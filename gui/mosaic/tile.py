@@ -1,0 +1,321 @@
+import numpy
+from OpenGL.GL import *
+from OpenGL import GLUT
+from OpenGL.GL.framebufferobjects import *
+
+## This module contains the Tile and MegaTile classes, along with some
+# supporting functions and constants.
+
+## Finds the smallest powers of two that will contain a texture with the 
+# specified dimensions.
+def getTexSize(width, height):
+    result = [2, 2]
+    for i, val in enumerate([width, height]):
+        while result[i] < val:
+            result[i] *= 2
+    return tuple(result)
+
+
+## Maps numpy datatypes to OpenGL datatypes
+dtypeToGlTypeMap = {
+    numpy.uint8: GL_UNSIGNED_BYTE,
+    numpy.uint16: GL_UNSIGNED_SHORT,
+    numpy.int16: GL_SHORT,
+    numpy.float32: GL_FLOAT,
+    numpy.float64: GL_FLOAT,
+    numpy.int32: GL_FLOAT,
+    numpy.uint32: GL_FLOAT,
+    numpy.complex64: GL_FLOAT,
+    numpy.complex128: GL_FLOAT,
+}
+
+## This class handles a single tile in the mosaic.
+class Tile:
+    def __init__(self, textureData, pos, size,
+            histogramScale, layer, isShown = True,
+            shouldDelayAllocation = False):
+
+        ## Array of pixel brightnesses
+        self.textureData = textureData
+        ## XYZ position tuple, in microns. NB the Z portion is ignored
+        # for rendering purposes and is mostly just kept around so we know
+        # the Z altitude at which the tile was collected, for later use.
+        self.pos = pos
+        ## width/height tuple, in microns
+        self.size = size
+        ## Box describing space we occupy: (upper left corner, lower right corner)
+        self.box = (self.pos[:2], (self.pos[0] + self.size[0], self.pos[1] + self.size[1]))
+
+        ## Grouping this tile belongs to, used to toggle display
+        self.layer = layer
+
+        ## OpenGL texture ID
+        self.texture = glGenTextures(1)
+        self.scaleHistogram(histogramScale[0], histogramScale[1])
+        if not shouldDelayAllocation:
+            self.bindTexture()
+            self.refresh()
+
+
+    def bindTexture(self):
+        glBindTexture(GL_TEXTURE_2D, self.texture)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST)
+        # These two are only really needed for megatiles; normal
+        # tiles don't have to deal with texture wrapping.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+
+        img = self.textureData
+
+        pic_ny, pic_nx = img.shape
+        tex_nx,tex_ny = getTexSize(pic_nx,pic_ny)
+
+        imgType = img.dtype.type
+        if imgType not in dtypeToGlTypeMap:
+            raise ValueError, "Unsupported data mode %s" % str(imgType)
+        glTexImage2D(GL_TEXTURE_2D,0,  GL_RGB, tex_nx,tex_ny, 0, 
+                     GL_LUMINANCE, dtypeToGlTypeMap[imgType], None)    
+
+
+    def refresh(self):
+        img = self.textureData
+        mi,ma = self.histogramScale
+        pic_ny, pic_nx = img.shape
+        if img.dtype.type in (numpy.float64, numpy.int32, numpy.uint32):
+            data = img.astype(numpy.float32)
+            imgString = data.tostring()
+            imgType = numpy.float32
+        else:
+            imgString = img.tostring()
+            imgType = img.dtype.type
+            
+        # maxUShort: value that represents "maximum color" - i.e. white
+        if img.dtype.type == numpy.uint16:
+            maxUShort = (1<<16) -1
+        elif img.dtype.type == numpy.int16:
+            maxUShort = (1<<15) -1
+        elif img.dtype.type == numpy.uint8:
+            maxUShort = (1<<8) -1
+        else:
+            maxUShort = 1
+
+        mmrange =  float(ma)-float(mi)
+        fBias =  -float(mi) / mmrange
+        f  =  maxUShort / mmrange
+        
+        glBindTexture(GL_TEXTURE_2D, self.texture)
+        glPixelTransferf(GL_RED_SCALE,   f)
+        glPixelTransferf(GL_GREEN_SCALE, f)
+        glPixelTransferf(GL_BLUE_SCALE,  f)
+        
+        glPixelTransferf(GL_RED_BIAS,   fBias)
+        glPixelTransferf(GL_GREEN_BIAS, fBias)
+        glPixelTransferf(GL_BLUE_BIAS,  fBias)
+        
+        glPixelTransferi(GL_MAP_COLOR, False)
+        
+        if img.dtype.type in (numpy.float64, numpy.int32, numpy.uint32,
+                numpy.complex64, numpy.complex128):
+            itSize = 4
+            glPixelStorei(GL_UNPACK_SWAP_BYTES, False) # create native float32 copy - see below
+        else:
+            itSize = img.itemsize
+            glPixelStorei(GL_UNPACK_SWAP_BYTES, not img.dtype.isnative)
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, itSize)
+
+        if imgType not in dtypeToGlTypeMap:
+            raise ValueError, "Unsupported data mode %s" % str(imgType)
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, pic_nx, pic_ny,  
+                     GL_LUMINANCE, dtypeToGlTypeMap[imgType], imgString)  
+
+
+    ## Free up memory we were using.
+    def wipe(self):
+        glDeleteTextures([self.texture])
+
+
+    ## Wipe our texture and recreate it, presumably because it has
+    # changed somehow.
+    def recreateTexture(self):
+        self.wipe()
+        self.texture = glGenTextures(1)
+        self.bindTexture()
+
+
+    ## Return true iff our area intersects the given
+    # (bottomLeft, topRight) tuple.
+    def intersectsBox(self, viewBox):
+        bottomLeft, topRight = viewBox
+        tileBottomLeft, tileTopRight = self.box
+
+        if (tileBottomLeft[0] > topRight[0] or
+                tileTopRight[0] < bottomLeft[0] or
+                tileTopRight[1] < bottomLeft[1] or
+                tileBottomLeft[1] > topRight[1]):
+            return False
+        return True
+
+
+    ## Draw the tile, if it intersects the given view box
+    def render(self, viewBox):
+        if not self.intersectsBox(viewBox):
+            return
+        
+        glColor3f(1, 1, 1)
+
+        img = self.textureData
+        pic_ny, pic_nx = img.shape
+        tex_nx,tex_ny = getTexSize(pic_nx,pic_ny)
+        picTexRatio_x = float(pic_nx) / tex_nx
+        picTexRatio_y = float(pic_ny) / tex_ny
+
+        (x,y) = self.pos[:2]
+
+        glBindTexture(GL_TEXTURE_2D, self.texture)
+        glBegin(GL_QUADS)
+        glTexCoord2f(0, 0)
+        glVertex2f(x, y)        
+        glTexCoord2f(picTexRatio_x, 0)
+        glVertex2f(x + self.size[0], y)
+        glTexCoord2f(picTexRatio_x, picTexRatio_y)
+        glVertex2f(x + self.size[0], y + self.size[1])
+        glTexCoord2f(0, picTexRatio_y)
+        glVertex2f(x, y + self.size[1])
+        glEnd()
+
+
+    ## Set our histogramScale tuple to (min, max), or base those off of 
+    # self.textureData if the provided values are None
+    def scaleHistogram(self, minVal = None, maxVal = None):
+        if minVal is None:
+            minVal = self.textureData.min()
+        if maxVal is None:
+            maxVal = self.textureData.max()
+        if minVal == maxVal:
+            # Prevent dividing by zero when we have to scale by these
+            # values for display.
+            maxVal = minVal + 1
+        ## Used to scale the brightness of the overall tile, like the
+        # histogram controls used for the camera views.
+        self.histogramScale = (minVal, maxVal)
+
+
+    ## Return the (xSize, ySize) tuple of a single pixel of texture data in GL
+    # units.
+    def getPixelSize(self):
+        return (self.size[0] / self.textureData.shape[0], 
+                self.size[1] / self.textureData.shape[1])
+
+
+
+## Length in pixels of one edge of a MegaTile's texture.
+megaTilePixelSize = 512
+## Length in microns of one edge of a MegaTile's texture.
+megaTileMicronSize = 500
+## Scaling factor to apply when prerendering to a MegaTile, so that
+# pixels line up properly at both render levels.
+megaTileScaleFactor = megaTileMicronSize / float(megaTilePixelSize)
+## Global numpy array of ones, used to initialize the MegaTile textures.
+megaTileData = numpy.ones((megaTilePixelSize, megaTilePixelSize), dtype = numpy.float32)
+## Framebuffer to use when prerendering. Set to None initially since
+# we have to wait for OpenGL to get set up in our window before we can
+# use it.
+megaTileFramebuffer = None
+## Unallocate the framebuffer
+def clearFramebuffer():
+    global megaTileFramebuffer
+    if megaTileFramebuffer is not None:
+        glDeleteFramebuffers([megaTileFramebuffer])
+        megaTileFramebuffer = None
+
+## This class handles pre-rendering of normal-sized Tile instances
+# at a reduced level of detail, which allows us to keep the program
+# responsive even when thousands of tiles are in view.
+class MegaTile(Tile):
+    ## Instantiate the megatile. The main difference here is that
+    # megatiles don't allocated any video memory until they have
+    # something to display; since the majority of the mosaic is
+    # usually blank, this saves significantly om memory.
+    #
+    # At this time, if megaTileFramebuffer has not been created
+    # yet, create it.
+    def __init__(self, pos):
+        Tile.__init__(self, megaTileData, pos,
+                 (megaTileMicronSize, megaTileMicronSize),
+                 (0, 1), 'megatiles',
+                 shouldDelayAllocation = True)
+        ## Counts the number of tiles we've rendered to ourselves.
+        self.numRenderedTiles = 0
+        ## Whether or not we've allocated memory for our texture yet.
+        self.haveAllocatedMemory = False
+        
+        global megaTileFramebuffer
+        if megaTileFramebuffer is None:
+            megaTileFramebuffer = glGenFramebuffers(1)
+
+
+    ## Go through the provided list of Tiles, find the ones that overlap
+    # our area, and prerender them to our texture
+    def prerenderTiles(self, tiles, viewer):
+        minX = self.pos[0]
+        minY = self.pos[1]
+        maxX = self.pos[0] + megaTileMicronSize
+        maxY = self.pos[1] + megaTileMicronSize
+        viewBox = ((minX, minY), (maxX, maxY))
+        newTiles = []
+        for tile in tiles:
+            if tile.intersectsBox(viewBox):
+                newTiles.append(tile)
+        if newTiles:
+            # Allocate memory for our texture, if needed.
+            if not self.haveAllocatedMemory:
+                self.bindTexture()
+                self.refresh()
+                self.haveAllocatedMemory = True
+            self.numRenderedTiles += len(newTiles)
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, megaTileFramebuffer)
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+                    GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                    self.texture, 0)
+            
+            glPushMatrix()
+            glLoadIdentity()
+            glViewport(0, 0, megaTilePixelSize, megaTilePixelSize)
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            glOrtho(0, megaTilePixelSize * megaTileScaleFactor,
+                    0, megaTilePixelSize * megaTileScaleFactor,
+                    1, 0)
+            glTranslatef(-self.pos[0], -self.pos[1], 0)
+            glMatrixMode(GL_MODELVIEW)
+
+            glEnable(GL_TEXTURE_2D)
+            for tile in newTiles:
+                tile.render(viewBox)
+
+            glPopMatrix()            
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
+
+
+    ## Prevent trying to delete our texture if we haven't made it yet.
+    def wipe(self):
+        if self.haveAllocatedMemory:
+            Tile.wipe(self)
+            self.haveAllocatedMemory = False
+            self.numRenderedTiles = 0
+            
+
+    ## Prevent allocating a new texture if we haven't drawn anything yet.
+    def recreateTexture(self):
+        if self.haveAllocatedMemory:
+            Tile.recreateTexture(self)
+            self.refresh()
+
+
+    def render(self, viewBox):
+        if not self.numRenderedTiles:
+            # We're empty, so no need to render.
+            return
+        Tile.render(self, viewBox)

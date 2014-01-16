@@ -1,0 +1,48 @@
+import wx
+
+import gui.camera.window
+import gui.mosaic.window
+import interfaces.stageMover
+
+## Given a wx.Window instance, set up keyboard controls for that instance.
+def setKeyboardHandlers(window):
+    accelTable = wx.AcceleratorTable([
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_MULTIPLY, 6903), # Rescale cameras
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_DIVIDE, 6904), # Switch stage control
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_DECIMAL, 6905), # Transfer image to mosaic
+
+        # Move the stage with the keypad
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD1, 6311), # Z down
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD2, 6312), # Y down
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD3, 6313), # Decrease delta
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD4, 6314), # X up
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD5, 6315), # Stop motion
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD6, 6316), # X down
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD7, 6317), # Z up
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD8, 6318), # Y up
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD9, 6319), # Increase delta
+
+        # Take an image
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_ADD, 6320),
+    ])
+    window.SetAcceleratorTable(accelTable)
+    for eventId, direction in [(6314, (1, 0, 0)), (6316, (-1, 0, 0)),
+            (6312, (0, -1, 0)), (6318, (0, 1, 0)), (6311, (0, 0, -1)),
+            (6317, (0, 0, 1))]:
+        wx.EVT_MENU(window, eventId,
+                lambda event, direction = direction: interfaces.stageMover.step(direction))
+    wx.EVT_MENU(window, 6903, 
+            lambda event: gui.camera.window.rescaleViews())
+    wx.EVT_MENU(window, 6904, 
+            lambda event: interfaces.stageMover.changeMover())
+    wx.EVT_MENU(window, 6905,
+            lambda event: gui.mosaic.window.transferCameraImage())
+
+    wx.EVT_MENU(window, 6313, 
+            lambda event: interfaces.stageMover.changeStepSize(-1))
+    wx.EVT_MENU(window, 6319, 
+            lambda event: interfaces.stageMover.changeStepSize(1))
+    
+    wx.EVT_MENU(window, 6320, 
+            lambda event: interfaces.imager.takeImage())
+
