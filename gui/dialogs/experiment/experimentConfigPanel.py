@@ -3,6 +3,7 @@ import experiment.experimentRegistry
 import gui.guiUtils
 import gui.saveTopBottomPanel
 import interfaces.stageMover
+import util.logger
 import util.userConfig
 import util.user
 
@@ -13,6 +14,7 @@ import numpy
 import json
 import os
 import time
+import traceback
 import wx
 
 ## @package dialogs.experimentConfigPanel
@@ -308,7 +310,12 @@ class ExperimentConfigPanel(wx.Panel):
             return
         filepath = dialog.GetPath()
         handle = open(filepath, 'w')
-        handle.write(json.dumps(settings))
+        try:
+            handle.write(json.dumps(settings))
+        except Exception, e:
+            util.logger.log.error("Couldn't save experiment settings: %s" % e)
+            util.logger.log.error(traceback.format_exc())
+            util.logger.log.error("Settings are:\n%s" % str(settings))
         handle.close()
         
 

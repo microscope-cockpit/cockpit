@@ -471,8 +471,22 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Generate a list of (label, action) tuples to use for generating menus.
     def getMenuActions(self):
         return [('Reset view', self.resetView),
-                ('Fill viewer', lambda: self.resetView(True))]
+                ('Fill viewer', lambda: self.resetView(True)),
+                ('Set histogram parameters', self.onSetHistogram)]
 
+
+    ## Let the user specify the blackpoint and whitepoint for image scaling.
+    def onSetHistogram(self, event = None):
+        values = gui.dialogs.getNumberDialog.getManyNumbersFromUser(
+                parent = self, title = "Set histogram scale parameters",
+                prompts = ["Blackpoint", "Whitepoint"],
+                defaultValues = [self.tiles[0][0].imageMin, self.tiles[0][0].imageMax])
+        values = map(float, values)
+        # Convert from pixel intensity values to [0, 1] scale values.
+        divisor = float(self.imageMax - self.imageMin)
+        self.blackPoint = (values[0] - self.imageMin) / divisor
+        self.whitePoint = (values[1] - self.imageMin) / divisor
+        self.changeHistScale(shouldRefresh = True)
 
 
     ## Display information on the pixel under the mouse at the given

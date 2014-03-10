@@ -135,6 +135,7 @@ class CameraDevice(device.Device):
     ## Set the gain for a camera, or for all cameras if none is
     # specified.
     def setGain(self, value, camera = None):
+        self.lastEMGain = value
         iterator = [camera]
         if camera is None:
             iterator = self.nameToConnection.keys()

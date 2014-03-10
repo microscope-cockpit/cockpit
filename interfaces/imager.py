@@ -3,6 +3,7 @@ import events
 import util.threads
 
 import time
+import traceback
 
 ## This module provides an interface for taking images with the current
 # active cameras and light sources. It's used only outside of experiment
@@ -76,7 +77,8 @@ class Imager:
             self.shouldStopVideoMode = True
             self.amInVideoMode = False
             return
-        
+
+        events.publish('video mode toggle', True)
         self.shouldStopVideoMode = False
         self.amInVideoMode = True
         while not self.shouldStopVideoMode:
@@ -86,7 +88,15 @@ class Imager:
                     haveNonRoomLight = True
                     break
             start = time.time()
-            self.takeImage(shouldBlock = haveNonRoomLight, shouldStopVideo = False)
+            try:
+                # HACK: only wait for one camera.
+                events.executeAndWaitFor("new image %s" % (list(self.activeCameras)[0].name),
+                        self.takeImage, 
+                        shouldBlock = haveNonRoomLight, shouldStopVideo = False)
+            except Exception, e:
+                print "Video mode failed:",e
+                traceback.print_exc()
+                break
             if haveNonRoomLight:
                 waitTime = 1 - (time.time() - start)
                 # Wait until 1s has passed before taking the next image.
@@ -94,6 +104,7 @@ class Imager:
             else:
                 time.sleep(.01)
         self.amInVideoMode = False
+        events.publish('video mode toggle', False)
 
 
     ## Stop our video thread, if relevant.

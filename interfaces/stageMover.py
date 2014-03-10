@@ -253,6 +253,11 @@ def deleteSite(siteID):
     site = mover.idToSite[siteID]
     del mover.idToSite[siteID]
     events.publish('site deleted', site)
+    # HACK: if this siteID is for the most-recently created
+    # site, decrement the global site ID.
+    global uniqueSiteIndex
+    if siteID == uniqueSiteIndex:
+        uniqueSiteIndex -= 1
 
 
 ## Retrieve the sites as a list.

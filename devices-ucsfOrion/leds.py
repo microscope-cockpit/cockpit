@@ -107,6 +107,7 @@ class LEDsDevice(device.Device):
         # Trim off the " power" from the name.
         name = name.split(' power')[0]
         self.nameToVoltage[name] = power
+        self.setVoltage(self.nameToChannel[name], power)
 
 
     ## Turn the LED(s) on for their respective illumination times.

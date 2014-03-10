@@ -7,6 +7,7 @@ import deviceHandler
 import events
 import gui.guiUtils
 import gui.toggleButton
+import util.userConfig
 
 
 ## This handler is for light filters, which control the percentage of light
@@ -45,6 +46,7 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
 
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
+        events.subscribe('user login', self.onLogin)
 
 
     ## Publish global filter position, if relevant.
@@ -52,6 +54,11 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
         if self.globalIndex is not None:
             events.publish('global filter change', 
                     self.globalIndex, self.curPosition)
+
+
+    ## User logged in; load their settings.
+    def onLogin(self, username):
+        self.selectPosition(util.userConfig.getValue(self.name + '-filterPosition', default = 0))
 
 
     ## Construct a UI consisting of a clickable box that pops up a menu allowing
@@ -96,6 +103,7 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
             events.publish('global filter change', 
                     self.globalIndex, self.curPosition)
         self.callbacks['setPosition'](self.name, index)
+        util.userConfig.setValue(self.name + '-filterPosition', index)
         wx.CallAfter(self.updateText)
 
 
@@ -113,7 +121,10 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
     ## Load our settings from the provided dict.
     def onLoadSettings(self, settings):
         if self.name in settings:
-            self.selectPosition(settings[self.name])
+            try:
+                self.selectPosition(settings[self.name])
+            except Exception, e:
+                print "Invalid filter position for %s: %s" % (self.name, settings.get(self.name, ''))
 
 
     ## Get the available filtrations, given the current global positions.

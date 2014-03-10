@@ -35,6 +35,9 @@ class CameraHandler(deviceHandler.DeviceHandler):
     #   of the values returned by getImageSizes().
     # - prepareForExperiment(name, experiment): Get the camera ready for an
     #   experiment.
+    # - Optional: getMinExposureTime(name): returns the minimum exposure time
+    #   the camera is capable of performing, in milliseconds. If not available,
+    #   0ms is used.
     # \param exposureMode One of TRIGGER_AFTER, TRIGGER_BEFORE, or
     #   TRIGGER_DURATION. The first two are for external-trigger cameras, which
     #   may be frame-transfer (trigger at end of exposure, and expose
@@ -44,7 +47,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
     # \param minExposureTime Minimum exposure duration, in milliseconds.
     #   Typically only applicable if doExperimentsExposeContinuously is True.
     def __init__(self, name, groupName, callbacks,
-            exposureMode, minExposureTime = 0):
+            exposureMode):
         # Note we assume that cameras are eligible for experiments.
         deviceHandler.DeviceHandler.__init__(self, name, groupName, True, 
                 callbacks, depot.CAMERA)
@@ -56,8 +59,6 @@ class CameraHandler(deviceHandler.DeviceHandler):
         self.wavelength = None
         ## True if the camera is currently receiving images.
         self.isEnabled = False
-        ## Minimum exposure duration for experiments.
-        self.minExposureTime = minExposureTime
         events.subscribe('drawer change', self.onDrawerChange)
         self.exposureMode = exposureMode
 
@@ -103,9 +104,12 @@ class CameraHandler(deviceHandler.DeviceHandler):
 
     ## Return the minimum allowed exposure time, in milliseconds.
     def getMinExposureTime(self, isExact = False):
+        val = 0
+        if 'getMinExposureTime' in self.callbacks:
+            val = self.callbacks['getMinExposureTime'](self.name)
         if isExact:
-            return decimal.Decimal(self.minExposureTime)
-        return self.minExposureTime
+            return decimal.Decimal(val)
+        return val
 
 
     ## Set a new exposure time, in milliseconds.

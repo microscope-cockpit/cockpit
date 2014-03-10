@@ -59,15 +59,16 @@ def login(parent):
     lastLoginTime = time.time()
 
     logger.changeFile(logger.generateLogFileName(curLoginName))
-    setWindowPositions(curLoginName)
+    setWindowPositions()
 
     userConfig.setValue('lastLoginDate', str(datetime.date.today()),
             isGlobal = True)
     events.publish("user login", curLoginName)
+    dialog.Destroy()
 
 
 ## Move the windows to where the user wants them to be.
-def setWindowPositions(username):
+def setWindowPositions():
     # Maps window titles to their positions.
     positions = userConfig.getValue('windowPositions', default =
             userConfig.getValue('defaultWindowPositions', isGlobal = True,

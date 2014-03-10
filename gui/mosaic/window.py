@@ -4,6 +4,7 @@ import numpy
 from OpenGL.GL import *
 import os
 import scipy.ndimage.measurements
+import threading
 import time
 import wx
 
@@ -51,6 +52,15 @@ class MosaicWindow(wx.Frame):
         ## True if we're generating a mosaic.
         self.amGeneratingMosaic = False
 
+        ## Lock on generating mosaics.
+        self.mosaicGenerationLock = threading.Lock()
+        ## Boolean that indicates if the current mosaic generation thread
+        # should exit.
+        self.shouldEndOldMosaic = False
+        ## Boolean that indicates if the current mosaic generation thread
+        # should pause.
+        self.shouldPauseMosaic = False
+
         ## Camera we last used for making a mosaic.
         self.prevMosaicCamera = None
 
@@ -75,17 +85,19 @@ class MosaicWindow(wx.Frame):
 
         sideSizer = wx.BoxSizer(wx.VERTICAL)
         for args in [
-                ('Run mosaic', self.displayMosaicMenu, None,
+                ('Run mosaic', self.displayMosaicMenu, self.continueMosaic,
                  "Generate a map of the sample by stitching together " +
                  "images collected with the current lights and one " +
-                 "camera. Click the Abort button to stop."),
+                 "camera. Click the Abort button to stop. Right-click " +
+                 "to continue a previous mosaic."),
                 ('Find stage', self.centerCanvas, None,
                  "Center the mosaic view on the stage and reset the " +
                  "zoom level"),
-                ('Delete tiles', self.onDeleteTiles, None,
+                ('Delete tiles', self.onDeleteTiles, self.onDeleteAllTiles,
                  "Left-click and drag to select mosaic tiles to delete. " +
                  "This can free up graphics memory on the computer. Click " +
-                 "this button again when you are done."),
+                 "this button again when you are done. Right-click to " +
+                 "delete every tile in the mosaic."),
                 ('Rescale tiles', self.autoscaleTiles,
                  self.displayRescaleMenu,
                  "Rescale each tile's black- and white-point. Left-click " +
@@ -296,17 +308,22 @@ class MosaicWindow(wx.Frame):
             # Draw a crude circle.
             x, y = site.position[:2]
             x = -x
+            # Set line width based on zoom factor.
+            lineWidth = max(1, self.canvas.scale * 1.5)
+            glLineWidth(lineWidth)
             glColor3f(*site.color)
             glBegin(GL_LINE_LOOP)
             for i in xrange(8):
                 glVertex3f(x + site.size * numpy.cos(numpy.pi * i / 4.0),
                         y + site.size * numpy.sin(numpy.pi * i / 4.0), 0)
             glEnd()
+            glLineWidth(1)
+
             glPushMatrix()
             glTranslatef(x, y, 0)
-            # Scale the text with respect to the site size (the default size
-            # is 25).
-            glScalef(site.size / 25.0, site.size / 25.0, 1)
+            # Scale the text with respect to the current zoom factor.
+            fontScale = 3 / max(5.0, self.canvas.scale)
+            glScalef(fontScale, fontScale, 1)
             self.font.Render(str(site.uniqueID))
             glPopMatrix()
 
@@ -350,14 +367,11 @@ class MosaicWindow(wx.Frame):
 
 
     # Draw a crosshairs at the specified position with the specified color.
-    # By default make the size of the crosshairs be the step size of motion
-    # in that axis.
+    # By default make the size of the crosshairs be really big.
     def drawCrosshairs(self, position, color, size = None):
         xSize = ySize = size
         if size is None:
-            steps = interfaces.stageMover.getCurStepSizes()[:2]
-            xSize = steps[0]
-            ySize = steps[1]
+            xSize = ySize = 100000
         x, y = position
 
         # Draw the crosshairs
@@ -397,12 +411,22 @@ class MosaicWindow(wx.Frame):
 
     ## Move the stage in a spiral pattern, stopping to take images at regular
     # intervals, to generate a stitched-together high-level view of the stage
-    # contents.
+    # contents. Check for an existing paused mosaic function and destroy it
+    # if it exists.
     # \param camera Handler of the camera we're collecting images from.
     @util.threads.callInNewThread
     def generateMosaic(self, camera):
+        if self.shouldPauseMosaic:
+            # We have a paused mosaic that needs to be destroyed.
+            self.shouldEndOldMosaic = True
+        self.generateMosaic2(camera)
+
+
+    def generateMosaic2(self, camera):
+        # Acquire the mosaic lock so no other mosaics can run.
+        self.mosaicGenerationLock.acquire()
+        
         self.amGeneratingMosaic = True
-        self.shouldAbort = False
         self.nameToButton['Run mosaic'].SetLabel('Stop mosaic')
         self.prevMosaicCamera = camera
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
@@ -412,8 +436,16 @@ class MosaicWindow(wx.Frame):
         centerX, centerY, curZ = interfaces.stageMover.getPosition()
         prevPosition = (centerX, centerY)
         for dx, dy in self.mosaicStepper():
-            if self.shouldAbort:
-                break
+            while self.shouldPauseMosaic:
+                # Wait until the mosaic is unpaused.
+                if self.shouldEndOldMosaic:
+                    # End the mosaic.
+                    self.shouldEndOldMosaic = False
+                    self.shouldPauseMosaic = False
+                    self.amGeneratingMosaic = False
+                    self.mosaicGenerationLock.release()
+                    return
+                time.sleep(.1)
             # Take an image.
             data, timestamp = events.executeAndWaitFor(
                     "new image %s" % camera.name, 
@@ -438,6 +470,9 @@ class MosaicWindow(wx.Frame):
             self.goTo(target, True)
             prevPosition = target
             curZ = interfaces.stageMover.getPositionForAxis(2)
+
+        # We should never reach this point!
+        self.mosaicGenerationLock.release()
 
 
     ## Transfer an image from the active camera (or first camera) to the
@@ -689,6 +724,21 @@ class MosaicWindow(wx.Frame):
                 self.generateMosaic)
 
 
+    ## Display a menu to the user letting them choose which camera
+    # to use to continue generating a pre-existing mosaic. Very
+    # similar to self.displayMosaicMenu.
+    def continueMosaic(self):
+        # If we're already running a mosaic, stop it instead.
+        if self.amGeneratingMosaic:
+            self.onAbort()
+            self.amGeneratingMosaic = False
+            return
+
+        self.shouldPauseMosaic = False
+        self.amGeneratingMosaic = True
+        self.nameToButton['Run mosaic'].SetLabel('Stop mosaic')
+
+
     ## Generate a menu where the user can select a camera to use to perform
     # some action.
     # \param text String template to use for entries in the menu.
@@ -726,6 +776,16 @@ class MosaicWindow(wx.Frame):
             self.setSelectFunc(self.canvas.deleteTilesIntersecting)
         else:
             self.setSelectFunc(None)
+
+
+    ## Delete all tiles in the mosaic, after prompting the user for
+    # confirmation.
+    def onDeleteAllTiles(self, event = None):
+        if not gui.guiUtils.getUserPermission(
+                "Are you sure you want to delete every tile in the mosaic?",
+                "Delete confirmation"):
+            return
+        self.canvas.deleteAll()
 
 
     ## Rescale each tile according to that tile's own values.
@@ -924,6 +984,8 @@ class MosaicWindow(wx.Frame):
     ## Handle the user clicking the abort button.
     def onAbort(self, *args):
         self.shouldAbort = True
+        if self.amGeneratingMosaic:
+            self.shouldPauseMosaic = True
         self.nameToButton['Run mosaic'].SetLabel('Run mosaic')
         # Stop deleting tiles, while we're at it.
         self.onDeleteTiles(shouldForceStop = True)
@@ -936,7 +998,8 @@ window = None
 
 def makeWindow(parent):
     global window
-    window = MosaicWindow(parent, title = "Mosaic view")
+    window = MosaicWindow(parent, title = "Mosaic view",
+            style = wx.CAPTION | wx.MINIMIZE_BOX)
     window.Show()
     window.centerCanvas()
 

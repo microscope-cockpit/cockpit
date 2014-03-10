@@ -14,8 +14,8 @@ import traceback
 # is used to remember individual users' settings (and a few global settings)
 # for dialogs and the like.
 
-## Directory that contains config files.
-CONFIG_ROOT_PATH = files.getConfigDir()
+## Directory that contains config files. Will be set when loadConfig is called.
+CONFIG_ROOT_PATH = None
 ## Username for config settings that don't belong to a specific user.
 GLOBAL_USERNAME = 'global'
 ## Suffix we append to each username to help avoid name conflicts
@@ -31,6 +31,8 @@ printer = pprint.PrettyPrinter()
 
 ## Open the config file and unserialize its contents.
 def loadConfig():
+    global CONFIG_ROOT_PATH
+    CONFIG_ROOT_PATH = files.getConfigDir()
     global config
     sys.path.append(CONFIG_ROOT_PATH)
     # Ensure that the config directory exists. Normally the util.files

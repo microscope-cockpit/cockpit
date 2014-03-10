@@ -14,6 +14,11 @@ EXPOSURE_TIMES = [1, 5] + range(10, 100, 10) + range(100, 1100, 100)
 ## Color to use for light sources that are in continuous exposure mode.
 CONTINUOUS_COLOR = (255, 170, 0)
 
+## Size of the button we make in the UI.
+BUTTON_SIZE = (120, 40)
+
+
+
 ## This handler is for lightsource toggle buttons and exposure time settings,
 # to control if a given illumination source is currently active (and for how
 # long).
@@ -62,12 +67,22 @@ class LightHandler(deviceHandler.DeviceHandler):
 
     ## Handle the laser being turned on/off by the user clicking on our button.
     def toggle(self, isOn):
-        self.callbacks['setEnabled'](self.name, isOn)
-        events.publish('light source enable', self, isOn)
+        if self.getIsExposingContinuously() and isOn:
+            # Actually we're already active; disable continuous-exposure
+            # mode instead.
+            self.callbacks['setExposing'](self.name, False)
+            # This will call toggle again...
+            wx.CallAfter(self.activeButton.setActive, False)
+        else:
+            self.callbacks['setEnabled'](self.name, isOn)
+            events.publish('light source enable', self, isOn)
 
 
     ## Turn the laser on and off, by manually toggling the button.
     def setEnabled(self, value):
+        if self.getIsExposingContinuously():
+            # Disable continuous activation first.
+            self.toggle(True)
         self.activeButton.setActive(value)
         events.publish('light source enable', self, value)
        
@@ -95,7 +110,7 @@ class LightHandler(deviceHandler.DeviceHandler):
                 activateAction = lambda: self.toggle(True),
                 deactivateAction = lambda: self.toggle(False),
                 label = label, parent = panel,
-                size = (120, -1))
+                size = (BUTTON_SIZE[0], -1))
         self.activeButton.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.setExposing())
         helpText = "Left-click to enable for taking images."
         if 'setExposing' in self.callbacks:
@@ -104,7 +119,7 @@ class LightHandler(deviceHandler.DeviceHandler):
         self.activeButton.SetToolTipString(helpText)
         sizer.Add(self.activeButton)
         self.exposureTime = gui.toggleButton.ToggleButton(
-                label = '', parent = panel, size = (120, 40))
+                label = '', parent = panel, size = BUTTON_SIZE)
         self.exposureTime.Bind(wx.EVT_LEFT_DOWN,
                 lambda event: self.makeMenu(panel))
         self.setLabel()
@@ -117,13 +132,10 @@ class LightHandler(deviceHandler.DeviceHandler):
     # \param value True for on, False for off, None for toggle
     def setExposing(self, value = None):
         if 'setExposing' in self.callbacks:
-            # Use the color of the button to tell us if we're currently in
-            # continuous-exposure mode.
-            color = self.activeButton.GetBackgroundColour()
-            isCurrentlyOn = color == CONTINUOUS_COLOR
+            isCurrentlyOn = self.getIsExposingContinuously()
             if value is None:
                 value = not isCurrentlyOn
-            if bool(value) == bool(isCurrentlyOn):
+            if bool(value) == isCurrentlyOn:
                 # Nothing to do.
                 return
             self.callbacks['setExposing'](self.name, value)
@@ -136,6 +148,13 @@ class LightHandler(deviceHandler.DeviceHandler):
                 self.activeButton.Refresh()
                 # ...but don't mark it as enabled, so it doesn't
                 # get used and then turned off when an image is taken.
+
+
+    ## Return True iff we are in continuous-exposure mode. We use the color
+    # of our button as the indicator for that state.
+    def getIsExposingContinuously(self):
+        color = self.activeButton.GetBackgroundColour()
+        return color == CONTINUOUS_COLOR
 
 
     ## Make a menu to let the user select the exposure time.

@@ -1,5 +1,6 @@
-## This Device specifies a "drawer" of optics and filters that determines
-# what cameras see what lights.
+## This Device creates a set of "virtual cameras" that are associated with 
+# each emission filter, and handles translating images received from the 
+# actual camera to the virtual cameras. 
 
 import depot
 import device
@@ -46,10 +47,22 @@ class EmissionFilterDevice(device.Device):
         ## List of valid filter position labels. The index of a label
         # corresponds to its position in the wheel. Why is there a
         # duplicate? I don't know. Because of how we set the filter position
-        # by name, it's inaccessible, but removing it would throw off all our
-        # indices.
-        self.options = ['Empty', 'ANALYZER', 'Empty', 'YFP HYQ',
-                'DAPI', 'FITC', 'FITC', 'TRITC', 'Full', 'BFP']
+        # by name, we need to provide a subtly different name or else it 
+        # becomes inaccessible.
+        self.options = ['Empty', 'ANALYZER', 'Empty2', 'YFP HYQ',
+                'DAPI', 'FITC', 'FITC2', 'TRITC', 'Full', 'BFP']
+        ## Maps option names (above) to their corresponding wavelengths,
+        # where applicable.
+        self.optionToWavelength = {
+            'Empty': 0,
+            'ANALYZER': 0,
+            'YFP HYQ': 530,
+            'DAPI': 455,
+            'FITC': 519,
+            'TRITC': 572,
+            'Full': 0,
+            'BFP': 440,
+        }
         ## Maps camera names to the corresponding filter option.
         self.nameToFilter = {}
         ## Maps LightSource instances to current camera gain values for those
@@ -130,10 +143,11 @@ class EmissionFilterDevice(device.Device):
                     'prepareForExperiment': self.wrap(self.coreCam.prepareForExperiment),
                     'getExposureTime': self.wrap(self.coreCam.getExposureTime),
                     'setExposureTime': self.wrap(self.coreCam.setExposureTime),
+                    'getMinExposureTime': lambda *args: 10,
                     'getImageSizes': self.wrap(self.coreCam.getImageSizes),
                     'getImageSize': self.wrap(self.coreCam.getImageSize),
                     'setImageSize': self.wrap(self.coreCam.setImageSize),
-                }, handlers.camera.TRIGGER_DURATION, 10))
+                }, handlers.camera.TRIGGER_DURATION))
             self.nameToFilter[camName] = filterName
         return result
 
@@ -234,27 +248,49 @@ class EmissionFilterDevice(device.Device):
         self.lightToFilterButton[light] = filterButton
 
 
-    ## Take an image. We do it once per active light source.
+    ## Take an image. We do it once per emission filter, using all the
+    # lights tied to that emission filter.
     def takeImage(self, *args):
         lights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
+        # Generate a mapping of emission filter to lights that use that
+        # filter.
+        emissionFilterToLights = {}
         for light in lights:
-            if not light.getIsEnabled():
+            if not light.getIsEnabled() or light.getIsExposingContinuously():
                 continue
             if light not in self.lightToFilter:
                 # Default to the current filter.
                 self.lightToFilter[light] = self.curFilter
-            print "For light",light.name,"setting filter",self.lightToFilter[light],"and gain",self.lightToGain[light]
+            lightFilter = self.lightToFilter[light]
+            if self.lightToFilter[light] not in emissionFilterToLights:
+                emissionFilterToLights[lightFilter] = []
+            emissionFilterToLights[lightFilter].append(light)
+
+        # Take images with each active filter.
+        for lightFilter, lights in emissionFilterToLights.iteritems():
             # Set the filter for that light.
-            self.setPosition(self.lightToFilter[light])
-            # Set the gain for that light.
+            self.setPosition(lightFilter)
+            # Set the gain. Use the strongest gain out of all of the lights
+            # used.
+            gain = max([self.lightToGain[light] for light in lights])
             self.core.setProperty(self.coreCam.name, 'MultiplierGain',
-                    self.lightToGain[light])
-            # Set the exposure time for that light.
-            self.core.setExposure(light.getExposureTime())
+                    gain)
+            # Set the exposure time. Use the max exposure time of all lights,
+            # since we unfortunately can't set them individually.
+            exposureTime = max([light.getExposureTime() for light in lights])
+            self.core.setExposure(exposureTime)
+            events.publish('nikon: prepare for image', lights)
             self.core.snapImage()
             image = self.core.getImage()
             timestamp = time.time()
             self.onImage(image, timestamp)
+            # Set the lights back to continuous exposure if necessary.
+            for light in lights:
+                if light.getIsExposingContinuously():
+                    # Simply calling setExposing(True) wouldn't do anything
+                    # as the light still thinks it is exposing.
+                    light.setExposing(False)
+                    light.setExposing(True)
 
 
     ## Check the provided experiment ActionTable, and ensure that the
@@ -294,14 +330,14 @@ class EmissionFilterDevice(device.Device):
 
     ## Return the numeric wavelength of light seen by the camera.
     def getWavelengthForCamera(self, name, cameraName):
-        # \todo Actually implement this.
-        return 0
+        filterName = self.nameToFilter[cameraName]
+        return self.optionToWavelength.get(filterName, 0)
 
 
-    ## Return the dye the camera sees. Since we've already stuck the
-    # filter name into the camera name, this is a no-op.
+    ## Return the dye the camera sees. We've stuck the dye name into the
+    # camera name; extract that back out and return it.
     def getDyeForCamera(self, name, cameraName):
-        return ''
+        return cameraName.split('(')[1].split(')')[0]
 
 
     ## Return the color used to represent the camera. Extract the actual
@@ -334,6 +370,6 @@ class EmissionFilterDevice(device.Device):
     ## The camera has generated an image; republish it based on the camera's
     # current active emission filter.
     def onImage(self, image, timestamp):
-        print "Republishing image under filter",self.curFilter
+        print "Publishing image under",self.curFilter
         events.publish('new image %s (%s)' % (self.coreCam.name, self.curFilter),
                 image, timestamp)

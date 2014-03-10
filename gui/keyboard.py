@@ -1,8 +1,10 @@
 import wx
 
 import gui.camera.window
+import gui.guiUtils
 import gui.mosaic.window
 import interfaces.stageMover
+import util.user
 
 ## Given a wx.Window instance, set up keyboard controls for that instance.
 def setKeyboardHandlers(window):
@@ -24,6 +26,9 @@ def setKeyboardHandlers(window):
 
         # Take an image
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_ADD, 6320),
+
+        # Pop up a menu to help the user find hidden windows.
+        (wx.ACCEL_CTRL, ord('M'), 6321),
     ])
     window.SetAcceleratorTable(accelTable)
     for eventId, direction in [(6314, (1, 0, 0)), (6316, (-1, 0, 0)),
@@ -45,4 +50,44 @@ def setKeyboardHandlers(window):
     
     wx.EVT_MENU(window, 6320, 
             lambda event: interfaces.imager.takeImage())
+
+    wx.EVT_MENU(window, 6321,
+            lambda event: martialWindows(window))
+
+
+## Pop up a menu under the mouse that helps the user find a window they may
+# have lost.
+def martialWindows(parent):
+    windows = wx.GetTopLevelWindows()
+    menu = wx.Menu()
+    menuId = 1
+    menu.Append(menuId, "Reset window positions")
+    wx.EVT_MENU(parent, menuId,
+            lambda event: util.user.setWindowPositions())
+    menuId += 1
+    for i, window in enumerate(windows):
+        if not window.GetTitle():
+            # Sometimes we get bogus top-level windows; no idea why.
+            # Just skip them.
+            # \todo Figure out where these windows come from and either get
+            # rid of them or fix them so they don't cause trouble here.
+            continue
+        subMenu = wx.Menu()
+        subMenu.Append(menuId, "Raise to top")
+        wx.EVT_MENU(parent, menuId,
+                lambda event, window = window: window.Raise())
+        menuId += 1
+        subMenu.Append(menuId, "Move to mouse")
+        wx.EVT_MENU(parent, menuId,
+                lambda event, window = window: window.SetPosition(wx.GetMousePosition()))
+        menuId += 1
+        subMenu.Append(menuId, "Move to top-left corner")
+        wx.EVT_MENU(parent, menuId,
+                lambda event, window = window: window.SetPosition((0, 0)))
+        menuId += 1
+        # Some windows have very long titles (e.g. the Macro Stage View),
+        # so just take the first 50 characters.
+        menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        menuId += 1
+    gui.guiUtils.placeMenuAtMouse(parent, menu)
 

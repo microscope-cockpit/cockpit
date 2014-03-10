@@ -85,11 +85,13 @@ class DSPDevice(device.Device):
         ## Information regarding light sources we control.
         self.lightInfo = [('Ambient light', 'Ambient', 0),
                 ('488 shutter', 488, 1 << 3),
-                ('561 shutter', 561, (1 << 10) + (1 << 11))]
+                ('561 shutter', 561, 1 << 11)]
 
         ## Generic handler to represent the trigger for the digital delay
         # generator.
         self.delayHandler = None
+        ## Generic handler to represent the trigger for the 561 AOM.
+        self.aom561Handler = None
         ## Resolution of actions we can take when running experiments.
         self.actionsPerMillisecond = 10
         ## Conversion factor between microns and the units the DSP card
@@ -209,6 +211,7 @@ class DSPDevice(device.Device):
         # \todo Handle this better. Too hungry right now.
         self.handlerToAnalogAxis[self.retarderHandler] = 0
 
+        # SLM handler
         result.append(handlers.genericPositioner.GenericPositionerHandler(
             "SI SLM", "structured illumination", True, 
             {'moveAbsolute': self.setSLMPattern, 
@@ -217,18 +220,26 @@ class DSPDevice(device.Device):
                 'getMovementTime': self.getSLMStabilizationTime}))
         self.handlerToDigitalLine[result[-1]] = 1 << 5
 
+        # 561 AOM handler
+        self.aom561Handler = handlers.genericHandler.GenericHandler(
+            "561 AOM", "561 light source", True)
+        result.append(self.aom561Handler)
+        self.handlerToDigitalLine[self.aom561Handler] = 1 << 12
+
+        # Delay generator for the 488 AOM.
+        self.delayHandler = handlers.genericHandler.GenericHandler(
+            'Delay generator trigger', 'General light control', True)
+        self.handlerToDigitalLine[self.delayHandler] = 1 << 4
+        result.append(self.delayHandler)
+
         result.append(handlers.imager.ImagerHandler(
             "DSP imager", "imager",
             {'takeImage': self.takeImage}))
         result.append(handlers.executor.ExecutorHandler(
             "DSP experiment executor", "executor",
-            {'examineActions': lambda *args: None, 
+            {'examineActions': self.examineActions, 
                 'getNumRunnableLines': self.getNumRunnableLines, 
                 'executeTable': self.executeTable}))
-        self.delayHandler = handlers.genericHandler.GenericHandler(
-            'Delay generator trigger', 'General light control', True)
-        self.handlerToDigitalLine[self.delayHandler] = 1 << 4
-        result.append(self.delayHandler)
 
         self.handlers = set(result)
         return result
@@ -302,10 +313,10 @@ class DSPDevice(device.Device):
     # initial position to the final position, as well
     # as the amount of time needed to stabilize after that point, 
     # both in milliseconds. These numbers are both somewhat arbitrary;
-    # we just say it takes 100ms per micron to stabilize and .1ms to move.
+    # we just say it takes 1ms per micron to stabilize and .1ms to move.
     def getPiezoMovementTime(self, axis, start, end):
         distance = abs(start - end)
-        return (decimal.Decimal('.1'), decimal.Decimal(distance * 100))
+        return (decimal.Decimal('.1'), decimal.Decimal(distance * 1))
 
 
     ## Set the SLM's position to a specific value. 
@@ -378,12 +389,12 @@ class DSPDevice(device.Device):
                 # generator will handle fine exposure time resolution.
                 exposureTime = max(exposureTime, 10)
                 lightTimePairs.append((line, exposureTime))
+                # The delay generator needs to know how long a pulse to send.
+                generator.setExposureTime(handler.name, maxTime)
         # Must trigger the delay generator alongside any lights. It takes a
         # TTL pulse instead of a normal exposure signal.
         lightTimePairs.append(
                 (self.handlerToDigitalLine[self.delayHandler], 1))
-        # The delay generator needs to know how long a pulse to send.
-        generator.setExposureTime(None, maxTime)
         for name, line in self.nameToDigitalLine.iteritems():
             if name in self.activeCameras:
                 cameraMask += line
@@ -399,6 +410,29 @@ class DSPDevice(device.Device):
     def onPrepareForExperiment(self, *args):
         self.lastDigitalVal = 0
         self.lastAnalogPositions = [0] * 4
+
+
+    ## Examine an ActionTable for validity. Replace activations of the 561
+    # shutter with activations of the 561 AOM, and open the shutter at the
+    # beginning and end of the experiment instead.
+    def examineActions(self, name, table):
+        have561 = False
+        for i, (time, handler, parameter) in enumerate(table.actions):
+            if handler.name == '561 shutter':
+                have561 = True
+                # Remove the event since it'll be replaced by triggering
+                # the AOM.
+                table.actions[i] = None
+                table.addAction(time, self.aom561Handler, parameter)
+        table.clearBadEntries()
+        
+        if have561:
+            shutterHandler = depot.getHandlerWithName('561 shutter')
+            start, end = table.getFirstAndLastActionTimes()
+            table.addAction(start, shutterHandler, True)
+            table.addAction(end + decimal.Decimal('.1'),
+                    shutterHandler, False)
+            
 
 
     ## Get the number of actions from the provided table that we are

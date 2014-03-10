@@ -89,11 +89,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
 
     ## Delete all tiles and textures, including the megatiles.
     def deleteAll(self):
-        self.clearIdx(0, len(self.tiles), refresh = False,
-                      shouldRerender = False)
-        for tile in self.megaTiles:
-            tile.wipe()
-        tile.clearFramebuffer()
+        self.deleteTilesList(list(self.tiles))
 
 
     ## Get all tiles that intersect the specified box, pulling from the provided

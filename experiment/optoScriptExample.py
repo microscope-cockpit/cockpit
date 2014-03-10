@@ -20,19 +20,26 @@ EXPERIMENT_NAME = 'Example opto script'
 # in experiment/zStack.py; the generateActions() function in that class is
 # what collects the actual data. We just modify the execute() function
 # (inherited from the base Experiment class in experiment/experiment.py) to
-# engage the LEDs.
+# engage the lights as specified before each rep.
 # See below this class for the ExperimentUI and OptoPanel classes that set
 # up the UI for configuring the experiment settings.
 class OptoExperiment(zStack.ZStackExperiment):
-    ## \param lightToTime Dictionary mapping different light handlers to
+    ## \param lightToTime Dictionary mapping different light handler names to
     #         lists of [start, stop] times for illuminating them prior to
     #         running a standard Z-stack.
     ## \param lightToIsOnDuringAcquisition Dictionary mapping different light
-    #         handlers to whether or not those lights should be left on while
+    #         handler names to whether or not those lights should be left on while
     #         taking images in the Z-stack section of the experiment.
     def __init__(self, lightToSequence, lightToIsOnDuringAcquisition, **kwargs):
-        self.lightToSequence = lightToSequence
-        self.lightToIsOnDuringAcquisition = lightToIsOnDuringAcquisition
+        # Convert from light source names to light handlers.
+        self.lightToSequence = {}
+        for name, sequence in lightToSequence.iteritems():
+            handler = depot.getHandlerWithName(name)
+            self.lightToSequence[handler] = sequence
+        self.lightToIsOnDuringAcquisition = {}
+        for name, isOn in lightToIsOnDuringAcquisition.iteritems():
+            handler = depot.getHandlerWithName(name)
+            self.lightToIsOnDuringAcquisition[handler] = isOn
         # Call the ZStackExperiment constructor with all of our remaining
         # parameters, which are in the "kwargs" dictionary object.
         zStack.ZStackExperiment.__init__(self, **kwargs)
@@ -47,6 +54,9 @@ class OptoExperiment(zStack.ZStackExperiment):
         numReps = self.numReps
         self.numReps = 1
         for i in xrange(numReps):
+            if self.shouldAbort:
+                # User aborted experiment.
+                break
             # Create a new thread for activating each light in parallel.
             # We could do this singlethreaded, but it would require an
             # in-depth examination of self.lightToSequence to determine when
@@ -140,18 +150,22 @@ class ExperimentUI(wx.Panel):
         self.SetSizerAndFit(sizer)
 
 
-    ## Return a mapping of light sources to lists of illumination sequences.
-    # e.g. {405 light handle: [[0, 20], [30, 50]]} to indicate that the 405
-    # light should be on from 0 to 20 seconds, and from 30 to 50 seconds.
+    ## Return a mapping of light source names to lists of illumination sequences.
+    # e.g. {"650 LED": [[0, 20], [30, 50]]} to indicate that the 650
+    # LED should be on from 0 to 20 seconds, and from 30 to 50 seconds.
+    # We use handler names instead of handlers here so that they can be
+    # serialized (when saving experiment settings) cleanly.
     def getLightToSequence(self):
-        return dict([(l, self.lightToPanel[l].getSequence()) for l in self.allLights])
+        return dict([(l.name, self.lightToPanel[l].getSequence()) for l in self.allLights])
 
 
-    ## Returns a mapping of light sources to whether or not those lights
+    ## Returns a mapping of light source names to whether or not those lights
     # should be left on during image acquisition (independently of whether
     # or not those lights are being used as traditional imaging lights).
+    # We use handler names instead of handlers here so that they can be
+    # serialized (when saving experiment settings) cleanly.
     def getLightToIsOnDuringAcquisition(self):
-        return dict([(l, self.lightToPanel[l].getIsOnDuringAcquisition()) for l in self.allLights])
+        return dict([(l.name, self.lightToPanel[l].getIsOnDuringAcquisition()) for l in self.allLights])
 
 
     ## Given a parameters dict (parameter name to value) to hand to the

@@ -7,6 +7,9 @@ import events
 
 import gui.guiUtils
 import gui.toggleButton
+import util.logger
+import util.userConfig
+
 
 
 ## This handler is for light sources where the power of the light can be
@@ -40,6 +43,16 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
 
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
+        events.subscribe('user login', self.onLogin)
+
+
+    ## User logged in; load their settings.
+    def onLogin(self, username):
+        targetPower = util.userConfig.getValue(self.name + '-lightPower', default = 0.01)
+        try:
+            self.setPower(targetPower)
+        except Exception, e:
+            util.logger.log.warn("Failed to set prior power level %s for %s: %s" % (targetPower, self.name, e))
 
 
     ## Construct a UI consisting of a clickable box that pops up a menu allowing
@@ -87,7 +100,11 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     ## Load our settings from the provided dict.
     def onLoadSettings(self, settings):
         if self.name in settings:
-            self.setPower(settings[self.name])
+            try:
+                self.setPower(settings[self.name])
+            except Exception, e:
+                # Invalid power; just ignore it.
+                print "Invalid power for %s: %s" % (self.name, settings.get(self.name, ''))
 
 
     ## Toggle accessibility of the handler.
@@ -105,6 +122,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     ## Set a new value for curPower.
     def setCurPower(self, curPower):
         self.curPower = curPower
+        util.userConfig.setValue(self.name + '-lightPower', curPower)
         self.updateText()
 
 

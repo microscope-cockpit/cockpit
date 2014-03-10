@@ -1,9 +1,11 @@
 import device
 import events
+import gui.guiUtils
 import handlers.stagePositioner
 import interfaces
 import util.logger
 import util.threads
+import util.userConfig
 
 from OpenGL.GL import *
 import Pyro4
@@ -96,6 +98,8 @@ class PhysikInstrumenteDevice(device.Device):
         events.subscribe('user logout', self.onLogout)
         events.subscribe('user abort', self.onAbort)
         events.subscribe('macro stage xy draw', self.onMacroStagePaint)
+        events.subscribe('cockpit initialization complete',
+                self.promptExerciseStage)
 
 
     def initialize(self):
@@ -117,6 +121,42 @@ class PhysikInstrumenteDevice(device.Device):
         self.getXYPosition(shouldUseCache = False)
         events.oneShotSubscribe('cockpit initialization complete',
                 self.timedDisableClosedLoop)
+
+
+    ## We want to periodically exercise the XY stage to spread the grease
+    # around on its bearings; check how long it's been since the stage was
+    # last exercised, and prompt the user if it's been more than a week.
+    def promptExerciseStage(self):
+        lastExerciseTimestamp = util.userConfig.getValue(
+                'PILastExerciseTimestamp',
+                isGlobal = True, default = 0)
+        curTime = time.time()
+        delay = curTime - lastExerciseTimestamp
+        daysPassed = delay / float(24 * 60 * 60)
+        if (daysPassed > 7 and
+                gui.guiUtils.getUserPermission(
+                    ("It has been %.1f days since " % daysPassed) +
+                    "the stage was last exercised. Please exercise " +
+                    "the stage regularly.\n\nExercise stage?",
+                    "Please exercise the stage")):
+            # Move to the middle of the stage, then to one corner, then to
+            # the opposite corner, repeat a few times, then back to the middle,
+            # then to where we started from. Positions are actually backed off
+            # slightly from the true safeties. Moving to the middle is
+            # necessary to avoid the banned rectangles, in case the stage is
+            # in them when we start.
+            initialPos = tuple(self.xyPositionCache)
+            interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
+            for i in xrange(5):
+                print "Rep %d of 5..." % i
+                for position in [(24500, -12000), (-24000, 42000)]:
+                    interfaces.stageMover.goToXY(position, shouldBlock = True)
+            interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
+            interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
+            print "Exercising complete. Thank you!"
+            
+            util.userConfig.setValue('PILastExerciseTimestamp',
+                    time.time(), isGlobal = True)
 
 
     ## This function disables closed loop on the Z piezo if the scope has been

@@ -56,6 +56,10 @@ class SIExperiment(experiment.Experiment):
         self.numAngles = numAngles
         self.numPhases = 5
         self.numZSlices = int(math.ceil(self.zHeight / self.sliceHeight))
+        if self.zHeight > 1e-6:
+            # Non-2D experiment; tack on an extra image to hit the top of
+            # the volume.
+            self.numZSlices += 1
         self.collectionOrder = collectionOrder
         self.angleHandler = angleHandler
         self.phaseHandler = phaseHandler

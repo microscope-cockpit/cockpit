@@ -17,6 +17,10 @@ class ZStackExperiment(experiment.Experiment):
         curTime = 0
         prevAltitude = None
         numZSlices = int(math.ceil(self.zHeight / self.sliceHeight))
+        if self.zHeight > 1e-6:
+            # Non-2D experiment; tack on an extra image to hit the top of
+            # the volume.
+            numZSlices += 1
         for zIndex in xrange(numZSlices):
             # Move to the next position, then wait for the stage to 
             # stabilize.

@@ -58,6 +58,7 @@ class TIRFMirrorDevice(device.Device):
     def makeUI(self, parent):
         curPosition = self.core.getProperty('TITIRF', 'Position')
         panel = wx.Panel(parent, style = wx.BORDER_SUNKEN)
+        panel.SetBackgroundColour((255, 255, 255))
         sizer = wx.BoxSizer(wx.VERTICAL)
         
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)

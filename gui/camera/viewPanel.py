@@ -110,8 +110,8 @@ class ViewPanel(wx.Panel):
             except Exception, e:
                 util.logger.log.error("Error disabling camera: %s", e)
                 util.logger.log.error(traceback.format_exc())
-            self.curCamera = None
             events.publish('camera enable', self.curCamera, False)
+            self.curCamera = None
             self.canvas.clear()
         if self.canvas is not None:
             # Destroy the canvas.

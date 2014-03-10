@@ -321,11 +321,20 @@ class MultiSiteExperimentDialog(wx.Dialog):
             cycleDuration = float(self.cycleDuration.GetValue())
         cyclePeriod, cycleNumToSitesList = self.chooseSiteVisitOrder()
         numCycles = int(self.numCycles.GetValue())
+        cycleStartTime = time.time()
         for cycleNum in xrange(numCycles):
-            print "Starting cycle",cycleNum,"at %.2f" % time.time()
+            siteIds = cycleNumToSitesList[cycleNum % cyclePeriod]
+            if cycleNum != 0:
+                # Move to the first site.
+                interfaces.stageMover.waitForStop()
+                interfaces.stageMover.goToSite(siteIds[0], shouldBlock = True)
+                # Wait for when the next cycle should start.
+                waitTime = cycleStartTime + cycleDuration - time.time()
+                if not self.waitFor(waitTime):
+                    print "Couldn't finish cycle in time; off by %.2f seconds" % (-waitTime)
+            print "Starting cycle",cycleNum,"of",numCycles,"at %.2f" % time.time()
             cycleStartTime = time.time()
             self.activateLights(cycleNum)
-            siteIds = cycleNumToSitesList[cycleNum % cyclePeriod]
             for siteId in siteIds:
                 if self.shouldAbort:
                     break
@@ -334,11 +343,6 @@ class MultiSiteExperimentDialog(wx.Dialog):
 
             if self.shouldAbort:
                 break
-            if cycleNum != numCycles - 1:
-                # Wait for when the next cycle should start.
-                waitTime = cycleStartTime + cycleDuration - time.time()
-                if not self.waitFor(waitTime):
-                    print "Couldn't finish cycle in time; off by %.2f seconds" % (-waitTime)
             if self.shouldAbort:
                 break
 
@@ -392,9 +396,9 @@ class MultiSiteExperimentDialog(wx.Dialog):
         except ValueError:
             # Not actually an int.
             pass
-        filename = "%s_%s_t%03d_p%s" % (
+        filename = "%s_t%03d_p%s_%s" % (
                 time.strftime('%Y%m%d-%H%M', experimentStart),
-                self.fileBase.GetValue(), cycleNum, siteId)
+                cycleNum, siteId, self.fileBase.GetValue())
         self.experimentPanel.setFilename(filename)
         start = time.time()
         events.executeAndWaitFor('experiment complete',

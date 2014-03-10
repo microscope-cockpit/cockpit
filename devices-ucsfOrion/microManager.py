@@ -13,7 +13,8 @@ import gui.toggleButton
 import handlers.stagePositioner
 import util.threads
 
-# HACK: we'll want access to this module later, but can't import it now,
+# HACK: we'll want access to this module later, but can't import it now (as 
+# Python's path isn't set properly yet),
 # so just add it to the global namespace for the moment. It will get replaced
 # in MMDevice.initialize().
 MMCorePy = None

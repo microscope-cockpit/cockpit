@@ -147,6 +147,7 @@ class CameraDevice(device.Device):
     ## Set the gain for a camera, or for all cameras if none is
     # specified.
     def setGain(self, value, camera = None):
+        self.lastEMGain = value
         iterator = [camera]
         if camera is None:
             iterator = self.nameToConnection.keys()
@@ -344,7 +345,7 @@ class CameraDevice(device.Device):
         # until the next external trigger. This causes a lot of background in
         # the first image. So we'll trigger the first image immediately before
         # starting the experiment (or as close-to as possible) and discard it.
-#        connection.skipNextNimages(1)
+        connection.skipNextNimages(1)
         connection.exposeTillAbort(1)
         self.flushCache(name)
 

@@ -29,6 +29,8 @@ class DigitalDelayGeneratorDevice(device.Device):
         self.executor = None
         ## Cached exposure times we have set.
         self.nameToExposureTime = {}
+        ## Set of light sources we care about.
+        self.controlledLightNames = set(['488 shutter'])
         ## Cached trigger response delay
         self.curDelay = None
         events.subscribe('prepare for experiment', self.prepareForExperiment)
@@ -87,11 +89,12 @@ class DigitalDelayGeneratorDevice(device.Device):
         
 
     ## Set the exposure time (time between rising and falling edges).
-    # \param timeUS Exposure time in microseconds
     def setExposureTime(self, name, value):
+        if name not in self.controlledLightNames:
+            # Not a light source we care about.
+            return
         if value != self.nameToExposureTime.get(name, None):
             num = convertToScientific(decimal.Decimal(value) / decimal.Decimal('1000'))
-            print "Setting exposure time to",num
             # Set channel 3 to be a specific time after channel 2
             self.sendCommand('DLAY3,2,%s' % num)
             self.sendCommand('LCAL')
@@ -127,11 +130,9 @@ class DigitalDelayGeneratorDevice(device.Device):
         # Time offset we're adding to each action to make room for our
         # change-exposure-time actions.
         timeOffset = 0
-        lights = set(depot.getHandlersOfType(depot.LIGHT_TOGGLE))
         delayHandler = depot.getHandlerWithName('Delay generator trigger')
         for i, (time, handler, action) in enumerate(table.actions):
-                
-            if handler not in lights:
+            if handler.name not in self.controlledLightNames:
                 # Not a device we care about.
                 continue
             if action:

@@ -6,12 +6,14 @@ import offsetGainCorrection
 import optoScriptExample
 import responseMap
 import structuredIllumination
+import stutteredZStack
 import sweptShutter
 import zStack
 
 ## List of registered modules.
 registeredModules = [zStack, sweptShutter,
-            offsetGainCorrection, responseMap, optoScriptExample]
+            offsetGainCorrection, responseMap, stutteredZStack,
+            optoScriptExample]
 
 
 ## Add another experiment to the registered set.

@@ -25,6 +25,7 @@ class ConfiguratorDevice(device.Device):
                 'dataDirectory': os.path.join(root, 'MUI_DATA'),
                 'logDirectory': os.path.join(root, 'MUI_LOGS'),
                 'configDirectory': os.path.join(root, 'MUI_CONFIG'),
+                'maxFilesizeMegabytes': 1000,
         }
         return [handlers.configuratorHandler.ConfiguratorHandler(
             'configuration', 'miscellaneous', {}, config)

@@ -34,6 +34,8 @@ class DeviceDepot:
         self.moduleToDevice = {}
         ## Maps devices to their handlers.
         self.deviceToHandlers = {}
+        ## Maps handlers back to their devices.
+        self.handlerToDevice = {}
         ## List of all device handlers for active modules.
         self.handlersList = []
         ## Maps handler device types to lists of the handlers controlling that
@@ -121,8 +123,12 @@ class DeviceDepot:
                 self.groupNameToHandlers[handler.groupName] = []
             if handler.name in self.nameToHandler:
                 # We enforce unique names.
-                raise RuntimeError("Multiple handlers with the same name [%s]" % handler.name)
+                otherHandler = self.nameToHandler[handler.name]
+                otherDevice = self.handlerToDevice[otherHandler]
+                raise RuntimeError("Multiple handlers with the same name [%s] from devices [%s] and [%s]" %
+                    (handler.name, str(device), str(otherDevice)))
             self.nameToHandler[handler.name] = handler
+            self.handlerToDevice[handler] = device
             
             self.groupNameToHandlers[handler.groupName].append(handler)
 

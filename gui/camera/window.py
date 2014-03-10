@@ -5,6 +5,7 @@ import depot
 import events
 import gui.keyboard
 import util.userConfig
+import gui.viewFileDropTarget
 import viewPanel
 
 
@@ -38,6 +39,7 @@ class CamerasWindow(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.onClose)
 
         self.resetGrid()
+        self.SetDropTarget(gui.viewFileDropTarget.ViewFileDropTarget(self))
 
 
     ## The window is closed; use that as a proxy for closing the program,

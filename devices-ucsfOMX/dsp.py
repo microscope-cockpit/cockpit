@@ -331,7 +331,7 @@ class DSPDevice(device.Device):
                 if handler.name == '488 Deepstar':
                     # Set the exposure time on the delay generator.
                     exposureTime = handler.getExposureTime()
-                    generator.setExposureTime(None, exposureTime)
+                    generator.setExposureTime(handler.name, exposureTime)
                     lightTimePairs.append((line, 1))
                 else:
                     # The DSP card can only handle integer exposure times.
@@ -352,6 +352,18 @@ class DSPDevice(device.Device):
     def prepareForExperiment(self, *args):
         self.lastDigitalVal = 0
         self.initialAnalogPositions = [self.connection.ReadPosition(i) for i in xrange(4)]
+        # Take an image for all cameras; otherwise the first image in the
+        # experiment is faulty.
+        cameraMask = 0
+        for name, line in self.nameToDigitalLine.iteritems():
+            if name in self.activeCameras:
+                cameraMask += line
+        # HACK: instead of calling arcl, we just set the digital lines hight
+        # and then low again. Otherwise, we risk the DSP being too busy doing
+        # the arcl function to be able to do the "collect" function for the
+        # actual experiment.
+        self.connection.WriteDigital(cameraMask)
+        self.connection.WriteDigital(0)
 
 
     ## Get the number of actions from the provided table that we are
