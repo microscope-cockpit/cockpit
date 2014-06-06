@@ -13,7 +13,7 @@ import zStack
 ## List of registered modules.
 registeredModules = [zStack, sweptShutter,
             offsetGainCorrection, responseMap, stutteredZStack,
-            optoScriptExample]
+            optoScriptExample, structuredIllumination]
 
 
 ## Add another experiment to the registered set.
