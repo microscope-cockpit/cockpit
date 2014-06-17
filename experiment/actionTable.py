@@ -119,6 +119,3 @@ class ActionTable:
     def __repr__(self):
         return self.prettyString()
 
-
-    def __len__(self):
-        return len(self.actions)
