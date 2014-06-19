@@ -1,3 +1,12 @@
+""" Configuration package for cockpit.
+
+Looks for .conf files in the package directory, loads them into a
+ConfigParser, then exposes that parser as cockpitconfig.config.
+
+Default configuration can be specified in default.conf.  This is
+processed first, so will be over-ridden if a section with the same
+name appears in another file.
+"""
 import os
 from ConfigParser import ConfigParser
 
@@ -7,12 +16,10 @@ _files = [os.path.sep.join([_path, file])
 
 try:
     _files.append(_files.pop(_files.index(
-        os.path.sep.join([_path,'master.conf']))))
+        os.path.sep.join([_path,'default.conf']))))
     _files.reverse()
-    print _files
 except:
     pass
 
-print _files
 config = ConfigParser()
-print config.read(_files)
+
