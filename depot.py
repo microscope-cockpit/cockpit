@@ -91,7 +91,7 @@ class DeviceDepot:
             return instance
 
 
-    ## Call the initialize() method for each registered devicee, then get
+    ## Call the initialize() method for each registered device, then get
     # the device's Handler instances and insert them into our various
     # containers. Yield the names of the modules holding the Devices as we go.
     def initialize(self):
