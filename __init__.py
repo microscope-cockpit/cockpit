@@ -8,6 +8,7 @@ _files = [os.path.sep.join([_path, file])
 try:
     _files.append(_files.pop(_files.index(
         os.path.sep.join([_path,'master.conf']))))
+    _files.reverse()
     print _files
 except:
     pass
