@@ -22,4 +22,5 @@ except:
     pass
 
 config = ConfigParser()
+config.read(_files)
 
