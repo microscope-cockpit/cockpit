@@ -31,6 +31,7 @@ import time
 import wx
 
 import depot
+
 import device
 import events
 import gui.toggleButton
@@ -40,20 +41,20 @@ import handlers.imager
 import handlers.lightSource
 import handlers.stagePositioner
 import util.threads
-
+from config import config, LIGHTS, CAMERAS
 CLASS_NAME = 'DSPDevice'
 
 class DSPDevice(device.Device):
     def __init__(self):
         device.Device.__init__(self)
+        if not config.has_section('dsp'):
+            raise Exception('No dsp section found in config.')
         ## IP address of the DSP computer.
-        #IMD 20130227 - dsp card in OMXTcam2 on oxford OMXT
-        self.ipAddress = '172.16.0.21'
+        self.ipAddress = config.get('dsp', 'ipAddress')
         ## Port to use to connect to the DSP computer.
-        self.port = 7766
+        self.port = config.get('dsp', 'port')
         ## Connection to the remote DSP computer
         self.connection = None
-        
         ## Set of all handlers we control.
         self.handlers = set()
         ## Where we believe the stage piezos to be.
@@ -71,14 +72,11 @@ class DSPDevice(device.Device):
         self.handlerToAnalogAxis = {}
         ## Maps handler names to the digital lines we use to activate those
         # devices. 
-#IMD 20130308 comment out all but West as the current config only has west.
-        self.nameToDigitalLine = {
-                'West': 1 << 0,
-#                'Northwest': 1 << 1,
-#                'Northeast': 1 << 2,
-#                'East': 1 << 2,
-#                '488 delay control': 1 << 14,
-        }
+        self.nameToDigitalLine = {}
+        self.nameToDigitalLine.update({key: val['line'] for \
+                                       key, val in LIGHTS.iteritems()})
+        self.nameToDigitalLine.update({key: val['line'] for \
+                                       key, val in CAMERAS.iteritems()})
         ## Resolution of actions we can take when running experiments.
         self.actionsPerMillisecond = 10
         ## Conversion factor between microns and the units the DSP card
@@ -145,18 +143,19 @@ class DSPDevice(device.Device):
     # stage motion piezos. 
     def getHandlers(self):
         result = []
-        # HACK: include a fake light source to let us artificially set
-        # camera exposure times even when no lights are active.
-        for wavelength, line in [('Ambient', 0), (488, 1 << 9),
-                (560, 1 << 14), (405, 1 << 13),('DIC', 1<< 11)]:
-            # Set up lightsource handlers. Default to 100ms exposure time.
+        # The "Ambient" light source lets us specify exposure times for images
+        # with no active illumination.
+        for light in LIGHTS:
+            # Set up lightsource handlers with default 100ms expsure time.
             handler = handlers.lightSource.LightHandler(
-                "%s light" % wavelength, "%s light source" % wavelength, 
+                light['label'], "%s light source" % label,
                 {'setEnabled': self.toggleLight,
                  'setExposureTime': self.setExposureTime,
-                 'getExposureTime': self.getExposureTime}, wavelength, 100)
+                 'getExposureTime': self.getExposureTime},
+                light['wavelength'],
+                100)    
             self.lightToExposureTime[handler.name] = 100
-            self.handlerToDigitalLine[handler] = line
+            self.handlerToDigitalLine[handler] = light['line']
             result.append(handler)
         for axis in xrange(3):
             handler = handlers.stagePositioner.PositionerHandler(
