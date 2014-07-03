@@ -20,6 +20,7 @@ DIFF_ANGLES = {
 }
 
 CLASS_NAME = 'SpatialLightModulatorDevice'
+CONFIG_NAME = 'slm'
 
 def loop_in_order(arrayList, order=None):
     """Iterate over a list of lists in a specified order."""
@@ -39,24 +40,25 @@ class SpatialLightModulatorDevice(device.Device):
     """Manage the spatial light modulator used to make SI patterns."""
     def __init__(self):
         device.Device.__init__(self)
-        ## Telnet connection to the device.
         self.connection = None
-        ## IP address of the device.
-        self.ipAddress = config['slm'].get('ipAddress')
-        self.port = config['slm'].get('port')
+        self.isActive = config.has_section(CONFIG_NAME)
+        if self.isActive:
+            self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
+            self.port = config.get(CONFIG_NAME, port)
+            events.subscribe('prepare for experiment',
+                             self.prepareForExperiment)
+            events.subscribe('experiment complete',
+                             self.cleanupAfterExperiment)
+        
+        self.patternparms = []
         ## Set of handlers we control.
         self.handlers = set()
         ## Our ExperimentExecutor handler.
-        self.executor = None 
-        events.subscribe('prepare for experiment', self.prepareForExperiment)
-        events.subscribe('experiment complete', self.cleanupAfterExperiment)
-        self.patternparms = []
-
+        self.executor = None
 
     def initialize(self):
         """Connect to the device."""
         uri = 'PYRO:pyroSLM@%s:%d' % (self.ipAddress, self.port)
-        print uri
         self.connection = Pyro4.Proxy(uri)
         self.connection._pyroTimeout = 10
 
