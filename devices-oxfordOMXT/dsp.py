@@ -1,5 +1,30 @@
+## This module handles interacting with the DSP card that sends the digital and
+# analog signals that control our light sources, cameras, and piezos. In 
+# particular, it effectively is solely responsible for running our experiments.
+# As such it's a fairly complex module. 
+# 
+# A few helpful features that need to be accessed from the commandline:
+# 1) A window that lets you directly control the digital and analog outputs
+#    of the DSP.
+# >>> import devices.dsp as DSP
+# >>> DSP.makeOutputWindow()
+#
+# 2) Create a plot describing the actions that the DSP set up in the most
+#    recent experiment profile.
+# >>> import devices.dsp as DSP
+# >>> DSP._deviceInstance.plotProfile()
+#
+# 3) Manually advance the SLM forwards some number of steps; useful for when
+#    it has gotten offset and is no longer "resting" on the first pattern.
+# >>> import devices.dsp as DSP
+# >>> DSP._deviceInstance.advanceSLM(numSteps)
+# (where numSteps is an integer, the number of times to advance it).
+
+import decimal
 import matplotlib
 matplotlib.use('WXAgg')
+import matplotlib.backends.backend_wxagg
+import matplotlib.figure
 import numpy
 import Pyro4
 import time
@@ -8,6 +33,7 @@ import wx
 import depot
 import device
 import events
+import gui.toggleButton
 import handlers.executor
 import handlers.genericPositioner
 import handlers.imager
@@ -442,6 +468,14 @@ class DSPDevice(device.Device):
         self.connection.WriteDigital(value)
 
 
+    ## Debugging function: set the analog voltage output for one of the DSP's
+    # analog lines.
+    def setAnalogVoltage(self, axis, voltage):
+        # Convert volts -> ADUs
+        adus = int(voltage * 6553.6)
+        self.connection.MoveAbsoluteADU(axis, adus)
+
+
     ## Debugging function: plot the DSP profile we last used.
     def plotProfile(self):
         if not self.prevProfileSettings:
@@ -538,3 +572,74 @@ class DSPDevice(device.Device):
         frame.Show()
 
 
+## This debugging window lets each digital lineout of the DSP be manipulated
+# individually.
+class DSPOutputWindow(wx.Frame):
+    def __init__(self, dsp, parent, *args, **kwargs):
+        wx.Frame.__init__(self, parent, *args, **kwargs)
+        ## DSPDevice instance.
+        self.dsp = dsp
+        # Contains all widgets.
+        panel = wx.Panel(self)
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
+        buttonSizer = wx.GridSizer(2, 8, 1, 1)
+
+        ## Maps buttons to their lines.
+        self.buttonToLine = {}
+
+        # Set up the digital lineout buttons.
+        for line in xrange(16):
+            lineVal = 1 << line
+            # Check if this line is officially hooked up.
+            label = str(line)
+            for handler, altLine in self.dsp.handlerToDigitalLine.iteritems():
+                if altLine & lineVal:
+                    label = handler.name
+                    break
+            button = gui.toggleButton.ToggleButton(
+                    parent = panel, label = label,
+                    activateAction = self.toggle,
+                    deactivateAction = self.toggle,
+                    size = (140, 80))
+            buttonSizer.Add(button, 1, wx.EXPAND)
+            self.buttonToLine[button] = lineVal
+        mainSizer.Add(buttonSizer)
+
+        # Set up the analog voltage inputs.
+        voltageSizer = wx.BoxSizer(wx.HORIZONTAL)
+        for axis in xrange(4):
+            voltageSizer.Add(wx.StaticText(panel, -1, "Voltage %d:" % axis))
+            control = wx.TextCtrl(panel, -1, size = (60, -1),
+                    style = wx.TE_PROCESS_ENTER)
+            control.Bind(wx.EVT_TEXT_ENTER,
+                    lambda event, axis = axis, control = control: self.setVoltage(axis, control))
+            voltageSizer.Add(control, 0, wx.RIGHT, 20)
+        mainSizer.Add(voltageSizer)
+        
+        panel.SetSizerAndFit(mainSizer)
+        self.SetClientSize(panel.GetSize())
+
+
+    ## One of our buttons was clicked; update the DSP's output.
+    def toggle(self):
+        output = 0
+        for button, line in self.buttonToLine.iteritems():
+            if button.getIsActive():
+                output += line
+        self.dsp.connection.WriteDigital(output)
+
+
+    ## The user input text for one of the voltage controls; set the voltage.
+    def setVoltage(self, axis, control):
+        val = float(control.GetValue())
+        self.dsp.setAnalogVoltage(axis, val)
+
+
+
+## Debugging function: display a DSPOutputWindow.
+def makeOutputWindow():
+    # HACK: the _deviceInstance object is created by the depot when this
+    # device is initialized.
+    global _deviceInstance
+    DSPOutputWindow(_deviceInstance, parent = wx.GetApp().GetTopWindow()).Show()
+    
