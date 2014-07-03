@@ -52,7 +52,7 @@ class DSPDevice(device.Device):
         ## IP address of the DSP computer.
         self.ipAddress = config.get('dsp', 'ipAddress')
         ## Port to use to connect to the DSP computer.
-        self.port = config.get('dsp', 'port')
+        self.port = int(config.get('dsp', 'port'))
         ## Connection to the remote DSP computer
         self.connection = None
         ## Set of all handlers we control.
