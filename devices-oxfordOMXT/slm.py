@@ -44,7 +44,7 @@ class SpatialLightModulatorDevice(device.Device):
         self.isActive = config.has_section(CONFIG_NAME)
         if self.isActive:
             self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
-            self.port = config.get(CONFIG_NAME, port)
+            self.port = config.get(CONFIG_NAME, 'port')
             events.subscribe('prepare for experiment',
                              self.prepareForExperiment)
             events.subscribe('experiment complete',
