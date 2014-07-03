@@ -145,10 +145,10 @@ class DSPDevice(device.Device):
         result = []
         # The "Ambient" light source lets us specify exposure times for images
         # with no active illumination.
-        for light in LIGHTS:
+        for key, light in LIGHTS.iteritems():
             # Set up lightsource handlers with default 100ms expsure time.
             handler = handlers.lightSource.LightHandler(
-                light['label'], "%s light source" % label,
+                light['label'], "%s light source" % light['label'],
                 {'setEnabled': self.toggleLight,
                  'setExposureTime': self.setExposureTime,
                  'getExposureTime': self.getExposureTime},
