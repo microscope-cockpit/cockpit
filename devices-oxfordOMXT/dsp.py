@@ -94,6 +94,13 @@ class DSPDevice(device.Device):
         ## (profile, digital settings, analog settings) tuple describing
         # the last Profile we loaded onto the DSP card.
         self.prevProfileSettings = None
+        ## Digital values as of the end of the last profile we sent to the
+        # card, so we can recall them later.
+        self.lastDigitalVal = 0
+        ## Analog positions as of the end of the last profile we sent to the
+        # card, so that it doesn't re-baseline values in the middle of an
+        # experiment.
+        self.lastAnalogPositions = [0] * 4
 
 
     ## Connect to the DSP computer.
@@ -313,9 +320,14 @@ class DSPDevice(device.Device):
 
 
     ## Prepare to run an experiment: cache our current piezo positions so
-    # we can restore them afterwards.
+    # we can restore them afterwards. Set our remembered output values so we
+    # have the correct baselines for each subset of the experiment, and set
+    # our values for before the experiment starts, so they can be restored
+    # at the end.
     def prepareForExperiment(self, *args):
         self.preExperimentPosition = tuple(self.curPosition)
+        self.lastDigitalVal = 0
+        self.lastAnalogPositions = [0] * 4
 
 
     ## Cleanup after an experiment completes: restore our cached position.
@@ -336,7 +348,6 @@ class DSPDevice(device.Device):
                 break
             count += 1
         return count
-                
 
     ## Actually execute the events in the table, starting at startIndex 
     # and proceeding up to but not through stopIndex.
@@ -345,6 +356,13 @@ class DSPDevice(device.Device):
         # Convert the desired portion of the table into a "profile" for
         # the DSP card.
         profileStr, digitals, analogs = self.generateProfile(table[startIndex:stopIndex], repDuration)
+        # Update our positioning values in case we have to make a new profile
+        # in this same experiment. The analog values are a bit tricky, since
+        # they're deltas from the values we used to create the profile.
+        self.lastDigitalVal = digitals[-1, 1]
+        for axis in xrange(4):
+            self.lastAnalogPositions[axis] = analogs[axis][-1][1] + self.lastAnalogPositions[axis]
+
         # Apologies for the messiness here; basically we're checking if any
         # aspect of the experiment profile has changed compared to the last
         # experiment we ran, if any. If there are differences, then we must
@@ -357,6 +375,7 @@ class DSPDevice(device.Device):
             self.connection.profileSet(profileStr, digitals, *analogs)
             self.connection.DownloadProfile()
             self.prevProfileSettings = (profileStr, digitals, analogs)
+            
         events.publish('update status light', 'device waiting',
                 'Waiting for\nDSP to finish', (255, 255, 0))
         self.connection.InitProfile(numReps)
@@ -374,6 +393,13 @@ class DSPDevice(device.Device):
             position = self.connection.ReadPosition(self.axisMapper[axis])
             self.curPosition[axis] = position
             self.publishPiezoPosition(axis)
+            # Manually force all digital lines to 0, because for some reason the
+            # DSP isn't doing this on its own, even though our experiments end
+            # with an all-zeros entry.
+            self.connection.WriteDigital(0)
+            # Likewise, force the retarder back to 0.
+            retarderLine = self.axisMapper[self.handlerToAnalogAxis[self.retarderHandler]]
+            self.setAnalogVoltage(retarderLine, 0)
 
 
     ## Given a list of (time, handle, action) tuples, generate several Numpy
@@ -385,6 +411,7 @@ class DSPDevice(device.Device):
         digitalToLastVal = {}
         # Maps analog lines to lists of (time, value) pairs. 
         analogToPosition = {}
+        
         # Expand out the timepoints so we can use integers to refer to 
         # sub-millisecond events, since the DSP table doesn't use
         # floating point.
@@ -403,26 +430,45 @@ class DSPDevice(device.Device):
             waitTime = repDuration - (times[-1] - baseTime)
             if waitTime > 0:
                 times.append(baseTime + repDuration)
+        # HACK: ensure that there's at least 2 timesteps in the experiment,
+        # or else it won't run properly.
+        havePaddedDigitals = False
+        if len(times) == 1:
+            times.append(times[0] + 1)
+            havePaddedDigitals = True
+            
         digitals = numpy.zeros((len(times), 2), dtype = numpy.uint32)
         digitals[:, 0] = times
         # Rebase the times so that they start from 0.
         digitals[:, 0] -= baseTime
-        curDigitalValue = 0
+
+        # Construct lists of (time, value) pairs for the DSP's digital and
+        # analog outputs.
+        curDigitalValue = self.lastDigitalVal
         axisToAnalogs = {}
         for time, handler, action in events:
             # Do the same "Decimal -> float -> rounded int" conversion
             time = int(float(time * self.actionsPerMillisecond) + .5)
+            index = times.index(time)
+            # Ensure a valid (nonzero) digital value exists regardless of the
+            # type of action, e.g. so analog actions don't zero the digital
+            # output.
+            digitals[index, 1] = curDigitalValue
             if handler in self.handlerToDigitalLine:
-                # Digital actions are either on or off, and they stay that 
-                # way until told otherwise.
+                # Update curDigitalValue according to the value of the output
+                # line for this handler. Digital actions are either on or off,
+                # and they stay that way until told otherwise.
                 line = self.handlerToDigitalLine[handler]
                 if line not in digitalToLastVal or digitalToLastVal[line] != action:
                     # Line has changed
                     addend = line
                     if not action:
                         addend = -line
+                    if curDigitalValue + addend < 0:
+                        # This should never happen.
+                        raise RuntimeError("Negative current digital value from adding %s to %s" % (bin(addend), bin(curDigitalValue)))
                     curDigitalValue += addend
-                    digitals[times.index(time), 1] = curDigitalValue
+                    digitals[index, 1] = curDigitalValue
                 digitalToLastVal[line] = action
             elif handler in self.handlerToAnalogAxis:
                 # Analog lines step to the next position.
@@ -431,25 +477,52 @@ class DSPDevice(device.Device):
                 if axis not in axisToAnalogs:
                     axisToAnalogs[axis] = []
                 axisToAnalogs[axis].append((time - baseTime, value))
+            else:
+                raise RuntimeError("Unhandled handler when generating DSP profile: %s" % handler.name)
+
+        if havePaddedDigitals:
+            # We created a dummy digitals entry since there was only one
+            # timepoint, but that dummy entry has an output value of 0 instead
+            # of whatever the current output is, so replace it.
+            digitals[-1, 1] = curDigitalValue
 
         # Convert the analog actions into Numpy arrays now that we know their
-        # lengths.
+        # lengths. Default to [0, 0], fill in a proper array for any axis where
+        # we actually do something.
         analogs = [numpy.zeros((1, 2), dtype = numpy.uint32) for i in xrange(4)]
         for axis, actions in axisToAnalogs.iteritems():
             analogs[self.axisMapper[axis]] = numpy.zeros((len(actions), 2), dtype = numpy.uint32)
             for i, (time, value) in enumerate(actions):
                 analogs[self.axisMapper[axis]][i] = (time, value)
 
-        # Generate the string that describes the profile we've created.                
+        # HACK: if the last analog action comes at the same time as, or after,
+        # the last digital action, then we need to insert a dummy digital
+        # action, or else the last analog action (or possibly all analog
+        # actions after the last digital action) will not be performed. No,
+        # I have no idea why this is.
+        lastAnalogTime = max([a[-1, 0] for a in analogs])
+        if lastAnalogTime >= digitals[-1, 0]:
+            # Create a new array for the digital entries.
+            temp = numpy.ones((digitals.shape[0] + 1, 2), dtype = digitals.dtype)
+            # Fill in the old values
+            temp[:-1] = digitals
+            # Create a dummy action.
+            temp[-1] = [lastAnalogTime + 1, curDigitalValue]
+            digitals = temp
+
+        # Generate the string that describes the profile we've created.
         description = numpy.rec.array(None,
                 formats = "u4, f4, u4, u4, 4u4",
                 names = ('count', 'clock', 'InitDio', 'nDigital', 'nAnalog'),
                 aligned = True, shape = 1)
-        runtime = times[-1] - times[0]
+
+        runtime = max(digitals[:, 0])
+        for axis in xrange(4):
+            runtime = max(runtime, max(analogs[axis][:, 0]))
         clock = 1000 / float(self.actionsPerMillisecond)
         description[0]['count'] = runtime
         description[0]['clock'] = clock
-        description[0]['InitDio'] = 0
+        description[0]['InitDio'] = self.lastDigitalVal
         description[0]['nDigital'] = len(digitals)
         description['nAnalog'] = [len(a) for a in analogs]
 
@@ -516,13 +589,15 @@ class DSPDevice(device.Device):
         axes.xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(25))
 
         lines = []
-        labels = []        
+        labels = []
         colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+        colorIndex = 0
         for axis, analog in enumerate(analogs):
             if numpy.any(analog) != 0:
                 xVals = [a[0] for a in analog]
                 yVals = [a[1] / 6553.60 for a in analog]
-                lines.append(axes.plot(xVals, yVals, colors[axis]))
+                lines.append(axes.plot(xVals, yVals, colors[colorIndex]))
+                colorIndex += 1
                 name = 'Axis %d' % axis
                 for handler, altAxis in self.handlerToAnalogAxis.iteritems():
                     if altAxis in self.axisMapper and axis == self.axisMapper[altAxis]:
@@ -559,8 +634,9 @@ class DSPDevice(device.Device):
                 xVals.append(pair[0])
                 scaledVal = minVoltage + pair[1] * scale * (maxVoltage - minVoltage)
                 yVals.append(scaledVal)
-            color = colors[min(len(colors) - 1, i)]
-            lines.append(axes.plot(xVals, yVals, colors[i]))
+            color = colors[colorIndex % len(colors)]
+            colorIndex += 1
+            lines.append(axes.plot(xVals, yVals, color))
             labels.append(name)
 
         figure.legend(lines, labels, loc = 'upper left')
@@ -569,6 +645,33 @@ class DSPDevice(device.Device):
                 frame, -1, figure)
         canvas.draw()
         frame.Show()
+    ## Debugging function: load and execute a profile.
+    def runProfile(self, digitals, analogs, numReps = 1, baseDigital = 0):
+        description = numpy.rec.array(None,
+                formats = "u4, f4, u4, u4, 4u4",
+                names = ('count', 'clock', 'InitDio', 'nDigital', 'nAnalog'),
+                aligned = True, shape = 1)
+        # Only doing the max of the digitals or the Z analog piezo.
+        runtime = max(max(digitals[:,0]), max(analogs[1][:,0]))
+        clock = 1000 / float(self.actionsPerMillisecond)
+        description[0]['count'] = runtime
+        description[0]['clock'] = clock
+        description[0]['InitDio'] = baseDigital
+        description[0]['nDigital'] = len(digitals)
+        description['nAnalog'] = [len(a) for a in analogs]
+        profileStr = description.tostring()
+
+        self.connection.profileSet(profileStr, digitals, *analogs)
+        self.connection.DownloadProfile()
+        # InitProfile will declare the current analog positions as a "basis"
+        # and do all actions as offsets from those bases, so we need to
+        # ensure that the variable retarder is zeroed out first.
+        retarderLine = self.axisMapper[self.handlerToAnalogAxis[self.retarderHandler]]
+        self.setAnalogVoltage(retarderLine, 0)
+
+        self.connection.InitProfile(numReps)
+        events.executeAndWaitFor("DSP done", self.connection.trigCollect)
+            
 
 
 ## This debugging window lets each digital lineout of the DSP be manipulated
