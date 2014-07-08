@@ -36,6 +36,7 @@ import device
 import events
 import gui.toggleButton
 import handlers.executor
+import handlers.genericHandler
 import handlers.genericPositioner
 import handlers.imager
 import handlers.lightSource
@@ -177,20 +178,27 @@ class DSPDevice(device.Device):
                 axis, [.01, .05, .1, .5, 1], 2, (0, 30))
             self.handlerToAnalogAxis[handler] = axis
             result.append(handler)
+        # SLM handler
+        if config.has_section('slm'):
+            line = config.get('slm', 'line')
+            result.append(handlers.genericPositioner.GenericPositionerHandler(
+                "SI SLM", "structured illumination", True, 
+                    {'moveAbsolute': self.setSLMPattern, 
+                    'moveRelative': self.moveSLMPatternBy,
+                    'getPosition': self.getCurSLMPattern, 
+                    'getMovementTime': self.getSLMStabilizationTime}))
+            self.handlerToDigitalLine[result[-1]] = 1 << 5
+
         result.append(handlers.imager.ImagerHandler(
             "DSP imager", "imager",
             {'takeImage': self.takeImage}))
-        result.append(handlers.genericPositioner.GenericPositionerHandler(
-            "SI phase", "phase piezo", True,
-            {'moveAbsolute': self.movePhaseAbsolute,
-                'moveRelative': self.movePhaseRelative,
-                'getPosition': self.getPhasePosition,
-                'getMovementTime': self.getPhaseMovementTime}))
+
         result.append(handlers.executor.ExecutorHandler(
             "DSP experiment executor", "executor",
             {'examineActions': lambda *args: None, 
                 'getNumRunnableLines': self.getNumRunnableLines, 
                 'executeTable': self.executeTable}))
+
         self.handlers = set(result)
         return result
 
@@ -204,7 +212,6 @@ class DSPDevice(device.Device):
 
     ## Enable/disable a specific light source.
     def toggleLight(self, lightName, isEnabled):
-
         if isEnabled:
             self.activeLights.add(lightName)
         elif lightName in self.activeLights:
@@ -214,7 +221,6 @@ class DSPDevice(device.Device):
     ## As toggleLight, but accepts a Handler instead.
     def toggleLightHandler(self, handler, isEnabled):
         self.toggleLight(handler.name, isEnabled)
-
 
 
     ## Update the exposure time for a specific light source.
@@ -275,9 +281,32 @@ class DSPDevice(device.Device):
         return (1, 1)
 
 
-    ## Move the phase piezo to the specified position.
-    def movePhaseAbsolute(self, name, pos):
+    ## Set the SLM's position to a specific value. 
+    # For now, do nothing; the only way we can change the SLM position is by 
+    # sending triggers so we have no absolute positioning.
+    def setSLMPattern(self, name, position): 
         pass
+
+
+    ## Adjust the SLM's position by the specified offset. Again, do nothing.
+    def moveSLMPatternBy(self, name, delta):
+        pass
+
+
+    ## Get the current SLM position, either angle or phase depending on the 
+    # caller. We have no idea, really.
+    def getCurSLMPattern(self, name):
+        return 0
+
+
+    ## Get the time to move to a new SLM position, and the stabilization time, 
+    # in milliseconds. Note we assume that this requires only one triggering
+    # of the SLM.
+    def getSLMStabilizationTime(self, name, prevPos, curPos):
+        return (1, 30)
+
+
+
 
 
     ## Move the phase piezo by a given delta.
@@ -645,6 +674,18 @@ class DSPDevice(device.Device):
                 frame, -1, figure)
         canvas.draw()
         frame.Show()
+
+
+    ## Debugging function: advance the SLM.
+    def advanceSLM(self, count = 1):
+        handler = depot.getHandlerWithName('SI SLM')
+        line = self.handlerToDigitalLine[handler]
+        for i in xrange(count):
+            self.setDigital(line)
+            self.setDigital(0)
+            time.sleep(.1)
+                    
+
     ## Debugging function: load and execute a profile.
     def runProfile(self, digitals, analogs, numReps = 1, baseDigital = 0):
         description = numpy.rec.array(None,
