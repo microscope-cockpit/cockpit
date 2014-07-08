@@ -110,7 +110,7 @@ class DSPDevice(device.Device):
     def initialize(self):
         uri = 'PYRO:pyroDSP@%s:%d' % (self.ipAddress, self.port)
         self.connection = Pyro4.Proxy(uri)
-        self.connection._pyroTimeout = 3
+        self.connection._pyroTimeout = 6
         self.connection.Abort()
         print "dsp init"
         for i in xrange(3):
@@ -124,7 +124,7 @@ class DSPDevice(device.Device):
         events.subscribe('camera enable', self.toggleCamera)
         events.subscribe('light source enable', self.toggleLightHandler)
         events.subscribe('user abort', self.onAbort)
-        events.subscribe('prepare for experiment', self.prepareForExperiment)
+        events.subscribe('prepare for experiment', self.onPrepareForExperiment)
         events.subscribe('cleanup after experiment',
                 self.cleanupAfterExperiment)
 
@@ -218,7 +218,7 @@ class DSPDevice(device.Device):
             self.activeLights.remove(lightName)
 
 
-    ## As toggleLight, but accepts a Handler instead.
+    ## As toggleLight, but accepts a handler instead.
     def toggleLightHandler(self, handler, isEnabled):
         self.toggleLight(handler.name, isEnabled)
 
@@ -235,11 +235,10 @@ class DSPDevice(device.Device):
 
     ## Enable/disable a specific camera.
     def toggleCamera(self, camera, isEnabled):
-        if isEnabled:
-            self.activeCameras.add(camera.name)
-        elif camera.name in self.activeCameras:
+        if not isEnabled and camera.name in self.activeCameras:
             self.activeCameras.remove(camera.name)
-
+        else:
+            self.activeCameras.add(camera.name)
 
 
     ## Report the new position of a piezo.
@@ -248,7 +247,7 @@ class DSPDevice(device.Device):
                 axis, self.curPosition[axis])
 
 
-    ## Move the stage piezo to a given position.
+    ## Move a stage piezo to a given position.
     def movePiezoAbsolute(self, axis, pos):
         self.curPosition[axis] = pos
         self.connection.MoveAbsolute(self.axisMapper[axis], self.curPosition[axis])
@@ -276,9 +275,11 @@ class DSPDevice(device.Device):
     ## Get the amount of time it would take the piezo to move from the 
     # initial position to the final position, as well
     # as the amount of time needed to stabilize after that point, 
-    # both in milliseconds.
+    # both in milliseconds. These numbers are both somewhat arbitrary;
+    # we just say it takes 1ms per micron to stabilize and .1ms to move.
     def getPiezoMovementTime(self, axis, start, end):
-        return (1, 1)
+        distance = abs(start - end)
+        return (decimal.Decimal('.1'), decimal.Decimal(distance * 1))
 
 
     ## Set the SLM's position to a specific value. 
@@ -335,6 +336,7 @@ class DSPDevice(device.Device):
         maxTime = 0
         for handler, line in self.handlerToDigitalLine.iteritems():
             if handler.name in self.activeLights:
+                maxTime = max(maxTime, handler.getExposureTime())
                 # The DSP card can only handle integer exposure times.
                 exposureTime = int(numpy.ceil(handler.getExposureTime()))
                 lightTimePairs.append((line, exposureTime))
@@ -353,7 +355,7 @@ class DSPDevice(device.Device):
     # have the correct baselines for each subset of the experiment, and set
     # our values for before the experiment starts, so they can be restored
     # at the end.
-    def prepareForExperiment(self, *args):
+    def onPrepareForExperiment(self, *args):
         self.preExperimentPosition = tuple(self.curPosition)
         self.lastDigitalVal = 0
         self.lastAnalogPositions = [0] * 4
@@ -378,8 +380,9 @@ class DSPDevice(device.Device):
             count += 1
         return count
 
-    ## Actually execute the events in the table, starting at startIndex 
-    # and proceeding up to but not through stopIndex.
+
+    ## Actually execute the events in an experiment ActionTable, starting at
+    # startIndex and proceeding up to but not through stopIndex.
     def executeTable(self, name, table, startIndex, stopIndex, numReps, 
             repDuration):
         # Convert the desired portion of the table into a "profile" for
@@ -409,6 +412,7 @@ class DSPDevice(device.Device):
                 'Waiting for\nDSP to finish', (255, 255, 0))
         self.connection.InitProfile(numReps)
         events.executeAndWaitFor("DSP done", self.connection.trigCollect)
+
         events.publish('experiment execution')
         return
 
@@ -503,6 +507,12 @@ class DSPDevice(device.Device):
                 # Analog lines step to the next position.
                 axis = self.handlerToAnalogAxis[handler]
                 value = self.convertMicronsToADUs(axis, action)
+                # If we're in the
+                # middle of an experiment, then these values need to be
+                # re-baselined based on where we started from, since when the
+                # DSP treats all analog positions as offsets of where it was
+                # when it started executing the profile.
+                value -= self.lastAnalogPositions[self.axisMapper[axis]]
                 if axis not in axisToAnalogs:
                     axisToAnalogs[axis] = []
                 axisToAnalogs[axis].append((time - baseTime, value))
