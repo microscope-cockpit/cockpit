@@ -83,8 +83,8 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     # an arbitrary value.
     def makeMenu(self, parent):
         menu = wx.Menu()
-        for i, power in enumerate(numpy.arange(self.minPower, self.maxPower + 1, self.maxPower / 20.0)):
-            menu.Append(i + 1, "%d%s" % (power, self.units))
+        for i, power in enumerate(numpy.arange(self.minPower, self.maxPower + 1, (self.maxPower - self.minPower) / 20.0)):
+            menu.Append(i + 1, "%d%s" % (min(power, self.maxPower), self.units))
             wx.EVT_MENU(parent, i + 1, lambda event, power = power: self.setPower(power))
         menu.Append(i + 2, '...')
         wx.EVT_MENU(parent, i + 2, lambda event: self.setPowerArbitrary(parent))
