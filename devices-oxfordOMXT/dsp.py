@@ -214,7 +214,7 @@ class DSPDevice(device.Device):
                     'moveRelative': self.moveSLMPatternBy,
                     'getPosition': self.getCurSLMPattern, 
                     'getMovementTime': self.getSLMStabilizationTime}))
-            self.handlerToDigitalLine[result[-1]] = 1 << 5
+            self.handlerToDigitalLine[result[-1]] = 1 << int(line)
 
         result.append(handlers.imager.ImagerHandler(
             "DSP imager", "imager",
