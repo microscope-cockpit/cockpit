@@ -90,11 +90,11 @@ class DSPDevice(device.Device):
         self.axisToUnitsPerADU = {}
         self.axisMapper = {}
         VperADU = 10.0 / 2**16
-        for aout in AOUTS:
-            self.axisToUnitsPerADU.update({
+        for key, aout in AOUTS.iteritems():
+            self.axisToUnitsPerADU.update({\
                 aout['name']: aout['sensitivity'] * VperADU, })
             ## Maps Cockpit axes (0: X, 1: Y, 2: Z) to DSP analog lines
-            self.axisMapper.update({
+            self.axisMapper.update({\
                 COCKPIT_AXES[aout['cockpit_axis']]: aout['aout'], })
         
         ## Position tuple of the piezos prior to experiment starting.
@@ -175,7 +175,7 @@ class DSPDevice(device.Device):
             self.handlerToDigitalLine[handler] = light['line']
             result.append(handler)
 
-        for aout in AOUTS:
+        for key, aout in AOUTS.iteritems():
             if aout['cockpit_axis'] in 'xyzXYZ':
                 axisName = aout['cockpit_axis']
                 handler = handlers.stagePositioner.PositionerHandler(
