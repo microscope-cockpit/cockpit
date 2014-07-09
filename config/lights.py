@@ -1,8 +1,8 @@
 ## _lights [(label, wavelength, dsp line, sim diffraction angle at slm),...]
-light_keys = ['label','wavelength','line','simtheta']
+light_keys = ['label','wavelength','line','simtheta','port','device']
 lights = [
     ('ambient', 'Ambient', 0),
     ('405nm', 405, 1<<13, 10),
-    ('488nm', 488, 1<<9, 9),
+    ('488nm', 488, 1<<9, 9, 7776, 'deepstar'),
     ('560nm', 560, 1<<13, 8),
     ('DIC', 'DIC', 1<<11),]

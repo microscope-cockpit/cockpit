@@ -4,13 +4,13 @@ import wx
 
 import depot
 import device
-import devices.powerButtons
+#import devices.powerButtons ## Oxford doesn't have powerButtons.
 import events
 import handlers.lightPower
 import handlers.lightSource
 
 CLASS_NAME = 'DeepstarDevice'
-
+from config import config, LIGHTS
 
 ## Maps wavelength to color used to represent that wavelength.
 WAVELENGTH_TO_COLOR = {
@@ -26,13 +26,19 @@ WAVELENGTH_TO_COLOR = {
 # it does create the LightPower handlers.
 class DeepstarDevice(device.Device):
     def __init__(self):
+        if not config.has_section('deepstar'):
+            return -1
         device.Device.__init__(self)
-        ## IP address of the Drill computer, which handles Deepstar lasers.
-        self.drillAddress = '192.168.12.31'
+        ## IP address of the deepstar computer, which handles Deepstar lasers.
+        self.ipAddress = config.get('deepstar', 'ipAddress')
+        
         ## Ports to use to connect to Deepstar control software.
-        self.wavelengthToPort = {
-            405: 7777, 488: 7776, 640: 7775
-        }
+        self.wavelengthToPort = {}
+        for key, light in LIGHTS.iteritems():
+            if light.get('device', '').lower() == 'deepstar':
+                self.wavelengthToPort.update(\
+                    {light['wavelength']: light['port']})
+
         ## The PowerButtons Device, which we need to communicate with.
         self.powerControl = None
 
@@ -51,23 +57,26 @@ class DeepstarDevice(device.Device):
     # provides the LightSource handlers.
     def getHandlers(self):
         result = []
-        self.powerControl = depot.getDevice(devices.powerButtons)
-        for wavelength in [405, 488, 640]:
+        #self.powerControl = depot.getDevice(devices.powerButtons)
+        for wavelength, port in self.wavelengthToPort.items():
             label = '%d Deepstar power' % wavelength
-            uri = 'PYRO:pyro%dDeepstarLaser@%s:%d' % (wavelength, self.drillAddress, self.wavelengthToPort[wavelength])
+            uri = 'PYRO:pyro%dDeepstarLaser@%s:%d' % (wavelength, self.ipAddress, port)
             self.nameToConnection[label] = Pyro4.Proxy(uri)
-            # Default to not allowing the laser to go below .1mW.
-            minPower = .1
+            # Default to not allowing the laser to go below 1mW.
+            minPower = 1
             # These values are only available if the laser is powered up. If
             # we can't get them now, we'll get them when the light source
             # is enabled.
             maxPower = 0
             curPower = 0
             isPowered = False
-            if self.powerControl.getIsDevicePowered('%d Deepstar' % wavelength):
-                maxPower = self.nameToConnection[label].getMaxPower()
-                curPower = self.nameToConnection[label].getPower()
-                isPowered = True
+            #if self.powerControl.getIsDevicePowered('%d Deepstar' % wavelength):
+            #    maxPower = self.nameToConnection[label].getMaxPower()
+            #    curPower = self.nameToConnection[label].getPower()
+            #    isPowered = True
+            maxPower = self.nameToConnection[label].getMaxPower()
+            curPower = self.nameToConnection[label].getPower_mW()
+            isPowered = True
             powerHandler = handlers.lightPower.LightPowerHandler(
                     label, '%d Deepstar' % wavelength,
                     {
@@ -154,6 +163,6 @@ class DeepstarDevice(device.Device):
 
     ## Set the power of a Deepstar laser.
     def setDeepstarPower(self, name, val):
-        self.nameToConnection[name].setPower(val)
+        self.nameToConnection[name].setPower_mW(val)
 
 
