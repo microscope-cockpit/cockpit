@@ -57,11 +57,10 @@ class DSPDevice(device.Device):
         self.port = int(config.get('dsp', 'port'))
         ## Connection to the remote DSP computer
         self.connection = None
-        
         ## Set of all handlers we control.
         self.handlers = set()
         ## Where we believe the stage piezos to be.
-        self.curPosition = [0, 0, 0]
+        self.curPosition = {}
         ## Current voltage output for the variable retarder.
         self.curRetarderVoltage = 0
         ## Names of cameras we trigger when taking an image.
@@ -87,15 +86,17 @@ class DSPDevice(device.Device):
         ## Conversion factor between microns and the units the DSP card
         # uses. The DSP has a 16-bit DAC (so 65536 ADUs (analog-digital units)
         # representing 0-10 volts).
+        ##HACK retarderVoltages
+        self.retarderVoltages = [0,1,2,3]
         self.axisToUnitsPerADU = {}
         self.axisMapper = {}
         VperADU = 10.0 / 2**16
         for key, aout in AOUTS.iteritems():
             self.axisToUnitsPerADU.update({\
-                aout['name']: aout['sensitivity'] * VperADU, })
+                COCKPIT_AXES[aout['cockpit_axis']]: aout['sensitivity'] * VperADU, })
             ## Maps Cockpit axes (0: X, 1: Y, 2: Z) to DSP analog lines
             self.axisMapper.update({\
-                COCKPIT_AXES[aout['cockpit_axis']]: aout['aout'], })
+                COCKPIT_AXES[aout['cockpit_axis']]: aout['line'], })
         
         ## Position tuple of the piezos prior to experiment starting.
         self.preExperimentPosition = None
@@ -179,7 +180,7 @@ class DSPDevice(device.Device):
             if aout['cockpit_axis'] in 'xyzXYZ':
                 axisName = aout['cockpit_axis']
                 handler = handlers.stagePositioner.PositionerHandler(
-                    "%s stage" % axisName, "%d stage motion" % axisName, True, 
+                    "%s stage" % axisName, "%s stage motion" % axisName, True, 
                     {'moveAbsolute': self.movePiezoAbsolute,
                         'moveRelative': self.movePiezoRelative, 
                         'getPosition': self.getPiezoPos, 
@@ -187,12 +188,13 @@ class DSPDevice(device.Device):
                         'cleanupAfterExperiment': self.cleanupPiezo,
                         # The DSP doesn't have modifiable soft motion safeties.
                         'setSafety': lambda *args: None},
-                        COCKPIT_AXES[aout['cockpit_axes']], 
-                        aout['deltas'],
-                        aout['default_delta'],
-                        aout['hard_limits'])
-                self.handlerToAnalogAxis[handler] = aout['cockpit_axis']
+                    COCKPIT_AXES[aout['cockpit_axis']], 
+                    aout['deltas'],
+                    aout['default_delta'],
+                    aout['hard_limits'])
+                self.handlerToAnalogAxis[handler] = COCKPIT_AXES[aout['cockpit_axis']]
                 result.append(handler)
+                self.curPosition.update({COCKPIT_AXES[aout['cockpit_axis']]: 0})
             
             if aout['cockpit_axis'].lower() == 'angle':
                 # Variable retarder.
@@ -203,7 +205,7 @@ class DSPDevice(device.Device):
                     'getPosition': self.getRetarderPos, 
                     'getMovementTime': self.getRetarderMovementTime})
                 result.append(self.retarderHandler)
-                self.handlerToAnalogAxis[self.retarderHandler] = aout['aout']
+                self.handlerToAnalogAxis[self.retarderHandler] = COCKPIT_AXES[aout['cockpit_axis']]
 
         # SLM handler
         if config.has_section('slm'):
@@ -276,7 +278,7 @@ class DSPDevice(device.Device):
 
     ## Move a stage piezo to a given position.
     def movePiezoAbsolute(self, axis, pos):
-        self.curPosition[axis] = pos
+        self.curPosition.update({axis: pos})
         self.connection.MoveAbsolute(self.axisMapper[axis], self.curPosition[axis])
         self.publishPiezoPosition(axis)
         # Assume piezo movements are instantaneous; we don't get notified by
@@ -384,14 +386,14 @@ class DSPDevice(device.Device):
     # our values for before the experiment starts, so they can be restored
     # at the end.
     def onPrepareForExperiment(self, *args):
-        self.preExperimentPosition = tuple(self.curPosition)
+        self.preExperimentPosition = self.curPosition.copy()
         self.lastDigitalVal = 0
         self.lastAnalogPositions = [0] * 4
 
 
     ## Cleanup after an experiment completes: restore our cached position.
     def cleanupAfterExperiment(self, *args):
-        for axis, position in enumerate(self.preExperimentPosition):
+        for axis, position in self.preExperimentPosition.iteritems():
             self.movePiezoAbsolute(axis, position)
 
 
@@ -458,7 +460,7 @@ class DSPDevice(device.Device):
             # even though it's told us it's done; wait a bit.
             time.sleep(.25)
             position = self.connection.ReadPosition(self.axisMapper[axis])
-            self.curPosition[axis] = position
+            self.curPosition.update({axis: position})
             self.publishPiezoPosition(axis)
             # Manually force all digital lines to 0, because for some reason the
             # DSP isn't doing this on its own, even though our experiments end
@@ -611,7 +613,7 @@ class DSPDevice(device.Device):
     ## Given a target position for the specified axis, generate an 
     # appropriate value for the DSP's analog system.
     def convertMicronsToADUs(self, axis, position):
-        return position / self.axisToMicronsPerADU[axis]
+        return position / self.axisToUnitsPerADU[axis]
 
 
     ## Debugging function: set the digital output for the DSP.
