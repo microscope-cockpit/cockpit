@@ -44,7 +44,7 @@ import handlers.stagePositioner
 import util.threads
 from config import config, LIGHTS, CAMERAS, AOUTS
 CLASS_NAME = 'DSPDevice'
-COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2, 'angle': -1}
+COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2, 'SI angle': -1}
 
 class DSPDevice(device.Device):
     def __init__(self):
@@ -96,7 +96,7 @@ class DSPDevice(device.Device):
                 COCKPIT_AXES[aout['cockpit_axis']]: aout['sensitivity'] * VperADU, })
             ## Maps Cockpit axes (0: X, 1: Y, 2: Z) to DSP analog lines
             self.axisMapper.update({\
-                COCKPIT_AXES[aout['cockpit_axis']]: aout['line'], })
+                COCKPIT_AXES[aout['cockpit_axis']]: int(aout['line']), })
         
         ## Position tuple of the piezos prior to experiment starting.
         self.preExperimentPosition = None
@@ -192,11 +192,11 @@ class DSPDevice(device.Device):
                     aout['deltas'],
                     aout['default_delta'],
                     aout['hard_limits'])
-                self.handlerToAnalogAxis[handler] = COCKPIT_AXES[aout['cockpit_axis']]
+                self.handlerToAnalogAxis[handler] = int(aout['line'])#COCKPIT_AXES[aout['cockpit_axis']]
                 result.append(handler)
                 self.curPosition.update({COCKPIT_AXES[aout['cockpit_axis']]: 0})
             
-            if aout['cockpit_axis'].lower() == 'angle':
+            if aout['cockpit_axis'].lower() == 'si angle':
                 # Variable retarder.
                 self.retarderHandler = handlers.genericPositioner.GenericPositionerHandler(
                     "SI angle", "structured illumination", True, 
@@ -205,18 +205,18 @@ class DSPDevice(device.Device):
                     'getPosition': self.getRetarderPos, 
                     'getMovementTime': self.getRetarderMovementTime})
                 result.append(self.retarderHandler)
-                self.handlerToAnalogAxis[self.retarderHandler] = COCKPIT_AXES[aout['cockpit_axis']]
+                self.handlerToAnalogAxis[self.retarderHandler] = aout['line']
 
         # SLM handler
         if config.has_section('slm'):
-            line = config.get('slm', 'line')
+            line = int(config.get('slm', 'line'))
             result.append(handlers.genericPositioner.GenericPositionerHandler(
                 "SI SLM", "structured illumination", True, 
                     {'moveAbsolute': self.setSLMPattern, 
                     'moveRelative': self.moveSLMPatternBy,
                     'getPosition': self.getCurSLMPattern, 
                     'getMovementTime': self.getSLMStabilizationTime}))
-            self.handlerToDigitalLine[result[-1]] = 1 << int(line)
+            self.handlerToDigitalLine[result[-1]] = 1 << line
 
         result.append(handlers.imager.ImagerHandler(
             "DSP imager", "imager",
@@ -279,7 +279,9 @@ class DSPDevice(device.Device):
     ## Move a stage piezo to a given position.
     def movePiezoAbsolute(self, axis, pos):
         self.curPosition.update({axis: pos})
-        self.connection.MoveAbsolute(self.axisMapper[axis], self.curPosition[axis])
+        # Convert from microns to ADUs.
+        aduPos = int(pos / self.axisToUnitsPerADU[axis])
+        self.connection.MoveAbsoluteADU(self.axisMapper[axis], aduPos)
         self.publishPiezoPosition(axis)
         # Assume piezo movements are instantaneous; we don't get notified by
         # the DSP when motion stops, anyway.
@@ -288,12 +290,7 @@ class DSPDevice(device.Device):
 
     ## Move the stage piezo by a given delta.
     def movePiezoRelative(self, axis, delta):
-        self.curPosition[axis] += delta
-        self.connection.MoveAbsolute(self.axisMapper[axis], self.curPosition[axis])
-        self.publishPiezoPosition(axis)
-        # Assume piezo movements are instantaneous; we don't get notified by
-        # the DSP when motion stops, anyway.
-        events.publish('stage stopped', '%d piezo' % axis)
+        self.movePiezoAbsolute(axis, self.curPosition[axis] + delta)
 
 
     ## Get the current piezo position.
@@ -339,9 +336,10 @@ class DSPDevice(device.Device):
     ## Move the variable retarder to the specified voltage.
     def moveRetarderAbsolute(self, name, pos):
         self.curRetarderVoltage = pos
+        handler = depot.getHandlerWithName('SI angle')
+        line = self.handlerToAnalogAxis[handler]
         # Convert from volts to ADUs.
-        # \todo Axis handled manually here.
-        self.connection.MoveAbsoluteADU(2, int(pos * 6553.6))
+        self.connection.MoveAbsoluteADU(line, int(pos * 6553.6))
 
 
     ## Move the variable retarder by the specified voltage offset.

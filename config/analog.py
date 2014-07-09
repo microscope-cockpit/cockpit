@@ -10,7 +10,7 @@ aout_keys = ['name',
 
 aouts = [(
             'polrot',   # polarisation rotatoar
-            'angle',    # moves angle 
+            'SI angle',    # moves angle 
             2,          # on analogue out 2
             1,          # 1V per V
             (0, 10),
