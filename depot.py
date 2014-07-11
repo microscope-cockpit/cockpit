@@ -23,7 +23,7 @@ OBJECTIVE = "objective"
 POWER_CONTROL = "power control"
 SERVER = "server"
 STAGE_POSITIONER = "stage positioner"
-
+DEVICE_FOLDER = 'devices'
 
 
 class DeviceDepot:
@@ -50,7 +50,7 @@ class DeviceDepot:
 
     ## Return the number of device modules we have to work with.
     def getNumModules(self):
-        return len(util.importer.getModulesFrom('devices',
+        return len(util.importer.getModulesFrom(DEVICE_FOLDER,
                 ['__init__', 'device']))
 
 
@@ -58,7 +58,7 @@ class DeviceDepot:
     # We examine all of the modules in the local directory, and try to
     # create a Device subclass from each (barring a few).
     def generateDevices(self):
-        modules = util.importer.getModulesFrom('devices', 
+        modules = util.importer.getModulesFrom(DEVICE_FOLDER, 
                 ['__init__', 'device'])
         for module in modules:
             self.loadDeviceModule(module)
@@ -68,8 +68,8 @@ class DeviceDepot:
     # "configurator.py" module. This is needed because config must be loaded
     # before any other Device, so that logfiles can be stored properly.
     def loadConfig(self):
-        if os.path.exists(os.path.join('devices', 'configurator.py')):
-            path = '.'.join(['devices', 'configurator'])
+        if os.path.exists(os.path.join(DEVICE_FOLDER, 'configurator.py')):
+            path = '.'.join([DEVICE_FOLDER, 'configurator'])
             module = importlib.import_module(path)
             device = self.loadDeviceModule(module)
             if device is not None: # i.e. device is active.
