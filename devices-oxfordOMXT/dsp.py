@@ -73,7 +73,7 @@ class DSPDevice(device.Device):
         # handler.
         self.handlerToDigitalLine = {}
         ## Maps various handlers to the analog axes we use to manipulate them.
-        self.handlerToAnalogAxis = {}
+        self.handlerToAnalogLine = {}
         ## Maps handler names to the digital lines we use to activate those
         # devices. 
         self.nameToDigitalLine = {}
@@ -88,15 +88,15 @@ class DSPDevice(device.Device):
         # representing 0-10 volts).
         ##HACK retarderVoltages
         self.retarderVoltages = [0,1,2,3]
-        self.axisToUnitsPerADU = {}
+        self.alineToUnitsPerADU = {}
         self.axisMapper = {}
         VperADU = 10.0 / 2**16
         for key, aout in AOUTS.iteritems():
-            self.axisToUnitsPerADU.update({\
-                COCKPIT_AXES[aout['cockpit_axis']]: aout['sensitivity'] * VperADU, })
+            self.alineToUnitsPerADU.update({\
+                aout['aline']: aout['sensitivity'] * VperADU, })
             ## Maps Cockpit axes (0: X, 1: Y, 2: Z) to DSP analog lines
             self.axisMapper.update({\
-                COCKPIT_AXES[aout['cockpit_axis']]: int(aout['line']), })
+                COCKPIT_AXES[aout['cockpit_axis']]: int(aout['aline']), })
         
         ## Position tuple of the piezos prior to experiment starting.
         self.preExperimentPosition = None
@@ -192,7 +192,7 @@ class DSPDevice(device.Device):
                     aout['deltas'],
                     aout['default_delta'],
                     aout['hard_limits'])
-                self.handlerToAnalogAxis[handler] = int(aout['line'])#COCKPIT_AXES[aout['cockpit_axis']]
+                self.handlerToAnalogLine[handler] = int(aout['aline'])#COCKPIT_AXES[aout['cockpit_axis']]
                 result.append(handler)
                 self.curPosition.update({COCKPIT_AXES[aout['cockpit_axis']]: 0})
             
@@ -205,7 +205,7 @@ class DSPDevice(device.Device):
                     'getPosition': self.getRetarderPos, 
                     'getMovementTime': self.getRetarderMovementTime})
                 result.append(self.retarderHandler)
-                self.handlerToAnalogAxis[self.retarderHandler] = aout['line']
+                self.handlerToAnalogLine[self.retarderHandler] = aout['aline']
 
         # SLM handler
         if config.has_section('slm'):
@@ -280,8 +280,9 @@ class DSPDevice(device.Device):
     def movePiezoAbsolute(self, axis, pos):
         self.curPosition.update({axis: pos})
         # Convert from microns to ADUs.
-        aduPos = int(pos / self.axisToUnitsPerADU[axis])
-        self.connection.MoveAbsoluteADU(self.axisMapper[axis], aduPos)
+        aline = self.axisMapper[axis]
+        aduPos = self.convertMicronsToADUs(aline, pos)
+        self.connection.MoveAbsoluteADU(aline, aduPos)
         self.publishPiezoPosition(axis)
         # Assume piezo movements are instantaneous; we don't get notified by
         # the DSP when motion stops, anyway.
@@ -337,9 +338,9 @@ class DSPDevice(device.Device):
     def moveRetarderAbsolute(self, name, pos):
         self.curRetarderVoltage = pos
         handler = depot.getHandlerWithName('SI angle')
-        line = self.handlerToAnalogAxis[handler]
+        aline = self.handlerToAnalogLine[handler]
         # Convert from volts to ADUs.
-        self.connection.MoveAbsoluteADU(line, int(pos * 6553.6))
+        self.connection.MoveAbsoluteADU(aline, int(pos * 6553.6))
 
 
     ## Move the variable retarder by the specified voltage offset.
@@ -420,8 +421,8 @@ class DSPDevice(device.Device):
         # in this same experiment. The analog values are a bit tricky, since
         # they're deltas from the values we used to create the profile.
         self.lastDigitalVal = digitals[-1, 1]
-        for axis in xrange(4):
-            self.lastAnalogPositions[axis] = analogs[axis][-1][1] + self.lastAnalogPositions[axis]
+        for aline in xrange(4):
+            self.lastAnalogPositions[aline] = analogs[aline][-1][1] + self.lastAnalogPositions[aline]
 
         # Apologies for the messiness here; basically we're checking if any
         # aspect of the experiment profile has changed compared to the last
@@ -441,7 +442,7 @@ class DSPDevice(device.Device):
         # InitProfile will declare the current analog positions as a "basis"
         # and do all actions as offsets from those bases, so we need to
         # ensure that the variable retarder is zeroed out first.
-        retarderLine = self.axisMapper[self.handlerToAnalogAxis[self.retarderHandler]]
+        retarderLine = self.handlerToAnalogLine[self.retarderHandler]
         self.setAnalogVoltage(retarderLine, 0)
 
         self.connection.InitProfile(numReps)
@@ -465,7 +466,7 @@ class DSPDevice(device.Device):
             # with an all-zeros entry.
             self.connection.WriteDigital(0)
             # Likewise, force the retarder back to 0.
-            retarderLine = self.axisMapper[self.handlerToAnalogAxis[self.retarderHandler]]
+            retarderLine = self.handlerToAnalogLine[self.retarderHandler]
             self.setAnalogVoltage(retarderLine, 0)
 
 
@@ -512,7 +513,7 @@ class DSPDevice(device.Device):
         # Construct lists of (time, value) pairs for the DSP's digital and
         # analog outputs.
         curDigitalValue = self.lastDigitalVal
-        axisToAnalogs = {}
+        alineToAnalogs = {}
         for time, handler, action in events:
             # Do the same "Decimal -> float -> rounded int" conversion
             time = int(float(time * self.actionsPerMillisecond) + .5)
@@ -537,25 +538,25 @@ class DSPDevice(device.Device):
                     curDigitalValue += addend
                     digitals[index, 1] = curDigitalValue
                 digitalToLastVal[line] = action
-            elif handler in self.handlerToAnalogAxis:
+            elif handler in self.handlerToAnalogLine:
                 # Analog lines step to the next position. 
                 # HACK: the variable retarder shows up here too, and for it
                 # we set specific voltage values depending on position.
-                axis = self.handlerToAnalogAxis[handler]
+                aline = self.handlerToAnalogLine[handler]
                 value = 0
                 if handler is self.retarderHandler:
                     value = int(self.retarderVoltages[action] * 6553.6)
                 else:
-                    value = self.convertMicronsToADUs(axis, action)
+                    value = self.convertMicronsToADUs(aline, action)
                 # If we're in the
                 # middle of an experiment, then these values need to be
                 # re-baselined based on where we started from, since when the
                 # DSP treats all analog positions as offsets of where it was
                 # when it started executing the profile.
-                value -= self.lastAnalogPositions[self.axisMapper[axis]]
-                if axis not in axisToAnalogs:
-                    axisToAnalogs[axis] = []
-                axisToAnalogs[axis].append((time - baseTime, value))
+                value -= self.lastAnalogPositions[aline]
+                if aline not in alineToAnalogs:
+                    alineToAnalogs[aline] = []
+                alineToAnalogs[aline].append((time - baseTime, value))
             else:
                 raise RuntimeError("Unhandled handler when generating DSP profile: %s" % handler.name)
 
@@ -569,10 +570,10 @@ class DSPDevice(device.Device):
         # lengths. Default to [0, 0], fill in a proper array for any axis where
         # we actually do something.
         analogs = [numpy.zeros((1, 2), dtype = numpy.uint32) for i in xrange(4)]
-        for axis, actions in axisToAnalogs.iteritems():
-            analogs[self.axisMapper[axis]] = numpy.zeros((len(actions), 2), dtype = numpy.uint32)
+        for aline, actions in alineToAnalogs.iteritems():
+            analogs[aline] = numpy.zeros((len(actions), 2), dtype = numpy.uint32)
             for i, (time, value) in enumerate(actions):
-                analogs[self.axisMapper[axis]][i] = (time, value)
+                analogs[aline][i] = (time, value)
 
         # HACK: if the last analog action comes at the same time as, or after,
         # the last digital action, then we need to insert a dummy digital
@@ -596,8 +597,8 @@ class DSPDevice(device.Device):
                 aligned = True, shape = 1)
 
         runtime = max(digitals[:, 0])
-        for axis in xrange(4):
-            runtime = max(runtime, max(analogs[axis][:, 0]))
+        for aline in xrange(4):
+            runtime = max(runtime, max(analogs[aline][:, 0]))
         clock = 1000 / float(self.actionsPerMillisecond)
         description[0]['count'] = runtime
         description[0]['clock'] = clock
@@ -610,8 +611,8 @@ class DSPDevice(device.Device):
 
     ## Given a target position for the specified axis, generate an 
     # appropriate value for the DSP's analog system.
-    def convertMicronsToADUs(self, axis, position):
-        return position / self.axisToUnitsPerADU[axis]
+    def convertMicronsToADUs(self, aline, position):
+        return long(position / self.alineToUnitsPerADU[aline])
 
 
     ## Debugging function: set the digital output for the DSP.
@@ -621,10 +622,10 @@ class DSPDevice(device.Device):
 
     ## Debugging function: set the analog voltage output for one of the DSP's
     # analog lines.
-    def setAnalogVoltage(self, axis, voltage):
+    def setAnalogVoltage(self, aline, voltage):
         # Convert volts -> ADUs
         adus = int(voltage * 6553.6)
-        self.connection.MoveAbsoluteADU(axis, adus)
+        self.connection.MoveAbsoluteADU(aline, adus)
 
 
     ## Debugging function: plot the DSP profile we last used.
@@ -671,17 +672,13 @@ class DSPDevice(device.Device):
         labels = []
         colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
         colorIndex = 0
-        for axis, analog in enumerate(analogs):
+        for aline, analog in enumerate(analogs):
             if numpy.any(analog) != 0:
                 xVals = [a[0] for a in analog]
                 yVals = [a[1] / 6553.60 for a in analog]
                 lines.append(axes.plot(xVals, yVals, colors[colorIndex]))
                 colorIndex += 1
-                name = 'Axis %d' % axis
-                for handler, altAxis in self.handlerToAnalogAxis.iteritems():
-                    if altAxis in self.axisMapper and axis == self.axisMapper[altAxis]:
-                        name = handler.name
-                        break
+                name = 'Line %d' % aline
                 labels.append(name)
 
         # Currently-active handlers at this point

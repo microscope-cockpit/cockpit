@@ -1,7 +1,7 @@
 ## _lights [(label, wavelength, dsp line, sim diffraction angle at slm),...]
 aout_keys = ['name', 
              'cockpit_axis', 
-             'line', 
+             'aline', 
              'sensitivity', 
              'hard_limits', 
              'soft_limits', 
@@ -21,7 +21,7 @@ aouts = [(
          (
             'z_insert',
             'z',
-            0,
+            0,          # on analogue out 0
             20,         # microns / V
             (0, 200),
             (None, None),

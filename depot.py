@@ -23,7 +23,7 @@ OBJECTIVE = "objective"
 POWER_CONTROL = "power control"
 SERVER = "server"
 STAGE_POSITIONER = "stage positioner"
-DEVICE_FOLDER = 'devices'
+DEVICE_FOLDER = 'devices-oxfordOMXT'
 
 
 class DeviceDepot:
