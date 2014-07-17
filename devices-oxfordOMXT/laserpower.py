@@ -1,3 +1,10 @@
+""" Cockpit LaserPowerDevice
+
+Handles communication with Deepstar and Cobalt device (or any laser that
+implements the required remote interface).  It doesn't create any LightSource
+handlers (those are created by the DSP device), but it does create the 
+LightPowerHandlers. """
+
 import Pyro4
 import time
 import wx
@@ -9,35 +16,24 @@ import events
 import handlers.lightPower
 import handlers.lightSource
 
-CLASS_NAME = 'DeepstarDevice'
+CLASS_NAME = 'LaserPower'
+SUPPORTED_LASERS = ['Deepstar',]# 'cobalt']
+
 from config import config, LIGHTS
 
-## Maps wavelength to color used to represent that wavelength.
-WAVELENGTH_TO_COLOR = {
-    405: (180, 30, 230),
-    488: (40, 130, 180),
-    640: (255, 40, 40)
-}
-
-
-
-## This Device handles communications with the Deepstar lasers. It doesn't
-# create any LightSource handlers (those are created by the DSPDevice), but
-# it does create the LightPower handlers.
-class DeepstarDevice(device.Device):
+class LaserPowerDevice(device.Device):
     def __init__(self):
-        if not config.has_section('deepstar'):
-            return -1
         device.Device.__init__(self)
-        ## IP address of the deepstar computer, which handles Deepstar lasers.
-        self.ipAddress = config.get('deepstar', 'ipAddress')
+        ## IP address of the computer which talks to the lasers.
+        self.ipAddress = config.get('lights', 'ipAddress')
         
-        ## Ports to use to connect to Deepstar control software.
-        self.wavelengthToPort = {}
+        ## Map wavelength to tuple(port, laser type).
+        self.wavelengthToDevice = {}
         for key, light in LIGHTS.iteritems():
-            if light.get('device', '').lower() == 'deepstar':
-                self.wavelengthToPort.update(\
-                    {light['wavelength']: light['port']})
+            laserType = light.get('device', '').capitalize()
+            if laserType in SUPPORTED_LASERS:
+                self.wavelengthToDevice.update(\
+                    {light['wavelength']: (light['port'], laserType)})
 
         ## The PowerButtons Device, which we need to communicate with.
         self.powerControl = None
@@ -53,14 +49,15 @@ class DeepstarDevice(device.Device):
         events.subscribe('light source enable', self.onLightSourceEnable)
 
 
-    ## Provide a LightPower handler for each of the Deepstar lasers. The DSP
+    ## Provide a LightPower handler for each of the lasers. The DSP
     # provides the LightSource handlers.
     def getHandlers(self):
         result = []
         #self.powerControl = depot.getDevice(devices.powerButtons)
-        for wavelength, port in self.wavelengthToPort.items():
-            label = '%d Deepstar power' % wavelength
-            uri = 'PYRO:pyro%dDeepstarLaser@%s:%d' % (wavelength, self.ipAddress, port)
+        for wavelength, (port, laserType) in self.wavelengthToDevice.items():
+            label = '%d Laser power' % wavelength
+            uri = 'PYRO:pyro%d%sLaser@%s:%d' % (wavelength, laserType,
+                                                self.ipAddress, port)
             self.nameToConnection[label] = Pyro4.Proxy(uri)
             # Default to not allowing the laser to go below 1mW.
             minPower = 1
@@ -74,13 +71,13 @@ class DeepstarDevice(device.Device):
             #    maxPower = self.nameToConnection[label].getMaxPower()
             #    curPower = self.nameToConnection[label].getPower()
             #    isPowered = True
-            maxPower = self.nameToConnection[label].getMaxPower()
+            maxPower = self.nameToConnection[label].getMaxPower_mW()
             curPower = self.nameToConnection[label].getPower_mW()
             isPowered = True
             powerHandler = handlers.lightPower.LightPowerHandler(
                     label, '%d Deepstar' % wavelength,
                     {
-                        'setPower': self.setDeepstarPower
+                        'setPower': self.setLaserPower
                     },
                     wavelength, minPower, maxPower, curPower,
                     WAVELENGTH_TO_COLOR[wavelength],
@@ -162,7 +159,7 @@ class DeepstarDevice(device.Device):
 
 
     ## Set the power of a Deepstar laser.
-    def setDeepstarPower(self, name, val):
+    def setLaserPower(self, name, val):
         self.nameToConnection[name].setPower_mW(val)
 
 
