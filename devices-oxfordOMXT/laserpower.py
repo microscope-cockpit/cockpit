@@ -60,7 +60,10 @@ class LaserPowerDevice(device.Device):
                                                 self.ipAddress, port)
             self.nameToConnection[label] = Pyro4.Proxy(uri)
             # Default to not allowing the laser to go below 1mW.
-            minPower = 1
+            if hasattr(self.nameToConnection[label], minPower):
+                minPower = self.nameToConnection[label].minPower
+            else:
+                minPower = 1
             # These values are only available if the laser is powered up. If
             # we can't get them now, we'll get them when the light source
             # is enabled.
