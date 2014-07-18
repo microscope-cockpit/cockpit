@@ -16,7 +16,7 @@ import events
 import handlers.lightPower
 import handlers.lightSource
 
-CLASS_NAME = 'LaserPower'
+CLASS_NAME = 'LaserPowerDevice'
 SUPPORTED_LASERS = ['Deepstar',]# 'cobalt']
 
 from config import config, LIGHTS
@@ -33,7 +33,7 @@ class LaserPowerDevice(device.Device):
             laserType = light.get('device', '').capitalize()
             if laserType in SUPPORTED_LASERS:
                 self.wavelengthToDevice.update(\
-                    {light['wavelength']: (light['port'], laserType)})
+                    {light['wavelength']: (light['port'], laserType, light['color'])})
 
         ## The PowerButtons Device, which we need to communicate with.
         self.powerControl = None
@@ -54,7 +54,7 @@ class LaserPowerDevice(device.Device):
     def getHandlers(self):
         result = []
         #self.powerControl = depot.getDevice(devices.powerButtons)
-        for wavelength, (port, laserType) in self.wavelengthToDevice.items():
+        for wavelength, (port, laserType, color) in self.wavelengthToDevice.items():
             label = '%d Laser power' % wavelength
             uri = 'PYRO:pyro%d%sLaser@%s:%d' % (wavelength, laserType,
                                                 self.ipAddress, port)
@@ -80,7 +80,7 @@ class LaserPowerDevice(device.Device):
                         'setPower': self.setLaserPower
                     },
                     wavelength, minPower, maxPower, curPower,
-                    WAVELENGTH_TO_COLOR[wavelength],
+                    color,
                     isEnabled = isPowered)
             result.append(powerHandler)
             self.nameToHandler[powerHandler.name] = powerHandler
@@ -137,7 +137,7 @@ class LaserPowerDevice(device.Device):
                         break
                     if i != 2:
                         time.sleep(5)
-                handler.setMaxPower(connection.getMaxPower())
+                handler.setMaxPower(connection.getMaxPower_mW())
                 handler.setCurPower(connection.getPower())
                 handler.setEnabled(True)
 
