@@ -27,8 +27,42 @@ import util.logger
 # (The first 2 refers to the input channel, which in this case is the analog
 # input line from the DSP).
 
-#Stage calibration (approx 60 steps/um) 
-STAGE_CAL = 60
+#few commnads
+# pr - position relative
+# pa - position aboslute
+# mm - position mode (1 -= closed loop)
+# sn - units mode 0= steps, 1= counts from encoder
+# dh - set home
+# md - motion done? 1=finished 0= in motion
+# fe - feedback error limit default = 1000
+# cl - closeed loop update freq in sec min = 0.1
+# ab - abort motion
+# mt - move to limit (suggest index on -ve limit on all channels)
+# tp? - query position.
+# or - find home? not sure what this means with current stages
+
+
+#Need to sort out defined positions. How do we know if the system has been homed?
+# How dowes this compare to "1 or"? I have no clue!
+# movement range is ~   335926 counts - need to measure distance.
+# moving from one end of the range to the other takes a LONG time.
+#
+# home routine
+# set units to counts (eg encoder)
+# 1 sn 1
+#enguage closed loop mode
+# 1 mm 1
+# closed loop timing 0.1s
+# 1 cl 0.1
+# move to neagtive limit
+# 1 mt - 
+# Set curent pos to 0
+# 1 dh
+# move back to mid position (need to check position)
+# 1 pa 10000
+
+#Stage calibration (approx 13750 counts/mm) - counts for closed loop control - 
+STAGE_CAL = 12.568
 CLASS_NAME = 'PicoMotorDevice'
 PICO_CONTROLLER = '172.16.0.30'
 PICO_PORT = 23
@@ -72,8 +106,11 @@ class PicoMotorDevice(device.Device):
         # value; this will be modified in initialize.
         self.xyPositionCache = (10 ** 100, 10 ** 100,7500)
         ## Maps the cockpit's axis ordering (0: X, 1: Y, 2: Z) to the
-        # XY stage's ordering (1: X, 2: Y)
-        self.axisMapper = {0: 1, 1: 2, 2: 3}
+        # XY stage's ordering which is 
+        #x controller 1, motor 1 - '1>1'
+        #y controller 1, motor 2 - '1>2'
+        #z controller 2, motor 1 - '2>1'
+        self.axisMapper = {0: '1>1', 1: '1>2', 2: '2>1'}
 
         events.subscribe('user logout', self.onLogout)
         events.subscribe('user abort', self.onAbort)
@@ -92,15 +129,17 @@ class PicoMotorDevice(device.Device):
 #        self.sendZCommand('SPA 1 0x06000500 2')
 
 
-        self.xyConnection=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.xyConnection.connect((PICO_CONTROLLER,PICO_PORT))
 
-        #IMD 20130421 reset at startup as the cointroller can go a bit mad
-        # Nedd long timeout as ethernet takes a while to come back up
-        self.xyConnection.settimeout(2)
-        result=self.sendXYCommand('RS',0)
-        time.sleep(2)
-        self.xyConnection.close()
+#IMD 20140717 removed reset as this lost the position signal
+#        self.xyConnection=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#        self.xyConnection.connect((PICO_CONTROLLER,PICO_PORT))
+
+        #IMD 20130421 reset at startup as the controller can go a bit mad
+        # Need long timeout as ethernet takes a while to come back up
+#        self.xyConnection.settimeout(2)
+#        result=self.sendXYCommand('RS',0)
+#        time.sleep(2)
+#        self.xyConnection.close()
 #restart the socket now we have rest the controller.
         self.xyConnection=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.xyConnection.connect((PICO_CONTROLLER,PICO_PORT))
@@ -144,6 +183,25 @@ class PicoMotorDevice(device.Device):
 ##                        'Unknown error code [%s]' % error)
 ##                raise RuntimeError("Error issuing command [%s] to the Z piezo controller: %s" % (command, errorDesc))
 ##            return response
+
+
+#Routine to home all 3 motors.
+#record position
+#move to negative threshold (z axis should go to +ve limit so as not to ram objective)
+#check if moving, sleep and loop
+#record new pos
+#set home
+#move to start-end position to resturn to starting position
+#loop through each axis
+
+
+#    def homeMotors(self):
+#        origPosition=self.getXYPosition(shouldUseCache = False)
+#        for axis in range(0,2)
+#			print "homeing axis 1 %s, origPosiiton=%d", self.axisMapper[axis],origPosition[axis]
+#        self.sendXYCommand('%s mt -' %
+#                (self.axisMapper[axis]),0)
+
 
 
     ## Send a command to the XY stage controller, read the response, check
@@ -212,7 +270,8 @@ class PicoMotorDevice(device.Device):
     ## Halt XY motion when the user aborts. Note we can't control Z motion
     # here because the piezo is under the DSP's control.
     def onAbort(self, *args):
-        self.sendXYCommand('AB',0)
+        self.sendXYCommand('1>AB',0)
+        self.sendXYCommand('2>AB',0)
 
 
     def getHandlers(self):
@@ -220,8 +279,8 @@ class PicoMotorDevice(device.Device):
         # stage movers get handlers here.
         #IMD 20130418 hacked to include Z in this for the Picomovers stage
         result = []
-        for axis, minPos, maxPos in [(0, -10000, 10000),
-                    (1, -10000, 10000),(2,-1000,1000)]:
+        for axis, minPos, maxPos in [(0, -100, 25000),
+                    (1, -100, 25000),(2,-100,25000)]:
             result.append(handlers.stagePositioner.PositionerHandler(
                     "%d PI mover" % axis, "%d stage motion" % axis, False,
                     {'moveAbsolute': self.moveXYAbsolute,
@@ -235,15 +294,16 @@ class PicoMotorDevice(device.Device):
 
     def getXYMovementTime(slef,axis,start,end):
         distance=abs (end-start)
-        #speed is 2000Hz, *STAGE_CAL steps/um +0.25 s slop
-        return (((distance*STAGE_CAL)/2000)+.25)
+        #IMD15072014 closed loop performance is much slower, or counts != steps. 
+        #speed is roughly 10,000 counts in 30 secs   
+        return (((distance*STAGE_CAL)/300)+.25)
 
     def moveXYAbsolute(self, axis, pos):
         # IMD 20130418 need to calibrate stage properly, approx is 67 steps/um
         #IMD 20130530 suggest by Chris just flip X movemets to fix wrong X direction
-        if (axis == 0) or (axis == 1):
-            pos = -pos
-        self.sendXYCommand('%d PA %d' %
+#        if (axis == 0) or (axis == 1):
+#            pos = -pos
+        self.sendXYCommand('%s PA %d' %
                 (self.axisMapper[axis], int (pos*STAGE_CAL) ),0)
         self.sendXYPositionUpdates()
 
@@ -254,9 +314,9 @@ class PicoMotorDevice(device.Device):
         if delta!=0 :
             #IMD 20130530 flip X axis to get correct direction.
             if (axis == 0) or (axis == 1):
-                delta = -delta
+                delta = delta
                 
-            self.sendXYCommand('%d PR %d' %
+            self.sendXYCommand('%s PR %d' %
                     (self.axisMapper[axis], int(delta*STAGE_CAL) ),0)
             self.sendXYPositionUpdates()
 
@@ -283,13 +343,19 @@ class PicoMotorDevice(device.Device):
     # If shouldUseCache is not set, then we will query the controller, which
     # takes some time.
     def getXYPosition(self, axis = None, shouldUseCache = True):
-#+++        self.xyPositionCache = (0, 0,0)
+    #+++        self.xyPositionCache = (0, 0,0)
         if not shouldUseCache:
-            positions=self.sendXYCommand('1TP?;2TP?;3TP?', 1, False)
-            (x,y,z)=positions.split(';')
+            positions=self.sendXYCommand('1>1TP?;2TP?', 1, False)
+            (stringtemp,positions)=positions.split('>')
+            
+            (x,y)=positions.split(';')
+            positions=self.sendXYCommand('2>1TP?', 1, False)
+            (stringtemp,positions)=positions.split('>')
+            z=positions
+            
             # Positions are in steps, and we need microns.
-            x = -float(x) / STAGE_CAL
-            y = -float(y) / STAGE_CAL
+            x = float(x) / STAGE_CAL
+            y = float(y) / STAGE_CAL
             z=float(z) / STAGE_CAL
             self.xyPositionCache = (x, y, z)
         if axis is None:
