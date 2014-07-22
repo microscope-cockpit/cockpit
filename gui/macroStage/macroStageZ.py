@@ -472,7 +472,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             # Map the click location to one of our histograms or to the main scale.
             scale = (self.minY, self.maxY)
             for histogram in self.histograms:
-                if canvasLoc[0] < self.maxX - histogram.xOffset - self.horizLineLength:
+                if canvasLoc[0] < histogram.xOffset + self.horizLineLength:
                     scale = (histogram.minAltitude, histogram.maxAltitude)
             weight = float(self.height - clickLoc[1]) / self.height
             altitude = (scale[1] - scale[0]) * weight + scale[0]
