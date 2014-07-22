@@ -185,8 +185,8 @@ def recenterFineMotion():
             safeties = handler.getHardLimits()
             target = (safeties[1] - safeties[0]) / 2 + safeties[0]
             handler.moveAbsolute(target)
-            totalDelta += (safeties[1] - safeties[0]) - curPosition
-        handlers[0].moveRelative(totalDelta)
+            totalDelta += target - curPosition
+        handlers[0].moveRelative(-totalDelta)
             
 
 ## Move to the specified position using the current handler. 
