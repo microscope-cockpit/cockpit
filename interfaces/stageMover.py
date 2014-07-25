@@ -132,7 +132,8 @@ def initialize():
 
 ## Publicize any information that various widgets care about.
 def makeInitialPublications():
-    for axis in xrange(3):
+    #for axis in xrange(3):
+    for axis in mover.axisToHandlers.keys():
         events.publish("stage position", axis, getPositionForAxis(axis))
         limits = getSoftLimitsForAxis(axis)
         for isMax in [0, 1]:
