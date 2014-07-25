@@ -178,9 +178,9 @@ class DSPDevice(device.Device):
 
         for key, aout in AOUTS.iteritems():
             if aout['cockpit_axis'] in 'xyzXYZ':
-                axisName = aout['cockpit_axis']
+                axisName = COCKPIT_AXES[aout['cockpit_axis'].lower()]
                 handler = handlers.stagePositioner.PositionerHandler(
-                    "%s stage" % axisName, "%s stage motion" % axisName, True, 
+                    "%s piezo" % axisName, "%s stage motion" % axisName, True, 
                     {'moveAbsolute': self.movePiezoAbsolute,
                         'moveRelative': self.movePiezoRelative, 
                         'getPosition': self.getPiezoPos, 
