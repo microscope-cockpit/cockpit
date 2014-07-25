@@ -59,7 +59,9 @@ class Histogram():
         if data:
             for y in xrange(int(self.minAltitude), int(self.maxAltitude) + 1, ALTITUDE_BUCKET_SIZE):
                 slot = int((y - self.minAltitude) / ALTITUDE_BUCKET_SIZE)
-                self.maxBucketSize = max(self.maxBucketSize, data[slot])
+                # MAP - this can crash here when Z-range is small, so bounds-check slot.
+                if slot < len(data):
+                    self.maxBucketSize = max(self.maxBucketSize, data[slot])
 
 
     ## Rescale an altitude to our min and max, so that our min
@@ -137,7 +139,9 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 util.logger.log.warn("Impossible experiment altitude %f (min %f, max %f)",
                         altitude, self.minY, self.maxY)
             else:
-                self.altitudeBuckets[slot] += 1
+            # bounds check slot
+                if slot < len(self.altitudeBuckets):
+                    self.altitudeBuckets[slot] += 1
 
 
     ## Handle a new experiment completing -- requires us to update our
@@ -355,7 +359,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 altitude = altitude * (histogram.maxAltitude - histogram.minAltitude) + histogram.minAltitude
                 # Map that altitude to a bucket
                 bucketIndex = int((altitude - self.minY) / ALTITUDE_BUCKET_SIZE)
-                count = self.altitudeBuckets[bucketIndex]
+                if bucketIndex < len(self.altitudeBuckets):
+                    count = self.altitudeBuckets[bucketIndex]
                 width = int(float(count) / histogram.maxBucketSize * histogram.width)
                 drawAltitude = histogram.scale(altitude)
                 self.scaledVertex(histogram.xOffset, drawAltitude)
