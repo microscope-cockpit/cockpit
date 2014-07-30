@@ -12,6 +12,7 @@ import numpy
 import threading
 import time
 import wx
+from config import CAMERAS
 
 ## Describes the settings used to connect a given camera. 
 CameraSettings = collections.namedtuple('CameraSettings',
@@ -21,7 +22,7 @@ CameraSettings = collections.namedtuple('CameraSettings',
 (IXON, IXON_PLUS, IXON_ULTRA) = range(3)
 
 CLASS_NAME = 'CameraDevice'
-
+SUPPORTED_CAMERAS = ['ixon', 'ixon_plus', 'ixon_ultra']
 
 
 class CameraDevice(device.Device):
@@ -53,6 +54,15 @@ class CameraDevice(device.Device):
         self.panel = None
         ## List of available image readout sizes.
         self.imageSizes = ['Full', '512x256', '512x128']
+        ## List of cameras this module controls
+        self.myCameras = []
+        for name, camera in CAMERAS.iteritems():
+            cameratype = camera.get('model', '')
+            if cameratype in SUPPORTED_CAMERAS:
+                self.myCameras.append((name,
+                                       camera.get('ipAddress'),
+                                       eval(camera.get('model').upper()))) 
+        
 
 
     def performSubscriptions(self):
@@ -62,12 +72,7 @@ class CameraDevice(device.Device):
 
     def getHandlers(self):
         result = []
-        for name, ipAddress, camModel in [
-				('West', '172.16.0.20', True)]:
-                #('West', '192.168.12.45', IXON_ULTRA),
-                #('East', '192.168.12.41', IXON_PLUS),
-                #('Northwest', '192.168.12.43', IXON),
-                #('Northeast', '192.168.12.44', IXON_PLUS)]:
+        for name, ipAddress, camModel in self.myCameras:
             result.append(handlers.camera.CameraHandler(
                 "%s" % name, "iXon camera", 
                 {'setEnabled': self.enableCamera, 
