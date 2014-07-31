@@ -4,6 +4,13 @@ import events
 import numpy
 import threading
 
+## Stage movement threshold (previously a hard-coded value).
+# There can be problems when this doesn't match a corresponding threshold
+# the stage device code.  
+#TODO:  This should be defined in only one place, either here,
+# in the stage code, or in a config file.
+STAGE_MIN_MOVEMENT = 0.3
+
 ## This module handles general stage motion: "go to this position", "move by
 # this delta", "remember this position", "go to this remembered position", 
 # etc. The cockpit deals with this module instead of speaking direction to 
@@ -106,7 +113,7 @@ class StageMover:
                     offset += handler.getPosition()
             handler = self.axisToHandlers[axis][self.curHandlerIndex]
             # Check if we need to bother moving.
-            if abs(handler.getPosition() - (target - offset)) > .01:
+            if abs(handler.getPosition() - (target - offset)) > STAGE_MIN_MOVEMENT:
                 event = threading.Event()
                 waiters.append(event)
                 self.nameToStoppedEvent[handler.name] = event
