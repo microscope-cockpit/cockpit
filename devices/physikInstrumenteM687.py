@@ -8,31 +8,18 @@ import util.threads
 import util.userConfig
 
 from OpenGL.GL import *
-import Pyro4
 import serial
 import socket
 import threading
 import time
 
-## This module is for Physik Instrumente (PI) stage motion
-# devices. It controls the XY stage, and sets up but does not directly
-# control the Z piezo -- that is handled by the analog voltage signal from
-# the DSP device.
+## This module is for Physik Instrumente (PI) M687 XY stage. 
+CLASS_NAME = 'PhysikInstrumenteM687'
+PORT='COM7'
+BAUD='115200'
+TIMEOUT = 0.05
 
-
-# Z piezo notes:
-# The degree of motion of the piezo for a given voltage input is controlled
-# via offset and gain, parameters are 0x02000200 and 0x02000300 respectively.
-# Use SPA to set volatile memory and WPA to write volatile memory to nonvolatile
-# (so settings will be remembered on reboot). E.g. for offset 0 and gain 2,
-# do
-# % SPA 2 0x02000200 0
-# % SPA 2 0x02000300 2
-# (The first 2 refers to the input channel, which in this case is the analog
-# input line from the DSP).
- 
-
-CLASS_NAME = 'PhysikInstrumenteDevice'
+## TODO:  These parameters should be factored out to a config file.
 
 ## Maps error codes to short descriptions. These appear to be the
 # same for the Z piezo controller and the XY stage system, so we re-use them.
@@ -67,14 +54,9 @@ BANNED_RECTANGLES = (
 )
 
 
-class PhysikInstrumenteDevice(device.Device):
+class PhysikInstrumenteM687(device.Device):
     def __init__(self):
         device.Device.__init__(self)
-        ## Connection to the Z piezo controller (Pyro4.Proxy of a
-        # telnetlib.Telnet instance)
-        self.zConnection = None
-        ## Lock around sending commands to the Z piezo controller.
-        self.zLock = threading.Lock()
         ## Connection to the XY stage controller (serial.Serial instance)
         self.xyConnection = None
         ## Lock around sending commands to the XY stage controller.
@@ -103,32 +85,18 @@ class PhysikInstrumenteDevice(device.Device):
 
 
     def initialize(self):
-        # Note we assume that the Z proxy is on the same host as the cockpit.
-        self.zConnection = Pyro4.Proxy('PYRO:PIZProxy@%s:%d' %
-                (socket.gethostbyname(socket.gethostname()), 7790))
-        # Enable closed-loop positioning for the Z piezo.
-        self.sendZCommand('SVO 1 1')
-        # Enable advanced commands.
-        self.sendZCommand('CCL 1 advanced')
-        # Switch to analog voltage control (via the DSP). NB setting
-        # 0 here would change it back to being controlled only via software.
-        self.sendZCommand('SPA 1 0x06000500 2')
-
-        self.xyConnection = serial.Serial('COM3', 115200, timeout = .05)
+        self.xyConnection = serial.Serial(PORT, BAUD, timeout = TIMEOUT)
         self.sendXYCommand('SVO 1 1')
         self.sendXYCommand('SVO 2 1')
         # Get the proper initial position.
         self.getXYPosition(shouldUseCache = False)
-        events.oneShotSubscribe('cockpit initialization complete',
-                self.timedDisableClosedLoop)
-
 
     ## We want to periodically exercise the XY stage to spread the grease
     # around on its bearings; check how long it's been since the stage was
     # last exercised, and prompt the user if it's been more than a week.
     def promptExerciseStage(self):
         lastExerciseTimestamp = util.userConfig.getValue(
-                'PILastExerciseTimestamp',
+                'PIM687LastExerciseTimestamp',
                 isGlobal = True, default = 0)
         curTime = time.time()
         delay = curTime - lastExerciseTimestamp
@@ -155,84 +123,8 @@ class PhysikInstrumenteDevice(device.Device):
             interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
             print "Exercising complete. Thank you!"
             
-            util.userConfig.setValue('PILastExerciseTimestamp',
+            util.userConfig.setValue('PIM687LastExerciseTimestamp',
                     time.time(), isGlobal = True)
-
-
-    ## This function disables closed loop on the Z piezo if the scope has been
-    # idle for some time.
-    @util.threads.callInNewThread
-    def timedDisableClosedLoop(self):
-        amInClosedLoop = True
-        # Disable this loop (and ensure that closed-loop positioning is on)
-        # when an experiment is in progress.
-        def disableDuringExperiment(*args):
-            self.sendZCommand('SVO 1 1')
-            amInClosedLoop = True
-            self.lastPiezoTime = None
-        events.subscribe('prepare for experiment', disableDuringExperiment)
-        
-        # Re-enable when experiments end.
-        def enableAfterExperiment(*args):
-            self.lastPiezoTime = time.time()
-        events.subscribe('experiment complete', enableAfterExperiment)
-
-        # End the loop on program exit.
-        amDone = False
-        def finish(*args):
-            amDone = True
-        events.subscribe('program exit', finish)
-
-        try:
-            curZPos = lastZPos = interfaces.stageMover.getPositionForAxis(2)
-            while not amDone:
-                curZPos = interfaces.stageMover.getPositionForAxis(2)
-                if (self.lastPiezoTime is not None and amInClosedLoop and 
-                        time.time() - self.lastPiezoTime > 3600):
-                    # It's been at least an hour since any actions with the piezo
-                    # were taken; assume the scope is sitting idle and
-                    # disable closed loop.
-                    # Remember lastPiezoTime as sendZCommand resets it.
-                    trueLastTime = self.lastPiezoTime
-                    self.sendZCommand('SVO 1 0')
-                    self.lastPiezoTime = trueLastTime
-                    amInClosedLoop = False
-                elif not amInClosedLoop and curZPos != lastZPos:
-                    # We've disabled closed loop in the past, but the user
-                    # has taken actions; re-enable closed loop.
-                    self.sendZCommand('SVO 1 1')
-                    amInClosedLoop = True
-                lastZPos = curZPos
-                time.sleep(1)
-            # Program exiting; redundantly disable closed loop.
-            self.sendZCommand('SVO 1 0')
-        except Exception, e:
-            util.logger.log.error("Closed-loop disabler thread failed: %s" % e)
-            import traceback
-            util.logger.log.error(traceback.format_exc())
-        
-
-    ## Send a command to the Z piezo controller, read the response, check
-    # for errors, and either raise an exception or return the response.
-    def sendZCommand(self, command):
-        with self.zLock:
-            self.lastPiezoTime = time.time()
-            self.zConnection.write(command + '\n')
-            response = self.zConnection.read_until('\n', .25)
-            while True:
-                # Read out any additional lines
-                line = self.zConnection.read_until('\n', .05)
-                if not line:
-                    break
-                response += line
-            # Check for errors
-            self.zConnection.write('ERR?\n')
-            error = int(self.zConnection.read_until('\n', .5).strip())
-            if error != 0: # 0 is "no error"
-                errorDesc = ERROR_CODES.get(error,
-                        'Unknown error code [%s]' % error)
-                raise RuntimeError("Error issuing command [%s] to the Z piezo controller: %s" % (command, errorDesc))
-            return response
 
 
     ## Send a command to the XY stage controller, read the response, check
@@ -281,7 +173,6 @@ class PhysikInstrumenteDevice(device.Device):
     ## When the user logs out, switch to open-loop mode.
     def onLogout(self, *args):
         # Switch to open loop
-        self.sendZCommand('SVO 1 0')
         self.sendXYCommand('SVO 1 0')
         self.sendXYCommand('SVO 2 0')
         self.xyConnection.close()
@@ -470,32 +361,6 @@ class PhysikInstrumenteDevice(device.Device):
         handle.close()
 
 
-    ## Debugging function: extract all valid parameters from the Z controller.
-    def listZParams(self):
-        # Don't use sendZCommand here because its error handling doesn't
-        # deal with HPA?'s output properly -- there's an extra blank line
-        # that makes it think output is done when it actually isn't.
-        self.zConnection.write('HPA?\n')
-        time.sleep(1)
-        lines = self.zConnection.read_very_eager()
-        
-        lines = lines.split('\n')
-        handle = open('zparams.txt', 'w')
-        for line in lines:
-            if '0x' in line:
-                # Parameter line
-                param = line.split('=')[0]
-                desc = line.split('\t')[5]
-                val = self.sendZCommand('SPA? 1 %s' % param)
-                # Note val has a newline at the end here.
-                handle.write("%s (%s): %s" % (desc, param, val))
-            else:
-                # Lines at the beginning/end don't have parameters in them.
-                handle.write(line)
-        handle.write('\n\n')
-        handle.close()
-
-
     ## Debugging function: test doBoxesIntersect().
     def testBoxIntersect(self):
         for items in [
@@ -514,5 +379,3 @@ class PhysikInstrumenteDevice(device.Device):
             assert(self.doBoxesIntersect((-s1, s2), (-e1, e2), ((-bs1, bs2), (-be1, be2))) == desire)
             assert(self.doBoxesIntersect((-s1, -s2), (-e1, -e2), ((-bs1, -bs2), (-be1, -be2))) == desire)
             assert(self.doBoxesIntersect((s1, -s2), (e1, -e2), ((bs1, -bs2), (be1, -be2))) == desire)
-
-
