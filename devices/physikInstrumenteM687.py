@@ -13,11 +13,11 @@ import socket
 import threading
 import time
 
+from config import config
+
 ## This module is for Physik Instrumente (PI) M687 XY stage. 
 CLASS_NAME = 'PhysikInstrumenteM687'
-PORT='COM7'
-BAUD='115200'
-TIMEOUT = 0.05
+CONFIG_NAME = 'm687'
 
 ## TODO:  These parameters should be factored out to a config file.
 
@@ -77,15 +77,26 @@ class PhysikInstrumenteM687(device.Device):
         # disable closed loop.
         self.lastPiezoTime = time.time()
 
-        events.subscribe('user logout', self.onLogout)
-        events.subscribe('user abort', self.onAbort)
-        events.subscribe('macro stage xy draw', self.onMacroStagePaint)
-        events.subscribe('cockpit initialization complete',
-                self.promptExerciseStage)
+        ## If there is a config section for the m687, grab the config and
+        # subscribe to events.
+        self.isActive = config.has_section(CONFIG_NAME)
+        if self.isActive:
+            self.port = 'COM7'#config.get(CONFIG_NAME, 'port')
+            self.baud = config.getint(CONFIG_NAME, 'baud')
+            self.timeout = config.getfloat(CONFIG_NAME, 'timeout')
+
+            events.subscribe('user logout', self.onLogout)
+            events.subscribe('user abort', self.onAbort)
+            events.subscribe('macro stage xy draw', self.onMacroStagePaint)
+            events.subscribe('cockpit initialization complete',
+                    self.promptExerciseStage)
 
 
     def initialize(self):
-        self.xyConnection = serial.Serial(PORT, BAUD, timeout = TIMEOUT)
+        port = self.port
+        baud = self.baud
+        timeout = self.timeout
+        self.xyConnection = serial.Serial(port, baud, timeout=timeout)
         self.sendXYCommand('SVO 1 1')
         self.sendXYCommand('SVO 2 1')
         # Get the proper initial position.
