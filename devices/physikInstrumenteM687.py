@@ -82,7 +82,7 @@ class PhysikInstrumenteM687(device.Device):
         # subscribe to events.
         self.isActive = config.has_section(CONFIG_NAME)
         if self.isActive:
-            self.port = 'COM7'#config.get(CONFIG_NAME, 'port')
+            self.port = config.get(CONFIG_NAME, 'port')
             self.baud = config.getint(CONFIG_NAME, 'baud')
             self.timeout = config.getfloat(CONFIG_NAME, 'timeout')
 
