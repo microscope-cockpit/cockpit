@@ -12,6 +12,7 @@ import serial
 import socket
 import threading
 import time
+import wx
 
 from config import config
 
@@ -153,8 +154,18 @@ class PhysikInstrumenteM687(device.Device):
                 # Check for errors
                 self.xyConnection.write('ERR?\n')
                 error = int(self.getXYResponse(1).strip())
-                # 0 is "no error"; 10 is "motion stopped by user".
-                if error not in [0, 10]:
+                #0 is "no error"; 10 is "motion stopped by user".
+                if error == 5:
+                    # Motors need homing.
+                    msg = """
+                    The XY stage needs to find the home position.
+                    Homing the stage will move it to its centre position.
+                    Ensure that there are no obstructions, then press 'OK' 
+                    to home the stage.
+                    """
+                    if gui.guiUtils.getUserPermission(msg):
+                        self.homeMotors()
+                elif error not in [0, 10]:
                     errorDesc = ERROR_CODES.get(error,
                             'Unknown error code [%s]' % error)
                     raise RuntimeError("Error issuing command [%s] to the XY stage controller: %s" % (command, errorDesc))
@@ -183,14 +194,49 @@ class PhysikInstrumenteM687(device.Device):
 
     ## Home the motors.
     def homeMotors(self):
+        # Clear output buffers
+        self.xyConnection.readlines()
         self.xyConnection.write('FRF\n')
+        # Motion status response.
         response = None
+
+        # Progress indicator.
+        # TODO - rather than raw wx, this should probably be a class from
+        # gui.guiUtils.
+        busy_box = wx.ProgressDialog(parent = None,
+                                     title = 'Busy...', 
+                                     message = 'Homing stage')
+        busy_box.Show()
         while response != 0:
             # Request motion status
             self.xyConnection.write(chr(5))
             response = int(self.xyConnection.readline())
-            time.sleep(0.5)
-        return response
+            busy_box.Pulse()
+            time.sleep(0.2)
+
+        busy_box.Hide()
+        busy_box.Destroy()
+        
+        # Was homing successful?
+        self.xyConnection.write('FRF?\n')
+        homestatus = self.xyConnection.readlines()
+        success = True
+        
+        msg = ''
+        for status in homestatus:
+            motor, state = status.strip().split('=')
+            if state != '1':
+                msg += 'There was a problem homing motor %s.\n' % motor
+                success = False
+        
+        if not success:
+            gui.guiUtils.showHelpDialog(None, msg)
+        else:
+            self.sendXYPositionUpdates()
+            gui.guiUtils.showHelpDialog(None, 'Homing successful.')
+            
+
+        return success
 
 
     ## When the user logs out, switch to open-loop mode.
