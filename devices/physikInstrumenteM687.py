@@ -181,6 +181,18 @@ class PhysikInstrumenteM687(device.Device):
         return response
 
 
+    ## Home the motors.
+    def homeMotors(self):
+        self.xyConnection.write('FRF\n')
+        response = None
+        while response != 0:
+            # Request motion status
+            self.xyConnection.write(chr(5))
+            response = int(self.xyConnection.readline())
+            time.sleep(0.5)
+        return response
+
+
     ## When the user logs out, switch to open-loop mode.
     def onLogout(self, *args):
         # Switch to open loop
