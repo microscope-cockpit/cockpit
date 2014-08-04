@@ -145,12 +145,23 @@ class WindowsJoystickDevice(device.Device):
         self.info.dwFlags = JOY_RETURNBUTTONS | JOY_RETURNCENTERED | JOY_RETURNPOV | JOY_RETURNU | JOY_RETURNV | JOY_RETURNX | JOY_RETURNY | JOY_RETURNZ
         self.p_info = ctypes.pointer(self.info)
 
-    
+        self.enable_read = True
+
     def initialize(self):
         ## Prepare a thread the reads joystick data and dispatches move events accordingly.
         self.joystickThread = threading.Thread(target = self.readJoystickThread)
-        events.subscribe('cockpit initialization complete', self.start)
+        events.subscribe("cockpit initialization complete", self.start)
+        events.subscribe("stage position", self.onStageMoved)
+        events.subscribe("stage stopped", self.onStageStopped)
 
+
+    def onStageMoved(self, axis, target):
+        self.enable_read = False
+        
+
+    def onStageStopped(self, axis):
+        self.enable_read = True
+        
 
     def start(self):
         self.joystickThread.start()
@@ -163,8 +174,11 @@ class WindowsJoystickDevice(device.Device):
         x_threshold = 0.05
         y_threshold = 0.05
 
-
         while joyGetPosEx(0, self.p_info) == 0:
+            
+            while not self.enable_read:
+                time.sleep(0.05)
+
             # Remap the values to float
             x = (self.info.dwXpos - 32767) / 32768.0
             y = (self.info.dwYpos - 32767) / 32768.0
@@ -199,25 +213,9 @@ class WindowsJoystickDevice(device.Device):
                 else:
                     self.button_states[btn] = False
 
-            # Format a list of currently pressed buttons.
-            prev_len = len(buttons_text)
-            buttons_text = " "
-            for btn in button_names + povbtn_names:
-                if self.button_states.get(btn):
-                    buttons_text += btn + ' '
-
             x = x if (abs(x) > x_threshold) else 0
             y = y if (abs(y) > y_threshold) else 0
             
             if abs(x) > 0 or abs(y) > 0:
                 interfaces.stageMover.moveRelative((-10*x, -10*y, 0), shouldBlock=False)
-
-
-            # Add spaces to erase data from the previous line
-            #erase = ' ' * max(0, prev_len - len(buttons_text))
-
-            # Display the x, y, trigger values.
-            #print "\r(% .3f % .3f % .3f) (% .3f % .3f % .3f)%s%s" % (x, y, lt, rx, ry, rt, buttons_text, erase),
-
-            #print info.dwXpos, info.dwYpos, info.dwZpos, info.dwRpos, info.dwUpos, info.dwVpos, info.dwButtons, info.dwButtonNumber, info.dwPOV, info.dwReserved1, info.dwReserved2
-            time.sleep(0.001)
+                time.sleep(0.05)
