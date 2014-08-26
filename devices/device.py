@@ -70,3 +70,26 @@ class Device(object):
     # of handlers.
     def initWithHandlers(self, handlers):
         raise RuntimeError("Device %s didn't implement its initWithHandlers function" % str(self))
+
+
+## device.CameraDevice subclasses Device with some additions appropriate
+# to any camera.
+class CameraDevice(Device):
+    from collections import namedtuple
+    from numpy import rot90, flipud, fliplr
+    
+    Transform = namedtuple('Transform', 'rot90, flip_h, flip_v')
+
+    def __init__(self):
+        super(Device, self).__init__()
+        self.transfrom = Transform(None, None, None)
+
+
+    def orient(self, image):
+        transform = self.transform
+        if transform.rot90:
+            numpy.rot90(image, transform.rot90)
+        if transform.flip_h:
+            numpy.fliplr(image)
+        if transform.flip_v:
+            numpy.flipud(image)
