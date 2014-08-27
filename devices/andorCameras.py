@@ -5,7 +5,8 @@ Historically, a single CameraDevice was used to address multiple
 cameras, using a number of dictionaries to map the camera name to
 its settings and methods.  Here, instead I have used a single
 CameraManager to keep track of one or more CameraDevices, which
-means that inheritance can be used for different camera types."""
+means that inheritance can be used for different camera types.
+"""
 
 import device
 import events
@@ -26,23 +27,25 @@ from config import CAMERAS
 
 CLASS_NAME = 'CameraManager'
 SUPPORTED_CAMERAS = ['ixon', 'ixon_plus', 'ixon_ultra']
+DEFAULT_TRIGGER = 'TRIGGER_AFTER'
+
 
 class CameraManager(device.Device):
-    """ CameraManager: a class to manage camera devices."""
+    """A class to manage camera devices in cockpit."""
     def __init__(self):
         self.cameras = []
-        for name, camConfig in CAMERAS.iteritems():
+        for name, cam_config in CAMERAS.iteritems():
             cameratype = camConfig.get('model', '')
             if cameratype in SUPPORTED_CAMERAS:
                 self.cameras.append(AndorCameraDevice(camConfig))
 
 
     def getHandlers(self):
+        """Aggregate and return handlers from managed cameras."""
         result = []
         for camera in self.cameras:
-            result.extend(camera.getHandlers)
+            result.append(camera.getHandlers)
         return result
-
 
 
 class AndorCameraDevice(device.CameraDevice):
@@ -54,6 +57,11 @@ class AndorCameraDevice(device.CameraDevice):
                 self.config.get('ipAddress'),
                 self.config.get('port'))
         self.imageSizes = ['Full', '512x256', '512x128']
+        ## Initial values should be read in from the config file.
+        self.settings = {}
+        self.settings['exposureTime' = 100]
+        self.settings['isWaterCooled' = False]
+        self.settings['targetTemperature' = -40]
 
 
     def performSubscriptions(self):
@@ -62,8 +70,14 @@ class AndorCameraDevice(device.CameraDevice):
 
 
     def getHandlers(self):
-        result = []
-        result.append(handlers.camera.CameraHandler(
+        """Return camera handlers."""
+        trigger = getattr(handlers.camera, 
+                # find in config
+                self.config.get('trigger', ''), 
+                # or default to
+                DEFAULT_TRIGGER)
+
+        handlers = handlers.camera.CameraHandler(
                 "%s" % self.config.get('name'), "iXon camera", 
                 {'setEnabled': self.enableCamera, 
                     'getImageSize': self.getImageSize, 
@@ -74,12 +88,29 @@ class AndorCameraDevice(device.CameraDevice):
                     'getImageSizes': self.getImageSizes,
                     'setImageSize': self.setImageSize, 
                     'getSavefileInfo': self.getSavefileInfo},
-                handlers.camera.TRIGGER_AFTER))
-        return result
+                trigger)
+        return handlers
 
 
     def enableCamera(self, shouldEnable):
-        pass
+        trigger = self.config.get('trigger', DEFAULT_TRIGGER)
+        if shouldEnable:
+            # Connect and set up callback
+            self.connection.connect(self.receiveData(*args))
+            thread = gui.guiUtils.WaitMessageDialog(
+                    "Connecting to %s" % name,
+                    "Connecting ...",
+                    0.5)
+            thread.start()
+            try:
+                self.connection.enable(self.settings)
+                while not self.connection.enabled:
+                    time.sleep(1)
+            except:
+                raise
+            finally:
+                thread.shouldStop = True
+
 
 
     def getExposureTime(self, isExact):
@@ -114,7 +145,8 @@ class AndorCameraDevice(device.CameraDevice):
 
 
     def setExposureTime(self, exposureTime):
-        pass
+        self.settings['exposureTime'] = exposureTime
+        self.set_exposure_time(exposureTime)
 
 
     def setImageSize(self, imageSize):
