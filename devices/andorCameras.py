@@ -6,15 +6,12 @@ cameras, using a number of dictionaries to map the camera name to
 its settings and methods.  Here, instead I have used a single
 CameraManager to keep track of one or more CameraDevices, which
 means that inheritance can be used for different camera types.
-"""
 
-import device
-import events
-import gui.guiUtils
-import gui.toggleButton
-import handlers.camera
-import util.connection
-import util.threads
+All the handler functions are called with (self, name, *args...).
+Since we make calls to instance methods here, we don't need 'name', 
+but it is left in the call so that we can continue to use camera
+modules that rely on dictionaries.
+"""
 
 import collections
 import decimal
@@ -23,28 +20,41 @@ import threading
 import time
 import wx
 
+import device
+import events
+import handlers.camera
+import gui.guiUtils
+import gui.toggleButton
+import util.connection
+import util.threads
+
 from config import CAMERAS
 
 CLASS_NAME = 'CameraManager'
 SUPPORTED_CAMERAS = ['ixon', 'ixon_plus', 'ixon_ultra']
 DEFAULT_TRIGGER = 'TRIGGER_AFTER'
 
+# The following must be defined as in handlers/camera.py
+(TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
 
 class CameraManager(device.Device):
     """A class to manage camera devices in cockpit."""
     def __init__(self):
         self.cameras = []
-        for name, cam_config in CAMERAS.iteritems():
+        for name, camConfig in CAMERAS.iteritems():
             cameratype = camConfig.get('model', '')
             if cameratype in SUPPORTED_CAMERAS:
                 self.cameras.append(AndorCameraDevice(camConfig))
+        if len(self.cameras) > 0:
+            self.isActive = True
+        self.priority = 100
 
 
     def getHandlers(self):
         """Aggregate and return handlers from managed cameras."""
         result = []
         for camera in self.cameras:
-            result.append(camera.getHandlers)
+            result.append(camera.getHandlers())
         return result
 
 
@@ -59,9 +69,9 @@ class AndorCameraDevice(device.CameraDevice):
         self.imageSizes = ['Full', '512x256', '512x128']
         ## Initial values should be read in from the config file.
         self.settings = {}
-        self.settings['exposureTime' = 100]
-        self.settings['isWaterCooled' = False]
-        self.settings['targetTemperature' = -40]
+        self.settings['exposureTime'] = 100
+        self.settings['isWaterCooled'] = False
+        self.settings['targetTemperature'] = -40
 
 
     def performSubscriptions(self):
@@ -71,14 +81,14 @@ class AndorCameraDevice(device.CameraDevice):
 
     def getHandlers(self):
         """Return camera handlers."""
-        trigger = getattr(handlers.camera, 
+        trigger = globals().get(
                 # find in config
                 self.config.get('trigger', ''), 
                 # or default to
                 DEFAULT_TRIGGER)
 
-        handlers = handlers.camera.CameraHandler(
-                "%s" % self.config.get('name'), "iXon camera", 
+        result = handlers.camera.CameraHandler(
+                "%s" % self.config.get('label'), "iXon camera", 
                 {'setEnabled': self.enableCamera, 
                     'getImageSize': self.getImageSize, 
                     'getTimeBetweenExposures': self.getTimeBetweenExposures, 
@@ -89,14 +99,15 @@ class AndorCameraDevice(device.CameraDevice):
                     'setImageSize': self.setImageSize, 
                     'getSavefileInfo': self.getSavefileInfo},
                 trigger)
-        return handlers
+        return result
 
 
-    def enableCamera(self, shouldEnable):
+    def enableCamera(self, name, shouldEnable):
         trigger = self.config.get('trigger', DEFAULT_TRIGGER)
         if shouldEnable:
             # Connect and set up callback
-            self.connection.connect(self.receiveData(*args))
+            self.connection.connect(
+                lambda *args: self.receiveData(self.name, *args))
             thread = gui.guiUtils.WaitMessageDialog(
                     "Connecting to %s" % name,
                     "Connecting ...",
@@ -113,27 +124,27 @@ class AndorCameraDevice(device.CameraDevice):
 
 
 
-    def getExposureTime(self, isExact):
+    def getExposureTime(self, name, isExact):
         pass
 
 
-    def getImageSize(self):
+    def getImageSize(self, name):
         pass
 
 
-    def getImageSizes(self):
+    def getImageSizes(self, name):
         return self.imageSizes
 
 
-    def getSavefileInfo(self):
+    def getSavefileInfo(self, name):
         pass
 
 
-    def getTimeBetweenExposures(self):
+    def getTimeBetweenExposures(self, name):
         pass
 
 
-    def prepareForExperiment(self, experiment):
+    def prepareForExperiment(self, name, experiment):
         pass
 
 
@@ -141,13 +152,13 @@ class AndorCameraDevice(device.CameraDevice):
         if action == 'new image':
             (image, timestamp) = args
             self.orient(image)
-            events.publish('new image %s' % name, image, timestamp)
+            events.publish('new image %s' % self.name, image, timestamp)
 
 
-    def setExposureTime(self, exposureTime):
+    def setExposureTime(self, name, exposureTime):
         self.settings['exposureTime'] = exposureTime
         self.set_exposure_time(exposureTime)
 
 
-    def setImageSize(self, imageSize):
+    def setImageSize(self, name, imageSize):
         pass
