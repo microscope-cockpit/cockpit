@@ -126,11 +126,12 @@ class AndorCameraDevice(device.CameraDevice):
 
 
     def getExposureTime(self, name, isExact):
-        pass
+        # Camera uses times in s; cockpit uses ms.
+        return self.object.get_exposure_time() * 1000.0
 
 
     def getImageSize(self, name):
-        pass
+        return self.object.get_image_size()
 
 
     def getImageSizes(self, name):
@@ -142,7 +143,10 @@ class AndorCameraDevice(device.CameraDevice):
 
 
     def getTimeBetweenExposures(self, name, isExact):
-        pass
+        ## Get the amount of time that must pass after stopping one exposure
+        # before another can be started, in milliseconds.
+        # Camera uses time in s; cockpit uses ms.
+        return self.object.get_min_time_between_exposures() * 1000.0
 
 
     def prepareForExperiment(self, name, experiment):
@@ -157,8 +161,9 @@ class AndorCameraDevice(device.CameraDevice):
 
 
     def setExposureTime(self, name, exposureTime):
+        # Camera uses times in s; cockpit uses ms.
         self.settings['exposureTime'] = exposureTime
-        self.set_exposure_time(exposureTime)
+        self.set_exposure_time(exposureTime / 1000.0)
 
 
     def setImageSize(self, name, imageSize):
