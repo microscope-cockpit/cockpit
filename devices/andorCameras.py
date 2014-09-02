@@ -66,6 +66,7 @@ class AndorCameraDevice(device.CameraDevice):
                 'pyroCam',
                 self.config.get('ipAddress'),
                 self.config.get('port'))
+        self.object = None
         self.imageSizes = ['Full', '512x256', '512x128']
         ## Initial values should be read in from the config file.
         self.settings = {}
@@ -105,23 +106,23 @@ class AndorCameraDevice(device.CameraDevice):
     def enableCamera(self, name, shouldEnable):
         trigger = self.config.get('trigger', DEFAULT_TRIGGER)
         if shouldEnable:
-            # Connect and set up callback
+            # Connect and set up callback.
             self.connection.connect(
-                lambda *args: self.receiveData(self.name, *args))
+                lambda *args: self.receiveData(*args))
+            self.object = self.connection.connection
             thread = gui.guiUtils.WaitMessageDialog(
                     "Connecting to %s" % name,
                     "Connecting ...",
                     0.5)
             thread.start()
             try:
-                self.connection.enable(self.settings)
-                while not self.connection.enabled:
+                self.object.enable(self.settings)
+                while not self.object.enabled:
                     time.sleep(1)
             except:
                 raise
             finally:
                 thread.shouldStop = True
-
 
 
     def getExposureTime(self, name, isExact):
@@ -140,7 +141,7 @@ class AndorCameraDevice(device.CameraDevice):
         pass
 
 
-    def getTimeBetweenExposures(self, name):
+    def getTimeBetweenExposures(self, name, isExact):
         pass
 
 
