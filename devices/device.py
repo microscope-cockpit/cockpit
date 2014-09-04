@@ -78,6 +78,9 @@ class CameraDevice(Device):
     from collections import namedtuple
     from numpy import rot90, flipud, fliplr
     
+    # Tuple of booleans: what transforms do we need to apply to recieved data?
+    # A derived class should set the state of each according to the camera
+    # position and orientation.
     Transform = namedtuple('Transform', 'rot90, flip_h, flip_v')
 
     def __init__(self):
@@ -86,6 +89,7 @@ class CameraDevice(Device):
 
 
     def orient(self, image):
+        """Apply transforms to an image to put it in the correction orientation."""
         transform = self.transform
         if transform.rot90:
             numpy.rot90(image, transform.rot90)
