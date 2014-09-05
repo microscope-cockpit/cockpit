@@ -11,6 +11,9 @@ All the handler functions are called with (self, name, *args...).
 Since we make calls to instance methods here, we don't need 'name', 
 but it is left in the call so that we can continue to use camera
 modules that rely on dictionaries.
+
+Cockpit uses lowerCamelCase function names.
+Functions names as lower_case are remote camera object methods.
 """
 
 import collections
@@ -37,30 +40,11 @@ DEFAULT_TRIGGER = 'TRIGGER_AFTER'
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
 
-class CameraManager(device.Device):
-    """A class to manage camera devices in cockpit."""
-    def __init__(self):
-        self.cameras = []
-        for name, camConfig in CAMERAS.iteritems():
-            cameratype = camConfig.get('model', '')
-            if cameratype in SUPPORTED_CAMERAS:
-                self.cameras.append(AndorCameraDevice(camConfig))
-        if len(self.cameras) > 0:
-            self.isActive = True
-        self.priority = 100
-
-
-    def getHandlers(self):
-        """Aggregate and return handlers from managed cameras."""
-        result = []
-        for camera in self.cameras:
-            result.append(camera.getHandlers())
-        return result
-
 
 class AndorCameraDevice(device.CameraDevice):
     """A class to control Andor cameras via the pyAndor remote interface."""
     def __init__(self, camConfig):
+        super(AndorCameraDevice, self).__init__(camConfig)
         self.config = camConfig
         self.connection = util.connection.Connection(
                 'pyroCam',
@@ -72,7 +56,12 @@ class AndorCameraDevice(device.CameraDevice):
         self.settings = {}
         self.settings['exposureTime'] = 100
         self.settings['isWaterCooled'] = False
-        self.settings['targetTemperature'] = -40
+        self.settings['targetTemperature'] = -40        
+
+
+    def cleanupAfterExperiment(self):
+        # Restore settings as they were prior to experiment.
+        self.object.enable(self.settings)
 
 
     def performSubscriptions(self):
@@ -168,3 +157,8 @@ class AndorCameraDevice(device.CameraDevice):
 
     def setImageSize(self, name, imageSize):
         pass
+
+
+class CameraManager(device.CameraManager):
+    _CAMERA_CLASS = AndorCameraDevice
+    _SUPPORTED_CAMERAS = SUPPORTED_CAMERAS
