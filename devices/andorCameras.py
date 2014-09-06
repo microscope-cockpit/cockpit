@@ -96,22 +96,26 @@ class AndorCameraDevice(device.CameraDevice):
         trigger = self.config.get('trigger', DEFAULT_TRIGGER)
         if shouldEnable:
             # Connect and set up callback.
-            self.connection.connect(
-                lambda *args: self.receiveData(*args))
-            self.object = self.connection.connection
-            thread = gui.guiUtils.WaitMessageDialog(
+            try:
+                self.connection.connect(
+                    lambda *args: self.receiveData(*args))
+            except:
+                raise
+            else:
+                self.object = self.connection.connection
+                thread = gui.guiUtils.WaitMessageDialog(
                     "Connecting to %s" % name,
                     "Connecting ...",
                     0.5)
-            thread.start()
-            try:
-                self.object.enable(self.settings)
-                while not self.object.enabled:
-                    time.sleep(1)
-            except:
-                raise
-            finally:
-                thread.shouldStop = True
+                thread.start()
+                try:
+                    self.object.enable(self.settings)
+                    while not self.object.enabled:
+                        time.sleep(1)
+                except:
+                    raise
+                finally:
+                    thread.shouldStop = True
 
 
     def getExposureTime(self, name, isExact):
