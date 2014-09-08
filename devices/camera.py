@@ -10,12 +10,66 @@ import numpy
 import scipy
 import time
 
-CLASS_NAME = 'CameraDevice'
+# An instance of this class is created if no real cameras are found by depot.
+CLASS_NAME = 'DummyCameraDevice'
 
 
-## List of valid image size strings.
-IMAGE_SIZES = ['512x512', '512x256', '512x128']
+## CameraDevice subclasses Device with some additions appropriate
+# to any camera.
+class CameraDevice(device.Device):
+    from collections import namedtuple
+    from numpy import rot90, flipud, fliplr
 
+
+    # Tuple of booleans: what transforms do we need to apply to recieved data?
+    # A derived class should set the state of each according to the camera
+    # position and orientation.
+    Transform = namedtuple('Transform', 'rot90, flip_h, flip_v')
+
+
+    def __init__(self, camConfig):
+        super(CameraDevice, self).__init__()
+        self.name = camConfig.get('label')
+        # Set transform according to config, or default to null transform.
+        transform = camConfig.get('transform', '')
+        if not transform:
+            self.transform = self.Transform(None, None, None)
+        else:
+            self.transform = self.Transform(*camConfig.get('transform'))
+
+
+    def orient(self, image):
+        """Apply transforms to an image to put it in the correction orientation."""
+        transform = self.transform
+        if transform.rot90:
+            numpy.rot90(image, transform.rot90)
+        if transform.flip_h:
+            numpy.fliplr(image)
+        if transform.flip_v:
+            numpy.flipud(image)
+
+
+from config import CAMERAS
+class CameraManager(device.Device):
+    """A class to manage camera devices in cockpit."""
+    def __init__(self):
+        super(CameraManager, self).__init__()
+        self.priority = 100
+        self.cameras = []
+
+        for name, camConfig in CAMERAS.iteritems():
+            camType = camConfig.get('model', '')
+            if camType and camType in self._SUPPORTED_CAMERAS:
+                self.cameras.append(self._CAMERA_CLASS(camConfig))
+        self.isActive = len(self.cameras) > 0
+
+
+    def getHandlers(self):
+        """Aggregate and return handlers from managed cameras."""
+        result = []
+        for camera in self.cameras:
+            result.append(camera.getHandlers())
+        return result
 
 
 ## An important clarification about this system: normally the assumption is that
@@ -24,7 +78,7 @@ IMAGE_SIZES = ['512x512', '512x256', '512x128']
 # has taken an image and send it to us here, at which point it is propagated
 # to the rest of the cockpit. Because this is a dummy camera, we don't have
 # exactly that system in place.
-class CameraDevice(device.Device):
+class DummyCameraDevice(device.Device):
     def __init__(self):
         device.Device.__init__(self)
         ## Mapping of camera name to that camera's image size in pixels 
@@ -41,10 +95,10 @@ class CameraDevice(device.Device):
         self.numBars = 16
         # Set priority to Inf to indicate that this is a dummy device.
         self.priority = float('inf')
-        self.deviceType = 'camera'
+        self.deviceType = "camera"
 
 
-    def initialize(self):
+    def performSubscriptions(self):
         events.subscribe("dummy take image", self.onDummyImage)
 
 
