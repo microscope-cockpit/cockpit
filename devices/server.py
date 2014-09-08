@@ -8,6 +8,8 @@ import handlers.server
 import util.logger
 import util.threads
 
+from config import config
+
 CLASS_NAME = 'CockpitServer'
 
 
@@ -24,7 +26,10 @@ class CockpitServer(device.Device):
         # priority is 100.
         self.priority = 10
         ## IP address of the cockpit computer.
-        self.ipAddress = '192.168.12.2'
+        if config.has_option('server', 'ipAddress'):
+            self.ipAddress = config.get('server', 'ipAddress')
+        else:
+            self.ipAddress = '127.0.0.1'
         ## Name used to represent us to the outside world.
         self.name = 'mui'
         ## Auto-incrementing port ID.
@@ -44,12 +49,16 @@ class CockpitServer(device.Device):
     # on the appropriate port; those calls will be forwarded to
     # the registered function. Return a URI used to connect to that
     # daemon from outside.
-    def register(self, func):
+    def register(self, func, localIP = None):
         self.uniquePortID += 1
-        daemon = ServerDaemon(self.name, func, self.uniquePortID, self.ipAddress)
+        ipAddress = self.ipAddress
+        if localIP is not None:
+            # Use the alternate address instead.
+            ipAddress = localIP
+        daemon = ServerDaemon(self.name, func, self.uniquePortID, ipAddress)
         self.funcToDaemon[func] = daemon
         daemon.serve()
-        return 'PYRO:%s@%s:%d' % (self.name, self.ipAddress, self.uniquePortID)
+        return 'PYRO:%s@%s:%d' % (self.name, ipAddress, self.uniquePortID)
 
 
     ## Stop a daemon.
