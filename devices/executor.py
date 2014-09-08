@@ -14,7 +14,7 @@ class ExperimentExecutorDevice(device.Device):
         device.Device.__init__(self)
         # Set priority to Inf to indicate that this is a dummy device.
         self.priority = float('inf')
-        self.deviceType = 'executor'
+        self.deviceType = 'experiment executor'
 
     
     ## Generate an ExperimentExecutor handler.
