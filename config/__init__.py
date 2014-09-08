@@ -10,6 +10,14 @@ name appears in another file.
 import os
 from ConfigParser import ConfigParser
 
+class MyConfigParser(ConfigParser):
+	def get(self, section, option, default=None):
+		if self.has_option(section, option) or default is None:
+			return  ConfigParser.get(self, section, option)
+		else:
+			return default
+
+
 _path = __path__[0]
 _files = [os.path.sep.join([_path, file])
             for file in os.listdir(_path) if file.endswith('.conf')]
@@ -21,7 +29,7 @@ try:
 except:
     pass
 
-config = ConfigParser()
+config = MyConfigParser()
 config.read(_files)
 
 try:
