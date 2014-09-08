@@ -22,6 +22,12 @@ CLASS_NAME = 'DummyDrawerDevice'
 
 
 class DummyDrawerDevice(device.Device):
+    def __init__(self):
+        device.Device.__init__(self)
+        # Set priority to Inf to indicate that this is a dummy device.
+        self.priority = float('inf')
+        self.deviceType = 'drawer'
+
     def getHandlers(self):
         # Note that these names have to be the same as the names used for the
         # CameraHandler instances created by other devices.

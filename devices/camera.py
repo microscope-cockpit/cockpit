@@ -39,6 +39,12 @@ class CameraDevice(device.Device):
         self.imageCount = 0
         ## Number of bars in the test image
         self.numBars = 16
+        # Set priority to Inf to indicate that this is a dummy device.
+        self.priority = float('inf')
+        self.deviceType = 'camera'
+
+
+    def initialize(self):
         events.subscribe("dummy take image", self.onDummyImage)
 
 

@@ -10,8 +10,14 @@ import handlers.imager
 CLASS_NAME = 'DummyImagerDevice'
 
 
-
 class DummyImagerDevice(device.Device):
+    def __init__(self):
+        device.Device.__init__(self)
+        # Set priority to Inf to indicate that this is a dummy device.
+        self.priority = float('inf')
+        self.deviceType = 'imager'
+
+
     ## We control which light sources are active, as well as a set of 
     # stage motion piezos. 
     def getHandlers(self):

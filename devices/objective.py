@@ -19,6 +19,13 @@ OBJECTIVE_PIXEL_SIZES = {
 CLASS_NAME = 'ObjectiveDevice'
 
 class ObjectiveDevice(device.Device):
+    def __init__(self):
+        device.Device.__init__(self)
+        # Set priority to Inf to indicate that this is a dummy device.
+        self.priority = float('inf')
+        self.deviceType = 'objective'
+
+
     def getHandlers(self):
         return [handlers.objective.ObjectiveHandler("objective", 
                 "miscellaneous", OBJECTIVE_PIXEL_SIZES, "100xOil")]

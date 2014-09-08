@@ -16,6 +16,7 @@ class DummyZStage(device.Device):
         self.deviceType = "stage positioner"
         self.axes = [2]
 
+
     def initialize(self):
         # At this point we would normally get the true stage position from
         # the actual device, but of course we have no such device.
