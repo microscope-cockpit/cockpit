@@ -23,7 +23,7 @@ import threading
 import time
 import wx
 
-import device
+import camera
 import events
 import handlers.camera
 import gui.guiUtils
@@ -41,7 +41,7 @@ DEFAULT_TRIGGER = 'TRIGGER_AFTER'
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
 
 
-class AndorCameraDevice(device.CameraDevice):
+class AndorCameraDevice(camera.CameraDevice):
     """A class to control Andor cameras via the pyAndor remote interface."""
     def __init__(self, camConfig):
         super(AndorCameraDevice, self).__init__(camConfig)
@@ -163,6 +163,6 @@ class AndorCameraDevice(device.CameraDevice):
         pass
 
 
-class CameraManager(device.CameraManager):
+class CameraManager(camera.CameraManager):
     _CAMERA_CLASS = AndorCameraDevice
     _SUPPORTED_CAMERAS = SUPPORTED_CAMERAS
