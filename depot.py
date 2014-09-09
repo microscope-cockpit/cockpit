@@ -51,7 +51,7 @@ class DeviceDepot:
     ## Return the number of device modules we have to work with.
     def getNumModules(self):
         return len(util.importer.getModulesFrom(DEVICE_FOLDER,
-                ['__init__', 'device']))
+                ['__init__', 'device', 'camera']))
 
 
     ## Instantiate all of the Device instances that front our hardware.
@@ -59,7 +59,7 @@ class DeviceDepot:
     # create a Device subclass from each (barring a few).
     def generateDevices(self):
         modules = util.importer.getModulesFrom(DEVICE_FOLDER, 
-                ['__init__', 'device'])
+                ['__init__', 'device', 'camera'])
         for module in modules:
             self.loadDeviceModule(module)
 
