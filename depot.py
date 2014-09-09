@@ -121,7 +121,7 @@ class DeviceDepot:
                 needDummy = False
 
             if ((device.deviceType == STAGE_POSITIONER)
-                & self.deviceTypeToHandlers.has_key(STAGE_POSITIONER) ):
+                and self.deviceTypeToHandlers.has_key(STAGE_POSITIONER) ):
                 # If we already have a handler for this axis, then
                 # we don't need the dummy handler.
                 try:
