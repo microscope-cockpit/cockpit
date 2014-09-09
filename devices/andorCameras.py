@@ -56,7 +56,8 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings = {}
         self.settings['exposureTime'] = 100
         self.settings['isWaterCooled'] = False
-        self.settings['targetTemperature'] = -40        
+        self.settings['targetTemperature'] = -40  
+        self.settings['EMGain'] = 0
 
 
     def cleanupAfterExperiment(self):
@@ -165,11 +166,42 @@ class AndorCameraDevice(camera.CameraDevice):
 
     ### UI stuff ###
     def makeUI(self, parent):
+        # self.panel = wx.Panel(parent)
+        # sizer = wx.BoxSizer(wx.VERTICAL)
+        # label = wx.StaticText(self.panel, -1, self.config['label'])
+        # label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        # sizer.Add(label)
+        # self.panel.SetSizerAndFit(sizer)
+        
+        # rowSizer = wx.BoxSizer(wx.HORIZONTAL)
+        # self.gainButton = gui.toggleButton.ToggleButton(
+        #     label='EM gain\n%d' % self.settings['EMGain'],
+        #     parent=self.panel, size=(168,100))
+        # rowSizer.Add(self.gainButton)
+        # sizer.Add(rowSizer)
+
         self.panel = wx.Panel(parent)
+        self.panel.SetBackgroundColour((170, 170, 170))
         sizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(self.panel, -1, self.config['label'])
-        label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        label = wx.StaticText(self.panel, -1,
+                              self.config['label'], 
+                              size=(128, 24),
+                              style=wx.ALIGN_CENTER)
+        label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         sizer.Add(label)
+        rowSizer = wx.BoxSizer(wx.VERTICAL)
+        self.gainButton = gui.toggleButton.ToggleButton(
+                label="EM Gain\n%d" % self.settings['EMGain'],
+                parent=self.panel, size=(128, 48))
+        #self.gainButton.Bind(wx.EVT_LEFT_DOWN, self.onGainButton)
+        rowSizer.Add(self.gainButton)
+        
+        self.ModeButton = gui.toggleButton.ToggleButton(
+                label="Mode:\n%s" % 'mode_desc',
+                parent=self.panel, size=(128,48))
+        # bind
+        rowSizer.Add(self.ModeButton)
+        sizer.Add(rowSizer)
         self.panel.SetSizerAndFit(sizer)
         return self.panel
 

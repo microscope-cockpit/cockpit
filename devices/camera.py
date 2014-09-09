@@ -64,16 +64,17 @@ class CameraManager(device.Device):
 
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        outerSizer = wx.BoxSizer(wx.VERTICAL)
         title = wx.StaticText(self.panel, -1, "Ixon Cameras")
         title.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        sizer.Add(title)
-        sizer.AddSpacer(12)
+        outerSizer.Add(title)
+        rowSizer = wx.BoxSizer(wx.HORIZONTAL)
         for cam in self.cameras:
             if hasattr(cam, 'makeUI'):
-                sizer.Add(cam.makeUI(self.panel))
-                sizer.AddSpacer(12)
-        self.panel.SetSizerAndFit(sizer)
+                rowSizer.Add(cam.makeUI(self.panel))
+                rowSizer.AddSpacer(12)
+        outerSizer.Add(rowSizer)
+        self.panel.SetSizerAndFit(outerSizer)
         return self.panel
 
 
