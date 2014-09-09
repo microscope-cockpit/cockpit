@@ -163,6 +163,17 @@ class AndorCameraDevice(camera.CameraDevice):
         pass
 
 
+    ### UI stuff ###
+    def makeUI(self, parent):
+        self.panel = wx.Panel(parent)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        label = wx.StaticText(self.panel, -1, self.config['label'])
+        label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        sizer.Add(label)
+        self.panel.SetSizerAndFit(sizer)
+        return self.panel
+
+
 class CameraManager(camera.CameraManager):
     _CAMERA_CLASS = AndorCameraDevice
     _SUPPORTED_CAMERAS = SUPPORTED_CAMERAS
