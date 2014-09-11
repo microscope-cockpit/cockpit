@@ -52,13 +52,14 @@ class AndorCameraDevice(camera.CameraDevice):
                 self.config.get('port'))
         self.object = None
         self.imageSizes = ['Full', '512x256', '512x128']
+        self.amplifierModes = None
         ## Initial values should be read in from the config file.
         self.settings = {}
         self.settings['exposureTime'] = 100
         self.settings['isWaterCooled'] = False
         self.settings['targetTemperature'] = -40  
         self.settings['EMGain'] = 0
-
+        self.settings['amplifierMode'] = None
 
     def cleanupAfterExperiment(self):
         # Restore settings as they were prior to experiment.
@@ -101,7 +102,7 @@ class AndorCameraDevice(camera.CameraDevice):
                 self.connection.connect(
                     lambda *args: self.receiveData(*args))
             except:
-                raise
+                raise Exception('Could not connect to camera %s' % name)
             else:
                 self.object = self.connection.connection
                 thread = gui.guiUtils.WaitMessageDialog(
@@ -111,12 +112,18 @@ class AndorCameraDevice(camera.CameraDevice):
                 thread.start()
                 try:
                     self.object.enable(self.settings)
+                    self.amplifierModes = self.object.get_amplifier_modes()
+                    # Wait for camera to show it is enabled.
                     while not self.object.enabled:
                         time.sleep(1)
+                    self.modeButton.Enable()
                 except:
                     raise
                 finally:
                     thread.shouldStop = True
+        else:
+            self.gainButton.Disable()
+            self.modeButton.Disable()
 
 
     def getExposureTime(self, name, isExact):
@@ -165,21 +172,53 @@ class AndorCameraDevice(camera.CameraDevice):
 
 
     ### UI stuff ###
-    def makeUI(self, parent):
-        # self.panel = wx.Panel(parent)
-        # sizer = wx.BoxSizer(wx.VERTICAL)
-        # label = wx.StaticText(self.panel, -1, self.config['label'])
-        # label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        # sizer.Add(label)
-        # self.panel.SetSizerAndFit(sizer)
-        
-        # rowSizer = wx.BoxSizer(wx.HORIZONTAL)
-        # self.gainButton = gui.toggleButton.ToggleButton(
-        #     label='EM gain\n%d' % self.settings['EMGain'],
-        #     parent=self.panel, size=(168,100))
-        # rowSizer.Add(self.gainButton)
-        # sizer.Add(rowSizer)
+    def onGainButton(self, event=None):
+        menu = wx.Menu()
+        menuID = 1
+        for value in range (0, 255, 10):
+            menu.Append(menuID, str(value))
+            wx.EVT_MENU(self.panel, menuID, lambda event, value=value: self.setGain(value))
+            menuID += 1
+        gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
+
+    def setGain(self, value):
+        self.settings['EMGain'] = value
+        self.object.update_settings(self.settings)
+        self.gainButton.SetLabel('EM Gain\n%d' % value)
+
+
+    def onModeButton(self, event=None):
+        menu = wx.Menu()
+        if not self.amplifierModes:
+            # Camera not enabled yet.
+            menu.Append(0, str('Camera not enabled.'))
+            wx.EVT_MENU(self.panel, 0, None)
+        else:
+            menuID = 0
+            for mode in self.amplifierModes:
+                menu.Append(menuID, mode['label'])
+                #wx.EVT_MENU(self.panel, menuID, lambda event, n=menuID:
+                #            self.setAmplifierMode(n))
+                wx.EVT_MENU(self.panel, menuID, lambda event, m=mode:
+                            self.setAmplifierMode(m))
+                menuID += 1
+        gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+
+
+    def setAmplifierMode(self, mode):
+        self.object.set_amplifier_mode(mode)
+        if mode.get('amplifier'):
+            self.gainButton.SetLabel('EM Gain\noff')
+            self.gainButton.Disable()
+        else:
+            self.gainButton.SetLabel('EM Gain\n%d' % self.settings['EMGain'])
+            self.gainButton.Enable()
+        self.modeButton.SetLabel('Mode:\n%s' % mode['label'])
+        self.settings.update({'amplifierMode': mode})
+
+
+    def makeUI(self, parent):
         self.panel = wx.Panel(parent)
         self.panel.SetBackgroundColour((170, 170, 170))
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -193,16 +232,19 @@ class AndorCameraDevice(camera.CameraDevice):
         self.gainButton = gui.toggleButton.ToggleButton(
                 label="EM Gain\n%d" % self.settings['EMGain'],
                 parent=self.panel, size=(128, 48))
-        #self.gainButton.Bind(wx.EVT_LEFT_DOWN, self.onGainButton)
+        self.gainButton.Bind(wx.EVT_LEFT_DOWN, self.onGainButton)
         rowSizer.Add(self.gainButton)
         
-        self.ModeButton = gui.toggleButton.ToggleButton(
+        self.modeButton = gui.toggleButton.ToggleButton(
                 label="Mode:\n%s" % 'mode_desc',
                 parent=self.panel, size=(128,48))
-        # bind
-        rowSizer.Add(self.ModeButton)
+        self.modeButton.Bind(wx.EVT_LEFT_DOWN, self.onModeButton)
+        rowSizer.Add(self.modeButton)
         sizer.Add(rowSizer)
         self.panel.SetSizerAndFit(sizer)
+        # These buttons are enabled when the camera is enabled.
+        self.modeButton.Disable()
+        self.gainButton.Disable()
         return self.panel
 
 
