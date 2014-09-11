@@ -112,11 +112,39 @@ class AndorCameraDevice(camera.CameraDevice):
                 thread.start()
                 try:
                     self.object.enable(self.settings)
-                    self.amplifierModes = self.object.get_amplifier_modes()
                     # Wait for camera to show it is enabled.
                     while not self.object.enabled:
                         time.sleep(1)
+                    # Update our settings with the real settings. 
+                    remote_settings = self.object.get_settings()
+                    self.settings.update(remote_settings)
+                    
+                    # Get the list of available amplifier modes.
+                    self.amplifierModes = self.object.get_amplifier_modes()
+
+                    # Update our UI buttons.
                     self.modeButton.Enable()
+                    self.modeButton.SetLabel('Mode:\n%s' % 
+                            self.settings['amplifierMode']['label'])
+                    if self.settings['amplifierMode']['amplifier'] == 0:
+                        self.gainButton.Enable()
+                        self.gainButton.SetLabel('EM Gain:\n%d' %
+                                self.settings['EMGain'])
+
+                    # Update camera buttons
+                    self.modeButton.Enable()
+                    if not self.settings.get('amplifierMode', None):
+                        try:
+                            mode = self.object.get_settings()['amplifierMode']
+                        except:
+                            mode = None
+
+                        if mode:
+                            self.settings.update({'amplifierMode', mode})
+                            modeText = mode['label']
+                        else:
+                            modeText = '???'
+                        self.modeButton.SetLabel('Mode:\n%s' % modeText)
                 except:
                     raise
                 finally:
