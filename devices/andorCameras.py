@@ -35,7 +35,7 @@ from config import CAMERAS
 
 CLASS_NAME = 'CameraManager'
 SUPPORTED_CAMERAS = ['ixon', 'ixon_plus', 'ixon_ultra']
-DEFAULT_TRIGGER = 'TRIGGER_AFTER'
+DEFAULT_TRIGGER = 'TRIGGER_BEFORE'
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
@@ -150,6 +150,8 @@ class AndorCameraDevice(camera.CameraDevice):
                 finally:
                     thread.shouldStop = True
         else:
+            self.object.disable()
+            self.connection.disconnect()
             self.gainButton.Disable()
             self.modeButton.Disable()
 
@@ -182,7 +184,8 @@ class AndorCameraDevice(camera.CameraDevice):
         pass
 
 
-    def receiveData(self, name, action, *args):
+    def receiveData(self, action, *args):
+        print 'receiveData received %s' % action
         if action == 'new image':
             (image, timestamp) = args
             self.orient(image)
