@@ -54,8 +54,9 @@ class AndorCameraDevice(camera.CameraDevice):
         self.imageSizes = ['Full', '512x256', '512x128']
         self.amplifierModes = None
         ## Initial values should be read in from the config file.
+        self.cached_settings={}
         self.settings = {}
-        self.settings['exposureTime'] = 100
+        self.settings['exposureTime'] = 0.001
         self.settings['isWaterCooled'] = False
         self.settings['targetTemperature'] = -40  
         self.settings['EMGain'] = 0
@@ -63,6 +64,7 @@ class AndorCameraDevice(camera.CameraDevice):
 
     def cleanupAfterExperiment(self):
         # Restore settings as they were prior to experiment.
+        self.settings.update(cached_settings)
         self.object.enable(self.settings)
 
 
@@ -99,16 +101,13 @@ class AndorCameraDevice(camera.CameraDevice):
         if shouldEnable:
             # Connect and set up callback.
             try:
-                self.connection.connect(
-                    lambda *args: self.receiveData(*args))
-            except:
-                raise Exception('Could not connect to camera %s' % name)
+                self.connection.connect(lambda *args: self.receiveData(*args))
+            except Exception as e:
+                print e
             else:
                 self.object = self.connection.connection
-                thread = gui.guiUtils.WaitMessageDialog(
-                    "Connecting to %s" % name,
-                    "Connecting ...",
-                    0.5)
+                thread = gui.guiUtils.WaitMessageDialog("Connecting to %s" % name,
+                                                        "Connecting ...", 0.5)
                 thread.start()
                 try:
                     self.object.enable(self.settings)
@@ -116,35 +115,14 @@ class AndorCameraDevice(camera.CameraDevice):
                     while not self.object.enabled:
                         time.sleep(1)
                     # Update our settings with the real settings. 
-                    remote_settings = self.object.get_settings()
-                    self.settings.update(remote_settings)
+                    self.settings.update(self.object.get_settings())
                     
                     # Get the list of available amplifier modes.
                     self.amplifierModes = self.object.get_amplifier_modes()
 
                     # Update our UI buttons.
-                    self.modeButton.Enable()
-                    self.modeButton.SetLabel('Mode:\n%s' % 
-                            self.settings['amplifierMode']['label'])
-                    if self.settings['amplifierMode']['amplifier'] == 0:
-                        self.gainButton.Enable()
-                        self.gainButton.SetLabel('EM Gain:\n%d' %
-                                self.settings['EMGain'])
+                    self.updateUI()
 
-                    # Update camera buttons
-                    self.modeButton.Enable()
-                    if not self.settings.get('amplifierMode', None):
-                        try:
-                            mode = self.object.get_settings()['amplifierMode']
-                        except:
-                            mode = None
-
-                        if mode:
-                            self.settings.update({'amplifierMode', mode})
-                            modeText = mode['label']
-                        else:
-                            modeText = '???'
-                        self.modeButton.SetLabel('Mode:\n%s' % modeText)
                 except:
                     raise
                 finally:
@@ -170,7 +148,11 @@ class AndorCameraDevice(camera.CameraDevice):
 
 
     def getSavefileInfo(self, name):
-        pass
+        if self.amplfierMode.get('amplifier') == 0:
+            gain = 'EM %d' % self.settings.get('EMGain')
+        else:
+            gain = 'Conv'
+        return "%s: %s gain, %s image" % (name, gain, '512x512')
 
 
     def getTimeBetweenExposures(self, name, isExact):
@@ -181,6 +163,10 @@ class AndorCameraDevice(camera.CameraDevice):
 
 
     def prepareForExperiment(self, name, experiment):
+        self.cached_settings.update(self.settings)
+        self.object.abort()
+        self.setExposureTime(name, 0)
+
         pass
 
 
@@ -194,7 +180,7 @@ class AndorCameraDevice(camera.CameraDevice):
 
     def setExposureTime(self, name, exposureTime):
         # Camera uses times in s; cockpit uses ms.
-        self.settings['exposureTime'] = exposureTime
+        self.settings['exposureTime'] = exposureTime / 1000.0
         self.set_exposure_time(exposureTime / 1000.0)
 
 
@@ -238,15 +224,10 @@ class AndorCameraDevice(camera.CameraDevice):
 
 
     def setAmplifierMode(self, mode):
-        self.object.set_amplifier_mode(mode)
-        if mode.get('amplifier'):
-            self.gainButton.SetLabel('EM Gain\noff')
-            self.gainButton.Disable()
-        else:
-            self.gainButton.SetLabel('EM Gain\n%d' % self.settings['EMGain'])
-            self.gainButton.Enable()
-        self.modeButton.SetLabel('Mode:\n%s' % mode['label'])
-        self.settings.update({'amplifierMode': mode})
+        setting = {'amplifierMode': mode}
+        self.object.update_settings(setting)
+        self.settings.update(setting)
+        self.updateUI()
 
 
     def makeUI(self, parent):
@@ -277,6 +258,30 @@ class AndorCameraDevice(camera.CameraDevice):
         self.modeButton.Disable()
         self.gainButton.Disable()
         return self.panel
+
+
+    def updateUI(self):
+        self.modeButton.Enable()
+        self.modeButton.SetLabel('Mode:\n%s' % 
+                                  self.settings['amplifierMode']['label'])
+        if self.settings['amplifierMode']['amplifier'] == 0:
+            self.gainButton.Enable()
+            self.gainButton.SetLabel('EM Gain:\n%d' % self.settings['EMGain'])
+
+        if not self.settings.get('amplifierMode', None):
+            try:
+                mode = self.object.get_settings()['amplifierMode']
+            except:
+                mode = None
+
+            if mode:
+                self.settings.update({'amplifierMode', mode})
+                modeText = mode['label']
+            else:
+                modeText = '???'
+            self.modeButton.SetLabel('Mode:\n%s' % modeText)
+
+
 
 
 class CameraManager(camera.CameraManager):
