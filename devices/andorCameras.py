@@ -8,7 +8,7 @@ CameraManager to keep track of one or more CameraDevices, which
 means that inheritance can be used for different camera types.
 
 All the handler functions are called with (self, name, *args...).
-Since we make calls to instance methods here, we don't need 'name', 
+Since we make calls to instance methods here, we don't need 'name',
 but it is left in the call so that we can continue to use camera
 modules that rely on dictionaries.
 
@@ -36,6 +36,10 @@ from config import CAMERAS
 CLASS_NAME = 'CameraManager'
 SUPPORTED_CAMERAS = ['ixon', 'ixon_plus', 'ixon_ultra']
 DEFAULT_TRIGGER = 'TRIGGER_BEFORE'
+COLOUR = {'grey': (170, 170, 170),
+          'green': (32, 128, 32),
+        }
+
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
@@ -58,17 +62,20 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings = {}
         self.settings['exposureTime'] = 0.001
         self.settings['isWaterCooled'] = False
-        self.settings['targetTemperature'] = -40  
+        self.settings['targetTemperature'] = -40
         self.settings['EMGain'] = 0
         self.settings['amplifierMode'] = None
+        self.enabled = False
+
 
     def cleanupAfterExperiment(self):
-        # Restore settings as they were prior to experiment.
+        """Restore settings as they were prior to experiment."""
         self.settings.update(cached_settings)
         self.object.enable(self.settings)
 
 
     def performSubscriptions(self):
+        """Perform subscriptions for this camera."""
         events.subscribe('cleanup after experiment',
                 self.cleanupAfterExperiment)
 
@@ -77,26 +84,27 @@ class AndorCameraDevice(camera.CameraDevice):
         """Return camera handlers."""
         trigger = globals().get(
                 # find in config
-                self.config.get('trigger', ''), 
+                self.config.get('trigger', ''),
                 # or default to
                 DEFAULT_TRIGGER)
 
         result = handlers.camera.CameraHandler(
-                "%s" % self.config.get('label'), "iXon camera", 
-                {'setEnabled': self.enableCamera, 
-                    'getImageSize': self.getImageSize, 
-                    'getTimeBetweenExposures': self.getTimeBetweenExposures, 
+                "%s" % self.config.get('label'), "iXon camera",
+                {'setEnabled': self.enableCamera,
+                    'getImageSize': self.getImageSize,
+                    'getTimeBetweenExposures': self.getTimeBetweenExposures,
                     'prepareForExperiment': self.prepareForExperiment,
                     'getExposureTime': self.getExposureTime,
                     'setExposureTime': self.setExposureTime,
                     'getImageSizes': self.getImageSizes,
-                    'setImageSize': self.setImageSize, 
+                    'setImageSize': self.setImageSize,
                     'getSavefileInfo': self.getSavefileInfo},
                 trigger)
         return result
 
 
     def enableCamera(self, name, shouldEnable):
+        """Enable the hardware."""
         trigger = self.config.get('trigger', DEFAULT_TRIGGER)
         if shouldEnable:
             # Connect and set up callback.
@@ -109,45 +117,47 @@ class AndorCameraDevice(camera.CameraDevice):
                 thread = gui.guiUtils.WaitMessageDialog("Connecting to %s" % name,
                                                         "Connecting ...", 0.5)
                 thread.start()
-                try:
-                    self.object.enable(self.settings)
-                    # Wait for camera to show it is enabled.
-                    while not self.object.enabled:
-                        time.sleep(1)
-                    # Update our settings with the real settings. 
-                    self.settings.update(self.object.get_settings())
-                    
-                    # Get the list of available amplifier modes.
-                    self.amplifierModes = self.object.get_amplifier_modes()
 
-                    # Update our UI buttons.
-                    self.updateUI()
+                self.object.enable(self.settings)
+                # Wait for camera to show it is enabled.
+                while not self.object.enabled:
+                    time.sleep(1)
 
-                except:
-                    raise
-                finally:
-                    thread.shouldStop = True
+                # Update our settings with the real settings.
+                self.settings.update(self.object.get_settings())
+
+                # Get the list of available amplifier modes.
+                self.amplifierModes = self.object.get_amplifier_modes()
+
+                thread.shouldStop = True
+                self.enabled = True
         else:
+            self.enabled = False
             self.object.disable()
             self.connection.disconnect()
-            self.gainButton.Disable()
-            self.modeButton.Disable()
+
+        # Finally, udate our UI buttons.
+        self.updateUI()
 
 
     def getExposureTime(self, name, isExact):
+        """Read the real exposure time from the camera."""
         # Camera uses times in s; cockpit uses ms.
         return self.object.get_exposure_time() * 1000.0
 
 
     def getImageSize(self, name):
+        """Read the image size from the camera."""
         return self.object.get_image_size()
 
 
     def getImageSizes(self, name):
+        """Return a list of available image sizes."""
         return self.imageSizes
 
 
     def getSavefileInfo(self, name):
+        """Return an info string describing the measurement."""
         if self.amplfierMode.get('amplifier') == 0:
             gain = 'EM %d' % self.settings.get('EMGain')
         else:
@@ -156,21 +166,23 @@ class AndorCameraDevice(camera.CameraDevice):
 
 
     def getTimeBetweenExposures(self, name, isExact):
-        ## Get the amount of time that must pass after stopping one exposure
-        # before another can be started, in milliseconds.
+        """Get the amount of time between exposures.
+
+        This is the time that must pass after stopping one exposure
+        before another can be started, in milliseconds."""
         # Camera uses time in s; cockpit uses ms.
         return self.object.get_min_time_between_exposures() * 1000.0
 
 
     def prepareForExperiment(self, name, experiment):
+        """Make the hardware ready for an experiment."""
         self.cached_settings.update(self.settings)
         self.object.abort()
         self.setExposureTime(name, 0)
 
-        pass
-
 
     def receiveData(self, action, *args):
+        """This function is called when data is received from the hardware."""
         print 'receiveData received %s' % action
         if action == 'new image':
             (image, timestamp) = args
@@ -179,9 +191,12 @@ class AndorCameraDevice(camera.CameraDevice):
 
 
     def setExposureTime(self, name, exposureTime):
+        """Set the exposure time."""
         # Camera uses times in s; cockpit uses ms.
-        self.settings['exposureTime'] = exposureTime / 1000.0
-        self.set_exposure_time(exposureTime / 1000.0)
+        self.settings.update({'exposureTime': exposureTime / 1000.0})
+        # Apply the change right now if the camera is enabled.
+        if self.enabled:
+            self.object.update_settings(settings)
 
 
     def setImageSize(self, name, imageSize):
@@ -200,16 +215,18 @@ class AndorCameraDevice(camera.CameraDevice):
 
 
     def setGain(self, value):
-        self.settings['EMGain'] = value
-        self.object.update_settings(self.settings)
-        self.gainButton.SetLabel('EM Gain\n%d' % value)
+        self.settings.update({'EMGain': value})
+        # Apply the change now if the camera is enabled.
+        if self.enabled:
+            self.object.update_settings(self.settings)
+        self.updateUI()
 
 
     def onModeButton(self, event=None):
         menu = wx.Menu()
         if not self.amplifierModes:
             # Camera not enabled yet.
-            menu.Append(0, str('Camera not enabled.'))
+            menu.Append(0, str('No modes known - camera never enabled.'))
             wx.EVT_MENU(self.panel, 0, None)
         else:
             menuID = 0
@@ -224,64 +241,81 @@ class AndorCameraDevice(camera.CameraDevice):
 
 
     def setAmplifierMode(self, mode):
-        setting = {'amplifierMode': mode}
-        self.object.update_settings(setting)
-        self.settings.update(setting)
+        self.settings.update({'amplifierMode': mode})
+        # Apply the change right now if camera is enabled.
+        if self.enabled:
+            self.object.update_settings(self.settings)
         self.updateUI()
 
 
+    ### UI functions ###
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
-        self.panel.SetBackgroundColour((170, 170, 170))
+        self.panel.SetBackgroundColour(COLOUR['grey'])
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(self.panel, -1,
-                              self.config['label'], 
+                              self.config['label'],
                               size=(128, 24),
                               style=wx.ALIGN_CENTER)
         label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         sizer.Add(label)
         rowSizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.modeButton = gui.toggleButton.ToggleButton(
+                label="Mode:\n%s" % 'mode_desc',
+                parent=self.panel, size=(128,48))
+        self.modeButton.Bind(wx.EVT_LEFT_DOWN, self.onModeButton)
+        rowSizer.Add(self.modeButton)
+
         self.gainButton = gui.toggleButton.ToggleButton(
                 label="EM Gain\n%d" % self.settings['EMGain'],
                 parent=self.panel, size=(128, 48))
         self.gainButton.Bind(wx.EVT_LEFT_DOWN, self.onGainButton)
         rowSizer.Add(self.gainButton)
         
-        self.modeButton = gui.toggleButton.ToggleButton(
-                label="Mode:\n%s" % 'mode_desc',
-                parent=self.panel, size=(128,48))
-        self.modeButton.Bind(wx.EVT_LEFT_DOWN, self.onModeButton)
-        rowSizer.Add(self.modeButton)
         sizer.Add(rowSizer)
         self.panel.SetSizerAndFit(sizer)
-        # These buttons are enabled when the camera is enabled.
-        self.modeButton.Disable()
-        self.gainButton.Disable()
         return self.panel
 
 
     def updateUI(self):
-        self.modeButton.Enable()
-        self.modeButton.SetLabel('Mode:\n%s' % 
-                                  self.settings['amplifierMode']['label'])
-        if self.settings['amplifierMode']['amplifier'] == 0:
-            self.gainButton.Enable()
-            self.gainButton.SetLabel('EM Gain:\n%d' % self.settings['EMGain'])
-
-        if not self.settings.get('amplifierMode', None):
+        # If there is no local amplifierMode
+        mode = self.settings.get('amplifierMode', None)
+        if not mode:
             try:
+                # try to read it from the hardware
                 mode = self.object.get_settings()['amplifierMode']
             except:
                 mode = None
 
-            if mode:
-                self.settings.update({'amplifierMode', mode})
-                modeText = mode['label']
-            else:
-                modeText = '???'
-            self.modeButton.SetLabel('Mode:\n%s' % modeText)
+        # If we succeeded in retrieving a mode ...
+        if mode:
+            # fetch the mode description ...
+            modeString = mode['label']
+            # and figure out of it uses EM.
+            modeIsEM = mode['amplifier'] == 0
+        else:
+            # Otherwise, show that we have no mode description ...
+            modeString = '???'
+            # and assume no EM.
+            modeIsEM = False
 
+        # Light up the mode button if the camera is active.
+        if self.enabled:
+            self.modeButton.setActive(True)
+        else:
+            self.modeButton.setActive(False)
 
+        # Light up the gain button if camera is active and mode uses EM.
+        if modeIsEM and self.enabled:
+            self.gainButton.setActive(True)
+        else:
+            self.gainButton.setActive(False)
+
+        # Labels must be set after setActive call, or the original
+        # label persists.
+        self.modeButton.SetLabel('Mode:\n%s' % modeString)
+        self.gainButton.SetLabel('EM Gain:\n%d' % self.settings['EMGain'])
 
 
 class CameraManager(camera.CameraManager):
