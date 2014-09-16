@@ -158,27 +158,38 @@ class AndorCameraDevice(camera.CameraDevice):
 
     def getSavefileInfo(self, name):
         """Return an info string describing the measurement."""
-        if self.amplfierMode.get('amplifier') == 0:
+        if self.settings.get('amplifierMode').get('amplifier') == 0:
             gain = 'EM %d' % self.settings.get('EMGain')
         else:
             gain = 'Conv'
         return "%s: %s gain, %s image" % (name, gain, '512x512')
 
 
-    def getTimeBetweenExposures(self, name, isExact):
+    def getTimeBetweenExposures(self, name, isExact=False):
         """Get the amount of time between exposures.
 
         This is the time that must pass after stopping one exposure
         before another can be started, in milliseconds."""
         # Camera uses time in s; cockpit uses ms.
-        return self.object.get_min_time_between_exposures() * 1000.0
+        t = self.object.get_min_time_between_exposures() * 1000.0
+        if isExact:
+            result = decimal.Decimal(t)
+        else:
+            result = t
+        return result
 
 
     def prepareForExperiment(self, name, experiment):
         """Make the hardware ready for an experiment."""
         self.cached_settings.update(self.settings)
         self.object.abort()
+        self.object.enable()
         self.setExposureTime(name, 0)
+        # Since we'll be in frame-transfer mode, we'll be accumulating light
+        # until the next external trigger. This causes a lot of background in
+        # the first image. So we'll trigger the first image immediately before
+        # starting the experiment (or as close-to as possible) and discard it.
+        self.object.skip_images(next=1)
 
 
     def receiveData(self, action, *args):
@@ -196,7 +207,7 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings.update({'exposureTime': exposureTime / 1000.0})
         # Apply the change right now if the camera is enabled.
         if self.enabled:
-            self.object.update_settings(settings)
+            self.object.update_settings(self.settings)
 
 
     def setImageSize(self, name, imageSize):
