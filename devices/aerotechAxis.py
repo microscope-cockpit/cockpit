@@ -138,6 +138,7 @@ class AerotechZStage(device.Device):
 
     ## Move the stage to a given position.
     def moveAbsolute(self, axis, pos):
+        self.command('ENABLE')
         self.command('MOVEABS D %f F %f'
                         % (pos / 1000, self.speed))
         events.publish('stage mover', '%d mover' % axis, axis, self.position)
@@ -151,6 +152,7 @@ class AerotechZStage(device.Device):
 
     ## Move the stage piezo by a given delta.
     def moveRelative(self, axis, delta):
+        self.command('ENABLE')
         self.command('MOVEINC D %f F %f'
                         % (delta / 1000, self.speed))
         events.publish('stage mover', '%d mover' % axis, axis, self.position)
