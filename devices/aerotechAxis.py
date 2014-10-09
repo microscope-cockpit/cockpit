@@ -178,9 +178,9 @@ class AerotechZStage(device.Device):
         # acceleration mm/s**2
         a = self.acceleration
         # displacement - passed as um
-        dS = (start - end) / 1000.0
+        dS = abs(start - end) / 1000.0
         # acceleration / braking distance
-        S_acc = 0.5 * speed**2 / acceleration
+        S_acc = 0.5 * v**2 / a
         
         # Determine time required for move, in ms.
         if dS < 2 * S_acc:
