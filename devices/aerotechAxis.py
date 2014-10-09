@@ -1,0 +1,216 @@
+## This module creates a simple stage-positioning device.
+
+import depot
+import device
+import events
+import handlers.stagePositioner
+
+import functools
+import socket
+from time import sleep
+
+from config import config
+
+CLASS_NAME = 'AerotechZStage'
+CONFIG_NAME = 'aerotech'
+
+## Characters used by the SoloistCP controller.
+# CommandTerminatingCharacter
+CTC = chr(10)
+# CommandSuccessCharacter
+CSC = chr(37)
+# CommandInvalidCharacter
+CIC = chr(33)
+# CommandFaultCharacter
+CFC = chr(35)
+# CommandTimeOutCharacter
+CTOC = chr(36)
+# Map character to meaning
+REPSONSE_CHARS = {
+    CSC: 'command success',
+    CIC: 'command invalid',
+    CFC: 'command caused fault',
+    CTOC: 'command timeout',
+    }
+
+
+class AerotechZStage(device.Device):
+    def __init__(self):
+        device.Device.__init__(self)
+        if config.has_section(CONFIG_NAME):
+            # Enable in depot.
+            self.enabled = True
+            # IP address of the controller.
+            self.ipAddress = config.get(CONFIG_NAME, ipAddress)   
+            # Controller port.
+            self.port = config.get(CONFIG_NAME, port)
+            # Subscribe to abort events.
+            events.subscribe('user abort', self.onAbort)
+            # The cockpit axis does this stage moves along.
+            self.axis = config.get(CONFIG_NAME, axis)
+            # Socket used to communicate with controller.
+            self.socket = None
+            # Last known position (microns)
+            self.position = None
+            # Axis acceleration (mm / s^2)
+            self.acceleration = 200
+            # Axis maximum speed (mm / s^2)
+            self.speed = 20
+
+    
+    ## Send a command to the Aerotech SoloistCP and fetch the response.
+    def command(self, cmd):
+        # The terminated command string.
+        cmdstr = cmd + CTC
+        # A flag indicating that a retry is needed.
+        retry = False
+
+        ## Try to send the command.
+        try:
+            self.socket.send(cmdstr)
+        except socket.error as e:
+            retry = True
+        except:
+            raise
+
+        ## Was there a connection error?
+        if retry:
+            self.openConnection()
+            try:
+                self.socket.send(cmdstr)
+            except:
+                raise
+
+        ## Fetch and parse the response
+        response = socket.recv(256)
+        # Response status character:
+        response_char = response[0]
+        # Response data:
+        response_data = response[1:]
+        
+        # Did the controlle report a problem?
+        if response_char != CTC:
+            raise Exception('Aerotech controller error - %s.' 
+                            % RESPONSE_CHARS[response_char])
+        else:
+            return response_data
+
+       
+    def getHandlers(self):
+        result = []
+        axis = self.axis
+        minVal = 0
+        maxVal = 25000
+        handler = handlers.stagePositioner.PositionerHandler(
+            "%d mover" % axis, "%d stage motion" % axis, True, 
+            {'moveAbsolute': self.moveAbsolute,
+                'moveRelative': self.moveRelative, 
+                'getPosition': self.getPosition, 
+                'getMovementTime': self.getMovementTime,
+                'cleanupAfterExperiment': self.cleanup,
+                'setSafety': self.setSafety},
+                axis, [.01, .05, .1, .5, 1, 5, 10, 50, 100, 500, 1000, 5000],
+                2, (minVal, maxVal), (minVal, maxVal))
+        result.append(handler)
+        return result
+    
+    
+    ## Initialize the axis.
+    def initialize(self):
+        # Open a connection to the controller.
+        self.openConnection()
+        self.position = self.command('CMDPOS')
+
+
+    ## Publish our current position.
+    def makeInitialPublications(self):
+        axis = self.axis
+        events.publish('stage mover', '%d mover' % axis, axis,
+                self.position)
+
+
+    ## User clicked the abort button; stop moving.
+    def onAbort(self):
+        self.command('ABORT')
+        axis = self.axis
+        events.publish('stage stopped', '%d mover' % axis)
+
+
+    ## Move the stage to a given position.
+    def moveAbsolute(self, axis, pos):
+        self.command('MOVEABS D %d F %d' 
+                        % (pos / 1000, self.speed))
+        events.publish('stage mover', '%d mover' % axis, axis, self.position)
+        # Wait until the move has finished - status bit 2 is InPosition.
+        while not int(self.command('AXISSTATUS')) & (1 << 2):
+            sleep(0.1)
+        self.position = self.command('CMDPOS')
+        events.publish('stage mover', '%d mover' % axis, axis, self.position)
+        events.publish('stage stopped', '%d mover' % axis)
+
+
+    ## Move the stage piezo by a given delta.
+    def moveRelative(self, axis, delta):
+        self.command('MOVEINC D %d F %d' 
+                        % (delta / 1000, self.speed))
+        events.publish('stage mover', '%d mover' % axis, axis, self.position)
+        # Wait until the move has finished - status bit 2 is InPosition.
+        while not int(self.command('AXISSTATUS')) & (1 << 2):
+            sleep(0.1)
+        self.position = self.command('CMDPOS')
+        events.publish('stage mover', '%d mover' % axis, axis, self.position)
+        events.publish('stage stopped', '%d mover' % axis)
+
+
+    ## Get the current piezo position.
+    def getPosition(self, axis):
+        return self.position
+
+
+    ## Get the amount of time it would take the mover to move from the 
+    # initial position to the final position, as well
+    # as the amount of time needed to stabilize after that point, 
+    # both in milliseconds. This is needed when setting up timings for 
+    # experiments.
+    def getMovementTime(self, axis, start, end):
+        # top speed mm/s
+        v = self.speed
+        # acceleration mm/s**2
+        a = self.acceleration
+        # displacement - passed as um
+        dS = (start - end) / 1000.0
+        # acceleration / braking distance
+        S_acc = 0.5 * speed**2 / acceleration
+        
+        # Determine time required for move, in ms.
+        if dS < 2 * S_acc:
+            dt = 1000 * 2 * (dS / a)**0.5
+        else:
+            dt = 1000 * 2 * (2 * dS / a)**0.5 + (dS - 2 * S_acc) / v
+
+        # The stage slows gradually to a stop so settling time is small.
+        # Allow one or two servo cycles - servo rate is 1kHz.
+        return (dt, 2)
+
+
+    def openConnection(self):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.socket.connect((self.ipAddress, self.port))
+        except:
+            raise
+
+
+    ## Set the soft motion safeties for one of the movers. Note that the 
+    # PositionerHandler provides its own soft safeties on the cockpit side; 
+    # this function just allows you to propagate safeties to device control
+    # code, if applicable.
+    def setSafety(self, axis, value, isMax):
+        pass
+
+
+    ## Cleanup after an experiment. For a real mover, this would probably 
+    # just mean making sure we were back where we were before the experiment
+    # started.
+    def cleanup(self, axis, isCleanupFinal):
+        self.moveAbsolute(axis, self.position)
