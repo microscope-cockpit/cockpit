@@ -26,7 +26,7 @@ CFC = chr(35)
 # CommandTimeOutCharacter
 CTOC = chr(36)
 # Map character to meaning
-REPSONSE_CHARS = {
+RESPONSE_CHARS = {
     CSC: 'command success',
     CIC: 'command invalid',
     CFC: 'command caused fault',
@@ -82,14 +82,14 @@ class AerotechZStage(device.Device):
                 raise
 
         ## Fetch and parse the response
-        response = socket.recv(256)
+        response = self.socket.recv(256)
         # Response status character:
         response_char = response[0]
         # Response data:
         response_data = response[1:]
         
         # Did the controlle report a problem?
-        if response_char != CTC:
+        if response_char != CSC:
             raise Exception('Aerotech controller error - %s.' 
                             % RESPONSE_CHARS[response_char])
         else:
