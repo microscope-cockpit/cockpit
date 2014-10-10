@@ -192,6 +192,9 @@ class AerotechZStage(device.Device):
         else:
             dt = 1000 * ((dS / v) + (v / a))
 
+        # Add a few ms to allow for any network latency (measured at < 10ms).
+        dt += 10
+
         # The stage slows gradually to a stop so settling time is small.
         # Allow one or two servo cycles - servo rate is 1kHz.
         return (dt, 2)
