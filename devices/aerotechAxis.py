@@ -120,6 +120,8 @@ class AerotechZStage(device.Device):
         # Open a connection to the controller.
         self.openConnection()
         self.position = self.command('CMDPOS')
+        self.speed = int(self.command('GETPARM(71)'))
+        self.acceleration = int(self.command('GETPARM(72'))
 
 
     ## Publish our current position.
