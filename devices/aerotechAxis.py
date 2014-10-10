@@ -150,6 +150,7 @@ class AerotechZStage(device.Device):
         self.position = self.command('CMDPOS')
         events.publish('stage mover', '%d mover' % axis, axis, self.position)
         events.publish('stage stopped', '%d mover' % axis)
+        self.command ('DISABLE')
 
 
     ## Move the stage piezo by a given delta.
@@ -164,6 +165,7 @@ class AerotechZStage(device.Device):
         self.position = self.command('CMDPOS')
         events.publish('stage mover', '%d mover' % axis, axis, self.position)
         events.publish('stage stopped', '%d mover' % axis)
+        self.command ('DISABLE')
 
 
     ## Get the current piezo position.
