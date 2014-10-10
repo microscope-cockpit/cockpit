@@ -188,7 +188,7 @@ class AerotechZStage(device.Device):
         if dS < 2 * S_acc:
             dt = 1000 * 2 * (dS / a)**0.5
         else:
-            dt = 1000 * 2 * (2 * dS / a)**0.5 + (dS - 2 * S_acc) / v
+            dt = 1000 * ((dS / v) + (v / a))
 
         # The stage slows gradually to a stop so settling time is small.
         # Allow one or two servo cycles - servo rate is 1kHz.
