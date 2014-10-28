@@ -2,6 +2,7 @@
 
 import device
 from config import CAMERAS
+import wx
 
 ## CameraDevice subclasses Device with some additions appropriate
 # to any camera.
@@ -62,5 +63,20 @@ class CameraManager(device.Device):
 
 
     def makeUI(self, parent):
+        self.panel = wx.Panel(parent)
+        outerSizer = wx.BoxSizer(wx.VERTICAL)
+        title = wx.StaticText(self.panel, -1, "Ixon Cameras")
+        title.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        outerSizer.Add(title)
+        rowSizer = wx.BoxSizer(wx.HORIZONTAL)
+        for cam in self.cameras:
+            if hasattr(cam, 'makeUI'):
+                rowSizer.Add(cam.makeUI(self.panel))
+                rowSizer.AddSpacer(12)
+        outerSizer.Add(rowSizer)
+        self.panel.SetSizerAndFit(outerSizer)
+        return self.panel
+
+
         print "camera.CameraManager.makeUI"
         return None
