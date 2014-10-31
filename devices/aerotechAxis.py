@@ -128,7 +128,7 @@ class AerotechZStage(device.Device):
     ## Publish our current position.
     def makeInitialPublications(self):
         axis = self.axis
-        events.publish('stage mover', '%d $s' % (axis, NAME_STRING), axis,
+        events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis,
                 self.position)
 
 
@@ -171,7 +171,7 @@ class AerotechZStage(device.Device):
 
     ## Get the current piezo position.
     def getPosition(self, axis):
-        return self.position
+        return float(self.position)
 
 
     ## Get the amount of time it would take the mover to move from the 
