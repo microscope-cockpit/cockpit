@@ -41,13 +41,13 @@ class AerotechZStage(device.Device):
             # Enable in depot.
             self.enabled = True
             # IP address of the controller.
-            self.ipAddress = config.get(CONFIG_NAME, ipAddress)   
+            self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')   
             # Controller port.
-            self.port = config.get(CONFIG_NAME, port)
+            self.port = config.get(CONFIG_NAME, 'port')
             # Subscribe to abort events.
             events.subscribe('user abort', self.onAbort)
             # The cockpit axis does this stage moves along.
-            self.axis = config.get(CONFIG_NAME, axis)
+            self.axis = config.get(CONFIG_NAME, 'axis')
             # Socket used to communicate with controller.
             self.socket = None
             # Last known position (microns)
