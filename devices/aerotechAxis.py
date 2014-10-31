@@ -13,6 +13,7 @@ from config import config
 
 CLASS_NAME = 'AerotechZStage'
 CONFIG_NAME = 'aerotech'
+NAME_STRING = 'aerotech mover' 
 
 ## Characters used by the SoloistCP controller.
 # CommandTerminatingCharacter
@@ -43,11 +44,11 @@ class AerotechZStage(device.Device):
             # IP address of the controller.
             self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')   
             # Controller port.
-            self.port = config.get(CONFIG_NAME, 'port')
+            self.port = config.getint(CONFIG_NAME, 'port')
             # Subscribe to abort events.
             events.subscribe('user abort', self.onAbort)
             # The cockpit axis does this stage moves along.
-            self.axis = config.get(CONFIG_NAME, 'axis')
+            self.axis = config.getint(CONFIG_NAME, 'axis')
             # Socket used to communicate with controller.
             self.socket = None
             # Last known position (microns)
@@ -102,7 +103,7 @@ class AerotechZStage(device.Device):
         minVal = 0
         maxVal = 25000
         handler = handlers.stagePositioner.PositionerHandler(
-            "%d mover" % axis, "%d stage motion" % axis, True, 
+            "%d %s" % (axis, NAME_STRING), "%d stage motion" % axis, True, 
             {'moveAbsolute': self.moveAbsolute,
                 'moveRelative': self.moveRelative, 
                 'getPosition': self.getPosition, 
@@ -127,7 +128,7 @@ class AerotechZStage(device.Device):
     ## Publish our current position.
     def makeInitialPublications(self):
         axis = self.axis
-        events.publish('stage mover', '%d mover' % axis, axis,
+        events.publish('stage mover', '%d $s' % (axis, NAME_STRING), axis,
                 self.position)
 
 
@@ -135,7 +136,7 @@ class AerotechZStage(device.Device):
     def onAbort(self):
         self.command('ABORT')
         axis = self.axis
-        events.publish('stage stopped', '%d mover' % axis)
+        events.publish('stage stopped', '%d %s' % (axis, NAME_STRING))
 
 
     ## Move the stage to a given position.
@@ -143,12 +144,12 @@ class AerotechZStage(device.Device):
         self.command('ENABLE')
         self.command('MOVEABS D %f F %f'
                         % (pos / 1000, self.speed))
-        events.publish('stage mover', '%d mover' % axis, axis, self.position)
+        events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
         # Wait until the move has finished - status bit 2 is InPosition.
         while not int(self.command('AXISSTATUS')) & (1 << 2):
             sleep(0.1)
         self.position = self.command('CMDPOS')
-        events.publish('stage mover', '%d mover' % axis, axis, self.position)
+        events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
         events.publish('stage stopped', '%d mover' % axis)
         self.command ('DISABLE')
 
@@ -158,13 +159,13 @@ class AerotechZStage(device.Device):
         self.command('ENABLE')
         self.command('MOVEINC D %f F %f'
                         % (delta / 1000, self.speed))
-        events.publish('stage mover', '%d mover' % axis, axis, self.position)
+        events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
         # Wait until the move has finished - status bit 2 is InPosition.
         while not int(self.command('AXISSTATUS')) & (1 << 2):
             sleep(0.1)
         self.position = self.command('CMDPOS')
-        events.publish('stage mover', '%d mover' % axis, axis, self.position)
-        events.publish('stage stopped', '%d mover' % axis)
+        events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
+        events.publish('stage stopped', '%d %s' % (axis, NAME_STRING))
         self.command ('DISABLE')
 
 
