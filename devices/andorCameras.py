@@ -118,10 +118,13 @@ class AndorCameraDevice(camera.CameraDevice):
                                                         "Connecting ...", 0.5)
                 thread.start()
 
+                originalTimeout = self.object._pyroTimeout
+                self.object._pyroTimeout = 60
                 self.object.enable(self.settings)
                 # Wait for camera to show it is enabled.
-                while not self.object.enabled:
+                while not self.object.is_enabled():
                     time.sleep(1)
+                self.object._pyroTimeout = originalTimeout
 
                 # Update our settings with the real settings.
                 self.settings.update(self.object.get_settings())
