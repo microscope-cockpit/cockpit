@@ -9,6 +9,7 @@ import wx
 
 import Pyro4
 Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
+Pyro4.config.SERIALIZER = 'pickle'
 
 
 # We need these first to ensure that we can log failures during startup.
