@@ -78,5 +78,10 @@ class CameraManager(device.Device):
         return self.panel
 
 
+    def performSubscriptions(self):
+        for camera in self.cameras:
+            camera.performSubscriptions()
+
+
         print "camera.CameraManager.makeUI"
         return None
