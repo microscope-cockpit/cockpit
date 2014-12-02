@@ -70,8 +70,9 @@ class AndorCameraDevice(camera.CameraDevice):
 
     def cleanupAfterExperiment(self):
         """Restore settings as they were prior to experiment."""
-        self.settings.update(cached_settings)
-        self.object.enable(self.settings)
+        if self.enabled:
+            self.settings.update(self.cached_settings)
+            self.object.enable(self.settings)
 
 
     def performSubscriptions(self):
@@ -120,6 +121,7 @@ class AndorCameraDevice(camera.CameraDevice):
 
                 originalTimeout = self.object._pyroTimeout
                 self.object._pyroTimeout = 60
+                self.settings['frameTransfer'] = False
                 self.object.enable(self.settings)
                 # Wait for camera to show it is enabled.
                 while not self.object.is_enabled():
@@ -185,14 +187,15 @@ class AndorCameraDevice(camera.CameraDevice):
     def prepareForExperiment(self, name, experiment):
         """Make the hardware ready for an experiment."""
         self.cached_settings.update(self.settings)
+        self.settings['frameTransfer'] = True
         self.object.abort()
-        self.object.enable()
-        self.setExposureTime(name, 0)
+        self.object.enable(self.settings)
+        #self.setExposureTime(name, 0)
         # Since we'll be in frame-transfer mode, we'll be accumulating light
         # until the next external trigger. This causes a lot of background in
         # the first image. So we'll trigger the first image immediately before
         # starting the experiment (or as close-to as possible) and discard it.
-        self.object.skip_images(next=1)
+        #self.object.skip_images(next=1)
 
 
     def receiveData(self, action, *args):
