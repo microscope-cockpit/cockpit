@@ -36,6 +36,7 @@ class StanfordShutterDevice(device.Device):
                             self.onPrepareForExperiment)
             events.subscribe('experiment complete', 
                             self.onCleanupAfterExperiment)
+            events.subscribe('light source enable', self.onLightSourceEnable)
 
 
     def initialize(self):
@@ -52,6 +53,12 @@ class StanfordShutterDevice(device.Device):
         # Set the control mode to external level. The shutter will be open as
         # long as the external input is high.
         self.send("SRCE 2")
+
+
+    def onLightSourceEnable(self, handler, isEnabled):
+        if handler.name in self.controlledLightNames:
+            # Our light has been enabled.  Make sure that we respond to triggers.
+            self.enableTrigger()
 
 
     def onPrepareForExperiment(self, experiment):
