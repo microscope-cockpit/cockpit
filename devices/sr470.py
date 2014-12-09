@@ -48,11 +48,31 @@ class StanfordShutterDevice(device.Device):
 
 
     def enableTrigger(self):
-        # Set the shutter to 'normally closed'.
-        self.send("POLR 1")
+        # The SR470 has a 'normal' shutter state: open or closed. With external
+        # level triggering, the shutter is in the 'normal' state when the 
+        # external input is high. If we set the shutter to 'normally closed', a
+        # low logic level from the DSP will open it, but the DSP expects to send
+        # a logic high to trigger or enable a light.
+        # The simplest solution is to set the shutter to 'normally open' here.
+        # When we exit, we will assert that the shutter be closed for safety.
+        self.send("POLR 0")
         # Set the control mode to external level. The shutter will be open as
         # long as the external input is high.
         self.send("SRCE 2")
+        # Enable the shutter - wake from 'sleep' mode.
+        self.send("ENAB 1")
+
+
+    def onExit(self):
+        try:
+            # Reset the controller to close the shutter and revert to internal
+            # triggering.
+            self.send("*RST")
+            # Go to local mode to enable the front panel
+            self.send("LCAL")
+            self.connection.close()
+        except:
+            pass
 
 
     def onLightSourceEnable(self, handler, isEnabled):
