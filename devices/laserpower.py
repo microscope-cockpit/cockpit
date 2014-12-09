@@ -84,15 +84,22 @@ class LaserPowerDevice(device.Device):
         return result
                         
 
+    ## Things to do when cockpit exits.
+    def onExit(self):
+        # Turn off the lasers.
+        for name, connection in self.nameToConnection.iteritems():
+            try:
+                connection.disable()
+                connection.onExit()
+            except:
+                pass
+
+
     ## A light source was enabled. Check if it's one of our Deepstar lasers,
     # throw an error if the laser is not powered up, and otherwise get the
     # current power levels if we don't already have them.
     def onLightSourceEnable(self, handler, isEnabled):
         label = handler.name
-        if label not in self.nameToConnection:
-            wx.MessageBox("I don't handle that laser.", "Error: laser not handled.", wx.OK)
-            return
-
         if (label in self.nameToIsEnabled and
                 self.nameToIsEnabled[label] == isEnabled):
             # Light source is already in the desired state; no need to do
