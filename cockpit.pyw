@@ -126,6 +126,14 @@ class CockpitApp(wx.App):
             util.logger.log.error("Destroying %s" % window)
             window.Destroy()
 
+        # Call any deviec onExit code to, for example, close shutters and
+        # switch of lasers.
+        for dev in depot.getAllDevices():
+            try:
+                dev.onExit()
+            except:
+                pass
+
 
 
 CockpitApp(redirect = False).MainLoop()
