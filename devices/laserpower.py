@@ -95,11 +95,15 @@ class LaserPowerDevice(device.Device):
                 pass
 
 
-    ## A light source was enabled. Check if it's one of our Deepstar lasers,
+    ## A light source was enabled. Check if it's one of our lasers,
     # throw an error if the laser is not powered up, and otherwise get the
     # current power levels if we don't already have them.
     def onLightSourceEnable(self, handler, isEnabled):
         label = handler.name
+        if label not in self.lights:
+            # Not one of our lasers.
+            return
+
         if (label in self.nameToIsEnabled and
                 self.nameToIsEnabled[label] == isEnabled):
             # Light source is already in the desired state; no need to do
