@@ -38,7 +38,8 @@ RESPONSE_CHARS = {
 class AerotechZStage(device.Device):
     def __init__(self):
         device.Device.__init__(self)
-        if config.has_section(CONFIG_NAME):
+        self.isActive = config.has_section(CONFIG_NAME)
+        if self.isActive:
             # Enable in depot.
             self.enabled = True
             # IP address of the controller.
