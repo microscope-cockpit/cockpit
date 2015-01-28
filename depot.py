@@ -51,7 +51,7 @@ class DeviceDepot:
     ## Return the number of device modules we have to work with.
     def getNumModules(self):
         return len(util.importer.getModulesFrom(DEVICE_FOLDER,
-                ['__init__', 'device']))
+                ['__init__', 'device', 'camera']))
 
 
     ## Instantiate all of the Device instances that front our hardware.
@@ -59,7 +59,7 @@ class DeviceDepot:
     # create a Device subclass from each (barring a few).
     def generateDevices(self):
         modules = util.importer.getModulesFrom(DEVICE_FOLDER, 
-                ['__init__', 'device'])
+                ['__init__', 'device', 'camera'])
         for module in modules:
             self.loadDeviceModule(module)
 
@@ -110,8 +110,48 @@ class DeviceDepot:
 
     ## Initialize a Device.
     def initDevice(self, device):
+        if device.priority == float('inf'):
+            # This is a dummy device.  Figure out if it's needed.
+            needDummy = True
+            try:
+                deviceType = device.deviceType
+            except:
+                raise Exception("Dummy device %s must declare its deviceType."
+                                 % (device.__class__))
+                needDummy = False
+
+            if ((device.deviceType == STAGE_POSITIONER)
+                and self.deviceTypeToHandlers.has_key(STAGE_POSITIONER) ):
+                # If we already have a handler for this axis, then
+                # we don't need the dummy handler.
+                try:
+                    axes = device.axes
+                except:
+                    raise Exception("Dummy mover device must declare its axes.")
+                    needDummy = False
+
+                if self.deviceTypeToHandlers.has_key(STAGE_POSITIONER):
+                    for other_handler in self.deviceTypeToHandlers[STAGE_POSITIONER]:
+                        if other_handler.axis in axes:
+                            # There is already a handler for this axis.
+                            needDummy = False
+                            
+            elif self.deviceTypeToHandlers.has_key(deviceType):
+                    # For anything else, we don't need a dummy handler if
+                    # we already have any handlers of this type.
+                    needDummy = False
+
+            if not needDummy:
+                print "Skipping dummy module: %s." % device.__module__
+                return
+            else:
+                print "Using dummy module: %s." % device.__module__
+
+        # Initialize and perform subscriptions
+        # *after* we know the device is required.
         device.initialize()
         device.performSubscriptions()
+
         handlers = device.getHandlers()
         self.deviceToHandlers[device] = handlers
         self.handlersList.extend(handlers)

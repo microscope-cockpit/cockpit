@@ -3,7 +3,7 @@
 # as MUI gets to speaking directly to hardware. Device implementation is 
 # largely left up to the client; this class simply provides a framework of 
 # stub functions that must be implemented. 
-class Device(object):
+class Device:
     def __init__(self):
         ## Set to False to disable this device. Disabled devices will not be 
         # initialized on startup. 

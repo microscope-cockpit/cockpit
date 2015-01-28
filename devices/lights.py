@@ -11,7 +11,9 @@ class LightsDevice(device.Device):
         device.Device.__init__(self)
         ## Maps lightsource names to their exposure times.
         self.nameToExposureTime = dict()
-
+        # Set priority to Inf to indicate that this is a dummy device.
+        self.priority = float('inf')        
+        self.deviceType = 'light source'
 
     def getHandlers(self):
         result = []

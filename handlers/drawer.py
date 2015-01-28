@@ -9,6 +9,22 @@ import gui.keyboard
 import gui.toggleButton
 
 
+## Maps dye names to colors to use for those dyes.
+DYE_TO_COLOR = {
+        'Cy5': (0, 255, 255),
+        'DAPI': (184, 0, 184),
+        'DIC': (128, 128, 128),
+        'FITC': (80,255,150),
+        'GFP': (0, 255, 0),
+        'mCherry': (255, 0, 0),
+        'RFP': (255, 0, 0),
+        'Rhod': (255,80,20),
+        'YFP': (255, 255, 0),
+        'ND': (200, 200, 200)
+}
+
+
+
 ## This handler is responsible for tracking what kinds of light each camera
 # receives, via the drawer system.
 class DrawerHandler(deviceHandler.DeviceHandler):
@@ -102,6 +118,20 @@ class DrawerHandler(deviceHandler.DeviceHandler):
         return self.settings[self.settingIndex].cameraToColor[cameraName]
 
 
+    def addCamera(self, cameraName, filters):
+        if not self.settings:
+            self.settings = []
+            for i, f in enumerate(filters):
+                self.settings.append(
+                    DrawerSettings('drawer_%d' % (i), [cameraName], [f['dye']],
+                                   [DYE_TO_COLOR[f['dye']]], [f['wavelength']]))
+        else:
+            for i, drawer in enumerate(self.settings):
+                drawer.update(cameraName,
+                              filters[i]['dye'],
+                              DYE_TO_COLOR[filters[i]['dye']],
+                              filters[i]['wavelength'])
+
 
 ## This is a simple container class to describe a single drawer. 
 class DrawerSettings:
@@ -126,3 +156,19 @@ class DrawerSettings:
         self.cameraToDye = dict(zip(cameraNames, dyeNames))
         self.cameraToWavelength = dict(zip(cameraNames, wavelengths))
 
+    def update(self, cameraName, dyeName, color, wavelength):
+        for i, camera in enumerate(self.cameraNames):
+            if camera == cameraName:
+                self.dyeNames[i] = dyeName
+                self.colors[i] = color
+                self.wavelengths[i] = wavelength
+                break
+        else:
+            # Didn't find the camera name.
+            self.cameraNames.append(cameraName)
+            self.dyeNames.append(dyeName)
+            self.colors.append(color)
+            self.wavelengths.append(wavelength)
+        self.cameraToColor = dict(zip(self.cameraNames, self.colors))
+        self.cameraToDye = dict(zip(self.cameraNames, self.dyeNames))
+        self.cameraToWavelength = dict(zip(self.cameraNames, self.wavelengths))

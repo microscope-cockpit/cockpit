@@ -7,6 +7,11 @@ import threading
 import traceback
 import wx
 
+import Pyro4
+Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
+Pyro4.config.SERIALIZER = 'pickle'
+
+
 # We need these first to ensure that we can log failures during startup.
 import depot
 depot.loadConfig()
@@ -120,6 +125,14 @@ class CockpitApp(wx.App):
         for window in wx.GetTopLevelWindows():
             util.logger.log.error("Destroying %s" % window)
             window.Destroy()
+
+        # Call any deviec onExit code to, for example, close shutters and
+        # switch of lasers.
+        for dev in depot.getAllDevices():
+            try:
+                dev.onExit()
+            except:
+                pass
 
 
 

@@ -4,21 +4,37 @@
 
 import device
 import handlers.objective
+from config import config
+CONFIG_NAME = 'objectives'
 
 ## Maps objective names to the pixel sizes for those objectives. This is the 
 # amount of sample viewed by the pixel, not the physical size of the 
 # pixel sensor.
-OBJECTIVE_PIXEL_SIZES = {
-        "40x": .198,
-        "60xWater": .132,
-        "60xOil": .132,
-        "100xOil": .0792,
-        "150xTIRF": .0528,
+DUMMY_OBJECTIVE_PIXEL_SIZES = {
+        "40x": .2,
+        "60xWater": .1,
+        "60xOil": .1,
+        "100xOil": .08,
+        "150xTIRF": .06,
 }
 
 CLASS_NAME = 'ObjectiveDevice'
 
 class ObjectiveDevice(device.Device):
+    def __init__(self):
+        device.Device.__init__(self)
+        # Set priority to Inf to indicate that this is a dummy device.
+        self.priority = float('inf')
+        self.deviceType = "objective"
+
+
     def getHandlers(self):
+        if config.has_section(CONFIG_NAME):
+            objectives = config.options(CONFIG_NAME)
+            OBJECTIVE_PIXEL_SIZES = {obj: float(config.get(CONFIG_NAME, obj)) 
+                                        for obj in objectives}
+        else:
+            OBJECTIVE_PIXEL_SIZES = DUMMY_OBJECTIVE_PIXEL_SIZES
+
         return [handlers.objective.ObjectiveHandler("objective", 
                 "miscellaneous", OBJECTIVE_PIXEL_SIZES, "100xOil")]
