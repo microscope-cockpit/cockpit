@@ -10,11 +10,19 @@ import time
 
 import util.logger
 
+from config import config
+CLASS_NAME = 'PicoMotorDevice'
+CONFIG_NAME = 'picomotor'
+## Will look for a config section called 'picomotor', containing parameters:
+#   cal        -  calibration;
+#   ipAddress  - the IP address of the controller;
+#   port       - the port the controller listens on.
+
+
 ## This module is for Physik Instrumente (PI) stage motion
 # devices. It controls the XY stage, and sets up but does not directly
 # control the Z piezo -- that is handled by the analog voltage signal from
 # the DSP device.
-
 
 # Z piezo notes:
 # The degree of motion of the piezo for a given voltage input is controlled
@@ -61,12 +69,6 @@ import util.logger
 # move back to mid position (need to check position)
 # 1 pa 10000
 
-#Stage calibration (approx 13750 counts/mm) - counts for closed loop control - 
-STAGE_CAL = 13.750
-CLASS_NAME = 'PicoMotorDevice'
-PICO_CONTROLLER = '172.16.0.30'
-PICO_PORT = 23
-
 ## Maps error codes to short descriptions. These appear to be the
 # same for the Z piezo controller and the XY stage system, so we re-use them.
 # Massively incomplete; just some common codes here. Check the manual
@@ -92,6 +94,14 @@ PICO_PORT = 23
 
 class PicoMotorDevice(device.Device):
     def __init__(self):
+        self.isActive = config.has_section(CONFIG_NAME)
+        if not self.isActive:
+            return
+        else:
+            STAGE_CAL = config.get(CONFIG_NAME, 'cal') # e.g. 13.750
+            PICO_CONTROLLER = config.get(CONFIG_NAME, 'ipAddress') # e.g. 172.16.0.30'
+            PICO_PORT = config.get(CONFIG_NAME, 'port') # e.g. 23
+
         device.Device.__init__(self)
         ## Connection to the Z piezo controller (Pyro4.Proxy of a
         # telnetlib.Telnet instance)
@@ -107,9 +117,9 @@ class PicoMotorDevice(device.Device):
         self.xyPositionCache = (10 ** 100, 10 ** 100,7500)
         ## Maps the cockpit's axis ordering (0: X, 1: Y, 2: Z) to the
         # XY stage's ordering which is 
-		#x controller 1, motor 1 - '1>1'
-		#y controller 1, motor 2 - '1>2'
-		#z controller 2, motor 1 - '2>1'
+        #x controller 1, motor 1 - '1>1'
+        #y controller 1, motor 2 - '1>2'
+        #z controller 2, motor 1 - '2>1'
         self.axisMapper = {0: '1>1', 1: '1>2', 2: '2>1'}
 
         events.subscribe('user logout', self.onLogout)
@@ -321,13 +331,13 @@ class PicoMotorDevice(device.Device):
     # If shouldUseCache is not set, then we will query the controller, which
     # takes some time.
     def getXYPosition(self, axis = None, shouldUseCache = True):
-#+++        self.xyPositionCache = (0, 0,0)
+        #+++        self.xyPositionCache = (0, 0,0)
         if not shouldUseCache:
             positions=self.sendXYCommand('1>1TP?;2TP?', 1, False)
             (x,y)=positions.split(';')
-			positions=self.sendXYCommand('2>1TP?', 1, False)
+            positions=self.sendXYCommand('2>1TP?', 1, False)
             z=positions
-			
+            
             # Positions are in steps, and we need microns.
             x = -float(x) / STAGE_CAL
             y = -float(y) / STAGE_CAL
