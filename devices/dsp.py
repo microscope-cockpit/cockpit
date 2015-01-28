@@ -45,12 +45,14 @@ import util.threads
 from config import config, LIGHTS, CAMERAS, AOUTS
 CLASS_NAME = 'DSPDevice'
 COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2, 'SI angle': -1}
+CONFIG_NAME = 'dsp'
 
 class DSPDevice(device.Device):
     def __init__(self):
         device.Device.__init__(self)
-        if not config.has_section('dsp'):
-            raise Exception('No dsp section found in config.')
+        self.isActive = config.has_section(CONFIG_NAME)
+        if not self.isActive:
+            return
         ## IP address of the DSP computer.
         self.ipAddress = config.get('dsp', 'ipAddress')
         ## Port to use to connect to the DSP computer.
