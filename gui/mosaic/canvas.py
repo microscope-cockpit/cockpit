@@ -279,7 +279,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     ## Change our view transform.
     def zoomTo(self, x, y, scale):
         # Paranoia
-        if scale == 0:
+        if not scale:
             return
         self.dx = -x * scale + self.width / 2
         self.dy = -y * scale + self.height / 2
