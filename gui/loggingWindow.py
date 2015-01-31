@@ -34,7 +34,7 @@ class LoggingWindow(wx.Frame):
         sys.stderr = self.stdErr
 
         self.auiManager.AddPane(self.stdErr, wx.aui.AuiPaneInfo().Caption("Standard error").CloseButton(False).Top().MinSize((-1, 194)))
-        self.auiManager.AddPane(self.stdOut, wx.aui.AuiPaneInfo().Caption("Standard out").CloseButton(False).Bottom().MinSize((-1, 194)))
+        self.auiManager.AddPane(self.stdOut, wx.aui.AuiPaneInfo().Caption("Standard out").CloseButton(False).Center().MinSize((-1, 194)))
 
         self.auiManager.Update()
 
@@ -65,11 +65,9 @@ def makeWindow(parent):
     window = LoggingWindow(parent)
     window.Show()
 
-
 ## Retrieve the contents of the stdout control.
 def getStdOut():
     return window.stdOut.GetValue()
-
 
 ## Retrieve the contents of the stderr control.
 def getStdErr():
