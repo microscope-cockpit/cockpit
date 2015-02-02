@@ -1,4 +1,3 @@
-## _lights [(label, wavelength, dsp line, sim diffraction angle at slm),...]
 aout_keys = ['name', 
              'cockpit_axis', 
              'aline', 
@@ -6,7 +5,8 @@ aout_keys = ['name',
              'hard_limits', 
              'soft_limits', 
              'deltas', 
-             'default_delta']
+             'default_delta',
+             'startup_value',]
 
 aouts = [(
             'polrot',   # polarisation rotatoar
@@ -16,7 +16,8 @@ aouts = [(
             (0, 10),
             (None, None),
             [0.01, 0.05, 0.1, 0.5, 1],
-            2
+            2,
+            None
          ),
          (
             'z_insert',
@@ -27,5 +28,6 @@ aouts = [(
             (0, 91.13),
             [.05, .1, .5, 1, 2, 5, 10],
             2,
+            45,
          )  
         ]
