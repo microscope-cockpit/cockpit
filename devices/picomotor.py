@@ -98,9 +98,10 @@ class PicoMotorDevice(device.Device):
         if not self.isActive:
             return
         else:
-            STAGE_CAL = config.get(CONFIG_NAME, 'cal') # e.g. 13.750
-            PICO_CONTROLLER = config.get(CONFIG_NAME, 'ipAddress') # e.g. 172.16.0.30'
-            PICO_PORT = config.get(CONFIG_NAME, 'port') # e.g. 23
+            self.STAGE_CAL = float(config.get(CONFIG_NAME, 'cal')) # e.g. 13.750
+            self.PICO_CONTROLLER = config.get(CONFIG_NAME, 'ipAddress') # e.g. 172.16.0.30'
+            self.PICO_PORT = int(config.get(CONFIG_NAME, 'port')) # e.g. 23
+            print self.STAGE_CAL,self.PICO_CONTROLLER,self.PICO_PORT
 
         device.Device.__init__(self)
         ## Connection to the Z piezo controller (Pyro4.Proxy of a
@@ -140,7 +141,7 @@ class PicoMotorDevice(device.Device):
 
 
         self.xyConnection=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.xyConnection.connect((PICO_CONTROLLER,PICO_PORT))
+        self.xyConnection.connect((self.PICO_CONTROLLER,self.PICO_PORT))
 
         #IMD 20130421 reset at startup as the cointroller can go a bit mad
         # Need long timeout as ethernet takes a while to come back up
@@ -150,7 +151,7 @@ class PicoMotorDevice(device.Device):
         self.xyConnection.close()
 #restart the socket now we have rest the controller.
         self.xyConnection=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.xyConnection.connect((PICO_CONTROLLER,PICO_PORT))
+        self.xyConnection.connect((self.PICO_CONTROLLER,self.PICO_PORT))
         self.xyConnection.settimeout(1)
         
 #20130418 - the controller dumps a line of rubbish before we start...
@@ -284,7 +285,7 @@ class PicoMotorDevice(device.Device):
         distance=abs (end-start)
 #IMD15072014 closed loop performance is much slower, or counts != steps. 
 #speed is roughly 10,000 counts in 30 secs   
-        return (((distance*STAGE_CAL)/300)+.25)
+        return (((distance*self.STAGE_CAL)/300)+.25)
 
     def moveXYAbsolute(self, axis, pos):
         # IMD 20130418 need to calibrate stage properly, approx is 67 steps/um
@@ -292,7 +293,7 @@ class PicoMotorDevice(device.Device):
         if (axis == 0) or (axis == 1):
             pos = -pos
         self.sendXYCommand('%s PA %d' %
-                (self.axisMapper[axis], int (pos*STAGE_CAL) ),0)
+                (self.axisMapper[axis], int (pos*self.STAGE_CAL) ),0)
         self.sendXYPositionUpdates()
 
 
@@ -305,7 +306,7 @@ class PicoMotorDevice(device.Device):
                 delta = -delta
                 
             self.sendXYCommand('%s PR %d' %
-                    (self.axisMapper[axis], int(delta*STAGE_CAL) ),0)
+                    (self.axisMapper[axis], int(delta*self.STAGE_CAL) ),0)
             self.sendXYPositionUpdates()
 
 
@@ -334,14 +335,15 @@ class PicoMotorDevice(device.Device):
         #+++        self.xyPositionCache = (0, 0,0)
         if not shouldUseCache:
             positions=self.sendXYCommand('1>1TP?;2TP?', 1, False)
-            (x,y)=positions.split(';')
+            #Depending on wether we have one or two controllers we get a different string
+            # 1 controller give "0;0", 2 gives "1>0;0"
+            (x,y)=positions.split('>')[-1].split(';')
             positions=self.sendXYCommand('2>1TP?', 1, False)
-            z=positions
-            
+            z=positions.split('>')[-1]
             # Positions are in steps, and we need microns.
-            x = -float(x) / STAGE_CAL
-            y = -float(y) / STAGE_CAL
-            z=float(z) / STAGE_CAL
+            x = -float(x) / self.STAGE_CAL
+            y = -float(y) / self.STAGE_CAL
+            z=float(z) / self.STAGE_CAL
             self.xyPositionCache = (x, y, z)
         if axis is None:
             return self.xyPositionCache
