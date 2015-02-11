@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 ## This module is the base module for running the cockpit software; invoke
 # Python on it to start the program. It initializes everything and creates
 # the GUI.
