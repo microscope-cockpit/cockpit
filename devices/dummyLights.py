@@ -2,11 +2,11 @@ import depot
 import device
 import handlers.lightSource
 
-CLASS_NAME = 'LightsDevice'
+CLASS_NAME = 'DummyLightsDevice'
 
 
 
-class LightsDevice(device.Device):
+class DummyLightsDevice(device.Device):
     def __init__(self):
         device.Device.__init__(self)
         ## Maps lightsource names to their exposure times.
