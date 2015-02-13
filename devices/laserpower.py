@@ -67,7 +67,7 @@ class LaserPowerDevice(device.Device):
             isPowered = False
             maxPower = self.nameToConnection[label].getMaxPower_mW()
             curPower = self.nameToConnection[label].getPower_mW()
-            isPowered = True
+            isPowered = self.nameToConnection[label].isAlive()
             powerHandler = handlers.lightPower.LightPowerHandler(
                     label + ' power', # name
                     label, # groupName
@@ -128,12 +128,12 @@ class LaserPowerDevice(device.Device):
                 # Loading the device status may fail if the device was
                 # only recently turned on, so we try multiple times.
                 for i in xrange(3):
-                    if connection.loadStatus():
+                    if connection.isAlive():
                         break
                     if i != 2:
                         time.sleep(5)
                 handler.setMaxPower(connection.getMaxPower_mW())
-                handler.setCurPower(connection.getPower())
+                handler.setCurPower(connection.getPower_mW())
                 handler.setEnabled(True)
 
             # Try to enable the laser.
@@ -153,7 +153,7 @@ class LaserPowerDevice(device.Device):
         self.nameToIsEnabled[label] = isEnabled
 
 
-    ## Set the power of a Deepstar laser.
+    ## Set the power of a supported laser.
     def setLaserPower(self, name, val):
         label = name.strip(' power')
         self.nameToConnection[label].setPower_mW(val)
