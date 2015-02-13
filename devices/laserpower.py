@@ -65,9 +65,11 @@ class LaserPowerDevice(device.Device):
             maxPower = 0
             curPower = 0
             isPowered = False
-            maxPower = self.nameToConnection[label].getMaxPower_mW()
-            curPower = self.nameToConnection[label].getPower_mW()
             isPowered = self.nameToConnection[label].isAlive()
+            if isPowered:
+                maxPower = self.nameToConnection[label].getMaxPower_mW()
+                curPower = self.nameToConnection[label].getPower_mW()
+            
             powerHandler = handlers.lightPower.LightPowerHandler(
                     label + ' power', # name
                     label, # groupName
