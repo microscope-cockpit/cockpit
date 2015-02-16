@@ -139,7 +139,7 @@ class LaserPowerDevice(device.Device):
 
             # Try to enable the laser.
             if not connection.enable():
-                wx.MessageBox("I was unable to enable the %s laser. Please ensure the key is turned and the standby switch is on." % handler.name,
+                wx.MessageBox("I was unable to enable the %s laser. Please check power/standby switch, safety key state and any interlocks." % handler.name,
                         "Error: Couldn't enable laser",
                         wx.OK | wx.ICON_ERROR | wx.STAY_ON_TOP)
                 # Disable the handler
