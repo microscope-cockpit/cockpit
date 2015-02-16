@@ -158,5 +158,3 @@ class LaserPowerDevice(device.Device):
     def setLaserPower(self, name, val):
         label = name.strip(' power')
         self.nameToConnection[label].setPower_mW(val)
-
-
