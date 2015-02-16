@@ -77,7 +77,11 @@ class LaserPowerDevice(device.Device):
                     isEnabled = isPowered)
             result.append(powerHandler)
             self.nameToHandler[label] = powerHandler
-            self.nameToIsEnabled[label] = False
+            try:
+                isEnabled = self.nameToConnection[label].getIsOn()
+            except:
+                isEnabled = False
+            self.nameToIsEnabled[label] = isEnabled
         return result
                         
 
