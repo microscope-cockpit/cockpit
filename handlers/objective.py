@@ -18,11 +18,12 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
     # - setObjective(name, objectiveName): Set the current objective to the
     #   named one. This is an optional callback; if not provided, nothing is
     #   done.
-    def __init__(self, name, groupName, nameToPixelSize, curObjective,
+    def __init__(self, name, groupName, nameToPixelSize, nameToTransform, curObjective,
             callbacks = {}):
         deviceHandler.DeviceHandler.__init__(self, name, groupName, 
                 False, {}, depot.OBJECTIVE)
         self.nameToPixelSize = nameToPixelSize
+        self.nameToTransform = nameToTransform
         self.curObjective = curObjective
         self.callbacks = callbacks
         ## List of ToggleButtons, one per objective.
@@ -76,7 +77,8 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
             self.callbacks['setObjective'](self.name, newName)
         self.curObjective = newName
         events.publish("objective change", newName, 
-                self.nameToPixelSize[newName]) 
+                pixelSize=self.nameToPixelSize[newName], 
+                transform=self.nameToTransform[newName]) 
         targetIndex = sorted(self.nameToPixelSize.keys()).index(newName)
         for i, button in enumerate(self.buttons):
             button.setActive(i == targetIndex)
