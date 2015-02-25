@@ -112,6 +112,8 @@ class DSPDevice(device.Device):
         # card, so that it doesn't re-baseline values in the middle of an
         # experiment.
         self.lastAnalogPositions = [0] * 4
+        ## Values for anologue positions at startup.
+        self.startupAnalogPositions = [None] * 4
 
 
     ## Connect to the DSP computer.
@@ -158,6 +160,12 @@ class DSPDevice(device.Device):
             handler = depot.getHandlerWithName(name)
             self.handlerToDigitalLine[handler] = line
 
+        # Move analogue lines to initial positions, if given in config.
+        for handler, line in self.handlerToAnalogLine.iteritems():
+            pos = self.startupAnalogPositions[line]
+            if pos is not None:
+                handler.moveAbsolute(pos)
+
 
     ## We control which light sources are active, as well as a set of 
     # stage motion piezos. 
@@ -197,7 +205,9 @@ class DSPDevice(device.Device):
                 self.handlerToAnalogLine[handler] = int(aout['aline'])#COCKPIT_AXES[aout['cockpit_axis']]
                 result.append(handler)
                 self.curPosition.update({COCKPIT_AXES[aout['cockpit_axis']]: 0})
-            
+                self.startupAnalogPositions[aout['aline']] = aout.get('startup_value')
+
+
             if aout['cockpit_axis'].lower() == 'si angle':
                 # Variable retarder.
                 self.retarderHandler = handlers.genericPositioner.GenericPositionerHandler(

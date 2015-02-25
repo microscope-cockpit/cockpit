@@ -52,22 +52,19 @@ class LaserPowerDevice(device.Device):
         for label, light in self.lights.items():
             uri = 'PYRO:%s@%s:%d' % (light['device'], self.ipAddress, light['port'])
             self.nameToConnection[label] = Pyro4.Proxy(uri)
-            # Default to not allowing the laser to go below 1mW.
-            # Have to use try/except as hasattr does not seem to work correctly
-            # for Pyro objects.
-            try:
-                minPower = self.nameToConnection[label].minPower()
-            except:
-                minPower = 1
+            # If the light config has minPower, use that, otherwise default to 1mW.
+            minPower = light.get('minPower') or 1
             # These values are only available if the laser is powered up. If
             # we can't get them now, we'll get them when the light source
             # is enabled.
             maxPower = 0
             curPower = 0
             isPowered = False
-            maxPower = self.nameToConnection[label].getMaxPower_mW()
-            curPower = self.nameToConnection[label].getPower_mW()
-            isPowered = True
+            isPowered = self.nameToConnection[label].isAlive()
+            if isPowered:
+                maxPower = self.nameToConnection[label].getMaxPower_mW()
+                curPower = self.nameToConnection[label].getPower_mW()
+            
             powerHandler = handlers.lightPower.LightPowerHandler(
                     label + ' power', # name
                     label, # groupName
@@ -80,7 +77,11 @@ class LaserPowerDevice(device.Device):
                     isEnabled = isPowered)
             result.append(powerHandler)
             self.nameToHandler[label] = powerHandler
-            self.nameToIsEnabled[label] = False
+            try:
+                isEnabled = self.nameToConnection[label].getIsOn()
+            except:
+                isEnabled = False
+            self.nameToIsEnabled[label] = isEnabled
         return result
                         
 
@@ -128,17 +129,17 @@ class LaserPowerDevice(device.Device):
                 # Loading the device status may fail if the device was
                 # only recently turned on, so we try multiple times.
                 for i in xrange(3):
-                    if connection.loadStatus():
+                    if connection.isAlive():
                         break
                     if i != 2:
                         time.sleep(5)
                 handler.setMaxPower(connection.getMaxPower_mW())
-                handler.setCurPower(connection.getPower())
+                handler.setCurPower(connection.getPower_mW())
                 handler.setEnabled(True)
 
             # Try to enable the laser.
             if not connection.enable():
-                wx.MessageBox("I was unable to enable the %s laser. Please ensure the key is turned and the standby switch is on." % handler.name,
+                wx.MessageBox("I was unable to enable the %s laser. Please check power/standby switch, safety key state and any interlocks." % handler.name,
                         "Error: Couldn't enable laser",
                         wx.OK | wx.ICON_ERROR | wx.STAY_ON_TOP)
                 # Disable the handler
@@ -153,9 +154,7 @@ class LaserPowerDevice(device.Device):
         self.nameToIsEnabled[label] = isEnabled
 
 
-    ## Set the power of a Deepstar laser.
+    ## Set the power of a supported laser.
     def setLaserPower(self, name, val):
         label = name.strip(' power')
         self.nameToConnection[label].setPower_mW(val)
-
-

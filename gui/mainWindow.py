@@ -99,26 +99,37 @@ class MainWindow(wx.Frame):
 
         # Make UIs for any other handlers / devices and insert them into
         # our window, if possible.
-        rowSizer = wx.BoxSizer(wx.HORIZONTAL)
-        allThings = depot.getAllDevices()
+        lightPowerThings = depot.getHandlersOfType(depot.LIGHT_POWER)
+        lightPowerThings.sort(key = lambda l: l.wavelength)
+        ignoreThings = lightToggles + list(lightAssociates) + lightPowerThings
+        otherThings = depot.getAllDevices()
         # Sort devices by their class names; all we care about is a consistent
-        # order to the elements of the UI.
-        allThings.sort(key = lambda d: d.__class__.__name__)
-        allThings.extend(depot.getAllHandlers())
-        for thing in allThings:
-            if thing not in lightToggles and thing not in lightAssociates:
-                item = thing.makeUI(topPanel)
-                if item is not None:
-                    # Add it to the main controls display.
-                    if item.GetMinSize()[0] + rowSizer.GetMinSize()[0] > MAX_WIDTH:
-                        # Start a new row, because the old one would be too
-                        # wide to accommodate the item.
-                        topSizer.Add(rowSizer, 1, wx.EXPAND)
-                        rowSizer = wx.BoxSizer(wx.HORIZONTAL)
-                    if rowSizer.GetChildren():
-                        # Add a spacer.
-                        rowSizer.Add((1, -1), 1, wx.EXPAND)
-                    rowSizer.Add(item)
+        # order to the elements of the UI. lightPowerThings are dealt with
+        # separately, otherwise they appear in a random order.
+        otherThings.sort(key = lambda d: d.__class__.__name__)
+        otherThings.extend(depot.getAllHandlers())
+        for thing in ignoreThings: 
+            try:
+                otherThings.remove(thing)
+            except ValueError:
+                pass
+        otherThings.extend(lightPowerThings)
+        # Now make the UI elements for otherThings.
+        rowSizer = wx.BoxSizer(wx.HORIZONTAL)
+        for thing in otherThings:
+            item = thing.makeUI(topPanel)
+            if item is not None:
+                # Add it to the main controls display.
+                if item.GetMinSize()[0] + rowSizer.GetMinSize()[0] > MAX_WIDTH:
+                    # Start a new row, because the old one would be too
+                    # wide to accommodate the item.
+                    topSizer.Add(rowSizer, 1, wx.EXPAND)
+                    rowSizer = wx.BoxSizer(wx.HORIZONTAL)
+                if rowSizer.GetChildren():
+                    # Add a spacer.
+                    rowSizer.Add((1, -1), 1, wx.EXPAND)
+                rowSizer.Add(item)
+
         topSizer.Add(rowSizer, 1, wx.EXPAND)
 
         topPanel.SetSizerAndFit(topSizer)
