@@ -8,9 +8,8 @@ import re
 from config import config
 CONFIG_NAME = 'objectives'
 PIXEL_PAT =  r"(?P<pixel_size>\d*[.]?\d*)"
-TRANSFORM_PAT = r"(?P<transform>\(\s*\d*\s*,\s*\d*\s*,\s*\d*\s*\))?"
-CONFIG_PAT = PIXEL_PAT + r"(\s*(,|;)\s*)?" + TRANSFORM_PAT
-
+TRANSFORM_PAT = r"(?P<transform>\(\s*\d*\s*,\s*\d*\s*,\s*\d*\s*\))*"
+CONFIG_PAT = PIXEL_PAT + r"\s*(,|;)\s*" + TRANSFORM_PAT
 
 ## Maps objective names to the pixel sizes for those objectives. This is the 
 # amount of sample viewed by the pixel, not the physical size of the 
@@ -46,17 +45,18 @@ class ObjectiveDevice(device.Device):
             objectives = config.options(CONFIG_NAME)
             for obj in objectives:
                 cfg = config.get(CONFIG_NAME, obj)
-                parsed = re.search(CONFIG_PAT, cfg)
-                if not parsed:
-                    # Could not parse config entry.
-                    raise Exception('Bad config: objectives.')
-                    # No transform tuple
-                else:    
-                    pstr = parsed.groupdict()['pixel_size']
-                    tstr = parsed.groupdict()['transform']
-                    pixel_size = float(pstr)
-                    transform = eval(tstr) if tstr else (0,0,0)            
-                pixel_sizes.update({obj: pixel_size})
+		parsed = re.search(CONFIG_PAT, cfg)
+		if not parsed:
+		    parsed = re.search(PIXEL_PAT, cfg)
+		    if not parsed:
+		        raise Exception('Bad config: objectives.')
+	            pixel_size = float(parsed.group())
+		    transform = (0, 0, 0)
+		else:
+		    pixel_size = parsed.groupdict()['pixel_size']
+		    transform = eval(parsed.groupdict()['transform'])
+
+                pixel_sizes.update({obj: 'pixel_size'})
                 transforms.update({obj: transform})
         default = pixel_sizes.keys()[0]
 
