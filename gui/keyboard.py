@@ -26,6 +26,8 @@ def setKeyboardHandlers(window):
 
         # Take an image
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_ADD, 6320),
+		(wx.ACCEL_NORMAL, wx.WXK_NUMPAD0, 6320),
+		
 
         # Pop up a menu to help the user find hidden windows.
         (wx.ACCEL_CTRL, ord('M'), 6321),
