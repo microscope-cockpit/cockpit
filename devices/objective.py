@@ -11,6 +11,7 @@ PIXEL_PAT =  r"(?P<pixel_size>\d*[.]?\d*)"
 TRANSFORM_PAT = r"(?P<transform>\(\s*\d*\s*,\s*\d*\s*,\s*\d*\s*\))?"
 CONFIG_PAT = PIXEL_PAT + r"(\s*(,|;)\s*)?" + TRANSFORM_PAT
 
+
 ## Maps objective names to the pixel sizes for those objectives. This is the 
 # amount of sample viewed by the pixel, not the physical size of the 
 # pixel sensor.
@@ -57,7 +58,6 @@ class ObjectiveDevice(device.Device):
                     transform = eval(tstr) if tstr else (0,0,0)            
                 pixel_sizes.update({obj: pixel_size})
                 transforms.update({obj: transform})
-
         default = pixel_sizes.keys()[0]
 
         return [handlers.objective.ObjectiveHandler("objective", 
