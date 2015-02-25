@@ -11,6 +11,7 @@ import time
 
 # An instance of this class is created if no real cameras are found by depot.
 CLASS_NAME = 'DummyCameraDevice'
+IMAGE_SIZES = ['512x512','256x512']
 
 ## An important clarification about this system: normally the assumption is that
 # cameras will be driven by external trigger. Thus there's no "take image" 
@@ -90,8 +91,8 @@ class DummyCameraDevice(device.Device):
     ## Change the exposure time. For this set of dummy cameras we use the same
     # exposure time for both of them.
     # \param time New exposure time, in milliseconds.
-    def setExposureTime(self, name, time):
-        self.curExposureTime = time
+    def setExposureTime(self, name, msTime):
+        self.curExposureTime = msTime
 
 
     ## Get the exposure time for this camera, in milliseconds.
