@@ -9,6 +9,7 @@ import traceback
 import wx
 
 import Pyro4
+Pyro4.config.SERIALIZERS_ACCEPTED.remove('serpent')
 Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
 Pyro4.config.SERIALIZER = 'pickle'
 
