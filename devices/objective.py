@@ -4,8 +4,12 @@
 
 import device
 import handlers.objective
+import re
 from config import config
 CONFIG_NAME = 'objectives'
+PIXEL_PAT =  r"(?P<pixel_size>\d*[.]?\d*)"
+TRANSFORM_PAT = r"(?P<transform>\(\s*\d*\s*,\s*\d*\s*,\s*\d*\s*\))?"
+CONFIG_PAT = PIXEL_PAT + r"(\s*(,|;)\s*)?" + TRANSFORM_PAT
 
 ## Maps objective names to the pixel sizes for those objectives. This is the 
 # amount of sample viewed by the pixel, not the physical size of the 
@@ -18,6 +22,8 @@ DUMMY_OBJECTIVE_PIXEL_SIZES = {
         "150xTIRF": .06,
 }
 
+
+
 CLASS_NAME = 'ObjectiveDevice'
 
 class ObjectiveDevice(device.Device):
@@ -29,12 +35,30 @@ class ObjectiveDevice(device.Device):
 
 
     def getHandlers(self):
-        if config.has_section(CONFIG_NAME):
-            objectives = config.options(CONFIG_NAME)
-            OBJECTIVE_PIXEL_SIZES = {obj: float(config.get(CONFIG_NAME, obj)) 
-                                        for obj in objectives}
+        pixel_sizes = {}
+        transforms = {}
+        if not config.has_section(CONFIG_NAME):
+            # No objectives section in config
+            pixel_sizes = DUMMY_OBJECTIVE_PIXEL_SIZES
+            transforms = {obj: (0,0,0) for obj in pixel_sizes.keys()}
         else:
-            OBJECTIVE_PIXEL_SIZES = DUMMY_OBJECTIVE_PIXEL_SIZES
+            objectives = config.options(CONFIG_NAME)
+            for obj in objectives:
+                cfg = config.get(CONFIG_NAME, obj)
+                parsed = re.search(CONFIG_PAT, cfg)
+                if not parsed:
+                    # Could not parse config entry.
+                    raise Exception('Bad config: objectives.')
+                    # No transform tuple
+                else:    
+                    pstr = parsed.groupdict()['pixel_size']
+                    tstr = parsed.groupdict()['transform']
+                    pixel_size = float(pstr)
+                    transform = eval(tstr) if tstr else (0,0,0)            
+                pixel_sizes.update({obj: pixel_size})
+                transforms.update({obj: transform})
+
+        default = pixel_sizes.keys()[0]
 
         return [handlers.objective.ObjectiveHandler("objective", 
-                "miscellaneous", OBJECTIVE_PIXEL_SIZES, "100xOil")]
+                "miscellaneous", pixel_sizes, transforms, default)]

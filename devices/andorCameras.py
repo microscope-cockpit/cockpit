@@ -48,6 +48,7 @@ COLOUR = {'grey': (170, 170, 170),
 class AndorCameraDevice(camera.CameraDevice):
     """A class to control Andor cameras via the pyAndor remote interface."""
     def __init__(self, camConfig):
+        # camConfig is a dict with containing configuration parameters.
         super(AndorCameraDevice, self).__init__(camConfig)
         self.config = camConfig
         self.connection = util.connection.Connection(
@@ -65,6 +66,8 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings['targetTemperature'] = -40
         self.settings['EMGain'] = 0
         self.settings['amplifierMode'] = None
+        self.settings['baseTransform'] = camConfig.get('baseTransform') or (0, 0, 0)
+        self.settings['pathTransform'] = (0, 0, 0)
         self.enabled = False
 
 
@@ -79,7 +82,16 @@ class AndorCameraDevice(camera.CameraDevice):
         """Perform subscriptions for this camera."""
         events.subscribe('cleanup after experiment',
                 self.cleanupAfterExperiment)
+        events.subscribe('objective change',
+                self.onObjectiveChange)
 
+
+    def onObjectiveChange(self, name, pixelSize, transform):
+        self.settings.update({'pathTransform': transform})
+        # Apply the change now if the camera is enabled.
+        if self.enabled:
+            self.object.update_settings(self.settings)
+    
 
     def getHandlers(self):
         """Return camera handlers."""

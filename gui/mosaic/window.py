@@ -226,7 +226,7 @@ class MosaicWindow(wx.Frame):
 
 
     ## User changed the objective in use; resize our crosshair box to suit.
-    def onObjectiveChange(self, name, pixelSize):
+    def onObjectiveChange(self, name, pixelSize, **kwargs):
         self.crosshairBoxSize = 512 * pixelSize
 
 
