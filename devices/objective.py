@@ -53,7 +53,7 @@ class ObjectiveDevice(device.Device):
 	            pixel_size = float(parsed.group())
 		    transform = (0, 0, 0)
 		else:
-		    pixel_size = parsed.groupdict()['pixel_size']
+		    pixel_size = float(parsed.groupdict()['pixel_size'])
 		    transform = eval(parsed.groupdict()['transform'])
 
                 pixel_sizes.update({obj: 'pixel_size'})
