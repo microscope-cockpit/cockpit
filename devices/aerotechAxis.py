@@ -101,7 +101,7 @@ class AerotechZStage(device.Device):
     def getHandlers(self):
         result = []
         axis = self.axis
-        minVal = 0
+        minVal = -10000
         maxVal = 25000
         handler = handlers.stagePositioner.PositionerHandler(
             "%d %s" % (axis, NAME_STRING), "%d stage motion" % axis, True, 
@@ -111,7 +111,7 @@ class AerotechZStage(device.Device):
                 'getMovementTime': self.getMovementTime,
                 'cleanupAfterExperiment': self.cleanup,
                 'setSafety': self.setSafety},
-                axis, [.01, .05, .1, .5, 1, 5, 10, 50, 100, 500, 1000, 5000],
+                axis, [1, 5, 10, 50, 100, 500, 1000, 5000],
                 2, (minVal, maxVal), (minVal, maxVal))
         result.append(handler)
         return result
@@ -159,7 +159,7 @@ class AerotechZStage(device.Device):
     def moveRelative(self, axis, delta):
         self.command('ENABLE')
         self.command('MOVEINC D %f F %f'
-                        % (delta / 1000, self.speed))
+                        % (delta / 1000.0, self.speed))
         events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
         # Wait until the move has finished - status bit 2 is InPosition.
         while not int(self.command('AXISSTATUS')) & (1 << 2):
