@@ -66,8 +66,8 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings['targetTemperature'] = -40
         self.settings['EMGain'] = 0
         self.settings['amplifierMode'] = None
-        self.settings['pathTransform'] = (0, 0, 0)
         self.settings['baseTransform'] = camConfig.get('baseTransform') or (0, 0, 0)
+        self.settings['pathTransform'] = (0, 0, 0)
         self.enabled = False
 
 
@@ -82,7 +82,7 @@ class AndorCameraDevice(camera.CameraDevice):
         """Perform subscriptions for this camera."""
         events.subscribe('cleanup after experiment',
                 self.cleanupAfterExperiment)
-        events.subscribe('objective changed',
+        events.subscribe('objective change',
                 self.onObjectiveChange)
 
 
