@@ -37,26 +37,31 @@ class ObjectiveDevice(device.Device):
     def getHandlers(self):
         pixel_sizes = {}
         transforms = {}
-        if config.has_section(CONFIG_NAME):
+        if not config.has_section(CONFIG_NAME):
+            # No objectives section in config
+            pixel_sizes = DUMMY_OBJECTIVE_PIXEL_SIZES
+            transforms = {obj: (0,0,0) for obj in pixel_sizes.keys()}
+        else:
             objectives = config.options(CONFIG_NAME)
             for obj in objectives:
                 cfg = config.get(CONFIG_NAME, obj)
-		parsed = re.search(CONFIG_PAT, cfg)
-		if not parsed:
-		    parsed = re.search(PIXEL_PAT, cfg)
-		    if not parsed:
-		        raise Exception('Bad config: objectives.')
-	            pixel_size = float(parsed.group())
-		    transform = (0, 0, 0)
-		else:
-		    pixel_size = float(parsed.groupdict()['pixel_size'])
-		    transform = eval(parsed.groupdict()['transform'])
-
-                pixel_sizes.update({obj: 'pixel_size'})
-                transforms.update({obj: transform})
-        else:
-            pixel_sizes = DUMMY_OBJECTIVE_PIXEL_SIZES
-            transforms = {obj: (0,0,0) for obj in pixel_sizes.keys()}
+                parsed = re.search(CONFIG_PAT, cfg)
+            if not parsed:
+                # No transform tuple
+                parsed = re.search(PIXEL_PAT, cfg)
+                transform = (0, 0, 0)
+                if not parsed:
+                    # No pixel size or transform tuple
+                    raise Exception('Bad config: objectives.')
+                else:
+                    pixel_size = float(parsed.group())
+            else:
+                # Both pixel size and transform tuple from config.
+                pixel_size = float(parsed.groupdict()['pixel_size'])
+                transform = eval(parsed.groupdict()['transform'])
+            
+            pixel_sizes.update({obj: pixel_size})
+            transforms.update({obj: transform})
 
         default = pixel_sizes.keys()[0]
 
