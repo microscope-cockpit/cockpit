@@ -49,10 +49,11 @@ ERROR_CODES = {
 # allowed to pass through, as doing so would cause the objective to collide
 # with part of the sample holder. 
 # Compare stage motion limits X: (-24500, 25000), Y: (-43000, 42500).
-BANNED_RECTANGLES = (
-        ((25000, -12500), (17500, -43000)),
-        ((-12500, -18000), (-24500, -43000))
-)
+BANNED_RECTANGLES = ()
+# IMD 2015-03-02 removed as not relevant for DeepSIM
+#  ((25000, -12500), (17500, -43000)),
+#        ((-12500, -18000), (-24500, -43000))
+#)
 
 
 class PhysikInstrumenteM687(device.Device):
@@ -274,8 +275,9 @@ class PhysikInstrumenteM687(device.Device):
         # range of motion, but they are needed to keep the stage from colliding
         # with the objective. 
         # True range of motion is (-67500, 67500) for X, (-42500, 42500) for Y.
-        for axis, minPos, maxPos in [(0, -24500, 25000),
-                    (1, -43000, 42500)]:
+		#IMD 2015-03-02 hacked in full range to see if we can access the full range
+        for axis, minPos, maxPos in [(0, -37500, 11500),
+                    (1, -67500, 59500)]:
             result.append(handlers.stagePositioner.PositionerHandler(
                     "%d PI mover" % axis, "%d stage motion" % axis, False,
                     {'moveAbsolute': self.moveXYAbsolute,
