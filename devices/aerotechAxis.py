@@ -101,8 +101,9 @@ class AerotechZStage(device.Device):
     def getHandlers(self):
         result = []
         axis = self.axis
-        minVal = -10000
-        maxVal = 25000
+		#IMD 2015-03-02 changed hard limits to reflect DeepSIM should go into config file
+        minVal = -30000
+        maxVal = 3500
         handler = handlers.stagePositioner.PositionerHandler(
             "%d %s" % (axis, NAME_STRING), "%d stage motion" % axis, True, 
             {'moveAbsolute': self.moveAbsolute,
