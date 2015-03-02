@@ -103,7 +103,7 @@ class AerotechZStage(device.Device):
         axis = self.axis
 		#IMD 2015-03-02 changed hard limits to reflect DeepSIM should go into config file
         minVal = -30000
-        maxVal = 3500
+        maxVal = 4000
         handler = handlers.stagePositioner.PositionerHandler(
             "%d %s" % (axis, NAME_STRING), "%d stage motion" % axis, True, 
             {'moveAbsolute': self.moveAbsolute,
@@ -113,7 +113,7 @@ class AerotechZStage(device.Device):
                 'cleanupAfterExperiment': self.cleanup,
                 'setSafety': self.setSafety},
                 axis, [1, 5, 10, 50, 100, 500, 1000, 5000],
-                2, (minVal, maxVal), (minVal, maxVal))
+                1, (minVal, maxVal), (minVal, maxVal))
         result.append(handler)
         return result
     
@@ -145,7 +145,7 @@ class AerotechZStage(device.Device):
     def moveAbsolute(self, axis, pos):
         self.command('ENABLE')
         self.command('MOVEABS D %f F %f'
-                        % (pos / 1000, self.speed))
+                        % (pos / 1000.0, self.speed))
         events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
         # Wait until the move has finished - status bit 2 is InPosition.
         while not int(self.command('AXISSTATUS')) & (1 << 2):
@@ -173,7 +173,7 @@ class AerotechZStage(device.Device):
 
     ## Get the current piezo position.
     def getPosition(self, axis):
-        return float(self.position)
+        return float(self.position)*1000.0
 
 
     ## Get the amount of time it would take the mover to move from the 
