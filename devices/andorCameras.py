@@ -35,7 +35,6 @@ from config import CAMERAS
 
 CLASS_NAME = 'CameraManager'
 SUPPORTED_CAMERAS = ['ixon', 'ixon_plus', 'ixon_ultra']
-DEFAULT_TRIGGER = 'TRIGGER_BEFORE'
 COLOUR = {'grey': (170, 170, 170),
           'green': (32, 128, 32),
         }
@@ -43,6 +42,21 @@ COLOUR = {'grey': (170, 170, 170),
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
+
+TriggerMode = collections.namedtuple('TriggerMode', 
+        ['label',
+         'frameTransfer',
+         'fastTrigger',
+         'cameraTrigger',
+         'cockpitTrigger'])
+
+TRIGGER_MODES = [
+    TriggerMode('clean, no FT', False, False, 1, TRIGGER_BEFORE),
+    TriggerMode('fast, no FT', False, True, 1, TRIGGER_BEFORE),
+    TriggerMode('clean, with FT', True, False, 1, TRIGGER_AFTER),
+    TriggerMode('fast, with FT', True, True, 1, TRIGGER_AFTER),
+    TriggerMode('bulb', False, False, 7, TRIGGER_DURATION)
+]
 
 
 class AndorCameraDevice(camera.CameraDevice):
@@ -68,7 +82,11 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings['amplifierMode'] = None
         self.settings['baseTransform'] = camConfig.get('baseTransform') or (0, 0, 0)
         self.settings['pathTransform'] = (0, 0, 0)
+        self.settings['triggerMode'] = 1
+        self.experimentTriggerMode = TRIGGER_MODES[0]
+        self.interactiveTrigger = TRIGGER_BEFORE
         self.enabled = False
+        self.handler = None
 
 
     def cleanupAfterExperiment(self):
@@ -76,6 +94,7 @@ class AndorCameraDevice(camera.CameraDevice):
         if self.enabled:
             self.settings.update(self.cached_settings)
             self.object.enable(self.settings)
+        self.handler.exposureMode = self.interactiveTrigger
 
 
     def performSubscriptions(self):
@@ -95,12 +114,6 @@ class AndorCameraDevice(camera.CameraDevice):
 
     def getHandlers(self):
         """Return camera handlers."""
-        trigger = globals().get(
-                # find in config
-                self.config.get('trigger', ''),
-                # or default to
-                DEFAULT_TRIGGER)
-
         result = handlers.camera.CameraHandler(
                 "%s" % self.config.get('label'), "iXon camera",
                 {'setEnabled': self.enableCamera,
@@ -112,13 +125,13 @@ class AndorCameraDevice(camera.CameraDevice):
                     'getImageSizes': self.getImageSizes,
                     'setImageSize': self.setImageSize,
                     'getSavefileInfo': self.getSavefileInfo},
-                trigger)
+                self.interactiveTrigger)
+        self.handler = result
         return result
 
 
     def enableCamera(self, name, shouldEnable):
         """Enable the hardware."""
-        trigger = self.config.get('trigger', DEFAULT_TRIGGER)
         if shouldEnable:
             # Connect and set up callback.
             try:
@@ -133,8 +146,18 @@ class AndorCameraDevice(camera.CameraDevice):
 
                 originalTimeout = self.object._pyroTimeout
                 self.object._pyroTimeout = 60
+
+                # We don't want fast triggers or frame transfer outside of experiments.
                 self.settings['frameTransfer'] = False
-                self.object.enable(self.settings)
+                self.settings['fastTrigger'] = False
+                try:
+                    self.object.enable(self.settings)
+                except:
+                    thread.shouldStop = True
+                    self.object._pyroTimeout = originalTimeout
+                    self.updateUI()
+                    return
+
                 # Wait for camera to show it is enabled.
                 while not self.object.is_enabled():
                     time.sleep(1)
@@ -151,6 +174,7 @@ class AndorCameraDevice(camera.CameraDevice):
         else:
             self.enabled = False
             self.object.disable()
+            self.object.make_safe()
             self.connection.disconnect()
 
         # Finally, udate our UI buttons.
@@ -160,7 +184,11 @@ class AndorCameraDevice(camera.CameraDevice):
     def getExposureTime(self, name, isExact):
         """Read the real exposure time from the camera."""
         # Camera uses times in s; cockpit uses ms.
-        return self.object.get_exposure_time() * 1000.0
+        t = self.object.get_exposure_time()
+        if isExact:
+            return decimal.Decimal(t * 1000.0)
+        else:
+            return t * 1000.0
 
 
     def getImageSize(self, name):
@@ -199,15 +227,16 @@ class AndorCameraDevice(camera.CameraDevice):
     def prepareForExperiment(self, name, experiment):
         """Make the hardware ready for an experiment."""
         self.cached_settings.update(self.settings)
-        self.settings['frameTransfer'] = True
         self.object.abort()
-        self.object.enable(self.settings)
-        #self.setExposureTime(name, 0)
-        # Since we'll be in frame-transfer mode, we'll be accumulating light
-        # until the next external trigger. This causes a lot of background in
-        # the first image. So we'll trigger the first image immediately before
-        # starting the experiment (or as close-to as possible) and discard it.
-        #self.object.skip_images(next=1)
+        self.settings['frameTransfer'] = self.experimentTriggerMode.frameTransfer
+        self.settings['fastTrigger'] = self.experimentTriggerMode.fastTrigger
+        self.settings['triggerMode'] = self.experimentTriggerMode.cameraTrigger
+        try:
+            self.object.enable(self.settings)
+        except:
+            raise
+        else:
+            self.handler.exposureMode = self.experimentTriggerMode.cockpitTrigger
 
 
     def receiveData(self, action, *args):
@@ -269,6 +298,22 @@ class AndorCameraDevice(camera.CameraDevice):
         gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
+    def onTrigButton(self, event=None):
+        menu = wx.Menu()
+        menuID = 0
+        for mode in TRIGGER_MODES:
+            menu.Append(menuID, mode.label)
+            wx.EVT_MENU(self.panel, menuID, lambda event, m=mode:
+                        self.setExperimentTriggerMode(m))
+            menuID += 1
+        gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+
+
+    def setExperimentTriggerMode(self, mode):
+        self.experimentTriggerMode = mode
+        self.trigButton.SetLabel('exp. trigger:\n%s' % mode.label)
+
+
     def setAmplifierMode(self, mode):
         self.settings.update({'amplifierMode': mode})
         # Apply the change right now if camera is enabled.
@@ -301,7 +346,13 @@ class AndorCameraDevice(camera.CameraDevice):
                 parent=self.panel, size=(128, 48))
         self.gainButton.Bind(wx.EVT_LEFT_DOWN, self.onGainButton)
         rowSizer.Add(self.gainButton)
-        
+
+        self.trigButton = gui.toggleButton.ToggleButton(
+                label='exp. trigger:\n%s' % self.experimentTriggerMode.label,
+                parent=self.panel,
+                size=(128,48))
+        self.trigButton.Bind(wx.EVT_LEFT_DOWN, self.onTrigButton)
+        rowSizer.Add(self.trigButton)
         sizer.Add(rowSizer)
         self.panel.SetSizerAndFit(sizer)
         return self.panel
