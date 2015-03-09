@@ -97,12 +97,12 @@ class Imager:
                 print "Video mode failed:",e
                 traceback.print_exc()
                 break
-            if haveNonRoomLight:
-                waitTime = 1 - (time.time() - start)
-                # Wait until 1s has passed before taking the next image.
-                time.sleep(max(0, 1 - time.time() + start))
-            else:
-                time.sleep(.01)
+#            if haveNonRoomLight:
+#                waitTime = 1 - (time.time() - start)
+#                # Wait until 1s has passed before taking the next image.
+#                time.sleep(max(0, 1 - time.time() + start))
+#            else:
+#                time.sleep(.01)
         self.amInVideoMode = False
         events.publish('video mode toggle', False)
 
