@@ -86,7 +86,7 @@ class AndorCameraDevice(camera.CameraDevice):
                 self.onObjectiveChange)
 
 
-    def onObjectiveChange(self, name, pixelSize, transform):
+    def onObjectiveChange(self, name, pixelSize, transform, offset):
         self.settings.update({'pathTransform': transform})
         # Apply the change now if the camera is enabled.
         if self.enabled:
