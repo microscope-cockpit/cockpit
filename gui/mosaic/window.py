@@ -196,12 +196,15 @@ class MosaicWindow(wx.Frame):
     ## Now that we've been created, recenter the canvas.
     def centerCanvas(self, event = None):
         curPosition = interfaces.stageMover.getPosition()[:2]
-        self.canvas.zoomTo(-curPosition[0], curPosition[1], 1)
+     
         # Calculate the size of the box at the center of the crosshairs. 
         # \todo Should we necessarily assume a 512x512 area here?
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         self.crosshairBoxSize = 512 * objective.getPixelSize()
-
+        self.offset = objective.getOffset()
+        self.canvas.zoomTo(-curPosition[0]+self.offset[0],
+                           curPosition[1]-self.offset[1], 1)
+        
 
     ## Resize our canvas.
     def onSize(self, event):
@@ -226,9 +229,12 @@ class MosaicWindow(wx.Frame):
 
 
     ## User changed the objective in use; resize our crosshair box to suit.
-    def onObjectiveChange(self, name, pixelSize, **kwargs):
+    def onObjectiveChange(self, name, pixelSize, transform, offset, **kwargs):
         self.crosshairBoxSize = 512 * pixelSize
-
+        self.offset = offset
+        #force a redraw so that the crosshairs are properly sized
+        self.Refresh()
+        
 
     ## Handle mouse events. 
     def onMouse(self, event):
@@ -253,8 +259,10 @@ class MosaicWindow(wx.Frame):
         if self.selectTilesFunc is None:
             if event.LeftDClick():
                 # Double left-click; move to the target position.
-                target = self.canvas.mapScreenToCanvas(mousePos)
-                self.goTo(target)
+                currentTarget = self.canvas.mapScreenToCanvas(mousePos)
+                newTarget = (currentTarget[0] + self.offset[0],
+                             currentTarget[1] + self.offset[1])
+                self.goTo(newTarget)
             elif event.LeftIsDown() and not event.LeftDown():
                 # Dragging the mouse with the left mouse button: drag or
                 # zoom, as appropriate.
@@ -307,7 +315,8 @@ class MosaicWindow(wx.Frame):
         for site in interfaces.stageMover.getAllSites():
             # Draw a crude circle.
             x, y = site.position[:2]
-            x = -x
+            x = -x - self.offset[0]
+            y = y +self.offset[1]
             # Set line width based on zoom factor.
             lineWidth = max(1, self.canvas.scale * 1.5)
             glLineWidth(lineWidth)
@@ -373,6 +382,8 @@ class MosaicWindow(wx.Frame):
         if size is None:
             xSize = ySize = 100000
         x, y = position
+        x = x-self.offset[0]
+        y = y-self.offset[1]
 
         # Draw the crosshairs
         glColor3f(*color)
@@ -433,7 +444,13 @@ class MosaicWindow(wx.Frame):
         width, height = camera.getImageSize()
         width *= objective.getPixelSize()
         height *= objective.getPixelSize()
-        centerX, centerY, curZ = interfaces.stageMover.getPosition()
+        self.offset= objective.getOffset()
+        pos=interfaces.stageMover.getPosition()
+#IMD 20150303 always work in shifted coords in mosaic
+        centerX=pos[0]-self.offset[0]
+        centerY=pos[1]-self.offset[1]
+        curZ=pos[2]-self.offset[2]
+#        centerX, centerY, curZ) = interfaces.stageMover.getPosition()+self.offset
         prevPosition = (centerX, centerY)
         for dx, dy in self.mosaicStepper():
             while self.shouldPauseMosaic:
@@ -465,11 +482,13 @@ class MosaicWindow(wx.Frame):
                         prevPosition[1] - height / 2, curZ),
                     (width, height), scalings = (scaleMin, scaleMax),
                     shouldRefresh = True)
-            # Move to the next position.
-            target = (centerX + dx * width, centerY + dy * height)
+            # Move to the next position in shifted coords.
+            target = (centerX +self.offset[0]+ dx * width,
+                      centerY +self.offset[1]+ dy * height)
             self.goTo(target, True)
-            prevPosition = target
-            curZ = interfaces.stageMover.getPositionForAxis(2)
+            prevPosition = (centerX + dx * width,
+                      centerY + dy * height)
+            curZ = interfaces.stageMover.getPositionForAxis(2)-self.offset[2]
 
         # We should never reach this point!
         self.mosaicGenerationLock.release()
@@ -492,7 +511,9 @@ class MosaicWindow(wx.Frame):
         height *= objective.getPixelSize()
         x, y, z = interfaces.stageMover.getPosition()
         data = gui.camera.window.getImageForCamera(camera)
-        self.canvas.addImage(data, (-x - width / 2, y - height / 2, z),
+        self.canvas.addImage(data, (-x +self.offset[0]- width / 2,
+                                    y-self.offset[1] - height / 2,
+                                    z-self.offset[2]),
                 (width, height),
                 scalings = gui.camera.window.getCameraScaling(camera))
         self.Refresh()
@@ -589,8 +610,12 @@ class MosaicWindow(wx.Frame):
             interfaces.stageMover.goTo((target[0], target[1], targetZ), 
                     shouldBlock)
         else:
+            #IMD 20150306 Save current mover, change to coarse to generate mosaic
+			# do move, and change mover back.			
+            originalMover= interfaces.stageMover.mover.curHandlerIndex
+            interfaces.stageMover.mover.curHandlerIndex = 0
             interfaces.stageMover.goToXY(target, shouldBlock)
-
+            interfaces.stageMover.mover.curHandlerIndex = originalMover
 
     ## Calculate the Z position in focus for a given XY position, according
     # to our focal plane parameters.
