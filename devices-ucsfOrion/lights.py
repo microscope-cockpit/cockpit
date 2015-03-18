@@ -341,7 +341,7 @@ class LightsDevice(device.Device):
                     epiLights.append(light)
             if len(epiLights) > 1:
                 raise RuntimeError("Tried to take an image with multiple simultaneous EPI lights; this is not possible. Suggest you set a different emission filter for each one.")
-            epiPosition = self.labelToEpiConfigs[light.name]
+            epiPosition = self.labelToEpiFilter[light.name]
             self.core.setProperty('Wheel-EPI', 'Label',
                     'Filter-%d' % epiPosition)
             self.setFilter(True, self.labelToDichroic[epiLights[0].name])
