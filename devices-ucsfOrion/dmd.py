@@ -26,7 +26,9 @@ CLASS_NAME = 'DMDDevice'
 BUTTON_WIDTH = 100
 
 ## Number of different grayscale values we allow (including black and white).
-NUM_COLORS = 3
+# Since the DMD device itself is black-and-white, these shades will be
+# achieved by performing timewise dithering.
+NUM_COLORS = 11
 
 ## Path to the file where DMD patterns are written to prior to them being
 # loaded onto the DMD itself.
@@ -98,7 +100,7 @@ class DMDWindow(wx.Frame):
 
         # Set up controls along the top of the main panel
         controlsPanel = wx.Panel(self.panel)
-        controlsSizer = wx.GridSizer(3, 4, 0, 0)
+        controlsSizer = wx.GridSizer(3, 5, 0, 0)
         for label, action, helpText in [
                 ('Write to DMD', lambda event: self.writeArray(self.data),
                  "Load the currently-drawn pattern onto the DMD."),
@@ -108,6 +110,8 @@ class DMDWindow(wx.Frame):
                  "Clear the entire field to white."),
                 ('Clear to black', lambda event: self.clear(0),
                  "Clear the entire field to black."),
+                ('Abort drawing', lambda event: self.stopDrawing(),
+                 "Stop drawing a rectangle or polygon."),
                 ('Record for site', lambda event: self.recordForSite(),
                  "Automatically load this pattern when we arrive at " +
                  "a specific site."),
@@ -120,7 +124,12 @@ class DMDWindow(wx.Frame):
                  "Remember this pattern for later re-use within the same " +
                  "microscope session."),
                 ('Manage patterns', lambda event: self.managePatterns(),
-                 "Bring up a dialog for interacting with stored patterns.")]:
+                 "Bring up a dialog for interacting with stored patterns."),
+                (None, None, None)]:
+            if label is None:
+                # Just add a spacer instead.
+                controlsSizer.Add((1, 1))
+                continue
             button = wx.Button(controlsPanel, -1, label,
                     size = (BUTTON_WIDTH, -1))
             button.SetToolTipString(helpText)
@@ -367,8 +376,8 @@ class DMDWindow(wx.Frame):
         maxX = int(max(p[0] for p in points))
         minY = int(min(p[1] for p in points))
         maxY = int(max(p[1] for p in points))
-        for y in xrange(minY, maxY + 1):
-            for x in xrange(minX, maxX + 1):
+        for y in xrange(max(0, minY), min(self.data.shape[0], maxY + 1)):
+            for x in xrange(max(0, minX), min(self.data.shape[1], maxX + 1)):
                 doesIntersect = False
                 for i, (px, py) in enumerate(points[:-1]):
                     nx, ny = points[i + 1]
@@ -383,15 +392,37 @@ class DMDWindow(wx.Frame):
 
 
     ## Write a new pattern to the DMD. We take this moment to implement
-    # timewise dithering: 0 = off, 2 = on, 1 = 50% dither. Thus, two
-    # buffers get written.
-    def writeArray(self, data):
+    # timewise dithering: 0 = off, (NUM_COLORS - 1) = 100% on,
+    # everything else is a timewise dither. Thus, multiple buffers get
+    # written.
+    # \param specificIndex Debugging option to only output a specific single
+    # buffer.
+    def writeArray(self, data, specificIndex = None):
         assert(data.shape == (600, 800))
+        indices = range(NUM_COLORS - 1)
+        if specificIndex is not None:
+            indices = [specificIndex]
+        # Because we want even spacing of the on/off states for pixels that
+        # are dithered in time, we'll use this summation buffer to track
+        # when a pixel should be on vs. off. Each iteration, each pixel adds
+        # to this buffer a value based on that pixel's frequency; when the
+        # buffer exceeds 1, we write an "on" state for that pixel and subtract
+        # 1 from the buffer.
+        summationBuffer = numpy.zeros(data.shape, dtype = numpy.float32)
+        # This is what we'll add to summationBuffer in each iteration.
+        addendBuffer = numpy.zeros(data.shape, dtype = numpy.float32)
+        addendBuffer[:] = data / float(NUM_COLORS - 1)
+        
         handle = open(DMD_PATH, 'wb')
-        for i in xrange(NUM_COLORS - 1):
+        for i in indices:
+            # Note: when looking at the pattern in the camera, 1 = "dark",
+            # 0 = "bright". Hence we start with a dark default and fill in
+            # the bright pixels.
             temp = numpy.ones((data.shape), dtype = numpy.uint8)
-            temp[numpy.where(data == 2)] = 0
-            temp[numpy.where(data % 2 == i)] = 0
+            summationBuffer += addendBuffer
+            onIndices = numpy.where(summationBuffer >= 1)
+            temp[onIndices] = 0
+            summationBuffer[onIndices] -= 1
             # Collapse to a linear array.
             temp.shape = numpy.product(temp.shape)
             handle.write(numpy.packbits(temp))
@@ -404,31 +435,41 @@ class DMDWindow(wx.Frame):
         self.canvas.setDisplay(self.data)
 
 
+    ## Abort drawing a polygon or rectangle.
+    def stopDrawing(self):
+        self.prevMousePos = None
+        self.canvas.polygonPoints = []
+        self.canvas.rectVert1 = None
+        self.canvas.rectColor = None
+
+
     ## Load the current pattern from the DMD. Except that we can't directly
     # access the DMD pattern; instead we load the patterns we last wrote
     # to the intermediary file.
     # \todo For now, only "restoring" the first pattern in that file, not
     # all of them (thus timewise dithering is lost).
     def loadArray(self):
-        handle = open(DMD_PATH, 'rb')
-        # Divide by 8 because the buffers are 1 bit per pixel but the
-        # datatype is 8 bits per pixel, so we're packing 8 pixels into
-        # each element.
-        data = numpy.fromfile(handle, dtype = numpy.uint8,
-                count = 800 * 600 / 8)
-        print "Loaded data with shape",data.shape
-        bufSum = 0
-        for i, item in enumerate(data):
-            if item != 0 and not bufSum:
-                print "First nonzero byte at",i
-            bufSum += item
-        print "Data sum is",bufSum
-        # Now unpack those elements.
-        data = numpy.unpackbits(data)
-        print "Unpacked pixels have shape",data.shape
-        data.shape = (600, 800)
-        # Remap (0, 1) to (0, MAX_COLORS - 1)
-        data *= (NUM_COLORS - 1)
+        try:
+            handle = open(DMD_PATH, 'rb')
+            # Divide by 8 because the buffers are 1 bit per pixel but the
+            # datatype is 8 bits per pixel, so we're packing 8 pixels into
+            # each element.
+            data = numpy.fromfile(handle, dtype = numpy.uint8,
+                    count = 800 * 600 / 8)
+            # Now unpack those elements.
+            data = numpy.unpackbits(data)
+            print "Unpacked pixels have shape",data.shape
+            data.shape = (600, 800)
+            # Reverse 0 and 1.
+            data[numpy.where(data == 1)] = 2
+            data[numpy.where(data == 0)] = 1
+            data[numpy.where(data == 2)] = 0
+            # Remap (0, 1) to (0, MAX_SHADES - 1)
+            data *= (NUM_COLORS - 1)
+        except Exception, e:
+            print "There was an error loading the previous buffer:",e
+            # Just use a blank canvas.
+            data = numpy.zeros((600, 800), dtype = numpy.uint8)
         self.data = data
         if self.canvas is not None:
             self.canvas.setDisplay(self.data)
