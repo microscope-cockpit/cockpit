@@ -3,10 +3,12 @@ import device
 import events
 import handlers.camera
 import util.connection
+import util.threads
 
 import decimal
 import numpy
 import Pyro4
+import Queue
 import threading
 import time
 
@@ -35,8 +37,19 @@ class CameraDevice(device.Device):
                 '528x512', '240x256', '144x128']
         ## Current trigger mode for cameras.
         self.curTriggerMode = TRIGGER_EXTERNAL_EXPOSURE
+        ## Queue of (image, timestamp, camera name) representing images
+        # received from the camera computer(s).
+        self.imageQueue = Queue.Queue()
+
+        ## Partial image that we are in the process of reconstructing from
+        # portions sent to us by the camera computer (only relevant for
+        # large image sizes).
+        self.partialImage = None
+        ## Timestamp for partial images.
+        self.partialImageTimestamp = None
 
         events.subscribe('experiment complete', self.onExperimentComplete)
+        self.publishImages()
 
 
     def getHandlers(self):
@@ -91,7 +104,39 @@ class CameraDevice(device.Device):
     ## Receive data from a camera. 
     def receiveData(self, name, action, *args):
         if action == 'new image':
+            # Received a new image in its entirety.
             (image, timestamp) = args
+            self.imageQueue.put((image, timestamp, name))
+        elif action == 'image component info':
+            # We'll be receiving pieces of an image in multiple messages;
+            # start assembling them into a complete image.
+            # \todo This logic doesn't cope with multiple cameras (i.e.
+            # self.partialImage should be a mapping of camera name to
+            # partial images).
+            (shape, timestamp) = args
+            self.partialImageTimestamp = timestamp
+            self.partialImage = numpy.zeros(shape, dtype = numpy.uint16)
+        elif action == 'image component':
+            # Received a component of the image.
+            (xOffset, yOffset, image) = args
+            self.partialImage[xOffset : xOffset + image.shape[0],
+                    yOffset : yOffset + image.shape[1]] = image
+        elif action == 'image complete':
+            # Done receiving image components.
+            self.imageQueue.put(
+                    (self.partialImage, self.partialImageTimestamp, name)
+            )
+
+
+    ## Publish images we have received. We do this in a separate thread from
+    # the thread that receives the images to avoid keeping the network link
+    # to the camera computer occupied.
+    @util.threads.callInNewThread
+    def publishImages(self):
+        while True:
+            # Wait for an image to arrive.
+            image, timestamp, name = self.imageQueue.get(block = True,
+                    timeout = None)
             events.publish("new image %s" % name, image, timestamp)
 
 
@@ -156,10 +201,11 @@ class CameraDevice(device.Device):
         curExposureTime = connection.getExposureTime()
         connection.setExposureTime(.00001)
         connection.setTrigger(self.curTriggerMode)
-        # Convert from seconds to milliseconds. 
+        # Convert from seconds to milliseconds
         result = connection.getExposureTime() * 1000
         connection.setExposureTime(curExposureTime)
         self.nameToMinExposureTime[name] = result
+        print "Min exposure time is",result
         return result
 
 
