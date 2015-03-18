@@ -166,7 +166,7 @@ class TIRFMirrorDevice(device.Device):
         if (not isEnabled) or 'LED' in handler.name:
             return
         # EPI doesn't use TIRF; everyone else does.
-        self.activeButton.setActive('EPI' in handler.name)
+        self.activeButton.setActive('EPI' not in handler.name)
         # Skip if we have multiple active light sources.
         allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         numActive = sum([(l.getIsEnabled() and 'LED' not in handler.name) for l in allLights])
