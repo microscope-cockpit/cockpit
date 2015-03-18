@@ -420,10 +420,9 @@ class MosaicWindow(wx.Frame):
             i += 1
 
 
-    ## Move the stage in a spiral pattern, stopping to take images at regular
-    # intervals, to generate a stitched-together high-level view of the stage
-    # contents. Check for an existing paused mosaic function and destroy it
-    # if it exists.
+    ## Generate a spiral mosaic. This function just checks to see if we have
+    # an existing mosaic thread, and if so, tells it to end before calling
+    # generateMosaic2() which does the actual mosaic generation.
     # \param camera Handler of the camera we're collecting images from.
     @util.threads.callInNewThread
     def generateMosaic(self, camera):
@@ -433,6 +432,11 @@ class MosaicWindow(wx.Frame):
         self.generateMosaic2(camera)
 
 
+    ## Move the stage in a spiral pattern, stopping to take images at regular
+    # intervals, to generate a stitched-together high-level view of the stage
+    # contents. This function is suspended when the Abort button (or the 
+    # Stop Mosaic button) is pressed, and can be resumed later. Only one 
+    # such suspended thread is allowed to be active at a time.
     def generateMosaic2(self, camera):
         # Acquire the mosaic lock so no other mosaics can run.
         self.mosaicGenerationLock.acquire()
