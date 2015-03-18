@@ -7,11 +7,21 @@ class ActionTable:
         ## List of (time, handler, parameter) tuples indicating what actions
         # must be taken at what times.
         self.actions = []
+        ## Time of our first action.
+        # \todo How do we handle the removal of actions rendering this invalid?
+        # For now, we don't.
+        self.firstActionTime = None
+        ## Time of our last action.
+        self.lastActionTime = None
     
 
     ## Insert an element into self.actions.
     def addAction(self, time, handler, parameter):
         self.actions.append((time, handler, parameter))
+        if self.firstActionTime is None or self.firstActionTime > time:
+            self.firstActionTime = time
+        if self.lastActionTime is None or self.lastActionTime < time:
+            self.lastActionTime = time
         return time
 
 
@@ -21,6 +31,10 @@ class ActionTable:
         self.actions.append((time, handler, True))
         time += decimal.Decimal('.1')
         self.actions.append((time, handler, False))
+        if self.firstActionTime is None or self.firstActionTime > time:
+            self.firstActionTime = time
+        if self.lastActionTime is None or self.lastActionTime < time:
+            self.lastActionTime = time
         return time
 
 
@@ -64,6 +78,8 @@ class ActionTable:
         for i in xrange(len(self.actions)):
             self.actions[i] = (self.actions[i][0] + delta,
                     self.actions[i][1], self.actions[i][2])
+        self.firstActionTime += delta
+        self.lastActionTime += delta
 
 
     ## Move all actions after the specified time back by the given offset,
@@ -72,10 +88,17 @@ class ActionTable:
         for i, (actionTime, handler, action) in enumerate(self.actions):
             if actionTime >= markTime:
                 self.actions[i] = (actionTime + delta, handler, action)
+        if self.firstActionTime > markTime:
+            self.firstActionTime += delta
+        if self.lastActionTime > markTime:
+            self.lastActionTime += delta
 
 
     ## Return the time of the first and last action we have.
-    def getFirstAndLastActionTimes(self):
+    # Use our cached values if allowed.
+    def getFirstAndLastActionTimes(self, canUseCache = True):
+        if canUseCache:
+            return self.firstActionTime, self.lastActionTime
         firstTime = lastTime = None
         for actionTime, handler, action in self.actions:
             if firstTime is None:
