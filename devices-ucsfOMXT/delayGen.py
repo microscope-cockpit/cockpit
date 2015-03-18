@@ -33,6 +33,8 @@ class DigitalDelayGeneratorDevice(device.Device):
         self.controlledLightNames = set(['488 shutter'])
         ## Cached trigger response delay
         self.curDelay = None
+        ## Whether or not we need to reconfigure incoming experiments.
+        self.shouldAdjustExperiments = True
         events.subscribe('prepare for experiment', self.prepareForExperiment)
         events.subscribe('experiment complete', self.cleanupAfterExperiment)
 
@@ -121,6 +123,10 @@ class DigitalDelayGeneratorDevice(device.Device):
     # physical shutters (which are instead left on for the duration of the
     # experiment).
     def examineActions(self, name, table):
+        # Don't adjust ourselves if the experiment is one that explicitly 
+        # knows about the delay generator already (see prepareForExperiment()).
+        if not self.shouldAdjustExperiments:
+            return
         # Maps handlers to the last time they went up.
         handlerToActivationTime = {}
         # Maps handlers to the last-used exposure time for those handlers.
@@ -208,8 +214,11 @@ class DigitalDelayGeneratorDevice(device.Device):
 
 
     ## Get ready for an experiment: set the initial trigger delay to 0.
+    # If we're doing any experiment except for the ZStackMultiExperiment, we
+    # also need to be ready to adjust its actions.
     def prepareForExperiment(self, experiment):
         self.setInitialDelay(0)
+        self.shouldAdjustExperiments = (type(experiment) is not experiment.zStackMulti.ZStackMultiExperiment)
 
 
     ## Experiment finished; set the delay back to 3ms so that we behave
