@@ -1,4 +1,6 @@
-## This Device creates a set of "virtual cameras" that are associated with 
+## This Device specifies a "drawer" of optics and filters that determines
+# what cameras see what lights.
+# It also creates a set of "virtual cameras" that are associated with 
 # each emission filter, and handles translating images received from the 
 # actual camera to the virtual cameras. 
 
@@ -47,8 +49,9 @@ class EmissionFilterDevice(device.Device):
         ## List of valid filter position labels. The index of a label
         # corresponds to its position in the wheel. Why is there a
         # duplicate? I don't know. Because of how we set the filter position
-        # by name, we need to provide a subtly different name or else it 
-        # becomes inaccessible.
+        # by name, it's inaccessible, but removing it would throw off all our
+        # indices. If it is to be accessible, it must have a subtly different
+        # (here have appended 2) or else it becomes inaccessible.
         self.options = ['Empty', 'ANALYZER', 'Empty2', 'YFP HYQ',
                 'DAPI', 'FITC', 'FITC2', 'TRITC', 'Full', 'BFP']
         ## Maps option names (above) to their corresponding wavelengths,
