@@ -472,19 +472,13 @@ class MosaicWindow(wx.Frame):
                     "new image %s" % camera.name, 
                     interfaces.imager.takeImage, shouldBlock = True)
             # Get the scaling for the camera we're using, since they may
-            # have changed. Calculate them manually since the camera's
-            # image display may be changing rapidly and its absolute black/
-            # whitepoints may not be accurate for the image we're working with.
-            black, white = gui.camera.window.getRelativeCameraScaling(camera)
-            minVal = data.min()
-            maxVal = data.max()
-            scaleMin = black * (maxVal - minVal) + minVal
-            scaleMax = white * (maxVal - minVal) + minVal
+            # have changed. 
+            minVal, maxVal = gui.camera.window.getCameraScaling(camera)
             events.executeAndWaitFor('mosaic canvas paint', 
                     self.canvas.addImage, data, 
                     (-prevPosition[0] - width / 2, 
                         prevPosition[1] - height / 2, curZ),
-                    (width, height), scalings = (scaleMin, scaleMax),
+                    (width, height), scalings = (minVal, maxVal),
                     shouldRefresh = True)
             # Move to the next position in shifted coords.
             target = (centerX +self.offset[0]+ dx * width,
@@ -1028,7 +1022,7 @@ window = None
 def makeWindow(parent):
     global window
     window = MosaicWindow(parent, title = "Mosaic view",
-            style = wx.CAPTION | wx.MINIMIZE_BOX)
+            style = wx.CAPTION | wx.MINIMIZE_BOX | wx.RESIZE_BORDER)
     window.Show()
     window.centerCanvas()
 
