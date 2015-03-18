@@ -221,13 +221,17 @@ class DigitalDelayGeneratorDevice(device.Device):
     ## Get ready for an experiment: set the initial trigger delay to 0.
     # If we're doing any experiment except for the ZStackMultiExperiment, we
     # also need to be ready to adjust its actions.
+    # NOTE: Assumes that the output of the delay generator is the "AB+CD"
+    # port on the back of the device! 
     # \param expObj The experiment object to use. I would name this variable
     # "experiment" except that creates a name conflict with the "experiment"
     # package we imported earlier. D'oh!
     def prepareForExperiment(self, expObj):
         self.setInitialDelay(0)
         self.shouldAdjustExperiments = True
-        if type(expObj) is not experiment.zStackMulti.ZStackMultiExperiment:
+        ## \todo BLEH! The way we identify the experiment type we want
+        # is pretty ugly!
+        if expObj.__class__ is experiment.zStackMulti.ZStackMultiExperiment:
             self.shouldAdjustExperiments = False
             # Extract the secondary delay and exposure times from the
             # experiment settings.
@@ -240,7 +244,8 @@ class DigitalDelayGeneratorDevice(device.Device):
             exposureTime = float(expObj.exposureSettings[0][1][0][1])
             self.setDelay(3, exposureTime)
             self.setDelay(4, delay)
-            self.setDelay(5, exposureTime * multiplier)
+            # NOTE: D is specified relative to t0, not to C!
+            self.setDelay(5, delay + exposureTime * multiplier)
 
 
     ## Experiment finished; set the delay back to 3ms so that we behave
