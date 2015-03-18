@@ -148,6 +148,32 @@ class DSPDevice(device.Device):
         self.moveRetarderAbsolute(None, 0)
 
 
+    ## Add a couple of buttons to access some specific functionality: the
+    # direct output control window, and the advanceSLM function.
+    def makeUI(self, parent):
+        panel = wx.Panel(parent)
+        panelSizer = wx.BoxSizer(wx.VERTICAL)
+        label = wx.StaticText(panel, -1, "DSP Controls:")
+        label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        panelSizer.Add(label)
+        
+        buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
+        button = gui.toggleButton.ToggleButton(
+                label = "DSP\nTTL", parent = panel, size = (84, 50))
+        button.Bind(wx.EVT_LEFT_DOWN, lambda event: makeOutputWindow())
+        buttonSizer.Add(button)
+
+        button = gui.toggleButton.ToggleButton(
+                label = "Advance SLM", parent = panel, size = (84, 50))
+        button.Bind(wx.EVT_LEFT_DOWN, lambda event: self.advanceSLM())
+        buttonSizer.Add(button)
+
+        panelSizer.Add(buttonSizer)
+        panel.SetSizerAndFit(panelSizer)
+        
+        return panel
+
+
     ## User clicked the abort button.
     def onAbort(self):
         self.connection.Abort()
