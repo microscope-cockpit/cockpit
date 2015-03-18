@@ -16,6 +16,11 @@ CLASS_NAME = 'ExperimentExecutorDevice'
 class ExperimentExecutorDevice(device.Device):
     def __init__(self):
         device.Device.__init__(self)
+        self.shouldAbort = False
+
+
+    def initialize(self):
+        events.subscribe('user abort', self.onAbort)
 
     
     ## Generate an ExperimentExecutor handler.
@@ -25,6 +30,12 @@ class ExperimentExecutorDevice(device.Device):
             {'examineActions': self.examineActions, 
                 'getNumRunnableLines': self.getNumRunnableLines, 
                 'executeTable': self.executeTable})]
+
+
+    ## User clicked the abort button; stop our experiment execution, if
+    # applicable.
+    def onAbort(self):
+        self.shouldAbort = True
 
 
     ## Given an experiment.ActionTable instance, examine the actions and 
@@ -51,28 +62,52 @@ class ExperimentExecutorDevice(device.Device):
             repDuration):
         allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         activeLights = filter(lambda l: l.getIsEnabled(), allLights)
+        # Pre-emptively disable all lights.
+        for light in activeLights:
+            light.setEnabled(False)
         allCameras = depot.getHandlersOfType(depot.CAMERA)
         curPosition = interfaces.stageMover.getPosition()
         for repNum in xrange(numReps):
+            if self.shouldAbort:
+                break
             startTime = time.time()
             curTime = startTime
             
             for i, (eventTime, handler, action) in enumerate(table[startIndex:stopIndex]):
+                if self.shouldAbort:
+                    break
                 timeOffset = time.time() - startTime
                 if action and handler.deviceType == depot.CAMERA:
                     # Rising edge of a camera trigger: scan until the falling
                     # edge to find what light sources are involved.
-                    usedLights = set()
+                    lightToTriggerTime = {}
+                    lightToExposureTime = {}
                     for j, (altTime, altHandler, altAction) in enumerate(table[i + 1:stopIndex]):
                         if altHandler in allLights:
-                            altHandler.setEnabled(True)
-                            usedLights.add(altHandler)
+                            if altAction:
+                                # Starting an exposure.
+                                lightToTriggerTime[altHandler] = altTime
+                            else:
+                                # Ending an exposure; record the exposure time.
+                                # Paranoia: if we don't have a start time for
+                                # the exposure, then use the camera trigger time.
+                                startTime = lightToTriggerTime.get(altHandler, eventTime)
+                                lightToExposureTime[altHandler] = altTime - startTime
                         if altHandler is handler and not altAction:
+                            # Ending camera trigger; set its exposure time.
                             exposureTime = altTime - eventTime
                             handler.setExposureTime(exposureTime)
                             break
+                    # Set the exposure time for each active light source.
+                    for light, triggerTime in lightToTriggerTime.iteritems():
+                        light.setEnabled(True)
+                        # Use the light's true exposure time if available;
+                        # otherwise, end the exposure with the camera.
+                        exposureTime = lightToExposureTime.get(light, eventTime - triggerTime)
+                        # Cast to float (i.e. away from Decimal).
+                        light.setExposureTime(float(exposureTime))
                     interfaces.imager.takeImage(shouldBlock = True)
-                    for light in usedLights:
+                    for light in lightToExposureTime.keys():
                         light.setEnabled(False)
                 elif handler.deviceType == depot.STAGE_POSITIONER:
                     # Positioning is specified relative to our starting
