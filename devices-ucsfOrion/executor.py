@@ -72,43 +72,31 @@ class ExperimentExecutorDevice(device.Device):
                 break
             startTime = time.time()
             curTime = startTime
+
+            # Track when lights are triggered so we can set their exposure
+            # times properly.
+            # HACK: we ignore camera events in this executor! We treat
+            # end-of-light-exposure as equivalent to snapping an image, since
+            # the lights (and their associated emission filters) determine
+            # when images are taken anyway. 
+            lightToTriggerTime = {}
             
             for i, (eventTime, handler, action) in enumerate(table[startIndex:stopIndex]):
                 if self.shouldAbort:
                     break
                 timeOffset = time.time() - startTime
-                if action and handler.deviceType == depot.CAMERA:
-                    # Rising edge of a camera trigger: scan until the falling
-                    # edge to find what light sources are involved.
-                    lightToTriggerTime = {}
-                    lightToExposureTime = {}
-                    for j, (altTime, altHandler, altAction) in enumerate(table[i + 1:stopIndex]):
-                        if altHandler in allLights:
-                            if altAction:
-                                # Starting an exposure.
-                                lightToTriggerTime[altHandler] = altTime
-                            else:
-                                # Ending an exposure; record the exposure time.
-                                # Paranoia: if we don't have a start time for
-                                # the exposure, then use the camera trigger time.
-                                startTime = lightToTriggerTime.get(altHandler, eventTime)
-                                lightToExposureTime[altHandler] = altTime - startTime
-                        if altHandler is handler and not altAction:
-                            # Ending camera trigger; set its exposure time.
-                            exposureTime = altTime - eventTime
-                            handler.setExposureTime(exposureTime)
-                            break
-                    # Set the exposure time for each active light source.
-                    for light, triggerTime in lightToTriggerTime.iteritems():
-                        light.setEnabled(True)
-                        # Use the light's true exposure time if available;
-                        # otherwise, end the exposure with the camera.
-                        exposureTime = lightToExposureTime.get(light, eventTime - triggerTime)
-                        # Cast to float (i.e. away from Decimal).
-                        light.setExposureTime(float(exposureTime))
-                    interfaces.imager.takeImage(shouldBlock = True)
-                    for light in lightToExposureTime.keys():
-                        light.setEnabled(False)
+                if handler.deviceType == depot.LIGHT_TOGGLE:
+                    # Turning a light on/off; track its trigger time or
+                    # take an image.
+                    if action:
+                        # Light turning on.
+                        lightToTriggerTime[handler] = eventTime
+                    else:
+                        # Light turning off; take an image with that light.
+                        handler.setEnabled(True)
+                        handler.setExposureTime(float(eventTime - lightToTriggerTime[handler]))
+                        interfaces.imager.takeImage(shouldBlock = False)
+                        handler.setEnabled(False)
                 elif handler.deviceType == depot.STAGE_POSITIONER:
                     # Positioning is specified relative to our starting
                     # position.
