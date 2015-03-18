@@ -61,7 +61,12 @@ class ZStackMultiExperiment(experiment.Experiment):
                 table.addToggle(curTime, camera)
                 table.addToggle(curTime + self.exposureDelay, camera)
                 self.cameraToImageCount[camera] += 2
-            curTime += self.exposureDelay + max(c.getTimeBetweenExposures(isExact = True) for c in cameras)
+            maxCamDelay = max(c.getTimeBetweenExposures(isExact = True) for c in cameras)
+            # Wait for the exposure to complete and/or for the cameras to be
+            # ready again.
+            longExposureTime = self.exposureSettings[0][1][0][1] * self.exposureMultiplier
+            curTime += self.exposureDelay + max(maxCamDelay,
+                    self.exposureDelay + longExposureTime)
             # Plus a little extra for the cameras to recover.
             # \todo This seems a bit excessive; why do we need to wait so
             # long for the Zyla to be ready?
@@ -117,7 +122,7 @@ class ExperimentUI(wx.Panel):
         self.exposureDelay = gui.guiUtils.addLabeledInput(self,
                 sizer, label = "Delay between exposures",
                 defaultValue = self.settings['exposureDelay'],
-                helperString = "Amount of time to wait, in milliseconds, between the end of the first exposure and the beginning of the second exposure. Should be long enough for the camera to recover from taking the first image!")
+                helperString = "Amount of time to wait, in milliseconds, between the beginning of the first exposure and the beginning of the second exposure. Should be long enough for the camera to recover from taking the first image!")
 
         self.SetSizerAndFit(sizer)
 
