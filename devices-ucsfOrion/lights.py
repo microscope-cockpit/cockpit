@@ -2,6 +2,7 @@ import depot
 import device
 import events
 import gui.guiUtils
+import gui.toggleButton
 import handlers.imager
 import handlers.lightPower
 import handlers.lightSource
@@ -36,8 +37,6 @@ class LightsDevice(device.Device):
         self.nameToExposureTime = dict()
         ## Maps lightsource names to their handlers.
         self.nameToHandler = dict()
-        ## Maps lightsource names to the names MicroManager uses.
-        self.nameToMMName = dict()
         ## Maps wavelengths to lightsource names.
         self.wavelengthToName = dict()
         ## Sorted list of wavelengths we control.
@@ -49,21 +48,49 @@ class LightsDevice(device.Device):
         ## Indicates if we've turned the 561 laser on yet this session.
         self.haveEnabled561 = False
 
-        ## List of (name, wavelength) tuples for non-laser lightsources.
-        self.specialLights = [('DIA', 0), ('EPI Blue', 405),
-                ('EPI Cyan', 440), ('EPI Green', 514),
-                ('EPI Yellow', 580), ('EPI Red', 640)]
-
-        ## Maps EPI light source labels to the (EPI filter,
-        # TIFilterBlock1 filter, TIFilterBlock2 filter) positions for those
-        # labels.
-        self.labelToEpiConfigs = {
-            'EPI Blue': (1, 5, 5),
-            'EPI Cyan': (4, 0, 4),
-            'EPI Green': (5, 1, 0),
-            'EPI Yellow': (9, 0, 0),
-            'EPI Red': (6, 3, 0),
+        ## Maps light source names to their wavelengths.
+        self.nameToWavelength = {
+            '405 T': 405,
+            '440T1': 440,
+            '488 L': 488,
+            '514 T': 514,
+            '561TI': 561,
+            'DIA': 0,
+            'EPI Blue': 405,
+            'EPI Cyan': 440,
+            'EPI Green': 514,
+            'EPI Yellow': 580,
+            'EPI Red': 640,
         }
+
+        ## Maps light source names to their TIFilterBlock1 filter positions.
+        self.labelToDichroic = {
+            '405 T': '6-405 T',
+            '440T1': '5-440T1',
+            '488 L': '2-488 L',
+            '514 T': '1-514 T',
+            '561TI': '4-561TI',
+            'EPI Blue': '6-405 T',
+            'EPI Cyan': '5-440T1',
+            'EPI Green': '2-488 L',
+            'EPI Yellow': '1-514 T',
+            'EPI Red': '4-561TI',
+            'DIA': None,
+        }
+
+        ## Maps EPI light source labels to the EPI filter positions for those
+        # lights.
+        self.labelToEpiFilter = {
+            'EPI Blue': 1,
+            'EPI Cyan': 4,
+            'EPI Green': 5,
+            'EPI Yellow': 9,
+            'EPI Red': 6,
+        }
+
+        ## Maps light source names to the buttons for setting their
+        # corresponding dichroics.
+        self.labelToDichroicButton = {}
 
         ## Dropdown menu for the first filter turret.
         self.filterMenu1 = None
@@ -78,6 +105,7 @@ class LightsDevice(device.Device):
         self.core = mmDevice.getCore()
         events.subscribe('prepare for experiment', self.onPrepareForExperiment)
         events.subscribe('cleanup after experiment', self.onExperimentCleanup)
+        events.subscribe('create light controls', self.onLightControl)
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
         events.subscribe('nikon: prepare for image', self.prepareForImage)
@@ -112,10 +140,43 @@ class LightsDevice(device.Device):
         return sizer
 
 
+    ## Add a menu for setting the dichroic used for this light.
+    def onLightControl(self, parent, sizer, light):
+        if light.name not in self.labelToDichroic:
+            # Not a light source we care about.
+            return
+        panel = wx.Panel(parent)
+        button = gui.toggleButton.ToggleButton(parent = panel,
+                label = 'Dichroic: %s' % self.labelToDichroic[light.name],
+                size = (120, 45))
+        
+        # Generate a dropdown menu to let the user select the dichroic
+        # to use.
+        menu = wx.Menu()
+        dichroics = self.core.getAllowedPropertyValues('TIFilterBlock1', 'Label')
+        for i, dichroic in enumerate(dichroics):
+            menu.Append(i, dichroic)
+            wx.EVT_MENU(panel, i,
+                    lambda event, i = i: self.setDichroic(light.name, dichroics[i]))
+        button.Bind(wx.EVT_LEFT_DOWN,
+                lambda *args: gui.guiUtils.placeMenuAtMouse(panel, menu))
+
+        self.labelToDichroicButton[light.name] = button
+
+        sizer.Add(panel)
+
+
+    ## Set the dichroic used for the specified light source.
+    def setDichroic(self, label, dichroic):
+        self.labelToDichroic[label] = dichroic
+        self.labelToDichroicButton[label].SetLabel('Dichroic: %s' % dichroic)
+
+
     ## Save our settings to the provided dict.
     def onSaveSettings(self, settings):
         settings['Filter turrets'] = [self.filterMenu1.GetStringSelection(),
                 self.filterMenu2.GetStringSelection()]
+        settings['labelToDichroic'] = self.labelToDichroic
 
 
     ## Load settings from the provided dict.
@@ -123,29 +184,16 @@ class LightsDevice(device.Device):
         if 'Filter turrets' in settings:
             self.setFilter(True, settings['Filter turrets'][0])
             self.setFilter(False, settings['Filter turrets'][1])
+        if 'labelToDichroic' in settings:
+            for label, dichroic in settings['labelToDichroic'].iteritems():
+                self.setDichroic(label, dichroic)
 
 
     def getHandlers(self):
         result = []
-        labels = self.core.getAllowedPropertyValues('TIFilterBlock1', 'Label')
-        nameAndWavelength = []
-        # Hack: extract the wavelength from the label, if possible.
-        # Generate a nicer name for the laser lights too.
-        for label in labels:
-            # HACK: ignore the "3-D-FTx" option.
-            if label == '3-D-FTx':
-                continue
-            match = re.match('.*?-(\d+)(.*)', label)
-            if not match:
-                wavelength = label
-                name = label
-            else:
-                wavelength = int(match.group(1))
-                name = match.group(1) + match.group(2)
-            nameAndWavelength.append((name, wavelength))
-            self.nameToMMName[name] = label
+        dichroics = self.core.getAllowedPropertyValues('TIFilterBlock1', 'Label')
 
-        for name, wavelength in nameAndWavelength + self.specialLights:
+        for name, wavelength in self.nameToWavelength.iteritems():
             handler = handlers.lightSource.LightHandler(
                 name, "%s light source" % name,
                 {'setEnabled': self.setEnabled,
@@ -156,7 +204,7 @@ class LightsDevice(device.Device):
             self.nameToExposureTime[handler.name] = 100
             self.nameToHandler[handler.name] = handler
             # Special behavior for lasers: add a power control.
-            if (name, wavelength) not in self.specialLights:
+            if sum([name in dichroic for dichroic in dichroics]):
                 # Add a laser power handler for the lasers with valid wavelengths,
                 # and default the laser to 15% emission.
                 color = util.colors.wavelengthToColor(wavelength)
@@ -215,7 +263,7 @@ class LightsDevice(device.Device):
             # Disable all DIA/EPI light sources that are active.
             for name, handler in self.nameToHandler.iteritems():
                 if 'DIA' in name or 'EPI' in name:
-                    handler.setEnabled(False)                
+                    handler.setEnabled(False)
 
         # Add/remove things from self.activeWavelengths.
         if not isEnabled:
@@ -251,13 +299,10 @@ class LightsDevice(device.Device):
             # No lights we care about.
             return
 
-        print "Have shutter more",shutterMode
-
         # Set the shutter mode.
         self.core.setShutterDevice(shutterMode)
         events.publish('MM shutter change', shutterMode)
 
-        # Adjust the filter turrets, only if using laser or EPI lights.
         if shutterMode == 'LMM5-Shutter':
             # Construct a list of lights that are lasers, since we don't
             # care about the others (e.g. LEDs).
@@ -265,18 +310,15 @@ class LightsDevice(device.Device):
             for light in lights:
                 if light.wavelength in self.wavelengths:
                     laserLights.append(light)
-            print "Laser lights are",laserLights
             if len(laserLights) == 1:
                 # Just one light; set the appropriate filter.
-                activeWavelength = laserLights[0].wavelength
-                activeName = self.wavelengthToName[activeWavelength]
-                self.setFilter(True, self.nameToMMName[activeName])
+                self.setFilter(True, self.labelToDichroic[laserLights[0].name])
             elif laserLights:
                 # Multiple lasers; set the "3-D-FTx" filter which seems
                 # to be empty.
                 self.setFilter(True, '3-D-FTx')
                 # Print a warning about the AOM.
-                print "Multiple simultaneous active lasers! I don't know if the AOM will work well for this..."
+                print "Multiple simultaneous active lasers! I don't know if the dichroic will work well for this..."
 
             # Construct the necessary AOM setting from the wavelengths of
             # the active lights.
@@ -289,7 +331,6 @@ class LightsDevice(device.Device):
                 if wavelength == 440:
                     wavelength = 444
                 modeStrings.append('%dnm-%d' % (wavelength, index))
-            print "Mode strings are",modeStrings
             self.core.setProperty('LMM5-Shutter', 'Label', 
                     '/'.join(modeStrings))
         elif shutterMode == 'Shutter-EPI':
@@ -300,13 +341,10 @@ class LightsDevice(device.Device):
                     epiLights.append(light)
             if len(epiLights) > 1:
                 raise RuntimeError("Tried to take an image with multiple simultaneous EPI lights; this is not possible. Suggest you set a different emission filter for each one.")
-            epiPosition, filter1, filter2 = self.labelToEpiConfigs[light.name]
-            filter1Label = self.core.getAllowedPropertyValues('TIFilterBlock1', 'Label')[filter1]
-            filter2Label = self.core.getAllowedPropertyValues('TIFilterBlock2', 'Label')[filter2]
+            epiPosition = self.labelToEpiConfigs[light.name]
             self.core.setProperty('Wheel-EPI', 'Label',
                     'Filter-%d' % epiPosition)
-            self.setFilter(True, filter1Label)
-            self.setFilter(False, filter2Label)
+            self.setFilter(True, self.labelToDichroic[epiLights[0].name])
             
 
     ## Enable/disable the DIA light source. If enabling, disable all others
@@ -340,14 +378,6 @@ class LightsDevice(device.Device):
             self.filterMenu2.SetStringSelection(label)
         if shouldBlock:
             self.core.waitForDevice(name)
-
-
-    ## Return True if any of our active lights are in self.specialLights.
-    def haveActiveSpecialLights(self):
-        for light in self.activeWavelengths:
-            if light in self.specialLights:
-                return True
-        return False
 
 
     ## Change the exposure time for a light source.
