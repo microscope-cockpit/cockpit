@@ -278,7 +278,9 @@ class EmissionFilterDevice(device.Device):
             # Set the exposure time. Use the max exposure time of all lights,
             # since we unfortunately can't set them individually.
             exposureTime = max([light.getExposureTime() for light in lights])
-            self.core.setExposure(exposureTime)
+            # Paranoia: the light source might potentially have a Decimal
+            # for an exposure time, which MicroManager can't handle cleanly.
+            self.core.setExposure(float(exposureTime))
             events.publish('nikon: prepare for image', lights)
             self.core.snapImage()
             image = self.core.getImage()
