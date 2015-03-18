@@ -121,15 +121,7 @@ class EmissionFilterDevice(device.Device):
                     'takeImage': self.takeImage
                 }
         ))
-        # Add an executor for changing the filter mid-experiment.
-        result.append(handlers.executor.ExecutorHandler(
-                'Emission filter executor', 'miscellaneous',
-                {
-                    'examineActions': self.examineActions,
-                    'getNumRunnableLines': self.getNumRunnableLines,
-                    'executeTable': self.executeTable
-                }
-        ))
+
 
         # Generate synthetic cameras, one per filter.
         # Cast to set so we don't get duplicates.
@@ -190,7 +182,7 @@ class EmissionFilterDevice(device.Device):
                     self.lightToGainButton[light].SetLabel('Gain: %s' % val['gain'])
                     if 'filter' in val:
                         self.lightToFilter[light] = val['filter']
-                        self.lightToFilterButton[light].SetLabel('Filter: %s' % val['filter'])
+                        self.lightToFilterButton[light].SetLabel('Emission: %s' % val['filter'])
 
 
     ## Camera enabled or disabled. If we have exactly 1 camera, set the
@@ -229,10 +221,10 @@ class EmissionFilterDevice(device.Device):
         self.lightToGainButton[light] = gainButton
 
         filterButton = gui.toggleButton.ToggleButton(parent = parent,
-                label = 'Filter: ')
+                label = 'Emission: ', size = (120, 45))
         def associateFilter(name):
             self.lightToFilter[light] = name
-            filterButton.SetLabel('Filter: %s' % name)
+            filterButton.SetLabel('Emission: %s' % name)
         def setFilter(event):
             eventObject = event.GetEventObject()
             menu = wx.Menu()
@@ -293,41 +285,6 @@ class EmissionFilterDevice(device.Device):
                     # as the light still thinks it is exposing.
                     light.setExposing(False)
                     light.setExposing(True)
-
-
-    ## Check the provided experiment ActionTable, and ensure that the
-    # appropriate emission filter is set prior to each exposure.
-    def examineActions(self, name, table):
-        lastCam = None
-        for i, (time, handler, action) in enumerate(table.actions):
-            if (handler.deviceType == depot.CAMERA and
-                    handler is not lastCam and action):
-                # Rising edge of a camera trigger using a different
-                # emission filter than currently set; change the emission
-                # filter immediately beforehand.
-                table.addAction(time - decimal.Decimal('1e-20'),
-                        self.drawerHandler, self.nameToFilter[handler.name])
-                lastCam = handler
-
-
-    ## Return the number of lines in the given ActionTable that we can
-    # execute. We only execute emission filter changes.
-    def getNumRunnableLines(self, name, table, curIndex):
-        total = 0
-        for time, handler, action in table[curIndex:]:
-            if handler is not self.drawerHandler:
-                return total
-            total += 1
-        return total
-
-
-    ## Execute the specified portion of the ActionTable.
-    def executeTable(self, name, table, startIndex, stopIndex, numReps,
-            repDuration):
-        for time, handler, action in table[startIndex:stopIndex]:
-            if handler is self.drawerHandler:
-                self.setPosition(action)
-        events.publish('experiment execution')
 
 
     ## Return the numeric wavelength of light seen by the camera.
