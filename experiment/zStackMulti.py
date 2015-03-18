@@ -33,8 +33,8 @@ class ZStackMultiExperiment(experiment.Experiment):
             prevAltitude = targetAltitude
 
             # Trigger the delay generator.
-            curTime = table.addToggle(curTime, delayGen)
-            # Trigger the cameras once. Lazy; only allow one set of cameras.
+            table.addToggle(curTime, delayGen)
+            # Trigger the cameras twice. Lazy; only allow one set of cameras.
             cameras = self.exposureSettings[0][0]
             for camera in cameras:
                 table.addAction(curTime, camera, True)
