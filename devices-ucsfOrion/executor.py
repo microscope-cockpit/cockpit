@@ -60,6 +60,7 @@ class ExperimentExecutorDevice(device.Device):
     ## Execute the table of experiment actions.
     def executeTable(self, name, table, startIndex, stopIndex, numReps, 
             repDuration):
+        self.shouldAbort = False
         allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         activeLights = filter(lambda l: l.getIsEnabled(), allLights)
         # Pre-emptively disable all lights.
@@ -69,6 +70,7 @@ class ExperimentExecutorDevice(device.Device):
         curPosition = interfaces.stageMover.getPosition()
         for repNum in xrange(numReps):
             if self.shouldAbort:
+                print "Aborting executor early!"
                 break
             startTime = time.time()
             curTime = startTime
@@ -95,7 +97,7 @@ class ExperimentExecutorDevice(device.Device):
                         # Light turning off; take an image with that light.
                         handler.setEnabled(True)
                         handler.setExposureTime(float(eventTime - lightToTriggerTime[handler]))
-                        interfaces.imager.takeImage(shouldBlock = False)
+                        interfaces.imager.takeImage(shouldBlock = True)
                         handler.setEnabled(False)
                 elif handler.deviceType == depot.STAGE_POSITIONER:
                     # Positioning is specified relative to our starting
