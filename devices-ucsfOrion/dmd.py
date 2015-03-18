@@ -9,6 +9,7 @@ import gui.toggleButton
 import interfaces.imager
 import interfaces.stageMover
 import util.user
+import util.userConfig
 
 import ctypes
 import numpy
@@ -84,7 +85,7 @@ class DMDWindow(wx.Frame):
         ## Current camera whose images we are listening for.
         self.camHandler = None
         ## Vertices of the rectangle we use for calibration.
-        self.testVertices = ((200, 200), (400, 400))
+        self.testVertices = ((100, 100), (500, 500))
         ## Tooltip text for our canvas for normal use.
         self.canvasTooltip = ("Left-click to draw rectangles in the " +
                 "current color, right-click to draw black ones. " +
@@ -516,15 +517,20 @@ class DMDCanvas(wx.glcanvas.GLCanvas):
         ## Whether or not we should force the tile to refresh.
         self.shouldRefresh = True
 
+        self.settings = util.userConfig.getValue('DMD defaults',
+                default = {'scaleX': .55, 'scaleY': .55,
+                           'offset': [-5, -1.5], 'rotation': 0})
+
         ## Scale factor to apply when remapping the DMD display onto
         # camera coordinates.
-        self.scaleX = self.scaleY = .55
+        self.scaleX = self.settings['scaleX']
+        self.scaleY = self.settings['scaleY']
         ## Offset to apply when remapping the DMD display onto camera
         # coordinates.
-        self.offset = [-5, -1.5]
+        self.offset = self.settings['offset']
         ## Rotation, in radians, to apply when remapping the DMD display
         # onto camera coordinates.
-        self.rotation = 0
+        self.rotation = self.settings['rotation']
 
         ## Array of pixel values representing the current camera image.
         self.camData = None
@@ -784,6 +790,11 @@ class DMDCanvas(wx.glcanvas.GLCanvas):
         self.offset[1] = dy / 4.0
 
         print "Calibration transforms are",self.offset,self.scaleX,self.scaleY
+
+        util.userConfig.setValue('DMD defaults',
+                {'scaleX': self.scaleX, 'scaleY': self.scaleY,
+                           'offset': self.offset, 'rotation': self.rotation},
+                isGlobal = True)
 
         self.Refresh()
 
