@@ -25,6 +25,18 @@ CLASS_NAME = 'DMDDevice'
 ## Width in pixels of the button bar.
 BUTTON_WIDTH = 100
 
+## Number of different grayscale values we allow (including black and white).
+NUM_COLORS = 3
+
+## Path to the file where DMD patterns are written to prior to them being
+# loaded onto the DMD itself.
+DMD_PATH = os.path.join('C:', os.path.sep, 'Users', 'Administrator', 'Documents',
+    'Mosaic C++ stuff', 'DLL_console_Cockpit', 'x64', 'Release', 'bufData.bin')
+
+## For debugging ease of access, a global copy of the most-recently-created
+# window.
+window = None
+
 
 
 ## This Device code just exists to create a UI for interacting with the
@@ -45,9 +57,9 @@ class DMDWindow(wx.Frame):
         # DMD array data.
         wx.Frame.__init__(self, parent = None, title = "DMD pattern display",
                 style = wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
+        global window
+        window = self
 
-        ## Path to the file that is polled to update the DMD pattern.
-        self.path = 'C:\Users\Administrator\Desktop\Release\THEFILE.txt'
         ## Panel containing the widgets in the DMD control.
         self.panel = None
         ## Height of the controls.
@@ -72,8 +84,9 @@ class DMDWindow(wx.Frame):
         ## Vertices of the rectangle we use for calibration.
         self.testVertices = ((200, 200), (400, 400))
         ## Tooltip text for our canvas for normal use.
-        self.canvasTooltip = "Left-click to draw black rectangles, " + \
-                "right-click to draw white ones. Hold shift to draw polygons."
+        self.canvasTooltip = ("Left-click to draw rectangles in the " +
+                "current color, right-click to draw black ones. " +
+                "Hold shift to draw polygons.")
         ## Tooltip text for our canvas when calibrating.
         self.calibrateTooltip = "Please click on each of the four corners " + \
                 "of the square."
@@ -85,13 +98,13 @@ class DMDWindow(wx.Frame):
 
         # Set up controls along the top of the main panel
         controlsPanel = wx.Panel(self.panel)
-        controlsSizer = wx.GridSizer(2, 6, 0, 0)
+        controlsSizer = wx.GridSizer(3, 4, 0, 0)
         for label, action, helpText in [
                 ('Write to DMD', lambda event: self.writeArray(self.data),
                  "Load the currently-drawn pattern onto the DMD."),
                 ('Reload from DMD', lambda event: self.loadArray(),
                  "Load and display the pattern currently on the DMD."),
-                ('Clear to white', lambda event: self.clear(1),
+                ('Clear to white', lambda event: self.clear(NUM_COLORS - 1),
                  "Clear the entire field to white."),
                 ('Clear to black', lambda event: self.clear(0),
                  "Clear the entire field to black."),
@@ -120,8 +133,15 @@ class DMDWindow(wx.Frame):
         ## Dropdown menu for selecting a camera to load image data from.
         self.camSelector = wx.Choice(controlsPanel, -1, choices = camNames)
         self.camSelector.Bind(wx.EVT_CHOICE, self.onSelectCam)
-        controlsSizer.Add(wx.StaticText(controlsPanel, -1, "Load image from camera:"))
+        controlsSizer.Add(wx.StaticText(controlsPanel, -1, "Load image from camera: "))
         controlsSizer.Add(self.camSelector)
+
+        ## Dropdown menu for setting the current color intensity.
+        self.colorSelector = wx.Choice(controlsPanel, -1,
+                choices = map(str, numpy.arange(0, 1.0001, 1 / float(NUM_COLORS - 1))))
+        self.colorSelector.SetSelection(NUM_COLORS - 1)
+        controlsSizer.Add(wx.StaticText(controlsPanel, -1, "Pixel intensity: "))
+        controlsSizer.Add(self.colorSelector)
 
         controlsPanel.SetSizerAndFit(controlsSizer)
         sizer.Add(controlsPanel)
@@ -273,7 +293,8 @@ class DMDWindow(wx.Frame):
         value = 0
         rectColor = (255, 0, 0)
         if event.LeftDown():
-            value = 1
+            # Use the currently-selected color instead.
+            value = self.colorSelector.GetSelection()
             rectColor = (0, 0, 255)
         if event.LeftDown() or event.RightDown():
             if event.ShiftDown() or self.amCalibrating:
@@ -292,14 +313,14 @@ class DMDWindow(wx.Frame):
             elif self.canvas.polygonPoints:
                 # Draw a polygon, including the most recent point.
                 self.canvas.polygonPoints.append(curPos)
-                self.rasterizePolygon(self.canvas.polygonPoints)
+                self.rasterizePolygon(self.canvas.polygonPoints, value)
                 self.canvas.setDisplay(self.data)
                 self.canvas.polygonPoints = []
                 self.prevMousePos = None
                 self.canvas.rectColor = None
             elif self.prevMousePos is not None:
                 # Draw a rectangle from the previous position to the new one.
-                self.rasterizeRect((minX, minY), (maxX, maxY))
+                self.rasterizeRect((minX, minY), (maxX, maxY), value)
                 self.canvas.setDisplay(self.data)
                 self.prevMousePos = None
                 self.canvas.rectColor = None
@@ -317,7 +338,7 @@ class DMDWindow(wx.Frame):
 
     ## Given a rect in camera coordinates, fill in the appropriate pixels
     # in the data array.
-    def rasterizeRect(self, p1, p2):
+    def rasterizeRect(self, p1, p2, value):
         # Our points are in camera coordinates, but with inverted Y. We need
         # to map them to data coordinates.
         fixedPoints = []
@@ -326,13 +347,13 @@ class DMDWindow(wx.Frame):
         p1, p2 = fixedPoints
         p1 = map(int, p1)
         p2 = map(int, p2)
-        self.data[p1[1] : p2[1], p1[0] : p2[0]] = self.canvas.rectColor == (255, 0, 0)
+        self.data[p1[1] : p2[1], p1[0] : p2[0]] = value
 
 
     ## Convert the provided list of points into a rasterized polygon.
     # Function adapted from http://en.wikipedia.org/wiki/Even-odd_rule
     # \param points List of polygon vertices in data coordinates.
-    def rasterizePolygon(self, points):
+    def rasterizePolygon(self, points, value):
         # Our points are in camera coordinates, but with inverted Y. We need
         # to map them to data coordinates.
         fixedPoints = []
@@ -358,19 +379,23 @@ class DMDWindow(wx.Frame):
                             (x < (nx - px) * (y - py) / (ny - py) + px)):
                         doesIntersect = not doesIntersect
                 if doesIntersect:
-                    self.data[(y, x)] = self.canvas.rectColor == (255, 0, 0)
+                    self.data[(y, x)] = value
 
 
-    ## Write a new pattern to the DMD.
+    ## Write a new pattern to the DMD. We take this moment to implement
+    # timewise dithering: 0 = off, 2 = on, 1 = 50% dither. Thus, two
+    # buffers get written.
     def writeArray(self, data):
         assert(data.shape == (600, 800))
-        dialog = wx.ProgressDialog(title = "Please wait",
-                message = "Writing pattern to DMD...")
-        handle = open(self.path, 'w')
-        for row in data:
-            handle.write(" ".join(map(str, row)) + "\n")
+        handle = open(DMD_PATH, 'wb')
+        for i in xrange(NUM_COLORS - 1):
+            temp = numpy.ones((data.shape), dtype = numpy.uint8)
+            temp[numpy.where(data == 2)] = 0
+            temp[numpy.where(data % 2 == i)] = 0
+            # Collapse to a linear array.
+            temp.shape = numpy.product(temp.shape)
+            handle.write(numpy.packbits(temp))
         handle.close()
-        dialog.Destroy()
 
 
     ## Write a single value to the entire array.
@@ -379,15 +404,32 @@ class DMDWindow(wx.Frame):
         self.canvas.setDisplay(self.data)
 
 
-    ## Load the current pattern from the DMD.
+    ## Load the current pattern from the DMD. Except that we can't directly
+    # access the DMD pattern; instead we load the patterns we last wrote
+    # to the intermediary file.
+    # \todo For now, only "restoring" the first pattern in that file, not
+    # all of them (thus timewise dithering is lost).
     def loadArray(self):
-        handle = open(self.path, 'r')
-        lines = handle.readlines()
-        handle.close()
-        array = []
-        for row in lines:
-            array.append(map(int, row.split(" ")))
-        self.data = numpy.array(array, dtype = numpy.uint16)
+        handle = open(DMD_PATH, 'rb')
+        # Divide by 8 because the buffers are 1 bit per pixel but the
+        # datatype is 8 bits per pixel, so we're packing 8 pixels into
+        # each element.
+        data = numpy.fromfile(handle, dtype = numpy.uint8,
+                count = 800 * 600 / 8)
+        print "Loaded data with shape",data.shape
+        bufSum = 0
+        for i, item in enumerate(data):
+            if item != 0 and not bufSum:
+                print "First nonzero byte at",i
+            bufSum += item
+        print "Data sum is",bufSum
+        # Now unpack those elements.
+        data = numpy.unpackbits(data)
+        print "Unpacked pixels have shape",data.shape
+        data.shape = (600, 800)
+        # Remap (0, 1) to (0, MAX_COLORS - 1)
+        data *= (NUM_COLORS - 1)
+        self.data = data
         if self.canvas is not None:
             self.canvas.setDisplay(self.data)
 
@@ -592,11 +634,10 @@ class DMDCanvas(wx.glcanvas.GLCanvas):
 
     ## Set us up to show a new pattern.
     def setDisplay(self, data):
-        # Invert display vertically, and treat 1 as .5 for better
-        # transparency behaviour.
+        # Invert display vertically, and rescale values to run from
+        # 0 to .5 for better transparency display.
         self.curDisplay = data[::-1].astype(numpy.float32)
-        # Convert 1 -> .5.
-        self.curDisplay *= .5
+        self.curDisplay /= float(NUM_COLORS)
         self.shouldRefresh = True
         wx.CallAfter(self.Refresh)
 
