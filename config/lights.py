@@ -11,7 +11,8 @@ WAVELENGTH_TO_COLOR = {
 
 lights = [
     ('ambient', 'Ambient', WAVELENGTH_TO_COLOR['white'], 0),
-#    ('405nm', 405, WAVELENGTH_TO_COLOR[405], 1<<13, 10),
-#    ('488nm', 488, WAVELENGTH_TO_COLOR[488], 1<<9, 9, 7776, 'deepstar'),
-#    ('561nm', 561, WAVELENGTH_TO_COLOR[561], 1<<13, 8),
-    ('DIC', 'DIC', WAVELENGTH_TO_COLOR['white'], 1<<11),]
+    #('405nm', 405, WAVELENGTH_TO_COLOR[405], 1<<12, 10.5, 8001, 'deepstar405'),
+    ('488nm', 488, WAVELENGTH_TO_COLOR[488], 1<<9, 10, 8001, 'deepstar488'),
+    #('561nm', 561, WAVELENGTH_TO_COLOR[561], 1<<14, 9.5, 8001, 'cobolt561'),
+    #('647nm', 647, WAVELENGTH_TO_COLOR[640], 1<<15, 9, 8001, 'deepstar647'),]
+    ]

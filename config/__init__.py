@@ -26,11 +26,11 @@ import os
 from ConfigParser import ConfigParser
 
 class MyConfigParser(ConfigParser):
-	def get(self, section, option, default=None):
-		if self.has_option(section, option) or default is None:
-			return  ConfigParser.get(self, section, option)
-		else:
-			return default
+    def get(self, section, option, default=None):
+        if self.has_option(section, option) or default is None:
+            return  ConfigParser.get(self, section, option)
+        else:
+            return default
 
 
 _path = __path__[0]
@@ -48,28 +48,29 @@ config = MyConfigParser()
 config.read(_files)
 
 try:
-	from lights import light_keys as _light_keys
-	from lights import lights as _lights
-	from lights import ipAddress as _lightsIpAddress
+    from lights import light_keys as _light_keys
+    from lights import lights as _lights
+    from lights import ipAddress as _lightsIpAddress
 except:
-	LIGHTS = {}
+    raise Exception('There is an error in config/lights.py')
+    LIGHTS = {}
 else:
-	LIGHTS = {light[0]: dict(zip(_light_keys, light)) for light in _lights}
-	config.add_section('lights')
-	config.set('lights', 'ipAddress', _lightsIpAddress)
+    LIGHTS = {light[0]: dict(zip(_light_keys, light)) for light in _lights}
+    config.add_section('lights')
+    config.set('lights', 'ipAddress', _lightsIpAddress)
 
 try:
-	from cameras import camera_keys as _camera_keys
-	from cameras import cameras as _cameras
+    from cameras import camera_keys as _camera_keys
+    from cameras import cameras as _cameras
 except:
-	CAMERAS = {}
+    CAMERAS = {}
 else:
-	CAMERAS = {camera[0]: dict(zip(_camera_keys, camera)) for camera in _cameras}
+    CAMERAS = {camera[0]: dict(zip(_camera_keys, camera)) for camera in _cameras}
 
 try:
-	from analog import aout_keys as _aout_keys
-	from analog import aouts as _aouts
+    from analog import aout_keys as _aout_keys
+    from analog import aouts as _aouts
 except:
-	AOUTS = {}
+    AOUTS = {}
 else:
-	AOUTS = {aout[0]: dict(zip(_aout_keys, aout)) for aout in _aouts}
+    AOUTS = {aout[0]: dict(zip(_aout_keys, aout)) for aout in _aouts}
