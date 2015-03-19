@@ -11,5 +11,10 @@ CLASS_NAME = 'ObjectiveDevice'
 
 class ObjectiveDevice(device.Device):
     def getHandlers(self):
-        return [handlers.objective.ObjectiveHandler("objective", 
-                "miscellaneous", OBJECTIVE_PIXEL_SIZES, "60xWaterCMOS")]
+        return [handlers.objective.ObjectiveHandler(
+                "objective", 
+                "miscellaneous",
+                OBJECTIVE_PIXEL_SIZES,
+                { obj: (0, 0, 0) for obj in OBJECTIVE_PIXEL_SIZES.keys() },
+                { obj: (0, 0, 0) for obj in OBJECTIVE_PIXEL_SIZES.keys() },
+                "60xWaterCMOS")]
