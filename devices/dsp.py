@@ -79,9 +79,9 @@ class DSPDevice(device.Device):
         ## Maps handler names to the digital lines we use to activate those
         # devices. 
         self.nameToDigitalLine = {}
-        self.nameToDigitalLine.update({key: val['line'] for \
+        self.nameToDigitalLine.update({key: val['triggerLine'] for \
                                        key, val in LIGHTS.iteritems()})
-        self.nameToDigitalLine.update({key: val['line'] for \
+        self.nameToDigitalLine.update({key: val['triggerLine'] for \
                                        key, val in CAMERAS.iteritems()})
         ## Resolution of actions we can take when running experiments.
         self.actionsPerMillisecond = 10
@@ -183,7 +183,7 @@ class DSPDevice(device.Device):
                 light['wavelength'],
                 100)    
             self.lightToExposureTime[handler.name] = 100
-            self.handlerToDigitalLine[handler] = light['line']
+            self.handlerToDigitalLine[handler] = light['triggerLine']
             result.append(handler)
 
         for key, aout in AOUTS.iteritems():
