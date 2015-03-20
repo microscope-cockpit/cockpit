@@ -43,7 +43,7 @@ import handlers.lightSource
 import handlers.stagePositioner
 import util.logger
 import util.threads
-
+from config import config
 
 CLASS_NAME = 'DSPDevice'
 
@@ -52,10 +52,12 @@ CLASS_NAME = 'DSPDevice'
 class DSPDevice(device.Device):
     def __init__(self):
         device.Device.__init__(self)
+        if not config.has_section('dsp'):
+            raise Exception('No dsp section found in config.')
         ## IP address of the DSP computer.
-        self.ipAddress = '192.168.137.100'
+        self.ipAddress = config.get('dsp', 'ipAddress')
         ## Port to use to connect to the DSP computer.
-        self.port = 7766
+        self.port = int(config.get('dsp', 'port'))
         ## Connection to the remote DSP computer
         self.connection = None
         
@@ -238,13 +240,15 @@ class DSPDevice(device.Device):
         self.handlerToAnalogAxis[self.retarderHandler] = 0
 
         # SLM handler
-        result.append(handlers.genericPositioner.GenericPositionerHandler(
-            "SI SLM", "structured illumination", True, 
-            {'moveAbsolute': self.setSLMPattern, 
-                'moveRelative': self.moveSLMPatternBy,
-                'getPosition': self.getCurSLMPattern, 
-                'getMovementTime': self.getSLMStabilizationTime}))
-        self.handlerToDigitalLine[result[-1]] = 1 << 5
+        if config.has_section('slm'):
+            line = int(config.get('slm', 'line'))
+            result.append(handlers.genericPositioner.GenericPositionerHandler(
+                    "SI SLM", "structured illumination", True, 
+                    {'moveAbsolute': self.setSLMPattern, 
+                     'moveRelative': self.moveSLMPatternBy,
+                     'getPosition': self.getCurSLMPattern, 
+                     'getMovementTime': self.getSLMStabilizationTime}))
+            self.handlerToDigitalLine[result[-1]] = 1 << line
 
         # 561 AOM handler
         self.aom561Handler = handlers.genericHandler.GenericHandler(
