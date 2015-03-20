@@ -253,7 +253,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
     ## Propagate changes to the histogram scaling to our tiles.
     def changeHistScale(self, shouldRefresh = True):
-        newMin, newMax = self.getScaling()
+        newMin = self.blackPoint * (self.imageMax - self.imageMin) + self.imageMin
+        newMax = self.whitePoint * (self.imageMax - self.imageMin) + self.imageMin
         if newMin is None or newMax is None:
             # No image; can't do anything.
             return
@@ -272,9 +273,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         if self.imageData is None:
             # No image to operate on yet.
             return (None, None)
-        black = self.blackPoint * (self.imageMax - self.imageMin) + self.imageMin
-        white = self.whitePoint * (self.imageMax - self.imageMin) + self.imageMin
-        return (black, white)
+        return (self.tiles[0][0].imageMin, self.tiles[0][0].imageMax)
 
 
     ## As above, but the values used to calculate them instead of the

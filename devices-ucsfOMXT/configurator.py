@@ -3,6 +3,7 @@
 import device
 import experiment.experimentRegistry
 import experiment.structuredIllumination
+import experiment.zStackMulti
 import handlers.configuratorHandler
 
 import os
@@ -14,6 +15,7 @@ class ConfiguratorDevice(device.Device):
     def initialize(self):
         # Insert just after Z-stack experiments.
         experiment.experimentRegistry.registerModule(experiment.structuredIllumination, 1)
+        experiment.experimentRegistry.registerModule(experiment.zStackMulti)
 
         
     def getHandlers(self):

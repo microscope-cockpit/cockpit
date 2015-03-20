@@ -1,6 +1,7 @@
 import depot
 import device
 import events
+import experiment.zStackMulti
 import handlers.executor
 import handlers.lightSource
 import util.logger
@@ -31,8 +32,10 @@ class DigitalDelayGeneratorDevice(device.Device):
         self.nameToExposureTime = {}
         ## Set of light sources we care about.
         self.controlledLightNames = set(['488 shutter'])
-        ## Cached trigger response delay
-        self.curDelay = None
+        ## Cached values we have set.
+        self.channelToDelay = {}
+        ## Whether or not we need to reconfigure incoming experiments.
+        self.shouldAdjustExperiments = True
         events.subscribe('prepare for experiment', self.prepareForExperiment)
         events.subscribe('experiment complete', self.cleanupAfterExperiment)
 
@@ -72,20 +75,24 @@ class DigitalDelayGeneratorDevice(device.Device):
  
 
     ## Set the delay between receipt of external trigger and starting our own
-    # signal.
+    # signal. Cache the value set.
     # \param delayMS Time to delay, in milliseconds.
     def setInitialDelay(self, delayMS):
-        if delayMS != self.curDelay:
+        self.setDelay(2, delayMS)
+
+
+    ## Set the delay of a specific channel.
+    def setDelay(self, channel, delayMS):
+        if delayMS != self.channelToDelay.get(channel, None):
             num = convertToScientific(delayMS / 1000.0)
-            # Set channel 2 to be a specific time after trigger
-            self.sendCommand('DLAY2,0,%s' % num)
+            self.sendCommand('DLAY%d,0,%s' % (channel, num))
             self.sendCommand('LCAL')
-            self.curDelay = delayMS
+            self.channelToDelay[channel] = delayMS
 
 
     ## Get the initial delay before sending a signal, in milliseconds.
     def getInitialDelay(self):
-        return self.curDelay
+        return self.channelToDelay.get(2, None)
         
 
     ## Set the exposure time (time between rising and falling edges).
@@ -121,6 +128,10 @@ class DigitalDelayGeneratorDevice(device.Device):
     # physical shutters (which are instead left on for the duration of the
     # experiment).
     def examineActions(self, name, table):
+        # Don't adjust ourselves if the experiment is one that explicitly 
+        # knows about the delay generator already (see prepareForExperiment()).
+        if not self.shouldAdjustExperiments:
+            return
         # Maps handlers to the last time they went up.
         handlerToActivationTime = {}
         # Maps handlers to the last-used exposure time for those handlers.
@@ -208,14 +219,42 @@ class DigitalDelayGeneratorDevice(device.Device):
 
 
     ## Get ready for an experiment: set the initial trigger delay to 0.
-    def prepareForExperiment(self, experiment):
+    # If we're doing any experiment except for the ZStackMultiExperiment, we
+    # also need to be ready to adjust its actions.
+    # NOTE: Assumes that the output of the delay generator is the "AB+CD"
+    # port on the back of the device! 
+    # \param expObj The experiment object to use. I would name this variable
+    # "experiment" except that creates a name conflict with the "experiment"
+    # package we imported earlier. D'oh!
+    def prepareForExperiment(self, expObj):
         self.setInitialDelay(0)
+        self.shouldAdjustExperiments = True
+        ## \todo BLEH! The way we identify the experiment type we want
+        # is pretty ugly!
+        if expObj.__class__ is experiment.zStackMulti.ZStackMultiExperiment:
+            self.shouldAdjustExperiments = False
+            # Extract the secondary delay and exposure times from the
+            # experiment settings.
+            # Note: cast to float since the provided time is a
+            # decimal.Decimal value.
+            delay = float(expObj.exposureDelay)
+            multiplier = float(expObj.exposureMultiplier)
+            # Just use the first exposure time in the first exposure settings.
+            # Lazy!
+            exposureTime = float(expObj.exposureSettings[0][1][0][1])
+            self.setDelay(3, exposureTime)
+            self.setDelay(4, delay)
+            # NOTE: D is specified relative to t0, not to C!
+            self.setDelay(5, delay + exposureTime * multiplier)
 
 
     ## Experiment finished; set the delay back to 3ms so that we behave
     # nicely when using a physical shutter in conjunction with the AOM.
+    # Also remove any triggering we might be doing on secondary channels.
     def cleanupAfterExperiment(self):
         self.setInitialDelay(3)
+        self.setDelay(4, 0)
+        self.setDelay(5, 0)
 
 
     ## Switch the delay generator "on" (front panel active and listening to 
