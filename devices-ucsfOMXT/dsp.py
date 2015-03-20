@@ -402,29 +402,44 @@ class DSPDevice(device.Device):
     def takeImage(self):
         cameraMask = 0
         lightTimePairs = []
-        # We need to know the delay generator's initial delay so we can
-        # adjust exposure times of the physical shutters.
-        generator = depot.getDevice(delayGen)
-        delay = generator.getInitialDelay()
         
-        # Track the max exposure time for the delay generator's sake.
+        # Track the max exposure time; will be used as the camera
+        # exposure time.
         maxTime = 0
         for handler, line in self.handlerToDigitalLine.iteritems():
             if handler.name in self.activeLights:
-                maxTime = max(maxTime, handler.getExposureTime())
+                if handler.name == '488 shutter':
+                    # If using the 488 light source, need to use the delay
+                    # generator to manipulate the AOM that gates that light
+                    # source.  Because there is an initial delay with the
+                    # delay generator, need to modify the requested exposure
+                    # time.
+                    generator = depot.getDevice(delayGen)
+                    delay = generator.getInitialDelay()
+                else:
+                    delay = 0
                 # The DSP card can only handle integer exposure times.
                 exposureTime = int(numpy.ceil(handler.getExposureTime())) + delay + 1
+                maxTime = max(maxTime, exposureTime)
                 # Enforce a minimum exposure time of 10ms for the shutter,
                 # which gets erratic at very low exposure times. The delay
                 # generator will handle fine exposure time resolution.
-                exposureTime = max(exposureTime, 10)
-                lightTimePairs.append((line, exposureTime))
-                # The delay generator needs to know how long a pulse to send.
-                generator.setExposureTime(handler.name, maxTime)
-        # Must trigger the delay generator alongside any lights. It takes a
-        # TTL pulse instead of a normal exposure signal.
-        lightTimePairs.append(
-                (self.handlerToDigitalLine[self.delayHandler], 1))
+                lightTimePairs.append((line, max(exposureTime, 10)))
+                if handler.name == '488 shutter':
+                    # The delay generator needs to know how long a pulse to
+                    # send.
+                    generator.setExposureTime(handler.name, handler.getExposureTime())
+                    # Trigger the delay generator alongside any lights.
+                    # It takes a TTL pulse instead of a normal exposure signal.
+                    lightTimePairs.append(
+                        (self.handlerToDigitalLine[self.delayHandler], 1))
+                elif handler.name == '561 shutter':
+                    # Trigger the 561 AOM.  Because this goes through the
+                    # DSP, use the exposure time coerced to be appropriate
+                    # for the DSP.
+                    lightTimePairs.append(
+                        (self.handlerToDigitalLine[self.aom561Handler],
+                         exposureTime))
         for name, line in self.nameToDigitalLine.iteritems():
             if name in self.activeCameras:
                 cameraMask += line
