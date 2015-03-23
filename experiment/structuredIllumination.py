@@ -159,7 +159,7 @@ class SIExperiment(experiment.Experiment):
             curTime += delayBeforeImaging
             # Image the sample.
             for cameras, lightTimePairs in self.exposureSettings:
-                curTime += self.expose(curTime, cameras, lightTimePairs, angle, phase, table)
+                curTime = self.expose(curTime, cameras, lightTimePairs, angle, phase, table)
                 
         # Hold Z, angle, and phase steady through to the end, then ramp down
         # to 0 to prep for the next experiment.
