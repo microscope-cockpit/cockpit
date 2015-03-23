@@ -194,7 +194,6 @@ class SIExperiment(experiment.Experiment):
         if self.slmHandler is not None:
             # Add a last trigger of the SLM to cycle back to the start.
             table.addAction(curTime, self.slmHandler, 0)
-            self.slmHandler.examineActions(table)
 
         return table
 
