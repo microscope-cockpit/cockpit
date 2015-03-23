@@ -200,7 +200,7 @@ class AndorCameraDevice(camera.CameraDevice):
         # Camera uses times in s; cockpit uses ms.
         t = self.object.get_exposure_time()
         if isExact:
-            return decimal.Decimal(t * 1000.0)
+            return decimal.Decimal(t) * (decimal.Decimal(1000.0))
         else:
             return t * 1000.0
 
@@ -255,7 +255,7 @@ class AndorCameraDevice(camera.CameraDevice):
 
     def receiveData(self, action, *args):
         """This function is called when data is received from the hardware."""
-        print 'receiveData received %s' % action
+        # print 'receiveData received %s' % action
         if action == 'new image':
             (image, timestamp) = args
             self.orient(image)
