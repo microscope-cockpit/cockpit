@@ -117,6 +117,8 @@ class BoulderSLMDevice(device.Device):
                 time += table.toggleTime
             # Update index tracker.
             lastIndex += numTriggers
+            if lastIndex >= sequenceLength:
+                lastIndex = lastIndex % sequenceLength
             
         ## TODO: check SLM has finished preparing patterns and is ready to go.
 
