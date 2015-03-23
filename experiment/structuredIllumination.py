@@ -158,6 +158,10 @@ class SIExperiment(experiment.Experiment):
 
             curTime += delayBeforeImaging
             # Image the sample.
+            # expose handles the SLM triggers. This may result in an additional
+            # short delay before exposure, but is the best way to support SIM
+            # in a series of exposures at different wavelengths, with the SIM
+            # pattern optimised for each wavelength.
             for cameras, lightTimePairs in self.exposureSettings:
                 curTime = self.expose(curTime, cameras, lightTimePairs, angle, phase, table)
                 
