@@ -138,6 +138,7 @@ class BoulderSLMDevice(device.Device):
         status.Destroy()
         if slmFail:
             raise Exception('SLM set_sim_sequence timeout.')
+        self.connection.run()
 
 
     ## Run some lines from the table.
