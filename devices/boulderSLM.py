@@ -19,6 +19,7 @@ Functions names as lower_case are remote camera object methods.
 import decimal
 import depot
 import device
+from itertools import groupby
 import Pyro4
 import wx
 
@@ -63,25 +64,50 @@ class BoulderSLMDevice(device.Device):
 
 
     def examineActions(self, name, table):
-        # Find the SLM trigger (provided elsewhere, e.g. by DSP)
+        # Extract pattern parameters from the table.
+        patternParams = [row[2] for row in table if row[1] is self.executor]
+        if not patternParams:
+            # SLM is not used in this experiment.
+            return
+
+        # Remove consecutive duplicates and position resets.
+        reducedParams = [p[0] for p in groupby(patternParams) 
+                          if type(p[0]) is tuple]
+        # Find the repeating unit in the sequence.
+        sequenceLength = len(reducedParams) 
+        for length in range(2, len(reducedParams) / 2):
+            if reducedParams[0:length] == reducedParams[length:2*length]:
+                sequenceLength = x
+                break
+        sequence = reducedParams[0:sequenceLength]
+
+        ## TODO: add asyncrhonous call here to make SLM prepare pattern seq.
+
+        # Step through the table and replace this handler with triggers.
+        # Identify the SLM trigger(provided elsewhere, e.g. by DSP)
         triggerHandler = depot.getHandlerWithName(CONFIG_NAME + ' trigger')
-        # Step through the table
-        lastPosition = 0
+        # Track sequence index set by last set of triggers.
+        lastIndex = 0
         for i, (time, handler, action) in enumerate(table.actions):
-            # action specifies a target frame in the sequence.
             if handler is not self.executor:
                 # Nothing to do
                 continue
-            ## Replace entry with triggers
-            # Remove original action.
+            # Action specifies a target frame in the sequence.
+            # Remove original event.
             table[i] = None
             table.clearBadEntries()
             # How many triggers?
-            if type(action) is int:
-                numTriggers = action - lastPosition
+            if type(action) is tuple and action != sequence[lastIndex]:
+                # Next pattern does not match last, so step one pattern.
+                    numTriggers = 1
+            elif type(action) is int:
+                if action > lastIndex:
+                    numTriggers = action - lastIndex
+                else:
+                    numTriggers = sequenceLength - lastIndex - action
             else:
-                numTriggers = 1
-            # How long will they take?
+                numTriggers = 0
+            # How long will the triggers take?
             # Time between triggers must be > table.toggleTime.
             dt = self.settlingTime + 2 * numTriggers * table.toggleTime
             ## Shift later table entries to allow for triggers and settling.
@@ -89,7 +115,10 @@ class BoulderSLMDevice(device.Device):
             for trig in xrange(numTriggers):
                 time = table.addToggle(time, triggerHandler)
                 time += table.toggleTime
-            lastPosition += numTriggers
+            # Update index tracker.
+            lastIndex += numTriggers
+            
+        ## TODO: check SLM has finished preparing patterns and is ready to go.
 
 
     ## Run some lines from the table.
