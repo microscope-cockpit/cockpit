@@ -48,6 +48,8 @@ class BoulderSLMDevice(device.Device):
         self.order = None
         self.position = None
         self.settlingTime = decimal.Decimal('0.01')
+        self.slmTimeout = int(config.get(CONFIG_NAME, 'timeout', default=10))
+        self.slmRetryLimit = int(config.get(CONFIG_NAME, 'retryLimit', default=3))
 
 
     def initialize(self):
@@ -77,11 +79,13 @@ class BoulderSLMDevice(device.Device):
         sequenceLength = len(reducedParams) 
         for length in range(2, len(reducedParams) / 2):
             if reducedParams[0:length] == reducedParams[length:2*length]:
-                sequenceLength = x
+                sequenceLength = length
                 break
         sequence = reducedParams[0:sequenceLength]
 
-        ## TODO: add asyncrhonous call here to make SLM prepare pattern seq.
+        ## Tell the SLM to prepare the pattern sequence.
+        asyncProxy = Pyro4.async(self.connection)
+        asyncResult = asyncProxy.set_sim_sequence(sequence)
 
         # Step through the table and replace this handler with triggers.
         # Identify the SLM trigger(provided elsewhere, e.g. by DSP)
@@ -120,7 +124,20 @@ class BoulderSLMDevice(device.Device):
             if lastIndex >= sequenceLength:
                 lastIndex = lastIndex % sequenceLength
             
-        ## TODO: check SLM has finished preparing patterns and is ready to go.
+        # Wait unti the SLM has finished preparing the pattern sequence.
+        status = wx.ProgressDialog(parent = wx.GetApp().GetTopWindow(),
+                title = "Waiting for SLM",
+                message = "SLM is generating pattern sequence.")
+        status.Show()
+        slmFailCount = 0
+        slmFail = False
+        while not asyncResult.wait(timeout=self.slmTimeout) and not slmFail:
+            slmFailCount += 1
+            if slmFailCount >= self.slmRetryLimit:
+                slmFail = True
+        status.Destroy()
+        if slmFail:
+            raise Exception('SLM set_sim_sequence timeout.')
 
 
     ## Run some lines from the table.
