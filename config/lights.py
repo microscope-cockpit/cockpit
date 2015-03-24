@@ -1,11 +1,5 @@
-## _lights [(label, wavelength, dsp line, sim diffraction angle at slm),...]
-<<<<<<< HEAD
 ipAddress = '172.16.0.21'
-light_keys = ['label','wavelength', 'color', 'line','simtheta','port','device']
-=======
-ipAddress = 'dsp.b24'
 light_keys = ['label','wavelength', 'color', 'triggerLine','simtheta','port','device']
->>>>>>> 805c872... Changed line to triggerLine in configs and dsp.
 WAVELENGTH_TO_COLOR = {
     405: (180, 30, 230),
     488: (40, 130, 180),
