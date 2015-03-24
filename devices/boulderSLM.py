@@ -67,6 +67,7 @@ class BoulderSLMDevice(device.Device):
 
     def examineActions(self, name, table):
         # Extract pattern parameters from the table.
+        # patternParms is a list of tuples (angle, phase, wavelength)
         patternParams = [row[2] for row in table if row[1] is self.executor]
         if not patternParams:
             # SLM is not used in this experiment.
