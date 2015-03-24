@@ -13,6 +13,7 @@ class ActionTable:
         self.firstActionTime = None
         ## Time of our last action.
         self.lastActionTime = None
+        self.toggleTime = decimal.Decimal('.1')
     
 
     ## Insert an element into self.actions.
@@ -29,7 +30,7 @@ class ActionTable:
     # Return the time after the toggle is completed.
     def addToggle(self, time, handler):
         self.actions.append((time, handler, True))
-        time += decimal.Decimal('.1')
+        time += self.toggleTime
         self.actions.append((time, handler, False))
         if self.firstActionTime is None or self.firstActionTime > time:
             self.firstActionTime = time

@@ -1,6 +1,5 @@
-## _lights [(label, wavelength, dsp line, sim diffraction angle at slm),...]
 ipAddress = '172.16.0.21'
-light_keys = ['label','wavelength', 'color', 'line','simtheta','port','device']
+light_keys = ['label','wavelength', 'color', 'triggerLine','simtheta','port','device']
 WAVELENGTH_TO_COLOR = {
     405: (180, 30, 230),
     488: (40, 130, 180),
