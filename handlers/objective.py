@@ -76,9 +76,11 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
         if 'setObjective' in self.callbacks:
             self.callbacks['setObjective'](self.name, newName)
         self.curObjective = newName
+        pixelSize=self.nameToPixelSize[newName]
+        transform=self.nameToTransform[newName]
         events.publish("objective change", newName, 
-                pixelSize=self.nameToPixelSize[newName], 
-                transform=self.nameToTransform[newName]) 
+                pixelSize, 
+                transform) 
         targetIndex = sorted(self.nameToPixelSize.keys()).index(newName)
         for i, button in enumerate(self.buttons):
             button.setActive(i == targetIndex)
