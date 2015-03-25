@@ -258,7 +258,6 @@ class AndorCameraDevice(camera.CameraDevice):
         print 'receiveData received %s' % action
         if action == 'new image':
             (image, timestamp) = args
-            self.orient(image)
             events.publish('new image %s' % self.name, image, timestamp)
 
 
