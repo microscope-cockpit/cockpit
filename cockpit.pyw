@@ -9,9 +9,12 @@ import traceback
 import wx
 
 import Pyro4
-Pyro4.config.SERIALIZERS_ACCEPTED.remove('serpent')
-Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
-Pyro4.config.SERIALIZER = 'pickle'
+import distutils.version
+if (distutils.version.LooseVersion(Pyro4.__version__) >=
+    distutils.version.LooseVersion('4.22')):
+    Pyro4.config.SERIALIZERS_ACCEPTED.remove('serpent')
+    Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
+    Pyro4.config.SERIALIZER = 'pickle'
 
 
 # We need these first to ensure that we can log failures during startup.
