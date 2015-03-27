@@ -14,6 +14,8 @@ import time
 import wx
 
 
+TIME_FORMAT_STR = '%Y-%m-%d %H:%M:%S'
+
 ## Purely for debugging purposes, a copy of the last Experiment that was
 # executed.
 lastExperiment = None
@@ -115,7 +117,6 @@ class Experiment:
     ## Run the experiment. We spin off the actual execution and cleanup
     # into separate threads.
     def run(self):
-        print 'Starting experiment.'
         # Check if the user is set to save to an already-existing file.
         if self.savePath and os.path.exists(self.savePath):
             if not gui.guiUtils.getUserPermission(
@@ -216,6 +217,7 @@ class Experiment:
 
     ## Run the experiment. Return True if it was successful.
     def execute(self):
+        util.logger.log.warn("Experiment.execute started.")
         # Iteratively find the ExperimentExecutor that can tackle the largest
         # portion of self.table, have them run it, and wait for them to finish.
         executors = depot.getHandlersOfType(depot.EXECUTOR)
@@ -259,7 +261,10 @@ class Experiment:
             if rep != self.numReps - 1:
                 waitTime = self.repDuration - (time.time() - startTime)
                 time.sleep(max(0, waitTime))
-        util.logger.log.warn("Execution complete")
+        ## TODO: figure out how long we should wait for the last captures to complete.
+        # For now, wait 1s.
+        time.sleep(1.)
+        util.logger.log.warn("Experiment.execute completed.")
         return True
 
 
@@ -497,19 +502,7 @@ class Experiment:
             # The camera actually finished exposing (and started reading
             # out) some time after lastUseTime, depending on its declared
             # exposure time.
-            
-            # 20150305-MAP: At the moment, the camera handler's ExposureTime is 
-            # never set, so 
-            #     nextUseTime += camera.getExposureTime(isExact = True)
-            # adds whatever was last used in interactive or video mode.
-            # Instead, 
-            #     nextUseTime += self.getExposureTimeForCamera(camera)
-            # adds whatever expsoure results from the light-time pairs ...
-            # but that doesn't mean the camera will be ready. 
-            # The camera needs to have its exposure time set to
-            # self.getExposureTimeForCamera(camera) at some point.
             nextUseTime += camera.getExposureTime(isExact = True)
-
         nextUseTime += self.cameraToReadoutTime[camera] + decimal.Decimal(0.1)
         return nextUseTime
 

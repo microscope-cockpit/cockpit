@@ -104,9 +104,6 @@ class SIExperiment(experiment.Experiment):
         
         for angle, phase, z in self.genSIPositions():
             delayBeforeImaging = 0
-            # Since we can change both phase and angle in the same "step",
-            # we need to track this to avoid triggering the SLM twice.
-            didTriggerSLM = False
             # Figure out which positions changed. They need to be held flat
             # up until the move, then spend some amount of time moving,
             # then have some time to stabilize. Or, if we have an SLM, then we
@@ -123,11 +120,6 @@ class SIExperiment(experiment.Experiment):
                             self.angleHandler, angle)
                     delayBeforeImaging = max(delayBeforeImaging, 
                             motionTime + stabilizationTime)
-                if self.slmHandler is not None:
-                    motionTime, stabilizationTime = self.slmHandler.getMovementTime(prevAngle, angle)
-                    table.addToggle(curTime, self.slmHandler)
-                    delayBeforeImaging = max(delayBeforeImaging,
-                            motionTime + stabilizationTime)
                 # Advance time slightly so all actions are sorted (e.g. we
                 # don't try to change angle and phase in the same timestep).
                 curTime += decimal.Decimal('.001')
@@ -141,11 +133,6 @@ class SIExperiment(experiment.Experiment):
                     table.addAction(curTime + motionTime, 
                             self.phaseHandler, phase)
                     delayBeforeImaging = max(delayBeforeImaging, 
-                            motionTime + stabilizationTime)
-                if self.slmHandler is not None and not didTriggerSLM:
-                    motionTime, stabilizationTime = self.slmHandler.getMovementTime(prevAngle, angle)
-                    table.addToggle(curTime, self.slmHandler)
-                    delayBeforeImaging = max(delayBeforeImaging,
                             motionTime + stabilizationTime)
                 # Advance time slightly so all actions are sorted (e.g. we
                 # don't try to change angle and phase in the same timestep).
@@ -171,13 +158,12 @@ class SIExperiment(experiment.Experiment):
 
             curTime += delayBeforeImaging
             # Image the sample.
+            # expose handles the SLM triggers. This may result in an additional
+            # short delay before exposure, but is the best way to support SIM
+            # in a series of exposures at different wavelengths, with the SIM
+            # pattern optimised for each wavelength.
             for cameras, lightTimePairs in self.exposureSettings:
-                curTime = self.expose(curTime, cameras, lightTimePairs,
-                        angle, table)
-                # HACK: add a miniscule offset here to ensure that all
-                # image-taking actions are sorted before the next illumination
-                # pattern change is made.
-                curTime += decimal.Decimal('1e-6')
+                curTime = self.expose(curTime, cameras, lightTimePairs, angle, phase, table)
                 
         # Hold Z, angle, and phase steady through to the end, then ramp down
         # to 0 to prep for the next experiment.
@@ -207,20 +193,39 @@ class SIExperiment(experiment.Experiment):
         
         if self.slmHandler is not None:
             # Add a last trigger of the SLM to cycle back to the start.
-            motionTime, stabilizationTime = self.slmHandler.getMovementTime(prevAngle, 0)
-            table.addToggle(curTime, self.slmHandler)
-            finalWaitTime = max(finalWaitTime, motionTime + stabilizationTime)
+            table.addAction(curTime, self.slmHandler, 0)
 
         return table
 
 
-    ## Wrapper around Experiment.expose() that adjusts exposure times based
-    # on the current angle, to compensate for bleaching.
-    def expose(self, curTime, cameras, lightTimePairs, angle, table):
+    ## Wrapper around Experiment.expose() that:
+    # 1: adjusts exposure times based on the current angle, to compensate for 
+    # bleaching;
+    # 2: uses an SLM (if available) to optimise SIM for each exposure.    
+    def expose(self, curTime, cameras, lightTimePairs, angle, phase, table):
+        # new lightTimePairs with exposure times adjusted for bleaching.
         newPairs = []
-        for light, time in lightTimePairs:
-            newTime = time * (1 + decimal.Decimal(self.handlerToBleachCompensation[light]) * angle)
-            newPairs.append((light, newTime))
+        # If a SIM pattern puts the 1st-order spots for a given wavelength at 
+        # the edge of the back pupil, the 1st-order spots from longer wave-
+        # lengths will fall beyond the edge of the pupil. Therefore, we use the 
+        # longest wavelength in a given exposure to determine the SIM pattern.
+        longestWavelength = 0   
+        # Using tExp rather than 'time' to avoid confusion between table event 
+        # times and exposure durations.
+        for light, tExp in lightTimePairs:
+            # SIM wavelength
+            longestWavelength = max(longestWavelength, light.wavelength)
+            # Bleaching compensation
+            tExpNew = tExp * (1 + decimal.Decimal(self.handlerToBleachCompensation[light]) * angle)
+            newPairs.append((light, tExpNew))
+            # SLM trigger
+        if self.slmHandler is not None:
+           ## Add SLM event ot set pattern for phase, angle and longestWavelength.
+           # The SLM handler will add triggering and settling delays when it 
+           # examines the action table by pushing back all subsequent events.
+           table.addAction(curTime, self.slmHandler, (angle, phase, longestWavelength))
+           # Add a small delay so that the exposure falls after the SLM event.
+           curTime += decimal.Decimal('1e-6')
         return experiment.Experiment.expose(self, curTime, cameras, newPairs, table)
 
 
@@ -329,7 +334,7 @@ class ExperimentUI(wx.Panel):
         params['collectionOrder'] = self.siCollectionOrder.GetStringSelection()
         params['angleHandler'] = depot.getHandlerWithName('SI angle')
         params['phaseHandler'] = depot.getHandlerWithName('SI phase')
-        params['slmHandler'] = depot.getHandlerWithName('SI SLM')
+        params['slmHandler'] = depot.getHandlerWithName('slm executor')
         compensations = {}
         for i, light in enumerate(self.allLights):
             val = gui.guiUtils.tryParseNum(self.bleachCompensations[i], float)
