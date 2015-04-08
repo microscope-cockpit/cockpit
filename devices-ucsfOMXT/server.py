@@ -9,6 +9,8 @@ import handlers.server
 import util.logger
 import util.threads
 
+from config import config
+
 CLASS_NAME = 'CockpitServer'
 
 
@@ -25,7 +27,10 @@ class CockpitServer(device.Device):
         # priority is 100.
         self.priority = 10
         ## IP address of the cockpit computer.
-        self.ipAddress = '192.168.137.1'
+        if config.has_option('server', 'ipAddress'):
+            self.ipAddress = config.get('server', 'ipAddress')
+        else:
+            self.ipAddress = '127.0.0.1'
         ## Name used to represent us to the outside world.
         self.name = 'mui'
         ## Auto-incrementing port ID.

@@ -8,8 +8,10 @@ import re
 from config import config
 CONFIG_NAME = 'objectives'
 PIXEL_PAT =  r"(?P<pixel_size>\d*[.]?\d*)"
-TRANSFORM_PAT = r"(?P<transform>\(\s*\d*\s*,\s*\d*\s*,\s*\d*\s*\))?"
-CONFIG_PAT = PIXEL_PAT + r"(\s*(,|;)\s*)?" + TRANSFORM_PAT
+TRANSFORM_PAT = r"(?P<transform>\(\s*\d*\s*,\s*\d*\s*,\s*\d*\s*\))"
+OFFSET_PAT = r"(?P<offset>\(\s*[-]?\d*\s*,\s*[-]?\d*\s*,\s*[-]?\d*\s*\))?"
+
+CONFIG_PAT = PIXEL_PAT + r"(\s*(,|;)\s*)?" + TRANSFORM_PAT + r"(\s*(,|;)\s*)?" + OFFSET_PAT
 
 ## Maps objective names to the pixel sizes for those objectives. This is the 
 # amount of sample viewed by the pixel, not the physical size of the 
@@ -37,10 +39,13 @@ class ObjectiveDevice(device.Device):
     def getHandlers(self):
         pixel_sizes = {}
         transforms = {}
+        offsets = {}
         if not config.has_section(CONFIG_NAME):
             # No objectives section in config
             pixel_sizes = DUMMY_OBJECTIVE_PIXEL_SIZES
             transforms = {obj: (0,0,0) for obj in pixel_sizes.keys()}
+            offsets = {obj: (0,0,0) for obj in pixel_sizes.keys()}
+			
         else:
             objectives = config.options(CONFIG_NAME)
             for obj in objectives:
@@ -53,12 +58,15 @@ class ObjectiveDevice(device.Device):
                 else:    
                     pstr = parsed.groupdict()['pixel_size']
                     tstr = parsed.groupdict()['transform']
+                    ostr =  parsed.groupdict()['offset']
                     pixel_size = float(pstr)
-                    transform = eval(tstr) if tstr else (0,0,0)            
+                    transform = eval(tstr) if tstr else (0,0,0)
+                    offset = eval(ostr) if ostr else (0,0,0)
                 pixel_sizes.update({obj: pixel_size})
                 transforms.update({obj: transform})
+                offsets.update({obj: offset})
 
         default = pixel_sizes.keys()[0]
 
         return [handlers.objective.ObjectiveHandler("objective", 
-                "miscellaneous", pixel_sizes, transforms, default)]
+                "miscellaneous", pixel_sizes, transforms, offsets, default)]

@@ -43,7 +43,7 @@ import handlers.lightSource
 import handlers.stagePositioner
 import util.logger
 import util.threads
-
+from config import config
 
 CLASS_NAME = 'DSPDevice'
 
@@ -52,10 +52,12 @@ CLASS_NAME = 'DSPDevice'
 class DSPDevice(device.Device):
     def __init__(self):
         device.Device.__init__(self)
+        if not config.has_section('dsp'):
+            raise Exception('No dsp section found in config.')
         ## IP address of the DSP computer.
-        self.ipAddress = '192.168.137.100'
+        self.ipAddress = config.get('dsp', 'ipAddress')
         ## Port to use to connect to the DSP computer.
-        self.port = 7766
+        self.port = int(config.get('dsp', 'port'))
         ## Connection to the remote DSP computer
         self.connection = None
         
@@ -148,6 +150,32 @@ class DSPDevice(device.Device):
         self.moveRetarderAbsolute(None, 0)
 
 
+    ## Add a couple of buttons to access some specific functionality: the
+    # direct output control window, and the advanceSLM function.
+    def makeUI(self, parent):
+        panel = wx.Panel(parent)
+        panelSizer = wx.BoxSizer(wx.VERTICAL)
+        label = wx.StaticText(panel, -1, "DSP Controls:")
+        label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        panelSizer.Add(label)
+        
+        buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
+        button = gui.toggleButton.ToggleButton(
+                label = "DSP\nTTL", parent = panel, size = (84, 50))
+        button.Bind(wx.EVT_LEFT_DOWN, lambda event: makeOutputWindow())
+        buttonSizer.Add(button)
+
+        button = gui.toggleButton.ToggleButton(
+                label = "Advance SLM", parent = panel, size = (84, 50))
+        button.Bind(wx.EVT_LEFT_DOWN, lambda event: self.advanceSLM())
+        buttonSizer.Add(button)
+
+        panelSizer.Add(buttonSizer)
+        panel.SetSizerAndFit(panelSizer)
+        
+        return panel
+
+
     ## User clicked the abort button.
     def onAbort(self):
         self.connection.Abort()
@@ -212,13 +240,15 @@ class DSPDevice(device.Device):
         self.handlerToAnalogAxis[self.retarderHandler] = 0
 
         # SLM handler
-        result.append(handlers.genericPositioner.GenericPositionerHandler(
-            "SI SLM", "structured illumination", True, 
-            {'moveAbsolute': self.setSLMPattern, 
-                'moveRelative': self.moveSLMPatternBy,
-                'getPosition': self.getCurSLMPattern, 
-                'getMovementTime': self.getSLMStabilizationTime}))
-        self.handlerToDigitalLine[result[-1]] = 1 << 5
+        if config.has_section('slm'):
+            line = int(config.get('slm', 'line'))
+            result.append(handlers.genericPositioner.GenericPositionerHandler(
+                    "SI SLM", "structured illumination", True, 
+                    {'moveAbsolute': self.setSLMPattern, 
+                     'moveRelative': self.moveSLMPatternBy,
+                     'getPosition': self.getCurSLMPattern, 
+                     'getMovementTime': self.getSLMStabilizationTime}))
+            self.handlerToDigitalLine[result[-1]] = 1 << line
 
         # 561 AOM handler
         self.aom561Handler = handlers.genericHandler.GenericHandler(
@@ -372,29 +402,44 @@ class DSPDevice(device.Device):
     def takeImage(self):
         cameraMask = 0
         lightTimePairs = []
-        # We need to know the delay generator's initial delay so we can
-        # adjust exposure times of the physical shutters.
-        generator = depot.getDevice(delayGen)
-        delay = generator.getInitialDelay()
         
-        # Track the max exposure time for the delay generator's sake.
+        # Track the max exposure time; will be used as the camera
+        # exposure time.
         maxTime = 0
         for handler, line in self.handlerToDigitalLine.iteritems():
             if handler.name in self.activeLights:
-                maxTime = max(maxTime, handler.getExposureTime())
+                if handler.name == '488 shutter':
+                    # If using the 488 light source, need to use the delay
+                    # generator to manipulate the AOM that gates that light
+                    # source.  Because there is an initial delay with the
+                    # delay generator, need to modify the requested exposure
+                    # time.
+                    generator = depot.getDevice(delayGen)
+                    delay = generator.getInitialDelay()
+                else:
+                    delay = 0
                 # The DSP card can only handle integer exposure times.
                 exposureTime = int(numpy.ceil(handler.getExposureTime())) + delay + 1
+                maxTime = max(maxTime, exposureTime)
                 # Enforce a minimum exposure time of 10ms for the shutter,
                 # which gets erratic at very low exposure times. The delay
                 # generator will handle fine exposure time resolution.
-                exposureTime = max(exposureTime, 10)
-                lightTimePairs.append((line, exposureTime))
-                # The delay generator needs to know how long a pulse to send.
-                generator.setExposureTime(handler.name, maxTime)
-        # Must trigger the delay generator alongside any lights. It takes a
-        # TTL pulse instead of a normal exposure signal.
-        lightTimePairs.append(
-                (self.handlerToDigitalLine[self.delayHandler], 1))
+                lightTimePairs.append((line, max(exposureTime, 10)))
+                if handler.name == '488 shutter':
+                    # The delay generator needs to know how long a pulse to
+                    # send.
+                    generator.setExposureTime(handler.name, handler.getExposureTime())
+                    # Trigger the delay generator alongside any lights.
+                    # It takes a TTL pulse instead of a normal exposure signal.
+                    lightTimePairs.append(
+                        (self.handlerToDigitalLine[self.delayHandler], 1))
+                elif handler.name == '561 shutter':
+                    # Trigger the 561 AOM.  Because this goes through the
+                    # DSP, use the exposure time coerced to be appropriate
+                    # for the DSP.
+                    lightTimePairs.append(
+                        (self.handlerToDigitalLine[self.aom561Handler],
+                         exposureTime))
         for name, line in self.nameToDigitalLine.iteritems():
             if name in self.activeCameras:
                 cameraMask += line

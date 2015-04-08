@@ -16,6 +16,11 @@ CLASS_NAME = 'ExperimentExecutorDevice'
 class ExperimentExecutorDevice(device.Device):
     def __init__(self):
         device.Device.__init__(self)
+        self.shouldAbort = False
+
+
+    def initialize(self):
+        events.subscribe('user abort', self.onAbort)
 
     
     ## Generate an ExperimentExecutor handler.
@@ -25,6 +30,12 @@ class ExperimentExecutorDevice(device.Device):
             {'examineActions': self.examineActions, 
                 'getNumRunnableLines': self.getNumRunnableLines, 
                 'executeTable': self.executeTable})]
+
+
+    ## User clicked the abort button; stop our experiment execution, if
+    # applicable.
+    def onAbort(self):
+        self.shouldAbort = True
 
 
     ## Given an experiment.ActionTable instance, examine the actions and 
@@ -49,31 +60,45 @@ class ExperimentExecutorDevice(device.Device):
     ## Execute the table of experiment actions.
     def executeTable(self, name, table, startIndex, stopIndex, numReps, 
             repDuration):
+        self.shouldAbort = False
         allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         activeLights = filter(lambda l: l.getIsEnabled(), allLights)
+        # Pre-emptively disable all lights.
+        for light in activeLights:
+            light.setEnabled(False)
         allCameras = depot.getHandlersOfType(depot.CAMERA)
         curPosition = interfaces.stageMover.getPosition()
         for repNum in xrange(numReps):
+            if self.shouldAbort:
+                print "Aborting executor early!"
+                break
             startTime = time.time()
             curTime = startTime
+
+            # Track when lights are triggered so we can set their exposure
+            # times properly.
+            # HACK: we ignore camera events in this executor! We treat
+            # end-of-light-exposure as equivalent to snapping an image, since
+            # the lights (and their associated emission filters) determine
+            # when images are taken anyway. 
+            lightToTriggerTime = {}
             
             for i, (eventTime, handler, action) in enumerate(table[startIndex:stopIndex]):
+                if self.shouldAbort:
+                    break
                 timeOffset = time.time() - startTime
-                if action and handler.deviceType == depot.CAMERA:
-                    # Rising edge of a camera trigger: scan until the falling
-                    # edge to find what light sources are involved.
-                    usedLights = set()
-                    for j, (altTime, altHandler, altAction) in enumerate(table[i + 1:stopIndex]):
-                        if altHandler in allLights:
-                            altHandler.setEnabled(True)
-                            usedLights.add(altHandler)
-                        if altHandler is handler and not altAction:
-                            exposureTime = altTime - eventTime
-                            handler.setExposureTime(exposureTime)
-                            break
-                    interfaces.imager.takeImage(shouldBlock = True)
-                    for light in usedLights:
-                        light.setEnabled(False)
+                if handler.deviceType == depot.LIGHT_TOGGLE:
+                    # Turning a light on/off; track its trigger time or
+                    # take an image.
+                    if action:
+                        # Light turning on.
+                        lightToTriggerTime[handler] = eventTime
+                    else:
+                        # Light turning off; take an image with that light.
+                        handler.setEnabled(True)
+                        handler.setExposureTime(float(eventTime - lightToTriggerTime[handler]))
+                        interfaces.imager.takeImage(shouldBlock = True)
+                        handler.setEnabled(False)
                 elif handler.deviceType == depot.STAGE_POSITIONER:
                     # Positioning is specified relative to our starting
                     # position.

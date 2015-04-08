@@ -142,14 +142,14 @@ class PhysikInstrumenteDevice(device.Device):
             # Move to the middle of the stage, then to one corner, then to
             # the opposite corner, repeat a few times, then back to the middle,
             # then to where we started from. Positions are actually backed off
-            # slightly from the true safeties. Moving to the middle is
+            # a fair bit from the true safeties. Moving to the middle is
             # necessary to avoid the banned rectangles, in case the stage is
             # in them when we start.
             initialPos = tuple(self.xyPositionCache)
             interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
             for i in xrange(5):
                 print "Rep %d of 5..." % i
-                for position in [(24500, -12000), (-24000, 42000)]:
+                for position in [(20000, -10000), (-20000, 40000)]:
                     interfaces.stageMover.goToXY(position, shouldBlock = True)
             interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
             interfaces.stageMover.goToXY(initialPos, shouldBlock = True)

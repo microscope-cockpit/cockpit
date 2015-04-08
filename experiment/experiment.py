@@ -14,6 +14,8 @@ import time
 import wx
 
 
+TIME_FORMAT_STR = '%Y-%m-%d %H:%M:%S'
+
 ## Purely for debugging purposes, a copy of the last Experiment that was
 # executed.
 lastExperiment = None
@@ -82,10 +84,8 @@ class Experiment:
                 raise RuntimeError("Handler [%s] is not usable in experiments." % handler.name)
 
         ## Maps camera handlers to their minimum time between exposures.
-        self.cameraToReadoutTime = dict([(c, c.getTimeBetweenExposures(isExact = True)) for c in self.cameras])
-        for camera, readTime in self.cameraToReadoutTime.iteritems():
-            if type(readTime) is not decimal.Decimal:
-                raise RuntimeError("Camera %s did not provide an exact (decimal.Decimal) readout time" % camera.name)
+        # Must be populated after exposure time has been set on camera.
+        self.cameraToReadoutTime = {}
         ## Maps cameras to whether or not they need to be blanked before they 
         # next take an image (because they expose continuously and other 
         # cameras have taken images while they were waiting). 
@@ -128,6 +128,16 @@ class Experiment:
         lastExperiment = self
         self.sanityCheckEnvironment()
         self.prepareHandlers()
+        
+        self.cameraToReadoutTime = dict([(c, c.getTimeBetweenExposures(isExact = True)) for c in self.cameras])
+        for camera, readTime in self.cameraToReadoutTime.iteritems():
+            if type(readTime) is not decimal.Decimal:
+                raise RuntimeError("Camera %s did not provide an exact (decimal.Decimal) readout time" % camera.name)
+
+        # Indicate any frame transfer cameras for reset at start of table.
+        for camera in self.cameras:
+            if camera.getExposureMode() == handlers.camera.TRIGGER_AFTER:
+                self.cameraToIsReady[camera] = False
        
         self.createValidActionTable()
        
@@ -177,6 +187,13 @@ class Experiment:
         # Prepare our position.
         interfaces.stageMover.goToZ(self.zBottom, shouldBlock = True)
         events.publish('prepare for experiment', self)
+        # Prepare cameras.
+        for camera in self.cameras:
+            # We set the expsoure time here. This needs to be set before
+            # the action table is generated, since the action table
+            # uses camera.getExposureTime to figure out timings.
+            exposureTime = float(self.getExposureTimeForCamera(camera))
+            camera.setExposureTime(exposureTime)
 
 
     ## Allow devices to examine the ActionTable we will be running, and modify
@@ -200,6 +217,7 @@ class Experiment:
 
     ## Run the experiment. Return True if it was successful.
     def execute(self):
+        util.logger.log.warn("Experiment.execute started.")
         # Iteratively find the ExperimentExecutor that can tackle the largest
         # portion of self.table, have them run it, and wait for them to finish.
         executors = depot.getHandlersOfType(depot.EXECUTOR)
@@ -243,7 +261,10 @@ class Experiment:
             if rep != self.numReps - 1:
                 waitTime = self.repDuration - (time.time() - startTime)
                 time.sleep(max(0, waitTime))
-        util.logger.log.warn("Execution complete")
+        ## TODO: figure out how long we should wait for the last captures to complete.
+        # For now, wait 1s.
+        time.sleep(1.)
+        util.logger.log.warn("Experiment.execute completed.")
         return True
 
 
@@ -475,12 +496,15 @@ class Experiment:
             # No actions yet; assume camera is ready at the start of the
             # experiment.
             return 0
+
+        nextUseTime = lastUseTime
         if camera.getExposureMode() == handlers.camera.TRIGGER_BEFORE:
             # The camera actually finished exposing (and started reading
             # out) some time after lastUseTime, depending on its declared
             # exposure time.
-            lastUseTime += camera.getExposureTime(isExact = True)
-        return lastUseTime + self.cameraToReadoutTime[camera] + decimal.Decimal('.1')
+            nextUseTime += camera.getExposureTime(isExact = True)
+        nextUseTime += self.cameraToReadoutTime[camera] + decimal.Decimal(0.1)
+        return nextUseTime
 
 
     ## Return a calculated exposure time for the specified camera handler,

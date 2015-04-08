@@ -79,10 +79,18 @@ class DSPDevice(device.Device):
         ## Maps handler names to the digital lines we use to activate those
         # devices. 
         self.nameToDigitalLine = {}
-        self.nameToDigitalLine.update({key: val['line'] for \
+        self.nameToDigitalLine.update({key: val['triggerLine'] for \
                                        key, val in LIGHTS.iteritems()})
-        self.nameToDigitalLine.update({key: val['line'] for \
+        self.nameToDigitalLine.update({key: val['triggerLine'] for \
                                        key, val in CAMERAS.iteritems()})
+        self.otherTriggers = []
+        for s in config.sections():
+            if not config.has_option(s, 'triggerLine'):
+                continue
+            t = int(config.get(s, 'triggerLine'))
+            name = '%s trigger' % s
+            self.nameToDigitalLine.update({name: 1 << t})
+            self.otherTriggers.append(name)
         ## Resolution of actions we can take when running experiments.
         self.actionsPerMillisecond = 10
         ## Conversion factor between microns and the units the DSP card
@@ -183,7 +191,7 @@ class DSPDevice(device.Device):
                 light['wavelength'],
                 100)    
             self.lightToExposureTime[handler.name] = 100
-            self.handlerToDigitalLine[handler] = light['line']
+            self.handlerToDigitalLine[handler] = light['triggerLine']
             result.append(handler)
 
         for key, aout in AOUTS.iteritems():
@@ -219,16 +227,11 @@ class DSPDevice(device.Device):
                 result.append(self.retarderHandler)
                 self.handlerToAnalogLine[self.retarderHandler] = aout['aline']
 
-        # SLM handler
-        if config.has_section('slm'):
-            line = int(config.get('slm', 'line'))
-            result.append(handlers.genericPositioner.GenericPositionerHandler(
-                "SI SLM", "structured illumination", True, 
-                    {'moveAbsolute': self.setSLMPattern, 
-                    'moveRelative': self.moveSLMPatternBy,
-                    'getPosition': self.getCurSLMPattern, 
-                    'getMovementTime': self.getSLMStabilizationTime}))
-            self.handlerToDigitalLine[result[-1]] = 1 << line
+        for name in self.otherTriggers:
+            handler = handlers.genericHandler.GenericHandler(
+                name, 'other triggers', True)
+            self.handlerToDigitalLine[handler] = self.nameToDigitalLine[name]
+            result.append(handler)
 
         result.append(handlers.imager.ImagerHandler(
             "DSP imager", "imager",

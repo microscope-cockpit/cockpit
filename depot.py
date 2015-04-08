@@ -153,6 +153,9 @@ class DeviceDepot:
         device.performSubscriptions()
 
         handlers = device.getHandlers()
+        if not handlers:
+            # device is not used
+            return
         self.deviceToHandlers[device] = handlers
         self.handlersList.extend(handlers)
         for handler in handlers:
