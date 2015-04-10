@@ -264,13 +264,11 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 
             motorPos = self.curStagePosition[2]
             majorPos = interfaces.stageMover.getAllPositions()[0][2]
-            minorPos= interfaces.stageMover.getAllPositions()[1][2]
             minorLimits = interfaces.stageMover.getIndividualSoftLimits(2)
-            zMin = majorPos
-            zMax = majorPos
             # Add the max range of motion of the first fine-motion controller.
             #And subtract the lower limit
             if len(minorLimits) > 1:
+                minorPos= interfaces.stageMover.getAllPositions()[1][2]
                 zMax = majorPos + minorLimits[1][1]
                 zMin = majorPos -(minorPos-minorLimits[1][0])
             else:
