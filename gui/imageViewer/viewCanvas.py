@@ -13,6 +13,8 @@ import traceback
 import wx
 import wx.glcanvas
 
+from cockpit import COCKPIT_PATH
+
 ## @package gui.imageViewer.viewCanvas
 # This module provides a canvas for displaying camera images.
 
@@ -98,7 +100,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
         ## Font for text rendering
         self.font = FTGL.TextureFont(
-                os.path.join('resources', 'fonts', 'GeosansLight.ttf'))
+                os.path.join(COCKPIT_PATH, 'resources',
+                             'fonts', 'GeosansLight.ttf'))
         self.font.FaceSize(18)
 
         self.Bind(wx.EVT_PAINT, self.onPaint)

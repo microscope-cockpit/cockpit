@@ -10,6 +10,8 @@ import events
 import interfaces.stageMover
 import util.logger
 
+from cockpit import COCKPIT_PATH
+
 ## @package gui.macroStage
 # This module contains the MacroStageBase base class, used by the MacroStageXY
 # and MacroStageZ classes, as well as some shared constants.
@@ -44,7 +46,8 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.shouldDraw = True
         ## Font for drawing text
         try:
-            path = os.path.join('resources', 'fonts', 'GeosansLight.ttf')
+            path = os.path.join(COCKPIT_PATH, 'resources', 
+                                'fonts', 'GeosansLight.ttf')
             self.font = FTGL.TextureFont(path)
             self.font.FaceSize(18)
         except Exception, e:
