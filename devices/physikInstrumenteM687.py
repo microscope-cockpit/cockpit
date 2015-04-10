@@ -88,15 +88,19 @@ class PhysikInstrumenteM687(device.Device):
             self.port = config.get(CONFIG_NAME, 'port')
             self.baud = config.getint(CONFIG_NAME, 'baud')
             self.timeout = config.getfloat(CONFIG_NAME, 'timeout')
-            limitString = config.get(CONFIG_NAME, 'softlimits')
-            parsed = re.search(LIMITS_PAT, limitString)
-            if not parsed:
-                # Could not parse config entry.
-                raise Exception('Bad config: PhysikInstrumentsM687 Limits.')
-                # No transform tuple
-            else:    
-                lstr = parsed.groupdict()['limits']
-                self.softlimits=eval(lstr)
+            try :
+                limitString = config.get(CONFIG_NAME, 'softlimits')
+                parsed = re.search(LIMITS_PAT, limitString)
+                if not parsed:
+                    # Could not parse config entry.
+                    raise Exception('Bad config: PhysikInstrumentsM687 Limits.')
+                    # No transform tuple
+                else:    
+                    lstr = parsed.groupdict()['limits']
+                    self.softlimits=eval(lstr)
+            except:
+                print "No softlimits section setting default limits"
+                self.softlimits = ((-67500, 67500), (-42500, 42500))
             events.subscribe('user logout', self.onLogout)
             events.subscribe('user abort', self.onAbort)
             events.subscribe('macro stage xy draw', self.onMacroStagePaint)
@@ -286,8 +290,8 @@ class PhysikInstrumenteM687(device.Device):
         # with the objective. 
         # True range of motion is (-67500, 67500) for X, (-42500, 42500) for Y.
         #IMD 2015-03-02 hacked in full range to see if we can access the full range
-        for axis, minPos, maxPos in [(0, -37500, 11500),
-                    (1, -67500, 59500)]:
+        for axis, minPos, maxPos in [(0, self.softlimits[0][0],self.softlimits[1][0]),
+                    (1, self.softlimits[0][1],self.softlimits[1][1])]:
             result.append(handlers.stagePositioner.PositionerHandler(
                     "%d PI mover" % axis, "%d stage motion" % axis, False,
                     {'moveAbsolute': self.moveXYAbsolute,
