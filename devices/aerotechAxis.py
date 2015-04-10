@@ -80,10 +80,14 @@ class AerotechZStage(device.Device):
             except:
                 print "No softlimits section setting default limits"
 <<<<<<< HEAD
+<<<<<<< HEAD
                 self.softlimits = (-30000,7000)
 =======
                 self.softlimits = (-30000,4000)
 >>>>>>> added softlimits argument to aerotech config options
+=======
+                self.softlimits = (-30000,7000)
+>>>>>>> updated default range to -30,000 to 7000 as this is DeepSIM range
 			
 			
             # Subscribe to abort events.
