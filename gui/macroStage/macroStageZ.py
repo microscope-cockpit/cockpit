@@ -149,8 +149,10 @@ class MacroStageZ(macroStageBase.MacroStageBase):
     def onExperimentComplete(self, *args):
         # Update histogram data
         self.experimentAltitudes = list(
-                util.userConfig.getValue('experimentAltitudes', default = [], isGlobal = True)
+                util.userConfig.getValue('experimentAltitudes', isGlobal = True, default=[])
         )
+        self.experimentAltitudes.append(self.curStagePosition[2])
+        util.userConfig.setValue('experimentAltitudes',self.experimentAltitudes, isGlobal=True)
         self.calculateHistogram()
 
 
@@ -162,13 +164,27 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         if self.prevZSafety is None or self.prevZSafety != position:
             # Update primary histogram display settings
             self.prevZSafety = position
-            self.makeBigHistogram(self.prevZSafety)
+#IMD 20150310 I think this breaks the histogram, dont know why it is here!
+			#            self.makeBigHistogram(self.prevZSafety)
 
-
+    #Hack so that this display the histogram over the current fine motion range.
+	#
     ## Generate the larger of the two histograms.
     def makeBigHistogram(self, altitude):
-        histogramMin = altitude - HISTOGRAM_MIN_PADDING
-        histogramMax = histogramMin + DEFAULT_HISTOGRAM_HEIGHT
+ #           motorPos = self.curStagePosition[2]
+ #           majorPos = interfaces.stageMover.getAllPositions()[0][2]
+        minorPos= interfaces.stageMover.getAllPositions()[1][2]
+        minorLimits = interfaces.stageMover.getIndividualSoftLimits(2)
+#            zMin = majorPos
+#            zMax = majorPos
+            # Add the max range of motion of the first fine-motion controller.
+            #And subtract the lower limit
+#            if len(minorLimits) > 1:
+#                zMax = majorPos + minorLimits[1][1]
+#                zMin = majorPos -(minorPos-minorLimits[1][0])
+
+        histogramMin = altitude-(minorPos-minorLimits[1][0]) - HISTOGRAM_MIN_PADDING
+        histogramMax = altitude + (-minorPos+minorLimits[1][1])+HISTOGRAM_MIN_PADDING
         histogram = Histogram(histogramMin, histogramMax, 
                 self.zHorizOffset - self.stageExtent * .4, 
                 self.minY, self.maxY, 
@@ -189,8 +205,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             return
         macroStageBase.MacroStageBase.onMotion(self, axis, position)
         # Ensure there's a histogram to work with.
-        if not self.histograms:
-            self.makeBigHistogram(interfaces.stageMover.getSoftLimitsForAxis(2)[0])
+#        if not self.histograms:
+        self.makeBigHistogram(interfaces.stageMover.getPosition()[2])
         if self.shouldDraw:
             try:
                 motorPos = self.curStagePosition[2]
@@ -249,12 +265,15 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 
             motorPos = self.curStagePosition[2]
             majorPos = interfaces.stageMover.getAllPositions()[0][2]
+            minorPos= interfaces.stageMover.getAllPositions()[1][2]
             minorLimits = interfaces.stageMover.getIndividualSoftLimits(2)
             zMin = majorPos
             zMax = majorPos
             # Add the max range of motion of the first fine-motion controller.
+            #And subtract the lower limit
             if len(minorLimits) > 1:
                 zMax = majorPos + minorLimits[1][1]
+                zMin = majorPos -(minorPos-minorLimits[1][0])
 
             # Draw histograms. We do this first so that other lines can be drawn
             # on top.
