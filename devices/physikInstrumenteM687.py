@@ -13,12 +13,14 @@ import socket
 import threading
 import time
 import wx
+import re # to get regular expression parsing for config file
 
 from config import config
 
 ## This module is for Physik Instrumente (PI) M687 XY stage. 
 CLASS_NAME = 'PhysikInstrumenteM687'
 CONFIG_NAME = 'm687'
+LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
 
 ## TODO:  These parameters should be factored out to a config file.
 
@@ -49,10 +51,11 @@ ERROR_CODES = {
 # allowed to pass through, as doing so would cause the objective to collide
 # with part of the sample holder. 
 # Compare stage motion limits X: (-24500, 25000), Y: (-43000, 42500).
-BANNED_RECTANGLES = (
-        ((25000, -12500), (17500, -43000)),
-        ((-12500, -18000), (-24500, -43000))
-)
+BANNED_RECTANGLES = ()
+# IMD 2015-03-02 removed as not relevant for DeepSIM
+#  ((25000, -12500), (17500, -43000)),
+#        ((-12500, -18000), (-24500, -43000))
+#)
 
 
 class PhysikInstrumenteM687(device.Device):
@@ -85,7 +88,19 @@ class PhysikInstrumenteM687(device.Device):
             self.port = config.get(CONFIG_NAME, 'port')
             self.baud = config.getint(CONFIG_NAME, 'baud')
             self.timeout = config.getfloat(CONFIG_NAME, 'timeout')
-
+            try :
+                limitString = config.get(CONFIG_NAME, 'softlimits')
+                parsed = re.search(LIMITS_PAT, limitString)
+                if not parsed:
+                    # Could not parse config entry.
+                    raise Exception('Bad config: PhysikInstrumentsM687 Limits.')
+                    # No transform tuple
+                else:    
+                    lstr = parsed.groupdict()['limits']
+                    self.softlimits=eval(lstr)
+            except:
+                print "No softlimits section setting default limits"
+                self.softlimits = ((-67500, 67500), (-42500, 42500))
             events.subscribe('user logout', self.onLogout)
             events.subscribe('user abort', self.onAbort)
             events.subscribe('macro stage xy draw', self.onMacroStagePaint)
@@ -129,7 +144,7 @@ class PhysikInstrumenteM687(device.Device):
             interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
             for i in xrange(5):
                 print "Rep %d of 5..." % i
-                for position in [(24500, -12000), (-24000, 42000)]:
+                for position in self.softlimits:
                     interfaces.stageMover.goToXY(position, shouldBlock = True)
             interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
             interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
@@ -274,8 +289,9 @@ class PhysikInstrumenteM687(device.Device):
         # range of motion, but they are needed to keep the stage from colliding
         # with the objective. 
         # True range of motion is (-67500, 67500) for X, (-42500, 42500) for Y.
-        for axis, minPos, maxPos in [(0, -24500, 25000),
-                    (1, -43000, 42500)]:
+        #IMD 2015-03-02 hacked in full range to see if we can access the full range
+        for axis, minPos, maxPos in [(0, self.softlimits[0][0],self.softlimits[1][0]),
+                    (1, self.softlimits[0][1],self.softlimits[1][1])]:
             result.append(handlers.stagePositioner.PositionerHandler(
                     "%d PI mover" % axis, "%d stage motion" % axis, False,
                     {'moveAbsolute': self.moveXYAbsolute,
