@@ -79,7 +79,7 @@ class AerotechZStage(device.Device):
                     self.softlimits=eval(lstr)
             except:
                 print "No softlimits section setting default limits"
-                self.softlimits = (-30000,4000)
+                self.softlimits = (-30000,7000)
 			
 			
             # Subscribe to abort events.
