@@ -20,6 +20,7 @@ import interfaces.stageMover
 import util.user
 import util.threads
 
+from cockpit import COCKPIT_PATH
 ## Size of the crosshairs indicating the stage position.
 CROSSHAIR_SIZE = 10000
 ## Valid colors to use for site markers.
@@ -77,7 +78,8 @@ class MosaicWindow(wx.Frame):
 
         ## Font to use for site labels.
         self.font = FTGL.TextureFont(
-                os.path.join('resources', 'fonts', 'GeosansLight.ttf'))
+                os.path.join(COCKPIT_PATH, 'resources', 
+                             'fonts', 'GeosansLight.ttf'))
         self.font.FaceSize(64)
 
         ## Maps button names to wx.Button instances.
