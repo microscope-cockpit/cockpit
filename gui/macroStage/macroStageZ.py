@@ -173,7 +173,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 	#
     ## Generate the larger of the two histograms.
     def makeBigHistogram(self, altitude):
-         minorLimits = interfaces.stageMover.getIndividualSoftLimits(2)
+        minorLimits = interfaces.stageMover.getIndividualSoftLimits(2)
             # Add the max range of motion of the first fine-motion controller.
             #And subtract the lower limit if minor controller exisits.
         if(len(minorLimits)>1):
