@@ -26,6 +26,7 @@ util.files.initialize()
 util.files.ensureDirectoriesExist()
 util.logger.makeLogger()
 
+COCKPIT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 class CockpitApp(wx.App):
     def OnInit(self):
