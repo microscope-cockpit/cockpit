@@ -79,7 +79,11 @@ class AerotechZStage(device.Device):
                     self.softlimits=eval(lstr)
             except:
                 print "No softlimits section setting default limits"
+<<<<<<< HEAD
                 self.softlimits = (-30000,7000)
+=======
+                self.softlimits = (-30000,4000)
+>>>>>>> added softlimits argument to aerotech config options
 			
 			
             # Subscribe to abort events.
@@ -137,6 +141,10 @@ class AerotechZStage(device.Device):
     def getHandlers(self):
         result = []
         axis = self.axis
+<<<<<<< HEAD
+=======
+		#IMD 2015-03-02 changed hard limits to reflect DeepSIM should go into config file
+>>>>>>> added softlimits argument to aerotech config options
         minVal = self.softlimits[0]
         maxVal = self.softlimits[1]
         handler = handlers.stagePositioner.PositionerHandler(
