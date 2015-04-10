@@ -101,7 +101,10 @@ class PhysikInstrumenteM687(device.Device):
             except:
                 print "No softlimits section setting default limits"
                 self.softlimits = ((-67500, 67500), (-42500, 42500))
+<<<<<<< HEAD
 
+=======
+>>>>>>> further updates to soft-limits code from config file
             events.subscribe('user logout', self.onLogout)
             events.subscribe('user abort', self.onAbort)
             events.subscribe('macro stage xy draw', self.onMacroStagePaint)
@@ -292,6 +295,7 @@ class PhysikInstrumenteM687(device.Device):
         # True range of motion is (-67500, 67500) for X, (-42500, 42500) for Y.
         #IMD 2015-03-02 hacked in full range to see if we can access the full range
 <<<<<<< HEAD
+<<<<<<< HEAD
         for axis, minPos, maxPos in [(0, self.softlimits[0][0],self.softlimits[1][0]),
                     (1, self.softlimits[0][1],self.softlimits[1][1])]:
 
@@ -299,6 +303,10 @@ class PhysikInstrumenteM687(device.Device):
         for axis, minPos, maxPos in [(0, -37500, 11500),
                     (1, -67500, 59500)]:
 >>>>>>> Moved M687 soft limits to config file.
+=======
+        for axis, minPos, maxPos in [(0, self.softlimits[0][0],self.softlimits[1][0]),
+                    (1, self.softlimits[0][1],self.softlimits[1][1])]:
+>>>>>>> further updates to soft-limits code from config file
             result.append(handlers.stagePositioner.PositionerHandler(
                     "%d PI mover" % axis, "%d stage motion" % axis, False,
                     {'moveAbsolute': self.moveXYAbsolute,
