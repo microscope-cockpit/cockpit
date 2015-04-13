@@ -4,6 +4,7 @@ import depot
 import events
 import experiment
 import gui.guiUtils
+import handlers.camera
 import util.datadoc
 import util.threads
 import util.userConfig
@@ -86,6 +87,11 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
         self.sanityCheckEnvironment()
         self.prepareHandlers()
 
+        self.cameraToReadoutTime = dict([(c, c.getTimeBetweenExposures(isExact = True)) for c in self.cameras])
+        for camera, readTime in self.cameraToReadoutTime.iteritems():
+            if type(readTime) is not decimal.Decimal:
+                raise RuntimeError("Camera %s did not provide an exact (decimal.Decimal) readout time" % camera.name)
+
         # Start out with no-exposure-time images to get a measured offset.
         multiplier = 0
         for camera, func in self.camToFunc.iteritems():
@@ -104,7 +110,11 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
                 self.camToImages[camera] = numpy.zeros((self.numExposures, height, width))
                 self.camToNumImagesReceived[camera] = 0
                 self.camToLock[camera] = threading.Lock()
-                
+                # Indicate any frame transfer cameras for reset at start of
+                # table.
+                if camera.getExposureMode() == handlers.camera.TRIGGER_AFTER:
+                    self.cameraToIsReady[camera] = False
+
             self.table = self.generateActions(multiplier, activeCameras)
             self.table.sort()
             self.examineActions()
