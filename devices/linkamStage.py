@@ -124,21 +124,22 @@ class CockpitLinkamStage(device.Device):
     @util.threads.callInNewThread
     def sendPositionUpdates(self):
         """Send XY stage positions until it stops moving."""
-        while self.remote.isMoving():
+        moving = True
+        # Send positions at least once.
+        while moving:
             coords = self.getPosition(shouldUseCache=False)
             for axis, value in enumerate(coords):
                 events.publish('stage mover',
                                '%d linkam mover' % axis, 
                                axis, value)
-            curPosition = coords
-            time.sleep(.1)
+            moving = self.remote.isMoving()
         
         for axis in (0, 1):
             events.publish('stage stopped', '%d linkam mover' % axis)
             self.motionTargets = [None, None]
         return
 
-    ## Get the position of the specified axis, or both axes by default.
+
     def getPosition(self, axis=None, shouldUseCache=True):
         """Return the position of one or both axes.
 
