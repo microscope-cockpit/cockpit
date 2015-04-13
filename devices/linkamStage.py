@@ -18,7 +18,7 @@ CLASS_NAME = 'CockpitLinkamStage'
 
 CONFIG_NAME = 'linkam'
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
-DEFAULT_LIMITS = ((0, 0), (5000, 3000))
+DEFAULT_LIMITS = ((0, 0), (11000, 3000))
 
 class CockpitLinkamStage(device.Device):
     def __init__(self):
@@ -53,7 +53,7 @@ class CockpitLinkamStage(device.Device):
             except:
                 logger.log.warn('Could not parse limits from config: using defaults.')
                 print "No softlimits section setting default limits"
-                self.softlimits = ((0, 0), (7000, 3000))
+                self.softlimits = DEFAULT_LIMITS
             events.subscribe('user logout', self.onLogout)
             events.subscribe('user abort', self.onAbort)
 
