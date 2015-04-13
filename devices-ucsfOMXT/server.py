@@ -1,4 +1,3 @@
-import collections
 import Pyro4
 import threading
 import traceback
