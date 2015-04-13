@@ -269,6 +269,10 @@ class SIExperiment(experiment.Experiment):
                     dtype = newData.dtype, XYSize = doc.imageHeader.d[0],
                     ZSize = doc.imageHeader.d[2],
                     wavelengths = doc.imageHeader.wave)
+            header.mmm1 = doc.imageHeader.mmm1
+            for i in xrange(1, newData.shape[0]):
+                nm = 'mm%d' % i + 1
+                setattr(header, nm, getattr(doc.imageHeader, nm))
             header.NumTitles = doc.imageHeader.NumTitles
             header.title = doc.imageHeader.title            
             del doc
