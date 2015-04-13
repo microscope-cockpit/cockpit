@@ -241,6 +241,16 @@ class SIExperiment(experiment.Experiment):
         if self.savePath is not None:
             doc = util.datadoc.DataDoc(self.savePath)
             newData = numpy.zeros(doc.imageArray.shape, dtype = doc.imageArray.dtype)
+            if doc.imageHeader.next > 0:
+                # Assumes that the file was written out in the native byte
+                # order (currently that is true).
+                oldExt = numpy.fromfile(
+                    self.savePath, dtype=numpy.dtype('u1'),
+                    count=1024+doc.imageHeader.next)
+                newExt = numpy.zeros(
+                    doc.imageHeader.next, dtype=numpy.dtype('u1'))
+                extImgBytes = 4 * (doc.imageHeader.NumIntegers +
+                                   doc.imageHeader.NumFloats)
             # Determine how to index into the source dataset. The slowest-
             # changing value has the largest multiplier.
             ordering = COLLECTION_ORDERS[self.collectionOrder]
@@ -262,13 +272,21 @@ class SIExperiment(experiment.Experiment):
                         source = angle * sourceAMult + phase * sourcePMult + z * sourceZMult
                         target = angle * targetAMult + phase * targetPMult + z * targetZMult
                         newData[:, :, target] = doc.imageArray[:, :, source]
+                        if doc.imageHeader.next > 0:
+                            extTgt = target * extImgBytes
+                            extSrc = 1024 + source * extImgBytes
+                            newExt[extTgt:extTgt + extImgBytes] = oldExt[
+                                extSrc:extSrc + extImgBytes]
 
             # Write the data out.
-            # HACK: we're ignoring the extended header here; oh well.
             header = util.datadoc.makeHeaderForShape(newData.shape,
                     dtype = newData.dtype, XYSize = doc.imageHeader.d[0],
                     ZSize = doc.imageHeader.d[2],
                     wavelengths = doc.imageHeader.wave)
+            header.next = doc.imageHeader.next
+            if header.next > 0:
+                header.NumIntegers = doc.imageHeader.NumIntegers
+                header.NumFloats = doc.imageHeader.NumFloats
             header.mmm1 = doc.imageHeader.mmm1
             for i in xrange(1, newData.shape[0]):
                 nm = 'mm%d' % i + 1
@@ -276,12 +294,15 @@ class SIExperiment(experiment.Experiment):
             header.NumTitles = doc.imageHeader.NumTitles
             header.title = doc.imageHeader.title            
             del doc
+            del oldExt
             
             # Write the new data to a new file, then remove the old file
             # and put the new one where it was.
             tempPath = self.savePath + str(os.getpid())
             handle = open(tempPath, 'wb')
             util.datadoc.writeMrcHeader(header, handle)
+            if header.next > 0:
+                handle.write(newExt)
             handle.write(newData)
             handle.close()
             os.remove(self.savePath)
