@@ -286,7 +286,7 @@ class ExperimentUI(wx.Panel):
         params['exposureMultiplier'] = gui.guiUtils.tryParseNum(self.correctionArgs['correctionExposureMultiplier'], float)
         params['maxIntensity'] = gui.guiUtils.tryParseNum(self.correctionArgs['correctionMaxIntensity'])
         params['cosmicRayThreshold'] = gui.guiUtils.tryParseNum(self.correctionArgs['correctionCosmicRayThreshold'], float)
-        params['shouldPreserveIntermediaryFiles'] = gui.guiUtils.responseArgs['correctionShouldPreserveIntermediaryFiles'].GetValue()
+        params['shouldPreserveIntermediaryFiles'] = self.correctionArgs['correctionShouldPreserveIntermediaryFiles'].GetValue()
         return params
 
 
