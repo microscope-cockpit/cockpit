@@ -49,8 +49,8 @@ class SingleSiteExperimentDialog(wx.Dialog):
             wx.MessageBox("The experiment cannot be run:\n%s" % message,
                     "Error", wx.OK | wx.ICON_ERROR | wx.STAY_ON_TOP)
             return
-        else:
-            self.Hide()
+#        else:
+#            self.Hide()
 
 
     ## Blow away the experiment panel and recreate it from scratch.
