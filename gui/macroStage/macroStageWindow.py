@@ -101,6 +101,12 @@ class MacroStageWindow(wx.Frame):
         button.Bind(wx.EVT_BUTTON, 
                 lambda event: interfaces.stageMover.recenterFineMotion())
         sizer.Add(button)
+		
+        self.gotoXYZButton = wx.Button(self, -1, "Go To XYZ")
+        self.gotoXYZButton.SetToolTipString("Go to Specified XYZ position.")
+        self.gotoXYZButton.Bind(wx.EVT_BUTTON,  lambda event: self.gotoXYZ())
+        sizer.Add(self.gotoXYZButton)
+		
         return sizer
 
     ## Returns a sizer containing a set of buttons related to the Z macro stage
@@ -139,6 +145,13 @@ class MacroStageWindow(wx.Frame):
     def setXYLimit(self, *args):
         self.macroStageXY.setXYLimit(*args)
 
+    def gotoXYZ(self):
+        position = interfaces.stageMover.getPosition()
+        values=gui.dialogs.getNumberDialog.getManyNumbersFromUser(self.GetParent(),"Go To XYZ",('X','Y','Z'),position)
+        newPos=(float(values[0]),float(values[1]),float(values[2]))
+        interfaces.stageMover.goTo(newPos)
+				
+			
 
 
 window = None
@@ -161,3 +174,5 @@ def setXYLimit():
 def userLoggedIn():
     comments = util.userConfig.getValue('histogramComments', default = '')
     window.comments.SetValue(comments)
+
+	
