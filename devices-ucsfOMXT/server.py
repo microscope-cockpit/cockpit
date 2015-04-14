@@ -1,4 +1,3 @@
-import collections
 import Pyro4
 import threading
 import traceback
@@ -50,12 +49,12 @@ class CockpitServer(device.Device):
     # on the appropriate port; those calls will be forwarded to
     # the registered function. Return a URI used to connect to that
     # daemon from outside.
-    def register(self, func, localIp = None):
+    def register(self, func, localIP = None):
         self.uniquePortID += 1
         ipAddress = self.ipAddress
-        if localIp is not None:
+        if localIP is not None:
             # Use the alternate address instead.
-            ipAddress = localIp
+            ipAddress = localIP
         daemon = ServerDaemon(self.name, func, self.uniquePortID, ipAddress)
         self.funcToDaemon[func] = daemon
         daemon.serve()

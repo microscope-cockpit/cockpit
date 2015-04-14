@@ -24,7 +24,7 @@ POWER_CONTROL = "power control"
 SERVER = "server"
 STAGE_POSITIONER = "stage positioner"
 DEVICE_FOLDER = 'devices'
-
+THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
 
 class DeviceDepot:
     ## Initialize the Depot. Find all the other modules in the "devices" 
@@ -68,7 +68,9 @@ class DeviceDepot:
     # "configurator.py" module. This is needed because config must be loaded
     # before any other Device, so that logfiles can be stored properly.
     def loadConfig(self):
-        if os.path.exists(os.path.join(DEVICE_FOLDER, 'configurator.py')):
+        if os.path.exists(os.path.join(THIS_FOLDER,
+                                       DEVICE_FOLDER,
+                                       'configurator.py')):
             path = '.'.join([DEVICE_FOLDER, 'configurator'])
             module = importlib.import_module(path)
             device = self.loadDeviceModule(module)

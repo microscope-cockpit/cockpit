@@ -12,7 +12,7 @@ import Pyro4
 import distutils.version
 if (distutils.version.LooseVersion(Pyro4.__version__) >=
     distutils.version.LooseVersion('4.22')):
-    Pyro4.config.SERIALIZERS_ACCEPTED.remove('serpent')
+    Pyro4.config.SERIALIZERS_ACCEPTED.discard('serpent')
     Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
     Pyro4.config.SERIALIZER = 'pickle'
 
@@ -26,6 +26,7 @@ util.files.initialize()
 util.files.ensureDirectoriesExist()
 util.logger.makeLogger()
 
+COCKPIT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 class CockpitApp(wx.App):
     def OnInit(self):
@@ -141,24 +142,23 @@ class CockpitApp(wx.App):
 
 
 
-CockpitApp(redirect = False).MainLoop()
-
-
-# HACK: manually exit the program. If we don't do this, then there's a small
-# possibility that non-daemonic threads (i.e. ones that don't exit when the 
-# main thread exits) will hang around uselessly, forcing the program to be
-# manually shut down via Task Manager or equivalent. Why do we have non-daemonic
-# threads? That's tricky to track down. Daemon status is inherited from the 
-# parent thread, and must be manually set otherwise. Since it's easy to get
-# wrong, we'll just leave this here to catch any failures to set daemon
-# status.
-badThreads = []
-for thread in threading.enumerate():
-    if not thread.daemon:
-        badThreads.append(thread)
-if badThreads:
-    util.logger.log.error("Still have non-daemon threads %s" % map(str, badThreads))
-    for thread in badThreads:
-        util.logger.log.error(str(thread.__dict__))
-os._exit(0)
+if __name__ == '__main__':
+    CockpitApp(redirect = False).MainLoop()
+    # HACK: manually exit the program. If we don't do this, then there's a small
+    # possibility that non-daemonic threads (i.e. ones that don't exit when the 
+    # main thread exits) will hang around uselessly, forcing the program to be
+    # manually shut down via Task Manager or equivalent. Why do we have non-daemonic
+    # threads? That's tricky to track down. Daemon status is inherited from the 
+    # parent thread, and must be manually set otherwise. Since it's easy to get
+    # wrong, we'll just leave this here to catch any failures to set daemon
+    # status.
+    badThreads = []
+    for thread in threading.enumerate():
+        if not thread.daemon:
+            badThreads.append(thread)
+    if badThreads:
+        util.logger.log.error("Still have non-daemon threads %s" % map(str, badThreads))
+        for thread in badThreads:
+            util.logger.log.error(str(thread.__dict__))
+    os._exit(0)
 
