@@ -123,6 +123,11 @@ class Experiment:
                     ("The file:\n%s\nalready exists. " % self.savePath) +
                     "Are you sure you want to overwrite it?"):
                 return
+				
+        if (interfaces.stageMover.mover.curHandlerIndex== 0):
+            if not gui.guiUtils.getUserPermission(
+                    ("The Z mover cannot do experiments!" + "please cancel")):
+                return
         
         global lastExperiment
         lastExperiment = self
