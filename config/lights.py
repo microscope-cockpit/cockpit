@@ -15,3 +15,4 @@ lights = [
     ('561nm', 561, WAVELENGTH_TO_COLOR[561], 1<<3, 8, 7776, 'cobolt561'),
     ('647nm', 640, WAVELENGTH_TO_COLOR[640], 1<<2, 8, 7776, 'deepstar647'),
     ('Trans', 'Trans', WAVELENGTH_TO_COLOR['white'], 1<<4), ]
+

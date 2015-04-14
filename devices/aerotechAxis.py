@@ -138,6 +138,7 @@ class AerotechZStage(device.Device):
     def getHandlers(self):
         result = []
         axis = self.axis
+
         minVal = self.softlimits[0]
         maxVal = self.softlimits[1]
         handler = handlers.stagePositioner.PositionerHandler(
