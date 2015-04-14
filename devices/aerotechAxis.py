@@ -142,14 +142,14 @@ class AerotechZStage(device.Device):
         minVal = self.softlimits[0]
         maxVal = self.softlimits[1]
         handler = handlers.stagePositioner.PositionerHandler(
-            "%d %s" % (axis, NAME_STRING), "%d stage motion" % axis, True, 
+            "%d %s" % (axis, NAME_STRING), "%d stage motion" % axis, False, 
             {'moveAbsolute': self.moveAbsolute,
                 'moveRelative': self.moveRelative, 
                 'getPosition': self.getPosition, 
                 'getMovementTime': self.getMovementTime,
                 'cleanupAfterExperiment': self.cleanup,
                 'setSafety': self.setSafety},
-                axis, [1, 5, 10, 50, 100, 500, 1000, 5000],
+                axis, [ 10, 50, 100, 500, 1000, 5000],
                 1, (minVal, maxVal), (minVal, maxVal))
         result.append(handler)
         return result
