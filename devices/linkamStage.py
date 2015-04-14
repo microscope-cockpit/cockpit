@@ -110,6 +110,10 @@ class CockpitLinkamStage(device.Device):
             newPos = (pos, None)
         elif axis == 1:
             newPos = (None, pos)
+        else:
+            # Arguments were wrong. Just return, since raising an
+            # exception can kill the mosaic.
+            return
         with self.xyLock:
             # moveToXY(x, y), where None indicates no change.
             self.remote.moveToXY(*newPos)
@@ -139,7 +143,7 @@ class CockpitLinkamStage(device.Device):
                                '%d linkam mover' % axis, 
                                axis, value)
             moving = self.remote.isMoving()
-        
+
         for axis in (0, 1):
             events.publish('stage stopped', '%d linkam mover' % axis)
             self.motionTargets = [None, None]
