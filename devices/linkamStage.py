@@ -35,6 +35,8 @@ class CockpitLinkamStage(device.Device):
         self.lastPiezoTime = time.time()
         ## Stage velocity
         self.stageVelocity = [None, None]
+        ## Flag to show that sendPositionUpdates is running.
+        self.sendingPositionUpdates = False
 
         self.isActive = config.has_section(CONFIG_NAME)
         if self.isActive:
@@ -124,6 +126,10 @@ class CockpitLinkamStage(device.Device):
     @util.threads.callInNewThread
     def sendPositionUpdates(self):
         """Send XY stage positions until it stops moving."""
+        if self.sendingPositionUpdates is True:
+            # Already sending updates.
+            return
+        self.sendingPositionUpdates = True
         moving = True
         # Send positions at least once.
         while moving:
@@ -137,6 +143,7 @@ class CockpitLinkamStage(device.Device):
         for axis in (0, 1):
             events.publish('stage stopped', '%d linkam mover' % axis)
             self.motionTargets = [None, None]
+        self.sendingPositionUpdates = False
         return
 
 
