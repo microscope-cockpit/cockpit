@@ -24,9 +24,9 @@ class DrawerDevice(device.Device):
         # Add the dummy cameras, too.
         cameraNames = ('Dummy camera 1', 'Dummy camera 2', 'Dummy camera 3', 'Dummy camera 4')
         drawerNames = ('Dummy drawer 1', 'Dummy drawer 2')
-        dyes = [('GFP', 'Cy5', 'mCherry', 'DAPI'), 
+        dyes = [('GFP', 'TRITC', 'mCherry', 'DAPI'), 
                 ('Cy5', 'FITC', 'Rhod', 'DAPI')]
-        wavelengths = [(525, 670, 585, 447), (695, 518, 590, 450)]
+        wavelengths = [(525, 600, 585, 447), (695, 518, 590, 450)]
         for i, camera in enumerate(cameraNames):
             filters = map(lambda d, w: {'dye': d, 'wavelength': w}, 
                 [dye[i] for dye in dyes],
