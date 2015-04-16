@@ -143,6 +143,8 @@ class CockpitLinkamStage(device.Device):
                                '%d linkam mover' % axis, 
                                axis, value)
             moving = self.remote.isMoving()
+            # Need this thread to sleep to give UI a chance to update.
+            time.sleep(0.1)
 
         for axis in (0, 1):
             events.publish('stage stopped', '%d linkam mover' % axis)
