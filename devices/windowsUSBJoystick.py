@@ -117,6 +117,7 @@ class JOYINFOEX(ctypes.Structure):
 
 class WindowsJoystickDevice(device.Device):
     def __init__(self):
+        super(self.__class__, self).__init__()
         self.isActive = True
         self.priority = 100
         # Get the number of supported devices (usually 16).
