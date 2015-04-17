@@ -17,9 +17,9 @@ class ConfiguratorDevice(device.Device):
  
         # Default values.
         configdict = {
-                'slideAltitude': 7370,
-                'slideTouchdownAltitude': 7900,
-                'dishAltitude': 5750,
+                'slideAltitude': 4070,
+                'slideTouchdownAltitude': 2000,
+                'dishAltitude': 2670,
                 'dataDirectory': os.path.join(root, 'AA_MUI_DATA'),
                 'logDirectory': os.path.join(root, 'AA_MUI_LOGS'),
                 'configDirectory': os.path.join(root, 'AA_MUI_CONFIG'),
