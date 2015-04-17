@@ -1,3 +1,4 @@
+import depot
 import device
 import events
 import gui.guiUtils
@@ -58,6 +59,18 @@ class CockpitLinkamStage(device.Device):
                 self.softlimits = DEFAULT_LIMITS
             events.subscribe('user logout', self.onLogout)
             events.subscribe('user abort', self.onAbort)
+
+
+    @util.threads.locked
+    def finalizeInitialization(self):
+        # Open an incoming connection with the remote object.
+        server = depot.getHandlersOfType(depot.SERVER)[0]
+        uri = server.register(self.receiveStatus)
+        self.remote.setClient(uri)
+
+
+    def receiveStatus(self, status):
+        pass
 
 
     def initialize(self):
