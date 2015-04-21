@@ -33,9 +33,6 @@ DEFAULT_FONT = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD)
 ## Small font
 SMALL_FONT = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
 
-import wx.lib.inspection
-wx.lib.inspection.InspectionTool().Show()
-
 
 class Label(wx.StaticText):
     """wx.StaticText with some default formatting.
