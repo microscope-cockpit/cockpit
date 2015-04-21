@@ -162,7 +162,8 @@ def step(direction):
     for axis, sign in enumerate(direction):
         if (axis in mover.axisToHandlers and
                 mover.curHandlerIndex < len(mover.axisToHandlers[axis])):
-#IMD 20150414 don't need to move is sign=0, this prevent aerotech unlocking stage on every keyboard move
+            #IMD 20150414 don't need to move if sign==0.
+            # Prevents aerotech axis unlocking stage on every keyboard move.
             if (sign !=0):
                 mover.axisToHandlers[axis][mover.curHandlerIndex].moveStep(sign)
 
