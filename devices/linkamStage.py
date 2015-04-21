@@ -101,6 +101,7 @@ class CockpitLinkamStage(device.Device):
 
 
     def initialize(self):
+        """Initialize the device."""
         uri = "PYRO:%s@%s:%d" % (CONFIG_NAME, self.ipAddress, self.port)
         self.remote = Pyro4.Proxy(uri)
         self.remote.connect()
@@ -114,15 +115,17 @@ class CockpitLinkamStage(device.Device):
 
 
     def onLogout(self, *args):
+        """Cleanup on user logout."""
         pass
         
 
     def onAbort(self, *args):
-        """Stop motion immediately."""
+        """Actions to do in the event of an abort."""
         pass
 
 
     def getHandlers(self):
+        """Generate and return device handlers."""
         result = []
         # zip(*limits) transforms ((x0,y0),(x1,y1)) to ((x0,x1),(y0,y1))
         for axis, (minPos, maxPos) in enumerate(zip(*self.softlimits)):
@@ -184,6 +187,7 @@ class CockpitLinkamStage(device.Device):
 
 
     def moveRelative(self, axis, delta):
+        """Move stage to a position relative to the current position."""
         if delta:
             curPos = self.positionCache[axis]
             self.moveAbsolute(axis, curPos + delta)
@@ -231,6 +235,7 @@ class CockpitLinkamStage(device.Device):
 
 
     def setSafety(self, axis, value, isMax):
+        """Set safety limits on range of motion."""
         pass
 
 
@@ -243,4 +248,5 @@ class CockpitLinkamStage(device.Device):
 
 
     def makeInitialPublications(self):
+        """Send initial device publications."""
         self.sendPositionUpdates()
