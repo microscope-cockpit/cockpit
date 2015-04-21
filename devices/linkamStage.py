@@ -154,7 +154,7 @@ class CockpitLinkamStage(device.Device):
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = gui.device.Label(parent=panel,
-                                label='cryostage')
+                                label='Cryostage')
         sizer.Add(label)
         ## Generate the value displays.
         self.displays = {}
