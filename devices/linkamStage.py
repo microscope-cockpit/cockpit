@@ -59,6 +59,8 @@ class CockpitLinkamStage(device.Device):
         self.stageVelocity = [None, None]
         ## Flag to show that sendPositionUpdates is running.
         self.sendingPositionUpdates = False
+        ## Status dict updated by remote.
+        status = None
 
         self.isActive = config.has_section(CONFIG_NAME)
         if self.isActive:
@@ -84,14 +86,18 @@ class CockpitLinkamStage(device.Device):
 
     @util.threads.locked
     def finalizeInitialization(self):
-        # Open an incoming connection with the remote object.
+        """Finalize device initialization."""
+        ## Open an incoming connection with the remote object.
+        # Used for status updates.
         server = depot.getHandlersOfType(depot.SERVER)[0]
         uri = server.register(self.receiveStatus)
         self.remote.setClient(uri)
 
 
     def receiveStatus(self, status):
-        pass
+        """Called when the remote sends a status update."""
+        self.status = status
+        self.updateUI()
 
 
     def initialize(self):
@@ -226,6 +232,14 @@ class CockpitLinkamStage(device.Device):
 
     def setSafety(self, axis, value, isMax):
         pass
+
+
+    def updateUI(self):
+        """Update user interface elements."""
+        status = self.status
+        self.displays['bridge'].updateValue(self.status.get('bridgeT'))
+        self.displays['chamber'].updateValue(self.status.get('chamberT'))
+        self.displays['dewar'].updateValue(self.status.get('dewarT'))
 
 
     def makeInitialPublications(self):
