@@ -21,6 +21,8 @@ import depot
 import device
 import events
 import gui.guiUtils
+import gui.device
+import gui.toggleButton
 import handlers.stagePositioner
 import interfaces
 import Pyro4
@@ -133,6 +135,28 @@ class CockpitLinkamStage(device.Device):
                     )
                 )
         return result
+
+
+    def makeUI(self, parent):
+        """Make cockpit user interface elements."""
+        ## A list of value displays for temperatures.
+        tempDisplays = ['bridge', 'chamber', 'dewar']
+        # Panel, sizer and a device label.
+        panel = wx.Panel(parent)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        label = gui.device.Label(parent=panel,
+                                label='cryostage')
+        sizer.Add(label)
+        ## Generate the value displays.
+        self.displays = {}
+        for d in tempDisplays:
+            self.displays[d] = gui.device.ValueDisplay(
+                    parent=panel, label=d, value=0.0, 
+                    unitStr=u'°C')
+            sizer.Add(self.displays[d])
+        ## Set the panel sizer and return.
+        panel.SetSizerAndFit(sizer)
+        return panel
 
 
     def moveAbsolute(self, axis, pos):
