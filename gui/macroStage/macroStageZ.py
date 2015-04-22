@@ -313,7 +313,14 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 self.scaledVertex(scaleX - spikeLength, altitude)
                 self.scaledVertex(scaleX, altitude + spikeHeight / 2)
                 glEnd()
-            
+
+            #Draw top and bottom positions of stack in blue.
+            self.stackdef=[gui.saveTopBottomPanel.savedTop,
+                        gui.saveTopBottomPanel.savedBottom]
+            for pos in self.stackdef:
+                if pos is not None:
+                    self.drawLine(pos, color = (0, 0, 1))
+
             # Draw current stage position
             self.drawLine(motorPos, color = (1, 0, 0),
                     label = str(int(motorPos)), isLabelOnLeft = True)
@@ -341,22 +348,6 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                         motorPos - stepSize)
                 glEnd()
 
-            #Draw top and bottom positions of stack in blue.
-            self.stackdef=[gui.saveTopBottomPanel.savedTop,
-                        gui.saveTopBottomPanel.savedBottom]
-            for pos in self.stackdef:
-                if pos is not None:
-                    glLineWidth(1)
-                    glColor3f(0, 0, 1)
-                    glBegin(GL_LINES)
-                    self.scaledVertex(scaleX + self.horizLineLength / 2, 
-                                      self.savedTop)
-                    self.scaledVertex(scaleX - self.horizLineLength / 2, 
-                                      self.savedTop)
-                    glEnd()
-
-            
-                
             # Draw direction of stage motion, if any
             if abs(motorPos - self.prevStagePosition[2]) > .01:
                 delta = motorPos - self.prevStagePosition[2]
