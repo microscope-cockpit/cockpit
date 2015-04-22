@@ -10,7 +10,7 @@ import util.logger
 import util.userConfig
 
 import macroStageBase
-
+import gui.saveTopBottomPanel
 
 ## Width of an altitude line.
 HEIGHT_LINE_WIDTH = 3
@@ -29,7 +29,7 @@ DEFAULT_HISTOGRAM_HEIGHT = 200
 MINI_HISTOGRAM_PADDING = 1
 
 #Size of secondar histogram if no fine motion stage in microns
-SECONDARY_HISTOGRAM_SIZE = 500
+SECONDARY_HISTOGRAM_SIZE = 50
 
 
 ## This is a simple container class for histogram display info.
@@ -341,6 +341,22 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                         motorPos - stepSize)
                 glEnd()
 
+            #Draw top and bottom positions of stack in blue.
+            self.stackdef=[gui.saveTopBottomPanel.savedTop,
+                        gui.saveTopBottomPanel.savedBottom]
+            for pos in self.stackdef:
+                if pos is not None:
+                    glLineWidth(1)
+                    glColor3f(0, 0, 1)
+                    glBegin(GL_LINES)
+                    self.scaledVertex(scaleX + self.horizLineLength / 2, 
+                                      self.savedTop)
+                    self.scaledVertex(scaleX - self.horizLineLength / 2, 
+                                      self.savedTop)
+                    glEnd()
+
+            
+                
             # Draw direction of stage motion, if any
             if abs(motorPos - self.prevStagePosition[2]) > .01:
                 delta = motorPos - self.prevStagePosition[2]
