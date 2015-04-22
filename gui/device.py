@@ -1,5 +1,5 @@
 # coding: utf-8
-"""gui.display
+"""gui.device
 
 Copyright 2014-2015 Mick Phillips (mick.phillips at gmail dot com)
 
@@ -21,8 +21,8 @@ Class definitions for labels and value displays with default formatting.
 
 import wx
 
-## @package gui.label
-# This module contains the Label class.
+## @package gui.device
+# Defines classes for common controls used by cockpit devices.
 
 ## Default size
 DEFAULT_SIZE = (120, 24)
