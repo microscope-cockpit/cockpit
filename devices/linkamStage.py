@@ -163,6 +163,16 @@ class CockpitLinkamStage(device.Device):
                     parent=panel, label=d, value=0.0, 
                     unitStr=u'°C')
             sizer.Add(self.displays[d])
+        lightButton = gui.toggleButton.ToggleButton(
+                parent=panel,
+                label='chamber light',
+                size=gui.device.DEFAULT_SIZE,
+                activateAction=self.toggleChamberLight,
+                deactivateAction=self.toggleChamberLight,
+                isBold=False)
+        self.displays['light'] = lightButton
+        sizer.Add(lightButton)
+
         ## Set the panel sizer and return.
         panel.SetSizerAndFit(sizer)
         return panel
@@ -239,12 +249,20 @@ class CockpitLinkamStage(device.Device):
         pass
 
 
+    def toggleChamberLight(self):
+        self.remote.toggleChamberLight()
+
+
     def updateUI(self):
         """Update user interface elements."""
         status = self.status
         self.displays['bridge'].updateValue(self.status.get('bridgeT'))
         self.displays['chamber'].updateValue(self.status.get('chamberT'))
         self.displays['dewar'].updateValue(self.status.get('dewarT'))
+
+        ## The stage SDK allows us to toggle the light, but not know
+        # its state.
+        # self.displays['light'].setActive(not self.status.get('light'))
 
 
     def makeInitialPublications(self):
