@@ -97,6 +97,7 @@ class CockpitLinkamStage(device.Device):
     def receiveStatus(self, status):
         """Called when the remote sends a status update."""
         self.status = status
+        events.publish("status update", __name__, status)
         self.updateUI()
 
 
