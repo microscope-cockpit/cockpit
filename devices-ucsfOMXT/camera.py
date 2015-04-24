@@ -69,12 +69,22 @@ class CameraManager(device.Device):
         title.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         outerSizer.Add(title)
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
+        child_uis = False
         for cam in self.cameras:
             if hasattr(cam, 'makeUI'):
-                rowSizer.Add(cam.makeUI(self.panel))
-                rowSizer.AddSpacer(12)
-        outerSizer.Add(rowSizer)
-        self.panel.SetSizerAndFit(outerSizer)
+                child_ui = cam.makeUI(self.panel)
+                if child_ui is not None:
+                    rowSizer.Add(child_ui)
+                    rowSizer.AddSpacer(12)
+                    child_uis = True
+        if child_uis:
+            outerSizer.Add(rowSizer)
+            self.panel.SetSizerAndFit(outerSizer)
+        else:
+            outerSizer.DeleteWindows()
+            rowSizer.DeleteWindows()
+            del rowSizer, title, outerSizer, self.panel
+            self.panel = None
         return self.panel
 
 
