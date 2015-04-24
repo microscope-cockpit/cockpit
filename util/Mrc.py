@@ -453,12 +453,12 @@ class Mrc2:
 
         if self._extHdrSize>0 and (self._extHdrNumInts>0 or self._extHdrNumFloats>0):
             nSecs = int( self._extHdrSize / self._extHdrBytesPerSec )
-            self._extHdrArray = N.rec.fromfile(self._f,
-                                             formats="%di4,%df4"%(self._extHdrNumInts,
-                                                                  self._extHdrNumFloats),
-                                             names='int,float',
-                                             shape=nSecs  )
-
+            byteorder = '='
+            type_descr = [
+                ("int",   "%s%di4"%(byteorder,self._extHdrNumInts)),
+                ("float", "%s%df4"%(byteorder,self._extHdrNumFloats))]
+            self._extHdrArray = N.rec.fromfile(
+                self._f, dtype=type_descr, shape=nSecs)
             if self._fileIsByteSwapped:
                 self._extHdrArray.newbyteorder()
             
@@ -494,10 +494,11 @@ class Mrc2:
 
         if self._extHdrSize>0 and (self._extHdrNumInts>0 or self._extHdrNumFloats>0):
             nSecs = int( self._extHdrSize / self._extHdrBytesPerSec )
-            self._extHdrArray = N.recarray(nSecs,
-                                           formats="%di4,%df4"%(self._extHdrNumInts,
-                                                                self._extHdrNumFloats),
-                                           names='int,float')
+            byteorder = '='
+            type_descr = [
+                ("int",   "%s%di4"%(byteorder,self._extHdrNumInts)),
+                ("float", "%s%df4"%(byteorder,self._extHdrNumFloats))]
+            self._extHdrArray = N.recarray(nSecs, dtype=type_descr)
 
             self.extInts   = self._extHdrArray.field('int')
             self.extFloats = self._extHdrArray.field('float')
