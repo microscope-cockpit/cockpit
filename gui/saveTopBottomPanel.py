@@ -16,17 +16,22 @@ bottomPosControl = None
 zStackHeightLabel = None
 
 ## Current saved top position
-savedTop = util.userConfig.getValue('savedTop', isGlobal = False)
+ 
+#util.userConfig.getValue('savedTop', isGlobal = False, default= 3010)
 ## Current saved bottom position
-savedBottom = util.userConfig.getValue('savedBottom', isGlobal = False)
+savedBottom = 3000
+#util.userConfig.getValue('savedBottom', isGlobal = False, default = 3000)
 
 
 ## Create and lay out the "save top/bottom" panel, which allows the user to 
 # remember Z levels of interest.
 def createSaveTopBottomPanel(parent):
-    global topPosControl, zStackHeightLabel, bottomPosControl
-    panel = wx.Panel(parent, 8910)
+    global topPosControl, zStackHeightLabel, bottomPosControl,savedTop,savedBottom
+	
+    savedTop=util.userConfig.getValue('savedTop', isGlobal = False, default= 3010)
+    savedBottom=util.userConfig.getValue('savedBottom', isGlobal = False, default = 3000)
 
+    panel = wx.Panel(parent, 8910)
     box = wx.StaticBox(panel, -1, '')
     
     sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
