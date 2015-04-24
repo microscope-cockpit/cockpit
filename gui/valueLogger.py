@@ -72,6 +72,9 @@ class ValueLoggerPanel(wx.Panel):
         self.border = (56, 88, 192, 24)
         ## Main panel sizer.
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ## Data sources
+        self.dataTimes = interfaces.valueLogger.instance.times
+        self.dataSeries = interfaces.valueLogger.instance.series
 
         # Add the canvas to the sizer.
         self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
@@ -123,10 +126,13 @@ class ValueLoggerPanel(wx.Panel):
         wx.EVT_MENU(menu, i, lambda event:self.saveShowKeysToConfig())
         i += 1
         menu.AppendSeparator()
-        for i, (key, enabled) in enumerate(sorted(self.showKeys.items()), i):
+        for key, enabled in sorted(self.showKeys.items() ):
+            if key not in self.dataSeries:
+                continue
             menu.Append(i, key, '', wx.ITEM_CHECK)
             menu.Check(i, enabled)
             wx.EVT_MENU(menu, i, lambda event, k=key:self.toggleShowKey(k))
+            i += 1
         gui.guiUtils.placeMenuAtMouse(self, menu)
 
     
@@ -136,8 +142,8 @@ class ValueLoggerPanel(wx.Panel):
             # If there is no window, there is nothing to do.
             return
 
-        dataTimes = interfaces.valueLogger.instance.times
-        dataSeries = interfaces.valueLogger.instance.series
+        dataTimes = self.dataTimes
+        dataSeries = self.dataSeries
         for (key, series) in dataSeries.iteritems():
             if key == 'time':
                 # Don't plot time vs time.
@@ -204,9 +210,6 @@ class ValueLoggerPanel(wx.Panel):
         
     def toggleShowKey(self, key):
         """Toggle the state of an entry in showKeys."""
-        if self.showKeys[key] and self.showKeys.values().count(True) == 1:
-            # This is the only key set to True. Do not change it.
-            return
         self.showKeys[key] = not self.showKeys[key]
         
 
