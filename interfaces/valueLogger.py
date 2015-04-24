@@ -19,6 +19,7 @@ Logs values published by devices.
 Devices should publish a 'status update' event, with a device
 identifier and one of:
     a single value;
+    a list of values;
     a dict of key-value pairs.
 """
 from collections import deque
@@ -27,34 +28,46 @@ from numbers import Number
 import threading
 import time
 import types
+import datetime
 
 
 class ValueLogger(object):
+    """A class to log arbitrary cockpit data."""
     def __init__(self):
+        ## Maximum no. of points for each dataset.
         self.historyLength = 500
+        ## Time between updates in seconds.
         self.updatePeriod = 1.
+        ## Current data values.
         self.currentValues = {}
+        ## Logged data series.
         self.series = {}
+        ## Time points for logged data series.
         self.times = deque(maxlen=self.historyLength)
-        
+        ## Last time at which point added to series.
         self.lastTime = 0
+        ## A thread to perform the logging.
         self.loggingThread = threading.Thread(target=self.log)
         self.loggingThread.Daemon = True
         self.loggingThread.start()
+        # Subscribe to position updates.
         events.subscribe("stage mover", self.onEvent)
+        # Subscribe to device status updates.
         events.subscribe("status update", self.onEvent)
 
 
     def onEvent(self, *args):
         """Respond to events that publish loggable values."""
+        ## The device that published the event
         device = args[0].lstrip('devices.')
+        ## The data published with the event.
         data = args[1]
         if isinstance(data, (Number, types.StringTypes)):
-            # single value
+            # Data is a single value. Map device name to data.
             self.currentValues[device] = data
         elif isinstance(data, types.ListType):
-            # list of values
-            formatstr = '%s-%%.%dd' % (data, len(str(len(data))))
+            # Data is a list of values. Map device name and integer to data.
+            formatstr = '%s:%%.%dd' % (data, len(str(len(data))))
             for (i, d) in enumerate(data):
                 key = formatstr % i
                 self.currentValues[key] = d
@@ -62,15 +75,15 @@ class ValueLogger(object):
                     self.series[key] = deque(len(self.times) * [None],
                                              maxlen=self.historyLength)
         elif isinstance(data, types.DictionaryType):
-            # dict of key, value pairs
+            # Data is a dict of key, value pairs. Map device name and key to values.
             for (key, value) in data.iteritems():
-                key = '%s-%s' % (device, key)
+                key = '%s:%s' % (device, key)
                 self.currentValues[key] = value
                 if key not in self.series:
                     self.series[key] = deque(len(self.times) * [None],
                                              maxlen=self.historyLength)
         else:
-            # could not handle this data type
+            # Could not handle this data type: raise an exception.
             errStr = '%s could not handle data of type %s from %s' % (
                     type(self), type(data), device)
             raise Exception(errStr)
@@ -78,7 +91,6 @@ class ValueLogger(object):
 
     def log(self):
         """Loop and log values at specified time interval."""
-        t0 = time.time()
         while True:
             now = time.time()
             if not self.series:
@@ -90,7 +102,7 @@ class ValueLogger(object):
                 time.sleep(0.1)
                 continue
             # Log current values and time.
-            self.times.append(now - t0)
+            self.times.append(datetime.datetime.fromtimestamp(now))
             self.lastTime = now
             for key, series in self.series.iteritems():
                 series.append(self.currentValues.get(key, None))
