@@ -8,12 +8,12 @@ import Pyro4
 import wx
 
 from config import config
-CLASS_NAME = 'raspberryPi'
+CLASS_NAME = 'RaspberryPi'
 CONFIG_NAME = 'RPi'
 
 
 
-class raspberryPi(device.Device):
+class RaspberryPi(device.Device):
     def __init__(self):
         self.isActive = config.has_section(CONFIG_NAME)
         self.priority = 10000
