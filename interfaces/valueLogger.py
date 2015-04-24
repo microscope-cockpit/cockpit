@@ -83,6 +83,9 @@ class ValueLogger(object):
         if isinstance(data, (Number, types.StringTypes)):
             # Data is a single value. Map device name to data.
             self.currentValues[device] = data
+            if device not in self.series:
+                self.series[device] = deque(len(self.times) * [None],
+                                            maxlen=self.historyLength)
         elif isinstance(data, types.ListType):
             # Data is a list of values. Map device name and integer to data.
             formatstr = '%s:%%.%dd' % (data, len(str(len(data))))
