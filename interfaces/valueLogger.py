@@ -21,6 +21,8 @@ identifier and one of:
     a single value;
     a list of values;
     a dict of key-value pairs.
+The logger will store a finite history of these values, and the history
+is displayed in an isntance of gui.valueLogger.ValueLoggerWindow.
 """
 from collections import deque
 import events
@@ -113,6 +115,7 @@ def initialize():
     """Create the ValueLogger."""
     global instance
     instance = ValueLogger()
+
 
 def makeInitialPublications():
     # Nothing to do here.
