@@ -176,21 +176,23 @@ class ValueLoggerPanel(wx.Panel):
                 if line:
                     # If it exists, remove it from the graph.
                     self.axes.lines.remove(line)
-                    self.lines[key] = None
+                    self.axes.texts.remove(self.labels[key])
+                    del(self.labels[key])
+                    del(self.lines[key])
         # Update the axes so that the current data sets fit.
-        self.axes.relim()
-        self.axes.autoscale_view()
-        # Rotate each tick mark
         xaxis = self.axes.xaxis
+        if self.lines:
+            self.axes.relim()
+            self.axes.autoscale_view()
+            # Put each series label at the far right of the axes.
+            xMax = xaxis.get_view_interval()[1]
+            for label in self.labels.values():
+                label.set_x(xMax)
+        # Rotate each tick mark
         ticksMajor = xaxis.get_ticklabels()
         ticksMinor = xaxis.get_ticklabels(minor=True)
         for tick in ticksMajor + ticksMinor:
             tick.set_rotation(90)
-        # Put each series label at the far right of the axes.
-        xMax = xaxis.get_view_interval()[1]
-        for label in self.labels.values():
-            label.set_x(xMax)
-
         # Update the canvas.
         self.canvas.draw()
         self.canvas.flush_events()
