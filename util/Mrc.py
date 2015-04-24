@@ -361,6 +361,41 @@ class Mrc2:
             self.seekSec(0)
         else:
             self.hdr = makeHdrArray()
+            self.hdr.Num = ( 0, 0, 0 )
+            self.hdr.PixelType = 1
+            self.hdr.mst = ( 0, 0, 0 )
+            self.hdr.m = ( 1, 1, 1 )
+            self.hdr.d = ( 1.0, 1.0, 1.0 )
+            self.hdr.angle = ( 90.0, 90.0, 90.0 )
+            self.hdr.axis = ( 1, 2, 3 )
+            self.hdr.mmm1 = ( 0.0, 0.0, 0.0 )
+            self.hdr.type = 0
+            self.hdr.nspg = 0
+            self.hdr.next = 0
+            self.hdr.dvid = 0xc0a0
+            self.hdr.blank = 0
+            self.hdr.NumIntegers = 0
+            self.hdr.NumFloats = 0
+            self.hdr.sub = 0
+            self.hdr.zfac = 2
+            self.hdr.mm2 = ( 0.0, 0.0 )
+            self.hdr.mm3 = ( 0.0, 0.0 )
+            self.hdr.mm4 = ( 0.0, 0.0 )
+            self.hdr.ImageType = 0
+            self.hdr.LensNum = 0
+            self.hdr.n1 = 0
+            self.hdr.n2 = 0
+            self.hdr.v1 = 0
+            self.hdr.v2 = 0
+            self.hdr.mm5 = ( 0.0, 0.0 )
+            self.hdr.NumTimes = 1
+            self.hdr.ImgSequence = 0
+            self.hdr.tilt = ( 0.0, 0.0, 0.0 )
+            self.hdr.NumWaves = 1
+            self.hdr.wave = ( 0, 0, 0, 0, 0 )
+            self.hdr.zxy0 = ( 0.0, 0.0, 0.0 )
+            self.hdr.NumTitles = 0
+            self.hdr.title = ' ' * 800
 
             self._shape   = None
             self._shape2d = None
