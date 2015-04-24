@@ -9,7 +9,7 @@ import wx
 
 from config import config
 CLASS_NAME = 'RaspberryPi'
-CONFIG_NAME = 'RPi'
+CONFIG_NAME = 'rpi'
 
 
 
