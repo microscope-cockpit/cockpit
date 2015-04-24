@@ -28,10 +28,12 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+import util.userConfig
 import threading
 import time
 import wx
 
+USER_CONFIG_ENTRY = 'ValueLogger.showKeys'
 
 class ValueLoggerWindow(wx.Frame):
     """The main ValueLogger window."""
@@ -75,8 +77,6 @@ class ValueLoggerPanel(wx.Panel):
         self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
         self.SetSizer(self.sizer)
         self.sizer.SetSizeHints(parent)
-        # Redraw when new logged values are available.
-        events.subscribe("valuelogger update", self.draw)
         # Show a menu of available data on right mouse click.
         self.canvas.Bind(wx.EVT_RIGHT_DOWN, self.onRightMouse)
         # Bind to our resize handler.
@@ -91,6 +91,11 @@ class ValueLoggerPanel(wx.Panel):
 
         ## Set intial figure borders.
         self.setFigureBorder(self.Size)
+
+        ## Subscribe to new logged values available events.
+        events.subscribe("valuelogger update", self.draw)
+        ## Subscribe to user login events.
+        events.subscribe("user login", self.loadShowKeysFromConfig)
         
 
     def setFigureBorder(self, size):
@@ -113,7 +118,12 @@ class ValueLoggerPanel(wx.Panel):
     def onRightMouse(self, *args):
         """Show a menu of available data on right mouse click."""
         menu = wx.Menu()
-        for i, (key, enabled) in enumerate(sorted(self.showKeys.items())):
+        i = 0
+        menu.Append(i, 'Save to user config.')
+        wx.EVT_MENU(menu, i, lambda event:self.saveShowKeysToConfig())
+        i += 1
+        menu.AppendSeparator()
+        for i, (key, enabled) in enumerate(sorted(self.showKeys.items()), i):
             menu.Append(i, key, '', wx.ITEM_CHECK)
             menu.Check(i, enabled)
             wx.EVT_MENU(menu, i, lambda event, k=key:self.toggleShowKey(k))
@@ -178,6 +188,18 @@ class ValueLoggerPanel(wx.Panel):
         # Update the canvas.
         self.canvas.draw()
         self.canvas.flush_events()
+
+
+    def loadShowKeysFromConfig(self, event):
+        """Load which traces to show from config."""
+        showKeys = util.userConfig.getValue(USER_CONFIG_ENTRY)
+        if showKeys:
+            self.showKeys = showKeys
+
+
+    def saveShowKeysToConfig(self):
+        """Save which traces to show to config."""
+        util.userConfig.setValue(USER_CONFIG_ENTRY, (self.showKeys))
 
         
     def toggleShowKey(self, key):
