@@ -32,7 +32,7 @@ class Mrc:
         self.filename = os.path.basename(path)
 
         if extHdrSize and extHdrSize % 1024:
-            raise ValueError, "extended header size needs to be integer multiple of 1024"
+            raise ValueError("extended header size needs to be integer multiple of 1024")
 
         self.m = N.memmap(path, mode=mode)
         self.h = self.m[:1024]
@@ -65,11 +65,9 @@ class Mrc:
 
     def insertExtHdr(self, numInts, numFloats, nz=-1):
         if numInts == numFloats == 0:
-            raise "what ??"
-        if self.data_offset != 1024:
-            raise "what 2 ??"
-        if self.hdr.next != 0:
-            raise "what 3 ??"
+            raise ValueError("insertExtHdr with no integers or floats")
+        assert self.data_offset == 1024
+        assert self.hdr.next == 0
         if nz <= 0:
             nz = self.hdr.Num[-1]
 
@@ -265,9 +263,9 @@ def save(a, fn, ifExists='ask', zAxisOrder=None,
         elif ifExists[0] == 'a':
             yes = raw_input("overwrite?").lower() == 'y'
             if not yes:
-                raise "not overwriting existing file '%s'"%fn
+                raise RuntimeError("not overwriting existing file '%s'"%fn)
         else:
-            raise "not overwriting existing file '%s'"%fn
+            raise RuntimeError("not overwriting existing file '%s'"%fn)
             
     m = Mrc2(fn, mode='w')
 
@@ -297,7 +295,7 @@ def save(a, fn, ifExists='ask', zAxisOrder=None,
                 m.hdr.mm5 = minMax(a.take((4,),wAxis))
 
     if extInts is not None or  extFloats is not None:
-        raise NotImplementedError, "todo: implement ext hdr"
+        raise NotImplementedError("todo: implement ext hdr")
 
     if hdrEval:
         import sys
@@ -409,7 +407,7 @@ class Mrc2:
                 self.hdr.ImgSequence = 2
                 self.hdr.NumTimes = arr.shape[-3]
             else:
-                raise ValueError, "unsupported axis order"
+                raise ValueError("unsupported axis order")
         elif arr.ndim == 4:
             if   zAxisOrder[-2:] == 'zt':
                 self.hdr.ImgSequence = 2
@@ -424,11 +422,11 @@ class Mrc2:
                 self.hdr.ImgSequence = 1
                 self.hdr.NumWaves = arr.shape[-3]
             else:
-                raise ValueError, "unsupported axis order"
+                raise ValueError("unsupported axis order")
         elif arr.ndim == 5:
-                raise ValueError, "FIXME TODO: 5D"
+                raise ValueError("FIXME TODO: 5D")
         else:  
-             raise ValueError, "unsupported array ndim"
+             raise ValueError("unsupported array ndim")
          
 
         self._initWhenHdrArraySet()
@@ -515,7 +513,7 @@ class Mrc2:
         
     def seekSec(self, i):
         if self._secByteSize == 0:
-            raise ValueError, "not inited yet - unknown shape, type"
+            raise ValueError("not inited yet - unknown shape, type")
         self._f.seek( self._dataOffset + i * self._secByteSize )
 
     def seekHeader(self):
@@ -598,7 +596,7 @@ def MrcMode2dtype(mode):
                   )
 
     if mode<0 or mode>7:
-        raise "Priism file supports pixeltype 0 to 7 - %d given" % mode
+        raise RuntimeError("Priism file supports pixeltype 0 to 7 - %d given" % mode)
     
     return PixelTypes[ int(mode) ]
 
@@ -615,7 +613,7 @@ def dtype2MrcMode(dtype):
         return 6
     if dtype == N.int32:
         return 7
-    raise TypeError, "MRC does not support %s (%s)"% (dtype.name, dtype)
+    raise TypeError("MRC does not support %s (%s)"% (dtype.name, dtype))
 
 
 def shapeFromHdr(hdr, verbose=0):
@@ -943,9 +941,9 @@ def setTitle(hdr, s, i=-1):
     if i < 0:
         i = n
     if i>9:
-        raise ValueError, "Mrc only support up to 10 titles (0<=i<10)"
+        raise ValueError("Mrc only support up to 10 titles (0<=i<10)")
     if len(s) > 80:
-        raise ValueError, "Mrc only support title up to 80 characters"
+        raise ValueError("Mrc only support title up to 80 characters")
     if i>=n:
         hdr.NumTitles = i+1
 
