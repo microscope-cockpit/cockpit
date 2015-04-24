@@ -25,12 +25,27 @@ The logger will store a finite history of these values, and the history
 is displayed in an isntance of gui.valueLogger.ValueLoggerWindow.
 """
 from collections import deque
+import datetime
 import events
 from numbers import Number
+import random
 import threading
 import time
 import types
-import datetime
+
+
+class ValueLoggerTestSource(object):
+    def __init__(self):
+        self.thread = threading.Thread(target=self.generateValues)
+        self.thread.Daemon = True
+        self.thread.start()
+
+
+    def generateValues(self):
+        while True:
+            value = random.random()
+            events.publish("status update", self.__class__.__name__, value)
+            time.sleep(1)
 
 
 class ValueLogger(object):
