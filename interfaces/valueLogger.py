@@ -76,7 +76,8 @@ class ValueLogger(object):
     def onEvent(self, *args):
         """Respond to events that publish loggable values."""
         ## The device that published the event
-        device = args[0].lstrip('devices.')
+        device = args[0].split('devices.')[-1]
+
         ## The data published with the event.
         data = args[1]
         if isinstance(data, (Number, types.StringTypes)):
