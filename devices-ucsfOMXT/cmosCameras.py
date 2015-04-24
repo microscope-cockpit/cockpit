@@ -34,7 +34,7 @@ class CameraDevice(device.Device):
         self.nameToTimeBetweenExposures = {}
         ## List of valid image size strings.
         self.imageSizes = ['Full (2560x2160)', 'Quarter (1392x1040)',
-                '528x512', '240x256', '144x128']
+                '540x512', '240x256', '144x128']
         ## Current trigger mode for cameras.
         self.curTriggerMode = TRIGGER_EXTERNAL_EXPOSURE
         ## Queue of (image, timestamp, camera name) representing images
@@ -79,7 +79,7 @@ class CameraDevice(device.Device):
         if isOn:
             self.nameToConnection[name].connect(lambda *args: self.receiveData(name, *args))
             connection = self.nameToConnection[name].connection
-            # Set 528x512 image size.
+            # Set 540x512 image size.
             connection.setCrop(2)
             # Switch to external exposure mode.
             connection.setTrigger(self.curTriggerMode)
