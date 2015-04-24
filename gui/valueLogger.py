@@ -21,6 +21,7 @@ Adds a logging window to cockpit.
 import events
 import interfaces.valueLogger
 import gui.guiUtils
+import gui.keyboard
 import matplotlib
 import matplotlib.dates
 matplotlib.use('WXAgg')
@@ -40,11 +41,13 @@ class ValueLoggerWindow(wx.Frame):
     def __init__(self, parent, title='value logger'):
         super(ValueLoggerWindow, self).__init__(
                 parent, -1, title,
-                style = wx.CAPTION | wx.RESIZE_BORDER)
+                style = wx.MINIMIZE_BOX | wx.MAXIMIZE_BOX | wx.RESIZE_BORDER | wx.SYSTEM_MENU | wx.CAPTION | wx.CLIP_CHILDREN )
         # Bind to close event.
         self.Bind(wx.EVT_CLOSE, self.onClose)
         # Create our panel.
         self.panel = ValueLoggerPanel(self)
+        # Add cockpit window bindings to this window.
+        gui.keyboard.setKeyboardHandlers(self)
         self.Show()
 
 
