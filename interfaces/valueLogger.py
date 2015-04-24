@@ -68,7 +68,7 @@ class ValueLogger(object):
         self.loggingThread.Daemon = True
         self.loggingThread.start()
         # Subscribe to position updates.
-        events.subscribe("stage mover", self.onEvent)
+        events.subscribe("stage mover", self.onMover)
         # Subscribe to device status updates.
         events.subscribe("status update", self.onEvent)
 
@@ -108,6 +108,14 @@ class ValueLogger(object):
             errStr = '%s could not handle data of type %s from %s' % (
                     type(self), type(data), device)
             raise Exception(errStr)
+
+
+    def onMover(self, *args):
+        """Respond to updates from movers."""
+        # Device label = stage mover name + axis
+        device = args[0].lstrip('012 ') + ':' + str(args[1])
+        data = args[2]
+        self.onEvent(device, data)
 
 
     def log(self):
