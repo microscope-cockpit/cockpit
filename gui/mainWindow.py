@@ -130,7 +130,7 @@ class MainWindow(wx.Frame):
                     rowSizer.Add((1, -1), 1, wx.EXPAND)
                 rowSizer.Add(item)
 
-        topSizer.Add(rowSizer, 1, wx.EXPAND)
+        topSizer.Add(rowSizer, 1)
 
         topPanel.SetSizerAndFit(topSizer)
         mainSizer.Add(topPanel)
