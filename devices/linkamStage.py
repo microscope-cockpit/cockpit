@@ -163,6 +163,7 @@ class CockpitLinkamStage(device.Device):
                     parent=panel, label=d, value=0.0, 
                     unitStr=u'°C')
             sizer.Add(self.displays[d])
+            self.displays[d].Bind(wx.EVT_RIGHT_DOWN, self.onRightMouse)
         lightButton = gui.toggleButton.ToggleButton(
                 parent=panel,
                 label='chamber light',
@@ -176,6 +177,15 @@ class CockpitLinkamStage(device.Device):
         ## Set the panel sizer and return.
         panel.SetSizerAndFit(sizer)
         return panel
+
+
+    def menuCallback(self, item):
+        print item
+        if item.lower() == 'home stage':
+            self.homeMotors()
+            return
+        else:
+            return
 
 
     def moveAbsolute(self, axis, pos):
@@ -201,6 +211,12 @@ class CockpitLinkamStage(device.Device):
         if delta:
             curPos = self.positionCache[axis]
             self.moveAbsolute(axis, curPos + delta)
+
+
+    def onRightMouse(self, event):
+        items = ['Home stage', '', 'Cancel']
+        menu = gui.device.Menu(items, self.menuCallback)
+        menu.show(event)
 
 
     @util.threads.callInNewThread
