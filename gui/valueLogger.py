@@ -144,10 +144,10 @@ class ValueLoggerPanel(wx.Panel):
         if not window:
             # If there is no window, there is nothing to do.
             return
-
         dataTimes = self.dataTimes
         dataSeries = self.dataSeries
-        for (key, series) in dataSeries.iteritems():
+        
+        for (key, series) in dataSeries.items():
             if key == 'time':
                 # Don't plot time vs time.
                 continue
@@ -158,30 +158,52 @@ class ValueLoggerPanel(wx.Panel):
                 # Require explicit instruction to show other items.
                 self.showKeys[key] = False
 
-            line = self.lines.get(key, None)
             if self.showKeys[key]:
-                # If we are to show this line ...
+                # This line should be shown.
+                # See if there is any good data.
+                lastPoint = reduce(
+                        lambda last, i: i if series[i] is not None else last,
+                        range(len(series)), -1)
+                if lastPoint == -1:
+                    showLine = False
+                else:
+                    showLine = True
+            else:
+                showLine = False
+
+            if showLine:
+                # The line should and can be shown.
+                line = self.lines.get(key, None)
                 if line:
-                    # if the line exists, update the data
+                    # If the line exists, update the data.
                     line.set_data(dataTimes, series)
-                    # Make the series label track the most recent value.
-                    self.labels[key].set_y(series[-1])
-                elif len(series) > 0:
-                    # otherwise, create the line if there is data available.
-                    self.lines[key], = self.axes.plot(
-                            dataTimes, 
-                            series)
+                else:
+                    # Otherwise, create the line.
+                    line, = self.axes.plot(dataTimes, series)
+                    self.lines[key] = line
+
+                # Update the label.
+                label = self.labels.get(key, None)
+                if label:
+                    # The label exists. Make it track the last good point.
+                    self.labels[key].set_y(series[lastPoint])
+                else:
+                    # The label does not yet exist. Create it.
                     self.labels[key] = self.axes.text(dataTimes[-1], 
-                                                      series[-1], 
+                                                      series[lastPoint], 
                                                       ' %s' % key)
             else:
-                # We don't want to show this line.
+                # The line should not or can not be shown.
+                line = self.lines.get(key, None)
+                label = self.labels.get(key, None)
                 if line:
                     # If it exists, remove it from the graph.
                     self.axes.lines.remove(line)
-                    self.axes.texts.remove(self.labels[key])
-                    del(self.labels[key])
                     del(self.lines[key])
+                if label:
+                    # If the label exists, remove it.
+                    self.axes.texts.remove(label)
+                    del(self.labels[key])
         # Update the axes so that the current data sets fit.
         xaxis = self.axes.xaxis
         if self.lines:
