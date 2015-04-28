@@ -119,8 +119,13 @@ class PhysikInstrumenteDevice(device.Device):
         self.sendXYCommand('SVO 2 1')
         # Get the proper initial position.
         self.getXYPosition(shouldUseCache = False)
-        events.oneShotSubscribe('cockpit initialization complete',
-                self.timedDisableClosedLoop)
+        # From John Sedat's most recent talks with PI, switching to open loop
+        # isn't a good way to lengthen the usable lifetime of the devices.
+        # Disable this for now until I get from John or PI what the new
+        # behavior should be (John mentioned something about lowering the
+        # voltages while keeping it in closed loop).
+        #events.oneShotSubscribe('cockpit initialization complete',
+        #        self.timedDisableClosedLoop)
 
 
     ## We want to periodically exercise the XY stage to spread the grease
@@ -278,12 +283,16 @@ class PhysikInstrumenteDevice(device.Device):
         return response
 
 
-    ## When the user logs out, switch to open-loop mode.
+    ## In the past, would switch to open-loop mode when logging out because
+    # that was thought to improve the usable lifetime of the device.  From
+    # John's most recent talks with PI, switching to open loop doesn't lengthen
+    # the lifetime so do not do that any more.  For now the user should turn
+    # off the piezo controller when it will not be used for an extended time.
     def onLogout(self, *args):
-        # Switch to open loop
-        self.sendZCommand('SVO 1 0')
-        self.sendXYCommand('SVO 1 0')
-        self.sendXYCommand('SVO 2 0')
+        ## Switch to open loop
+        #self.sendZCommand('SVO 1 0')
+        #self.sendXYCommand('SVO 1 0')
+        #self.sendXYCommand('SVO 2 0')
         self.xyConnection.close()
 
 
