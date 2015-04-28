@@ -86,12 +86,10 @@ class Menu(wx.Menu):
         """Initialise a menu of menuItems that are handled by menuCallback."""
         ## Call wx.Menu.__init__(self)
         super(Menu, self).__init__()
-        i = 0
-        for item in menuItems:
+        for i, item in enumerate(menuItems):
             if len(item):
                 self.Append(i, item, '')
-                wx.EVT_MENU(self, i, lambda event, i=i:menuCallback(i))
-                i += 1
+                wx.EVT_MENU(self, i, lambda event, item=item:menuCallback(item))
             else:
                 self.AppendSeparator()
 
