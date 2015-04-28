@@ -40,6 +40,7 @@ import wx
 import camera
 import events
 import handlers.camera
+import gui.device
 import gui.guiUtils
 import gui.toggleButton
 import util.connection
@@ -335,11 +336,8 @@ class AndorCameraDevice(camera.CameraDevice):
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(self.panel, -1,
-                              self.config['label'],
-                              size=(128, 24),
-                              style=wx.ALIGN_CENTER)
-        label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        label = gui.device.Label(
+                parent=self.panel, label=self.config['label'])
         sizer.Add(label)
         rowSizer = wx.BoxSizer(wx.VERTICAL)
 
