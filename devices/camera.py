@@ -62,6 +62,11 @@ class CameraManager(device.Device):
         return result
 
 
+    def finalizeInitialization(self):
+        for camera in self.cameras:
+            camera.finalizeInitialization()
+
+
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
         outerSizer = wx.BoxSizer(wx.VERTICAL)
