@@ -109,11 +109,8 @@ class MainWindow(wx.Frame):
         otherThings.sort(key = lambda d: d.__class__.__name__)
         otherThings.extend(depot.getAllHandlers())
         for thing in ignoreThings: 
-            try:
+            if thing in otherThings:
                 otherThings.remove(thing)
-            except ValueError:
-                pass
-        otherThings.extend(lightPowerThings)
         # Now make the UI elements for otherThings.
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
         for thing in otherThings:
