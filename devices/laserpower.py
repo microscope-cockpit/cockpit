@@ -82,7 +82,7 @@ class LaserPowerDevice(device.Device):
             
             powerHandler = handlers.lightPower.LightPowerHandler(
                     label + ' power', # name
-                    label, # groupName
+                    label + ' light source', # groupName
                     {
                         'setPower': self.setLaserPower
                     },

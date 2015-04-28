@@ -62,6 +62,7 @@ class CockpitApp(wx.App):
             import gui.mosaic.window
             import gui.shellWindow
             import gui.statusLightsWindow
+            import gui.valueLogger
             import interfaces
             import util.user
             import util.userConfig
@@ -88,6 +89,7 @@ class CockpitApp(wx.App):
             gui.macroStage.macroStageWindow.makeWindow(frame)
             gui.shellWindow.makeWindow(frame)
             gui.statusLightsWindow.makeWindow(frame)
+            gui.valueLogger.makeWindow(frame)
 
             # Now that the UI exists, we don't need this any more.
             status.Destroy()

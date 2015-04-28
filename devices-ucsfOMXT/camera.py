@@ -65,20 +65,38 @@ class CameraManager(device.Device):
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
         outerSizer = wx.BoxSizer(wx.VERTICAL)
+        title = wx.StaticText(self.panel, -1, self.getUILabel())
+        title.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        outerSizer.Add(title)
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
+        child_uis = False
         for cam in self.cameras:
             if hasattr(cam, 'makeUI'):
-                rowSizer.Add(cam.makeUI(self.panel))
-                rowSizer.AddSpacer(12)
-        outerSizer.Add(rowSizer)
-        self.panel.SetSizerAndFit(outerSizer)
+                child_ui = cam.makeUI(self.panel)
+                if child_ui is not None:
+                    rowSizer.Add(child_ui)
+                    rowSizer.AddSpacer(12)
+                    child_uis = True
+        if child_uis:
+            outerSizer.Add(rowSizer)
+            self.panel.SetSizerAndFit(outerSizer)
+        else:
+            outerSizer.DeleteWindows()
+            rowSizer.DeleteWindows()
+            del rowSizer, title, outerSizer, self.panel
+            self.panel = None
         return self.panel
+
+
+    def getUILabel(self):
+        """Returns a string to be used as a text label in makeUI().
+        Override this in subclasses to customize that label.  By default
+        the label is "Cameras".
+        """
+
+        return 'Cameras'
 
 
     def performSubscriptions(self):
         for camera in self.cameras:
             camera.performSubscriptions()
-
-
-        print "camera.CameraManager.makeUI"
-        return None
