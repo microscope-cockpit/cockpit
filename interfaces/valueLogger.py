@@ -103,6 +103,16 @@ class ValueLogger(object):
                 if key not in self.series:
                     self.series[key] = deque(len(self.times) * [None],
                                              maxlen=self.historyLength)
+        elif data is None:
+            ## Device has published 'None': data for this device is
+            # no longer current, so update the currentValues dict.
+            # Don't use iterkeys, because we don't maintain a lock
+            # on the dict so its size could change resulting in a 
+            # runtime error.
+            keys = [k for k in self.currentValues.keys() 
+                    if k.startswith(device + ':')]
+            for k in keys:
+                self.currentValues[k] = None
         else:
             # Could not handle this data type: raise an exception.
             errStr = '%s could not handle data of type %s from %s' % (
