@@ -20,6 +20,7 @@ Class definitions for labels and value displays with default formatting.
 
 
 import wx
+import gui.guiUtils
 
 ## @package gui.device
 # Defines classes for common controls used by cockpit devices.
@@ -57,6 +58,7 @@ class ValueDisplay(wx.BoxSizer):
                 parent=parent, label=(' ' + label.strip(':') + ':'), 
                 size=SMALL_SIZE, style=wx.ALIGN_LEFT)
         label.SetFont(SMALL_FONT)
+        self.label = label
         self.Add(label)
         self.valDisplay = Label(
                 parent=parent, label=str(value),
@@ -66,6 +68,11 @@ class ValueDisplay(wx.BoxSizer):
         self.formatStr = (formatStr or r'%.6s') + (unitStr or '') + ' '
 
 
+    def Bind(self, *args, **kwargs):
+        self.label.Bind(*args, **kwargs)
+        self.valDisplay.Bind(*args, **kwargs)
+
+
     def updateValue(self, value=None):
         if value is not None:
             if self.value == value:
@@ -73,3 +80,18 @@ class ValueDisplay(wx.BoxSizer):
             self.value = value
         self.valDisplay.SetLabel(self.formatStr % self.value)
 
+
+class Menu(wx.Menu):
+    def __init__(self, menuItems, menuCallback):
+        """Initialise a menu of menuItems that are handled by menuCallback."""
+        ## Call wx.Menu.__init__(self)
+        super(Menu, self).__init__()
+        for i, item in enumerate(menuItems):
+            if len(item):
+                self.Append(i, item, '')
+                wx.EVT_MENU(self, i, lambda event, item=item:menuCallback(item))
+            else:
+                self.AppendSeparator()
+
+    def show(self, event):
+        gui.guiUtils.placeMenuAtMouse(event.GetEventObject(), self)
