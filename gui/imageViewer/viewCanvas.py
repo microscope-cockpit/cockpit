@@ -2,6 +2,7 @@ import events
 import gui.guiUtils
 import image
 import util.threads
+import util.userConfig
 
 import FTGL
 import numpy
@@ -91,7 +92,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.panY = 0
 
         ##should we display a scale bar and what size?
-        self.scalebar = 5.0
+        self.scalebar = util.userConfig.getValue('scalebar', isGlobal = False,
+                                                 default= 10.0)
 
         ## What kind of dragging we're doing.
         self.dragMode = DRAG_NONE
@@ -535,6 +537,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 prompts = ["Length (um)"],
                 defaultValues = [self.scalebar])
         self.scalebar = float(value[0])
+        util.userConfig.setValue('scalebar',self.scalebar, isGlobal=False)
+
 		
 		
     ## Display information on the pixel under the mouse at the given
