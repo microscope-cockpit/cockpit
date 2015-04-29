@@ -12,6 +12,7 @@ import threading
 import traceback
 import wx
 import wx.glcanvas
+import depot
 
 from cockpit import COCKPIT_PATH
 
@@ -367,22 +368,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         self.pixelSize = objective.getPixelSize()
 
-        #scale bar needs to be 10.0/pixelSize, pixels =
-        #self.w is width of canvas, imageshape is image shape in pixels. 
-        # (10.0/pixelSize) * (imageshape[1]/self.w)
-        if (self.scalebar != 0):
-            scalebarSize= ((self.scalebar/self.pixelSize) *
-                           (self.imageshape[1]/self.w))*self.zoom
-        
-            glColor3f(0, 255, 0)
-            glBegin(GL_QUADS)
-            glVertex2f( self.w/10.0, HISTOGRAM_HEIGHT/10)
-            glVertex2f(self.w/10.0 + scalecarSize ,
-                       HISTOGRAM_HEIGHT/10 )
-            glVertex2f(self.w/10.0 + scalecarSize, HISTOGRAM_HEIGHT/5)
-            glVertex2f(self.w/10, HISTOGRAM_HEIGHT/5)
-            glEnd()
-        
+           
+		
         # The actual histogram
         glBegin(GL_QUADS)
         glColor3f(0, 0, 0)
@@ -430,6 +417,33 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                  self.imageMax, self.tiles[0][0].imageMax))
         glPopMatrix()
 
+        #scale bar needs to be 10.0/pixelSize, pixels =
+        #self.w is width of canvas, imageshape is image shape in pixels. 
+        # (10.0/pixelSize) * (imageshape[1]/self.w)
+        if (self.scalebar != 0):
+            scalebarSize= ((self.scalebar/self.pixelSize) *
+                           (self.imageShape[1]/self.w))*self.zoom
+        
+            glColor3f(255, 0, 0)
+            glBegin(GL_QUADS)
+            glVertex2f( self.w*0.9, HISTOGRAM_HEIGHT*0.9)
+            glVertex2f(self.w*0.9 - scalebarSize ,
+                       HISTOGRAM_HEIGHT*0.9 )
+            glVertex2f(self.w*0.9- scalebarSize, HISTOGRAM_HEIGHT*0.8)
+            glVertex2f(self.w*0.9, HISTOGRAM_HEIGHT*0.8)
+            glEnd()
+			
+			# Draw size label
+            self.font.FaceSize(13)
+            glColor3f(255, 0, 0)
+            labelPosX= self.w*0.9 - (scalebarSize/2) 
+            labelPosY= HISTOGRAM_HEIGHT*0.5
+            glPushMatrix()
+            glTranslatef(labelPosX, labelPosY, 0)
+            self.font.Render('%d um' % self.scalebar)
+            glPopMatrix()
+            self.font.FaceSize(18)
+ 
 
     ## Update the size of the canvas by scaling it.
     def setSize(self, size):
@@ -497,7 +511,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def getMenuActions(self):
         return [('Reset view', self.resetView),
                 ('Fill viewer', lambda: self.resetView(True)),
-                ('Set histogram parameters', self.onSetHistogram)]
+                ('Set histogram parameters', self.onSetHistogram),
+                ('Set scale bar', self.onSetScaleBar)]
 
 
     ## Let the user specify the blackpoint and whitepoint for image scaling.
@@ -513,7 +528,15 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.whitePoint = (values[1] - self.imageMin) / divisor
         self.changeHistScale(shouldRefresh = True)
 
-
+    ##Set a scale bar size zero shows no scale bar
+    def onSetScaleBar(self, event = None):
+        value = gui.dialogs.getNumberDialog.getManyNumbersFromUser(
+                parent = self, title = "Set Scale bar Size",
+                prompts = ["Length (um)"],
+                defaultValues = [self.scalebar])
+        self.scalebar = float(value[0])
+		
+		
     ## Display information on the pixel under the mouse at the given
     # position.
     def updateMouseInfo(self, x, y):
