@@ -292,7 +292,6 @@ class PhysikInstrumenteM687(device.Device):
         # True range of motion is (-67500, 67500) for X, (-42500, 42500) for Y.
         for axis, minPos, maxPos in [(0, self.softlimits[0][0],self.softlimits[1][0]),
                     (1, self.softlimits[0][1],self.softlimits[1][1])]:
-
             result.append(handlers.stagePositioner.PositionerHandler(
                     "%d PI mover" % axis, "%d stage motion" % axis, False,
                     {'moveAbsolute': self.moveXYAbsolute,

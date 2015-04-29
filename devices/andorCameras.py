@@ -98,6 +98,10 @@ class AndorCameraDevice(camera.CameraDevice):
         self.interactiveTrigger = TRIGGER_BEFORE
         self.enabled = False
         self.handler = None
+        # A thread to publish status updates.
+        self.statusThread = threading.Thread(target=self.updateStatus)
+        self.statusThread.Daemon = True
+        self.statusThread.start()
 
 
     def cleanupAfterExperiment(self):
@@ -330,6 +334,24 @@ class AndorCameraDevice(camera.CameraDevice):
         if self.enabled:
             self.object.update_settings(self.settings)
         self.updateUI()
+
+
+    def updateStatus(self):
+        """Runs in a separate thread publish status updates."""
+        updatePeriod = 1
+        temperature = None
+        while True:
+            if self.object:
+                try:
+                    temperature = self.object.get_temperature()
+                except:
+                    ## There is a communication issue. It's not this thread's
+                    # job to fix it. Set temperature to None to avoid bogus
+                    # data.
+                    temperature = None
+            events.publish("status update",
+                           self.config.get('label', 'unidentifiedCamera'),
+                           {'temperature': temperature,})
 
 
     ### UI functions ###

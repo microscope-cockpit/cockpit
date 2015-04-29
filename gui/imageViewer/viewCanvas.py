@@ -89,6 +89,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.panX = 0
         self.panY = 0
 
+        ##should we display a scale bar and what size?
+        self.scalebar = 5.0
+
         ## What kind of dragging we're doing.
         self.dragMode = DRAG_NONE
 
@@ -360,6 +363,26 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         glVertex2f(0, HISTOGRAM_HEIGHT)
         glEnd()
 
+        #draw scale bar in green at the top of the histogram box
+        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+        self.pixelSize = objective.getPixelSize()
+
+        #scale bar needs to be 10.0/pixelSize, pixels =
+        #self.w is width of canvas, imageshape is image shape in pixels. 
+        # (10.0/pixelSize) * (imageshape[1]/self.w)
+        if (self.scalebar != 0):
+            scalebarSize= ((self.scalebar/self.pixelSize) *
+                           (self.imageshape[1]/self.w))*self.zoom
+        
+            glColor3f(0, 255, 0)
+            glBegin(GL_QUADS)
+            glVertex2f( self.w/10.0, HISTOGRAM_HEIGHT/10)
+            glVertex2f(self.w/10.0 + scalecarSize ,
+                       HISTOGRAM_HEIGHT/10 )
+            glVertex2f(self.w/10.0 + scalecarSize, HISTOGRAM_HEIGHT/5)
+            glVertex2f(self.w/10, HISTOGRAM_HEIGHT/5)
+            glEnd()
+        
         # The actual histogram
         glBegin(GL_QUADS)
         glColor3f(0, 0, 0)
