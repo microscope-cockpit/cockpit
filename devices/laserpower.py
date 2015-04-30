@@ -29,11 +29,13 @@ import device
 import events
 import handlers.lightPower
 import handlers.lightSource
+import util.threads
 
 CLASS_NAME = 'LaserPowerDevice'
 SUPPORTED_LASERS = ['deepstar', 'cobolt']
 
 from config import config, LIGHTS
+
 
 class LaserPowerDevice(device.Device):
     def __init__(self):
@@ -114,6 +116,8 @@ class LaserPowerDevice(device.Device):
     ## A light source was enabled. Check if it's one of our lasers,
     # throw an error if the laser is not powered up, and otherwise get the
     # current power levels if we don't already have them.
+    @util.threads.locked
+    @util.threads.callInNewThread
     def onLightSourceEnable(self, handler, isEnabled):
         label = handler.name
         if label not in self.lights:
@@ -170,6 +174,8 @@ class LaserPowerDevice(device.Device):
 
 
     ## Set the power of a supported laser.
+    @util.threads.locked
+    @util.threads.callInNewThread
     def setLaserPower(self, name, val):
         label = name.strip(' power')
         self.nameToConnection[label].setPower_mW(val)
