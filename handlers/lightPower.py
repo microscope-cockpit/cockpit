@@ -155,7 +155,8 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
 
     ## Update our text display to indicate our current power output.
     def updateText(self):
-        self.powerText.SetLabel("%.1f%s" % (self.curPower, self.units))
+        if self.powerText:
+            self.powerText.SetLabel("%.1f%s" % (self.curPower, self.units))
 
 
     ## Simple getter.
