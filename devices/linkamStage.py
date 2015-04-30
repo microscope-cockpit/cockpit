@@ -105,7 +105,7 @@ class CockpitLinkamStage(device.Device):
         """Initialize the device."""
         uri = "PYRO:%s@%s:%d" % (CONFIG_NAME, self.ipAddress, self.port)
         self.remote = Pyro4.Proxy(uri)
-        self.remote.connect()
+        # self.remote.connect()
         self.getPosition(shouldUseCache = False)
         
 
