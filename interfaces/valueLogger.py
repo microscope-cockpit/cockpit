@@ -51,6 +51,8 @@ class ValueLoggerTestSource(object):
 class ValueLogger(object):
     """A class to log arbitrary cockpit data."""
     def __init__(self):
+        global instance
+        instance = self
         ## Maximum no. of points for each dataset.
         self.historyLength = 500
         ## Time between updates in seconds.
