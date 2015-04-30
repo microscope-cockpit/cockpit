@@ -141,8 +141,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         if power < self.minPower or power > self.maxPower:
             raise RuntimeError("Tried to set invalid power %f for light %s (range %f to %f)" % (power, self.name, self.minPower, self.maxPower))
         self.callbacks['setPower'](self.name, power)
-        self.curPower = power
-        wx.CallAfter(self.updateText)
 
 
     ## Select an arbitrary power output.

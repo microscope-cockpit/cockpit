@@ -21,6 +21,7 @@ handlers (those are created by the DSP device), but it does create the
 LightPowerHandlers. """
 
 import Pyro4
+import threading
 import time
 import wx
 
@@ -59,11 +60,30 @@ class LaserPowerDevice(device.Device):
         # LightSource handler is currently enabled.
         self.nameToIsEnabled = {}
         events.subscribe('light source enable', self.onLightSourceEnable)
+        ## A lock on handlers.
+        self.hLock = threading.Lock()
+        ## A thread to poll current laser powers.
+        # Adding a single thread here to update all laser powers.
+        # The alternative is to have one thread per handler, which gives
+        # increased overhead for little to no gain.
+        self.pollThread = threading.Thread(target=self._pollPower)
+        self.pollThread.Daemon = True
+        self.pollThread.start()
+
+
+    def _pollPower(self):
+        while True:
+            with self.hLock:
+                for name, h in self.nameToHandler.iteritems():
+                    h.curPower = self.nameToConnection[name].getPower_mW()
+                    h.updateText()
+            time.sleep(0.1)
 
 
     ## Provide a LightPower handler for each of the lasers. The DSP
     # provides the LightSource handlers.
     def getHandlers(self):
+        self.hLock.acquire()
         result = []
         #self.powerControl = depot.getDevice(devices.powerButtons)
         for label, light in self.lights.items():
@@ -99,6 +119,7 @@ class LaserPowerDevice(device.Device):
             except:
                 isEnabled = False
             self.nameToIsEnabled[label] = isEnabled
+        self.hLock.release()
         return result
                         
 
