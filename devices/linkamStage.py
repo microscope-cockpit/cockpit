@@ -60,7 +60,7 @@ class CockpitLinkamStage(device.Device):
         ## Flag to show that sendPositionUpdates is running.
         self.sendingPositionUpdates = False
         ## Status dict updated by remote.
-        status = None
+        self.status = {}
 
         self.isActive = config.has_section(CONFIG_NAME)
         if self.isActive:
@@ -96,8 +96,12 @@ class CockpitLinkamStage(device.Device):
 
     def receiveStatus(self, status):
         """Called when the remote sends a status update."""
-        self.status = status
-        events.publish("status update", __name__, status)
+        self.status.update(status)
+        if not status.get('connected', None):
+            # The stage is disconnected: values are bogus - set them to None.
+            keys = set(self.status.keys()).difference(set(['connected']))
+            self.status.update(map(lambda k: (k, None), keys))
+        events.publish("status update", __name__, self.status)
         self.updateUI()
 
 
