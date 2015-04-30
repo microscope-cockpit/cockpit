@@ -48,6 +48,7 @@ class ValueLoggerWindow(wx.Frame):
         self.panel = ValueLoggerPanel(self)
         # Add cockpit window bindings to this window.
         gui.keyboard.setKeyboardHandlers(self)
+        self.SetSizeHints(600, 400)
         self.Show()
 
 
@@ -82,7 +83,6 @@ class ValueLoggerPanel(wx.Panel):
         # Add the canvas to the sizer.
         self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
         self.SetSizer(self.sizer)
-        self.sizer.SetSizeHints(parent)
         # Show a menu of available data on right mouse click.
         self.canvas.Bind(wx.EVT_RIGHT_DOWN, self.onRightMouse)
         # Bind to our resize handler.
