@@ -280,10 +280,22 @@ class CockpitLinkamStage(device.Device):
         self.displays['bridge'].updateValue(self.status.get('bridgeT'))
         self.displays['chamber'].updateValue(self.status.get('chamberT'))
         self.displays['dewar'].updateValue(self.status.get('dewarT'))
-
         ## The stage SDK allows us to toggle the light, but not know
         # its state.
         # self.displays['light'].setActive(not self.status.get('light'))
+        valuesValid = status.get('connected', False)
+        if valuesValid:
+            for k, d in self.displays.iteritems():
+                try:
+                    d.Enable()
+                except Exception as e:
+                    print e
+        else:
+            for k, d in self.displays.iteritems():
+                try:
+                    d.Disable()
+                except Exception as e:
+                    print e
 
 
     def makeInitialPublications(self):
