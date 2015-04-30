@@ -60,7 +60,7 @@ class CockpitLinkamStage(device.Device):
         ## Flag to show that sendPositionUpdates is running.
         self.sendingPositionUpdates = False
         ## Status dict updated by remote.
-        status = None
+        self.status = {}
 
         self.isActive = config.has_section(CONFIG_NAME)
         if self.isActive:
@@ -96,8 +96,12 @@ class CockpitLinkamStage(device.Device):
 
     def receiveStatus(self, status):
         """Called when the remote sends a status update."""
-        self.status = status
-        events.publish("status update", __name__, status)
+        self.status.update(status)
+        if not status.get('connected', None):
+            # The stage is disconnected: values are bogus - set them to None.
+            keys = set(self.status.keys()).difference(set(['connected']))
+            self.status.update(map(lambda k: (k, None), keys))
+        events.publish("status update", __name__, self.status)
         self.updateUI()
 
 
@@ -276,10 +280,22 @@ class CockpitLinkamStage(device.Device):
         self.displays['bridge'].updateValue(self.status.get('bridgeT'))
         self.displays['chamber'].updateValue(self.status.get('chamberT'))
         self.displays['dewar'].updateValue(self.status.get('dewarT'))
-
         ## The stage SDK allows us to toggle the light, but not know
         # its state.
         # self.displays['light'].setActive(not self.status.get('light'))
+        valuesValid = status.get('connected', False)
+        if valuesValid:
+            for k, d in self.displays.iteritems():
+                try:
+                    d.Enable()
+                except Exception as e:
+                    print e
+        else:
+            for k, d in self.displays.iteritems():
+                try:
+                    d.Disable()
+                except Exception as e:
+                    print e
 
 
     def makeInitialPublications(self):
