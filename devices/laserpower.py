@@ -129,13 +129,6 @@ class LaserPowerDevice(device.Device):
             # Light source is already in the desired state; no need to do
             # anything.
             return
-
-        # Use the group name (e.g. "488nm") instead of the
-        # handler name (e.g. "488nm power").
-        status = wx.ProgressDialog(parent = wx.GetApp().GetTopWindow(),
-                title = "Laser power communication",
-                message = "Communicating with the %s..." % handler.groupName)
-        status.Show()
         
         connection = self.nameToConnection[label]
         if isEnabled:
@@ -163,13 +156,11 @@ class LaserPowerDevice(device.Device):
                         wx.OK | wx.ICON_ERROR | wx.STAY_ON_TOP)
                 # Disable the handler
                 wx.CallAfter(handler.setEnabled, False)
-                status.Destroy()
                 return
         else:
             if connection.getIsOn():
                 # Disable the laser.
                 connection.disable()
-        status.Destroy()
         self.nameToIsEnabled[label] = isEnabled
 
 
