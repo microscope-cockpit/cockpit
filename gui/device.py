@@ -73,6 +73,14 @@ class ValueDisplay(wx.BoxSizer):
         self.valDisplay.Bind(*args, **kwargs)
 
 
+    def Disable(self):
+        return self.valDisplay.Disable()
+
+
+    def Enable(self):
+        return self.valDisplay.Enable()
+
+
     def updateValue(self, value=None):
         if value is not None:
             if self.value == value:
