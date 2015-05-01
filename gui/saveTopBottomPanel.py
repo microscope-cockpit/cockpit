@@ -1,5 +1,6 @@
 import interfaces.stageMover
 import util.userConfig
+import events
 import wx
 
 ## @package saveTopBottomPanel
@@ -15,21 +16,18 @@ bottomPosControl = None
 ## Text label for the total height of the stack. 
 zStackHeightLabel = None
 
-## Current saved top position
- 
-#util.userConfig.getValue('savedTop', isGlobal = False, default= 3010)
-## Current saved bottom position
-savedBottom = 3000
-#util.userConfig.getValue('savedBottom', isGlobal = False, default = 3000)
-
 
 ## Create and lay out the "save top/bottom" panel, which allows the user to 
 # remember Z levels of interest.
 def createSaveTopBottomPanel(parent):
     global topPosControl, zStackHeightLabel, bottomPosControl,savedTop,savedBottom
-	
-    savedTop=util.userConfig.getValue('savedTop', isGlobal = False, default= 3010)
-    savedBottom=util.userConfig.getValue('savedBottom', isGlobal = False, default = 3000)
+
+    ## Current saved top position stored in user config file so we
+    ## need a login event to find them.
+    events.subscribe('user login', onUserLogin)
+
+    savedTop = 3010
+    savedBottom = 3000
 
     panel = wx.Panel(parent, 8910)
     box = wx.StaticBox(panel, -1, '')
@@ -143,3 +141,14 @@ def updateZStackHeight():
 ## Get the bottom and top of the stack.
 def getBottomAndTop():
     return (savedBottom, savedTop)
+
+
+def onUserLogin(userName):
+    global savedTop, savedBottom    
+    savedTop=util.userConfig.getValue('savedTop', isGlobal = False,
+                                      default= 3010)
+    savedBottom=util.userConfig.getValue('savedBottom', isGlobal =
+                                         False, default = 3000)
+    topPosControl.SetValue("%.1f" % savedTop)
+    bottomPosControl.SetValue("%.1f" % savedBottom)
+    updateZStackHeight()
