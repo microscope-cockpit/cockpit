@@ -10,7 +10,7 @@ import util.logger
 import util.userConfig
 
 import macroStageBase
-import gui.saveTopBottomPanel
+
 
 ## Width of an altitude line.
 HEIGHT_LINE_WIDTH = 3
@@ -29,7 +29,7 @@ DEFAULT_HISTOGRAM_HEIGHT = 200
 MINI_HISTOGRAM_PADDING = 1
 
 #Size of secondar histogram if no fine motion stage in microns
-SECONDARY_HISTOGRAM_SIZE = 50
+SECONDARY_HISTOGRAM_SIZE = 500
 
 
 ## This is a simple container class for histogram display info.
@@ -272,8 +272,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 zMax = majorPos + minorLimits[1][1]
                 zMin = majorPos -(minorPos-minorLimits[1][0])
             else:
-                zMax = majorPos +(SECONDARY_HISTOGRAM_SIZE/2.0)
-                zMin = majorPos -(SECONDARY_HISTOGRAM_SIZE/2.0)
+                zMax = majorpos +(SECONDARY_HISTOGRAM_SIZE/2.0)
+                zMax = majorpos -(SECONDARY_HISTOGRAM_SIZE/2.0)
 
             # Draw histograms. We do this first so that other lines can be drawn
             # on top.
@@ -313,14 +313,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 self.scaledVertex(scaleX - spikeLength, altitude)
                 self.scaledVertex(scaleX, altitude + spikeHeight / 2)
                 glEnd()
-
-            #Draw top and bottom positions of stack in blue.
-            self.stackdef=[gui.saveTopBottomPanel.savedTop,
-                        gui.saveTopBottomPanel.savedBottom]
-            for pos in self.stackdef:
-                if pos is not None:
-                    self.drawLine(pos, color = (0, 0, 1))
-
+            
             # Draw current stage position
             self.drawLine(motorPos, color = (1, 0, 0),
                     label = str(int(motorPos)), isLabelOnLeft = True)
@@ -502,14 +495,24 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             canvasLoc = self.mapClickToCanvas(clickLoc)
             # Map the click location to one of our histograms or to the main scale.
             scale = (self.minY, self.maxY)
+            # if we are on the first hist then use the coarset mover if not
+            # then use the currently selected one.
+            originalMover= interfaces.stageMover.mover.curHandlerIndex
+            interfaces.stageMover.mover.curHandlerIndex = 0
+            
             for histogram in self.histograms:
                 if canvasLoc[0] < histogram.xOffset + self.horizLineLength:
                     scale = (histogram.minAltitude, histogram.maxAltitude)
+					# not on coarse histogram so reset to currently active Z mover
+                    interfaces.stageMover.mover.curHandlerIndex = originalMover
+                    
+                    
             weight = float(self.height - clickLoc[1]) / self.height
             altitude = (scale[1] - scale[0]) * weight + scale[0]
             zHardMax = interfaces.stageMover.getIndividualHardLimits(2)[0][1]
             interfaces.stageMover.goToZ(min(zHardMax, altitude))
-
+            #mkae sure we are back to the expected mover
+            interfaces.stageMover.mover.curHandlerIndex = originalMover
 
     ## Remap an XY tuple to stage coordinates.
     def mapClickToCanvas(self, loc):
