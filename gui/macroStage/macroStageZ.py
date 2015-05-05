@@ -272,8 +272,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 zMax = majorPos + minorLimits[1][1]
                 zMin = majorPos -(minorPos-minorLimits[1][0])
             else:
-                zMax = majorpos +(SECONDARY_HISTOGRAM_SIZE/2.0)
-                zMax = majorpos -(SECONDARY_HISTOGRAM_SIZE/2.0)
+                zMax = majorPos +(SECONDARY_HISTOGRAM_SIZE/2.0)
+                zMax = majorPos -(SECONDARY_HISTOGRAM_SIZE/2.0)
 
             # Draw histograms. We do this first so that other lines can be drawn
             # on top.
