@@ -1,4 +1,4 @@
-import device
+Import device
 import depot
 import events
 import gui.toggleButton
@@ -22,6 +22,7 @@ class RaspberryPi(device.Device):
         else:
             self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
             self.port = int(config.get(CONFIG_NAME, 'port'))
+            
         self.RPiConnection = None
         ## util.connection.Connection for the temperature sensors.
 
@@ -53,6 +54,7 @@ class RaspberryPi(device.Device):
         
         pass
 
+    
     ## Generate a column of buttons for setting the light path. Make a window
     # that plots our temperature data.
     def makeUI(self, parent):
@@ -123,3 +125,51 @@ class RaspberryPi(device.Device):
         else: #default behaviour, mapping objective
 		    self.flipDownUp(0, 1)
         print "pi-DIO objective change"
+
+
+## This debugging window lets each digital lineout of the DSP be manipulated
+# individually.
+class piOutputWindow(wx.Frame):
+    def __init__(self, dsp, parent, *args, **kwargs):
+        wx.Frame.__init__(self, parent, *args, **kwargs)
+        ## piDevice instance.
+        self.pi = pi-DIO
+        # Contains all widgets.
+        panel = wx.Panel(self)
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
+        buttonSizer = wx.GridSizer(2, 4, 1, 1)
+
+        ## Maps buttons to their lines.
+        self.buttonToLine = {}
+
+        # Set up the digital lineout buttons.
+        for line in xrange(1):
+            button = gui.toggleButton.ToggleButton(
+                    parent = panel, label = line,
+                    activateAction = self.toggle,
+                    deactivateAction = self.toggle,
+                    size = (140, 80))
+            buttonSizer.Add(button, 1, wx.EXPAND)
+            self.buttonToLine[button] = line
+        mainSizer.Add(buttonSizer)
+
+        panel.SetSizerAndFit(mainSizer)
+        self.SetClientSize(panel.GetSize())
+
+
+    ## One of our buttons was clicked; update the DSP's output.
+    def toggle(self):
+        output = 0
+        for button, line in self.buttonToLine.iteritems():
+            if button.getIsActive():
+                output += line
+        self.pi-DIO.RPiConnection.flipDownUp(line, int(isUp))
+
+
+## Debugging function: display a DSPOutputWindow.
+def makeOutputWindow():
+    # HACK: the _deviceInstance object is created by the depot when this
+    # device is initialized.
+    global _deviceInstance
+    DIOOutputWindow(_deviceInstance, parent = wx.GetApp().GetTopWindow()).Show()
+    
