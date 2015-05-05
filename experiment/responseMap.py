@@ -6,6 +6,7 @@ import experiment
 import gui.guiUtils
 import gui.imageSequenceViewer
 import gui.progressDialog
+import handlers.camera
 import offsetGainCorrection
 import util.correctNonlinear
 import util.datadoc
@@ -71,6 +72,11 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
         self.sanityCheckEnvironment()
         self.prepareHandlers()
 
+        self.cameraToReadoutTime = dict([(c, c.getTimeBetweenExposures(isExact = True)) for c in self.cameras])
+        for camera, readTime in self.cameraToReadoutTime.iteritems():
+            if type(readTime) is not decimal.Decimal:
+                raise RuntimeError("Camera %s did not provide an exact (decimal.Decimal) readout time" % camera.name)
+
         for camera, func in self.camToFunc.iteritems():
             events.subscribe('new image %s' % camera.name, func)
         for exposureTime in self.exposureTimes:
@@ -85,6 +91,10 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
                 self.camToImages[camera] = numpy.zeros((self.numExposures, height, width))
                 self.camToNumImagesReceived[camera] = 0
                 self.camToLock[camera] = threading.Lock()
+                # Indicate any frame transfer cameras for reset at start of
+                # table.
+                if camera.getExposureMode() == handlers.camera.TRIGGER_AFTER:
+                    self.cameraToIsReady[camera] = False
                 
             self.table = self.generateActions(exposureTime)
             self.table.sort()

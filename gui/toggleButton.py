@@ -8,6 +8,9 @@ import wx
 ACTIVE_COLOR = (128, 255, 125)
 ## Color for inactive controls, barring control-specific colors
 INACTIVE_COLOR = (128, 128, 128)
+## Default size
+DEFAULT_SIZE=(128, 48)
+
 
 ## This class provides a simple button that can be toggled on and off, and
 # allows you to specify functions to call when it is activated/deactivated.
@@ -27,6 +30,9 @@ class ToggleButton(wx.StaticText):
                  activateAction = None, deactivateAction = None,
                  activeLabel = None, inactiveLabel = None,
                  tooltip = '', textSize = 12, isBold = True, **kwargs):
+        # Default size:
+        if 'size' not in kwargs:
+            kwargs['size'] = DEFAULT_SIZE
         wx.StaticText.__init__(self,
                 style = wx.RAISED_BORDER | wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE,
                 **kwargs)

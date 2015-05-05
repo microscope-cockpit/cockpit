@@ -40,6 +40,7 @@ import wx
 import camera
 import events
 import handlers.camera
+import gui.device
 import gui.guiUtils
 import gui.toggleButton
 import util.connection
@@ -49,10 +50,6 @@ from config import CAMERAS
 
 CLASS_NAME = 'CameraManager'
 SUPPORTED_CAMERAS = ['ixon', 'ixon_plus', 'ixon_ultra']
-COLOUR = {'grey': (170, 170, 170),
-          'green': (32, 128, 32),
-        }
-
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
@@ -101,6 +98,10 @@ class AndorCameraDevice(camera.CameraDevice):
         self.interactiveTrigger = TRIGGER_BEFORE
         self.enabled = False
         self.handler = None
+        # A thread to publish status updates.
+        self.statusThread = threading.Thread(target=self.updateStatus)
+        self.statusThread.Daemon = True
+        self.statusThread.start()
 
 
     def cleanupAfterExperiment(self):
@@ -335,35 +336,48 @@ class AndorCameraDevice(camera.CameraDevice):
         self.updateUI()
 
 
+    def updateStatus(self):
+        """Runs in a separate thread publish status updates."""
+        updatePeriod = 1
+        temperature = None
+        while True:
+            if self.object:
+                try:
+                    temperature = self.object.get_temperature()
+                except:
+                    ## There is a communication issue. It's not this thread's
+                    # job to fix it. Set temperature to None to avoid bogus
+                    # data.
+                    temperature = None
+            events.publish("status update",
+                           self.config.get('label', 'unidentifiedCamera'),
+                           {'temperature': temperature,})
+
+
     ### UI functions ###
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
-        self.panel.SetBackgroundColour(COLOUR['grey'])
         sizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(self.panel, -1,
-                              self.config['label'],
-                              size=(128, 24),
-                              style=wx.ALIGN_CENTER)
-        label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        label = gui.device.Label(
+                parent=self.panel, label=self.config['label'])
         sizer.Add(label)
         rowSizer = wx.BoxSizer(wx.VERTICAL)
 
         self.modeButton = gui.toggleButton.ToggleButton(
                 label="Mode:\n%s" % 'mode_desc',
-                parent=self.panel, size=(128,48))
+                parent=self.panel)
         self.modeButton.Bind(wx.EVT_LEFT_DOWN, self.onModeButton)
         rowSizer.Add(self.modeButton)
 
         self.gainButton = gui.toggleButton.ToggleButton(
                 label="EM Gain\n%d" % self.settings['EMGain'],
-                parent=self.panel, size=(128, 48))
+                parent=self.panel)
         self.gainButton.Bind(wx.EVT_LEFT_DOWN, self.onGainButton)
         rowSizer.Add(self.gainButton)
 
         self.trigButton = gui.toggleButton.ToggleButton(
                 label='exp. trigger:\n%s' % self.experimentTriggerMode.label,
-                parent=self.panel,
-                size=(128,48))
+                parent=self.panel)
         self.trigButton.Bind(wx.EVT_LEFT_DOWN, self.onTrigButton)
         rowSizer.Add(self.trigButton)
         sizer.Add(rowSizer)

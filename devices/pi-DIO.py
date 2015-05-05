@@ -5,16 +5,18 @@ import gui.toggleButton
 import util.connection
 import collections
 import Pyro4
+import wx
 
 from config import config
-CLASS_NAME = 'raspberryPi'
-CONFIG_NAME = 'RPi'
+CLASS_NAME = 'RaspberryPi'
+CONFIG_NAME = 'rpi'
 
 
 
-class raspberryPi(device.Device):
+class RaspberryPi(device.Device):
     def __init__(self):
         self.isActive = config.has_section(CONFIG_NAME)
+        self.priority = 10000
         if not self.isActive:
             return
         else:
@@ -113,8 +115,11 @@ class raspberryPi(device.Device):
         self.RPiConnection.flipDownUp(index, int(isUp))
 
 
-    def onObjectiveChange(self, newName, newPixelSize, transform, offset):
-        if (newName=='63x85nm'):
-            self.setDetMode('with AO & 85 nm pixel size')
-        elif (newName=='63x209nm'):
-            self.setDetMode('w/o AO & 209 nm pixel size')
+    def onObjectiveChange(self, name, pixelSize, transform, offset):
+        if (name=='10x'):
+		    self.flipDownUp(0, 1)
+        elif (name=='60xwater'):
+		    self.flipDownUp(0, 0)
+        else: #default behaviour, mapping objective
+		    self.flipDownUp(0, 1)
+        print "pi-DIO objective change"
