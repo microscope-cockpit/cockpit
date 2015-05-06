@@ -1,5 +1,6 @@
 import interfaces.stageMover
-
+import util.userConfig
+import events
 import wx
 
 ## @package saveTopBottomPanel
@@ -138,3 +139,14 @@ def updateZStackHeight():
 ## Get the bottom and top of the stack.
 def getBottomAndTop():
     return (savedBottom, savedTop)
+
+
+def onUserLogin(userName):
+    global savedTop, savedBottom    
+    savedTop=util.userConfig.getValue('savedTop', isGlobal = False,
+                                      default= 3010)
+    savedBottom=util.userConfig.getValue('savedBottom', isGlobal =
+                                         False, default = 3000)
+    topPosControl.SetValue("%.1f" % savedTop)
+    bottomPosControl.SetValue("%.1f" % savedBottom)
+    updateZStackHeight()
