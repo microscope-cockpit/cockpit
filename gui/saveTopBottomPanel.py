@@ -16,18 +16,20 @@ bottomPosControl = None
 ## Text label for the total height of the stack. 
 zStackHeightLabel = None
 
-## Current saved top position
-savedTop = 7780
-## Current saved bottom position
-savedBottom = 7770
-
 
 ## Create and lay out the "save top/bottom" panel, which allows the user to 
 # remember Z levels of interest.
 def createSaveTopBottomPanel(parent):
-    global topPosControl, zStackHeightLabel, bottomPosControl
-    panel = wx.Panel(parent, 8910)
+    global topPosControl, zStackHeightLabel, bottomPosControl,savedTop,savedBottom
 
+    ## Current saved top position stored in user config file so we
+    ## need a login event to find them.
+    events.subscribe('user login', onUserLogin)
+
+    savedTop = 3010
+    savedBottom = 3000
+
+    panel = wx.Panel(parent, 8910)
     box = wx.StaticBox(panel, -1, '')
     
     sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
