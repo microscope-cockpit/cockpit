@@ -83,12 +83,18 @@ class CockpitApp(wx.App):
             status.Update(4 + i, "Initializing user interface...")
 
             frame = gui.mainWindow.makeWindow()
+            status.Update(5 + i, " ... camera window")
             self.SetTopWindow(frame)
             gui.camera.window.makeWindow(frame)
+            status.Update(6 + i, " ... mosaic window")
             gui.mosaic.window.makeWindow(frame)
+            status.Update(7 + i, " ... macrostage window")
             gui.macroStage.macroStageWindow.makeWindow(frame)
+            status.Update(8 + i, " ... shell window")
             gui.shellWindow.makeWindow(frame)
+            status.Update(9 + i, " ... statuslights window")
             gui.statusLightsWindow.makeWindow(frame)
+            status.Update(10 + i, " ... valuelogger window")
             gui.valueLogger.makeWindow(frame)
 
             # Now that the UI exists, we don't need this any more.
