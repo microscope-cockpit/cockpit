@@ -95,7 +95,7 @@ def OnTB_saveTop(ev):
     savedTop = interfaces.stageMover.getPosition()[2]
     topPosControl.SetValue("%.1f" % savedTop)
     updateZStackHeight()
-
+    util.userConfig.setValue('savedTop',savedTop, isGlobal=False)
 
 ## Event for handling users clicking on the "save bottom" button. Set 
 # savedBottom.
@@ -104,7 +104,7 @@ def OnTB_saveBottom(ev):
     savedBottom = interfaces.stageMover.getPosition()[2]
     bottomPosControl.SetValue("%.1f" % savedBottom)
     updateZStackHeight()
-
+    util.userConfig.setValue('savedBottom',savedBottom, isGlobal=False)
 
 ## Event for handling users clicking on the "go to top" button. Use the 
 # nanomover (and, optionally, also the stage piezo) to move to the target
