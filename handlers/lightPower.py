@@ -73,6 +73,10 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
                 style = wx.ALIGN_CENTRE_HORIZONTAL | wx.ST_NO_AUTORESIZE | wx.SUNKEN_BORDER,
                 size = (120, 40))
         self.powerToggle.Enable(self.isEnabled)
+        # If maxPower is zero or unset, we can not determine the
+        # menu entries, so disable powerToggle button.
+        if not self.maxPower:
+            self.powerToggle.Enable(False)
         self.powerText.Enable(self.isEnabled)
         sizer.Add(self.powerText)
         return sizer
@@ -155,6 +159,9 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     def updateText(self):
         if self.powerText:
             self.powerText.SetLabel("%.1f%s" % (self.curPower, self.units))
+        # Enable or disable the powerToggle button, if it exists.
+        if self.powerToggle:
+            self.powerToggle.Enable(self.maxPower and self.isEnabled)
 
 
     ## Simple getter.
