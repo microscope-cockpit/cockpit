@@ -6,8 +6,12 @@ import wx
 ## This class allows for prompting the user for a number, similar to
 # wx.GetNumberFromUser except that we allow for floating point values as well.
 class GetNumberDialog(wx.Dialog):
-    def __init__(self, parent, title, prompt, default):
-        wx.Dialog.__init__(self, parent, -1, title)
+    def __init__(self, parent, title, prompt, default, atMouse=False):
+        if atMouse:
+            mousePos = wx.GetMousePosition()
+            wx.Dialog.__init__(self, parent, -1, title, mousePos)
+        else:
+            wx.Dialog.__init__(self, parent, -1, title)
         
         mainSizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -42,8 +46,12 @@ class GetNumberDialog(wx.Dialog):
 
 ## As above, but we can accept any number of prompts for multiple numbers.
 class GetManyNumbersDialog(wx.Dialog):
-    def __init__(self, parent, title, prompts, defaultValues):
-        wx.Dialog.__init__(self, parent, -1, title)
+    def __init__(self, parent, title, prompts, defaultValues, atMouse=False):
+        if atMouse:
+            mousePos = wx.GetMousePosition()
+            wx.Dialog.__init__(self, parent, -1, title, mousePos)
+        else:
+            wx.Dialog.__init__(self, parent, -1, title)
         
         mainSizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -79,16 +87,13 @@ class GetManyNumbersDialog(wx.Dialog):
 
 
         
-def getNumberFromUser(parent, title, prompt, default):
-    dialog = GetNumberDialog(parent, title, prompt, default)
+def getNumberFromUser(parent, title, prompt, default, atMouse=False):
+    dialog = GetNumberDialog(parent, title, prompt, default, atMouse)
     dialog.ShowModal()
     return dialog.getValue()
     
 
-def getManyNumbersFromUser(parent, title, prompts, defaultValues):
-    dialog = GetManyNumbersDialog(parent, title, prompts, defaultValues)
+def getManyNumbersFromUser(parent, title, prompts, defaultValues, atMouse=False):
+    dialog = GetManyNumbersDialog(parent, title, prompts, defaultValues, atMouse)
     dialog.ShowModal()
     return dialog.getValues()
-
-
-    
