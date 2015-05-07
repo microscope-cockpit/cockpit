@@ -501,13 +501,27 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             canvasLoc = self.mapClickToCanvas(clickLoc)
             # Map the click location to one of our histograms or to the main scale.
             scale = (self.minY, self.maxY)
-            for histogram in self.histograms:
+            # if we are on the first hist then use the coarest mover if not
+            # then use the currently selected one.
+            originalMover= interfaces.stageMover.mover.curHandlerIndex
+            interfaces.stageMover.mover.curHandlerIndex = 0
+            
+            for histogram in self.histograms
                 if canvasLoc[0] < histogram.xOffset + self.horizLineLength:
                     scale = (histogram.minAltitude, histogram.maxAltitude)
+                    break # fall through as we have found which
+                          # histogram we clicked on
+                # not first hist so revert to current mover whatever that
+                #might be
+                interfaces.stageMover.mover.curHandlerIndex = originalMover            
+                    
             weight = float(self.height - clickLoc[1]) / self.height
             altitude = (scale[1] - scale[0]) * weight + scale[0]
             zHardMax = interfaces.stageMover.getIndividualHardLimits(2)[0][1]
             interfaces.stageMover.goToZ(min(zHardMax, altitude))
+            #make sure we are back to the expected mover
+            interfaces.stageMover.mover.curHandlerIndex = originalMover
+
 
 
     ## Remap an XY tuple to stage coordinates.
