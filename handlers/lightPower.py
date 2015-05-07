@@ -127,7 +127,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     def setCurPower(self, curPower):
         self.curPower = curPower
         util.userConfig.setValue(self.name + '-lightPower', curPower)
-        self.updateText()
+        self.updateDisplay()
 
 
     ## Set a new value for minPower.
@@ -155,8 +155,9 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         self.setPower(float(value))
 
 
-    ## Update our text display to indicate our current power output.
-    def updateText(self):
+    ## Update our laser power display.
+    def updateDisplay(self):
+        # Show current power on the text display, if it exists.
         if self.powerText:
             self.powerText.SetLabel("%.1f%s" % (self.curPower, self.units))
         # Enable or disable the powerToggle button, if it exists.
