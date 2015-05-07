@@ -77,6 +77,10 @@ class LaserPowerDevice(device.Device):
             with self.hLock:
                 for name, h in self.nameToHandler.iteritems():
                     h.setCurPower(self.nameToConnection[name].getPower_mW())
+                    # Populate maxPower if not already set.
+                    if not h.maxPower:
+                        h.setMaxPower(
+                                self.nameToConnection[name].getMaxPower_mW())
             time.sleep(0.1)
 
 
@@ -92,18 +96,13 @@ class LaserPowerDevice(device.Device):
             self.nameToConnection[label] = Pyro4.Proxy(uri)
             # If the light config has minPower, use that, otherwise default to 1mW.
             minPower = light.get('minPower') or 1
-            # These values are only available if the laser is powered up. If
-            # we can't get them now, we'll get them when the light source
-            # is enabled.
-            maxPower = 0
-            # Just set curPower to zero. Reading it here slows startup,
-            # and _pollPower will update it soon enough, anyway.
+            # Just set maxPwer and curPower to zero. 
+            # Reading them here only works if the laser is on, delays startup,
+            # and _pollPower will update these soon enough, anyway.
             curPower = 0
+            maxPower = 0
             isPowered = False
             isPowered = self.nameToConnection[label].isAlive()
-            if isPowered:
-                maxPower = self.nameToConnection[label].getMaxPower_mW()
-            
             powerHandler = handlers.lightPower.LightPowerHandler(
                     label + ' power', # name
                     label + ' light source', # groupName
