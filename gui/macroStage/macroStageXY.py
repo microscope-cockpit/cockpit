@@ -61,7 +61,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         wx.EVT_RIGHT_DCLICK(self, self.OnRightDoubleClick)
         events.subscribe("soft safety limit", self.onSafetyChange)
         self.SetToolTipString("Left double-click to move the stage. " +
-                "Right double-click to toggle displaying of mosaic " +
+                "Right click for gotoXYZ and double-click to toggle displaying of mosaic " +
                 "tiles.")
 
 
