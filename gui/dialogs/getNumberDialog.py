@@ -87,13 +87,13 @@ class GetManyNumbersDialog(wx.Dialog):
 
 
         
-def getNumberFromUser(parent, title, prompt, default, atMouse=False):
+def getNumberFromUser(parent, title, prompt, default, atMouse=True):
     dialog = GetNumberDialog(parent, title, prompt, default, atMouse)
     dialog.ShowModal()
     return dialog.getValue()
     
 
-def getManyNumbersFromUser(parent, title, prompts, defaultValues, atMouse=False):
+def getManyNumbersFromUser(parent, title, prompts, defaultValues, atMouse=True):
     dialog = GetManyNumbersDialog(parent, title, prompts, defaultValues, atMouse)
     dialog.ShowModal()
     return dialog.getValues()
