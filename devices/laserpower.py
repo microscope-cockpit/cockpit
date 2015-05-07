@@ -96,12 +96,13 @@ class LaserPowerDevice(device.Device):
             # we can't get them now, we'll get them when the light source
             # is enabled.
             maxPower = 0
+            # Just set curPower to zero. Reading it here slows startup,
+            # and _pollPower will update it soon enough, anyway.
             curPower = 0
             isPowered = False
             isPowered = self.nameToConnection[label].isAlive()
             if isPowered:
                 maxPower = self.nameToConnection[label].getMaxPower_mW()
-                curPower = self.nameToConnection[label].getPower_mW()
             
             powerHandler = handlers.lightPower.LightPowerHandler(
                     label + ' power', # name
