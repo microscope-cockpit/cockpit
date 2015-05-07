@@ -41,6 +41,9 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         ## wx.StaticText describing the current power level.
         self.powerText = None
 
+        # The number of levels in the power menu.
+        self.numPowerLevels = 20
+
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
         events.subscribe('user login', self.onLogin)
@@ -87,7 +90,11 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     # an arbitrary value.
     def makeMenu(self, parent):
         menu = wx.Menu()
-        for i, power in enumerate(numpy.arange(self.minPower, self.maxPower + 1, (self.maxPower - self.minPower) / 20.0)):
+        powerDelta = self.maxPower / self.numPowerLevels
+        powers = numpy.arange(self.minPower,
+                              self.maxPower + powerDelta,
+                              powerDelta)
+        for i, power in enumerate(powers):
             menu.Append(i + 1, "%d%s" % (min(power, self.maxPower), self.units))
             wx.EVT_MENU(parent, i + 1, lambda event, power = power: self.setPower(power))
         menu.Append(i + 2, '...')
