@@ -200,9 +200,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             # We only care about the Z axis.
             return
         macroStageBase.MacroStageBase.onMotion(self, axis, position)
-        # Ensure there's a histogram to work with.
-        if not self.histograms:
-            self.makeBigHistogram(interfaces.stageMover.getSoftLimitsForAxis(2)[0])
+        # Ensure there's a histogram to work with based around current pos.
+        self.makeBigHistogram(interfaces.stageMover.getPosition()[2])
         if self.shouldDraw:
             try:
                 motorPos = self.curStagePosition[2]
