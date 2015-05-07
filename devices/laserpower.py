@@ -79,8 +79,9 @@ class LaserPowerDevice(device.Device):
                     h.setCurPower(self.nameToConnection[name].getPower_mW())
                     # Populate maxPower if not already set.
                     if not h.maxPower:
-                        h.setMaxPower(
-                                self.nameToConnection[name].getMaxPower_mW())
+                        maxPower = self.nameToConnection[name].getMaxPower_mW()
+                        h.setMaxPower(maxPower)
+                        h.setMinPower(maxPower / h.numPowerLevels)
             time.sleep(0.1)
 
 
