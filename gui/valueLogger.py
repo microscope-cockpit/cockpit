@@ -48,6 +48,7 @@ class ValueLoggerWindow(wx.Frame):
         self.panel = ValueLoggerPanel(self)
         # Add cockpit window bindings to this window.
         gui.keyboard.setKeyboardHandlers(self)
+        self.SetSizeHints(600, 400)
         self.Show()
 
 
@@ -72,7 +73,7 @@ class ValueLoggerPanel(wx.Panel):
         self.axes = self.figure.add_subplot(111)
         self.canvas = FigureCanvas(self, -1, self.figure)
         ## Border around axes in pixels (left, bottom, right, top)
-        self.border = (56, 88, 192, 24)
+        self.border = (56, 56, 24, 24)
         ## Main panel sizer.
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         ## Data sources
@@ -82,7 +83,6 @@ class ValueLoggerPanel(wx.Panel):
         # Add the canvas to the sizer.
         self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
         self.SetSizer(self.sizer)
-        self.sizer.SetSizeHints(parent)
         # Show a menu of available data on right mouse click.
         self.canvas.Bind(wx.EVT_RIGHT_DOWN, self.onRightMouse)
         # Bind to our resize handler.
@@ -91,7 +91,7 @@ class ValueLoggerPanel(wx.Panel):
         ## Set axis properties.
         self.axes.xaxis_date()
         self.axes.xaxis.set_major_formatter(
-                matplotlib.dates.DateFormatter('%H:%M:%S'))
+                matplotlib.dates.DateFormatter('%H:%M'))
         self.axes.xaxis.set_major_locator(
                 matplotlib.ticker.LinearLocator() )
 
@@ -189,9 +189,12 @@ class ValueLoggerPanel(wx.Panel):
                     self.labels[key].set_y(series[lastPoint])
                 else:
                     # The label does not yet exist. Create it.
-                    self.labels[key] = self.axes.text(dataTimes[-1], 
-                                                      series[lastPoint], 
-                                                      ' %s' % key)
+                    self.labels[key] = self.axes.text(
+                            dataTimes[-1], 
+                            series[lastPoint], 
+                            ' %s' % key,
+                            ha='right',
+                            color=self.lines[key].get_color())
             else:
                 # The line should not or can not be shown.
                 line = self.lines.get(key, None)
