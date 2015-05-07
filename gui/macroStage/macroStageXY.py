@@ -57,6 +57,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         wx.EVT_MOTION(self, self.OnMouseMotion)
         wx.EVT_LEFT_UP(self, self.OnLeftClick)
         wx.EVT_LEFT_DCLICK(self, self.OnLeftDoubleClick)
+        wx.EVT_RIGHT_UP(self, self.OnRightClick)
         wx.EVT_RIGHT_DCLICK(self, self.OnRightDoubleClick)
         events.subscribe("soft safety limit", self.onSafetyChange)
         self.SetToolTipString("Left double-click to move the stage. " +
@@ -300,7 +301,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
     def OnLeftDoubleClick(self, event):
         interfaces.stageMover.goToXY(self.remapClick(event.GetPosition()))
 
-
+    def OnRightClick(self, event):
+        pass
+		
     ## Right-clicked the mouse. Toggle drawing of the mosaic tiles
     def OnRightDoubleClick(self, event):
         self.shouldDrawMosaic = not self.shouldDrawMosaic
