@@ -10,6 +10,7 @@ import util.logger
 import util.userConfig
 
 import macroStageBase
+import gui.saveTopBottomPanel
 
 
 ## Width of an altitude line.
@@ -295,6 +296,14 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 self.scaledVertex(scaleX, altitude + spikeHeight / 2)
                 glEnd()
             
+            #Draw top and bottom positions of stack in blue.
+            self.stackdef=[gui.saveTopBottomPanel.savedTop,
+                          gui.saveTopBottomPanel.savedBottom]
+            for pos in self.stackdef:
+                if pos is not None:
+                    self.drawLine(pos, color = (0, 0, 1))
+
+			
             # Draw current stage position
             self.drawLine(motorPos, color = (1, 0, 0),
                     label = str(int(motorPos)), isLabelOnLeft = True)
