@@ -76,8 +76,7 @@ class LaserPowerDevice(device.Device):
             # Require hLock to prevent changes of nameToHandler dict.
             with self.hLock:
                 for name, h in self.nameToHandler.iteritems():
-                    h.curPower = self.nameToConnection[name].getPower_mW()
-                    h.updateText()
+                    h.setCurPower(self.nameToConnection[name].getPower_mW())
             time.sleep(0.1)
 
 
