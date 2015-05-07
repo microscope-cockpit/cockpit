@@ -94,6 +94,13 @@ class MainWindow(wx.Frame):
                 size = (120, 80), parent = topPanel)
         loadButton.Bind(wx.EVT_LEFT_DOWN, self.onLoadExposureSettings)        
         buttonSizer.Add(loadButton)
+        snapButton = toggleButton.ToggleButton(textSize = 12,
+                label = "Snap",
+                size = (120, 80), parent = topPanel)
+        snapButton.Bind(wx.EVT_LEFT_DOWN,
+                        lambda event: interfaces.imager.takeImage())
+        buttonSizer.Add(snapButton)
+
         
         topSizer.Add(buttonSizer)
 
