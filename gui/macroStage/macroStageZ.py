@@ -166,7 +166,6 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         if self.prevZSafety is None or self.prevZSafety != position:
             # Update primary histogram display settings
             self.prevZSafety = position
-            self.makeBigHistogram(self.prevZSafety)
 
 
     ## Generate the larger of the two histograms.
