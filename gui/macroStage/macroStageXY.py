@@ -303,7 +303,11 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
     def OnRightClick(self, event):
         position = interfaces.stageMover.getPosition()
-        values=gui.dialogs.getNumberDialog.getManyNumbersFromUser(self.GetParent(),"Go To XYZ",('X','Y','Z'),position)
+        values=gui.dialogs.getNumberDialog.getManyNumbersFromUser(
+                self.GetParent(),
+                "Go To XYZ",('X','Y','Z'), 
+                position,
+                atMouse=True)
         newPos=(float(values[0]),float(values[1]),float(values[2]))
         interfaces.stageMover.goTo(newPos)
 		
