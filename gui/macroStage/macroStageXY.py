@@ -302,7 +302,10 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         interfaces.stageMover.goToXY(self.remapClick(event.GetPosition()))
 
     def OnRightClick(self, event):
-        pass
+        position = interfaces.stageMover.getPosition()
+        values=gui.dialogs.getNumberDialog.getManyNumbersFromUser(self.GetParent(),"Go To XYZ",('X','Y','Z'),position)
+        newPos=(float(values[0]),float(values[1]),float(values[2]))
+        interfaces.stageMover.goTo(newPos)
 		
     ## Right-clicked the mouse. Toggle drawing of the mosaic tiles
     def OnRightDoubleClick(self, event):
