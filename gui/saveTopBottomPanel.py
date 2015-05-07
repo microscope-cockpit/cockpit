@@ -1,5 +1,6 @@
 import interfaces.stageMover
-
+import util.userConfig
+import events
 import wx
 
 ## @package saveTopBottomPanel
@@ -15,18 +16,20 @@ bottomPosControl = None
 ## Text label for the total height of the stack. 
 zStackHeightLabel = None
 
-## Current saved top position
-savedTop = 7780
-## Current saved bottom position
-savedBottom = 7770
-
 
 ## Create and lay out the "save top/bottom" panel, which allows the user to 
 # remember Z levels of interest.
 def createSaveTopBottomPanel(parent):
-    global topPosControl, zStackHeightLabel, bottomPosControl
-    panel = wx.Panel(parent, 8910)
+    global topPosControl, zStackHeightLabel, bottomPosControl,savedTop,savedBottom
 
+    ## Current saved top position stored in user config file so we
+    ## need a login event to find them.
+    events.subscribe('user login', onUserLogin)
+
+    savedTop = 3010
+    savedBottom = 3000
+
+    panel = wx.Panel(parent, 8910)
     box = wx.StaticBox(panel, -1, '')
     
     sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
@@ -92,7 +95,7 @@ def OnTB_saveTop(ev):
     savedTop = interfaces.stageMover.getPosition()[2]
     topPosControl.SetValue("%.1f" % savedTop)
     updateZStackHeight()
-
+    util.userConfig.setValue('savedTop',savedTop, isGlobal=False)
 
 ## Event for handling users clicking on the "save bottom" button. Set 
 # savedBottom.
@@ -101,7 +104,7 @@ def OnTB_saveBottom(ev):
     savedBottom = interfaces.stageMover.getPosition()[2]
     bottomPosControl.SetValue("%.1f" % savedBottom)
     updateZStackHeight()
-
+    util.userConfig.setValue('savedBottom',savedBottom, isGlobal=False)
 
 ## Event for handling users clicking on the "go to top" button. Use the 
 # nanomover (and, optionally, also the stage piezo) to move to the target
@@ -138,3 +141,14 @@ def updateZStackHeight():
 ## Get the bottom and top of the stack.
 def getBottomAndTop():
     return (savedBottom, savedTop)
+
+
+def onUserLogin(userName):
+    global savedTop, savedBottom    
+    savedTop=util.userConfig.getValue('savedTop', isGlobal = False,
+                                      default= 3010)
+    savedBottom=util.userConfig.getValue('savedBottom', isGlobal =
+                                         False, default = 3000)
+    topPosControl.SetValue("%.1f" % savedTop)
+    bottomPosControl.SetValue("%.1f" % savedBottom)
+    updateZStackHeight()
