@@ -59,7 +59,18 @@ class ViewPanel(wx.Panel):
             pixelSize = depot.getHandlersOfType(depot.OBJECTIVE)[0].getPixelSize()
             dx = ((sizeX / 2) - x) * pixelSize
             dy = ((sizeY / 2) - y) * pixelSize
-            interfaces.stageMover.moveRelative((dx, dy, 0))
+			#Need to see if the current movers have xy capbility
+            positions = interfaces.stageMover.getAllPositions()
+            handler = interfaces.stageMover.mover.curHandlerIndex
+            if ((positions[handler][0] == None) or ( positions[handler][1] == None)):
+			    #We dont have an x or y axis so use the main handler
+                originalMover= interfaces.stageMover.mover.curHandlerIndex
+                interfaces.stageMover.mover.curHandlerIndex = 0
+                interfaces.stageMover.moveRelative((dx, dy, 0))
+                interfaces.stageMover.mover.curHandlerIndex = originalMover
+            else:
+               interfaces.stageMover.moveRelative((dx, dy, 0))
+			
 
 
     ## User clicked on the selector. Pop up a menu to let them either activate
