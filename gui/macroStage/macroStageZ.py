@@ -153,7 +153,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 util.userConfig.getValue('experimentAltitudes', default = [], isGlobal = True)
         )
         self.experimentAltitudes.append(self.curStagePosition[2])
-        util.userConfig.setValue('experimentAltitudes',self.experimentAltitudes, isGlobal=True))
+        util.userConfig.setValue('experimentAltitudes', self.experimentAltitudes, isGlobal=True)
         self.calculateHistogram()
 
 
