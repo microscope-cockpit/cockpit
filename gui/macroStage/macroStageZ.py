@@ -29,7 +29,8 @@ DEFAULT_HISTOGRAM_HEIGHT = 200
 ## Amount, in microns, of padding to add on either end of the mini-histogram
 MINI_HISTOGRAM_PADDING = 1
 
-
+#Size of secondar histogram if no fine motion stage in microns
+SECONDARY_HISTOGRAM_SIZE = 50
 
 ## This is a simple container class for histogram display info.
 # \todo Refactor histogram drawing logic into this class.
@@ -170,8 +171,16 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 
     ## Generate the larger of the two histograms.
     def makeBigHistogram(self, altitude):
-        histogramMin = altitude - HISTOGRAM_MIN_PADDING
-        histogramMax = histogramMin + DEFAULT_HISTOGRAM_HEIGHT
+        minorLimits = interfaces.stageMover.getIndividualSoftLimits(2)
+        # Add the max range of motion of the first fine-motion controller.
+        #And subtract the lower limit if minor controller exisits.
+        if(len(minorLimits)>1):
+            minorPos= interfaces.stageMover.getAllPositions()[1][2]
+            histogramMin = altitude-(minorPos-minorLimits[1][0]) - HISTOGRAM_MIN_PADDING
+            histogramMax = altitude+(-minorPos+minorLimits[1][1])+HISTOGRAM_MIN_PADDING
+        else: 
+            histogramMin = altitude-(SECONDARY_HISTOGRAM_SIZE/2.0)- HISTOGRAM_MIN_PADDING
+            histogramMax = altitude+(SECONDARY_HISTOGRAM_SIZE/2.0)+HISTOGRAM_MIN_PADDING
         histogram = Histogram(histogramMin, histogramMax, 
                 self.zHorizOffset - self.stageExtent * .4, 
                 self.minY, self.maxY, 
