@@ -73,6 +73,7 @@ class LaserPowerDevice(device.Device):
 
     def _pollPower(self):
         while True:
+            # Require hLock to prevent changes of nameToHandler dict.
             with self.hLock:
                 for name, h in self.nameToHandler.iteritems():
                     h.curPower = self.nameToConnection[name].getPower_mW()
@@ -83,6 +84,7 @@ class LaserPowerDevice(device.Device):
     ## Provide a LightPower handler for each of the lasers. The DSP
     # provides the LightSource handlers.
     def getHandlers(self):
+        # Do not update dict if it is locked by _pollPower
         self.hLock.acquire()
         result = []
         #self.powerControl = depot.getDevice(devices.powerButtons)
