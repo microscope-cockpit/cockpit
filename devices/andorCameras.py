@@ -49,7 +49,7 @@ import util.threads
 
 from config import CAMERAS
 
-CLASS_NAME = 'CameraManager'
+CLASS_NAME = 'AndorCameraManager'
 SUPPORTED_CAMERAS = ['ixon', 'ixon_plus', 'ixon_ultra']
 
 # The following must be defined as in handlers/camera.py
@@ -429,6 +429,6 @@ class AndorCameraDevice(camera.CameraDevice):
         self.gainButton.SetLabel('EM Gain:\n%d' % self.settings['EMGain'])
 
 
-class CameraManager(camera.CameraManager):
+class AndorCameraManager(camera.CameraManager):
     _CAMERA_CLASS = AndorCameraDevice
     _SUPPORTED_CAMERAS = SUPPORTED_CAMERAS
