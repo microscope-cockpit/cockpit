@@ -150,51 +150,44 @@ class AndorCameraDevice(camera.CameraDevice):
 
     def enableCamera(self, name, shouldEnable):
         """Enable the hardware."""
-        if shouldEnable:
-            # Connect and set up callback.
-            try:
-                self.listener.connect()
-            except Exception as e:
-                print e
-            else:
-                thread = gui.guiUtils.WaitMessageDialog("Connecting to %s" % name,
-                                                        "Connecting ...", 0.5)
-                thread.start()
+        if not shouldEnable:
+            # Disable the camera, if it is enabled.
+            if self.enabled:
+                self.enabled = False
+                self.object.disable()
+                self.object.make_safe()
+                self.listener.disconnect()
+                self.updateUI()
+                return
 
-                originalTimeout = self.object._pyroTimeout
-                self.object._pyroTimeout = 60
+        # Enable the camera
+        if self.enabled:
+            # Nothing to do.
+            return
 
-                # We don't want fast triggers or frame transfer outside of experiments.
-                self.settings['frameTransfer'] = False
-                self.settings['fastTrigger'] = False
-                try:
-                    self.object.enable(self.settings)
-                except:
-                    thread.shouldStop = True
-                    self.object._pyroTimeout = originalTimeout
-                    self.updateUI()
-                    return
+        # We don't want fast triggers or frame transfer outside of experiments.
+        self.settings['frameTransfer'] = False
+        self.settings['fastTrigger'] = False
 
-                # Wait for camera to show it is enabled.
-                while not self.object.is_enabled():
-                    time.sleep(1)
-                self.object._pyroTimeout = originalTimeout
-
-                # Update our settings with the real settings.
-                self.settings.update(self.object.get_settings())
-
-                # Get the list of available amplifier modes.
-                self.amplifierModes = self.object.get_amplifier_modes()
-
-                thread.shouldStop = True
-                self.enabled = True
+        originalTimeout = self.object._pyroTimeout
+        try:
+            self.object._pyroTimeout = 60
+            self.object.enable(self.settings)
+            self.object._pyroTimeout = originalTimeout
+        except Exception as e:
+            print e
         else:
-            self.enabled = False
-            self.object.disable()
-            self.object.make_safe()
-            self.listener.disconnect()
-
-        # Finally, udate our UI buttons.
+            # Wait for camera to show it is enabled.
+            while not self.object.is_enabled():
+                time.sleep(1)
+            self.enabled = True
+            # Connect the listener to receive data.
+            self.listener.connect()
+            # Update our settings with the real settings.
+            self.settings.update(self.object.get_settings())
+            # Get the list of available amplifier modes.
+            self.amplifierModes = self.object.get_amplifier_modes()
+        # Update the UI.
         self.updateUI()
 
 
