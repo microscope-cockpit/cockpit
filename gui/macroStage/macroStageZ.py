@@ -509,11 +509,12 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             for histogram in self.histograms:
                 if canvasLoc[0] < histogram.xOffset + self.horizLineLength:
                     scale = (histogram.minAltitude, histogram.maxAltitude)
+                    # not first hist so revert to current mover whatever that
+                    #might be
+                    interfaces.stageMover.mover.curHandlerIndex = originalMover                
                     break # fall through as we have found which
                           # histogram we clicked on
-                # not first hist so revert to current mover whatever that
-                #might be
-                interfaces.stageMover.mover.curHandlerIndex = originalMover
+                
 
             weight = float(self.height - clickLoc[1]) / self.height
             altitude = (scale[1] - scale[0]) * weight + scale[0]
