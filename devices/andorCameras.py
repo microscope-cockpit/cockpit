@@ -85,7 +85,10 @@ class AndorCameraDevice(camera.CameraDevice):
         self.listener = util.listener.Listener(self.object, 
                                                lambda *args: self.receiveData(*args))
         self.imageSizes = ['Full', '512x256', '512x128']
-        self.amplifierModes = None
+        try:
+            self.amplifierModes = self.object.get_amplifier_modes()
+        except:
+            self.amplifierModes = None
         ## Initial values should be read in from the config file.
         self.cached_settings={}
         self.settings = {}
