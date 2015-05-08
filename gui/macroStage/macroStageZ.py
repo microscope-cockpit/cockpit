@@ -505,7 +505,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             # then use the currently selected one.
             originalMover= interfaces.stageMover.mover.curHandlerIndex
             interfaces.stageMover.mover.curHandlerIndex = 0
-            
+
             for histogram in self.histograms:
                 if canvasLoc[0] < histogram.xOffset + self.horizLineLength:
                     scale = (histogram.minAltitude, histogram.maxAltitude)
@@ -513,8 +513,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                           # histogram we clicked on
                 # not first hist so revert to current mover whatever that
                 #might be
-                interfaces.stageMover.mover.curHandlerIndex = originalMover            
-                    
+                interfaces.stageMover.mover.curHandlerIndex = originalMover
+
             weight = float(self.height - clickLoc[1]) / self.height
             altitude = (scale[1] - scale[0]) * weight + scale[0]
             zHardMax = interfaces.stageMover.getIndividualHardLimits(2)[0][1]
@@ -551,7 +551,7 @@ class MacroStageZKey(macroStageBase.MacroStageBase):
         ## Y offset for text. Ditto.
         self.yOffset = self.yExtent * .75
 
-        
+
     ## Draw the key
     def onPaint(self, event = None):
         if not self.shouldDraw:
@@ -587,6 +587,3 @@ class MacroStageZKey(macroStageBase.MacroStageBase):
             util.logger.log.error("Error drawing Z macro stage key: %s", e)
             traceback.print_exc()
             self.shouldDraw = False
-
-
-
