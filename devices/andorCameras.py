@@ -145,7 +145,8 @@ class AndorCameraDevice(camera.CameraDevice):
                     'setExposureTime': self.setExposureTime,
                     'getImageSizes': self.getImageSizes,
                     'setImageSize': self.setImageSize,
-                    'getSavefileInfo': self.getSavefileInfo},
+                    'getSavefileInfo': self.getSavefileInfo,
+                    'makeUI': self.makeUI},
                 self.interactiveTrigger)
         self.handler = result
         return result
