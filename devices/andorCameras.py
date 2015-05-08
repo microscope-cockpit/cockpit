@@ -340,7 +340,7 @@ class AndorCameraDevice(camera.CameraDevice):
 
     def updateStatus(self):
         """Runs in a separate thread publish status updates."""
-        updatePeriod = 1
+        updatePeriod = 0.2
         temperature = None
         while True:
             if self.object:
@@ -354,6 +354,7 @@ class AndorCameraDevice(camera.CameraDevice):
             events.publish("status update",
                            self.config.get('label', 'unidentifiedCamera'),
                            {'temperature': temperature,})
+            time.sleep(updatePeriod)
 
 
     ### UI functions ###
