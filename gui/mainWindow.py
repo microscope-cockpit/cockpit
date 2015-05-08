@@ -23,6 +23,8 @@ window = None
 ## Max width of rows of UI widgets.
 # This number is chosen to match the width of the Macro Stage view.
 MAX_WIDTH = 850
+ROW_SPACER = 12
+COL_SPACER = 8
 
 
 
@@ -101,25 +103,36 @@ class MainWindow(wx.Frame):
                         lambda event: interfaces.imager.takeImage())
         buttonSizer.Add(snapButton)
 
-        
         topSizer.Add(buttonSizer)
+        topSizer.AddSpacer(ROW_SPACER)
 
         # Make UIs for any other handlers / devices and insert them into
         # our window, if possible.
+        # Light power things will be handled later.
         lightPowerThings = depot.getHandlersOfType(depot.LIGHT_POWER)
         lightPowerThings.sort(key = lambda l: l.wavelength)
+        # Camera UIs are drawn seperately. Currently, they are drawn first,
+        # but this separation may make it easier to implement cameras in
+        # ordered slots, giving the user control over exposure order.
+        cameraThings = depot.getHandlersOfType(depot.CAMERA)
+        # Ignore anything that is handled specially.
         ignoreThings = lightToggles + list(lightAssociates) + lightPowerThings
+        ignoreThings += cameraThings
+        # Remove ignoreThings from the full list of devices.
         otherThings = depot.getAllDevices()
-        # Sort devices by their class names; all we care about is a consistent
-        # order to the elements of the UI. lightPowerThings are dealt with
-        # separately, otherwise they appear in a random order.
         otherThings.sort(key = lambda d: d.__class__.__name__)
         otherThings.extend(depot.getAllHandlers())
         for thing in ignoreThings: 
             if thing in otherThings:
                 otherThings.remove(thing)
-        # Now make the UI elements for otherThings.
+        # Make the UI elements for the cameras.
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
+        for camera in cameraThings:
+            cameraUI = camera.callbacks['makeUI'](topPanel)
+            if cameraUI:
+                rowSizer.Add(cameraUI)
+                rowSizer.AddSpacer(COL_SPACER)
+        # Make the UI elements for eveything else.
         for thing in otherThings:
             item = thing.makeUI(topPanel)
             if item is not None:
@@ -131,13 +144,14 @@ class MainWindow(wx.Frame):
                     rowSizer = wx.BoxSizer(wx.HORIZONTAL)
                 if rowSizer.GetChildren():
                     # Add a spacer.
-                    rowSizer.Add((1, -1), 1, wx.EXPAND)
+                    rowSizer.AddSpacer(COL_SPACER)
                 rowSizer.Add(item)
 
         topSizer.Add(rowSizer, 1)
 
         topPanel.SetSizerAndFit(topSizer)
         mainSizer.Add(topPanel)
+        mainSizer.AddSpacer(ROW_SPACER)
 
         ## Panel for holding light sources.
         self.bottomPanel = wx.Panel(self)
