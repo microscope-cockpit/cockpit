@@ -363,7 +363,7 @@ class AndorCameraDevice(camera.CameraDevice):
         rowSizer = wx.BoxSizer(wx.VERTICAL)
 
         self.modeButton = gui.toggleButton.ToggleButton(
-                label="Mode:\n%s" % 'mode_desc',
+                label="Mode:\n%s" % 'not set',
                 parent=self.panel)
         self.modeButton.Bind(wx.EVT_LEFT_DOWN, self.onModeButton)
         rowSizer.Add(self.modeButton)
@@ -406,7 +406,7 @@ class AndorCameraDevice(camera.CameraDevice):
             modeIsEM = mode['amplifier'] == 0
         else:
             # Otherwise, show that we have no mode description ...
-            modeString = '???'
+            modeString = 'not set'
             # and assume no EM.
             modeIsEM = False
 
