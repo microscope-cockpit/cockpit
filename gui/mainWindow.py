@@ -23,6 +23,8 @@ window = None
 ## Max width of rows of UI widgets.
 # This number is chosen to match the width of the Macro Stage view.
 MAX_WIDTH = 850
+ROW_SPACER = 12
+COL_SPACER = 8
 
 
 
@@ -102,6 +104,7 @@ class MainWindow(wx.Frame):
         buttonSizer.Add(snapButton)
 
         topSizer.Add(buttonSizer)
+        topSizer.AddSpacer(ROW_SPACER)
 
         # Make UIs for any other handlers / devices and insert them into
         # our window, if possible.
@@ -128,7 +131,7 @@ class MainWindow(wx.Frame):
             cameraUI = camera.callbacks['makeUI'](topPanel)
             if cameraUI:
                 rowSizer.Add(cameraUI)
-                rowSizer.AddSpacer(2)
+                rowSizer.AddSpacer(COL_SPACER)
         # Make the UI elements for eveything else.
         for thing in otherThings:
             item = thing.makeUI(topPanel)
@@ -141,13 +144,14 @@ class MainWindow(wx.Frame):
                     rowSizer = wx.BoxSizer(wx.HORIZONTAL)
                 if rowSizer.GetChildren():
                     # Add a spacer.
-                    rowSizer.Add((1, -1), 1, wx.EXPAND)
+                    rowSizer.AddSpacer(COL_SPACER)
                 rowSizer.Add(item)
 
         topSizer.Add(rowSizer, 1)
 
         topPanel.SetSizerAndFit(topSizer)
         mainSizer.Add(topPanel)
+        mainSizer.AddSpacer(ROW_SPACER)
 
         ## Panel for holding light sources.
         self.bottomPanel = wx.Panel(self)
