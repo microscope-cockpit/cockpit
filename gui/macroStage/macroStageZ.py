@@ -506,7 +506,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             originalMover= interfaces.stageMover.mover.curHandlerIndex
             interfaces.stageMover.mover.curHandlerIndex = 0
             
-            for histogram in self.histograms
+            for histogram in self.histograms:
                 if canvasLoc[0] < histogram.xOffset + self.horizLineLength:
                     scale = (histogram.minAltitude, histogram.maxAltitude)
                     break # fall through as we have found which
