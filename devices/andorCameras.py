@@ -43,7 +43,8 @@ import handlers.camera
 import gui.device
 import gui.guiUtils
 import gui.toggleButton
-import util.connection
+import Pyro4
+import util.listener
 import util.threads
 
 from config import CAMERAS
@@ -76,11 +77,13 @@ class AndorCameraDevice(camera.CameraDevice):
         # camConfig is a dict with containing configuration parameters.
         super(AndorCameraDevice, self).__init__(camConfig)
         self.config = camConfig
-        self.connection = util.connection.Connection(
-                'pyroCam',
-                self.config.get('ipAddress'),
-                self.config.get('port'))
-        self.object = None
+        ## Pyro proxy (formerly a copy of self.connection.connection).
+        self.object =  Pyro4.Proxy('PYRO:%s@%s:%d' % ('pyroCam',
+                                                      camConfig.get('ipAddress'),
+                                                      camConfig.get('port')))
+        ## A listner (formerly self.connection).
+        self.listener = util.listener.Listener(self.object, 
+                                               lambda *args: self.receiveData(*args))
         self.imageSizes = ['Full', '512x256', '512x128']
         self.amplifierModes = None
         ## Initial values should be read in from the config file.
@@ -150,11 +153,10 @@ class AndorCameraDevice(camera.CameraDevice):
         if shouldEnable:
             # Connect and set up callback.
             try:
-                self.connection.connect(lambda *args: self.receiveData(*args))
+                self.listener.connect()
             except Exception as e:
                 print e
             else:
-                self.object = self.connection.connection
                 thread = gui.guiUtils.WaitMessageDialog("Connecting to %s" % name,
                                                         "Connecting ...", 0.5)
                 thread.start()
@@ -190,7 +192,7 @@ class AndorCameraDevice(camera.CameraDevice):
             self.enabled = False
             self.object.disable()
             self.object.make_safe()
-            self.connection.disconnect()
+            self.listener.disconnect()
 
         # Finally, udate our UI buttons.
         self.updateUI()
