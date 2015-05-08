@@ -101,11 +101,11 @@ class AndorCameraDevice(camera.CameraDevice):
         self.interactiveTrigger = TRIGGER_BEFORE
         self.enabled = False
         self.handler = None
+        self.hasUI = False
         # A thread to publish status updates.
         self.statusThread = threading.Thread(target=self.updateStatus)
         self.statusThread.Daemon = True
         self.statusThread.start()
-
 
     def cleanupAfterExperiment(self):
         """Restore settings as they were prior to experiment."""
@@ -378,10 +378,14 @@ class AndorCameraDevice(camera.CameraDevice):
         rowSizer.Add(self.trigButton)
         sizer.Add(rowSizer)
         self.panel.SetSizerAndFit(sizer)
+        self.hasUI = True
         return self.panel
 
 
     def updateUI(self):
+        if not self.hasUI:
+            # No UI to update.
+            return
         # If there is no local amplifierMode
         mode = self.settings.get('amplifierMode', None)
         if not mode:
