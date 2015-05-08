@@ -43,7 +43,8 @@ import handlers.camera
 import gui.device
 import gui.guiUtils
 import gui.toggleButton
-import util.connection
+import Pyro4
+import util.listener
 import util.threads
 
 from config import CAMERAS
@@ -76,13 +77,18 @@ class AndorCameraDevice(camera.CameraDevice):
         # camConfig is a dict with containing configuration parameters.
         super(AndorCameraDevice, self).__init__(camConfig)
         self.config = camConfig
-        self.connection = util.connection.Connection(
-                'pyroCam',
-                self.config.get('ipAddress'),
-                self.config.get('port'))
-        self.object = None
+        ## Pyro proxy (formerly a copy of self.connection.connection).
+        self.object =  Pyro4.Proxy('PYRO:%s@%s:%d' % ('pyroCam',
+                                                      camConfig.get('ipAddress'),
+                                                      camConfig.get('port')))
+        ## A listner (formerly self.connection).
+        self.listener = util.listener.Listener(self.object, 
+                                               lambda *args: self.receiveData(*args))
         self.imageSizes = ['Full', '512x256', '512x128']
-        self.amplifierModes = None
+        try:
+            self.amplifierModes = self.object.get_amplifier_modes()
+        except:
+            self.amplifierModes = None
         ## Initial values should be read in from the config file.
         self.cached_settings={}
         self.settings = {}
@@ -98,11 +104,11 @@ class AndorCameraDevice(camera.CameraDevice):
         self.interactiveTrigger = TRIGGER_BEFORE
         self.enabled = False
         self.handler = None
+        self.hasUI = False
         # A thread to publish status updates.
         self.statusThread = threading.Thread(target=self.updateStatus)
         self.statusThread.Daemon = True
         self.statusThread.start()
-
 
     def cleanupAfterExperiment(self):
         """Restore settings as they were prior to experiment."""
@@ -147,52 +153,44 @@ class AndorCameraDevice(camera.CameraDevice):
 
     def enableCamera(self, name, shouldEnable):
         """Enable the hardware."""
-        if shouldEnable:
-            # Connect and set up callback.
-            try:
-                self.connection.connect(lambda *args: self.receiveData(*args))
-            except Exception as e:
-                print e
-            else:
-                self.object = self.connection.connection
-                thread = gui.guiUtils.WaitMessageDialog("Connecting to %s" % name,
-                                                        "Connecting ...", 0.5)
-                thread.start()
+        if not shouldEnable:
+            # Disable the camera, if it is enabled.
+            if self.enabled:
+                self.enabled = False
+                self.object.disable()
+                self.object.make_safe()
+                self.listener.disconnect()
+                self.updateUI()
+                return
 
-                originalTimeout = self.object._pyroTimeout
-                self.object._pyroTimeout = 60
+        # Enable the camera
+        if self.enabled:
+            # Nothing to do.
+            return
 
-                # We don't want fast triggers or frame transfer outside of experiments.
-                self.settings['frameTransfer'] = False
-                self.settings['fastTrigger'] = False
-                try:
-                    self.object.enable(self.settings)
-                except:
-                    thread.shouldStop = True
-                    self.object._pyroTimeout = originalTimeout
-                    self.updateUI()
-                    return
+        # We don't want fast triggers or frame transfer outside of experiments.
+        self.settings['frameTransfer'] = False
+        self.settings['fastTrigger'] = False
 
-                # Wait for camera to show it is enabled.
-                while not self.object.is_enabled():
-                    time.sleep(1)
-                self.object._pyroTimeout = originalTimeout
-
-                # Update our settings with the real settings.
-                self.settings.update(self.object.get_settings())
-
-                # Get the list of available amplifier modes.
-                self.amplifierModes = self.object.get_amplifier_modes()
-
-                thread.shouldStop = True
-                self.enabled = True
+        originalTimeout = self.object._pyroTimeout
+        try:
+            self.object._pyroTimeout = 60
+            self.object.enable(self.settings)
+            self.object._pyroTimeout = originalTimeout
+        except Exception as e:
+            print e
         else:
-            self.enabled = False
-            self.object.disable()
-            self.object.make_safe()
-            self.connection.disconnect()
-
-        # Finally, udate our UI buttons.
+            # Wait for camera to show it is enabled.
+            while not self.object.is_enabled():
+                time.sleep(1)
+            self.enabled = True
+            # Connect the listener to receive data.
+            self.listener.connect()
+            # Update our settings with the real settings.
+            self.settings.update(self.object.get_settings())
+            # Get the list of available amplifier modes.
+            self.amplifierModes = self.object.get_amplifier_modes()
+        # Update the UI.
         self.updateUI()
 
 
@@ -338,7 +336,7 @@ class AndorCameraDevice(camera.CameraDevice):
 
     def updateStatus(self):
         """Runs in a separate thread publish status updates."""
-        updatePeriod = 1
+        updatePeriod = 0.2
         temperature = None
         while True:
             if self.object:
@@ -352,6 +350,7 @@ class AndorCameraDevice(camera.CameraDevice):
             events.publish("status update",
                            self.config.get('label', 'unidentifiedCamera'),
                            {'temperature': temperature,})
+            time.sleep(updatePeriod)
 
 
     ### UI functions ###
@@ -364,7 +363,7 @@ class AndorCameraDevice(camera.CameraDevice):
         rowSizer = wx.BoxSizer(wx.VERTICAL)
 
         self.modeButton = gui.toggleButton.ToggleButton(
-                label="Mode:\n%s" % 'mode_desc',
+                label="Mode:\n%s" % 'not set',
                 parent=self.panel)
         self.modeButton.Bind(wx.EVT_LEFT_DOWN, self.onModeButton)
         rowSizer.Add(self.modeButton)
@@ -382,10 +381,14 @@ class AndorCameraDevice(camera.CameraDevice):
         rowSizer.Add(self.trigButton)
         sizer.Add(rowSizer)
         self.panel.SetSizerAndFit(sizer)
+        self.hasUI = True
         return self.panel
 
 
     def updateUI(self):
+        if not self.hasUI:
+            # No UI to update.
+            return
         # If there is no local amplifierMode
         mode = self.settings.get('amplifierMode', None)
         if not mode:
@@ -403,7 +406,7 @@ class AndorCameraDevice(camera.CameraDevice):
             modeIsEM = mode['amplifier'] == 0
         else:
             # Otherwise, show that we have no mode description ...
-            modeString = '???'
+            modeString = 'not set'
             # and assume no EM.
             modeIsEM = False
 
