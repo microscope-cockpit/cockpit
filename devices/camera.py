@@ -67,19 +67,6 @@ class CameraManager(device.Device):
             camera.finalizeInitialization()
 
 
-    # def makeUI(self, parent):
-    #     self.panel = wx.Panel(parent)
-    #     outerSizer = wx.BoxSizer(wx.VERTICAL)
-    #     rowSizer = wx.BoxSizer(wx.HORIZONTAL)
-    #     for cam in self.cameras:
-    #         if hasattr(cam, 'makeUI'):
-    #             rowSizer.Add(cam.makeUI(self.panel))
-    #             rowSizer.AddSpacer(12)
-    #     outerSizer.Add(rowSizer)
-    #     self.panel.SetSizerAndFit(outerSizer)
-    #     return self.panel
-
-
     def performSubscriptions(self):
         for camera in self.cameras:
             camera.performSubscriptions()
