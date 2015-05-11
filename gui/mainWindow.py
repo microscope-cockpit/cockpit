@@ -128,7 +128,14 @@ class MainWindow(wx.Frame):
         # Make the UI elements for the cameras.
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
         for camera in cameraThings:
-            cameraUI = camera.callbacks['makeUI'](topPanel)
+            # Clear cameraUI so we don't use previous value.
+            cameraUI = None
+            # See if the camera has a function to make UI elements.
+            uiFunc = camera.callbacks.get('makeUI', None)
+            # If there is a UI function, evaluate it.
+            if uiFunc:
+                cameraUI = uiFunc(topPanel)
+            # uiFunc should return a panel.
             if cameraUI:
                 rowSizer.Add(cameraUI)
                 rowSizer.AddSpacer(COL_SPACER)
