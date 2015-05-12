@@ -186,10 +186,13 @@ class CockpitLinkamStage(device.Device):
 
 
     def menuCallback(self, item):
-        print item
+        p = r'(?P<speed>[0-9]*)./s'
         if item.lower() == 'home stage':
             self.homeMotors()
             return
+        elif re.match(p, item):
+            speed = int(re.match(p, item).groupdict()['speed'])
+            self.remote.setMotorSpeed(speed)
         else:
             return
 
@@ -220,8 +223,11 @@ class CockpitLinkamStage(device.Device):
 
 
     def onRightMouse(self, event):
-        items = ['Home stage', '', 'Cancel']
+        items = ['Home stage', '',
+                 'Motor speed', u'100µ/s', u'200µ/s', u'300µ/s',
+                 u'400µ/s', u'500µ/s', '', 'Cancel']
         menu = gui.device.Menu(items, self.menuCallback)
+        menu.Enable(2, False)
         menu.show(event)
 
 
