@@ -166,7 +166,9 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     def updateDisplay(self):
         # Show current power on the text display, if it exists.
         if self.powerText:
-            self.powerText.SetLabel("%.1f%s" % (self.curPower, self.units))
+            label = "%.1f%s" % (self.curPower, self.units)
+            if self.powerText.GetLabel() != label:
+                self.powerText.SetLabel(label)
         # Enable or disable the powerToggle button, if it exists.
         if self.powerToggle:
             self.powerToggle.Enable(self.maxPower and self.isEnabled)
