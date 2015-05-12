@@ -227,6 +227,9 @@ class DSPDevice(device.Device):
                 result.append(self.retarderHandler)
                 self.handlerToAnalogLine[self.retarderHandler] = aout['aline']
                 self.startupAnalogPositions[aout['aline']] = aout.get('startup_value')
+                #IMD 20150512 hack to get voltages in config file overload
+                #the Dletas list. 
+                self.retarderVoltages = aout['deltas']
                 
         for name in self.otherTriggers:
             handler = handlers.genericHandler.GenericHandler(
