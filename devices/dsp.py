@@ -97,7 +97,7 @@ class DSPDevice(device.Device):
         # uses. The DSP has a 16-bit DAC (so 65536 ADUs (analog-digital units)
         # representing 0-10 volts).
         ##HACK retarderVoltages
-        self.retarderVoltages = [0,1,2,3]
+        self.retarderVoltages = [1,2,3]
         self.alineToUnitsPerADU = {}
         self.axisMapper = {}
         VperADU = 10.0 / 2**16
@@ -226,7 +226,8 @@ class DSPDevice(device.Device):
                     'getMovementTime': self.getRetarderMovementTime})
                 result.append(self.retarderHandler)
                 self.handlerToAnalogLine[self.retarderHandler] = aout['aline']
-
+                self.startupAnalogPositions[aout['aline']] = aout.get('startup_value')
+                
         for name in self.otherTriggers:
             handler = handlers.genericHandler.GenericHandler(
                 name, 'other triggers', True)
@@ -456,9 +457,10 @@ class DSPDevice(device.Device):
                 'Waiting for\nDSP to finish', (255, 255, 0))
         # InitProfile will declare the current analog positions as a "basis"
         # and do all actions as offsets from those bases, so we need to
-        # ensure that the variable retarder is zeroed out first.
+        # ensure that the variable retarder is set to its startup pos first.
         retarderLine = self.handlerToAnalogLine[self.retarderHandler]
-        self.setAnalogVoltage(retarderLine, 0)
+        self.setAnalogVoltage(retarderLine,
+                              self.startupAnalogPositions[retarderLine] )
 
         self.connection.InitProfile(numReps)
         events.executeAndWaitFor("DSP done", self.connection.trigCollect)
