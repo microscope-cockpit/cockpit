@@ -156,7 +156,8 @@ class CockpitLinkamStage(device.Device):
         ## A list of value displays for temperatures.
         tempDisplays = ['bridge', 'chamber', 'dewar']
         # Panel, sizer and a device label.
-        panel = wx.Panel(parent)
+        self.panel = wx.Panel(parent)
+        panel = self.panel
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = gui.device.Label(parent=panel,
                                 label='Cryostage')
@@ -285,17 +286,9 @@ class CockpitLinkamStage(device.Device):
         # self.displays['light'].setActive(not self.status.get('light'))
         valuesValid = status.get('connected', False)
         if valuesValid:
-            for k, d in self.displays.iteritems():
-                try:
-                    d.Enable()
-                except Exception as e:
-                    print e
+            self.panel.Enable()
         else:
-            for k, d in self.displays.iteritems():
-                try:
-                    d.Disable()
-                except Exception as e:
-                    print e
+            self.panel.Disable()
 
 
     def makeInitialPublications(self):
