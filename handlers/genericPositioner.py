@@ -18,6 +18,11 @@ class GenericPositionerHandler(deviceHandler.DeviceHandler):
     # - getMovementTime(name, start, stop): return the movement time and 
     #   stabilization time needed to go from <start> to <stop>.
     # \todo Add motion limits.
+    
+    ## Shortcuts to decorators defined in parent class.
+    reset_cache = deviceHandler.DeviceHandler.reset_cache
+    cached = deviceHandler.DeviceHandler.cached
+
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks):
         deviceHandler.DeviceHandler.__init__(self, name, groupName,
                 isEligibleForExperiments, callbacks, 
@@ -41,5 +46,6 @@ class GenericPositionerHandler(deviceHandler.DeviceHandler):
 
     ## Get the movement and stabilization time needed to perform the specified
     # motion, in milliseconds.
+    @cached
     def getMovementTime(self, start, stop):
         return self.callbacks['getMovementTime'](self.name, start, stop)

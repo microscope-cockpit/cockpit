@@ -21,8 +21,27 @@ class DeviceHandler:
     #        DeviceHandler subclass. 
     # \param isEligibleForExperiments True if the device can be used in
     #        experiments (i.e. data collections).
+    @classmethod
+    def cached(cls, f):
+        def wrapper(self, *args, **kwargs):
+            key = (f, args, frozenset(sorted(kwargs.items())))
+            if key not in self.__cache:
+                self.__cache[key] = f(self, *args, **kwargs)
+            return self.__cache[key]
+        return wrapper
+
+
+    @classmethod
+    def reset_cache(cls, f):
+        def wrapper(self, *args, **kwargs):
+            self.__cache = {}
+            return f(self, *args)
+        return wrapper
+
+
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks, 
             deviceType):
+        self.__cache = {}
         self.name = name
         self.groupName = groupName
         self.callbacks = callbacks

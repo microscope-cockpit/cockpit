@@ -29,6 +29,11 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     #        the device's hard motion limits.
     # \param softLimits Default soft motion limits for the device. Defaults
     #        to the hard limits.
+
+    ## Shortcuts to decorators defined in parent class.
+    reset_cache = deviceHandler.DeviceHandler.reset_cache
+    cached = deviceHandler.DeviceHandler.cached
+
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks, 
             axis, stepSizes, stepIndex, hardLimits, softLimits = None):
         deviceHandler.DeviceHandler.__init__(self, name, groupName,
@@ -112,6 +117,7 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     ## Return the amount of time it'd take us to move the specified distance,
     # and the amount of time needed to stabilize after reaching that point.
     # Only called if this device is experiment-eligible.
+    @cached
     def getMovementTime(self, start, end):
         if self.isEligibleForExperiments:
             if (start < self.softLimits[0] or start > self.softLimits[1] or 
