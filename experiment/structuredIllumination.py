@@ -101,6 +101,10 @@ class SIExperiment(experiment.Experiment):
             curTime += decimal.Decimal('1e-6')
         table.addAction(curTime, self.zPositioner, 0)
         curTime += decimal.Decimal('1e-6')
+		
+        if self.slmHandler is not None:
+            # Add a first trigger of the SLM to get first new image.
+            table.addAction(curTime, self.slmHandler, 0)
         
         for angle, phase, z in self.genSIPositions():
             delayBeforeImaging = 0
@@ -191,9 +195,7 @@ class SIExperiment(experiment.Experiment):
             table.addAction(curTime + motionTime, self.phaseHandler, 0)
             finalWaitTime = max(finalWaitTime, motionTime + stabilizationTime)
         
-        if self.slmHandler is not None:
-            # Add a last trigger of the SLM to cycle back to the start.
-            table.addAction(curTime, self.slmHandler, 0)
+ 
 
         return table
 
