@@ -46,6 +46,11 @@ class GenericPositionerHandler(deviceHandler.DeviceHandler):
 
     ## Get the movement and stabilization time needed to perform the specified
     # motion, in milliseconds.
-    @cached
     def getMovementTime(self, start, stop):
-        return self.callbacks['getMovementTime'](self.name, start, stop)
+        #return self.callbacks['getMovementTime'](self.name, start, stop)
+        return self.getDeltaMovementTime(abs(stop - start))
+
+
+    @cached
+    def getDeltaMovementTime(self, delta):
+        return self.callbacks['getMovementTime'](self.name, 0., delta)

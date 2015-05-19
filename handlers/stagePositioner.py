@@ -117,15 +117,20 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     ## Return the amount of time it'd take us to move the specified distance,
     # and the amount of time needed to stabilize after reaching that point.
     # Only called if this device is experiment-eligible.
-    @cached
     def getMovementTime(self, start, end):
         if self.isEligibleForExperiments:
-            if (start < self.softLimits[0] or start > self.softLimits[1] or 
-                    end < self.softLimits[0] or end > self.softLimits[1]):
-                raise RuntimeError("Experiment tries to move [%s] from %.2f to %.2f, outside motion limits (%.2f, %.2f)" % (self.name, start, end, self.softLimits[0], self.softLimits[1]))
-            return self.callbacks['getMovementTime'](self.axis, start, end)
+            # if (start < self.softLimits[0] or start > self.softLimits[1] or 
+            #         end < self.softLimits[0] or end > self.softLimits[1]):
+            #     raise RuntimeError("Experiment tries to move [%s] from %.2f to %.2f, outside motion limits (%.2f, %.2f)" % (self.name, start, end, self.softLimits[0], self.softLimits[1]))
+            # return self.callbacks['getMovementTime'](self.axis, start, end)
+            return self.getDeltaMovementTime(abs(end - start))
         raise RuntimeError("Called getMovementTime on non-experiment-eligible positioner [%s]" % self.name)
 
+
+    @cached
+    def getDeltaMovementTime(self, delta):
+        return self.callbacks['getMovementTime'](self.axis, 0., delta)
+        
 
     ## Do any necessary cleanup now that the experiment is over.
     def cleanupAfterExperiment(self, isCleanupFinal = True):
