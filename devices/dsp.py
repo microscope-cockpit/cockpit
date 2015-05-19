@@ -485,9 +485,9 @@ class DSPDevice(device.Device):
             # DSP isn't doing this on its own, even though our experiments end
             # with an all-zeros entry.
             self.connection.WriteDigital(0)
-            # Likewise, force the retarder back to 0.
+            # Likewise, force the retarder back to startup value.
             retarderLine = self.handlerToAnalogLine[self.retarderHandler]
-            self.setAnalogVoltage(retarderLine, 0)
+            self.setAnalogVoltage(retarderLine, self.startupAnalogPositions[retarderLine])
 
 
     ## Given a list of (time, handle, action) tuples, generate several Numpy
@@ -775,7 +775,7 @@ class DSPDevice(device.Device):
         # and do all actions as offsets from those bases, so we need to
         # ensure that the variable retarder is zeroed out first.
         retarderLine = self.axisMapper[self.handlerToAnalogAxis[self.retarderHandler]]
-        self.setAnalogVoltage(retarderLine, 0)
+        self.setAnalogVoltage(retarderLine, self.startupAnalogPositions[retarderLine])
 
         self.connection.InitProfile(numReps)
         events.executeAndWaitFor("DSP done", self.connection.trigCollect)
