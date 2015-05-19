@@ -148,8 +148,9 @@ class DSPDevice(device.Device):
     # publish them. We want the Z piezo to be in the middle of its range
     # of motion.
     def makeInitialPublications(self):
-        self.moveRetarderAbsolute(None, 0)
-
+	#this crashes the pol-rotator so needs to be removed. It has no material benefit anyway
+        #self.moveRetarderAbsolute(None, 0)
+        pass
 
     ## User clicked the abort button.
     def onAbort(self):
