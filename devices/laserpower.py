@@ -76,12 +76,19 @@ class LaserPowerDevice(device.Device):
             # Require hLock to prevent changes of nameToHandler dict.
             with self.hLock:
                 for name, h in self.nameToHandler.iteritems():
-                    h.setCurPower(self.nameToConnection[name].getPower_mW())
+                    try:
+		        h.setCurPower(self.nameToConnection[name].getPower_mW())
+		    except:
+		        # Comms error.
+			pass
                     # Populate maxPower if not already set.
                     if not h.maxPower:
-                        maxPower = self.nameToConnection[name].getMaxPower_mW()
-                        h.setMaxPower(maxPower)
-                        h.setMinPower(maxPower / h.numPowerLevels)
+                        try:
+			    maxPower = self.nameToConnection[name].getMaxPower_mW()
+                            h.setMaxPower(maxPower)
+                            h.setMinPower(maxPower / h.numPowerLevels)
+			except:
+			    pass
             time.sleep(0.1)
 
 
