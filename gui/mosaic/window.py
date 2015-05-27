@@ -377,22 +377,22 @@ class MosaicWindow(wx.Frame):
         glLineWidth(1)
         glDisable(GL_LINE_STIPPLE)
 
-        # draw a scale bar visable in the window,
-        self.scalebar = 100*(10**math.floor(math.log(1/self.canvas.scale,10)))
-
- #       self.scalebar = 10
-        scalebarPos = [30,-10] # near the top left hand corner
-        x1 = scalebarPos[0]/self.canvas.scale
-        x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
-        y1 = scalebarPos[1]/self.canvas.scale
-        y2 = ((scalebarPos[1]+(self.scalebar/5)*self.canvas.scale)/self.canvas.scale)
-        canvasPos=self.canvas.mapScreenToCanvas((0,0))
-        x1 -= canvasPos[0]
-        x2 -= canvasPos[0]
-        y1 += canvasPos[1]
-        y2 += canvasPos[1]
-        
+        #Draw a scale bar if the scalebar size is not zero.
         if (self.scalebar != 0):
+            # draw a scale bar visable in the window,
+            self.scalebar = 100*(10**math.floor(math.log(1/self.canvas.scale,10)))
+
+            scalebarPos = [30,-10] # near the top left hand corner
+            x1 = scalebarPos[0]/self.canvas.scale
+            x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
+            y1 = scalebarPos[1]/self.canvas.scale
+            y2 = ((scalebarPos[1]+(self.scalebar/5)*self.canvas.scale)/self.canvas.scale)
+            canvasPos=self.canvas.mapScreenToCanvas((0,0))
+            x1 -= canvasPos[0]
+            x2 -= canvasPos[0]
+            y1 += canvasPos[1]
+            y2 += canvasPos[1]
+            #Do the actual drawing
             glColor3f(255, 0, 0)
             glBegin(GL_QUADS)
             glVertex2f(x1,y1)
