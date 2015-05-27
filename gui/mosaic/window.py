@@ -380,7 +380,33 @@ class MosaicWindow(wx.Frame):
         glLineWidth(1)
         glDisable(GL_LINE_STIPPLE)
 
-
+        # draw a scale bar visable in the window
+        self.scalebar = 10
+        x1=0
+        x2=self.scalebar
+        y1 =0
+        y2 = max(1, self.canvas.scale * 1.5)
+        
+        if (self.scalebar != 0):
+            glColor3f(255, 0, 0)
+            glBegin(GL_QUADS)
+            glVertex2f(x1,y1)
+            glVertex2f(x2,y1)
+            glVertex2f(x2,y2)
+            glVertex2f(x1,y2)
+            glEnd()
+	    
+	    # Draw size label
+            self.font.FaceSize(13)
+            glColor3f(255, 0, 0)
+            labelPosX= x1+self.scalebar/2 
+            labelPosY= y1-20
+            glPushMatrix()
+            glTranslatef(labelPosX, labelPosY, 0)
+            self.font.Render('%d um' % self.scalebar)
+            glPopMatrix()
+            self.font.FaceSize(18)
+ 
     # Draw a crosshairs at the specified position with the specified color.
     # By default make the size of the crosshairs be really big.
     def drawCrosshairs(self, position, color, size = None):
