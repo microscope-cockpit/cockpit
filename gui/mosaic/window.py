@@ -370,9 +370,13 @@ class MosaicWindow(wx.Frame):
         softSafeties = interfaces.stageMover.getSoftLimits()[:2]
         hardSafeties = interfaces.stageMover.getHardLimits()[:2]
         for safeties, color, stipple in [(softSafeties, (0, 1, 0), 0x5555),
-                (hardSafeties, (0, 0, 1), 0xAAAA)]:
+                                         (hardSafeties, (0, 0, 1), 0xAAAA)]:
             x1, x2 = safeties[0]
+            x1 -=  self.offset[0]
+            x2 -=  self.offset[0]
             y1, y2 = safeties[1]
+            y1 -=  self.offset[1]
+            y2 -=  self.offset[1]
             glLineStipple(3, stipple)
             glColor3f(*color)
             glBegin(GL_LINE_LOOP)
