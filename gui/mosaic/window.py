@@ -19,6 +19,7 @@ import gui.keyboard
 import interfaces.stageMover
 import util.user
 import util.threads
+import util.userConfig
 import math
 
 from cockpit import COCKPIT_PATH
@@ -83,6 +84,8 @@ class MosaicWindow(wx.Frame):
                              'fonts', 'GeosansLight.ttf'))
         self.font.FaceSize(64)
 
+        #default scale bar size is Zero
+        self.scalebar = 0
         ## Maps button names to wx.Button instances.
         self.nameToButton = {}
 
@@ -221,7 +224,8 @@ class MosaicWindow(wx.Frame):
     # suit.
     def onLogin(self, *args):
         self.centerCanvas()
-
+        self.scalebar=util.userConfig.getValue('mosaicScaleBar', isGlobal = False,
+                                               default= 0)
 
     ## Get updated about new stage position info or step size.
     # This requires redrawing the display, if the axis is the X or Y axes.
@@ -298,6 +302,9 @@ class MosaicWindow(wx.Frame):
                 wx.EVT_MENU(self.panel, menuId, 
                         lambda event, color = color: self.saveSite(color))
                 menuId += 1
+            menu.Append(menuId, "Toggle mosaic scale bar")
+            wx.EVT_MENU(self.panel, menuId, 
+                        lambda event: self.togglescalebar())
             gui.guiUtils.placeMenuAtMouse(self.panel, menu)
             
         self.prevMousePos = mousePos
@@ -553,7 +560,16 @@ class MosaicWindow(wx.Frame):
                 scalings = gui.camera.window.getCameraScaling(camera))
         self.Refresh()
 
-
+    def togglescalebar(self):
+        #toggle the scale bar between 0 and 1.
+        if (self.scalebar!=0):
+            self.scalebar = 0
+        else:
+            self.scalebar = 1
+        #store current state for future.
+        util.userConfig.setValue('mosaicScaleBar',self.scalebar, isGlobal=False)
+        self.Refresh()
+        
     ## Save the current stage position as a new site with the specified
     # color (or our currently-selected color if none is provided).
     def saveSite(self, color = None):
