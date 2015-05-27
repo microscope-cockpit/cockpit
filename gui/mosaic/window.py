@@ -364,11 +364,7 @@ class MosaicWindow(wx.Frame):
         for safeties, color, stipple in [(softSafeties, (0, 1, 0), 0x5555),
                 (hardSafeties, (0, 0, 1), 0xAAAA)]:
             x1, x2 = safeties[0]
-            x1 -=  self.offset[0]
-            x2 -=  self.offset[0]
             y1, y2 = safeties[1]
-            y1 -=  self.offset[1]
-            y2 -=  self.offset[1]
             glLineStipple(3, stipple)
             glColor3f(*color)
             glBegin(GL_LINE_LOOP)
@@ -382,10 +378,16 @@ class MosaicWindow(wx.Frame):
 
         # draw a scale bar visable in the window
         self.scalebar = 10
-        x1=0
-        x2=self.scalebar
-        y1 =0
-        y2 = max(1, self.canvas.scale * 1.5)
+        scalebarPos = [30,-10] # near the top left hand corner
+        x1 = scalebarPos[0]/self.canvas.scale
+        x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
+        y1 = scalebarPos[1]/self.canvas.scale
+        y2 = ((scalebarPos[1]+(self.scalebar/5)*self.canvas.scale)/self.canvas.scale)
+        canvasPos=self.canvas.mapScreenToCanvas((0,0))
+        x1 -= canvasPos[0]
+        x2 -= canvasPos[0]
+        y1 += canvasPos[1]
+        y2 += canvasPos[1]
         
         if (self.scalebar != 0):
             glColor3f(255, 0, 0)
@@ -397,10 +399,10 @@ class MosaicWindow(wx.Frame):
             glEnd()
 	    
 	    # Draw size label
-            self.font.FaceSize(13)
+            self.font.FaceSize(max(8,int(13/self.canvas.scale))) # min ftgl font is 8 pt
             glColor3f(255, 0, 0)
-            labelPosX= x1+self.scalebar/2 
-            labelPosY= y1-20
+            labelPosX= x1
+            labelPosY= y1-(20/self.canvas.scale)
             glPushMatrix()
             glTranslatef(labelPosX, labelPosY, 0)
             self.font.Render('%d um' % self.scalebar)
