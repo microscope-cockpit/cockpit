@@ -19,6 +19,7 @@ import gui.keyboard
 import interfaces.stageMover
 import util.user
 import util.threads
+import math
 
 from cockpit import COCKPIT_PATH
 ## Size of the crosshairs indicating the stage position.
@@ -376,8 +377,10 @@ class MosaicWindow(wx.Frame):
         glLineWidth(1)
         glDisable(GL_LINE_STIPPLE)
 
-        # draw a scale bar visable in the window
-        self.scalebar = 10
+        # draw a scale bar visable in the window,
+        self.scalebar = 100*(10**math.floor(math.log(1/self.canvas.scale,10)))
+
+ #       self.scalebar = 10
         scalebarPos = [30,-10] # near the top left hand corner
         x1 = scalebarPos[0]/self.canvas.scale
         x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
