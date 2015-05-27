@@ -206,7 +206,10 @@ class Mrc:
         
 
     def close(self):
-        self.m.close()
+        # As of numpy 1.9, memmap no longer has a close method.  Instead
+        # use del for all versions.
+        if hasattr(self, 'm'):
+            del self.m
 
 
 
