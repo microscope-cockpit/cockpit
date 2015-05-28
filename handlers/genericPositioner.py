@@ -48,7 +48,7 @@ class GenericPositionerHandler(deviceHandler.DeviceHandler):
     # motion, in milliseconds.
     def getMovementTime(self, start, stop):
         #return self.callbacks['getMovementTime'](self.name, start, stop)
-        return self.getDeltaMovementTime(abs(stop - start))
+        return self.getDeltaMovementTime(stop - start)
 
 
     @cached

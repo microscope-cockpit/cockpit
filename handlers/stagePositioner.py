@@ -123,7 +123,7 @@ class PositionerHandler(deviceHandler.DeviceHandler):
             #         end < self.softLimits[0] or end > self.softLimits[1]):
             #     raise RuntimeError("Experiment tries to move [%s] from %.2f to %.2f, outside motion limits (%.2f, %.2f)" % (self.name, start, end, self.softLimits[0], self.softLimits[1]))
             # return self.callbacks['getMovementTime'](self.axis, start, end)
-            return self.getDeltaMovementTime(abs(end - start))
+            return self.getDeltaMovementTime(end - start)
         raise RuntimeError("Called getMovementTime on non-experiment-eligible positioner [%s]" % self.name)
 
 
