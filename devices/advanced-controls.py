@@ -4,6 +4,7 @@
 #
 
 import wx
+import device
 import devices.dsp as DSP
 import devices.piDIO as DIO
 
@@ -13,8 +14,8 @@ CONFIG_NAME = 'advCtl'
 
 
 
-class advancedControl(devices.Device):
-        def __init__(self):
+class advancedControl(device.Device):
+    def __init__(self):
         self.isActive = config.has_section(CONFIG_NAME)
         self.priority = 10000
         if not self.isActive:

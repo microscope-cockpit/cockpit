@@ -1,4 +1,4 @@
-Import device
+import device
 import depot
 import events
 import gui.toggleButton
