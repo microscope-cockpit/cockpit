@@ -124,16 +124,16 @@ class RaspberryPi(device.Device):
 		    self.flipDownUp(0, 0)
         else: #default behaviour, mapping objective
 		    self.flipDownUp(0, 1)
-        print "pi-DIO objective change"
+        print "piDIO objective change"
 
 
 ## This debugging window lets each digital lineout of the DSP be manipulated
 # individually.
 class piOutputWindow(wx.Frame):
-    def __init__(self, dsp, parent, *args, **kwargs):
+    def __init__(self, piDIO, parent, *args, **kwargs):
         wx.Frame.__init__(self, parent, *args, **kwargs)
         ## piDevice instance.
-        self.pi = pi-DIO
+        self.pi = piDIO
         # Contains all widgets.
         panel = wx.Panel(self)
         mainSizer = wx.BoxSizer(wx.VERTICAL)
@@ -163,7 +163,7 @@ class piOutputWindow(wx.Frame):
         for button, line in self.buttonToLine.iteritems():
             if button.getIsActive():
                 output += line
-        self.pi-DIO.RPiConnection.flipDownUp(line, int(isUp))
+        self.piDIO.RPiConnection.flipDownUp(line, int(isUp))
 
 
 ## Debugging function: display a DSPOutputWindow.
@@ -171,5 +171,5 @@ def makeOutputWindow():
     # HACK: the _deviceInstance object is created by the depot when this
     # device is initialized.
     global _deviceInstance
-    DIOOutputWindow(_deviceInstance, parent = wx.GetApp().GetTopWindow()).Show()
+    piOutputWindow(_deviceInstance, parent = wx.GetApp().GetTopWindow()).Show()
     

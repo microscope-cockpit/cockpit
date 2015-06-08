@@ -5,7 +5,7 @@
 
 import wx
 import devices.dsp as DSP
-import devices.pi-DIO as DIO
+import devices.piDIO as DIO
 
 from config import config
 CLASS_NAME = 'AdvancedControl'
