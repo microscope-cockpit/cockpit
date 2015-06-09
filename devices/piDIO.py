@@ -6,10 +6,13 @@ import util.connection
 import collections
 import Pyro4
 import wx
+import re
 
 from config import config
 CLASS_NAME = 'RaspberryPi'
 CONFIG_NAME = 'rpi'
+DIO_LINES = ['Objective']
+LINES_PAT = r"(?P<lines>\'\s*\w*\s*\')"
 
 
 
@@ -22,6 +25,20 @@ class RaspberryPi(device.Device):
         else:
             self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
             self.port = int(config.get(CONFIG_NAME, 'port'))
+            self.lines = DIO_LINES
+#            try :
+#                linestring = config.get(CONFIG_NAME, 'DIOlines')
+#                parsed = re.search(LINES_PAT, linestring)
+#                if not parsed:
+#                    # Could not parse config entry.
+#                    raise Exception('Bad config: PiDIO could not parse Lines spec.')
+#                    # No transform tuple
+#                else:    
+#                    lstr = parsed.groupdict()['lines']
+#                    self.softlimits=eval(lstr)
+#            except:
+#                print "No lines section setting default lines"
+#                self.lines = ['0']
             
         self.RPiConnection = None
         ## util.connection.Connection for the temperature sensors.
@@ -143,7 +160,7 @@ class piOutputWindow(wx.Frame):
         self.buttonToLine = {}
 
         # Set up the digital lineout buttons.
-        for line in xrange(2):
+        for line in xrange(1):
             button = gui.toggleButton.ToggleButton(
                     parent = panel, label = str(line),
                     activateAction = self.toggle,
