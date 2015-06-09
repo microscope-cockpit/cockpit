@@ -7,6 +7,7 @@ import wx
 import device
 import devices.dsp as DSP
 import devices.piDIO as DIO
+import gui.toggleButton
 
 from config import config
 CLASS_NAME = 'AdvancedControl'
@@ -14,7 +15,7 @@ CONFIG_NAME = 'advCtl'
 
 
 
-class advancedControl(device.Device):
+class AdvancedControl(device.Device):
     def __init__(self):
         self.isActive = config.has_section(CONFIG_NAME)
         self.priority = 10000
@@ -34,9 +35,9 @@ class advancedControl(device.Device):
         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         panelSizer.Add(label)
         
-        buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
+        buttonSizer = wx.BoxSizer(wx.VERTICAL)
         button = gui.toggleButton.ToggleButton(
-                label = "DSP\nTTL", parent = panel, size = (84, 50))
+                label = "DSP TTL", parent = panel, size = (84, 50))
         button.Bind(wx.EVT_LEFT_DOWN, lambda event: DSP.makeOutputWindow())
         buttonSizer.Add(button)
 
