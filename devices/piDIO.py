@@ -119,11 +119,11 @@ class RaspberryPi(device.Device):
 
     def onObjectiveChange(self, name, pixelSize, transform, offset):
         if (name=='10x'):
-		    self.flipDownUp(0, 1)
+            self.flipDownUp(0, 1)
         elif (name=='60xwater'):
-		    self.flipDownUp(0, 0)
+            self.flipDownUp(0, 0)
         else: #default behaviour, mapping objective
-		    self.flipDownUp(0, 1)
+            self.flipDownUp(0, 1)
         print "piDIO objective change"
 
 
@@ -143,9 +143,9 @@ class piOutputWindow(wx.Frame):
         self.buttonToLine = {}
 
         # Set up the digital lineout buttons.
-        for line in xrange(1):
+        for line in xrange(2):
             button = gui.toggleButton.ToggleButton(
-                    parent = panel, label = line,
+                    parent = panel, label = str(line),
                     activateAction = self.toggle,
                     deactivateAction = self.toggle,
                     size = (140, 80))
@@ -162,8 +162,9 @@ class piOutputWindow(wx.Frame):
         output = 0
         for button, line in self.buttonToLine.iteritems():
             if button.getIsActive():
-                output += line
-        self.piDIO.RPiConnection.flipDownUp(line, int(isUp))
+                self.pi.RPiConnection.flipDownUp(line, 1)
+            else:
+                self.pi.RPiConnection.flipDownUp(line, 0)
 
 
 ## Debugging function: display a DSPOutputWindow.
