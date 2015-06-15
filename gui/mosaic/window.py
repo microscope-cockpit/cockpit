@@ -82,7 +82,8 @@ class MosaicWindow(wx.Frame):
         self.font = FTGL.TextureFont(
                 os.path.join(COCKPIT_PATH, 'resources', 
                              'fonts', 'GeosansLight.ttf'))
-        self.font.FaceSize(64)
+        self.defaultFaceSize = 64
+        self.font.FaceSize(self.defaultFaceSize)
 
         #default scale bar size is Zero
         self.scalebar = 0
