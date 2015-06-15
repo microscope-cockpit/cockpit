@@ -397,20 +397,20 @@ class MosaicWindow(wx.Frame):
             x1 = scalebarPos[0]/self.canvas.scale
             x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
             y1 = scalebarPos[1]/self.canvas.scale
-            y2 = ((scalebarPos[1]+(self.scalebar/5)*self.canvas.scale)/self.canvas.scale)
             canvasPos=self.canvas.mapScreenToCanvas((0,0))
             x1 -= canvasPos[0]
             x2 -= canvasPos[0]
             y1 += canvasPos[1]
-            y2 += canvasPos[1]
+            
+
             #Do the actual drawing
             glColor3f(255, 0, 0)
-            glBegin(GL_QUADS)
+            glLineWidth(8)
+            glBegin(GL_LINES)
             glVertex2f(x1,y1)
             glVertex2f(x2,y1)
-            glVertex2f(x2,y2)
-            glVertex2f(x1,y2)
             glEnd()
+            glLineWidth(1)
 	    
 	    # Draw size label
             self.font.FaceSize(max(8,int(13/self.canvas.scale))) # min ftgl font is 8 pt
