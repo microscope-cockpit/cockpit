@@ -19,6 +19,8 @@ import gui.keyboard
 import interfaces.stageMover
 import util.user
 import util.threads
+import util.userConfig
+import math
 
 from cockpit import COCKPIT_PATH
 ## Size of the crosshairs indicating the stage position.
@@ -80,8 +82,11 @@ class MosaicWindow(wx.Frame):
         self.font = FTGL.TextureFont(
                 os.path.join(COCKPIT_PATH, 'resources', 
                              'fonts', 'GeosansLight.ttf'))
-        self.font.FaceSize(64)
+        self.defaultFaceSize = 64
+        self.font.FaceSize(self.defaultFaceSize)
 
+        #default scale bar size is Zero
+        self.scalebar = 0
         ## Maps button names to wx.Button instances.
         self.nameToButton = {}
 
@@ -125,7 +130,7 @@ class MosaicWindow(wx.Frame):
                  "is useful for collecting PSFs.")]:
             button = self.makeButton(self.panel, *args)
             sideSizer.Add(button, 0, wx.EXPAND)
-        
+
         ## Panel for controls dealing with specific sites.
         self.sitesPanel = wx.Panel(self.panel, style = wx.BORDER_SUNKEN)
         sitesSizer = wx.BoxSizer(wx.VERTICAL)
@@ -157,7 +162,7 @@ class MosaicWindow(wx.Frame):
             button = self.makeButton(self.sitesPanel, *args,
                     size = (SIDEBAR_WIDTH, -1))
             sitesSizer.Add(button)
-        
+
         self.sitesPanel.SetSizerAndFit(sitesSizer)
         sideSizer.Add(self.sitesPanel, 1)
         sizer.Add(sideSizer, 0, wx.EXPAND)
@@ -198,7 +203,7 @@ class MosaicWindow(wx.Frame):
     ## Now that we've been created, recenter the canvas.
     def centerCanvas(self, event = None):
         curPosition = interfaces.stageMover.getPosition()[:2]
-     
+
         # Calculate the size of the box at the center of the crosshairs. 
         # \todo Should we necessarily assume a 512x512 area here?
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
@@ -206,7 +211,7 @@ class MosaicWindow(wx.Frame):
         self.offset = objective.getOffset()
         self.canvas.zoomTo(-curPosition[0]+self.offset[0],
                            curPosition[1]-self.offset[1], 1)
-        
+
 
     ## Resize our canvas.
     def onSize(self, event):
@@ -220,7 +225,8 @@ class MosaicWindow(wx.Frame):
     # suit.
     def onLogin(self, *args):
         self.centerCanvas()
-
+        self.scalebar=util.userConfig.getValue('mosaicScaleBar', isGlobal = False,
+                                               default= 0)
 
     ## Get updated about new stage position info or step size.
     # This requires redrawing the display, if the axis is the X or Y axes.
@@ -236,7 +242,7 @@ class MosaicWindow(wx.Frame):
         self.offset = offset
         #force a redraw so that the crosshairs are properly sized
         self.Refresh()
-        
+
 
     ## Handle mouse events. 
     def onMouse(self, event):
@@ -246,7 +252,7 @@ class MosaicWindow(wx.Frame):
             # function. Normally we'll set this at the end of the function.
             self.prevMousePos = event.GetPosition()
             return
-        
+
         mousePos = event.GetPosition()
         if event.LeftDown():
             self.lastClickPos = event.GetPosition()
@@ -297,10 +303,13 @@ class MosaicWindow(wx.Frame):
                 wx.EVT_MENU(self.panel, menuId, 
                         lambda event, color = color: self.saveSite(color))
                 menuId += 1
+            menu.Append(menuId, "Toggle mosaic scale bar")
+            wx.EVT_MENU(self.panel, menuId, 
+                        lambda event: self.togglescalebar())
             gui.guiUtils.placeMenuAtMouse(self.panel, menu)
-            
+
         self.prevMousePos = mousePos
-        
+
         if self.selectTilesFunc is not None:
             # Need to draw the box the user is drawing.
             self.Refresh()
@@ -362,7 +371,7 @@ class MosaicWindow(wx.Frame):
         softSafeties = interfaces.stageMover.getSoftLimits()[:2]
         hardSafeties = interfaces.stageMover.getHardLimits()[:2]
         for safeties, color, stipple in [(softSafeties, (0, 1, 0), 0x5555),
-                (hardSafeties, (0, 0, 1), 0xAAAA)]:
+                                         (hardSafeties, (0, 0, 1), 0xAAAA)]:
             x1, x2 = safeties[0]
             x1 -=  self.offset[0]
             x2 -=  self.offset[0]
@@ -380,6 +389,46 @@ class MosaicWindow(wx.Frame):
         glLineWidth(1)
         glDisable(GL_LINE_STIPPLE)
 
+        #Draw a scale bar if the scalebar size is not zero.
+        if (self.scalebar != 0):
+            # Scale bar width.
+            self.scalebar = 100*(10**math.floor(math.log(1/self.canvas.scale,10)))
+            # Scale bar position, near the top left-hand corner.
+            scalebarPos = [30,-10]
+            
+            # Scale bar vertices.
+            x1 = scalebarPos[0]/self.canvas.scale
+            x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
+            y1 = scalebarPos[1]/self.canvas.scale
+            canvasPos=self.canvas.mapScreenToCanvas((0,0))
+            x1 -= canvasPos[0]
+            x2 -= canvasPos[0]
+            y1 += canvasPos[1]
+
+
+            # Do the actual drawing
+            glColor3f(255, 0, 0)
+            # The scale bar itself.
+            glLineWidth(8)
+            glBegin(GL_LINES)
+            glVertex2f(x1,y1)
+            glVertex2f(x2,y1)
+            glEnd()
+            glLineWidth(1)
+	        # The scale label.
+            self.font.FaceSize(16)
+            glPushMatrix()
+            labelPosX= x1
+            labelPosY= y1 - (20/self.canvas.scale)
+            glTranslatef(labelPosX, labelPosY, 0)
+            fontScale = 1 / self.canvas.scale
+            glScalef(fontScale, fontScale, 1)
+            self.font.Render('%d um' % self.scalebar)
+            glPopMatrix()
+
+            # Restore the default font size.
+            self.font.FaceSize(64)
+            
 
     # Draw a crosshairs at the specified position with the specified color.
     # By default make the size of the crosshairs be really big.
@@ -446,7 +495,7 @@ class MosaicWindow(wx.Frame):
     def generateMosaic2(self, camera):
         # Acquire the mosaic lock so no other mosaics can run.
         self.mosaicGenerationLock.acquire()
-        
+
         self.amGeneratingMosaic = True
         self.nameToButton['Run mosaic'].SetLabel('Stop mosaic')
         self.prevMosaicCamera = camera
@@ -522,6 +571,15 @@ class MosaicWindow(wx.Frame):
                 scalings = gui.camera.window.getCameraScaling(camera))
         self.Refresh()
 
+    def togglescalebar(self):
+        #toggle the scale bar between 0 and 1.
+        if (self.scalebar!=0):
+            self.scalebar = 0
+        else:
+            self.scalebar = 1
+        #store current state for future.
+        util.userConfig.setValue('mosaicScaleBar',self.scalebar, isGlobal=False)
+        self.Refresh()
 
     ## Save the current stage position as a new site with the specified
     # color (or our currently-selected color if none is provided).
@@ -581,7 +639,7 @@ class MosaicWindow(wx.Frame):
                     normal = numpy.cross(p2 - p1, p3 - p1)
                     magnitude = numpy.sqrt(sum(normal * normal))
                     normals.append(normal / magnitude)
-        
+
         # Ensure all normals point in the same direction. If they oppose, 
         # their sum should be ~0; if they are aligned, it should be 
         # ~2.
@@ -792,7 +850,7 @@ class MosaicWindow(wx.Frame):
     def setSelectFunc(self, func):
         self.selectTilesFunc = func
         self.lastClickPos = None
-        
+
 
     ## User clicked the "delete tiles" button; start/stop deleting tiles.
     def onDeleteTiles(self, event = None, shouldForceStop = None):
@@ -896,7 +954,7 @@ class MosaicWindow(wx.Frame):
             # arbitrary.
             thresholded = numpy.zeros(data.shape, dtype = numpy.uint16)
             thresholded[numpy.where(data > median + std * 15)] = 1
-            
+
             # Slice up into overlapping regions. Only examine the center
             # portion of the composite image.
             for j in xrange(data.shape[0] / 3, 2 * data.shape[0] / 3, regionSize / 4):
