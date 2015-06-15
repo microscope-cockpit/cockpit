@@ -413,16 +413,18 @@ class MosaicWindow(wx.Frame):
             glEnd()
             glLineWidth(1)
 	    
-	    # Draw size label
-            self.font.FaceSize(max(8,int(13/self.canvas.scale))) # min ftgl font is 8 pt
-            glColor3f(255, 0, 0)
-            labelPosX= x1
-            labelPosY= y1-(20/self.canvas.scale)
+	        # Draw size label
+            self.font.FaceSize(16)
             glPushMatrix()
+            labelPosX= x1
+            labelPosY= y1 - (20/self.canvas.scale)
             glTranslatef(labelPosX, labelPosY, 0)
+            fontScale = 1 / self.canvas.scale
+            glScalef(fontScale, fontScale, 1)
             self.font.Render('%d um' % self.scalebar)
             glPopMatrix()
-            self.font.FaceSize(18)
+            
+            self.font.FaceSize(64)
  
     # Draw a crosshairs at the specified position with the specified color.
     # By default make the size of the crosshairs be really big.
