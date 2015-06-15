@@ -46,6 +46,11 @@ class CameraHandler(deviceHandler.DeviceHandler):
     #   which expose for as long as you tell them to, based on the TTL line.
     # \param minExposureTime Minimum exposure duration, in milliseconds.
     #   Typically only applicable if doExperimentsExposeContinuously is True.
+    
+    ## Shortcuts to decorators defined in parent class.
+    reset_cache = deviceHandler.DeviceHandler.reset_cache
+    cached = deviceHandler.DeviceHandler.cached
+
     def __init__(self, name, groupName, callbacks,
             exposureMode):
         # Note we assume that cameras are eligible for experiments.
@@ -76,6 +81,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
 
 
     ## Invoke our callback, and let everyone know that a new camera is online.
+    @reset_cache
     def setEnabled(self, shouldEnable = True):
         self.callbacks['setEnabled'](self.name, shouldEnable)
         self.isEnabled = shouldEnable
@@ -98,11 +104,13 @@ class CameraHandler(deviceHandler.DeviceHandler):
     # ending one exposure before another can be started.
     # If isExact is specified, then we return a decimal.Decimal value instead
     # of a raw floating point value.
+    @cached
     def getTimeBetweenExposures(self, isExact = False):
         return self.callbacks['getTimeBetweenExposures'](self.name, isExact)
 
 
     ## Return the minimum allowed exposure time, in milliseconds.
+    @cached
     def getMinExposureTime(self, isExact = False):
         val = 0
         if 'getMinExposureTime' in self.callbacks:
@@ -113,6 +121,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
 
 
     ## Set a new exposure time, in milliseconds.
+    @reset_cache
     def setExposureTime(self, time):
         return self.callbacks['setExposureTime'](self.name, time)
 
@@ -120,6 +129,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
     ## Return the camera's currently-set exposure time, in milliseconds.
     # If isExact is specified, then we return a decimal.Decimal value instead
     # of a raw floating point value.
+    @cached
     def getExposureTime(self, isExact = False):
         return self.callbacks['getExposureTime'](self.name, isExact)
 
@@ -130,12 +140,14 @@ class CameraHandler(deviceHandler.DeviceHandler):
 
 
     ## Set the image size to one of the options returned by getImageSizes.
+    @reset_cache
     def setImageSize(self, size):
         return self.callbacks['setImageSize'](self.name, size)
 
 
     ## Do any necessary preparation for the camera to participate in an 
     # experiment.
+    @reset_cache
     def prepareForExperiment(self, experiment):
         return self.callbacks['prepareForExperiment'](self.name, experiment)
 

@@ -33,6 +33,11 @@ class LightHandler(deviceHandler.DeviceHandler):
     #   (i.e. without regard for what the camera(s) are doing). 
     # \param wavelength Wavelength of light the source emits, if appropriate.
     # \param exposureTime Default exposure time.
+
+    ## Shortcuts to decorators defined in parent class.
+    reset_cache = deviceHandler.DeviceHandler.reset_cache
+    cached = deviceHandler.DeviceHandler.cached
+
     def __init__(self, name, groupName, callbacks, wavelength, exposureTime):
         # Note we assume all light sources are eligible for experiments.
         # However there's no associated callbacks for a light source.
@@ -189,17 +194,20 @@ class LightHandler(deviceHandler.DeviceHandler):
 
 
     ## Set a new exposure time, in milliseconds.
+    @reset_cache
     def setExposureTime(self, value):
         self.callbacks['setExposureTime'](self.name, value)
         self.setLabel()
 
 
     ## Get the current exposure time, in milliseconds.
+    @cached
     def getExposureTime(self):
         return self.callbacks['getExposureTime'](self.name)
 
 
     ## Simple getter.
+    @cached
     def getWavelength(self):
         return self.wavelength
 
