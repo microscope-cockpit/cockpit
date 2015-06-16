@@ -427,7 +427,7 @@ class MosaicWindow(wx.Frame):
             glPopMatrix()
 
             # Restore the default font size.
-            self.font.FaceSize(64)
+            self.font.FaceSize(self.defaultFaceSize)
             
 
     # Draw a crosshairs at the specified position with the specified color.
