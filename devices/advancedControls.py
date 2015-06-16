@@ -31,20 +31,22 @@ class AdvancedControl(device.Device):
     def makeUI(self, parent):
         panel = wx.Panel(parent)
         panelSizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(panel, -1, "Advanced Controls:")
+        label = wx.StaticText(panel, -1, "Advanced\nControls:")
         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         panelSizer.Add(label)
-        
-        buttonSizer = wx.BoxSizer(wx.VERTICAL)
-        button = gui.toggleButton.ToggleButton(
-                label = "DSP TTL", parent = panel, size = (84, 50))
-        button.Bind(wx.EVT_LEFT_DOWN, lambda event: DSP.makeOutputWindow())
-        buttonSizer.Add(button)
 
-        button = gui.toggleButton.ToggleButton(
-                label = "pi-DIO", parent = panel, size = (84, 50))
-        button.Bind(wx.EVT_LEFT_DOWN, lambda event: DIO.makeOutputWindow())
-        buttonSizer.Add(button)
+        if DSP.isActive:
+
+            buttonSizer = wx.BoxSizer(wx.VERTICAL)
+            button = gui.toggleButton.ToggleButton(
+                    label = "DSP TTL", parent = panel, size = (84, 50))
+            button.Bind(wx.EVT_LEFT_DOWN, lambda event: DSP.makeOutputWindow())
+            buttonSizer.Add(button)
+        if DIO.isActive:
+            button = gui.toggleButton.ToggleButton(
+                    label = "pi-DIO", parent = panel, size = (84, 50))
+            button.Bind(wx.EVT_LEFT_DOWN, lambda event: DIO.makeOutputWindow())
+            buttonSizer.Add(button)
 
         panelSizer.Add(buttonSizer)
         panel.SetSizerAndFit(panelSizer)
