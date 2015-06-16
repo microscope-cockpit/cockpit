@@ -8,6 +8,7 @@ import device
 import devices.dsp as DSP
 import devices.piDIO as DIO
 import gui.toggleButton
+import depot
 
 from config import config
 CLASS_NAME = 'AdvancedControl'
@@ -34,21 +35,18 @@ class AdvancedControl(device.Device):
         label = wx.StaticText(panel, -1, "Advanced\nControls:")
         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         panelSizer.Add(label)
-
-        if DSP.isActive:
-
-            buttonSizer = wx.BoxSizer(wx.VERTICAL)
-            button = gui.toggleButton.ToggleButton(
-                    label = "DSP TTL", parent = panel, size = (84, 50))
-            button.Bind(wx.EVT_LEFT_DOWN, lambda event: DSP.makeOutputWindow())
-            buttonSizer.Add(button)
-        if DIO.isActive:
-            button = gui.toggleButton.ToggleButton(
-                    label = "pi-DIO", parent = panel, size = (84, 50))
-            button.Bind(wx.EVT_LEFT_DOWN, lambda event: DIO.makeOutputWindow())
-            buttonSizer.Add(button)
-
-        panelSizer.Add(buttonSizer)
-        panel.SetSizerAndFit(panelSizer)
+        devs = depot.getAllDevices()
+        buttonSizer = wx.BoxSizer(wx.VERTICAL)
+        for dev in devs :
+            if hasattr(dev,'makeOutputWindow'):
+                if callable(dev,'makeOutputWindow'):
+                    button = gui.toggleButton.ToggleButton(
+                          label = dev.__class__.__name__, parent = panel, size = (84, 50))
+                    button.Bind(wx.EVT_LEFT_DOWN, lambda event: dev.makeOutputWindow())
+                    buttonSizer.Add(button)
+ 
+ 
+     #   panelSizer.Add(buttonSizer)
+      #  panel.SetSizerAndFit(panelSizer)
         
         return panel
