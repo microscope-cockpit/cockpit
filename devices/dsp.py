@@ -97,7 +97,7 @@ class DSPDevice(device.Device):
         # uses. The DSP has a 16-bit DAC (so 65536 ADUs (analog-digital units)
         # representing 0-10 volts).
         ##HACK retarderVoltages
-        self.retarderVoltages = [0,1,2,3]
+        self.retarderVoltages = [1,2,3]
         self.alineToUnitsPerADU = {}
         self.axisMapper = {}
         VperADU = 10.0 / 2**16
@@ -148,8 +148,9 @@ class DSPDevice(device.Device):
     # publish them. We want the Z piezo to be in the middle of its range
     # of motion.
     def makeInitialPublications(self):
-        self.moveRetarderAbsolute(None, 0)
-
+	#this crashes the pol-rotator so needs to be removed. It has no material benefit anyway
+        #self.moveRetarderAbsolute(None, 0)
+        pass
 
     ## User clicked the abort button.
     def onAbort(self):
@@ -226,7 +227,11 @@ class DSPDevice(device.Device):
                     'getMovementTime': self.getRetarderMovementTime})
                 result.append(self.retarderHandler)
                 self.handlerToAnalogLine[self.retarderHandler] = aout['aline']
-
+                self.startupAnalogPositions[aout['aline']] = aout.get('startup_value')
+                #IMD 20150512 hack to get voltages in config file overload
+                #the Dletas list. 
+                self.retarderVoltages = aout['deltas']
+                
         for name in self.otherTriggers:
             handler = handlers.genericHandler.GenericHandler(
                 name, 'other triggers', True)
@@ -456,9 +461,10 @@ class DSPDevice(device.Device):
                 'Waiting for\nDSP to finish', (255, 255, 0))
         # InitProfile will declare the current analog positions as a "basis"
         # and do all actions as offsets from those bases, so we need to
-        # ensure that the variable retarder is zeroed out first.
+        # ensure that the variable retarder is set to its startup pos first.
         retarderLine = self.handlerToAnalogLine[self.retarderHandler]
-        self.setAnalogVoltage(retarderLine, 0)
+        self.setAnalogVoltage(retarderLine,
+                              self.startupAnalogPositions[retarderLine] )
 
         self.connection.InitProfile(numReps)
         events.executeAndWaitFor("DSP done", self.connection.trigCollect)
@@ -480,9 +486,9 @@ class DSPDevice(device.Device):
             # DSP isn't doing this on its own, even though our experiments end
             # with an all-zeros entry.
             self.connection.WriteDigital(0)
-            # Likewise, force the retarder back to 0.
+            # Likewise, force the retarder back to startup value.
             retarderLine = self.handlerToAnalogLine[self.retarderHandler]
-            self.setAnalogVoltage(retarderLine, 0)
+            self.setAnalogVoltage(retarderLine, self.startupAnalogPositions[retarderLine])
 
 
     ## Given a list of (time, handle, action) tuples, generate several Numpy
@@ -770,7 +776,7 @@ class DSPDevice(device.Device):
         # and do all actions as offsets from those bases, so we need to
         # ensure that the variable retarder is zeroed out first.
         retarderLine = self.axisMapper[self.handlerToAnalogAxis[self.retarderHandler]]
-        self.setAnalogVoltage(retarderLine, 0)
+        self.setAnalogVoltage(retarderLine, self.startupAnalogPositions[retarderLine])
 
         self.connection.InitProfile(numReps)
         events.executeAndWaitFor("DSP done", self.connection.trigCollect)
