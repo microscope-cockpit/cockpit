@@ -25,7 +25,11 @@ class RaspberryPi(device.Device):
         else:
             self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
             self.port = int(config.get(CONFIG_NAME, 'port'))
-            self.lines = DIO_LINES
+            linestring = config.get(CONFIG_NAME, 'lines')
+            self.lines = linestring.split(',')
+			
+			
+			#DIO_LINES
 #            try :
 #                linestring = config.get(CONFIG_NAME, 'DIOlines')
 #                parsed = re.search(LINES_PAT, linestring)
@@ -160,14 +164,14 @@ class piOutputWindow(wx.Frame):
         self.buttonToLine = {}
 
         # Set up the digital lineout buttons.
-        for line in xrange(1):
+        for i in range(len(piDIO.lines)) :
             button = gui.toggleButton.ToggleButton(
-                    parent = panel, label = str(line),
+                    parent = panel, label = str(piDIO.lines[i]),
                     activateAction = self.toggle,
                     deactivateAction = self.toggle,
                     size = (140, 80))
             buttonSizer.Add(button, 1, wx.EXPAND)
-            self.buttonToLine[button] = line
+            self.buttonToLine[button] = i
         mainSizer.Add(buttonSizer)
 
         panel.SetSizerAndFit(mainSizer)
