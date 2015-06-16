@@ -308,8 +308,27 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 "Go To XYZ",('X','Y','Z'), 
                 position,
                 atMouse=True)
-        newPos=(float(values[0]),float(values[1]),float(values[2]))
+        newPos=[float(values[0]),float(values[1]),float(values[2])]
+#Work out if we will be ouside the limits of the current stage
+        posDelta = [position[0]-newPos[0],position[1]-newPos[1],position[2]-newPos[2]]
+        originalHandlerIndex = interfaces.stageMover.mover.curHandlerIndex
+        currentHandlerIndex = originalHandlerIndex
+        allPositions=interfaces.stageMover.getAllPositions()
+        for axis in range(3):
+            if (posDelta[axis]**2 > .001 ):
+                    limits = interfaces.stageMover.getIndividualHardLimits(axis)
+                    currentpos = allPositions[currentHandlerIndex][axis]
+                    if  ((currentpos == None ) or  # no handler on this axis.
+                          (currentpos + posDelta[axis]<(limits[currentHandlerIndex][0])) or # off bottom
+                          (currentpos + posDelta[axis]>(limits[currentHandlerIndex][1]))): #off top
+                        currentHandlerIndex -= 1 # go to a bigger handler index
+                    if currentHandlerIndex<0:
+                        return False
+        interfaces.stageMover.mover.curHandlerIndex = currentHandlerIndex
         interfaces.stageMover.goTo(newPos)
+        interfaces.stageMover.mover.curHandlerIndex = originalHandlerIndex
+        return True
+
 		
     ## Right-clicked the mouse. Toggle drawing of the mosaic tiles
     def OnRightDoubleClick(self, event):
