@@ -2,6 +2,18 @@
 # pieces of hardware eg dsp, DIO, etc....
 # IMD 20150505
 #
+# Requires some setup in the device file.
+# 1) device must have a callable makeOutputWindow function
+# 2) This function must be accessible as self.makeOutputWindow from within the device context
+# and the function must create a window with the relevant controls in it.
+# 3) Device file must also have self.buttonName variable as a string which the advanced 
+#	controls button will be labelled with.
+# See either dsp.py or piDIO.py for examples. 
+# These examples are slightly more complex as they have makeOutputWindow also accessible from
+# ouside the device context to allow easy access to them from the python command line via
+# import devices.dsp as DSP
+# DSP.makeOutputWindow()
+#
 
 import wx
 import device
