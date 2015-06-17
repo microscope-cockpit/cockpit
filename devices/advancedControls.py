@@ -17,8 +17,6 @@
 
 import wx
 import device
-import devices.dsp as DSP
-import devices.piDIO as DIO
 import gui.toggleButton
 import depot
 
