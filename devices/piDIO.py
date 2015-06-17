@@ -46,6 +46,9 @@ class RaspberryPi(device.Device):
             
         self.RPiConnection = None
         ## util.connection.Connection for the temperature sensors.
+		
+        self.makeOutputWindow = makeOutputWindow
+        self.buttonName='piDIO'
 
         ## Maps light modes to the mirror settings for those modes, as a list
         #IMD 20140806
