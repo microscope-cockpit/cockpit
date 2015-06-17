@@ -192,7 +192,7 @@ class piOutputWindow(wx.Frame):
 
 
 ## Debugging function: display a DSPOutputWindow.
-def makeOutputWindow():
+def makeOutputWindow(self):
     # HACK: the _deviceInstance object is created by the depot when this
     # device is initialized.
     global _deviceInstance
