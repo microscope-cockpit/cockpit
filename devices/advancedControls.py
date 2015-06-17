@@ -14,6 +14,8 @@
 # import devices.dsp as DSP
 # DSP.makeOutputWindow()
 #
+# If the config has an [advCtl] section then this feature will be activated otherwise it does nothing.
+#
 
 import wx
 import device
