@@ -37,16 +37,21 @@ class AdvancedControl(device.Device):
         panelSizer.Add(label)
         devs = depot.getAllDevices()
         buttonSizer = wx.BoxSizer(wx.VERTICAL)
+        advancedDevList=[]
+        i=0
         for dev in devs :
             if hasattr(dev,'makeOutputWindow'):
-                if callable(dev,'makeOutputWindow'):
+                if callable(dev.makeOutputWindow):
+                    advancedDevList.append (dev.makeOutputWindow)
                     button = gui.toggleButton.ToggleButton(
-                          label = dev.__class__.__name__, parent = panel, size = (84, 50))
-                    button.Bind(wx.EVT_LEFT_DOWN, lambda event: dev.makeOutputWindow())
+                          label = dev.buttonName, parent = panel, size = (84, 50))
+						  
+                    button.Bind(wx.EVT_LEFT_DOWN, dev.makeOutputWindow)#lambda event: advancedDevList[i])
                     buttonSizer.Add(button)
+                    i=i+1
  
  
-     #   panelSizer.Add(buttonSizer)
-      #  panel.SetSizerAndFit(panelSizer)
+        panelSizer.Add(buttonSizer)
+        panel.SetSizerAndFit(panelSizer)
         
         return panel
