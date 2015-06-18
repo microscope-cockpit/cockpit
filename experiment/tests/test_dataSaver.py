@@ -42,9 +42,11 @@ class TestDataSaver(unittest.TestCase):
                                     pixelSizeZ=None,
                                     titles=[])
 
-    def tearDown(self):
-        subprocess.Popen(['rm', self.savePath]).wait()
 
+    def tearDown(self):
+        subprocess.Popen(['rm', self.savePath.NNN]).wait()
+        # For splitting, files are created with savePath.NNN
+        subprocess.Popen(['rm', self.savePath+'.*']).wait()
 
     def test___init__(self):
         '''Absolutely minimal class instance.
