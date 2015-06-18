@@ -1,5 +1,6 @@
 *.pyc
 *.bak
+*.pickle
 **/*.pyc
 **/*.bak
-
+**/*.pickle
