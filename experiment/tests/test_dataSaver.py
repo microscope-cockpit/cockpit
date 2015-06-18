@@ -2,6 +2,9 @@
 
 Even if we can't get a good idea of functional correctness, we can make sure
 the module all compiles and works.
+
+It also uses it's own threads, and so currently does not
+die at the end of the test run.
 '''
 
 import unittest
@@ -77,7 +80,6 @@ class TestDataSaver(unittest.TestCase):
         print(mock_camera.call_args_list)
         # data_saver = DataSaver(cameras, numReps, cameraToImagesPerRep, cameraToIgnoredImageIndices, runThread, savePath, pixelSizeZ, titles)
         # self.assertEqual(expected, data_saver.startCollecting())
-        assert False # TODO: implement your test here
 '''
     def test_writeImage(self):
         # data_saver = DataSaver(cameras, numReps, cameraToImagesPerRep, cameraToIgnoredImageIndices, runThread, savePath, pixelSizeZ, titles)
