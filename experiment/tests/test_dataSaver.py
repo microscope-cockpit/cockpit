@@ -1,4 +1,7 @@
 '''DataSaver is very fragile, and tightly coupled!
+
+Even if we can't get a good idea of functional correctness, we can make sure
+the module all compiles and works.
 '''
 
 import unittest
@@ -19,7 +22,6 @@ class TestDataSaver(unittest.TestCase):
         self.cameraToIgnoredImageIndices = mock.MagicMock()
         self.savePath = os.path.join(os.getcwd(), 'testfile')
 
-        self.depot = dataSaver.depot
         dataSaver.depot = mock.MagicMock()
         self.data_saver = DataSaver(cameras=[self.camera],
                                     numReps=0,
@@ -30,17 +32,14 @@ class TestDataSaver(unittest.TestCase):
                                     pixelSizeZ=None,
                                     titles=[])
 
+
     def test___init__(self):
         '''Absolutely minimal class instance.
         '''
         self.assertTrue(isinstance(self.data_saver, DataSaver))
 
-
+        '''
     def test_cleanup(self):
-        data_saver = mock.Mock()
-        events_backup = dataSaver.events
-        dataSaver.events = mock.Mock()
-        # self.assertEqual(expected, data_saver.cleanup())
         assert False # TODO: implement your test here
 
     def test_executeAndSave(self):
@@ -67,18 +66,25 @@ class TestDataSaver(unittest.TestCase):
         # data_saver = DataSaver(cameras, numReps, cameraToImagesPerRep, cameraToIgnoredImageIndices, runThread, savePath, pixelSizeZ, titles)
         # self.assertEqual(expected, data_saver.saveData())
         assert False # TODO: implement your test here
+        '''
 
     def test_startCollecting(self):
+        mock_camera = mock.MagicMock()
+        self.statusThread = mock.MagicMock()
+        self.data_saver.cameras = [mock_camera]
+        dataSaver.events = mock.MagicMock()
+        self.data_saver.startCollecting()
+        print(mock_camera.call_args_list)
         # data_saver = DataSaver(cameras, numReps, cameraToImagesPerRep, cameraToIgnoredImageIndices, runThread, savePath, pixelSizeZ, titles)
         # self.assertEqual(expected, data_saver.startCollecting())
         assert False # TODO: implement your test here
-
+'''
     def test_writeImage(self):
         # data_saver = DataSaver(cameras, numReps, cameraToImagesPerRep, cameraToIgnoredImageIndices, runThread, savePath, pixelSizeZ, titles)
         # self.assertEqual(expected, data_saver.writeImage(cameraIndex, imageData, timestamp))
         assert False # TODO: implement your test here
 
-'''
+
     def test_executeAndSave(self):
         # data_saver = DataSaver(cameras, numReps, cameraToImagesPerRep, cameraToIgnoredImageIndices, runThread, savePath, pixelSizeZ, titles)
         # self.assertEqual(expected, data_saver.executeAndSave())
@@ -134,25 +140,5 @@ class TestStatusUpdateThread(unittest.TestCase):
         # self.assertEqual(expected, status_update_thread.updateText())
         assert False # TODO: implement your test here
 '''
-class TestStatusUpdateThread(unittest.TestCase):
-    def test___init__(self):
-        # status_update_thread = StatusUpdateThread(cameraNames, totals)
-        assert False # TODO: implement your test here
-
-    def test_newImage(self):
-        # status_update_thread = StatusUpdateThread(cameraNames, totals)
-        # self.assertEqual(expected, status_update_thread.newImage(index))
-        assert False # TODO: implement your test here
-
-    def test_run(self):
-        # status_update_thread = StatusUpdateThread(cameraNames, totals)
-        # self.assertEqual(expected, status_update_thread.run())
-        assert False # TODO: implement your test here
-
-    def test_updateText(self):
-        # status_update_thread = StatusUpdateThread(cameraNames, totals)
-        # self.assertEqual(expected, status_update_thread.updateText())
-        assert False # TODO: implement your test here
-
 if __name__ == '__main__':
     unittest.main()
