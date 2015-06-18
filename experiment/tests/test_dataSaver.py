@@ -5,15 +5,21 @@ the module all compiles and works.
 
 It also uses it's own threads, and so currently does not
 die at the end of the test run.
+
+
 '''
 
 import unittest
 import threading
 import mock
-from ..experiment import dataSaver
+from experiment import dataSaver
 DataSaver = dataSaver.DataSaver
-import os
 
+from handlers import camera
+import os
+import inspect
+import subprocess
+import uuid
 
 class TestDataSaver(unittest.TestCase):
 
@@ -23,7 +29,8 @@ class TestDataSaver(unittest.TestCase):
         self.camera.getImageSize.return_value = (0, 0)
         self.cameraToImagesPerRep = mock.MagicMock()
         self.cameraToIgnoredImageIndices = mock.MagicMock()
-        self.savePath = os.path.join(os.getcwd(), 'testfile')
+        # Give each file a random name to delete later
+        self.savePath = os.path.join(os.getcwd(), 'datasavertestfile'+str(uuid.uuid4()))
 
         dataSaver.depot = mock.MagicMock()
         self.data_saver = DataSaver(cameras=[self.camera],
@@ -35,11 +42,26 @@ class TestDataSaver(unittest.TestCase):
                                     pixelSizeZ=None,
                                     titles=[])
 
+    def tearDown(self):
+        subprocess.Popen(['rm', self.savePath]).wait()
+
 
     def test___init__(self):
         '''Absolutely minimal class instance.
         '''
         self.assertTrue(isinstance(self.data_saver, DataSaver))
+
+
+    def test_opens_correct_file(self):
+        '''Tests that executeAndSave uses the right file.
+        using a Mock insted of a real instance for simplicity.
+        '''
+        # OH MY.
+        #for attr, value in inspect.getmembers(self.data_saver):
+        #    exec()
+        #self.data_saver
+        #DataSaver.executeAndSave(dsMock)
+        pass
 
         '''
     def test_cleanup(self):
@@ -70,7 +92,8 @@ class TestDataSaver(unittest.TestCase):
         # self.assertEqual(expected, data_saver.saveData())
         assert False # TODO: implement your test here
         '''
-
+        ## startCollecting opens a new thread that keeps the tests alive indef.
+        '''
     def test_startCollecting(self):
         mock_camera = mock.MagicMock()
         self.statusThread = mock.MagicMock()
@@ -80,7 +103,9 @@ class TestDataSaver(unittest.TestCase):
         print(mock_camera.call_args_list)
         # data_saver = DataSaver(cameras, numReps, cameraToImagesPerRep, cameraToIgnoredImageIndices, runThread, savePath, pixelSizeZ, titles)
         # self.assertEqual(expected, data_saver.startCollecting())
-'''
+        '''
+
+        '''
     def test_writeImage(self):
         # data_saver = DataSaver(cameras, numReps, cameraToImagesPerRep, cameraToIgnoredImageIndices, runThread, savePath, pixelSizeZ, titles)
         # self.assertEqual(expected, data_saver.writeImage(cameraIndex, imageData, timestamp))
@@ -141,6 +166,6 @@ class TestStatusUpdateThread(unittest.TestCase):
         # status_update_thread = StatusUpdateThread(cameraNames, totals)
         # self.assertEqual(expected, status_update_thread.updateText())
         assert False # TODO: implement your test here
-'''
+        '''
 if __name__ == '__main__':
     unittest.main()
