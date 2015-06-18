@@ -2,6 +2,20 @@ import unittest
 import colors
 import numpy as np
 
+class TestWavelengthToColor(unittest.TestCase):
+
+    def test_wavelenth_to_color_red(self):
+        R, G, B = colors.wavelengthToColor(650)
+        self.assertEqual(G, 0)
+        self.assertEqual(B, 0)
+        self.assertGreater(R, 0)
+
+    def test_wavelenth_to_color_blue(self):
+        R, G, B = colors.wavelengthToColor(400)
+        self.assertEqual(G, 0)
+        self.assertEqual(R, 0)
+        self.assertGreater(B, 0)
+
 class TestHsvToRgb(unittest.TestCase):
 
     def test_hsv_to_rgb_greyscale(self):
