@@ -16,6 +16,10 @@ class TestWavelengthToColor(unittest.TestCase):
         self.assertEqual(R, 0)
         self.assertGreater(B, 0)
 
+    def test_wavelenth_to_color_no_color(self):
+        with self.assertRaises(TypeError):
+            colors.wavelengthToColor(None)
+
 class TestHsvToRgb(unittest.TestCase):
 
     def test_hsv_to_rgb_greyscale(self):
