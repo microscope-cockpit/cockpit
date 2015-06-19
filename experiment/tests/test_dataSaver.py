@@ -48,6 +48,7 @@ class TestDataSaver(unittest.TestCase):
         # For splitting, files are created with savePath.NNN
         subprocess.Popen(['rm', self.savePath+'.*']).wait()
 
+
     def test___init__(self):
         '''Absolutely minimal class instance.
         '''

@@ -13,6 +13,7 @@ import decimal
 import threading
 
 import experiment.experiment
+import experiment.actionTable
 
 class TestExperiment(unittest.TestCase):
 
@@ -62,6 +63,9 @@ class TestExperiment(unittest.TestCase):
 
 
     def test_non_decimal_readout(self):
+        '''The value the handler produces must be a decimal.Decimal - test that
+        the experiment checks this.
+        '''
         self.MockCamera.getTimeBetweenExposures.return_value = 0
         with mock.patch('experiment.experiment.interfaces.stageMover'):
             test_exp = experiment.experiment.Experiment(**self.test_params)
@@ -88,9 +92,9 @@ class TestExperiment(unittest.TestCase):
             self.test_params['zPositioner'].getMovementTime.return_value = (0, 0)
 
             test_experiment = experiment.zStack.ZStackExperiment(**self.test_params)
-            actiontable = test_experiment.run()
-            print(actiontable)
+            test_experiment.run()
             test_experiment.cleanup()
+
 
     def test_emtpy_save_path_does_not_call_dataSaver(self):
         self.test_params['savePath'] = ''
