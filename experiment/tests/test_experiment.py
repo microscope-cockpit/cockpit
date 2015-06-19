@@ -6,6 +6,7 @@ correctly.
 '''
 import unittest
 import mock
+from contextlib import contextmanager
 import uuid
 import subprocess
 import os
@@ -15,9 +16,23 @@ import threading
 import experiment.experiment
 import experiment.actionTable
 
+@contextmanager
+def replace_with_mock(func):
+    '''Replaces a name in the surrounding namespace with a magic mock object.
+    '''
+    global func
+    bkup = func
+    func = mock.MagicMock()
+    yield func
+    func = bkup
+
 class TestExperiment(unittest.TestCase):
 
     def setUp(self):
+
+        # Capture log messages
+        experiment.experiment.util.logger = mock.MagicMock()
+
         # Recreates the basic init for the experiment class.
         self.MockHandler = mock.MagicMock()
         self.MockCamera = mock.MagicMock()
@@ -77,9 +92,82 @@ class TestExperiment(unittest.TestCase):
         #boo
 
 
-    def test_zstack_return_value(self):
+    def test_asks_user_when_path_exists(self):
+        '''Test that when running the experiment it will ask for confirmation
+        before overwriting files.
+        '''
+        # Create file - will be cleaned up by teardown.
+        open(self.savePath, 'w').close()
+        # test
+        try:
+            # Mock out the gui
+            orj_gui = experiment.experiment.gui
+            experiment.experiment.gui = mock.MagicMock()
+            experiment.experiment.gui.guiUtils.getUserPermission.return_value = False
+            test_exper = experiment.experiment.Experiment(**self.test_params)
+            test_exper.run()
+            self.assertTrue(experiment.experiment.gui.guiUtils.getUserPermission.called)
+        finally:
+            experiment.experiment.gui = orj_gui
+
+
+    def test_execute_abort(self):
+        '''The execure has a nasty race in it where you can call
+        execute, and then as the thread spins up call abort but execute will
+        clear the abort.
+
+        use a infinite generator for table to keep execute spinning, and
+        send a syncronus abort to test.
+        '''
+        # TODO
+        try:
+            logger_backup = experiment.experiment.util.logger
+            experiment.experiment.util.logger = mock.Mock()
+
+            executor = mock.Mock()
+            executor.getNumRunnableLines.return_value = 1
+
+            depot_backup = experiment.experiment.depot
+            experiment.experiment.depot.getHandlersOfType = mock.Mock(return_value=[executor])
+
+            test_exper = experiment.experiment.Experiment(**self.test_params)
+
+            # execute will keep going as long as the current point is less
+            # than the len of the actiontable - so create a object larger
+            # than any number and return that as the len.
+            def __cmp__(self):
+                return True
+
+            greatest_number = mock.MagicMock()
+            greatest_number.__cmp__ = __cmp__
+
+            test_exper.table = mock.MagicMock()
+            test_exper.table.__len__.return_value = greatest_number
+
+
+            test_exper.onAbort()
+            test_exper.execute()
+        finally:
+            experiment.experiment.util.logger = logger_backup
+            experiment.experiment.depot = depot_backup
+
+    def test_stuttered_zstack(self):
+        import experiment.stutteredZStack
+        with mock.patch('experiment.experiment.interfaces.stageMover'):
+            # As this is a z-experiment, give some height
+            self.test_params['zHeight'] = 5
+            self.test_params['sliceHeight'] = 1
+            self.test_params['savePath'] = ''
+
+            # The z handler mock needs to have some behaviour. (movetime, stabilize)
+            self.test_params['zPositioner'].getMovementTime.return_value = (0, 0)
+
+            test_experiment = experiment.stutteredZStack.StutteredZStackExperiment(**self.test_params)
+            test_experiment.run()
+            test_experiment.cleanup()
+
+    def test_zstack(self):
         import experiment.zStack
-        import experiment.actionTable
 
         # We don't need to move a stage
         with mock.patch('experiment.experiment.interfaces.stageMover'):
