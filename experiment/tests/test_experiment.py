@@ -19,13 +19,21 @@ import experiment.actionTable
 
 @contextmanager
 def replace_with_mock(namespace, funcname):
-    '''Replaces a name in the surrounding namespace with a magic mock object.
+    '''Replaces a name in the given namespace with a magic mock object.
+
+    with replace_with_mock(namespace, funcname):
+        *do whatever with the mock*
+
+    and the namespace is restored here!
     '''
     func_backup = vars(namespace)[funcname]
     vars(namespace)[funcname] = mock.MagicMock()
+    print('replacing', funcname)
     yield vars(namespace)[funcname]
     # and restore afterwards
+    print('restoring', funcname)
     vars(namespace)[funcname] = func_backup
+
 
 class TestExperiment(unittest.TestCase):
 
@@ -68,9 +76,9 @@ class TestExperiment(unittest.TestCase):
     def tearDown(self):
         if self.savePath:
             # remove any temp files
-            subprocess.Popen(['rm', self.savePath]).wait()
+            subprocess.Popen(['rm', '-f', self.savePath]).wait()
             # For splitting, files are created with savePath.NNN
-            subprocess.Popen(['rm', self.savePath+'.*']).wait()
+            subprocess.Popen(['rm', '-f', self.savePath+'.*']).wait()
 
 
     def test___init__(self):
@@ -99,16 +107,17 @@ class TestExperiment(unittest.TestCase):
         '''
         # Create file - will be cleaned up by teardown.
         open(self.savePath, 'w').close()
-
-        with replace_with_mock(experiment.experiment.gui) as mockgui:
-            mockgui.getUserPermission.return_value = False
+        with replace_with_mock(experiment.experiment, 'gui') as mockgui:
+            mockgui.guiUtils.getUserPermission.return_value = False
+            print(mockgui)
             test_exper = experiment.experiment.Experiment(**self.test_params)
             test_exper.run()
-            self.assertTrue(experiment.experiment.gui.guiUtils.getUserPermission.called)
+            self.assertTrue(mockgui.guiUtils.getUserPermission.called)
 
 
     def test_execute_abort(self):
-        '''The execure has a nasty race in it where you can call
+        '''
+        The execure has a nasty race in it where you can call
         execute, and then as the thread spins up call abort but execute will
         clear the abort.
 
@@ -116,79 +125,77 @@ class TestExperiment(unittest.TestCase):
         send a syncronus abort to test.
         '''
         # TODO
-        try:
-            logger_backup = experiment.experiment.util.logger
-            experiment.experiment.util.logger = mock.Mock()
+        with replace_with_mock(experiment.experiment.util, 'logger') as mocklog:
+            with replace_with_mock(experiment.experiment, 'depot') as mockdepot:
+                with replace_with_mock(experiment.experiment, 'threading'):
+                    executor = mock.Mock()
+                    executor.getNumRunnableLines.return_value = 1
 
-            executor = mock.Mock()
-            executor.getNumRunnableLines.return_value = 1
+                    mockdepot.getHandlersOfType = mock.Mock(return_value=[executor])
 
-            depot_backup = experiment.experiment.depot
-            experiment.experiment.depot.getHandlersOfType = mock.Mock(return_value=[executor])
+                    test_exper = experiment.experiment.Experiment(**self.test_params)
 
-            test_exper = experiment.experiment.Experiment(**self.test_params)
+                    # execute will keep going as long as the current point is less
+                    # than the len of the actiontable - so create a object larger
+                    # than any number and return that as the len.
+                    def __cmp__(self):
+                        return True
 
-            # execute will keep going as long as the current point is less
-            # than the len of the actiontable - so create a object larger
-            # than any number and return that as the len.
-            def __cmp__(self):
-                return True
+                    greatest_number = mock.MagicMock()
+                    greatest_number.__cmp__ = __cmp__
 
-            greatest_number = mock.MagicMock()
-            greatest_number.__cmp__ = __cmp__
+                    test_exper.table = mock.MagicMock()
+                    test_exper.table.__len__.return_value = greatest_number
 
-            test_exper.table = mock.MagicMock()
-            test_exper.table.__len__.return_value = greatest_number
+                    test_exper.onAbort()
+                    #test_exper.execute()
 
-
-            test_exper.onAbort()
-            test_exper.execute()
-        finally:
-            experiment.experiment.util.logger = logger_backup
-            experiment.experiment.depot = depot_backup
 
     def test_stuttered_zstack(self):
         import experiment.stutteredZStack
         with mock.patch('experiment.experiment.interfaces.stageMover'):
-            # As this is a z-experiment, give some height
-            self.test_params['zHeight'] = 5
-            self.test_params['sliceHeight'] = 1
-            self.test_params['savePath'] = ''
+            with replace_with_mock(experiment.experiment, 'threading'):
+                # As this is a z-experiment, give some height
+                self.test_params['zHeight'] = 5
+                self.test_params['sliceHeight'] = 1
+                self.test_params['savePath'] = ''
 
-            # The z handler mock needs to have some behaviour. (movetime, stabilize)
-            self.test_params['zPositioner'].getMovementTime.return_value = (0, 0)
+                # The z handler mock needs to have some behaviour. (movetime, stabilize)
+                self.test_params['zPositioner'].getMovementTime.return_value = (0, 0)
 
-            test_experiment = experiment.stutteredZStack.StutteredZStackExperiment(**self.test_params)
-            test_experiment.run()
-            test_experiment.cleanup()
+                test_experiment = experiment.stutteredZStack.StutteredZStackExperiment(**self.test_params)
+                test_experiment.run()
+                test_experiment.cleanup()
+
 
     def test_zstack(self):
         import experiment.zStack
 
         # We don't need to move a stage
-        with mock.patch('experiment.experiment.interfaces.stageMover'):
-            # As this is a z-experiment, give some height
-            self.test_params['zHeight'] = 5
-            self.test_params['sliceHeight'] = 1
-            self.test_params['savePath'] = ''
+        with replace_with_mock(experiment.experiment.interfaces, 'stageMover'):
+            with replace_with_mock(experiment.experiment, 'threading'):
+                # As this is a z-experiment, give some height
+                self.test_params['zHeight'] = 5
+                self.test_params['sliceHeight'] = 1
+                self.test_params['savePath'] = ''
 
-            # The z handler mock needs to have some behaviour. (movetime, stabilize)
-            self.test_params['zPositioner'].getMovementTime.return_value = (0, 0)
+                # The z handler mock needs to have some behaviour. (movetime, stabilize)
+                self.test_params['zPositioner'].getMovementTime.return_value = (0, 0)
 
-            test_experiment = experiment.zStack.ZStackExperiment(**self.test_params)
-            test_experiment.run()
-            test_experiment.cleanup()
+                test_experiment = experiment.zStack.ZStackExperiment(**self.test_params)
+                test_experiment.run()
+                test_experiment.cleanup()
 
 
     def test_emtpy_save_path_does_not_call_dataSaver(self):
         self.test_params['savePath'] = ''
         with mock.patch('experiment.experiment.interfaces.stageMover'):
             with mock.patch('experiment.experiment.dataSaver') as ds:
-
-                test_exp = experiment.experiment.Experiment(**self.test_params)
-                test_exp.generateActions = mock.MagicMock()
-                test_exp.run()
-                self.assertFalse(ds.called)
+                with replace_with_mock(experiment.experiment, 'threading'):
+                    test_exp = experiment.experiment.Experiment(**self.test_params)
+                    test_exp.generateActions = mock.MagicMock()
+                    test_exp.run()
+                    self.assertFalse(ds.called)
 
 
 if __name__ == '__main__':
