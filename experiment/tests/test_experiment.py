@@ -7,6 +7,7 @@ correctly.
 import unittest
 import mock
 from contextlib import contextmanager
+import inspect
 import uuid
 import subprocess
 import os
@@ -17,14 +18,14 @@ import experiment.experiment
 import experiment.actionTable
 
 @contextmanager
-def replace_with_mock(func):
+def replace_with_mock(namespace, funcname):
     '''Replaces a name in the surrounding namespace with a magic mock object.
     '''
-    global func
-    bkup = func
-    func = mock.MagicMock()
-    yield func
-    func = bkup
+    func_backup = vars(namespace)[funcname]
+    vars(namespace)[funcname] = mock.MagicMock()
+    yield vars(namespace)[funcname]
+    # and restore afterwards
+    vars(namespace)[funcname] = func_backup
 
 class TestExperiment(unittest.TestCase):
 
@@ -98,17 +99,12 @@ class TestExperiment(unittest.TestCase):
         '''
         # Create file - will be cleaned up by teardown.
         open(self.savePath, 'w').close()
-        # test
-        try:
-            # Mock out the gui
-            orj_gui = experiment.experiment.gui
-            experiment.experiment.gui = mock.MagicMock()
-            experiment.experiment.gui.guiUtils.getUserPermission.return_value = False
+
+        with replace_with_mock(experiment.experiment.gui) as mockgui:
+            mockgui.getUserPermission.return_value = False
             test_exper = experiment.experiment.Experiment(**self.test_params)
             test_exper.run()
             self.assertTrue(experiment.experiment.gui.guiUtils.getUserPermission.called)
-        finally:
-            experiment.experiment.gui = orj_gui
 
 
     def test_execute_abort(self):
