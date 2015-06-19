@@ -44,7 +44,7 @@ class TestDataSaver(unittest.TestCase):
 
 
     def tearDown(self):
-        subprocess.Popen(['rm', self.savePath.NNN]).wait()
+        subprocess.Popen(['rm', self.savePath]).wait()
         # For splitting, files are created with savePath.NNN
         subprocess.Popen(['rm', self.savePath+'.*']).wait()
 

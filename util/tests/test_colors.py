@@ -1,6 +1,5 @@
 import unittest
-import colors
-import numpy as np
+import util.colors as colors
 
 class TestWavelengthToColor(unittest.TestCase):
 
