@@ -211,8 +211,8 @@ class TestExperiment(unittest.TestCase):
 
         test_experiment = experiment.sweptShutter.OpenShutterSweepExperiment(**self.test_params)
 
-
         table = test_experiment.generateActions()
+        self.assertEqual(len(table), len(self.test_params['exposureSettings']))
         print(table)
 
 
