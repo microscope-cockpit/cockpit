@@ -13,12 +13,10 @@ import subprocess
 import os
 import sys
 import decimal
-import threading
 import itertools
 
 import experiment.experiment
 import experiment.actionTable
-
 
 @contextmanager
 def replace_with_mock(namespace, funcname):
@@ -34,6 +32,7 @@ def replace_with_mock(namespace, funcname):
     yield vars(namespace)[funcname]
     # and restore afterwards
     vars(namespace)[funcname] = func_backup
+
 
 @contextmanager
 def mock_import(modname):
@@ -299,8 +298,7 @@ class TestExperiment(unittest.TestCase):
     def test_response_map(self):
         with mock_import('gui.guiUtils'), mock_import('gui.imageSequenceViewer'), mock_import('gui.progressDialog'), mock_import('util.userConfig'):
             import experiment.responseMap
-            experiment.responseMap.threading = None
-            experiment.responseMap.util.threads = None
+
             self.test_params['numExposures'] = 5
             self.test_params['exposureTimes'] = [1, 2, 3, 4, 5]
             self.test_params['cosmicRayThreshold'] = 5
@@ -309,5 +307,33 @@ class TestExperiment(unittest.TestCase):
             test_exper.run()
 
 
+    def test_response_map_save(self):
+        with mock_import('gui.guiUtils'), mock_import('gui.imageSequenceViewer'), mock_import('gui.progressDialog'), mock_import('util.userConfig'), mock_import('depot'):
+            with mock_import('interfaces.stageMover'):
+                import experiment.responseMap
+
+                self.test_params['numExposures'] = 5
+                self.test_params['exposureTimes'] = [1, 2, 3, 4, 5]
+                self.test_params['cosmicRayThreshold'] = 5
+                self.test_params['shouldPreserveIntermediaryFiles'] = False
+                test_exper = experiment.responseMap.ResponseMapExperiment(**self.test_params)
+                test_exper.timesAndImages = mock.MagicMock()
+                test_exper.timesAndImages.__len__ = lambda _: 0
+                test_exper.save()
+
+
+    def test_offset_gain(self):
+        with mock_import('gui.guiUtils'), mock_import('gui.imageSequenceViewer'), mock_import('gui.progressDialog'), mock_import('util.userConfig'), mock_import('depot'):
+            self.test_params['numExposures'] =  1
+            import experiment.offsetGainCorrection
+            test_exper = experiment.offsetGainCorrection.OffsetGainCorrectionExperiment(**self.test_params)
+            test_exper.run()
+
+
+    def test_immediate_mode(self):
+        import experiment.immediateMode
+        test_exper = experiment.immediateMode.ImmediateModeExperiment(1, 1, 1)
+        test_exper.run()
+        
 if __name__ == '__main__':
     unittest.main()
