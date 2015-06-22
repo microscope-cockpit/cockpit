@@ -14,9 +14,11 @@ import os
 import sys
 import decimal
 import threading
+import itertools
 
 import experiment.experiment
 import experiment.actionTable
+
 
 @contextmanager
 def replace_with_mock(namespace, funcname):
@@ -33,6 +35,36 @@ def replace_with_mock(namespace, funcname):
     # and restore afterwards
     vars(namespace)[funcname] = func_backup
 
+@contextmanager
+def mock_import(modname):
+    '''adds/replaces a module before it is imported. Useful if the import would
+    have side effects or would error. Restores the real module (or lack of)
+    afterwards.
+
+    USAGE:
+    with mock_import('numpy') as mocknp:
+        mocknp.pi = 4
+        # code that imports and uses numpy
+
+    Works as when import is called, the module is first looked up in sys.modules
+    to avoid reimporting, and so we can slip in ahead of the real import logic.
+
+    if other imports occour that depend upon the mocked objects, they will also
+    be affected. import them before the with statment manually to avoid this
+    (don't mock builtins)
+    '''
+    if modname in sys.modules:
+        module_backup = sys.modules[modname]
+    else:
+        module_backup = None
+    sys.modules[modname] = mock.MagicMock()
+    yield sys.modules[modname]
+
+    if module_backup:
+        sys.modules[modname] = module_backup
+    else:
+        del sys.modules[modname]
+
 
 class TestExperiment(unittest.TestCase):
 
@@ -42,12 +74,12 @@ class TestExperiment(unittest.TestCase):
         experiment.experiment.util.logger = mock.MagicMock()
 
         # Recreates the basic init for the experiment class.
-        self.MockHandler = mock.MagicMock()
-        self.MockCamera = mock.MagicMock()
+        self.MockHandler = mock.MagicMock(name='MockHandler')
+        self.MockCamera = mock.MagicMock(name='MockCamera')
         self.MockCamera.getTimeBetweenExposures.return_value = decimal.Decimal(0)
         self.MockCamera.getExposureTime.return_value = decimal.Decimal(0)
         self.MockCamera.getImageSize.return_value = (0, 0)
-        self.MockLight = mock.MagicMock()
+        self.MockLight = mock.MagicMock(name='MockLight')
         self.MockLight.getWavelength.return_value = 650
 
 
@@ -150,23 +182,21 @@ class TestExperiment(unittest.TestCase):
 
 
     def test_stuttered_zstack(self):
-        ''' Does not get to the core of this experiment at all.
-        '''
-        sys.modules['util.userConfig'] = mock.MagicMock()
-        import experiment.stutteredZStack
-        with mock.patch('experiment.experiment.interfaces.stageMover'):
-            with replace_with_mock(experiment.experiment, 'threading'):
-                # As this is a z-experiment, give some height
-                self.test_params['zHeight'] = 5
-                self.test_params['sliceHeight'] = 1
-                self.test_params['savePath'] = ''
+        with mock_import('util.userConfig'):
+            import experiment.stutteredZStack
+            with mock.patch('experiment.experiment.interfaces.stageMover'):
+                with replace_with_mock(experiment.experiment, 'threading'):
+                    # As this is a z-experiment, give some height
+                    self.test_params['zHeight'] = 5
+                    self.test_params['sliceHeight'] = 1
+                    self.test_params['savePath'] = ''
 
-                # The z handler mock needs to have some behaviour. (movetime, stabilize)
-                self.test_params['zPositioner'].getMovementTime.return_value = (0, 0)
+                    # The z handler mock needs to have some behaviour. (movetime, stabilize)
+                    self.test_params['zPositioner'].getMovementTime.return_value = (0, 0)
 
-                test_experiment = experiment.stutteredZStack.StutteredZStackExperiment((0, 0), **self.test_params)
-                test_experiment.run()
-                test_experiment.cleanup()
+                    test_experiment = experiment.stutteredZStack.StutteredZStackExperiment((0, 0), **self.test_params)
+                    test_experiment.run()
+                    test_experiment.cleanup()
 
 
     def test_zstack(self):
@@ -189,6 +219,7 @@ class TestExperiment(unittest.TestCase):
 
 
     def test_emtpy_save_path_does_not_call_dataSaver(self):
+        '''Tests that if no file is specified, no saving is attempted.'''
         self.test_params['savePath'] = ''
         with mock.patch('experiment.experiment.interfaces.stageMover'):
             with mock.patch('experiment.experiment.dataSaver') as ds:
@@ -202,7 +233,7 @@ class TestExperiment(unittest.TestCase):
     def test_sweptShutter(self):
         '''Tests simple swept shutter experiment.
 
-        BUG: expose takes diffrent args. what is right?
+        BUG: expose takes diffrent args. corrected on a different branch.
         '''
         import experiment.sweptShutter
         self.test_params['zPositioner'].getMovementTime.return_value = (0, 0)
@@ -214,6 +245,68 @@ class TestExperiment(unittest.TestCase):
         table = test_experiment.generateActions()
         self.assertEqual(len(table), len(self.test_params['exposureSettings']))
         print(table)
+
+
+    def set_SI_testparams(self):
+            '''More parameters are needed for the SI experiments.'''
+            self.test_params['numAngles'] = 5
+            self.test_params['collectionOrder'] = "Angle, Phase, Z"
+            self.test_params['bleachCompensations'] = mock.MagicMock()
+            self.test_params['bleachCompensations'].__getitem__ = lambda *_: 0.1
+            self.test_params['sliceHeight'] = 1
+            self.test_params['zHeight'] = 2
+            self.test_params['zPositioner'].getMovementTime.return_value = (0.1, 0.1)
+
+
+    def test_SI___init__(self):
+        '''Test that SI init's without exceptions.
+        '''
+        with mock_import('util.userConfig'), mock_import('gui.guiUtils'):
+            import experiment.structuredIllumination
+            self.set_SI_testparams()
+            test_exper = experiment.structuredIllumination.SIExperiment(**self.test_params)
+
+
+    def test_SI_generateActions(self):
+        '''Tests the action table generated by the SI experiment.
+
+        With this set of parameters, 452 actions are generated.
+
+        This randomly fails with a decimal + float addition error?
+        '''
+        with mock_import('util.userConfig'), mock_import('gui.guiUtils'):
+            import experiment.structuredIllumination
+            self.set_SI_testparams()
+            test_exper = experiment.structuredIllumination.SIExperiment(**self.test_params)
+            test_exper.cameraToReadoutTime[self.MockCamera] = 0
+            action_table = test_exper.generateActions()
+
+        #print(action_table)
+        self.assertEqual(len(action_table), 452)
+
+
+    def test_SI_cleanup_out_of_order(self):
+        # The logic for writing out is complex
+        pass
+        '''
+        with mock_import('util.userConfig'), mock_import('gui.guiUtils'), mock_import('util.datadoc'):
+            self.set_SI_testparams()
+            test_exper = experiment.structuredIllumination.SIExperiment(**self.test_params)
+            test_exper.cleanup()
+        '''
+
+
+    def test_response_map(self):
+        with mock_import('gui.guiUtils'), mock_import('gui.imageSequenceViewer'), mock_import('gui.progressDialog'), mock_import('util.userConfig'):
+            import experiment.responseMap
+            experiment.responseMap.threading = None
+            experiment.responseMap.util.threads = None
+            self.test_params['numExposures'] = 5
+            self.test_params['exposureTimes'] = [1, 2, 3, 4, 5]
+            self.test_params['cosmicRayThreshold'] = 5
+            self.test_params['shouldPreserveIntermediaryFiles'] = False
+            test_exper = experiment.responseMap.ResponseMapExperiment(**self.test_params)
+            test_exper.run()
 
 
 if __name__ == '__main__':
