@@ -11,6 +11,7 @@ import inspect
 import uuid
 import subprocess
 import os
+import sys
 import decimal
 import threading
 
@@ -28,10 +29,8 @@ def replace_with_mock(namespace, funcname):
     '''
     func_backup = vars(namespace)[funcname]
     vars(namespace)[funcname] = mock.MagicMock()
-    print('replacing', funcname)
     yield vars(namespace)[funcname]
     # and restore afterwards
-    print('restoring', funcname)
     vars(namespace)[funcname] = func_backup
 
 
@@ -109,7 +108,6 @@ class TestExperiment(unittest.TestCase):
         open(self.savePath, 'w').close()
         with replace_with_mock(experiment.experiment, 'gui') as mockgui:
             mockgui.guiUtils.getUserPermission.return_value = False
-            print(mockgui)
             test_exper = experiment.experiment.Experiment(**self.test_params)
             test_exper.run()
             self.assertTrue(mockgui.guiUtils.getUserPermission.called)
@@ -117,7 +115,7 @@ class TestExperiment(unittest.TestCase):
 
     def test_execute_abort(self):
         '''
-        The execure has a nasty race in it where you can call
+        The execute has a nasty race in it where you can call
         execute, and then as the thread spins up call abort but execute will
         clear the abort.
 
@@ -152,6 +150,9 @@ class TestExperiment(unittest.TestCase):
 
 
     def test_stuttered_zstack(self):
+        ''' Does not get to the core of this experiment at all.
+        '''
+        sys.modules['util.userConfig'] = mock.MagicMock()
         import experiment.stutteredZStack
         with mock.patch('experiment.experiment.interfaces.stageMover'):
             with replace_with_mock(experiment.experiment, 'threading'):
@@ -163,7 +164,7 @@ class TestExperiment(unittest.TestCase):
                 # The z handler mock needs to have some behaviour. (movetime, stabilize)
                 self.test_params['zPositioner'].getMovementTime.return_value = (0, 0)
 
-                test_experiment = experiment.stutteredZStack.StutteredZStackExperiment(**self.test_params)
+                test_experiment = experiment.stutteredZStack.StutteredZStackExperiment((0, 0), **self.test_params)
                 test_experiment.run()
                 test_experiment.cleanup()
 
@@ -196,6 +197,23 @@ class TestExperiment(unittest.TestCase):
                     test_exp.generateActions = mock.MagicMock()
                     test_exp.run()
                     self.assertFalse(ds.called)
+
+
+    def test_sweptShutter(self):
+        '''Tests simple swept shutter experiment.
+
+        BUG: expose takes diffrent args. what is right?
+        '''
+        import experiment.sweptShutter
+        self.test_params['zPositioner'].getMovementTime.return_value = (0, 0)
+        self.test_params['exposureSettings'] = [[self.MockCamera, (self.MockLight, 0)],
+                                                [self.MockCamera, (self.MockLight, 0)]]
+
+        test_experiment = experiment.sweptShutter.OpenShutterSweepExperiment(**self.test_params)
+
+
+        table = test_experiment.generateActions()
+        print(table)
 
 
 if __name__ == '__main__':
