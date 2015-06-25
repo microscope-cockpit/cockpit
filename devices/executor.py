@@ -35,12 +35,12 @@ class ExperimentExecutorDevice(device.Device):
     ## Figure out how many lines of the provided table we can execute on our
     # own, starting from the specified index. In our case, we can execute
     # everything in the dummy device set.
-    def getNumRunnableLines(self, name, table, curIndex):
+    def getNumRunnableLines(self, table, curIndex):
         return len(table) - curIndex
 
 
     ## Execute the table of experiment actions.
-    def executeTable(self, name, table, startIndex, stopIndex, numReps,
+    def executeTable(self, table, startIndex, stopIndex, numReps,
             repDuration):
         for i in xrange(numReps):
             startTime = time.time()
