@@ -16,31 +16,31 @@ class ExperimentExecutorDevice(device.Device):
         self.priority = float('inf')
         self.deviceType = 'experiment executor'
 
-    
+
     ## Generate an ExperimentExecutor handler.
     def getHandlers(self):
         return [handlers.executor.ExecutorHandler(
             "Dummy experiment executor", "executor",
-            {'examineActions': self.examineActions, 
-                'getNumRunnableLines': self.getNumRunnableLines, 
+            {'examineActions': self.examineActions,
+                'getNumRunnableLines': self.getNumRunnableLines,
                 'executeTable': self.executeTable})]
 
 
-    ## Given an experiment.ActionTable instance, examine the actions and 
+    ## Given an experiment.ActionTable instance, examine the actions and
     # make any necessary modifications.
-    def examineActions(self, name, table):
+    def examineActions(self, table):
         pass
 
 
     ## Figure out how many lines of the provided table we can execute on our
-    # own, starting from the specified index. In our case, we can execute 
+    # own, starting from the specified index. In our case, we can execute
     # everything in the dummy device set.
     def getNumRunnableLines(self, name, table, curIndex):
         return len(table) - curIndex
 
 
     ## Execute the table of experiment actions.
-    def executeTable(self, name, table, startIndex, stopIndex, numReps, 
+    def executeTable(self, name, table, startIndex, stopIndex, numReps,
             repDuration):
         for i in xrange(numReps):
             startTime = time.time()
