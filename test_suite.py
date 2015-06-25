@@ -16,15 +16,21 @@ thomasparks@outlook.com
 '''
 
 import unittest
+#from util.tests.test_logger import *
 
-from experiment.tests.test_experiment import TestExperiment
-from experiment.tests.test_actionTable import TestActionTable
-from experiment.tests.test_dataSaver import TestDataSaver
+#from util.tests.test_user import test_user, test_user_modification
 
-from util.tests.test_colors import TestWavelengthToColor, TestHsvToRgb
+from experiment.tests.test_full_chain import TestChain
 
-from util.tests.test_datadoc import TestDataDoc
+#from experiment.tests.test_experiment import TestExperiment
 
+#from experiment.tests.test_actionTable import TestActionTable
+
+#from experiment.tests.test_dataSaver import TestDataSaver
+
+#from util.tests.test_colors import TestWavelengthToColor, TestHsvToRgb
+
+#from util.tests.test_datadoc import TestDataDoc
 
 if __name__ == '__main__':
     unittest.main()
