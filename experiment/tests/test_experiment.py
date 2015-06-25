@@ -6,63 +6,15 @@ correctly.
 '''
 import unittest
 import mock
-from contextlib import contextmanager
-import inspect
 import uuid
 import subprocess
 import os
-import sys
 import decimal
-import itertools
+import types
+
+from mockManagers import replace_with_mock, mock_import
 
 import experiment.experiment
-import experiment.actionTable
-
-@contextmanager
-def replace_with_mock(namespace, funcname):
-    '''Replaces a name in the given namespace with a magic mock object.
-
-    with replace_with_mock(namespace, funcname):
-        *do whatever with the mock*
-
-    and the namespace is restored here!
-    '''
-    func_backup = vars(namespace)[funcname]
-    vars(namespace)[funcname] = mock.MagicMock()
-    yield vars(namespace)[funcname]
-    # and restore afterwards
-    vars(namespace)[funcname] = func_backup
-
-
-@contextmanager
-def mock_import(modname):
-    '''adds/replaces a module before it is imported. Useful if the import would
-    have side effects or would error. Restores the real module (or lack of)
-    afterwards.
-
-    USAGE:
-    with mock_import('numpy') as mocknp:
-        mocknp.pi = 4
-        # code that imports and uses numpy
-
-    Works as when import is called, the module is first looked up in sys.modules
-    to avoid reimporting, and so we can slip in ahead of the real import logic.
-
-    if other imports occour that depend upon the mocked objects, they will also
-    be affected. import them before the with statment manually to avoid this
-    (don't mock builtins)
-    '''
-    if modname in sys.modules:
-        module_backup = sys.modules[modname]
-    else:
-        module_backup = None
-    sys.modules[modname] = mock.MagicMock()
-    yield sys.modules[modname]
-
-    if module_backup:
-        sys.modules[modname] = module_backup
-    else:
-        del sys.modules[modname]
 
 
 class TestExperiment(unittest.TestCase):
@@ -70,6 +22,8 @@ class TestExperiment(unittest.TestCase):
     def setUp(self):
 
         # Capture log messages
+
+        self.loggerbackup = experiment.experiment.util.logger
         experiment.experiment.util.logger = mock.MagicMock()
 
         # Recreates the basic init for the experiment class.
@@ -109,6 +63,7 @@ class TestExperiment(unittest.TestCase):
             subprocess.Popen(['rm', '-f', self.savePath]).wait()
             # For splitting, files are created with savePath.NNN
             subprocess.Popen(['rm', '-f', self.savePath+'.*']).wait()
+        experiment.experiment.util.logger = self.loggerbackup
 
 
     def test___init__(self):
@@ -181,7 +136,7 @@ class TestExperiment(unittest.TestCase):
 
 
     def test_stuttered_zstack(self):
-        with mock_import('util.userConfig'):
+        with mock_import(['util.userConfig']):
             import experiment.stutteredZStack
             with mock.patch('experiment.experiment.interfaces.stageMover'):
                 with replace_with_mock(experiment.experiment, 'threading'):
@@ -260,7 +215,7 @@ class TestExperiment(unittest.TestCase):
     def test_SI___init__(self):
         '''Test that SI init's without exceptions.
         '''
-        with mock_import('util.userConfig'), mock_import('gui.guiUtils'):
+        with mock_import(['util.userConfig', 'gui.guiUtils']):
             import experiment.structuredIllumination
             self.set_SI_testparams()
             test_exper = experiment.structuredIllumination.SIExperiment(**self.test_params)
@@ -273,7 +228,7 @@ class TestExperiment(unittest.TestCase):
 
         This randomly fails with a decimal + float addition error?
         '''
-        with mock_import('util.userConfig'), mock_import('gui.guiUtils'):
+        with mock_import(['util.userConfig', 'gui.guiUtils']):
             import experiment.structuredIllumination
             self.set_SI_testparams()
             test_exper = experiment.structuredIllumination.SIExperiment(**self.test_params)
@@ -296,9 +251,12 @@ class TestExperiment(unittest.TestCase):
 
 
     def test_response_map(self):
-        with mock_import('gui.guiUtils'), mock_import('gui.imageSequenceViewer'), mock_import('gui.progressDialog'), mock_import('util.userConfig'):
+        with mock_import(['gui.guiUtils',
+                          'gui.imageSequenceViewer',
+                          'gui.progressDialog',
+                          'util.userConfig',
+                          'depot']):
             import experiment.responseMap
-
             self.test_params['numExposures'] = 5
             self.test_params['exposureTimes'] = [1, 2, 3, 4, 5]
             self.test_params['cosmicRayThreshold'] = 5
@@ -308,22 +266,31 @@ class TestExperiment(unittest.TestCase):
 
 
     def test_response_map_save(self):
-        with mock_import('gui.guiUtils'), mock_import('gui.imageSequenceViewer'), mock_import('gui.progressDialog'), mock_import('util.userConfig'), mock_import('depot'):
-            with mock_import('interfaces.stageMover'):
-                import experiment.responseMap
+        with mock_import(['gui.guiUtils',
+                          'gui.imageSequenceViewer',
+                          'gui.progressDialog',
+                          'util.userConfig',
+                          'depot',
+                          'interfaces.stageMover']) as importedmocks:
+            import experiment.responseMap
 
-                self.test_params['numExposures'] = 5
-                self.test_params['exposureTimes'] = [1, 2, 3, 4, 5]
-                self.test_params['cosmicRayThreshold'] = 5
-                self.test_params['shouldPreserveIntermediaryFiles'] = False
-                test_exper = experiment.responseMap.ResponseMapExperiment(**self.test_params)
-                test_exper.timesAndImages = mock.MagicMock()
-                test_exper.timesAndImages.__len__ = lambda _: 0
-                test_exper.save()
+            importedmocks['depot'].getHandlersOfType.return_value = [1, 2, 3]
+            self.test_params['numExposures'] = 5
+            self.test_params['exposureTimes'] = [1, 2, 3, 4, 5]
+            self.test_params['cosmicRayThreshold'] = 5
+            self.test_params['shouldPreserveIntermediaryFiles'] = False
+            test_exper = experiment.responseMap.ResponseMapExperiment(**self.test_params)
+            test_exper.timesAndImages = mock.MagicMock()
+            test_exper.timesAndImages.__len__ = lambda _: 0
+            test_exper.save()
 
 
     def test_offset_gain(self):
-        with mock_import('gui.guiUtils'), mock_import('gui.imageSequenceViewer'), mock_import('gui.progressDialog'), mock_import('util.userConfig'), mock_import('depot'):
+        with mock_import(['gui.guiUtils',
+                          'gui.imageSequenceViewer',
+                          'gui.progressDialog',
+                          'util.userConfig',
+                          'depot']):
             self.test_params['numExposures'] =  1
             import experiment.offsetGainCorrection
             test_exper = experiment.offsetGainCorrection.OffsetGainCorrectionExperiment(**self.test_params)
@@ -334,6 +301,39 @@ class TestExperiment(unittest.TestCase):
         import experiment.immediateMode
         test_exper = experiment.immediateMode.ImmediateModeExperiment(1, 1, 1)
         test_exper.run()
-        
+
+
+    def test_experiment_reg(self):
+        with mock_import(['gui.guiUtils',
+                          'gui.imageSequenceViewer',
+                          'gui.progressDialog',
+                          'util.userConfig']):
+            import experiment.experimentRegistry
+            experiments = experiment.experimentRegistry.getExperimentModules()
+            self.assertTrue(hasattr(experiments, '__getitem__'))
+
+
+    def test_experiment_reg(self):
+        with mock_import(['gui.guiUtils',
+                          'gui.imageSequenceViewer',
+                          'gui.progressDialog',
+                          'util.userConfig']):
+            import experiment.experimentRegistry
+            experiments = experiment.experimentRegistry.getExperimentModules()
+            for experiment in experiments:
+                self.assertEqual(type(experiment), types.ModuleType)
+
+
+    def test_experiment_reg(self):
+        with mock_import(['gui.guiUtils',
+                          'gui.imageSequenceViewer',
+                          'gui.progressDialog',
+                          'util.userConfig']):
+            import experiment.experimentRegistry
+            mockmodule = mock.Mock()
+            experiments = experiment.experimentRegistry.registerModule(mockmodule)
+            self.assertEqual(experiment.experimentRegistry.getExperimentModules()[-1],
+                             mockmodule)
+
 if __name__ == '__main__':
     unittest.main()
