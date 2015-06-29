@@ -21,6 +21,7 @@ import unittest
 #from util.tests.test_user import test_user, test_user_modification
 
 from util.tests.test_listener import testListener
+from util.tests.test_connection import TestConnection
 
 #from experiment.tests.test_full_chain import TestChain
 
