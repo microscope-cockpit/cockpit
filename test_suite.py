@@ -20,7 +20,9 @@ import unittest
 
 #from util.tests.test_user import test_user, test_user_modification
 
-from experiment.tests.test_full_chain import TestChain
+from util.tests.test_listener import testListener
+
+#from experiment.tests.test_full_chain import TestChain
 
 #from experiment.tests.test_experiment import TestExperiment
 
