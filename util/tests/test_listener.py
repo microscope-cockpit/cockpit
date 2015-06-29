@@ -7,6 +7,11 @@ import util.listener
 def doNothing():
     pass
 
+
+'''
+The timeout parameter on connect is not honoured, but I'm not sure where it
+should go.
+'''
 class testListener(unittest.TestCase):
 
     def setUp(self):
