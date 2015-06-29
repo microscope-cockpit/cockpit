@@ -22,6 +22,7 @@ import unittest
 
 from util.tests.test_listener import testListener
 from util.tests.test_connection import TestConnection
+from util.tests.test_correctNonLinear import TestCorrector
 
 #from experiment.tests.test_full_chain import TestChain
 
