@@ -326,8 +326,8 @@ class MosaicWindow(wx.Frame):
         for site in interfaces.stageMover.getAllSites():
             # Draw a crude circle.
             x, y = site.position[:2]
-            x = -x - self.offset[0]
-            y = y +self.offset[1]
+            x = -x + self.offset[0]
+            y = y -self.offset[1]
             # Set line width based on zoom factor.
             lineWidth = max(1, self.canvas.scale * 1.5)
             glLineWidth(lineWidth)
@@ -427,7 +427,7 @@ class MosaicWindow(wx.Frame):
             glPopMatrix()
 
             # Restore the default font size.
-            self.font.FaceSize(64)
+            self.font.FaceSize(self.defaultFaceSize)
             
 
     # Draw a crosshairs at the specified position with the specified color.
