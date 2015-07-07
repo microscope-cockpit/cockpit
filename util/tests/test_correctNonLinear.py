@@ -7,7 +7,7 @@ import util.correctNonlinear
 class TestCorrector(unittest.TestCase):
 
     def test_flat(self):
-        '''No need or correction, so slope shoud be 1.'''
+        '''No correction needed, so slope shoud be 1.'''
         exposures = np.linspace(0, 10, 6)
         mapData = np.ones((6, 10, 10))
 
@@ -72,7 +72,8 @@ class TestCorrector(unittest.TestCase):
 
         corrector = util.correctNonlinear.Corrector(exposures, mapData)
         print(corrector.correct(np.zeros((10, 10))))
-        self.assertTrue( np.allclose(corrector.correct(np.zeros((10, 10))), np.zeros((10, 10)), 
+        self.assertTrue( np.allclose(corrector.correct(np.zeros((10, 10))), np.zeros((10, 10)),
                                      rtol=1e-4, atol=1e-4) )
-    
-                                
+
+        # 3 parts + 2 linear interps.
+        self.assertEqual(len(corrector.subCorrectors), 5)
