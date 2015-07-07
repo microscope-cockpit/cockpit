@@ -1,7 +1,7 @@
 import actionTable
 import experiment
 import zStack
-import gui.guiUtils as guiUtils
+import gui.guiUtils
 import depot
 
 import decimal
@@ -10,13 +10,14 @@ import wx
 
 EXPERIMENT_NAME = 'STORM'
 
-# We override the only method in ZStackExperiment but this makes the inheritance more clear.
-
+# We override the only method in ZStackExperiment,
+# but this makes the inheritance more clear.
 class STORM(zStack.ZStackExperiment):
 
-    def __init__(self, repetitions=1, *args, **kwargs):
+    def __init__(self, repetitions=1, sequences=[], *args, **kwargs):
         experiment.Experiment.__init__(self, *args, **kwargs)
         self.repetitions = repetitions
+        self.sequences = sequences
 
     ## Create the ActionTable needed to run the experiment. We simply move to
     # each Z-slice in turn, take all the images required for STORM,
@@ -43,15 +44,23 @@ class STORM(zStack.ZStackExperiment):
             prevAltitude = targetAltitude
 
 
-            # Image the sample. This gets more complex.
+            # Image the sample.
             for rep in xrange(self.repetitions):
-                for cameras, lightTimePairs in self.exposureSettings:
+                ## A sequence corresponds to a row in the experiment dialog
+                #  consists of the required light, the exposure time, and the
+                #  camera to use.
+                #  we create cameras, lighttimepairs from this.
+                for sequence in self.sequences:
+                    print(self.cameraToIsReady, self.sequences)
+                    cameras = [sequence[2]]
+                    lightTimePairs = [ (sequence[0], sequence[1]) ]
+
                     curTime = self.expose(curTime, cameras, lightTimePairs, table)
                     # Advance the time very slightly so that all exposures
                     # are strictly ordered.
                     curTime += decimal.Decimal('1e-10')
-                # Hold the Z motion flat during the exposure.
-                table.addAction(curTime, self.zPositioner, targetAltitude)
+                    # Hold the Z motion flat during the exposure.
+                    table.addAction(curTime, self.zPositioner, targetAltitude)
 
         # Move back to the start so we're ready for the next rep.
         motionTime, stabilizationTime = self.zPositioner.getMovementTime(
@@ -77,60 +86,50 @@ class STORM(zStack.ZStackExperiment):
 EXPERIMENT_CLASS = STORM
 
 
+class inputRow(object):
+
+    def __init__(self, parent, sizer):
+        '''Class representing the selections for the STORM experiment plan.'''
+        self.parent = parent
+        self.sizer = sizer
+
+    def addInputRowToSizer(self):
+        self.lightChoice = wx.Choice(self.parent, choices=[str(light) for light in
+                                                    depot.getHandlersOfType(depot.LIGHT_TOGGLE)])
+        self.sizer.Add(self.lightChoice)
+
+        self.PulseLenBox = wx.TextCtrl(self.parent)
+        self.sizer.Add(self.PulseLenBox)
+
+        self.camChoice = wx.Choice(self.parent, choices=[str(camera) for camera in
+                                                    depot.getHandlersOfType(depot.CAMERA)]+
+                                                    [str(None)])
+        self.sizer.Add(self.camChoice)
+
+        self.enabled = wx.CheckBox(self.parent)
+        self.sizer.Add(self.enabled)
+
+    def getSelections(self):
+        if self.enabled.GetValue():
+            return (depot.getHandlersOfType(depot.LIGHT_TOGGLE)[self.lightChoice.GetCurrentSelection()],
+                   int(self.PulseLenBox.GetValue()),
+                   depot.getHandlersOfType(depot.CAMERA)[self.camChoice.GetCurrentSelection()])
+        else:
+            return None
+
+
 class ExperimentUI(wx.Panel):
 
     def __init__(self, parent, configKey):
-        wx.Panel.__init__(self, parent = parent)
-
-        self.sizer = wx.FlexGridSizer(1, 2, 5, 5)
-
-        self.sizer.Add(wx.StaticText(self, -1, 'Number of repetitions:'))
-        self.repetitionsBox = wx.TextCtrl(self)
-        self.sizer.Add(self.repetitionsBox)
-
-        self.SetSizerAndFit(self.sizer)
-
-    def augmentParams(self, params):
-        params['repetitions'] = gui.guiUtils.tryParseNum(self.repetitionsBox, int)
-        return params
-
-'''
-class ExperimentUI(wx.Panel):
-
-    def __init__(self, parent, configKey):
-        wx.Panel.__init__(self, parent = parent)
-
-        # dict from light to pulse length
-        self.spec = {}
-        # number of seperate light pulses
-        self.repetitions = 1
-
-        rows = 2+len(depot.getHandlersOfType(depot.LIGHT_TOGGLE))
-        self.sizer = wx.FlexGridSizer(rows, 2, 5, 5)
-
-        self.sizer.Add(wx.StaticText(self, -1, 'Number of repetitions:'))
-        self.repetitionsBox = wx.TextCtrl(self)
-        self.sizer.Add(self.repetitionsBox)
-
-        self.sizer.Add(wx.StaticText(self, -1, 'Light'))
-        self.sizer.Add(wx.StaticText(self, -1, 'Exposure length (ms)'))
-
-        LightToPulseLenBoxes = {}
-        for light in depot.getHandlersOfType(depot.LIGHT_TOGGLE):
-            TextBox = wx.TextCtrl(self)
-            LightToPulseLenBoxes[light] = TextBox
-            self.sizer.Add(wx.StaticText(self, -1, str(light)))
-            self.sizer.Add(TextBox)
-
-        self.SetSizerAndFit(self.sizer)
-'''
-'''
-class ExperimentUI(wx.Panel):
-
-    def __init__(self, parent, configKey):
+        '''Creates a experiment control panel for the STORM class.
+        Has one text box for the number of table repetitions to execute,
+        and rows (inputRow) that will be executed in order numReps times.
+        '''
         wx.Panel.__init__(self, parent = parent)
 
         self.configKey = configKey
+
+        self.numInputRows = 5
         ## List of STORM sequences to add to actiontable.
         # STORM sequence: (numReps, {LIGHT:(duration, camera)})
         self.Sequences = []
@@ -138,57 +137,47 @@ class ExperimentUI(wx.Panel):
         self.lights = depot.getHandlersOfType(depot.CAMERA)
         self.regenInput()
 
+
     # Everything expects 4 cols.
     def regenInput(self):
-        rows = 2+len(self.Sequences)
+        rows = 3+self.numInputRows
         self.GlobalSizer = wx.FlexGridSizer(rows, 4, 5, 5)
 
+        self.addRepsRow(self.GlobalSizer)
         self.addTitleRow(self.GlobalSizer)
-        for row in self.Sequences:
-            addExperimentRow(self.GlobalSizer, row)
-        self.addInputRow(self.GlobalSizer)
+
+        self.rows = [inputRow(parent=self, sizer=self.GlobalSizer)
+                     for _ in range(self.numInputRows)]
+        for row in self.rows:
+            pass
+            row.addInputRowToSizer()
 
         self.GlobalSizer.Layout()
         self.SetSizerAndFit(self.GlobalSizer)
 
-    def addExperimentRow(self, sizer, row):
-        for spec in row:
-            sizer.Add(wx.StaticText(self, -1, str(spec)))
-        self.DelSequence = wx.Button(self, -1, 'Delete Sequence')
-        self.DelSequence.Bind(wx.EVT_LEFT_DOWN, lambda event: self.removeSequenceEvent())
-        sizer.Add(self.DelSequence)
+
+    def addRepsRow(self, sizer):
+        pass
+        sizer.Add(wx.StaticText(self, -1, 'Number of table repeats'))
+
+        self.repsBox = wx.TextCtrl(self)
+        sizer.Add(self.repsBox)
+
+        # Placeholders
+        sizer.Add(wx.StaticText(self, -1, ''))
+        sizer.Add(wx.StaticText(self, -1, ''))
+
 
     def addTitleRow(self, sizer):
         sizer.Add(wx.StaticText(self, -1, 'Light'))
-        sizer.Add(wx.StaticText(self, -1, 'Number of repetitions'))
-        sizer.Add(wx.StaticText(self, -1, 'Pulse length (ms)'))
-        sizer.Add(wx.StaticText(self, -1, 'Add row'))
-
-    def addInputRow(self, sizer):
-        self.lightChoice = wx.Choice(self, choices=[str(light) for light in
-                                                    depot.getHandlersOfType(depot.LIGHT_TOGGLE)])
-        sizer.Add(self.lightChoice)
-
-        self.repetitionsBox = wx.TextCtrl(self)
-        sizer.Add(self.repetitionsBox)
-
-        self.PulseLenBox = wx.TextCtrl(self)
-        sizer.Add(self.PulseLenBox)
-
-        self.AddSequence = wx.Button(self, -1, 'Add Sequence')
-        self.AddSequence.Bind(wx.EVT_LEFT_DOWN, lambda event: self.addSequenceEvent())
-        sizer.Add(self.AddSequence)
+        sizer.Add(wx.StaticText(self, -1, 'Exposure Length'))
+        sizer.Add(wx.StaticText(self, -1, 'Camera to expose with'))
+        sizer.Add(wx.StaticText(self, -1, 'Enabled'))
 
 
-    def addSequenceEvent(self):
-        # TODO: check and typeconvert data
-        row = (self.lightChoice.GetSelection(),
-               self.repetitionsBox.GetValue(),
-               self.repetitionsBox.PulseLenBox(),
-               self.cameraChoice.GetSelection())
-        self.Sequences.append(row)
-        self.regenInput()
-
-    def removeSequenceEvent(self):
-        pass
-'''
+    def augmentParams(self, params):
+        sequences = [row.getSelections() for row in self.rows
+                     if row.getSelections() is not None]
+        params['sequences'] = sequences
+        params['repetitions'] = gui.guiUtils.tryParseNum(self.repsBox, int)
+        return params

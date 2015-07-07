@@ -9,11 +9,12 @@ import structuredIllumination
 import stutteredZStack
 import sweptShutter
 import zStack
+import STORM
 
 ## List of registered modules.
 registeredModules = [zStack, sweptShutter,
             offsetGainCorrection, responseMap, stutteredZStack,
-            optoScriptExample, structuredIllumination]
+            optoScriptExample, structuredIllumination, STORM]
 
 
 ## Add another experiment to the registered set.
@@ -23,7 +24,7 @@ def registerModule(module, index = -1):
     if index == -1:
         index = len(registeredModules)
     registeredModules.insert(index, module)
-    
+
 
 ## Retrieve all registered experiments.
 def getExperimentModules():
