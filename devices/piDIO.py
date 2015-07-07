@@ -6,10 +6,13 @@ import util.connection
 import collections
 import Pyro4
 import wx
+import re
 
 from config import config
 CLASS_NAME = 'RaspberryPi'
 CONFIG_NAME = 'rpi'
+DIO_LINES = ['Objective']
+LINES_PAT = r"(?P<lines>\'\s*\w*\s*\')"
 
 
 
@@ -22,8 +25,30 @@ class RaspberryPi(device.Device):
         else:
             self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
             self.port = int(config.get(CONFIG_NAME, 'port'))
+            linestring = config.get(CONFIG_NAME, 'lines')
+            self.lines = linestring.split(',')
+			
+			
+			#DIO_LINES
+#            try :
+#                linestring = config.get(CONFIG_NAME, 'DIOlines')
+#                parsed = re.search(LINES_PAT, linestring)
+#                if not parsed:
+#                    # Could not parse config entry.
+#                    raise Exception('Bad config: PiDIO could not parse Lines spec.')
+#                    # No transform tuple
+#                else:    
+#                    lstr = parsed.groupdict()['lines']
+#                    self.softlimits=eval(lstr)
+#            except:
+#                print "No lines section setting default lines"
+#                self.lines = ['0']
+            
         self.RPiConnection = None
         ## util.connection.Connection for the temperature sensors.
+		
+        self.makeOutputWindow = makeOutputWindow
+        self.buttonName='piDIO'
 
         ## Maps light modes to the mirror settings for those modes, as a list
         #IMD 20140806
@@ -53,6 +78,7 @@ class RaspberryPi(device.Device):
         
         pass
 
+    
     ## Generate a column of buttons for setting the light path. Make a window
     # that plots our temperature data.
     def makeUI(self, parent):
@@ -117,9 +143,58 @@ class RaspberryPi(device.Device):
 
     def onObjectiveChange(self, name, pixelSize, transform, offset):
         if (name=='10x'):
-		    self.flipDownUp(0, 1)
+            self.flipDownUp(0, 1)
         elif (name=='60xwater'):
-		    self.flipDownUp(0, 0)
+            self.flipDownUp(0, 0)
         else: #default behaviour, mapping objective
-		    self.flipDownUp(0, 1)
-        print "pi-DIO objective change"
+            self.flipDownUp(0, 1)
+        print "piDIO objective change"
+
+
+## This debugging window lets each digital lineout of the DSP be manipulated
+# individually.
+class piOutputWindow(wx.Frame):
+    def __init__(self, piDIO, parent, *args, **kwargs):
+        wx.Frame.__init__(self, parent, *args, **kwargs)
+        ## piDevice instance.
+        self.pi = piDIO
+        # Contains all widgets.
+        panel = wx.Panel(self)
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
+        buttonSizer = wx.GridSizer(2, 4, 1, 1)
+
+        ## Maps buttons to their lines.
+        self.buttonToLine = {}
+
+        # Set up the digital lineout buttons.
+        for i in range(len(piDIO.lines)) :
+            button = gui.toggleButton.ToggleButton(
+                    parent = panel, label = str(piDIO.lines[i]),
+                    activateAction = self.toggle,
+                    deactivateAction = self.toggle,
+                    size = (140, 80))
+            buttonSizer.Add(button, 1, wx.EXPAND)
+            self.buttonToLine[button] = i
+        mainSizer.Add(buttonSizer)
+
+        panel.SetSizerAndFit(mainSizer)
+        self.SetClientSize(panel.GetSize())
+
+
+    ## One of our buttons was clicked; update the DSP's output.
+    def toggle(self):
+        output = 0
+        for button, line in self.buttonToLine.iteritems():
+            if button.getIsActive():
+                self.pi.RPiConnection.flipDownUp(line, 1)
+            else:
+                self.pi.RPiConnection.flipDownUp(line, 0)
+
+
+## Debugging function: display a DSPOutputWindow.
+def makeOutputWindow(self):
+    # HACK: the _deviceInstance object is created by the depot when this
+    # device is initialized.
+    global _deviceInstance
+    piOutputWindow(_deviceInstance, parent = wx.GetApp().GetTopWindow()).Show()
+    

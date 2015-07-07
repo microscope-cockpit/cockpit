@@ -122,6 +122,9 @@ class DSPDevice(device.Device):
         self.lastAnalogPositions = [0] * 4
         ## Values for anologue positions at startup.
         self.startupAnalogPositions = [None] * 4
+		#IMD 20150617 adeded to make adcanved control work.
+        self.makeOutputWindow = makeOutputWindow
+        self.buttonName='DSP TTL'
 
 
     ## Connect to the DSP computer.
@@ -848,7 +851,7 @@ class DSPOutputWindow(wx.Frame):
 
 
 ## Debugging function: display a DSPOutputWindow.
-def makeOutputWindow():
+def makeOutputWindow(self):
     # HACK: the _deviceInstance object is created by the depot when this
     # device is initialized.
     global _deviceInstance
