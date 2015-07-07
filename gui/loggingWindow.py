@@ -43,7 +43,8 @@ class LoggingWindow(wx.Frame):
 
     ## Send text to one of our output boxes, and also log that text.
     def write(self, target, *args):
-        wx.CallAfter(target.AppendText, *args)
+        #wx.CallAfter(target.AppendText, *args)
+        target.AppendText(*args)
         self.textCache += ' '.join(map(str, args))
         if '\n' in self.textCache:
             # Ended a line; send the text to the logs, minus any trailing
