@@ -211,6 +211,8 @@ class PhysikInstrumenteM687(device.Device):
     def homeMotors(self):
         # Clear output buffers
         self.xyConnection.readlines()
+        self.xyConnection.write('SVO 1 1\n')
+        self.xyConnection.write('SVO 2 1\n')
         self.xyConnection.write('FRF\n')
         # Motion status response.
         response = None
@@ -231,12 +233,12 @@ class PhysikInstrumenteM687(device.Device):
 
         busy_box.Hide()
         busy_box.Destroy()
-        
+		
         # Was homing successful?
         self.xyConnection.write('FRF?\n')
         homestatus = self.xyConnection.readlines()
         success = True
-        
+		
         msg = ''
         for status in homestatus:
             motor, state = status.strip().split('=')
