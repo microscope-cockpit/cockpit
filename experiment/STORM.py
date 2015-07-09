@@ -99,14 +99,14 @@ class inputRow(object):
         self.cameras = depot.getActiveCameras()
 
     def addInputRowToSizer(self):
-        self.lightChoice = wx.Choice(self.parent, choices=[str(light) for light in
+        self.lightChoice = wx.Choice(self.parent, choices=[str(light.wavelength) for light in
                                                     depot.getHandlersOfType(depot.LIGHT_TOGGLE)])
         self.sizer.Add(self.lightChoice)
 
         self.PulseLenBox = wx.TextCtrl(self.parent)
         self.sizer.Add(self.PulseLenBox)
 
-        self.camChoice = wx.Choice(self.parent, choices=[str(camera) for camera in
+        self.camChoice = wx.Choice(self.parent, choices=[camera.descriptiveName for camera in
                                                     self.cameras]+[str(None)])
         self.sizer.Add(self.camChoice)
 
