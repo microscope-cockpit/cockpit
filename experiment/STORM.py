@@ -92,6 +92,11 @@ class inputRow(object):
         '''Class representing the selections for the STORM experiment plan.'''
         self.parent = parent
         self.sizer = sizer
+        # The user could change the enabled cameras whilst we are in the
+        # Experiment dialog, changing the indices. This would cause the cameras
+        # that were used to be random - V. suprising
+        # So, save the enabled cameras as they were when experiment panel opened
+        self.cameras = depot.getActiveCameras()
 
     def addInputRowToSizer(self):
         self.lightChoice = wx.Choice(self.parent, choices=[str(light) for light in
@@ -102,8 +107,7 @@ class inputRow(object):
         self.sizer.Add(self.PulseLenBox)
 
         self.camChoice = wx.Choice(self.parent, choices=[str(camera) for camera in
-                                                    depot.getHandlersOfType(depot.CAMERA)]+
-                                                    [str(None)])
+                                                    self.cameras]+[str(None)])
         self.sizer.Add(self.camChoice)
 
         self.enabled = wx.CheckBox(self.parent)
@@ -111,9 +115,12 @@ class inputRow(object):
 
     def getSelections(self):
         if self.enabled.GetValue():
-            return (depot.getHandlersOfType(depot.LIGHT_TOGGLE)[self.lightChoice.GetCurrentSelection()],
-                   int(self.PulseLenBox.GetValue()),
-                   depot.getHandlersOfType(depot.CAMERA)[self.camChoice.GetCurrentSelection()])
+            light = depot.getHandlersOfType(depot.LIGHT_TOGGLE)[self.lightChoice.GetCurrentSelection()]
+            exposureLen = int(self.PulseLenBox.GetValue())
+            camera = self.cameras[self.camChoice.GetCurrentSelection()]\
+                     if self.camChoice.GetCurrentSelection() != 'None' else None
+
+            return (light, exposureLen, camera)
         else:
             return None
 
@@ -134,7 +141,6 @@ class ExperimentUI(wx.Panel):
         # STORM sequence: (numReps, {LIGHT:(duration, camera)})
         self.Sequences = []
 
-        self.lights = depot.getHandlersOfType(depot.CAMERA)
         self.regenInput()
 
 
