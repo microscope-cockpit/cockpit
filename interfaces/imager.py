@@ -90,9 +90,13 @@ class Imager:
             start = time.time()
             try:
                 # HACK: only wait for one camera.
-                events.executeAndWaitFor("new image %s" % (list(self.activeCameras)[0].name),
-                        self.takeImage, 
-                        shouldBlock = haveNonRoomLight, shouldStopVideo = False)
+                waitTime = self.getNextImageTime() - time.time()
+                if waitTime < 0:
+                    events.executeAndWaitFor("new image %s" % (list(self.activeCameras)[0].name),
+                            self.takeImage,
+                            shouldBlock = haveNonRoomLight, shouldStopVideo = False)
+                else:
+                    pass # Would have deadlocked
             except Exception, e:
                 print "Video mode failed:",e
                 traceback.print_exc()
@@ -123,8 +127,8 @@ class Imager:
             lightLimiter = max(lightLimiter, light.getExposureTime())
         # The limiters are in milliseconds; downconvert.
         return self.lastImageTime + (camLimiter + lightLimiter) / 1000.0
-        
-        
+
+
 
 
 ## Global singleton.
@@ -147,4 +151,3 @@ def takeImage(shouldBlock = False):
 ## Simple passthrough.
 def videoMode():
     imager.videoMode()
-        
