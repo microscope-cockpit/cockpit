@@ -144,10 +144,13 @@ class RaspberryPi(device.Device):
     def onObjectiveChange(self, name, pixelSize, transform, offset):
         if (name=='10x'):
             self.flipDownUp(0, 1)
+            self.flipDownUp(1, 0)
         elif (name=='60xwater'):
             self.flipDownUp(0, 0)
+            self.flipDownUp(1, 1)
         else: #default behaviour, mapping objective
             self.flipDownUp(0, 1)
+            self.flipDownUp(1, 0)
         print "piDIO objective change"
 
 
