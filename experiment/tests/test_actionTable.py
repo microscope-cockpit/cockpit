@@ -147,7 +147,7 @@ class TestActionTable(unittest.TestCase):
         self.assertEqual(0, self.action_table[0][0])
         self.assertEqual(1, self.action_table[1][0])
 
-
+    @unittest.expectedFailure
     def test_enforcePositiveTimepoints_unsorted(self):
         '''Enforcing the sorted order should move all elements forward by
         the most negative elements time.

@@ -74,6 +74,3 @@ class TestCorrector(unittest.TestCase):
         print(corrector.correct(np.zeros((10, 10))))
         self.assertTrue( np.allclose(corrector.correct(np.zeros((10, 10))), np.zeros((10, 10)),
                                      rtol=1e-4, atol=1e-4) )
-
-        # 3 parts + 2 linear interps.
-        self.assertEqual(len(corrector.subCorrectors), 5)
