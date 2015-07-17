@@ -137,6 +137,9 @@ class inputRow(object):
         # Not in the list and enabled
         elif enabled and position == wx.NOT_FOUND:
             self.camChoice.Append(cameraLabel)
+        # Update self.cameras as they may have been enabled/disabled since
+        # the control was __init__'ed.
+        self.cameras = depot.getActiveCameras()
 
 
 class ExperimentUI(wx.Panel):
@@ -153,8 +156,6 @@ class ExperimentUI(wx.Panel):
         # STORM sequence: (numReps, {LIGHT:(duration, camera)})
         self.Sequences = []
         self.regenInput()
-
-
 
 
     # Everything expects 4 cols.
