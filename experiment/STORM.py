@@ -3,6 +3,7 @@ import experiment
 import zStack
 import gui.guiUtils
 import depot
+import events
 
 import decimal
 import math
@@ -113,6 +114,8 @@ class inputRow(object):
         self.enabled = wx.CheckBox(self.parent)
         self.sizer.Add(self.enabled)
 
+        events.subscribe('camera enable', self.cameraToggled)
+
     def getSelections(self):
         if self.enabled.GetValue():
             light = depot.getHandlersOfType(depot.LIGHT_TOGGLE)[self.lightChoice.GetCurrentSelection()]
@@ -124,6 +127,17 @@ class inputRow(object):
         else:
             return None
 
+    def cameraToggled(self, camera, enabled):
+        cameraLabel = camera.descriptiveName
+        position = self.camChoice.FindString(cameraLabel)
+        # Present and now disabled
+        if (not enabled and position != wx.NOT_FOUND):
+            # Remove it
+            self.camChoice.Delete(position)
+        # Not in the list and enabled
+        elif enabled and position == wx.NOT_FOUND:
+            self.camChoice.Append(cameraLabel)
+
 
 class ExperimentUI(wx.Panel):
 
@@ -133,15 +147,14 @@ class ExperimentUI(wx.Panel):
         and rows (inputRow) that will be executed in order numReps times.
         '''
         wx.Panel.__init__(self, parent = parent)
-
         self.configKey = configKey
-
         self.numInputRows = 5
         ## List of STORM sequences to add to actiontable.
         # STORM sequence: (numReps, {LIGHT:(duration, camera)})
         self.Sequences = []
-
         self.regenInput()
+
+
 
 
     # Everything expects 4 cols.
