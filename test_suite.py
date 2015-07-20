@@ -20,7 +20,7 @@ import unittest
 
 #from util.tests.test_user import test_user, test_user_modification
 
-from util.tests.test_importer import testImporter
+#from util.tests.test_importer import testImporter
 
 #from util.tests.test_listener import testListener
 #from util.tests.test_connection import TestConnection
@@ -37,6 +37,8 @@ from util.tests.test_importer import testImporter
 #from util.tests.test_colors import TestWavelengthToColor, TestHsvToRgb
 
 #from util.tests.test_datadoc import TestDataDoc
+
+from handlers.tests.test_camera import testCamera
 
 if __name__ == '__main__':
     unittest.main()
