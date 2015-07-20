@@ -39,6 +39,7 @@ import unittest
 #from util.tests.test_datadoc import TestDataDoc
 
 from handlers.tests.test_camera import testCamera
-
+from handlers.tests.test_drawer import testDrawer
+from handlers.tests.test_lightSource import TestLightSourceHandler
 if __name__ == '__main__':
     unittest.main()
