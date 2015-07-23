@@ -180,6 +180,15 @@ class CockpitLinkamStage(device.Device):
                 isBold=False)
         self.displays['light'] = lightButton
         sizer.Add(lightButton)
+        condensorButton = gui.toggleButton.ToggleButton(
+                parent=panel,
+                label='condensor LED',
+                size=gui.device.DEFAULT_SIZE,
+                activateAction=self.condensorOn,
+                deactivateAction=self.condensorOff,
+                isBold=False)
+        self.displays['condensor'] = condensorButton
+        sizer.Add(condensorButton)
 
         ## Set the panel sizer and return.
         panel.SetSizerAndFit(sizer)
@@ -280,6 +289,14 @@ class CockpitLinkamStage(device.Device):
 
     def toggleChamberLight(self):
         self.remote.toggleChamberLight()
+
+
+    def condensorOff(self):
+        self.remote.setCondensorLedLevel(0)
+
+
+    def condensorOn(self):
+        self.remote.setCondensorLedLevel(1)
 
 
     def updateUI(self):
