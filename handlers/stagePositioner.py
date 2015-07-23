@@ -45,6 +45,10 @@ class PositionerHandler(deviceHandler.DeviceHandler):
         self.hardLimits = hardLimits
         if softLimits is None:
             softLimits = hardLimits
+        elif min(softLimits) < min(hardLimits) or max(softLimits) > max(hardLimits):
+            raise RuntimeError('Soft limits {} for the PositionerHandler were outside the \
+                               Range of hard limits {}'.format(softLimits, hardLimits))
+            
         # Cast to a list since we may need to modify these later.
         self.softLimits = list(softLimits)
 
