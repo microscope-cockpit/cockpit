@@ -855,5 +855,16 @@ def makeOutputWindow(self):
     # HACK: the _deviceInstance object is created by the depot when this
     # device is initialized.
     global _deviceInstance
-    DSPOutputWindow(_deviceInstance, parent = wx.GetApp().GetTopWindow()).Show()
+    # Ensure only a single instance of the window.
+    global _windowInstance
+    window = globals().get('_windowInstance')
+    if window:
+        try:
+            window.Raise()
+            return None
+        except:
+            pass
+    # If we get this far, we need to create a new window.
+    _windowInstance = DSPOutputWindow(_deviceInstance, parent=wx.GetApp().GetTopWindow())
+    _windowInstance.Show()
     
