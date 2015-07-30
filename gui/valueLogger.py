@@ -225,7 +225,7 @@ class ValueLoggerPanel(wx.Panel):
             tick.set_rotation(90)
         # Update the canvas.
         self.canvas.draw()
-        self.canvas.flush_events()
+        #self.canvas.flush_events()
 
 
     def loadShowKeysFromConfig(self, event):
