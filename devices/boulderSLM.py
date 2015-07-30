@@ -18,6 +18,7 @@ Cockpit uses lowerCamelCase function names.
 Functions names as lower_case are remote camera object methods.
 """
 
+from collections import OrderedDict
 import decimal
 import depot
 import device
@@ -53,6 +54,13 @@ class BoulderSLMDevice(device.Device):
         self.settlingTime = decimal.Decimal('0.01')
         self.slmTimeout = int(config.get(CONFIG_NAME, 'timeout', default=10))
         self.slmRetryLimit = int(config.get(CONFIG_NAME, 'retryLimit', default=3))
+        self.lastParms = None
+        # A mapping of context-menu entries to functions.
+        # Define in tuples - easier to read and reorder.
+        menuTuples = (('Generate SIM sequence', self.testSIMSequence),
+                      ('SIM diff. angle', self.setDiffractionAngle), )
+        # Store as ordered dict for easy item->func lookup.
+        self.menuItems = OrderedDict(menuTuples)
 
 
     def initialize(self):
@@ -81,23 +89,25 @@ class BoulderSLMDevice(device.Device):
             return
 
         # Remove consecutive duplicates and position resets.
-        reducedParams = [p[0] for p in groupby(patternParams) 
+        reducedParams = [p[0] for p in groupby(patternParams)
                           if type(p[0]) is tuple]
         # Find the repeating unit in the sequence.
-        sequenceLength = len(reducedParams) 
+        sequenceLength = len(reducedParams)
         for length in range(2, len(reducedParams) / 2):
             if reducedParams[0:length] == reducedParams[length:2*length]:
                 sequenceLength = length
                 break
         sequence = reducedParams[0:sequenceLength]
-
         ## Tell the SLM to prepare the pattern sequence.
         asyncProxy = Pyro4.async(self.connection)
         asyncResult = asyncProxy.set_sim_sequence(sequence)
+        # Store the parameters used to generate the sequence.
+        self.lastParms = sequence
 
         # Step through the table and replace this handler with triggers.
         # Identify the SLM trigger(provided elsewhere, e.g. by DSP)
         triggerHandler = depot.getHandlerWithName(CONFIG_NAME + ' trigger')
+
         # Track sequence index set by last set of triggers.
         lastIndex = 0
         for i, (time, handler, action) in enumerate(table.actions):
@@ -131,7 +141,7 @@ class BoulderSLMDevice(device.Device):
             lastIndex += numTriggers
             if lastIndex >= sequenceLength:
                 lastIndex = lastIndex % sequenceLength
-            
+
         # Wait unti the SLM has finished preparing the pattern sequence.
         status = wx.ProgressDialog(parent = wx.GetApp().GetTopWindow(),
                 title = "Waiting for SLM",
@@ -150,9 +160,9 @@ class BoulderSLMDevice(device.Device):
 
 
     ## Run some lines from the table.
-    # Note we ignore the repDuration parameter, on the assumption that we 
+    # Note we ignore the repDuration parameter, on the assumption that we
     # will never be responsible for gating the duration of a rep.
-    def executeTable(self, name, table, startIndex, stopIndex, numReps, 
+    def executeTable(self, name, table, startIndex, stopIndex, numReps,
             repDuration):
         for time, handler, action in table[startIndex:stopIndex]:
             if handler is self.executor:
@@ -167,7 +177,7 @@ class BoulderSLMDevice(device.Device):
 
     def getHandlers(self):
         result = []
-        # We need to be able to go over experiments to check on the 
+        # We need to be able to go over experiments to check on the
         # exposure times needed.
         self.executor = handlers.executor.ExecutorHandler(
                 "slm executor",
@@ -197,7 +207,8 @@ class BoulderSLMDevice(device.Device):
                 parent=self.panel, label='SLM')
         sizer.Add(label)
         rowSizer = wx.BoxSizer(wx.VERTICAL)
-        self.powerButton = gui.toggleButton.ToggleButton(
+        self.buttons = []
+        powerButton = gui.toggleButton.ToggleButton(
                 label='OFF',
                 activateAction = self.enable,
                 deactivateAction = self.disable,
@@ -205,12 +216,13 @@ class BoulderSLMDevice(device.Device):
                 inactiveLabel = 'OFF',
                 parent=self.panel,
                 size=gui.device.DEFAULT_SIZE)
-        rowSizer.Add(self.powerButton)
-        self.diffAngleButton = gui.device.Button(
-                label='diff. angle',
-                leftAction=self.onSetSIMDiffractionAngle,
-                parent=self.panel)
-        rowSizer.Add(self.diffAngleButton)
+        self.buttons.append(powerButton)
+
+        # Changed my mind. SIM diffraction angle is an advanced parameter,
+        # so it now lives in a right-click menu rather than on a button.
+        for b in self.buttons:
+            b.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.onRightMouse(event))
+            rowSizer.Add(b)
         sizer.Add(rowSizer)
         self.panel.SetSizerAndFit(sizer)
         self.hasUI = True
@@ -228,7 +240,45 @@ class BoulderSLMDevice(device.Device):
         #        self.cleanupAfterExperiment)
 
 
-    def onSetSIMDiffractionAngle(self, event):
+    ### Context menu and handlers ###
+    def menuCallback(self, item):
+        func = self.menuItems[item]
+        return func()
+
+
+    def onRightMouse(self, event):
+        menu = gui.device.Menu(self.menuItems.keys(), self.menuCallback)
+        menu.show(event)
+
+
+    def testSIMSequence(self):
+        inputs = gui.dialogs.getNumberDialog.getManyNumbersFromUser(
+                self.panel,
+                'Generate a SIM sequence',
+                ['wavelength',
+                 'total angles',
+                 'total phases',
+                 'order\n0 for a then ph\n1 for ph then a'],
+                 (488, 3, 5, 0))
+        wavelength, angles, phases, order = [int(i) for i in inputs]
+        if order == 0:
+            params = [(theta, phi, wavelength)
+                            for phi in xrange(phases)
+                            for theta in xrange(angles)]
+        elif order == 1:
+            params = [(theta, phi, wavelength)
+                            for theta in xrange(angles)
+                            for phi in xrange(phases)]
+        else:
+            raise ValueError('Order must be 0 or 1.')
+        try:
+            self.connection.set_sim_sequence(params)
+        except:
+            raise Exception('Could not communicate with SLM service.')
+        self.lastParms = params
+
+
+    def setDiffractionAngle(self):
         try:
             theta = self.connection.get_sim_diffraction_angle()
         except:
