@@ -19,6 +19,7 @@
 
 import wx
 import device
+import gui.device
 import gui.toggleButton
 import depot
 
@@ -44,8 +45,9 @@ class AdvancedControl(device.Device):
     def makeUI(self, parent):
         panel = wx.Panel(parent)
         panelSizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(panel, -1, "Advanced")
-        label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        label = gui.device.Label(
+                parent=panel, 
+                label="Advanced")
         panelSizer.Add(label)
         devs = depot.getAllDevices()
         buttonSizer = wx.BoxSizer(wx.VERTICAL)
