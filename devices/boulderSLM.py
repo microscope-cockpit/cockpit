@@ -181,6 +181,29 @@ class BoulderSLMDevice(device.Device):
             total += 1
 
 
+    ### UI functions ###
+    def makeUI(self, parent):
+        self.panel = wx.Panel(parent)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        label = gui.device.Label(
+                parent=self.panel, label='SLM')
+        sizer.Add(label)
+        rowSizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.powerButton = gui.toggleButton.ToggleButton(
+                label='slm',
+                activateAction = self.enable,
+                deactivateAction = self.disable,
+                activeLabel = 'ON',
+                inactiveLabel = 'OFF',
+                parent=self.panel)
+        rowSizer.Add(self.powerButton)
+        sizer.Add(rowSizer)
+        self.panel.SetSizerAndFit(sizer)
+        self.hasUI = True
+        return self.panel
+
+
     def onPrepareForExperiment(self, *args):
         self.position = self.getCurrentPosition()
 
