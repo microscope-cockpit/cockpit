@@ -28,7 +28,6 @@ CLASS_NAME = 'AdvancedControl'
 CONFIG_NAME = 'advCtl'
 
 
-
 class AdvancedControl(device.Device):
     def __init__(self):
         self.isActive = config.has_section(CONFIG_NAME)
@@ -59,7 +58,8 @@ class AdvancedControl(device.Device):
                     advancedDevList.append (dev.makeOutputWindow)
                     button = gui.toggleButton.ToggleButton(
                             label=dev.buttonName,
-                            parent=panel)
+                            parent=panel, 
+                            size=gui.device.DEFAULT_SIZE)
                     button.Bind(wx.EVT_LEFT_DOWN, dev.makeOutputWindow)#lambda event: advancedDevList[i])
                     buttonSizer.Add(button)
                     i=i+1
