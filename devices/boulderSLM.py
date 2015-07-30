@@ -57,12 +57,12 @@ class BoulderSLMDevice(device.Device):
         self.connection = Pyro4.Proxy(uri)
 
 
-    def enable(self):
-        self.connection.run()
-
-
     def disable(self):
         self.connection.stop()
+
+
+    def enable(self):
+        self.connection.run()
 
 
     def examineActions(self, name, table):
@@ -181,12 +181,12 @@ class BoulderSLMDevice(device.Device):
             total += 1
 
 
+    def onPrepareForExperiment(self, *args):
+        self.position = self.getCurrentPosition()
+
+
     def performSubscriptions(self):
         #events.subscribe('user abort', self.onAbort)
         events.subscribe('prepare for experiment', self.onPrepareForExperiment)
         #events.subscribe('cleanup after experiment',
         #        self.cleanupAfterExperiment)
-
-
-    def onPrepareForExperiment(self, *args):
-        self.position = self.getCurrentPosition()
