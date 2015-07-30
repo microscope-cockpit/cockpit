@@ -167,7 +167,8 @@ class BoulderSLMDevice(device.Device):
                 "slm",
                 {'examineActions': self.examineActions,
                     'getNumRunnableLines': self.getNumRunnableLines,
-                    'executeTable': self.executeTable})
+                    'executeTable': self.executeTable,
+                    'makeUI': self.makeUI})
         result.append(self.executor)
         return result
 
