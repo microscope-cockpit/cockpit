@@ -101,8 +101,6 @@ class BoulderSLMDevice(device.Device):
         ## Tell the SLM to prepare the pattern sequence.
         asyncProxy = Pyro4.async(self.connection)
         asyncResult = asyncProxy.set_sim_sequence(sequence)
-        # Store the parameters used to generate the sequence.
-        self.lastParms = sequence
 
         # Step through the table and replace this handler with triggers.
         # Identify the SLM trigger(provided elsewhere, e.g. by DSP)
@@ -141,21 +139,10 @@ class BoulderSLMDevice(device.Device):
             lastIndex += numTriggers
             if lastIndex >= sequenceLength:
                 lastIndex = lastIndex % sequenceLength
-
-        # Wait unti the SLM has finished preparing the pattern sequence.
-        status = wx.ProgressDialog(parent = wx.GetApp().GetTopWindow(),
-                title = "Waiting for SLM",
-                message = "SLM is generating pattern sequence.")
-        status.Show()
-        slmFailCount = 0
-        slmFail = False
-        while not asyncResult.wait(timeout=self.slmTimeout) and not slmFail:
-            slmFailCount += 1
-            if slmFailCount >= self.slmRetryLimit:
-                slmFail = True
-        status.Destroy()
-        if slmFail:
-            raise Exception('SLM set_sim_sequence timeout.')
+        # Wait until SLM has finished generating and loading patterns.
+        self.wait(asyncResult, "SLM is generating pattern sequence.")
+        # Store the parameters used to generate the sequence.
+        self.lastParms = sequence
         self.connection.run()
 
 
@@ -240,6 +227,23 @@ class BoulderSLMDevice(device.Device):
         #        self.cleanupAfterExperiment)
 
 
+    def wait(self, asyncResult, message):
+        # Wait unti the SLM has finished an aynchronous task.
+        status = wx.ProgressDialog(parent = wx.GetApp().GetTopWindow(),
+                title = "Waiting for SLM",
+                message = message)
+        status.Show()
+        slmFailCount = 0
+        slmFail = False
+        while not asyncResult.wait(timeout=self.slmTimeout) and not slmFail:
+            slmFailCount += 1
+            if slmFailCount >= self.slmRetryLimit:
+                slmFail = True
+        status.Destroy()
+        if slmFail:
+            raise Exception('SLM timeout.')
+
+
     ### Context menu and handlers ###
     def menuCallback(self, item):
         func = self.menuItems[item]
@@ -271,10 +275,10 @@ class BoulderSLMDevice(device.Device):
                             for phi in xrange(phases)]
         else:
             raise ValueError('Order must be 0 or 1.')
-        try:
-            self.connection.set_sim_sequence(params)
-        except:
-            raise Exception('Could not communicate with SLM service.')
+        ## Tell the SLM to prepare the pattern sequence.
+        asyncProxy = Pyro4.async(self.connection)
+        asyncResult = asyncProxy.set_sim_sequence(params)
+        self.wait(asyncResult, "SLM is generating pattern sequence.")
         self.lastParms = params
 
 
