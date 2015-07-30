@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: UTF8   -*-
 """ This module makes a BNS SLM  device available to Cockpit.
 
 Mick Phillips, University of Oxford, 2014.
@@ -24,6 +26,7 @@ import Pyro4
 import wx
 
 import events
+import gui.device
 import gui.guiUtils
 import gui.toggleButton
 import handlers
@@ -199,6 +202,11 @@ class BoulderSLMDevice(device.Device):
                 parent=self.panel,
                 size=gui.device.DEFAULT_SIZE)
         rowSizer.Add(self.powerButton)
+        self.diffAngleButton = gui.device.Button(
+                label='diff. angle',
+                leftAction=self.onSetSIMDiffractionAngle,
+                parent=self.panel)
+        rowSizer.Add(self.diffAngleButton)
         sizer.Add(rowSizer)
         self.panel.SetSizerAndFit(sizer)
         self.hasUI = True
@@ -214,3 +222,18 @@ class BoulderSLMDevice(device.Device):
         events.subscribe('prepare for experiment', self.onPrepareForExperiment)
         #events.subscribe('cleanup after experiment',
         #        self.cleanupAfterExperiment)
+
+
+    def onSetSIMDiffractionAngle(self, event):
+        try:
+            theta = self.connection.get_sim_diffraction_angle()
+        except:
+            raise Exception('Could not communicate with SLM service.')
+        newTheta = gui.dialogs.getNumberDialog.getNumberFromUser(
+                self.panel,
+                'Set SIM diffraction angle',
+                ('Adjust diffraction angle to\nput spots at edge of pupil.\n'
+                 u'Current angle is %.2f°.' % theta ),
+                theta,
+                atMouse=True)
+        self.connection.set_sim_diffraction_angle(newTheta)
