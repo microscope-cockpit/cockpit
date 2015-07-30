@@ -44,7 +44,7 @@ class AdvancedControl(device.Device):
     def makeUI(self, parent):
         panel = wx.Panel(parent)
         panelSizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(panel, -1, "Advanced\nControls:")
+        label = wx.StaticText(panel, -1, "Advanced")
         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         panelSizer.Add(label)
         devs = depot.getAllDevices()
@@ -56,8 +56,8 @@ class AdvancedControl(device.Device):
                 if callable(dev.makeOutputWindow):
                     advancedDevList.append (dev.makeOutputWindow)
                     button = gui.toggleButton.ToggleButton(
-                          label = dev.buttonName, parent = panel, size = (84, 50))
-						  
+                            label=dev.buttonName,
+                            parent=panel)
                     button.Bind(wx.EVT_LEFT_DOWN, dev.makeOutputWindow)#lambda event: advancedDevList[i])
                     buttonSizer.Add(button)
                     i=i+1
