@@ -29,6 +29,7 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+import util.threads
 import util.userConfig
 import threading
 import time
@@ -139,6 +140,7 @@ class ValueLoggerPanel(wx.Panel):
         gui.guiUtils.placeMenuAtMouse(self, menu)
 
     
+    @util.threads.callInMainThread
     def draw(self, *args):
         """Plot the data."""
         if not window:
