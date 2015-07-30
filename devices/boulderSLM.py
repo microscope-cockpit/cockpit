@@ -58,6 +58,10 @@ class BoulderSLMDevice(device.Device):
     def initialize(self):
         uri = "PYRO:pyroSLM@%s:%d" % (self.ipAddress, self.port)
         self.connection = Pyro4.Proxy(uri)
+        # If there's a diffraction angle in the config, set it on the remote.
+        if config.has_option(CONFIG_NAME, 'diffractionAngle'):
+            theta = config.get(CONFIG_NAME, 'diffractionAngle')
+            self.connection.set_sim_diffraction_angle(diffractionAngle)
 
 
     def disable(self):
