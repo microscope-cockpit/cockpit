@@ -190,14 +190,14 @@ class BoulderSLMDevice(device.Device):
                 parent=self.panel, label='SLM')
         sizer.Add(label)
         rowSizer = wx.BoxSizer(wx.VERTICAL)
-
         self.powerButton = gui.toggleButton.ToggleButton(
-                label='slm',
+                label='OFF',
                 activateAction = self.enable,
                 deactivateAction = self.disable,
                 activeLabel = 'ON',
                 inactiveLabel = 'OFF',
-                parent=self.panel)
+                parent=self.panel,
+                size=gui.device.DEFAULT_SIZE)
         rowSizer.Add(self.powerButton)
         sizer.Add(rowSizer)
         self.panel.SetSizerAndFit(sizer)
