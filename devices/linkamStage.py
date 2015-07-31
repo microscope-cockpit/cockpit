@@ -102,6 +102,8 @@ class CockpitLinkamStage(device.Device):
             keys = set(self.status.keys()).difference(set(['connected']))
             self.status.update(map(lambda k: (k, None), keys))
         events.publish("status update", __name__, self.status)
+        # Send position updates in case stage has been moved with paddle.
+        self.sendPositionUpdates()
         self.updateUI()
 
 
