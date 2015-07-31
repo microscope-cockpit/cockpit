@@ -88,7 +88,7 @@ class Label(wx.StaticText):
 
 
 class ValueDisplay(wx.BoxSizer):
-    def __init__(self, parent, label, value, formatStr=None, unitStr=None):
+    def __init__(self, parent, label, value='', formatStr=None, unitStr=None):
         super(ValueDisplay, self).__init__(wx.HORIZONTAL)
         self.value = value
         label = Label(
@@ -124,6 +124,17 @@ class ValueDisplay(wx.BoxSizer):
                 return
             self.value = value
         self.valDisplay.SetLabel(self.formatStr % self.value)
+
+
+class MultilineDisplay(wx.StaticText):
+    def __init__(self, *args, **kwargs):
+        if 'style' not in kwargs:
+            kwargs['style'] = wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE
+        if 'numLines' in kwargs:
+            n = kwargs.pop('numLines')
+            kwargs['size'] = (DEFAULT_SIZE[0], n * DEFAULT_SIZE[1])
+        super(MultilineDisplay, self).__init__(*args, **kwargs)
+        self.SetFont(SMALL_FONT)
 
 
 class Menu(wx.Menu):
