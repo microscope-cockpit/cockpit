@@ -163,14 +163,7 @@ class CockpitLinkamStage(device.Device):
         label = gui.device.Label(parent=panel,
                                 label='Cryostage')
         sizer.Add(label)
-        ## Generate the value displays.
-        self.displays = {}
-        for d in tempDisplays:
-            self.displays[d] = gui.device.ValueDisplay(
-                    parent=panel, label=d, value=0.0, 
-                    unitStr=u'°C')
-            sizer.Add(self.displays[d])
-            self.displays[d].Bind(wx.EVT_RIGHT_DOWN, self.onRightMouse)
+        self.elements = {}
         lightButton = gui.toggleButton.ToggleButton(
                 parent=panel,
                 label='chamber light',
@@ -178,7 +171,7 @@ class CockpitLinkamStage(device.Device):
                 activateAction=self.toggleChamberLight,
                 deactivateAction=self.toggleChamberLight,
                 isBold=False)
-        self.displays['light'] = lightButton
+        self.elements['light'] = lightButton
         sizer.Add(lightButton)
         condensorButton = gui.toggleButton.ToggleButton(
                 parent=panel,
@@ -187,8 +180,15 @@ class CockpitLinkamStage(device.Device):
                 activateAction=self.condensorOn,
                 deactivateAction=self.condensorOff,
                 isBold=False)
-        self.displays['condensor'] = condensorButton
+        self.elements['condensor'] = condensorButton
         sizer.Add(condensorButton)
+        ## Generate the value displays.
+        for d in tempDisplays:
+            self.elements[d] = gui.device.ValueDisplay(
+                    parent=panel, label=d, value=0.0, 
+                    unitStr=u'°C')
+            sizer.Add(self.elements[d])
+            self.elements[d].Bind(wx.EVT_RIGHT_DOWN, self.onRightMouse)
 
         ## Set the panel sizer and return.
         panel.SetSizerAndFit(sizer)
@@ -302,12 +302,12 @@ class CockpitLinkamStage(device.Device):
     def updateUI(self):
         """Update user interface elements."""
         status = self.status
-        self.displays['bridge'].updateValue(self.status.get('bridgeT'))
-        self.displays['chamber'].updateValue(self.status.get('chamberT'))
-        self.displays['dewar'].updateValue(self.status.get('dewarT'))
+        self.elements['bridge'].updateValue(self.status.get('bridgeT'))
+        self.elements['chamber'].updateValue(self.status.get('chamberT'))
+        self.elements['dewar'].updateValue(self.status.get('dewarT'))
         ## The stage SDK allows us to toggle the light, but not know
         # its state.
-        # self.displays['light'].setActive(not self.status.get('light'))
+        # self.elements['light'].setActive(not self.status.get('light'))
         valuesValid = status.get('connected', False)
         if valuesValid:
             self.panel.Enable()
