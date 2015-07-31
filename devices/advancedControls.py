@@ -19,13 +19,13 @@
 
 import wx
 import device
+import gui.device
 import gui.toggleButton
 import depot
 
 from config import config
 CLASS_NAME = 'AdvancedControl'
 CONFIG_NAME = 'advCtl'
-
 
 
 class AdvancedControl(device.Device):
@@ -44,8 +44,9 @@ class AdvancedControl(device.Device):
     def makeUI(self, parent):
         panel = wx.Panel(parent)
         panelSizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(panel, -1, "Advanced\nControls:")
-        label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        label = gui.device.Label(
+                parent=panel, 
+                label="Advanced")
         panelSizer.Add(label)
         devs = depot.getAllDevices()
         buttonSizer = wx.BoxSizer(wx.VERTICAL)
@@ -56,8 +57,9 @@ class AdvancedControl(device.Device):
                 if callable(dev.makeOutputWindow):
                     advancedDevList.append (dev.makeOutputWindow)
                     button = gui.toggleButton.ToggleButton(
-                          label = dev.buttonName, parent = panel, size = (84, 50))
-						  
+                            label=dev.buttonName,
+                            parent=panel, 
+                            size=gui.device.DEFAULT_SIZE)
                     button.Bind(wx.EVT_LEFT_DOWN, dev.makeOutputWindow)#lambda event: advancedDevList[i])
                     buttonSizer.Add(button)
                     i=i+1
