@@ -157,6 +157,7 @@ class CockpitLinkamStage(device.Device):
         tempDisplays = ['bridge', 'chamber', 'dewar']
         # Panel, sizer and a device label.
         self.panel = wx.Panel(parent)
+        self.panel.SetDoubleBuffered(True)
         panel = self.panel
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = gui.device.Label(parent=panel,
