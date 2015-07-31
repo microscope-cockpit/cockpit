@@ -31,6 +31,7 @@ import gui.device
 import gui.guiUtils
 import gui.toggleButton
 import handlers
+import util
 from config import config
 
 CLASS_NAME = 'BoulderSLMDevice'
@@ -78,6 +79,7 @@ class BoulderSLMDevice(device.Device):
 
     def enable(self):
         self.connection.run()
+        self.position = self.getCurrentPosition()
 
 
     def examineActions(self, name, table):
@@ -189,12 +191,13 @@ class BoulderSLMDevice(device.Device):
     ### UI functions ###
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
+        self.panel.SetDoubleBuffered(True)
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = gui.device.Label(
                 parent=self.panel, label='SLM')
         sizer.Add(label)
         rowSizer = wx.BoxSizer(wx.VERTICAL)
-        self.buttons = []
+        self.elements = OrderedDict()
         powerButton = gui.toggleButton.ToggleButton(
                 label='OFF',
                 activateAction = self.enable,
@@ -203,17 +206,41 @@ class BoulderSLMDevice(device.Device):
                 inactiveLabel = 'OFF',
                 parent=self.panel,
                 size=gui.device.DEFAULT_SIZE)
-        self.buttons.append(powerButton)
+        self.elements['powerButton'] = powerButton
+        # Add a position display.
+        posDisplay = gui.device.MultilineDisplay(parent=self.panel, numLines=3)
+        posDisplay.Bind(wx.EVT_TIMER,
+                        lambda event: self.updatePositionDisplay(event))
+        # Set up a timer to update value displays.
+        self.updateTimer = wx.Timer(posDisplay)
+        self.updateTimer.Start(1000)
+        self.elements['posDisplay'] = posDisplay
 
         # Changed my mind. SIM diffraction angle is an advanced parameter,
         # so it now lives in a right-click menu rather than on a button.
-        for b in self.buttons:
-            b.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.onRightMouse(event))
-            rowSizer.Add(b)
+        for e in self.elements.itervalues():
+            e.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.onRightMouse(event))
+            rowSizer.Add(e)
         sizer.Add(rowSizer)
         self.panel.SetSizerAndFit(sizer)
         self.hasUI = True
         return self.panel
+
+
+    def updatePositionDisplay(self, event):
+        baseStr = 'angle:\t%d\nphase:\t%d\nwavel.:\t%d'
+        display = event.GetEventObject().GetOwner()
+        if self.position is not None and self.lastParms:
+            display.SetLabel(baseStr % self.lastParms[self.position])
+        # Dispatch a call in new thread to fetch new values for next time
+        self.updatePosition()
+
+
+    @util.threads.callInNewThread
+    def updatePosition(self):
+        if not self.lastParms:
+            self.lastParms = self.connection.get_sequence_parameters()
+        self.position = self.getCurrentPosition()
 
 
     def onPrepareForExperiment(self, *args):
