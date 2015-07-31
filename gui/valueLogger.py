@@ -140,9 +140,12 @@ class ValueLoggerPanel(wx.Panel):
         gui.guiUtils.placeMenuAtMouse(self, menu)
 
     
-    @util.threads.callInMainThread
     def draw(self, *args):
-        """Plot the data."""
+        """Plot the data.
+
+        All the leg work can be done in any thread, but the canvas.show
+        call must be in the main wx thread.
+        """
         if not window:
             # If there is no window, there is nothing to do.
             return
@@ -223,7 +226,12 @@ class ValueLoggerPanel(wx.Panel):
         ticksMinor = xaxis.get_ticklabels(minor=True)
         for tick in ticksMajor + ticksMinor:
             tick.set_rotation(90)
-        # Update the canvas.
+        # Update the canvas in the main wx thread.
+        self._doDraw()
+
+
+    @util.threads.callInMainThread
+    def _doDraw(self):
         self.canvas.draw()
         #self.canvas.flush_events()
 
