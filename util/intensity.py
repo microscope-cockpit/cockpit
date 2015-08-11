@@ -285,5 +285,14 @@ def main():
     wx.lib.inspection.InspectionTool().Show()
     app.MainLoop()
 
+
+def makeWindow(parent):
+    """Call from another app to get a single window instance."""
+    global window
+    window = IntensityProfilerFrame(parent)
+    #window.Bind(wx.EVT_CLOSE, lambda event: window.Hide())
+    #return window
+
+
 if __name__ == '__main__':
     main()
