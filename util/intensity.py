@@ -1,5 +1,12 @@
 #!/usr/bin/python
 # -*- coding: UTF8   -*-
+"""SIM intensity profiling tool.
+
+This can be used on its own from the command line,
+or can be included as part of another wx app.
+"""
+
+
 import matplotlib.pyplot as plt
 import Mrc
 import numpy as np
@@ -11,7 +18,9 @@ import wx.lib.plot as plot
 ICON_SIZE = (16,16)
 BITMAP_SIZE = (512,512)
 
+
 class IntensityProfiler(object):
+    """A class to profile intensity and store calculation variables."""
     def __init__(self):
         self._data = None
         self._projection = None
@@ -21,6 +30,7 @@ class IntensityProfiler(object):
 
 
     def calculateInstensity(self):
+        """Do the calculation."""
         if self._data is None:
             return
         if self._beadCentre is None:
@@ -57,6 +67,7 @@ class IntensityProfiler(object):
 
 
     def setDataSource(self, filename):
+        """Set data source, clearing invalidated variables."""
         self._data = Mrc.bindFile(filename)
         self._source = Mrc.open(filename)
         self._projection = None
@@ -65,6 +76,7 @@ class IntensityProfiler(object):
 
 
     def guessBeadCentre(self):
+        """Estimate the bead centre from position of maximum data value."""
         if self._data is None:
             return
         nz, ny, nx  = self._data.shape
@@ -81,6 +93,7 @@ class IntensityProfiler(object):
 
 
     def getProjection(self):
+        """Calculates a Z-projection and returns a copy."""
         if self._projection is None:
             nz = self._data.shape[0]
             dz = min(30, nz / 8)
@@ -90,10 +103,14 @@ class IntensityProfiler(object):
 
 
     def hasData(self):
+        """Do I have data?"""
         return not self._data is None
 
 
     def sepmatrix(self):
+        """Return SIM separation matrix.
+
+        Depends on self._phases."""
         nphases = self._phases
         sepmat = np.zeros((nphases,nphases)).astype(np.float32)
         norders = (nphases+1)/2
@@ -107,27 +124,33 @@ class IntensityProfiler(object):
 
 
     def setBeadCentre(self, pos):
+        """Set the bead centre to a client-provided value."""
         self._beadCentre = pos
 
 
     def setPhases(self, n):
+        """Set the number of phases to use in sepmatrix."""
         self._phases = n
 
 
 class IntensityProfilerFrame(wx.Frame):
+    """This class provides a UI for IntensityProfiler."""
     def __init__(self, parent=None):
         super(IntensityProfilerFrame, self).__init__(parent, title="SIM intensity profile")
         self.profiler = IntensityProfiler()
 
+        # Outermost sizer.
         vbox = wx.BoxSizer(wx.VERTICAL)
 
-        # Toolbar
+        ## Toolbar
         toolbar = wx.ToolBar(self, -1)
+        # Open file
         openTool = toolbar.AddSimpleTool(
                         wx.ID_ANY,
                         wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR, ICON_SIZE),
                         "Open", "Open a dataset")
         toolbar.AddSeparator()
+        # Number of phases
         label = wx.StaticText(toolbar,
                               wx.ID_ANY,
                               label='# phases: ',
@@ -144,6 +167,7 @@ class IntensityProfilerFrame(wx.Frame):
         phasesTool.Bind(wx.EVT_SPIN,
                         lambda event: self.profiler.setPhases(event.GetPosition()))
         toolbar.AddControl(control=phasesTool)
+        # Calculate profile.
         goTool = toolbar.AddSimpleTool(
                         wx.ID_ANY,
                         wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_TOOLBAR, ICON_SIZE),
@@ -153,10 +177,9 @@ class IntensityProfilerFrame(wx.Frame):
         self.Bind(wx.EVT_TOOL, self.calculate, goTool)
         vbox.Add(toolbar, 0, border=5)
 
-        # Canvases
+        ## Canvases
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         # Image canvas
-
         self.canvas = FloatCanvas.FloatCanvas(self, size=(512,512))
         img = wx.EmptyImage(BITMAP_SIZE[0], BITMAP_SIZE[1], True)
         self.bitmap = self.canvas.AddBitmap(img, (0,0), 'cc', False)
@@ -164,7 +187,7 @@ class IntensityProfilerFrame(wx.Frame):
         self.canvas.Draw()
         self.canvas.Bind(FloatCanvas.EVT_LEFT_UP, self.onClickCanvas)
         hbox.Add(self.canvas)
-
+        # Plot canvas
         self.plotCanvas = plot.PlotCanvas(self, wx.ID_ANY, pos=(-1,-1))
         self.plotCanvas.MinSize=(512,512)
         self.plotCanvas.SetSize((512,512))
@@ -172,36 +195,44 @@ class IntensityProfilerFrame(wx.Frame):
 
         vbox.Add(hbox)
 
+        ## Status bar.
         self.sb = self.CreateStatusBar()
 
         self.SetSizerAndFit(vbox)
 
 
     def calculate(self, event):
+        """Calculate the profile."""
+        # Check that the profiler has data.
         if not self.profiler.hasData():
             self.sb.SetStatusText('No data loaded.')
+        # Do the calculation
         self.profiler.calculateInstensity()
-
+        ## Generate line graphs
+        # Raw intensity.
         peakY = self.profiler.results['peak'][1:]
         peakX = np.arange(len(peakY))
         peak = plot.PolyLine(zip(peakX, peakY), colour='red')
-
+        # First order.
         firstY = self.profiler.results['mag'][1,1:]
         firstX = np.arange(len(firstY))
         first = plot.PolyLine(zip(firstX, firstY), colour='green')
-
+        # Second order.
         secondY = self.profiler.results['mag'][2,1:]
         secondX = np.arange(len(secondY))
         second = plot.PolyLine(zip(secondX, secondY), colour='blue')
-
+        # Add line graphs to a graphics context.
         gc = plot.PlotGraphics([peak, first, second],
                                'Intensity profiles', 'pixels', 'arb. units')
-
+        # Clear any old graphs.
         self.plotCanvas.Clear()
+        # Draw the graphics context.
         self.plotCanvas.Draw(gc)
 
 
     def loadFile(self, event):
+        """Open a data file."""
+        ## Display the file chooser.
         top = wx.GetApp().TopWindow
         dlg = wx.FileDialog(top, "Open", "", "", "",
                             wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
@@ -209,13 +240,15 @@ class IntensityProfilerFrame(wx.Frame):
             filename = dlg.GetPath()
         else:
             return
+        # Set the profiler data source .
         self.profiler.setDataSource(filename)
 
         # Guess a bead position
         xpos, ypos = self.profiler.guessBeadCentre()
+        # Move indicator circle to the bead position.
         self.circle.SetPoint(self.canvas.PixelToWorld((xpos, ypos)))
 
-        # Update the bitmap
+        # Update the bitmap.
         proj = self.profiler.getProjection()
         proj -= np.min(proj)
         proj /= np.max(proj)
@@ -226,22 +259,25 @@ class IntensityProfilerFrame(wx.Frame):
         self.bitmap.Bitmap.SetSize((nx,ny))
         self.bitmap.Bitmap.CopyFromBuffer(img.tostring())
 
+        # Update the canvas.
         self.plotCanvas.Clear()
         self.canvas.Draw(Force=True)
 
 
     def onClickCanvas(self, event):
-         # Position in pixels from upper left corner.
-         pos = event.GetPosition()
-         # Update profiler bead centre.
-         self.profiler.setBeadCentre(pos)
-         # Redraw circle to mark bead. Need to translate from pixel to world co-ords.
-         self.circle.SetPoint(self.canvas.PixelToWorld(pos))
-         # Update the canvas.
-         self.canvas.Draw(Force=True)
+        """Respond to click to choose a new bead position."""
+        # Position in pixels from upper left corner.
+        pos = event.GetPosition()
+        # Update profiler bead centre.
+        self.profiler.setBeadCentre(pos)
+        # Redraw circle to mark bead. Need to translate from pixel to world co-ords.
+        self.circle.SetPoint(self.canvas.PixelToWorld(pos))
+        # Update the canvas.
+        self.canvas.Draw(Force=True)
 
 
 def main():
+    """Run as a standalone app."""
     import wx.lib.inspection
     app = wx.App(False)
     ip = IntensityProfilerFrame()
