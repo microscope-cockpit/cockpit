@@ -6,6 +6,7 @@ import numpy as np
 import sys
 import wx
 from wx.lib.floatcanvas import FloatCanvas
+import wx.lib.plot as plot
 
 ICON_SIZE = (16,16)
 BITMAP_SIZE = (512,512)
@@ -16,6 +17,7 @@ class IntensityProfiler(object):
         self._projection = None
         self._beadCntre = None
         self._phases = 5
+        self._results = None
 
 
     def calculateInstensity(self):
@@ -23,12 +25,35 @@ class IntensityProfiler(object):
             return
         if self._beadCentre is None:
             self.guessBeadCentre()
-        # Estimate background from image corners.
+        nPhases = self._phases
         nz, ny, nx = self._data.shape
-        bkg = np.Min([N.mean(indat[:,:nx/10,:ny/10]),
-                      N.mean(indat[:,:-nx/10,:ny/10]),
-                      N.mean(indat[:,:-nx/10,:-ny/10]),
-                      N.mean(indat[:,:nx/10,:-ny/10])])
+        peakx, peaky = self._beadCentre
+        # Estimate background from image corners.
+        bkg = np.min([np.mean(self._data[:,:nx/10,:ny/10]),
+                      np.mean(self._data[:,:-nx/10,:ny/10]),
+                      np.mean(self._data[:,:-nx/10,:-ny/10]),
+                      np.mean(self._data[:,:nx/10,:-ny/10])])
+
+        phaseArr = np.sum(np.sum(self._data - bkg, axis=2), axis=1)
+        phaseArr = np.reshape(phaseArr, (-1, nPhases)).astype(np.float32)
+        sepArr = np.dot(self.sepmatrix(), phaseArr.transpose())
+        mag = np.zeros((nPhases/2 + 1, nz/nPhases)).astype(np.float32)
+        phi = np.zeros((nPhases/2 + 1, nz/nPhases)).astype(np.float32)
+        mag[0] = sepArr[0]
+
+        for order in range (1,3):
+            mag[order] = np.sqrt(sepArr[2*order-1]**2 + sepArr[2*order]**2)
+            phi[order] = np.arctan2(sepArr[2*order], sepArr[2*order-1])
+        peak = np.reshape(self._data[:,peaky,peakx], (-1, nPhases))
+        peak = np.average(peak, 1)
+
+        peak -= peak.min()
+        peak *= mag[1].max() / peak.max()
+
+        self.results = dict(peak=peak,
+                            mag=mag,
+                            phi=phi,
+                            sep=sepArr)
 
 
     def setDataSource(self, filename):
@@ -36,6 +61,7 @@ class IntensityProfiler(object):
         self._source = Mrc.open(filename)
         self._projection = None
         self._beadCentre = None
+        self._results = None
 
 
     def guessBeadCentre(self):
@@ -67,22 +93,34 @@ class IntensityProfiler(object):
         return not self._data is None
 
 
+    def sepmatrix(self):
+        nphases = self._phases
+        sepmat = np.zeros((nphases,nphases)).astype(np.float32)
+        norders = (nphases+1)/2
+        phi = 2*np.pi / nphases
+        for j in range(nphases):
+            sepmat[0, j] = 1.0/nphases
+            for order in range(1,norders):
+                sepmat[2*order-1,j] = 2.0 * np.cos(j*order*phi)/nphases
+                sepmat[2*order  ,j] = 2.0 * np.sin(j*order*phi)/nphases
+        return sepmat
+
+
     def setBeadCentre(self, pos):
         self._beadCentre = pos
 
 
     def setPhases(self, n):
         self._phases = n
-        print n
 
 
 class IntensityProfilerFrame(wx.Frame):
     def __init__(self, parent=None):
         super(IntensityProfilerFrame, self).__init__(parent, title="SIM intensity profile")
         self.profiler = IntensityProfiler()
-        
+
         vbox = wx.BoxSizer(wx.VERTICAL)
-        
+
         # Toolbar
         toolbar = wx.ToolBar(self, -1)
         openTool = toolbar.AddSimpleTool(
@@ -90,20 +128,20 @@ class IntensityProfilerFrame(wx.Frame):
                         wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR, ICON_SIZE),
                         "Open", "Open a dataset")
         toolbar.AddSeparator()
-        label = wx.StaticText(toolbar, 
-                              wx.ID_ANY, 
+        label = wx.StaticText(toolbar,
+                              wx.ID_ANY,
                               label='# phases: ',
                               style=wx.TRANSPARENT_WINDOW)
         label.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: None)
         toolbar.AddControl(label)
-        phasesTool = wx.SpinCtrl(toolbar, 
+        phasesTool = wx.SpinCtrl(toolbar,
                                  wx.ID_ANY,
                                  value='5',
                                  size=(48, -1),
                                  min=1,
                                  max=5,
                                  initial=5)
-        phasesTool.Bind(wx.EVT_SPIN, 
+        phasesTool.Bind(wx.EVT_SPIN,
                         lambda event: self.profiler.setPhases(event.GetPosition()))
         toolbar.AddControl(control=phasesTool)
         goTool = toolbar.AddSimpleTool(
@@ -113,16 +151,26 @@ class IntensityProfilerFrame(wx.Frame):
         toolbar.Realize()
         self.Bind(wx.EVT_TOOL, self.loadFile, openTool)
         self.Bind(wx.EVT_TOOL, self.calculate, goTool)
-        vbox.Add(toolbar, 0, border=5)        
-        
-        # Canvas
+        vbox.Add(toolbar, 0, border=5)
+
+        # Canvases
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        # Image canvas
+
         self.canvas = FloatCanvas.FloatCanvas(self, size=(512,512))
         img = wx.EmptyImage(BITMAP_SIZE[0], BITMAP_SIZE[1], True)
         self.bitmap = self.canvas.AddBitmap(img, (0,0), 'cc', False)
         self.circle = self.canvas.AddCircle((0,0), 10, '#ff0000')
         self.canvas.Draw()
         self.canvas.Bind(FloatCanvas.EVT_LEFT_UP, self.onClickCanvas)
-        vbox.Add(self.canvas)
+        hbox.Add(self.canvas)
+
+        self.plotCanvas = plot.PlotCanvas(self, wx.ID_ANY, pos=(-1,-1))
+        self.plotCanvas.MinSize=(512,512)
+        self.plotCanvas.SetSize((512,512))
+        hbox.Add(self.plotCanvas)
+
+        vbox.Add(hbox)
 
         self.sb = self.CreateStatusBar()
 
@@ -132,6 +180,25 @@ class IntensityProfilerFrame(wx.Frame):
     def calculate(self, event):
         if not self.profiler.hasData():
             self.sb.SetStatusText('No data loaded.')
+        self.profiler.calculateInstensity()
+
+        peakY = self.profiler.results['peak'][1:]
+        peakX = np.arange(len(peakY))
+        peak = plot.PolyLine(zip(peakX, peakY), colour='red')
+
+        firstY = self.profiler.results['mag'][1,1:]
+        firstX = np.arange(len(firstY))
+        first = plot.PolyLine(zip(firstX, firstY), colour='green')
+
+        secondY = self.profiler.results['mag'][2,1:]
+        secondX = np.arange(len(secondY))
+        second = plot.PolyLine(zip(secondX, secondY), colour='blue')
+
+        gc = plot.PlotGraphics([peak, first, second],
+                               'Intensity profiles', 'pixels', 'arb. units')
+
+        self.plotCanvas.Clear()
+        self.plotCanvas.Draw(gc)
 
 
     def loadFile(self, event):
@@ -144,7 +211,7 @@ class IntensityProfilerFrame(wx.Frame):
             return
         self.profiler.setDataSource(filename)
 
-        # Guess a bead position      
+        # Guess a bead position
         xpos, ypos = self.profiler.guessBeadCentre()
         self.circle.SetPoint(self.canvas.PixelToWorld((xpos, ypos)))
 
@@ -159,6 +226,7 @@ class IntensityProfilerFrame(wx.Frame):
         self.bitmap.Bitmap.SetSize((nx,ny))
         self.bitmap.Bitmap.CopyFromBuffer(img.tostring())
 
+        self.plotCanvas.Clear()
         self.canvas.Draw(Force=True)
 
 
