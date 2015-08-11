@@ -37,32 +37,11 @@ import wx
 
 USER_CONFIG_ENTRY = 'ValueLogger.showKeys'
 
+
 class ValueLoggerWindow(wx.Frame):
-    """The main ValueLogger window."""
-    def __init__(self, parent, title='value logger'):
-        super(ValueLoggerWindow, self).__init__(
-                parent, -1, title,
-                style = wx.MINIMIZE_BOX | wx.MAXIMIZE_BOX | wx.RESIZE_BORDER | wx.SYSTEM_MENU | wx.CAPTION | wx.CLIP_CHILDREN )
-        # Bind to close event.
-        self.Bind(wx.EVT_CLOSE, self.onClose)
-        # Create our panel.
-        self.panel = ValueLoggerPanel(self)
-        # Add cockpit window bindings to this window.
-        gui.keyboard.setKeyboardHandlers(self)
-        self.SetSizeHints(600, 400)
-        self.Show()
-
-
-    def onClose(self, *args):
-        window = None
-        self.panel.Destroy()
-        self.Destroy()
-
-
-class ValueLoggerPanel(wx.Panel):
-    """A panel for ValueLoggerWindow."""
+    """A window that shows logged values."""
     def __init__(self, parent):
-        super(ValueLoggerPanel, self).__init__(parent)
+        super(ValueLoggerWindow, self).__init__(parent, title='Value logger')
         ## A mapping of names to booleans.
         self.showKeys = {}
         ## A mapping of name to line objects.
@@ -103,6 +82,11 @@ class ValueLoggerPanel(wx.Panel):
         events.subscribe("valuelogger update", self.draw)
         ## Subscribe to user login events.
         events.subscribe("user login", self.loadShowKeysFromConfig)
+
+        # Add cockpit window bindings to this window.
+        gui.keyboard.setKeyboardHandlers(self)
+        self.SetSizeHints(600, 400)
+        self.Show()
         
 
     def setFigureBorder(self, size):
