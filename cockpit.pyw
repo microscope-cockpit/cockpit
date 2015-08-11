@@ -62,7 +62,6 @@ class CockpitApp(wx.App):
             import gui.mosaic.window
             import gui.shellWindow
             import gui.statusLightsWindow
-            import gui.valueLogger
             import interfaces
             import util.user
             import util.userConfig
@@ -94,10 +93,27 @@ class CockpitApp(wx.App):
             gui.shellWindow.makeWindow(frame)
             status.Update(9 + i, " ... statuslights window")
             gui.statusLightsWindow.makeWindow(frame)
-            status.Update(10 + i, " ... valuelogger window")
-            gui.valueLogger.makeWindow(frame)
 
+            # At this point, we have all the main windows are displayed.
+            self.primaryWindows = [w for w in wx.GetTopLevelWindows()]
+            # Now create secondary windows. These are single instance
+            # windows that won't appear in the primary window marshalling
+            # list.
+            import gui.valueLogger
+            gui.valueLogger.makeWindow(frame)
+            from util import intensity
+            intensity.makeWindow(frame)
+            # All secondary windows created.
+            self.secondaryWindows = [w for w in wx.GetTopLevelWindows() if w not in self.primaryWindows]
+
+            for w in self.secondaryWindows:
+                # Close secondary windows rather than kill them.
+                w.Bind(wx.EVT_CLOSE, lambda event: w.Hide())
+                # Hide the window until it is called up.
+                w.Hide()
+            
             # Now that the UI exists, we don't need this any more.
+            self.primaryWindows.remove(status)
             status.Destroy()
 
             util.user.login(frame)
