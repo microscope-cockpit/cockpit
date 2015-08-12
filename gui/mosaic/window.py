@@ -494,7 +494,10 @@ class MosaicWindow(wx.Frame):
     # such suspended thread is allowed to be active at a time.
     def generateMosaic2(self, camera):
         # Acquire the mosaic lock so no other mosaics can run.
-        self.mosaicGenerationLock.acquire()
+        if not self.mosaicGenerationLock.acquire(False):
+            # Do not block. Otherwise, multiple calls to generateMosaic
+            # can result in multiple threads waiting here for the lock.
+            return
 
         self.amGeneratingMosaic = True
         self.nameToButton['Run mosaic'].SetLabel('Stop mosaic')
