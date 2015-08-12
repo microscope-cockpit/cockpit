@@ -520,7 +520,7 @@ class MosaicWindow(wx.Frame):
                 # Wait until the mosaic is unpaused.
                 if self.shouldEndOldMosaic:
                     # End the mosaic.
-                    self.endMosaic()
+                    self.exitMosaicLoop()
                     return
                 time.sleep(.1)
             # Take an image.
@@ -545,17 +545,14 @@ class MosaicWindow(wx.Frame):
                 self.goTo(target, True)
             except:
                 # On any movement error, terminate the mosaic cleanly.
-                self.endMosaic()
+                self.exitMosaicLoop()
                 raise
             prevPosition = (centerX + dx * width,
                       centerY + dy * height)
             curZ = interfaces.stageMover.getPositionForAxis(2)-self.offset[2]
 
-        # We should never reach this point!
-        self.mosaicGenerationLock.release()
 
-
-    def endMosaic(self):
+    def exitMosaicLoop(self):
         self.shouldEndOldMosaic = False
         self.shouldPauseMosaic = False
         self.amGeneratingMosaic = False
