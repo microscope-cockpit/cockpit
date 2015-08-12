@@ -523,6 +523,8 @@ class MosaicWindow(wx.Frame):
                     return
                 time.sleep(.1)
             # Take an image.
+            # FIX: if anything happens to the camera, the mosaic gets
+            # stuck here and can not be restarted.
             data, timestamp = events.executeAndWaitFor(
                     "new image %s" % camera.name, 
                     interfaces.imager.takeImage, shouldBlock = True)
