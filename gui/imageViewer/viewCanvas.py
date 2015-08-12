@@ -273,7 +273,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Return the blackpoint and whitepoint (i.e. the pixel values which
     # are displayed as black and white, respectively).
     def getScaling(self):
-        if self.imageData is None:
+        if self.imageData is None or len(self.tiles) == 0:
             # No image to operate on yet.
             return (None, None)
         return (self.tiles[0][0].imageMin, self.tiles[0][0].imageMax)
