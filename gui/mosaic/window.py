@@ -50,8 +50,6 @@ class MosaicWindow(wx.Frame):
         self.lastClickPos = None
         ## Function to call when tiles are selected. 
         self.selectTilesFunc = None
-        ## True if we should stop what we're doing.
-        self.shouldAbort = False
         ## True if we're generating a mosaic.
         self.amGeneratingMosaic = False
 
@@ -1085,7 +1083,6 @@ class MosaicWindow(wx.Frame):
 
     ## Handle the user clicking the abort button.
     def onAbort(self, *args):
-        self.shouldAbort = True
         if self.amGeneratingMosaic:
             self.shouldPauseMosaic = True
         self.nameToButton['Run mosaic'].SetLabel('Run mosaic')
