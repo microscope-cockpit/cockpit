@@ -482,6 +482,9 @@ class MosaicWindow(wx.Frame):
         if self.shouldPauseMosaic:
             # We have a paused mosaic that needs to be destroyed.
             self.shouldEndOldMosaic = True
+            # Mosaic thread may sleep for 0.1s before testing
+            # self.shouldEndOldMosaic, so wait 0.1s.
+            time.sleep(0.1)
         self.generateMosaic2(camera)
 
 
