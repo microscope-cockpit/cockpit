@@ -60,14 +60,19 @@ def setKeyboardHandlers(window):
 ## Pop up a menu under the mouse that helps the user find a window they may
 # have lost.
 def martialWindows(parent):
-    windows = wx.GetTopLevelWindows()
+    primaryWindows = wx.GetApp().primaryWindows
+    secondaryWindows = wx.GetApp().secondaryWindows
+    otherWindows = [w for w in wx.GetTopLevelWindows() 
+                        if w not in (primaryWindows + secondaryWindows)]
+    # windows = wx.GetTopLevelWindows()
     menu = wx.Menu()
     menuId = 1
     menu.Append(menuId, "Reset window positions")
     wx.EVT_MENU(parent, menuId,
             lambda event: util.user.setWindowPositions())
     menuId += 1
-    for i, window in enumerate(windows):
+    #for i, window in enumerate(windows):
+    for i, window in enumerate(primaryWindows):
         if not window.GetTitle():
             # Sometimes we get bogus top-level windows; no idea why.
             # Just skip them.
@@ -91,5 +96,53 @@ def martialWindows(parent):
         # so just take the first 50 characters.
         menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
         menuId += 1
+
+    menu.AppendSeparator()
+    for i, window in enumerate(secondaryWindows):
+        if not window.GetTitle():
+            # Sometimes we get bogus top-level windows; no idea why.
+            # Just skip them.
+            # \todo Figure out where these windows come from and either get
+            # rid of them or fix them so they don't cause trouble here.
+            continue
+        subMenu = wx.Menu()
+        subMenu.Append(menuId, "Show/Hide")
+        wx.EVT_MENU(parent, menuId,
+                lambda event, window = window: (window.Restore() if window.IsIconized() 
+                                                else window.Show(not window.IsShown()) ) )
+        menuId += 1
+        # Some windows have very long titles (e.g. the Macro Stage View),
+        # so just take the first 50 characters.
+        menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        menuId += 1
+
+    menu.AppendSeparator()
+    for i, window in enumerate(otherWindows):
+        if not window.GetTitle():
+            # Sometimes we get bogus top-level windows; no idea why.
+            # Just skip them.
+            # \todo Figure out where these windows come from and either get
+            # rid of them or fix them so they don't cause trouble here.
+            continue
+        subMenu = wx.Menu()
+        subMenu.Append(menuId, "Raise to top")
+        wx.EVT_MENU(parent, menuId,
+                lambda event, window = window: window.Raise())
+        menuId += 1
+        subMenu.Append(menuId, "Move to mouse")
+        wx.EVT_MENU(parent, menuId,
+                lambda event, window = window: window.SetPosition(wx.GetMousePosition()))
+        menuId += 1
+        subMenu.Append(menuId, "Move to top-left corner")
+        wx.EVT_MENU(parent, menuId,
+                lambda event, window = window: window.SetPosition((0, 0)))
+        menuId += 1
+        # Some windows have very long titles (e.g. the Macro Stage View),
+        # so just take the first 50 characters.
+        menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        menuId += 1
+
+
+
     gui.guiUtils.placeMenuAtMouse(parent, menu)
 
