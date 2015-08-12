@@ -543,7 +543,12 @@ class MosaicWindow(wx.Frame):
                 raise
             # Get the scaling for the camera we're using, since they may
             # have changed. 
-            minVal, maxVal = gui.camera.window.getCameraScaling(camera)
+            try:
+                minVal, maxVal = gui.camera.window.getCameraScaling(camera)
+            except:
+                # Camera may have been deactivated.
+                self.exitMosaicLoop()
+                raise
             events.executeAndWaitFor('mosaic canvas paint', 
                     self.canvas.addImage, data, 
                     (-prevPosition[0] - width / 2, 
