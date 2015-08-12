@@ -32,6 +32,9 @@ SITE_COLORS = [('green', (0, 1, 0)), ('red', (1, 0, 0)),
 ## Width of widgets in the sidebar.
 SIDEBAR_WIDTH = 150
 
+## Timeout for mosaic new image events
+CAMERA_TIMEOUT = 5
+
 ## Simple structure for marking potential beads.
 BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 
@@ -524,11 +527,20 @@ class MosaicWindow(wx.Frame):
                     return
                 time.sleep(.1)
             # Take an image.
-            # FIX: if anything happens to the camera, the mosaic gets
-            # stuck here and can not be restarted.
-            data, timestamp = events.executeAndWaitFor(
-                    "new image %s" % camera.name, 
-                    interfaces.imager.takeImage, shouldBlock = True)
+            # If anything happens to the camera, the mosaic gets
+            # stuck here and can not be restarted, so we use a
+            # timeout.
+            try:
+                #data, timestamp = events.executeAndWaitForOrTimeout(
+                data, timestamp = events.executeAndWaitForOrTimeout(
+                        "new image %s" % camera.name,
+                        interfaces.imager.takeImage,
+                        CAMERA_TIMEOUT,
+                        shouldBlock = True)
+            except:
+                # Exit gracefully on timeout.
+                self.exitMosaicLoop()
+                raise
             # Get the scaling for the camera we're using, since they may
             # have changed. 
             minVal, maxVal = gui.camera.window.getCameraScaling(camera)
