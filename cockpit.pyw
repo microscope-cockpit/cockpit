@@ -113,7 +113,9 @@ class CockpitApp(wx.App):
                 w.Hide()
             
             # Now that the UI exists, we don't need this any more.
-            self.primaryWindows.remove(status)
+        	# Sometimes, status doesn't make it into the list, so test.
+            if status in self.primaryWindows:
+            	self.primaryWindows.remove(status)
             status.Destroy()
 
             util.user.login(frame)
