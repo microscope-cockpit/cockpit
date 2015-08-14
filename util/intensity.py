@@ -2,8 +2,26 @@
 # -*- coding: UTF8   -*-
 """SIM intensity profiling tool.
 
-This can be used on its own from the command line,
-or can be included as part of another wx app.
+Copyright 2015 Mick Phillips (mick.phillips at gmail dot com)
+and Ian Dobbie.
+Based on a command-line utility by Lin Shao.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+=============================================================================
+
+This can be used on its own from the command line, or can be included
+as part of another wx app.
 """
 
 
@@ -26,25 +44,30 @@ class IntensityProfiler(object):
         self._projection = None
         self._beadCntre = None
         self._phases = 5
-        self._results = None
+        self.results = None
 
 
     def calculateInstensity(self):
         """Do the calculation."""
         if self._data is None:
-            return
+            return False
         if self._beadCentre is None:
             self.guessBeadCentre()
         nPhases = self._phases
         nz, ny, nx = self._data.shape
         peakx, peaky = self._beadCentre
+        # Use a the fifth of the data around the bead, or to edge of dataset.
+        dataSubset = self._data[:,
+                                max(0, peaky - ny/10) : min(ny, peaky + ny/10),
+                                max(0, peakx - nx/10) : min(nx, peakx + nx/10)]
         # Estimate background from image corners.
         bkg = np.min([np.mean(self._data[:,:nx/10,:ny/10]),
                       np.mean(self._data[:,:-nx/10,:ny/10]),
                       np.mean(self._data[:,:-nx/10,:-ny/10]),
                       np.mean(self._data[:,:nx/10,:-ny/10])])
 
-        phaseArr = np.sum(np.sum(self._data - bkg, axis=2), axis=1)
+        # phaseArr = np.sum(np.sum(self._data - bkg, axis=2), axis=1)
+        phaseArr = np.sum(np.sum(dataSubset - bkg, axis=2), axis=1)
         phaseArr = np.reshape(phaseArr, (-1, nPhases)).astype(np.float32)
         sepArr = np.dot(self.sepmatrix(), phaseArr.transpose())
         mag = np.zeros((nPhases/2 + 1, nz/nPhases)).astype(np.float32)
@@ -54,13 +77,22 @@ class IntensityProfiler(object):
         for order in range (1,3):
             mag[order] = np.sqrt(sepArr[2*order-1]**2 + sepArr[2*order]**2)
             phi[order] = np.arctan2(sepArr[2*order], sepArr[2*order-1])
+        # Average a few points around the peak
+        beadAverage = np.average(np.average(
+                          self._data[:, peaky-2:peaky+2, peakx-2:peakx+2],
+                          axis=2), axis=1)
+        avgPeak = np.reshape(beadAverage, (-1, nPhases))
+        avgPeak = np.average(avgPeak, 1)
+        avgPeak -= avgPeak.min()
+        avgPeak *= mag[1].max() / avgPeak.max()
+
         peak = np.reshape(self._data[:,peaky,peakx], (-1, nPhases))
         peak = np.average(peak, 1)
-
         peak -= peak.min()
         peak *= mag[1].max() / peak.max()
 
         self.results = dict(peak=peak,
+                            avg=avgPeak,
                             mag=mag,
                             phi=phi,
                             sep=sepArr)
@@ -69,7 +101,12 @@ class IntensityProfiler(object):
     def setDataSource(self, filename):
         """Set data source, clearing invalidated variables."""
         self._data = Mrc.bindFile(filename)
-        self._source = Mrc.open(filename)
+        # Mrc.py version conflict.
+        # With cockpit data, Mrc.open from cockpit/util/Mrc.py works just fine,
+        # but local Mrc.py fails. There are no version numbers, so I have no idea
+        # which is 'current'.
+        # I included self._source for access to headers, but since they're never
+        # used here, I'll just comment this out for now. MAP 20150811
         self._projection = None
         self._beadCentre = None
         self._results = None
@@ -207,12 +244,20 @@ class IntensityProfilerFrame(wx.Frame):
         if not self.profiler.hasData():
             self.sb.SetStatusText('No data loaded.')
         # Do the calculation
-        self.profiler.calculateInstensity()
+        if self.profiler.calculateInstensity() is False:
+            return
         ## Generate line graphs
-        # Raw intensity.
+        # Raw intensity at one point in XY.
         peakY = self.profiler.results['peak'][1:]
         peakX = np.arange(len(peakY))
         peak = plot.PolyLine(zip(peakX, peakY), colour='red')
+        # Average intensity over a few XY points around the peak.
+        # The raw intensity plot can vary greatly when the z-profile is taken
+        # just one pixel away; this average plot can help show if a dip in the
+        # raw data is a feature of the bead, or due to noise.
+        avgY = self.profiler.results['avg'][1:]
+        avgX = np.arange(len(avgY))
+        avg = plot.PolyLine(zip(avgX, avgY), colour='red', style=wx.DOT)
         # First order.
         firstY = self.profiler.results['mag'][1,1:]
         firstX = np.arange(len(firstY))
@@ -222,8 +267,8 @@ class IntensityProfilerFrame(wx.Frame):
         secondX = np.arange(len(secondY))
         second = plot.PolyLine(zip(secondX, secondY), colour='blue')
         # Add line graphs to a graphics context.
-        gc = plot.PlotGraphics([peak, first, second],
-                               'Intensity profiles', 'pixels', 'arb. units')
+        gc = plot.PlotGraphics([peak, avg, first, second],
+                               'Intensity profiles', 'z', 'arb. units')
         # Clear any old graphs.
         self.plotCanvas.Clear()
         # Draw the graphics context.
