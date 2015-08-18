@@ -118,9 +118,11 @@ def martialWindows(parent):
 
     menu.AppendSeparator()
     for i, window in enumerate(otherWindows):
-        if not window.GetTitle():
+        if not window.GetTitle() or not window.IsShown():
             # Sometimes we get bogus top-level windows; no idea why.
             # Just skip them.
+            # Also, some windows are hidden rather than destroyed
+            # (e.g. the experiment setup window). Skip those, too.
             # \todo Figure out where these windows come from and either get
             # rid of them or fix them so they don't cause trouble here.
             continue

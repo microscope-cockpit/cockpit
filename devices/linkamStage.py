@@ -276,7 +276,24 @@ class CockpitLinkamStage(device.Device):
         Query the hardware if shouldUseCache is False.
         """
         if not shouldUseCache:
-            position = self.remote.getPosition()
+            # Occasionally, at the start on an experiment, a
+            # ConnectionClosedError is thrown here. I think this is something
+            # to do with Pyro reusing connections and those connections getting
+            # closed on the remote due to frequent traffic in the status thread.
+            # Workaround: retry a few times in the event of a ConnectionClosedError.
+            success = False
+            failCount = 0
+            while not success:
+                try:
+                    position = self.remote.getPosition()
+                    success = True
+                except Pyro4.errors.ConnectionClosedError:
+                    if failCount < 5:
+                        failCount += 1
+                    else:
+                        raise
+                except:
+                    raise
             self.positionCache = position
         if axis is None:
             return self.positionCache
