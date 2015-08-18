@@ -105,8 +105,11 @@ class IntensityProfiler(object):
         # With cockpit data, Mrc.open from cockpit/util/Mrc.py works just fine,
         # but local Mrc.py fails. There are no version numbers, so I have no idea
         # which is 'current'.
-        # I included self._source for access to headers, but since they're never
-        # used here, I'll just comment this out for now. MAP 20150811
+        try:
+            self._source = Mrc.open(filename)
+            self.zDelta = self._source.hdr.d[-1]
+        except:
+            self.zDelta = None
         self._projection = None
         self._beadCentre = None
         self._results = None
@@ -249,26 +252,30 @@ class IntensityProfilerFrame(wx.Frame):
         ## Generate line graphs
         # Raw intensity at one point in XY.
         peakY = self.profiler.results['peak'][1:]
-        peakX = np.arange(len(peakY))
+        peakX = np.arange(len(peakY)) * (self.profiler.zDelta or 1)
         peak = plot.PolyLine(zip(peakX, peakY), colour='red')
         # Average intensity over a few XY points around the peak.
         # The raw intensity plot can vary greatly when the z-profile is taken
         # just one pixel away; this average plot can help show if a dip in the
         # raw data is a feature of the bead, or due to noise.
         avgY = self.profiler.results['avg'][1:]
-        avgX = np.arange(len(avgY))
+        avgX = np.arange(len(avgY)) * (self.profiler.zDelta or 1)
         avg = plot.PolyLine(zip(avgX, avgY), colour='red', style=wx.DOT)
         # First order.
         firstY = self.profiler.results['mag'][1,1:]
-        firstX = np.arange(len(firstY))
+        firstX = np.arange(len(firstY)) * (self.profiler.zDelta or 1)
         first = plot.PolyLine(zip(firstX, firstY), colour='green')
         # Second order.
         secondY = self.profiler.results['mag'][2,1:]
-        secondX = np.arange(len(secondY))
+        secondX = np.arange(len(secondY)) * (self.profiler.zDelta or 1)
         second = plot.PolyLine(zip(secondX, secondY), colour='blue')
         # Add line graphs to a graphics context.
+        if self.profiler.zDelta is None:
+            xLabel = 'Z slice'
+        else:
+            xLabel = 'Z'
         gc = plot.PlotGraphics([peak, avg, first, second],
-                               'Intensity profiles', 'z', 'arb. units')
+                               'Intensity profiles', xLabel, 'arb. units')
         # Clear any old graphs.
         self.plotCanvas.Clear()
         # Draw the graphics context.
