@@ -133,7 +133,7 @@ class IntensityProfiler(object):
         """Calculates a Z-projection and returns a copy."""
         if self._projection is None:
             nz = self._data.shape[0]
-            dz = min(30, nz / 8)
+            dz = min(100, nz / 3)
             self._projection = np.mean(self._data[nz/2 - dz : nz/2 + dz, :, :],
                                       axis=0)
         return self._projection.copy()
