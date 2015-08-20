@@ -32,6 +32,9 @@ SITE_COLORS = [('green', (0, 1, 0)), ('red', (1, 0, 0)),
 ## Width of widgets in the sidebar.
 SIDEBAR_WIDTH = 150
 
+## Timeout for mosaic new image events
+CAMERA_TIMEOUT = 5
+
 ## Simple structure for marking potential beads.
 BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 
@@ -50,8 +53,6 @@ class MosaicWindow(wx.Frame):
         self.lastClickPos = None
         ## Function to call when tiles are selected. 
         self.selectTilesFunc = None
-        ## True if we should stop what we're doing.
-        self.shouldAbort = False
         ## True if we're generating a mosaic.
         self.amGeneratingMosaic = False
 
@@ -326,8 +327,8 @@ class MosaicWindow(wx.Frame):
         for site in interfaces.stageMover.getAllSites():
             # Draw a crude circle.
             x, y = site.position[:2]
-            x = -x - self.offset[0]
-            y = y +self.offset[1]
+            x = -x + self.offset[0]
+            y = y -self.offset[1]
             # Set line width based on zoom factor.
             lineWidth = max(1, self.canvas.scale * 1.5)
             glLineWidth(lineWidth)
@@ -427,7 +428,7 @@ class MosaicWindow(wx.Frame):
             glPopMatrix()
 
             # Restore the default font size.
-            self.font.FaceSize(64)
+            self.font.FaceSize(self.defaultFaceSize)
             
 
     # Draw a crosshairs at the specified position with the specified color.
@@ -484,6 +485,9 @@ class MosaicWindow(wx.Frame):
         if self.shouldPauseMosaic:
             # We have a paused mosaic that needs to be destroyed.
             self.shouldEndOldMosaic = True
+            # Mosaic thread may sleep for 0.1s before testing
+            # self.shouldEndOldMosaic, so wait 0.1s.
+            time.sleep(0.1)
         self.generateMosaic2(camera)
 
 
@@ -494,7 +498,10 @@ class MosaicWindow(wx.Frame):
     # such suspended thread is allowed to be active at a time.
     def generateMosaic2(self, camera):
         # Acquire the mosaic lock so no other mosaics can run.
-        self.mosaicGenerationLock.acquire()
+        if not self.mosaicGenerationLock.acquire(False):
+            # Do not block. Otherwise, multiple calls to generateMosaic
+            # can result in multiple threads waiting here for the lock.
+            return
 
         self.amGeneratingMosaic = True
         self.nameToButton['Run mosaic'].SetLabel('Stop mosaic')
@@ -516,19 +523,32 @@ class MosaicWindow(wx.Frame):
                 # Wait until the mosaic is unpaused.
                 if self.shouldEndOldMosaic:
                     # End the mosaic.
-                    self.shouldEndOldMosaic = False
-                    self.shouldPauseMosaic = False
-                    self.amGeneratingMosaic = False
-                    self.mosaicGenerationLock.release()
+                    self.exitMosaicLoop()
                     return
                 time.sleep(.1)
             # Take an image.
-            data, timestamp = events.executeAndWaitFor(
-                    "new image %s" % camera.name, 
-                    interfaces.imager.takeImage, shouldBlock = True)
+            # If anything happens to the camera, the mosaic gets
+            # stuck here and can not be restarted, so we use a
+            # timeout.
+            try:
+                #data, timestamp = events.executeAndWaitForOrTimeout(
+                data, timestamp = events.executeAndWaitForOrTimeout(
+                        "new image %s" % camera.name,
+                        interfaces.imager.takeImage,
+                        CAMERA_TIMEOUT,
+                        shouldBlock = True)
+            except:
+                # Exit gracefully on timeout.
+                self.exitMosaicLoop()
+                raise
             # Get the scaling for the camera we're using, since they may
             # have changed. 
-            minVal, maxVal = gui.camera.window.getCameraScaling(camera)
+            try:
+                minVal, maxVal = gui.camera.window.getCameraScaling(camera)
+            except:
+                # Camera may have been deactivated.
+                self.exitMosaicLoop()
+                raise
             events.executeAndWaitFor('mosaic canvas paint', 
                     self.canvas.addImage, data, 
                     (-prevPosition[0] - width / 2, 
@@ -538,12 +558,22 @@ class MosaicWindow(wx.Frame):
             # Move to the next position in shifted coords.
             target = (centerX +self.offset[0]+ dx * width,
                       centerY +self.offset[1]+ dy * height)
-            self.goTo(target, True)
+            try:
+                self.goTo(target, True)
+            except:
+                # On any movement error, terminate the mosaic cleanly.
+                self.exitMosaicLoop()
+                raise
             prevPosition = (centerX + dx * width,
                       centerY + dy * height)
             curZ = interfaces.stageMover.getPositionForAxis(2)-self.offset[2]
 
-        # We should never reach this point!
+
+    def exitMosaicLoop(self):
+        self.shouldEndOldMosaic = False
+        self.shouldPauseMosaic = False
+        self.amGeneratingMosaic = False
+        self.nameToButton['Run mosaic'].SetLabel('Run mosaic')
         self.mosaicGenerationLock.release()
 
 
@@ -1070,7 +1100,6 @@ class MosaicWindow(wx.Frame):
 
     ## Handle the user clicking the abort button.
     def onAbort(self, *args):
-        self.shouldAbort = True
         if self.amGeneratingMosaic:
             self.shouldPauseMosaic = True
         self.nameToButton['Run mosaic'].SetLabel('Run mosaic')

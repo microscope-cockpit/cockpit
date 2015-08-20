@@ -33,6 +33,43 @@ SMALL_SIZE = (60, 18)
 DEFAULT_FONT = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD)
 ## Small font
 SMALL_FONT = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
+## Background colour
+BACKGROUND = (128, 128, 128)
+
+class Button(wx.StaticText):
+    def __init__(self, 
+                 tooltip = '', textSize = 12, isBold = True, 
+                 leftAction = None, rightAction = None,
+                 **kwargs):
+        # Default size:
+        if 'size' not in kwargs:
+            kwargs['size'] = DEFAULT_SIZE
+        wx.StaticText.__init__(self,
+                style = wx.RAISED_BORDER | wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE,
+                **kwargs)
+        flag = wx.FONTWEIGHT_BOLD
+        if not isBold:
+            flag = wx.FONTWEIGHT_NORMAL
+        self.SetFont(wx.Font(textSize,wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, flag))
+        self.SetToolTipString(tooltip)
+        self.SetBackgroundColour(BACKGROUND)
+        # Realign the label using our custom version of the function
+        self.SetLabel(self.GetLabel())
+        self.Bind(wx.EVT_LEFT_DOWN, lambda event: leftAction(event))
+        self.Bind(wx.EVT_RIGHT_DOWN, lambda event: rightAction(event))
+
+
+    ## Override of normal StaticText SetLabel, to try to vertically
+    # align the text.
+    def SetLabel(self, text, *args, **kwargs):
+        height = self.GetSize()[1]
+        font = self.GetFont()
+        fontHeight = font.GetPointSize()
+        maxLines = min(height / fontHeight, max)
+        numLinesUsed = len(text.split("\n"))
+        lineBuffer = (maxLines - numLinesUsed) / 2 - 1
+        newText = ("\n" * lineBuffer) + text + ("\n" * lineBuffer)
+        wx.StaticText.SetLabel(self, newText, *args, **kwargs)
 
 
 class Label(wx.StaticText):
@@ -51,7 +88,7 @@ class Label(wx.StaticText):
 
 
 class ValueDisplay(wx.BoxSizer):
-    def __init__(self, parent, label, value, formatStr=None, unitStr=None):
+    def __init__(self, parent, label, value='', formatStr=None, unitStr=None):
         super(ValueDisplay, self).__init__(wx.HORIZONTAL)
         self.value = value
         label = Label(
@@ -87,6 +124,17 @@ class ValueDisplay(wx.BoxSizer):
                 return
             self.value = value
         self.valDisplay.SetLabel(self.formatStr % self.value)
+
+
+class MultilineDisplay(wx.StaticText):
+    def __init__(self, *args, **kwargs):
+        if 'style' not in kwargs:
+            kwargs['style'] = wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE
+        if 'numLines' in kwargs:
+            n = kwargs.pop('numLines')
+            kwargs['size'] = (DEFAULT_SIZE[0], n * DEFAULT_SIZE[1])
+        super(MultilineDisplay, self).__init__(*args, **kwargs)
+        self.SetFont(SMALL_FONT)
 
 
 class Menu(wx.Menu):

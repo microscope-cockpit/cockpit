@@ -1,4 +1,5 @@
 import threading
+import time
 
 ## This module handles the event-passing system between the UI and the 
 # devices. Objects may publish events, subscribe to them, and unsubscribe from
@@ -74,5 +75,45 @@ def executeAndWaitFor(eventType, func, *args, **kwargs):
         return result
 
 
+## Call the specified function with the provided arguments, and then wait for
+# either the named event to occur or the timeout to expire.
+def executeAndWaitForOrTimeout(eventType, func, timeout, *args, **kwargs):
+    # Timeout implemented with a condition.
+    newCondition = threading.Condition(threading.Lock())
+    # Mutable flag to show whether or not releaser called.
+    released = [False]
+    # Mutable object to store results.
+    result = []
 
+    def releaser(*args):
+        # Append arguments to result.
+        result.extend(args)
+        # Show that releaser called.
+        released[0] = True
+        # Notify condition.
+        with newCondition:
+            newCondition.notify()
 
+    oneShotSubscribe(eventType, releaser)
+    func(*args, **kwargs)
+
+    # If event has not already happened, wait for notification or timeout.
+    if not released[0]:
+        with newCondition:
+            # Blocks until another thread calls notify, or timeout.
+            newCondition.wait(timeout)
+
+    if released[0]:
+        if len(result) == 1:
+            return result[0]
+        return result
+    else:
+        ## Timeout expired
+        # Unsubscribe to keep subscription tables tidy.
+        with subscriberLock:
+            curSubscribers = eventToOneShotSubscribers.get(eventType, [])
+            for i, subscriberFunc in enumerate(curSubscribers):
+                if func == subscriberFunc:
+                    del curSubscribers[i]
+        # Raise an exception to indicate timeout.
+        raise Exception('Event timeout: %s, %s' % (eventType, func))

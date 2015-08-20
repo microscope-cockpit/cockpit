@@ -29,6 +29,7 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+import util.threads
 import util.userConfig
 import threading
 import time
@@ -36,32 +37,11 @@ import wx
 
 USER_CONFIG_ENTRY = 'ValueLogger.showKeys'
 
+
 class ValueLoggerWindow(wx.Frame):
-    """The main ValueLogger window."""
-    def __init__(self, parent, title='value logger'):
-        super(ValueLoggerWindow, self).__init__(
-                parent, -1, title,
-                style = wx.MINIMIZE_BOX | wx.MAXIMIZE_BOX | wx.RESIZE_BORDER | wx.SYSTEM_MENU | wx.CAPTION | wx.CLIP_CHILDREN )
-        # Bind to close event.
-        self.Bind(wx.EVT_CLOSE, self.onClose)
-        # Create our panel.
-        self.panel = ValueLoggerPanel(self)
-        # Add cockpit window bindings to this window.
-        gui.keyboard.setKeyboardHandlers(self)
-        self.SetSizeHints(600, 400)
-        self.Show()
-
-
-    def onClose(self, *args):
-        window = None
-        self.panel.Destroy()
-        self.Destroy()
-
-
-class ValueLoggerPanel(wx.Panel):
-    """A panel for ValueLoggerWindow."""
+    """A window that shows logged values."""
     def __init__(self, parent):
-        super(ValueLoggerPanel, self).__init__(parent)
+        super(ValueLoggerWindow, self).__init__(parent, title='Value logger')
         ## A mapping of names to booleans.
         self.showKeys = {}
         ## A mapping of name to line objects.
@@ -102,6 +82,11 @@ class ValueLoggerPanel(wx.Panel):
         events.subscribe("valuelogger update", self.draw)
         ## Subscribe to user login events.
         events.subscribe("user login", self.loadShowKeysFromConfig)
+
+        # Add cockpit window bindings to this window.
+        gui.keyboard.setKeyboardHandlers(self)
+        self.SetSizeHints(600, 400)
+        self.Show()
         
 
     def setFigureBorder(self, size):
@@ -140,7 +125,11 @@ class ValueLoggerPanel(wx.Panel):
 
     
     def draw(self, *args):
-        """Plot the data."""
+        """Plot the data.
+
+        All the leg work can be done in any thread, but the canvas.show
+        call must be in the main wx thread.
+        """
         if not window:
             # If there is no window, there is nothing to do.
             return
@@ -221,9 +210,14 @@ class ValueLoggerPanel(wx.Panel):
         ticksMinor = xaxis.get_ticklabels(minor=True)
         for tick in ticksMajor + ticksMinor:
             tick.set_rotation(90)
-        # Update the canvas.
+        # Update the canvas in the main wx thread.
+        self._doDraw()
+
+
+    @util.threads.callInMainThread
+    def _doDraw(self):
         self.canvas.draw()
-        self.canvas.flush_events()
+        #self.canvas.flush_events()
 
 
     def loadShowKeysFromConfig(self, event):

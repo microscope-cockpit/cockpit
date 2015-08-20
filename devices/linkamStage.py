@@ -102,6 +102,8 @@ class CockpitLinkamStage(device.Device):
             keys = set(self.status.keys()).difference(set(['connected']))
             self.status.update(map(lambda k: (k, None), keys))
         events.publish("status update", __name__, self.status)
+        # Send position updates in case stage has been moved with paddle.
+        self.sendPositionUpdates()
         self.updateUI()
 
 
@@ -157,19 +159,13 @@ class CockpitLinkamStage(device.Device):
         tempDisplays = ['bridge', 'chamber', 'dewar']
         # Panel, sizer and a device label.
         self.panel = wx.Panel(parent)
+        self.panel.SetDoubleBuffered(True)
         panel = self.panel
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = gui.device.Label(parent=panel,
                                 label='Cryostage')
         sizer.Add(label)
-        ## Generate the value displays.
-        self.displays = {}
-        for d in tempDisplays:
-            self.displays[d] = gui.device.ValueDisplay(
-                    parent=panel, label=d, value=0.0, 
-                    unitStr=u'°C')
-            sizer.Add(self.displays[d])
-            self.displays[d].Bind(wx.EVT_RIGHT_DOWN, self.onRightMouse)
+        self.elements = {}
         lightButton = gui.toggleButton.ToggleButton(
                 parent=panel,
                 label='chamber light',
@@ -177,8 +173,24 @@ class CockpitLinkamStage(device.Device):
                 activateAction=self.toggleChamberLight,
                 deactivateAction=self.toggleChamberLight,
                 isBold=False)
-        self.displays['light'] = lightButton
+        self.elements['light'] = lightButton
         sizer.Add(lightButton)
+        condensorButton = gui.toggleButton.ToggleButton(
+                parent=panel,
+                label='condensor LED',
+                size=gui.device.DEFAULT_SIZE,
+                activateAction=self.condensorOn,
+                deactivateAction=self.condensorOff,
+                isBold=False)
+        self.elements['condensor'] = condensorButton
+        sizer.Add(condensorButton)
+        ## Generate the value displays.
+        for d in tempDisplays:
+            self.elements[d] = gui.device.ValueDisplay(
+                    parent=panel, label=d, value=0.0, 
+                    unitStr=u'°C')
+            sizer.Add(self.elements[d])
+            self.elements[d].Bind(wx.EVT_RIGHT_DOWN, self.onRightMouse)
 
         ## Set the panel sizer and return.
         panel.SetSizerAndFit(sizer)
@@ -264,7 +276,24 @@ class CockpitLinkamStage(device.Device):
         Query the hardware if shouldUseCache is False.
         """
         if not shouldUseCache:
-            position = self.remote.getPosition()
+            # Occasionally, at the start on an experiment, a
+            # ConnectionClosedError is thrown here. I think this is something
+            # to do with Pyro reusing connections and those connections getting
+            # closed on the remote due to frequent traffic in the status thread.
+            # Workaround: retry a few times in the event of a ConnectionClosedError.
+            success = False
+            failCount = 0
+            while not success:
+                try:
+                    position = self.remote.getPosition()
+                    success = True
+                except Pyro4.errors.ConnectionClosedError:
+                    if failCount < 5:
+                        failCount += 1
+                    else:
+                        raise
+                except:
+                    raise
             self.positionCache = position
         if axis is None:
             return self.positionCache
@@ -281,15 +310,23 @@ class CockpitLinkamStage(device.Device):
         self.remote.toggleChamberLight()
 
 
+    def condensorOff(self):
+        self.remote.setCondensorLedLevel(0)
+
+
+    def condensorOn(self):
+        self.remote.setCondensorLedLevel(1)
+
+
     def updateUI(self):
         """Update user interface elements."""
         status = self.status
-        self.displays['bridge'].updateValue(self.status.get('bridgeT'))
-        self.displays['chamber'].updateValue(self.status.get('chamberT'))
-        self.displays['dewar'].updateValue(self.status.get('dewarT'))
+        self.elements['bridge'].updateValue(self.status.get('bridgeT'))
+        self.elements['chamber'].updateValue(self.status.get('chamberT'))
+        self.elements['dewar'].updateValue(self.status.get('dewarT'))
         ## The stage SDK allows us to toggle the light, but not know
         # its state.
-        # self.displays['light'].setActive(not self.status.get('light'))
+        # self.elements['light'].setActive(not self.status.get('light'))
         valuesValid = status.get('connected', False)
         if valuesValid:
             self.panel.Enable()

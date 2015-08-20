@@ -25,9 +25,18 @@ class DeviceHandler:
     def cached(cls, f):
         def wrapper(self, *args, **kwargs):
             key = (f, args, frozenset(sorted(kwargs.items())))
-            if key not in self.__cache:
-                self.__cache[key] = f(self, *args, **kwargs)
-            return self.__cache[key]
+            # Previously, I checked for key existence and, if it wasn't
+            # found, added the key and value to the cache, then returned
+            # self.__cache[key]. If another thread calls reset_cache 
+            # between the cache assignment and the return, this can
+            # cause a KeyError, so instead I now put the result in a 
+            # local variable, cache it, then return the local.
+            try:
+                return self.__cache[key]
+            except KeyError:
+                result = f(self, *args, **kwargs)
+                self.__cache[key] = result
+                return result
         return wrapper
 
 

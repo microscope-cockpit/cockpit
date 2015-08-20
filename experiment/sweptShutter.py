@@ -23,8 +23,8 @@ class OpenShutterSweepExperiment(experiment.Experiment):
             motionTime, stabilizationTime = self.zPositioner.getMovementTime(0,
                     self.zHeight)
             # Image the sample.
-            curTime = self.expose(curTime, cameras, lightTimePairs, table, motionTime)
-        
+            curTime = self.expose(curTime, cameras, lightTimePairs, table)
+
             # End the exposure with the stage at the top.
             table.addAction(curTime, self.zPositioner, self.zHeight)
             curTime += stabilizationTime
@@ -50,7 +50,7 @@ class OpenShutterSweepExperiment(experiment.Experiment):
         return table
 
 
-    def expose(self, curTime, cameras, lightTimePairs, motionTime):
+    def expose(self, curTime, cameras, lightTimePairs, table):
         return curTime
 
 
