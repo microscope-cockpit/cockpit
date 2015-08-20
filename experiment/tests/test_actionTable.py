@@ -48,6 +48,11 @@ class TestActionTable(unittest.TestCase):
             self.action_table.addAction(n, None, None)
         self.assertEqual(5, self.action_table.__len__())
 
+    def test_lenFunc(self):
+        for n in range(5):
+            self.action_table.addAction(n, None, None)
+        self.assertEqual(len(self.action_table), self.action_table.__len__())
+
 
     def test___repr__(self):
         '''All this does currently is call prettyString.'''
