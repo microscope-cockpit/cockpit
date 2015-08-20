@@ -23,6 +23,8 @@ import uuid
 
 class TestDataSaver(unittest.TestCase):
 
+    filePrefix = 'datasavertestfile'
+
     def setUp(self):
         self.depot = mock.MagicMock()
         self.camera = mock.MagicMock()
@@ -30,7 +32,7 @@ class TestDataSaver(unittest.TestCase):
         self.cameraToImagesPerRep = mock.MagicMock()
         self.cameraToIgnoredImageIndices = mock.MagicMock()
         # Give each file a random name to delete later
-        self.savePath = os.path.join(os.getcwd(), 'datasavertestfile'+str(uuid.uuid4()))
+        self.savePath = os.path.join(os.getcwd(), self.filePrefix+str(uuid.uuid4()))
 
         dataSaver.depot = mock.MagicMock()
         self.data_saver = DataSaver(cameras=[self.camera],
@@ -44,9 +46,12 @@ class TestDataSaver(unittest.TestCase):
 
 
     def tearDown(self):
-        subprocess.Popen(['rm', self.savePath]).wait()
-        # For splitting, files are created with savePath.NNN
-        subprocess.Popen(['rm', self.savePath+'.*']).wait()
+        try:
+            # don't report no file found
+            subprocess.call(['rm', self.filePrefix+'*'], shell=True, stdout=open(os.devnull, 'w')).wait()
+        except OSError as e:
+            # no file made to begin with
+            pass
 
 
     def test___init__(self):
