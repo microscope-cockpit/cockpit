@@ -199,7 +199,6 @@ class TestExperiment(unittest.TestCase):
         table = test_experiment.generateActions()
         # 3 x the no of cameras as we need to decend to bottom, wait, and rise
         self.assertEqual(len(table), 3*len(self.test_params['exposureSettings']))
-        print(table)
 
 
     def set_SI_testparams(self):
@@ -283,7 +282,8 @@ class TestExperiment(unittest.TestCase):
             test_exper = experiment.responseMap.ResponseMapExperiment(**self.test_params)
             test_exper.timesAndImages = mock.MagicMock()
             test_exper.timesAndImages.__len__ = lambda _: 0
-            test_exper.save()
+            with mock.patch('experiment.responseMap.depot') as mDepot:
+                test_exper.save()
 
 
     def test_offset_gain(self):
