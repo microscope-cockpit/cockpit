@@ -5,30 +5,32 @@
 # 
 # A few helpful features that need to be accessed from the commandline:
 # 1) A window that lets you directly control the digital and analog outputs
-#    of the DSP.
-# >>> import devices.dsp as DSP
-# >>> DSP.makeOutputWindow()
+#    of the FPGA.
+# >>> import devices.fpga as FPGA
+# >>> FPGA.makeOutputWindow()
 #
-# 2) Create a plot describing the actions that the DSP set up in the most
+# 2) Create a plot describing the actions that the NI-FPGA set up in the most
 #    recent experiment profile.
-# >>> import devices.dsp as DSP
-# >>> DSP._deviceInstance.plotProfile()
+# >>> import devices.fpga as FPGA
+# >>> FPGA._deviceInstance.plotProfile()
 #
 # 3) Manually advance the SLM forwards some number of steps; useful for when
 #    it has gotten offset and is no longer "resting" on the first pattern.
-# >>> import devices.dsp as DSP
-# >>> DSP._deviceInstance.advanceSLM(numSteps)
+# >>> import devices.fpga as FPGA
+# >>> FPGA._deviceInstance.advanceSLM(numSteps)
 # (where numSteps is an integer, the number of times to advance it).
 
 #TODO: Change config files
 
 import decimal
 import matplotlib
+from string import rjust
 matplotlib.use('WXAgg')
 import matplotlib.backends.backend_wxagg
 import matplotlib.figure
 import numpy
-import Pyro4
+# import Pyro4: In principle not used for the FPGA
+import socket
 import time
 import wx
 
@@ -59,7 +61,9 @@ class NIcRIO(device.Device):
             return
         ## IP address of the NIcRIO RT-computer.
         self.ipAddress = config.get('nicrio9068', 'ipAddress')
-        ## Port to use to connect to the NIcRIO RT-computer.
+        ## Port to use to connect to the NIcRIO RT-computer. Port is a tupple 
+        #  where the first element is the port to send tables and commands and 
+        #  the second is to listen to status through UDP
         self.port = int(config.get('nicrio9068', 'port'))
         ## Connection to the NIcRIO RT-computer
         self.connection = None
@@ -128,15 +132,15 @@ class NIcRIO(device.Device):
         ## Values for anologue positions at startup.
         self.startupAnalogPositions = [None] * 4
 
-#TODO: Initialize socket connection... How?
-    ## Connect to the DSP computer.
+#TODO: Initialize socket connection: Test socket connection, reboot FPGA
+    ## Connect to ni's RT-host computer.
     @util.threads.locked
     def initialize(self):
-        uri = 'PYRO:pyroDSP@%s:%d' % (self.ipAddress, self.port)
-        self.connection = Pyro4.Proxy(uri)
+        # uri = 'PYRO:pyroDSP@%s:%d' % (self.ipAddress, self.port)
+        self.connection = Connection(uri)
         self.connection._pyroTimeout = 6
         self.connection.Abort()
-
+        
 
     ## We care when cameras are enabled, since we control some of them 
     # via external trigger. There are also some light sources that we don't
@@ -155,18 +159,19 @@ class NIcRIO(device.Device):
     def makeInitialPublications(self):
         self.moveRetarderAbsolute(None, 0)
 
-#TODO: Define Safe onAbort config on cRIO
+#TODO: Define onAbort command
     ## User clicked the abort button.
     def onAbort(self):
-        self.connection.Abort()
+        Connection.Abort()
 
 
     @util.threads.locked
     def finalizeInitialization(self):
-        # Tell the remote DSP computer how to talk to us.
-        server = depot.getHandlersOfType(depot.SERVER)[0]
-        uri = server.register(self.receiveData)
-        self.connection.receiveClient(uri)
+        #Unnecessary for the NI-FPGA
+#         # Tell the remote DSP computer how to talk to us.
+#         server = depot.getHandlersOfType(depot.SERVER)[0]
+#         uri = server.register(self.receiveData)
+#         self.connection.receiveClient(uri)
         # Get all the other devices we can control, and add them to our
         # digital lines.
         for name, line in self.nameToDigitalLine.iteritems():
@@ -178,7 +183,6 @@ class NIcRIO(device.Device):
             pos = self.startupAnalogPositions[line]
             if pos is not None:
                 handler.moveAbsolute(pos)
-
 
     ## We control which light sources are active, as well as a set of 
     # stage motion piezos. 
@@ -209,7 +213,7 @@ class NIcRIO(device.Device):
                         'getPosition': self.getPiezoPos, 
                         'getMovementTime': self.getPiezoMovementTime,
                         'cleanupAfterExperiment': self.cleanupPiezo,
-                        # The DSP doesn't have modifiable soft motion safeties.
+                        # TODO: What is meant by this? The DSP doesn't have modifiable soft motion safeties.
                         'setSafety': lambda *args: None},
                     COCKPIT_AXES[aout['cockpit_axis']], 
                     aout['deltas'],
@@ -239,11 +243,11 @@ class NIcRIO(device.Device):
             result.append(handler)
 
         result.append(handlers.imager.ImagerHandler(
-            "DSP imager", "imager",
+            "NI-FPGA imager", "imager",
             {'takeImage': self.takeImage}))
 
         result.append(handlers.executor.ExecutorHandler(
-            "DSP experiment executor", "executor",
+            "NI-FPGA experiment executor", "executor",
             {'examineActions': lambda *args: None, 
                 'getNumRunnableLines': self.getNumRunnableLines, 
                 'executeTable': self.executeTable}))
@@ -252,12 +256,11 @@ class NIcRIO(device.Device):
         return result
 
 
-    ## Receive data from the DSP computer.
+    ## Receive data from the RT-host computer.
     def receiveData(self, action, *args):
-        if action == 'DSP done':
-            print "dsp done"
-            events.publish("DSP done")
-
+        if action == 'NI-FPGA done':
+            print "NI-FPGA done"
+            events.publish("NI-FPGA done")
 
     ## Enable/disable a specific light source.
     def toggleLight(self, lightName, isEnabled):
@@ -265,7 +268,6 @@ class NIcRIO(device.Device):
             self.activeLights.add(lightName)
         elif lightName in self.activeLights:
             self.activeLights.remove(lightName)
-
 
     ## As toggleLight, but accepts a handler instead.
     def toggleLightHandler(self, handler, isEnabled):
@@ -276,19 +278,18 @@ class NIcRIO(device.Device):
     def setExposureTime(self, name, value):
         self.lightToExposureTime[name] = value
 
-
     ## Retrieve the exposure time for a specific light source.
     def getExposureTime(self, name):
         return self.lightToExposureTime[name]
 
 
     ## Enable/disable a specific camera.
+
     def toggleCamera(self, camera, isEnabled):
         if not isEnabled and camera.name in self.activeCameras:
             self.activeCameras.remove(camera.name)
         else:
             self.activeCameras.add(camera.name)
-
 
     ## Report the new position of a piezo.
     def publishPiezoPosition(self, axis):
@@ -304,15 +305,15 @@ class NIcRIO(device.Device):
         aduPos = self.convertMicronsToADUs(aline, pos)
         self.connection.MoveAbsoluteADU(aline, aduPos)
         self.publishPiezoPosition(axis)
-        # Assume piezo movements are instantaneous; we don't get notified by
-        # the DSP when motion stops, anyway.
+        # Assume piezo movements are instantaneous; 
+        # TODO: we could establish a verification through the FPGA eg: connection.MoveAbsolute does not return until done
         events.publish('stage stopped', '%d piezo' % axis)
 
 
     ## Move the stage piezo by a given delta.
+
     def movePiezoRelative(self, axis, delta):
         self.movePiezoAbsolute(axis, self.curPosition[axis] + delta)
-
 
     ## Get the current piezo position.
     def getPiezoPos(self, axis):
@@ -326,7 +327,7 @@ class NIcRIO(device.Device):
     # we just say it takes 1ms per micron to stabilize and .1ms to move.
     def getPiezoMovementTime(self, axis, start, end):
         distance = abs(start - end)
-        return (decimal.Decimal('.1'), decimal.Decimal(distance * 1))
+        return (decimal.Decimal('.1'), decimal.Decimal(distance * 1000))
 
 
     ## Set the SLM's position to a specific value. 
@@ -351,7 +352,7 @@ class NIcRIO(device.Device):
     # in milliseconds. Note we assume that this requires only one triggering
     # of the SLM.
     def getSLMStabilizationTime(self, name, prevPos, curPos):
-        return (1, 30)
+        return (1, 30000)
 
 
     ## Move the variable retarder to the specified voltage.
@@ -360,7 +361,8 @@ class NIcRIO(device.Device):
         handler = depot.getHandlerWithName('SI angle')
         aline = self.handlerToAnalogLine[handler]
         # Convert from volts to ADUs.
-        self.connection.MoveAbsoluteADU(aline, int(pos * 6553.6))
+        # TODO: add volts to ADUs in config files
+        self.connection.MoveAbsoluteADU(aline, int(pos * 3276.8))
 
 
     ## Move the variable retarder by the specified voltage offset.
@@ -375,7 +377,7 @@ class NIcRIO(device.Device):
 
     ## Get the time needed for the variable retarder to move to a new value.
     def getRetarderMovementTime(self, name, start, end):
-        return (1, 1)
+        return (1, 1000)
 
     ## Take an image with the current light sources and active cameras.
     @util.threads.locked
@@ -435,11 +437,12 @@ class NIcRIO(device.Device):
     def executeTable(self, name, table, startIndex, stopIndex, numReps, 
             repDuration):
         # Convert the desired portion of the table into a "profile" for
-        # the DSP card.
+        # the FPGA.
         profileStr, digitals, analogs = self.generateProfile(table[startIndex:stopIndex], repDuration)
         # Update our positioning values in case we have to make a new profile
         # in this same experiment. The analog values are a bit tricky, since
         # they're deltas from the values we used to create the profile.
+        # TODO: Check if this is true for the FPGA. I believe it's not
         self.lastDigitalVal = digitals[-1, 1]
         for aline in xrange(4):
             self.lastAnalogPositions[aline] = analogs[aline][-1][1] + self.lastAnalogPositions[aline]
@@ -453,20 +456,21 @@ class NIcRIO(device.Device):
                 numpy.any(digitals != self.prevProfileSettings[1]) or
                 sum([numpy.any(analogs[i] != self.prevProfileSettings[2][i]) for i in xrange(4)])):
             # We can't just re-use the already-loaded profile.
-            self.connection.profileSet(profileStr, digitals, *analogs)
-            self.connection.DownloadProfile()
+            # TODO: fuse these two commands into one?
+            self.connection.sendTables(digitals, *analogs)
             self.prevProfileSettings = (profileStr, digitals, analogs)
             
         events.publish('update status light', 'device waiting',
-                'Waiting for\nDSP to finish', (255, 255, 0))
+                'Waiting for\nFPGA to finish', (255, 255, 0))
         # InitProfile will declare the current analog positions as a "basis"
         # and do all actions as offsets from those bases, so we need to
         # ensure that the variable retarder is zeroed out first.
+        # TODO: again verify if this is true for the FPGA
         retarderLine = self.handlerToAnalogLine[self.retarderHandler]
         self.setAnalogVoltage(retarderLine, 0)
 
         self.connection.InitProfile(numReps)
-        events.executeAndWaitFor("DSP done", self.connection.trigCollect)
+        events.executeAndWaitFor("NI-FPGA done", self.connection.trigCollect)
 
         events.publish('experiment execution')
         return
@@ -478,13 +482,13 @@ class NIcRIO(device.Device):
             # The DSP may complain about still being in collection mode
             # even though it's told us it's done; wait a bit.
             time.sleep(.25)
-            position = self.connection.ReadPosition(self.axisMapper[axis])
+            position = self.connection.getAnalogue(self.axisMapper[axis])
             self.curPosition.update({axis: position})
             self.publishPiezoPosition(axis)
             # Manually force all digital lines to 0, because for some reason the
             # DSP isn't doing this on its own, even though our experiments end
             # with an all-zeros entry.
-            self.connection.WriteDigital(0)
+            self.connection.writeDigitals(0)
             # Likewise, force the retarder back to 0.
             retarderLine = self.handlerToAnalogLine[self.retarderHandler]
             self.setAnalogVoltage(retarderLine, 0)
@@ -513,6 +517,7 @@ class NIcRIO(device.Device):
         # Take into account the desired rep duration -- if we have spare
         # time left over, then we insert a dummy action in to take up that
         # spare time.
+        # TODO: whay do do this. The FPGA will only change
         if repDuration is not None:
             repDuration *= self.actionsPerMillisecond
             waitTime = repDuration - (times[-1] - baseTime)
@@ -630,25 +635,26 @@ class NIcRIO(device.Device):
             
 
     ## Given a target position for the specified axis, generate an 
-    # appropriate value for the DSP's analog system.
+    # appropriate value for the NI-FPGA's analog system.
     def convertMicronsToADUs(self, aline, position):
         return long(position / self.alineToUnitsPerADU[aline])
 
 
-    ## Debugging function: set the digital output for the DSP.
+    ## Debugging function: set the digital output for the NI-FPGA.
     def setDigital(self, value):
-        self.connection.WriteDigital(value)
+        self.connection.writeDigitals(value)
 
 
-    ## Debugging function: set the analog voltage output for one of the DSP's
+    ## Debugging function: set the analog voltage output for one of the NI-FPGA's
     # analog lines.
+    # TODO: integrate thsi function into the configuration files
     def setAnalogVoltage(self, aline, voltage):
         # Convert volts -> ADUs
-        adus = int(voltage * 6553.6)
+        adus = int(voltage * 3276.8)
         self.connection.MoveAbsoluteADU(aline, adus)
 
 
-    ## Debugging function: plot the DSP profile we last used.
+    ## Debugging function: plot the NI-FPGA profile we last used.
     def plotProfile(self):
         if not self.prevProfileSettings:
             return
@@ -668,7 +674,8 @@ class NIcRIO(device.Device):
         maxVoltage = None
         for axis, analog in enumerate(analogs):
             for time, val in analog:
-                converted = val / 6553.60 # Convert ADUs -> volts
+                #TODO: integrate this conversion into the config files
+                converted = val / 3276.80 # Convert ADUs -> volts
                 if minVoltage is None or minVoltage > converted:
                     minVoltage = converted
                 if maxVoltage is None or maxVoltage < converted:
@@ -683,7 +690,7 @@ class NIcRIO(device.Device):
                 dpi = 100, facecolor = (1, 1, 1))
         axes = figure.add_subplot(1, 1, 1)
         axes.set_axis_bgcolor('white')
-        axes.set_title('DSP profile plot')
+        axes.set_title('NI-FPGA profile plot')
         axes.set_ylabel('Volts')
         axes.set_xlabel('Time (tenths of ms)')
         axes.xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(25))
@@ -695,7 +702,8 @@ class NIcRIO(device.Device):
         for aline, analog in enumerate(analogs):
             if numpy.any(analog) != 0:
                 xVals = [a[0] for a in analog]
-                yVals = [a[1] / 6553.60 for a in analog]
+                # TODO: integrate this conversion into the config files
+                yVals = [a[1] / 3276.80 for a in analog]
                 lines.append(axes.plot(xVals, yVals, colors[colorIndex]))
                 colorIndex += 1
                 name = 'Line %d' % aline
@@ -736,7 +744,7 @@ class NIcRIO(device.Device):
             labels.append(name)
 
         figure.legend(lines, labels, loc = 'upper left')
-        frame = wx.Frame(None, title = 'DSP Profile Plot')
+        frame = wx.Frame(None, title = 'NI-FPGA Profile Plot')
         canvas = matplotlib.backends.backend_wxagg.FigureCanvasWxAgg(
                 frame, -1, figure)
         canvas.draw()
@@ -778,17 +786,358 @@ class NIcRIO(device.Device):
         self.setAnalogVoltage(retarderLine, 0)
 
         self.connection.InitProfile(numReps)
-        events.executeAndWaitFor("DSP done", self.connection.trigCollect)
+        events.executeAndWaitFor("NI-FPGA done", self.connection.trigCollect)
             
+            
+# This class handles the connection with NI's RT-host computer
+class Connection():
+    
+    def __init__(self):
+        # Edit this dictionary of common commands after updating the NI RT-host settup
+        self.commandDict = {'abort' : '201',
+                            'reInit' : '202',
+                            'reInitHost' : '203',
+                            'reInitFPGA' : '204',
+                            'updateNrReps' : '205',
+                            'sendDigitals' : '101',
+                            'sendAnalogues' : '11X',
+                            '' : }
+        self.errorCodes = {'0' : none,
+                           '1' : 'Could not create socket',
+                           '2' : 'Could not create socket connection',
+                           '3' : 'Send error'}
+        self.host = config.get('nicrio9068', 'ipAddress')
+        self.port = config.get('nicrio9068', 'port')
 
 
-## This debugging window lets each digital lineout of the DSP be manipulated
+#        self.fn = fn
+#        self.startCollectThread()
+#        self.reInit()
+#        self.clientConnection = None
+#        self.MoveAbsolute(0, 10)
+#        self.WriteShutter(255)
+
+
+    def writeReply(self):
+        '''
+        For debugging
+        '''
+        pass
+    
+    
+    def runCommand(self, command, args = [], msgLength = 48):
+        '''
+        This method creates a socket connection with the RT-host and sends a 
+        command message of three numbers followed by associated arguments
+        
+        command is a 3 digits string obtained from commandDict
+        
+        args is a list of strings containing the arguments associated. Elements
+        must be 48 chars or less
+        
+        msgLength can be modified to addapt to the message length but should 
+        be in sync with RT-host computer receiver
+        
+        Return a tuple where first element is 0 if success and 1 if error.
+        Second element is error code.
+        '''
+        # Transform args into a list of strings of 48 chars
+        newArgs = []
+        for arg in args:
+            newArgs.append(arg.rjust(msgLength, '0'))
+        
+        args = newArgs
+                                   
+        try:
+            # Create an AF_INET, STREAM socket (TCP)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        except socket.error, msg:
+            print 'Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
+            return (1, '1')
+        
+        try:
+            # Connect to remote server
+            s.connect((host , port[0]))
+        except socket.error, msg:
+            print 'Failed to establish connection. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
+            return (1, '2')
+        
+        try:
+            # Send the actual message and arguments
+            s.send(command)
+            for arg in args:
+                s.send(arg)
+        except socket.error, msg:
+            #Send failed
+            print 'Send failed. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
+            return (1, '3')
+
+        # close connection
+        s.close()
+        return (0,0)
+    
+    
+    def writeParameter(self, parameter, value):
+        '''
+        Writes parameter value to RT-host
+        '''
+        pass
+    
+    
+    def readStatus(self, key = none):
+        '''
+        This method will listen to a UDP socket and get the status information
+        of the RT-host and FPGA.
+        
+        This information is returned as a dictionary. If a key is
+        specified the corresponding value is returned as a string
+        
+        Keys are:
+        E0 to E9 - errors
+        C0 to C9 - collecting status
+        I00 to I99 - interlock status
+        T00 to T99 - temperatures
+        A00 to A99 - analogue output status
+        D000 to D999 - digital output status
+        '''
+        
+        # TODO: define host to replace symbolic link ''
+        
+        try:
+            # Create an AF_INET, Datagram socket (UDP)
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        except socket.error, msg:
+            print 'Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
+        
+        try:
+            # Bind Socket to local host and port
+            s.bind('' , port[1])
+        except socket.error, msg:
+            print 'Failed to bind address. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
+
+        datagram = none
+        
+        while not datagram:
+            # Receive Datagram
+            datagram = s.recvfrom(512)
+
+        # close connection
+        s.close()
+        
+        # parse datagram
+        datagramList = split(datagram[0], '_')
+        
+        datagramDict = {}
+        
+        for element in datagramList:
+            element = element.split('=')
+            datagramDict[element[0]] = element[1]
+            
+        if key:
+            return datagramDict[key]
+        else:
+            return datagramDict
+
+        
+    def abort(self):
+        '''
+        Sends abort experiment command to FPGA
+        '''
+        self.runCommand(self.commandDict['abort'])
+        
+    
+    def reInit(self, unit = none):
+        '''
+        Restarts the RT-host and FPGA unless 'host' or 'fpga' is specified as unit
+        
+        Returns nothing
+        '''
+        if not unit:
+            self.runCommand(self.commandDict['reInit'])
+            
+        if unit == 'host':
+            self.runCommand(self.commandDict['reInitHost'])
+            
+        if unit == 'fpga':
+            self.runCommand(self.commandDict['reInitFPGA'])
+
+         
+    def updateNReps(self, newCount):
+        '''
+        Updates the number of repetitions to execute on the FPGA.
+        
+        newCount must be a string of less than 48 characters
+        '''
+        self.runCommand(self.commandDict['updateNrReps'], newCount)
+        
+    # TODO block thsi method
+    def sendTables(self, digitalsList, msgLength = 20, *analoguesList):
+        '''
+        Sends through TCP the digitals and analogues tables to the RT-host.
+        
+        Analogues lists must be ordered form 0 onward and without gaps. That is,
+        (0), (0,1), (0,1,2) or (0,1,2,3)
+        
+        '''
+        
+        # Send digitals
+        self.runCommand(self.commandDict['sendDigitals'], digitalsList, msgLength)
+        
+        # Send Analogues
+        analogueChannel = 0
+        for analogues in analoguesList:
+            command = self.commandDict['sendAnalogues'][0:2] + str(analogueChannel)
+            self.runCommand(command, analogues, msgLength)
+            analogueChannel =+1
+            
+    
+    def readError(self):
+        '''
+        Gets error code from RT-host and FPGA
+        
+        Returns a tuple with the error code and the corresponding error message
+        '''
+        return self.getStatus('E0')       
+        
+    
+    def isCollecting(self, collectionLine = 'C0'):
+        '''
+        Returns 1 if experiment is running and 0 if idle
+        '''
+        return = int(self.readStatus(collectionLine))
+    
+    
+    def writeAnalogueADU(self, analogueValue, analogueChannel):
+        '''
+        Changes an analogueChannel output to the specified analogueValue value
+        
+        analogueValue is taken as a raw 16 or 32bit value
+        
+        analogueChannel is an integer corresponding to the analogue in the FPGA 
+        as specified in the config files
+        '''
+        pass
+    
+    
+    def writeAnalogueADU(self, analogueValue, analogueChannel, sensitivity):
+        '''
+        Changes an analogueChannel output to the specified analogueValue value
+        
+        analogueValue is taken as a calibrated value according to the sensitivity:
+        
+        raw value (16 or 32 bit) = analogueValue (eg V or microns) * sensitivity
+        
+        analogueChannel is an integer corresponding to the analogue in the FPGA 
+        as specified in the config files
+        '''
+        pass
+    
+    
+    def writeAnalogueDelta(self, analogueDeltaValue, analogueChannel):
+        '''
+        Changes an analogueChannel output to the specified analogueValue delta-value
+        
+        analogueDeltaValue is taken as a raw 16bit value
+        
+        analogueChannel is an integer corresponding to the analogue in the FPGA 
+        as specified in the config files
+        '''
+        pass
+        
+    
+    def readAnalogue(self, analogueLine):
+        '''
+        Returns the current output value of the analogue line 'analogueLine'
+        
+        analogueLine is an integer corresponding to the requested analogue on the FPGA
+        as entered in the analogue config files.
+        '''
+        
+        analogueLine = 'A' + str(analogueLine).rjust(2, '0')
+        
+        return = int(self.readStatus(analogueLine))
+        
+    
+    def writeDigitals(self, digitalValue, digitalChannel = none):
+        '''
+        Write a specific value to the ensemble of the digitals through a 32bit
+        integer digitalValue.
+        
+        If digitalChannel is specified, then only that channel is modified.
+        In that case, digitalValue must be 0 or 1.
+        '''
+        pass
+    
+    
+    def readDigitals(self, digitalChannel = none):
+        '''
+        Get the value of the current Digitals outputs as a 32bit integer.
+        
+        If digitalChannel is specified, a 0 or 1 is returned.
+        '''
+        pass
+    
+    
+    def initProfile(self,numberReps):
+        '''
+        run a profile?
+        '''
+        pass
+    
+    
+    def getframedata(self):
+        '''
+        Get the current frame
+        '''
+        pass
+    
+    
+    
+
+# 
+#     def trigCollect(self):
+#         self.collThread.do('collect')
+# 
+#     def arcl(self, cameras, lightTimePairs):
+#         self.collThread.do(('arcl', (cameras, lightTimePairs)))
+# 
+#     def getframedata(self):
+#         numframe = pyC67.GetFrameCount()
+#         import numpy as N
+#         #from numarray import records as rec
+#         #fd=rec.array(formats="u4,u4,4f4",
+#         #             shape=numframe,
+#         #             names=('rep','step','adc'),
+#         #             aligned=1)
+#         #aa = na.array(sequence=fd._data, type=na.UInt8, copy=0, savespace=0, shape=numframe*6*4)
+#         fd = N.recarray(numframe,
+#                         formats="u4,u4,4f4",
+#                         names='rep,step,adc')
+#         #ProStr_aa[:] = 0
+#         if numframe>0:
+#             aa = N.ndarray(numframe*4*6, buffer=fd.data,dtype=N.uint8)
+#             pyC67.ReturnFrameData(aa)
+#         return fd
+# 
+#     def startCollectThread(self):
+#         pyC67.mmInitMMTimer()
+#         try:
+#             self.collThread.doEvent.doWhat = 'quit'
+#         except:
+#             pass
+#         self.collThread = CollectThread(self)
+#         self.collThread.start()
+# 
+  
+
+## This debugging window lets each digital lineout of the NI-FPGA be manipulated
 # individually.
-class DSPOutputWindow(wx.Frame):
-    def __init__(self, dsp, parent, *args, **kwargs):
+# TODO: change the class name and the corresponding calls
+class FPGAOutputWindow(wx.Frame):
+    def __init__(self, fpga, parent, *args, **kwargs):
         wx.Frame.__init__(self, parent, *args, **kwargs)
-        ## DSPDevice instance.
-        self.dsp = dsp
+        ## FPGADevice instance.
+        self.fpga = fpga
         # Contains all widgets.
         panel = wx.Panel(self)
         mainSizer = wx.BoxSizer(wx.VERTICAL)
@@ -802,7 +1151,7 @@ class DSPOutputWindow(wx.Frame):
             lineVal = 1 << line
             # Check if this line is officially hooked up.
             label = str(line)
-            for handler, altLine in self.dsp.handlerToDigitalLine.iteritems():
+            for handler, altLine in self.fpga.handlerToDigitalLine.iteritems():
                 if altLine & lineVal:
                     label = handler.name
                     break
@@ -830,26 +1179,26 @@ class DSPOutputWindow(wx.Frame):
         self.SetClientSize(panel.GetSize())
 
 
-    ## One of our buttons was clicked; update the DSP's output.
+    ## One of our buttons was clicked; update the NI-FPGA's output.
     def toggle(self):
         output = 0
         for button, line in self.buttonToLine.iteritems():
             if button.getIsActive():
                 output += line
-        self.dsp.connection.WriteDigital(output)
+        Connection.writeDigitals(output)
 
 
     ## The user input text for one of the voltage controls; set the voltage.
     def setVoltage(self, axis, control):
         val = float(control.GetValue())
-        self.dsp.setAnalogVoltage(axis, val)
+        self.fpga.setAnalogVoltage(axis, val)
 
 
 
-## Debugging function: display a DSPOutputWindow.
+## Debugging function: display a FPGAOutputWindow.
 def makeOutputWindow():
     # HACK: the _deviceInstance object is created by the depot when this
     # device is initialized.
     global _deviceInstance
-    DSPOutputWindow(_deviceInstance, parent = wx.GetApp().GetTopWindow()).Show()
+    FPGAOutputWindow(_deviceInstance, parent = wx.GetApp().GetTopWindow()).Show()
     
