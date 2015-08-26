@@ -229,7 +229,14 @@ class BoulderSLMDevice(device.Device):
 
     def updatePositionDisplay(self, event):
         baseStr = 'angle:\t%d\nphase:\t%d\nwavel.:\t%d'
-        display = event.GetEventObject().GetOwner()
+        # Get the display object. It seems there is variation between
+        # wx versions. With some versions, the display is obtained by
+        #    event.GetEventObject().
+        # With others, it is
+        #    event.GetEventObject().GetOwner()
+        display = event.GetEventObject()
+        if not hasattr(display, 'SetLabel'):
+            display = display.GetOwner()
         if self.position is not None and self.lastParms:
             display.SetLabel(baseStr % self.lastParms[self.position])
         # Dispatch a call in new thread to fetch new values for next time
