@@ -253,14 +253,16 @@ class CockpitLinkamStage(device.Device):
         moving = True
         # Send positions at least once.
         while moving:
+            # Need this thread to sleep to give UI a chance to update.
+            # Sleep at start of loop to allow stage time to respond to
+            # move request so remote.isMoving() returns True.
+            time.sleep(0.1)
             coords = self.getPosition(shouldUseCache=False)
             for axis, value in enumerate(coords):
                 events.publish('stage mover',
                                '%d linkam mover' % axis, 
                                axis, value)
             moving = self.remote.isMoving()
-            # Need this thread to sleep to give UI a chance to update.
-            time.sleep(0.1)
 
         for axis in (0, 1):
             events.publish('stage stopped', '%d linkam mover' % axis)
