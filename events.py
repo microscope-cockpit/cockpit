@@ -56,6 +56,13 @@ def unsubscribe(eventType, func):
                 return
 
 
+## Clear one-shot subscribers on abort.
+def clearOneShotSubscribers():
+    eventToOneShotSubscribers = {}
+
+subscribe('user abort', clearOneShotSubscribers)
+
+
 ## Call the specified function with the provided arguments, and then wait for
 # the named event to occur.
 def executeAndWaitFor(eventType, func, *args, **kwargs):

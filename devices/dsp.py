@@ -158,6 +158,9 @@ class DSPDevice(device.Device):
     ## User clicked the abort button.
     def onAbort(self):
         self.connection.Abort()
+        # Various threads could be waiting for a 'DSP done' event, preventing
+        # new DSP actions from starting after an abort.
+        events.publish("DSP done")
 
 
     @util.threads.locked
