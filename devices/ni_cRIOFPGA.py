@@ -26,6 +26,7 @@
 import decimal
 import matplotlib
 from string import rjust
+from _elementtree import Element
 matplotlib.use('WXAgg')
 import matplotlib.backends.backend_wxagg
 import matplotlib.figure
@@ -66,6 +67,7 @@ class NIcRIO(device.Device):
         self.port = [self.sendPort, self.receivePort]
         ## Create connection to the NIcRIO RT-computer
         self.connection = Connection(self.ipAddress, self.port)
+        # TODO: call destructor 
         ## Set of all handlers we control.
         self.handlers = set()
         ## Where we believe the stage piezos to be.
@@ -414,8 +416,7 @@ class NIcRIO(device.Device):
         for handler, line in self.handlerToDigitalLine.iteritems():
             if handler.name in self.activeLights:
                 maxTime = max(maxTime, handler.getExposureTime())
-                # The DSP card can only handle integer exposure times.
-                exposureTime = int(numpy.ceil(handler.getExposureTime()))
+                exposureTime = handler.getExposureTime()
                 lightTimePairs.append((line, exposureTime))
                 maxTime = max(maxTime, exposureTime)
         for name, line in self.nameToDigitalLine.iteritems():
@@ -423,8 +424,7 @@ class NIcRIO(device.Device):
                 cameraMask += line
                 handler = depot.getHandlerWithName(name)
                 handler.setExposureTime(maxTime)
- #       print "Cam mask, lighttimeparis", cameraMask, lightTimePairs
-        self.connection.arcl(cameraMask, lightTimePairs)
+        self.connection.takeImage(cameraMask, lightTimePairs)
 
 
     def onPrepareForExperiment(self, *args):
@@ -691,7 +691,7 @@ class NIcRIO(device.Device):
         # Convert volts -> ADUs
         adus = int(voltage * 3276.8)
         ## TODO: sensitivity
-        self.connection.MoveAbsoluteADU(aline, adus, 'sensitivity')
+        self.connection.writeAnalogueADU(adus, aline)
 
 
     ## Debugging function: plot the NI-FPGA profile we last used.
@@ -833,7 +833,6 @@ class Connection():
     '''
     This class handles the connection with NI's RT-host computer
     '''
-    
     def __init__(self, host, port):
         # Edit this dictionary of common commands after updating the NI RT-host settup
         self.commandDict = {'abort' : '301',
@@ -844,6 +843,9 @@ class Connection():
                             'sendStartStopIndexes' : '306',
                             'initProfile' : '307',
                             'triggerExperiment' : '308',
+                            'writeDigitals' : '311',
+                            'takeImage' : '312',
+                            'writeAnalogue' : '34X',
                             'sendDigitals' : '101',
                             'sendAnalogues' : '20X',
                             }
@@ -877,8 +879,7 @@ class Connection():
         
         command is a 3 digits string obtained from commandDict
         
-        args is a list of strings containing the arguments associated. Elements
-        must be 48 chars or less
+        args is a list of strings containing the arguments associated.
         
         msgLength can be modified to addapt to the message length but should 
         be in sync with RT-host computer receiver
@@ -886,7 +887,7 @@ class Connection():
         Return a tuple where first element is 0 if success and 1 if error.
         Second element is error code.
         '''
-        # Transform args into a list of strings of 48 chars
+        # Transform args into a list of strings of 20 chars
         newArgs = []
         for arg in args:
             newArgs.append(arg.rjust(msgLength, '0'))
@@ -910,8 +911,8 @@ class Connection():
         try:
             # Send the actual message and arguments
             s.send(command)
-            for arg in args:
-                s.send(arg)
+            buf = str.join(args)
+            s.sendall(buf)
         except socket.error, msg:
             #Send failed
             print 'Send failed. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
@@ -1015,12 +1016,12 @@ class Connection():
         '''
         
         # Convert newCount into a string
-        newCount = str(newCount).rjust(20, '0')
+        newCount = str(newCount)
         
         self.runCommand(self.commandDict['updateNrReps'], newCount, msgLength=20)
         
     @util.threads.locked
-    def sendTables(self, digitalsTable, msgLength = 20, digitalsBitDepth = 16, analoguesBitDepth = 16, *analogueTables):
+    def sendTables(self, digitalsTable, msgLength = 20, digitalsBitDepth = 32, analoguesBitDepth = 16, *analogueTables):
         '''
         Sends through TCP the digitals and analogue tables to the RT-host.
         
@@ -1032,8 +1033,8 @@ class Connection():
         digitalsList = []
         
         for time, value in digitalsTable:
-            digitalsValue = numpy.binary_repr(time, 32) + numpy.binary_repr(value, digitalsBitDepth)
-            digitalsList.append(digitalsValue.rjust(20, '0'))
+            digitalsValue = int(numpy.binary_repr(time, 32) + numpy.binary_repr(value, digitalsBitDepth), 2)
+            digitalsList.append(str(digitalsValue))
                     
         # Send digitals
         self.runCommand(self.commandDict['sendDigitals'], digitalsList, msgLength)
@@ -1046,8 +1047,8 @@ class Connection():
             analogueList = []
             
             for time, value in analogueTable:
-                analogueValue = numpy.binary_repr(time, 32) + numpy.binary_repr(value, analoguesBitDepth)
-                analogueList.append(analogueValue.rjust(20, '0'))
+                analogueValue = int(numpy.binary_repr(time, 32) + numpy.binary_repr(value, analoguesBitDepth), 2)
+                analogueList.append(str(analogueValue))
             
             command = self.commandDict['sendAnalogues'][0:2] + str(analogueChannel)
             self.runCommand(command, analogueList, msgLength)
@@ -1086,12 +1087,12 @@ class Connection():
         
         newList = []        
         for index in analoguesStartIndexes:
-            newList.append(str(index).rjust(20,'0'))
+            newList.append(str(index))
         analoguesStartIndexes = newList
         
         newList = []        
         for index in analoguesStopIndexes:
-            newList.append(str(index).rjust(20,'0'))
+            newList.append(str(index))
         analoguesStopIndexes = newList
         
         # Merge everything in a single list to send. Note that we interlace the 
@@ -1141,7 +1142,9 @@ class Connection():
         '''
         Changes an analogueChannel output to the specified analogueValue value
         
-        analogueValue is taken as a raw 16 or 32bit value
+        analogueValue is taken as a calibrated value according to the sensitivity:
+        
+        raw value (16 or 32 bit) = analogueValue (eg V or microns) * sensitivity
         
         analogueChannel is an integer corresponding to the analogue in the FPGA 
         as specified in the config files
@@ -1153,14 +1156,14 @@ class Connection():
         '''
         Changes an analogueChannel output to the specified analogueValue value
         
-        analogueValue is taken as a calibrated value according to the sensitivity:
-        
-        raw value (16 or 32 bit) = analogueValue (eg V or microns) * sensitivity
+        analogueValue is taken as a raw 16 or 32bit value
         
         analogueChannel is an integer corresponding to the analogue in the FPGA 
         as specified in the config files
         '''
-        pass
+        analogue = [str(analogueChannel), str(analogueValueADU)]
+        
+        self.runCommand(self.commandDict['writeAnalogue'], analogue)
     
     
     def writeAnalogueDelta(self, analogueDeltaValue, analogueChannel):
@@ -1188,16 +1191,13 @@ class Connection():
         return int(self.readStatus(analogueLine))
         
     
-    def writeDigitals(self, digitalValue, digitalChannel = None):
+    def writeDigitals(self, digitalValue):
         '''
         Write a specific value to the ensemble of the digitals through a 32bit
-        integer digitalValue.
-        
-        If digitalChannel is specified, then only that channel is modified.
-        In that case, digitalValue must be 0 or 1.
+        integer digitalValue.        
         '''
-        pass
-    
+        self.runCommand(self.commandDict['writeDigitals'], str(digitalValue))
+
     
     def readDigitals(self, digitalChannel = None):
         '''
@@ -1205,7 +1205,13 @@ class Connection():
         
         If digitalChannel is specified, a 0 or 1 is returned.
         '''
-        pass
+        value = Connection.readStatus(key = 'D0')
+        
+        if digitalChannel:
+            return int(value[-digitalChannel])
+        
+        else:
+            return int(value, 2)
     
     
     def initProfile(self,numberReps, repDuration):
@@ -1236,11 +1242,59 @@ class Connection():
         Trigger the execution of an experiment.
         '''
         self.runCommand(self.commandDict('triggerExperiment'))
+        
+        
+    def takeImage(self, cameras, lightTimePairs, actionsPerMillisecond=1000, digitalsBitDepth = 32):
+        '''
+        Performs a snap with the selected cameras and light-time pairs
+        
+        Generates a list of tiems and digitals that is sent to the FPGA to be run
+        
+        Expose all lights at the start, then drop them out
+        as their exposure times come to an end.
+        '''
+        
+        if lightTimePairs:
+            # transform the times in FPGA time units
+            lightTimePairs = [(light, int(time * actionsPerMillisecond)) for (light, time) in lightTimePairs]
+            
+            # Sort so that the longest exposure time comes last.
+            lightTimePairs.sort(key = lambda a: a[1])
+            
+            # the first timepoint: all cameras and lights are turned on and time is 0
+            timingList = [(cameras + sum([p[0] for p in lightTimePairs]), 0)]
+            
+            # For similar exposure times, we just send the digitals values that turn off
+            # all the lights
+            for light, time in lightTimePairs:
+                if time == timingList[-1][1]:
+                    timingList[-1] = (timingList[-1][0] - light, time)
+                else:
+                    timingList.append((timingList[-1][0] - light, time))
+                    
+            # In the last time point also the cameras should be turned off
+            timingList[-1] = (timingList[-1][0] - cameras, timingList[-1][1])
+            
+            # Add a 0 at the end will stop the execution of the list    
+            timingList.append((0, 0))
+
+            
+            lightTimePairs = timingList
+            
+            sendList = []
+            
+            for light, time in lightTimePairs:
+                # binarize and concatenate time and digital value
+                value = numpy.binary_repr(time, 32) + numpy.binary_repr(light, digitalsBitDepth)
+                value = int(value, 2)
+                sendList.append(str(value))
+                
+            print sendList
+            self.runCommand(self.commandDict['takeImage'], sendList, msgLength=20)
+            
 
 
 
-#     def arcl(self, cameras, lightTimePairs):
-#         self.collThread.do(('arcl', (cameras, lightTimePairs)))
 # 
 #     def getframedata(self):
 #         numframe = pyC67.GetFrameCount()
