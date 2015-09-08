@@ -469,11 +469,16 @@ class NIcRIO(device.Device):
         # Convert the desired portion of the table into a "profile" for
         # the FPGA.
         '''
+        print('executeTable called') # TODO: removethis
+        
         profileStr, digitals, analogs = self.generateProfile(table[startIndex:stopIndex], repDuration)
         # Update our positioning values in case we have to make a new profile
         # in this same experiment. The analog values are a bit tricky, since
         # they're deltas from the values we used to create the profile.
         ## Not true for the FPGA
+        
+        print(profileStr) # TODO: removethis
+        
         self.lastDigitalVal = digitals[-1, 1]
         for aline in xrange(4):
             self.lastAnalogPositions[aline] = analogs[aline][-1][1] #  + self.lastAnalogPositions[aline]
@@ -487,7 +492,9 @@ class NIcRIO(device.Device):
                 numpy.any(digitals != self.prevProfileSettings[1]) or
                 sum([numpy.any(analogs[i] != self.prevProfileSettings[2][i]) for i in xrange(4)])):
             # We can't just re-use the already-loaded profile.
+            print('going to sendTables') # TODO: removethis
             self.connection.sendTables(digitals, *analogs)
+            print(profileStr) # TODO: removethis
             self.prevProfileSettings = (profileStr, digitals, analogs)
             
         events.publish('update status light', 'device waiting',
@@ -529,6 +536,7 @@ class NIcRIO(device.Device):
     # We also generate the "profile string" that is used to describe these
     # arrays.
     def generateProfile(self, events, repDuration):
+        print('generateProfile called') # TODO: removethis
         # Maps digital lines to the most recent setting for that line.
         digitalToLastVal = {}
         # Maps analog lines to lists of (time, value) pairs. 
@@ -544,6 +552,9 @@ class NIcRIO(device.Device):
         times = [int(t + .5) for t in times]
         times = sorted(list(set(times)))
         baseTime = times[0]
+        
+        print('basetime: ' + str(baseTime)) # TODO: removethis
+        
         # Take into account the desired rep duration -- if we have spare
         # time left over, then we insert a dummy action in to take up that
         # spare time.
@@ -573,6 +584,7 @@ class NIcRIO(device.Device):
         for time, handler, action in events:
             # Do the same "Decimal -> float -> rounded int" conversion
             time = int(float(time * self.actionsPerMillisecond) + .5)
+            print('Time/handler/action: ' + str(time) + str(handler) + str(action)) # TODO: removethis
             index = times.index(time)
             # Ensure a valid (nonzero) digital value exists regardless of the
             # type of action, e.g. so analog actions don't zero the digital
@@ -663,7 +675,7 @@ class NIcRIO(device.Device):
         description[0]['InitDio'] = self.lastDigitalVal
         description[0]['nDigital'] = len(digitals)
         description['nAnalog'] = [len(a) for a in analogs]
-
+        
         return description.tostring(), digitals, analogs
             
 
@@ -855,6 +867,8 @@ class Connection():
                            '3' : 'Send error'}
         self.host = host
         self.port = port # port is a tuple with two values
+        self.sendSocket = self.createSendSocket(self.host, self.port[0])
+        self.receiveSocket = self.createReceiveSocket('10.90.90.21', self.port[1])
 
 
 #        self.fn = fn
@@ -864,7 +878,56 @@ class Connection():
 #        self.MoveAbsolute(0, 10)
 #        self.WriteShutter(255)
 
+    def createSendSocket(self, host, port):
+        '''
+        Creates a TCP socket meant to send commands to the RT-host
+        
+        Returns the connected socket
+        '''
+        try:
+            # Create an AF_INET, STREAM socket (TCP)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            print('socket created') # TODO: removethis
+        except socket.error, msg:
+            print 'Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
+            return (1, '1')
+        
+        try:
+            # Connect to remote server
+            s.connect((host , port))
+            print('socket connected') # TODO: removethis
+        except socket.error, msg:
+            print 'Failed to establish connection. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
+            return (1, '2')
+        
+        return s
 
+
+    def createReceiveSocket(self, host, port):
+        '''
+        Creates a UDP socket meant to receive status information
+        form the RT-host
+        
+        returns the bound socket
+        '''
+        # TODO: define host to replace symbolic link ''
+        
+        try:
+            # Create an AF_INET, Datagram socket (UDP)
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        except socket.error, msg:
+            print 'Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
+        
+        try:
+            # Bind Socket to local host and port
+            s.bind((host , port))
+        except socket.error, msg:
+            print 'Failed to bind address. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
+        
+        return s
+
+        
+    
     def writeReply(self):
         '''
         For debugging
@@ -872,54 +935,33 @@ class Connection():
         pass
     
     
-    def runCommand(self, command, args = [], msgLength = 20):
+    def runCommand(self, command, args = []):
         '''
-        This method creates a socket connection with the RT-host and sends a 
-        command message of three numbers followed by associated arguments
+        This method sends a command message of three numbers followed by 
+        associated arguments to the RT-host
         
         command is a 3 digits string obtained from commandDict
         
         args is a list of strings containing the arguments associated.
-        
-        msgLength can be modified to addapt to the message length but should 
-        be in sync with RT-host computer receiver
-        
+                
         Return a tuple where first element is 0 if success and 1 if error.
         Second element is error code.
         '''
+        print('runCommand called') # TODO: removethis
         # Transform args into a list of strings of 20 chars
-        newArgs = []
-        for arg in args:
-            newArgs.append(arg.rjust(msgLength, '0'))
-        
-        args = newArgs
-                                   
-        try:
-            # Create an AF_INET, STREAM socket (TCP)
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        except socket.error, msg:
-            print 'Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
-            return (1, '1')
-        
-        try:
-            # Connect to remote server
-            s.connect((self.host , self.port[0]))
-        except socket.error, msg:
-            print 'Failed to establish connection. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
-            return (1, '2')
-        
+                                 
         try:
             # Send the actual message and arguments
-            s.send(command)
-            buf = str.join(args)
-            s.sendall(buf)
+            self.sendSocket.send(command)
+            print('sent command: ' + command) # TODO: removethis
+            buf = str('').join(args)
+            self.sendSocket.sendall(buf)
+            print('buffer sent') # TODO: removethis
         except socket.error, msg:
             #Send failed
             print 'Send failed. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
             return (1, '3')
 
-        # close connection
-        s.close()
         return (0,0)
     
     
@@ -947,28 +989,14 @@ class Connection():
         D0 to D9 - digital output status
         '''
         
-        # TODO: define host to replace symbolic link ''
-        
-        try:
-            # Create an AF_INET, Datagram socket (UDP)
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        except socket.error, msg:
-            print 'Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
-        
-        try:
-            # Bind Socket to local host and port
-            s.bind('' , self.port[1])
-        except socket.error, msg:
-            print 'Failed to bind address. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
-
         datagram = None
         
         while not datagram:
             # Receive Datagram
-            datagram = s.recvfrom(512)
+            print(self.receiveSocket.getsockname())
+            # print(self.receiveSocket.getsockopt(level, option))
+            datagram = self.receiveSocket.recvfrom(1024)
             
-        # close connection
-        s.close()
         
         # parse datagram
         datagramList = datagram[0].split('_')
@@ -1020,7 +1048,6 @@ class Connection():
         
         self.runCommand(self.commandDict['updateNrReps'], newCount, msgLength=20)
         
-    @util.threads.locked
     def sendTables(self, digitalsTable, msgLength = 20, digitalsBitDepth = 32, analoguesBitDepth = 16, *analogueTables):
         '''
         Sends through TCP the digitals and analogue tables to the RT-host.
@@ -1029,14 +1056,23 @@ class Connection():
         (0), (0,1), (0,1,2) or (0,1,2,3). If a table is missing a dummy table must be introduced
         
         '''
+        
+        print('sendTables called')
         # Convert the digitals numpy table into a list of messages for the TCP
         digitalsList = []
         
+        progres = 0 # TODO: removethis
+        
         for time, value in digitalsTable:
-            digitalsValue = int(numpy.binary_repr(time, 32) + numpy.binary_repr(value, digitalsBitDepth), 2)
-            digitalsList.append(str(digitalsValue))
+            print progres # TODO: removethis
+            digitalsValue = int(numpy.binary_repr(time, 32) + numpy.binary_repr(value, 32), 2)
+            digitalsList.append(str(digitalsValue).rjust(20, '0'))
+            progres = progres + 1 # TODO: removethis
+        
+        print(digitalsList) # TODO: removethis
                     
         # Send digitals
+        print('gonna runCommand') # TODO: removethis
         self.runCommand(self.commandDict['sendDigitals'], digitalsList, msgLength)
         
         # Send Analogues
@@ -1047,7 +1083,7 @@ class Connection():
             analogueList = []
             
             for time, value in analogueTable:
-                analogueValue = int(numpy.binary_repr(time, 32) + numpy.binary_repr(value, analoguesBitDepth), 2)
+                analogueValue = int(numpy.binary_repr(time, 32) + numpy.binary_repr(value, 32), 2)
                 analogueList.append(str(analogueValue))
             
             command = self.commandDict['sendAnalogues'][0:2] + str(analogueChannel)
@@ -1241,7 +1277,7 @@ class Connection():
         '''
         Trigger the execution of an experiment.
         '''
-        self.runCommand(self.commandDict('triggerExperiment'))
+        self.runCommand(self.commandDict['triggerExperiment'])
         
         
     def takeImage(self, cameras, lightTimePairs, actionsPerMillisecond=1000, digitalsBitDepth = 32):
@@ -1289,7 +1325,6 @@ class Connection():
                 value = int(value, 2)
                 sendList.append(str(value))
                 
-            print sendList
             self.runCommand(self.commandDict['takeImage'], sendList, msgLength=20)
             
 
