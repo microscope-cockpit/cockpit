@@ -85,6 +85,8 @@ class SoftCameraDevice(camera.CameraDevice):
             self.remote.enableCamera()
             self.listener.connect()
         else:
+            self.remote.disableCamera()
+            self.listener.disconnect()
             self.enabled = False
 
 
