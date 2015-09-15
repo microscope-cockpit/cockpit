@@ -20,6 +20,7 @@ limitations under the License.
 import camera
 import events
 import handlers.camera
+import numpy as np
 import util.listener
 import Pyro4
 from config import CAMERAS
@@ -116,6 +117,13 @@ class SoftCameraDevice(camera.CameraDevice):
         # print 'receiveData received %s' % action
         if action == 'new image':
             (image, timestamp) = args
+            transform = self.transform
+            if transform.rot90:
+                image = np.rot90(image, transform.rot90)
+            if transform.flip_h:
+                image = np.fliplr(image)
+            if transform.flip_v:
+                image = np.flipud(image)
             events.publish('new image %s' % self.name, image, timestamp)
 
 
