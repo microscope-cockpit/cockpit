@@ -110,8 +110,26 @@ def OnTB_saveBottom(ev):
 # nanomover (and, optionally, also the stage piezo) to move to the target
 # elevation.
 def OnTB_gotoTop(ev):
-    interfaces.stageMover.goToZ(savedTop)
+    #Need to check current mover limits, see if we exceed them and if
+    #so drop down to lower mover handler.
+    originalMover= interfaces.stageMover.mover.curHandlerIndex
+    hardSafeties = interfaces.stageMover.getHardLimits()[:2]
+    offset = interfaces.stageMover.getPosition()[2]-saveTop
+    currentPosition= interfaces.stageMover.getPosition()[2]
 
+    while (interfaces.stageMover.mover.curHandlerIndex >= 0):
+        if ((currentpos - offset)> harSafeties[1] or
+            (currentpos-offset) < hardSafeties[0]):
+            # need to drop down a handler to see if next handler can do the move
+            interfaces.stageMover.mover.curHandlerIndex -= 1
+            if (interfaces.stageMover.mover.curHandlerIndex < 0):
+                print "Move too large for coarse Z motion"
+                
+        else: 
+            interfaces.stageMover.goToZ(SavedTop)
+        #retrun to original active mover.
+        interfaces.stageMover.mover.curHandlerIndex = originalMover
+        
 
 ## As OnTB_gotoTop, but for the bottom button instead.
 def OnTB_gotoBottom(ev):
