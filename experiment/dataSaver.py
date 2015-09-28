@@ -136,9 +136,10 @@ class DataSaver:
         self.fileLocks = [threading.Lock() for handle in self.filehandles]
 
         pixelSizeXY = depot.getHandlersOfType(depot.OBJECTIVE)[0].getPixelSize()
+        lensID = depot.getHandlersOfType(depot.OBJECTIVE)[0].getlensID()
         drawer = depot.getHandlersOfType(depot.DRAWER)[0]
         wavelengths = [drawer.getWavelengthForCamera(c.name) for c in self.cameras]
-        
+
         ## Size of one image's worth of metadata in the extended header.
         # We store 1 4-byte float per image.
         self.extendedBytes = 4
