@@ -118,17 +118,18 @@ def OnTB_gotoTop(ev):
     currentPosition= interfaces.stageMover.getPosition()[2]
 
     while (interfaces.stageMover.mover.curHandlerIndex >= 0):
-        if ((currentpos - offset)> harSafeties[1] or
-            (currentpos-offset) < hardSafeties[0]):
+        if ((currentpos + offset)> harSafeties[1] or
+            (currentpos - offset) < hardSafeties[0]):
             # need to drop down a handler to see if next handler can do the move
             interfaces.stageMover.mover.curHandlerIndex -= 1
             if (interfaces.stageMover.mover.curHandlerIndex < 0):
                 print "Move too large for coarse Z motion"
-                
+            
         else: 
             interfaces.stageMover.goToZ(SavedTop)
-        #retrun to original active mover.
-        interfaces.stageMover.mover.curHandlerIndex = originalMover
+
+    #retrun to original active mover.
+    interfaces.stageMover.mover.curHandlerIndex = originalMover
         
 
 ## As OnTB_gotoTop, but for the bottom button instead.
