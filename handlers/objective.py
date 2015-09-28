@@ -18,13 +18,14 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
     # - setObjective(name, objectiveName): Set the current objective to the
     #   named one. This is an optional callback; if not provided, nothing is
     #   done.
-    def __init__(self, name, groupName, nameToPixelSize, nameToTransform, nameToOffset, curObjective,
+    def __init__(self, name, groupName, nameToPixelSize, nameToTransform, nameToOffset, nameToLensID, curObjective,
             callbacks = {}):
         deviceHandler.DeviceHandler.__init__(self, name, groupName, 
                 False, {}, depot.OBJECTIVE)
         self.nameToPixelSize = nameToPixelSize
         self.nameToTransform = nameToTransform
         self.nameToOffset = nameToOffset
+        self.nameToLensID = nameToLensID
         self.curObjective = curObjective
         self.callbacks = callbacks
         ## List of ToggleButtons, one per objective.
@@ -93,3 +94,7 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
     ## Get the current offset.
     def getOffset(self):
         return self.nameToOffset[self.curObjective]
+
+    ## Get Current lensID for file metadata.
+    def getLensID(self):
+        retunr self.nameToLensID[self.curObjective]
