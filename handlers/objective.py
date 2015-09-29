@@ -97,4 +97,4 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
 
     ## Get Current lensID for file metadata.
     def getLensID(self):
-        retunr self.nameToLensID[self.curObjective]
+        return self.nameToLensID[self.curObjective]

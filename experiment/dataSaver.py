@@ -136,7 +136,7 @@ class DataSaver:
         self.fileLocks = [threading.Lock() for handle in self.filehandles]
 
         pixelSizeXY = depot.getHandlersOfType(depot.OBJECTIVE)[0].getPixelSize()
-        lensID = depot.getHandlersOfType(depot.OBJECTIVE)[0].getlensID()
+        lensID = depot.getHandlersOfType(depot.OBJECTIVE)[0].getLensID()
         drawer = depot.getHandlersOfType(depot.DRAWER)[0]
         wavelengths = [drawer.getWavelengthForCamera(c.name) for c in self.cameras]
 
