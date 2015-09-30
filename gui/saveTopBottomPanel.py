@@ -110,37 +110,41 @@ def OnTB_saveBottom(ev):
 # nanomover (and, optionally, also the stage piezo) to move to the target
 # elevation.
 def OnTB_gotoTop(ev):
+    moveZCheckMoverLimits(savedTop)
+        
+## As OnTB_gotoTop, but for the bottom button instead.
+def OnTB_gotoBottom(ev):
+    moveZCheckMoverLimits(savedBottom)
+
+## As OnTB_gotoTop, but for the middle button instead. 
+def OnTB_gotoCenter(ev):
+    target = savedBottom + ((savedTop - savedBottom) / 2.0)
+    moveZCheckMoverLimits(target)
+
+
+def moveZCheckMoverLimits(target):
     #Need to check current mover limits, see if we exceed them and if
     #so drop down to lower mover handler.
     originalMover= interfaces.stageMover.mover.curHandlerIndex
-    hardSafeties = interfaces.stageMover.getHardLimits()[:2]
-    offset = interfaces.stageMover.getPosition()[2]-saveTop
-    currentPosition= interfaces.stageMover.getPosition()[2]
+    limits = interfaces.stageMover.getIndividualSoftLimits(2)
+    currentPos= interfaces.stageMover.getPosition()[2]
+    offset = target - currentPos
 
     while (interfaces.stageMover.mover.curHandlerIndex >= 0):
-        if ((currentpos + offset)> harSafeties[1] or
-            (currentpos - offset) < hardSafeties[0]):
+        if ((currentPos + offset)> limits[interfaces.stageMover.mover.curHandlerIndex][1] or
+            (currentPos + offset) < limits[interfaces.stageMover.mover.curHandlerIndex][0]):
             # need to drop down a handler to see if next handler can do the move
             interfaces.stageMover.mover.curHandlerIndex -= 1
             if (interfaces.stageMover.mover.curHandlerIndex < 0):
                 print "Move too large for coarse Z motion"
             
         else: 
-            interfaces.stageMover.goToZ(SavedTop)
+            interfaces.stageMover.goToZ(target)
+            break
 
     #retrun to original active mover.
     interfaces.stageMover.mover.curHandlerIndex = originalMover
         
-
-## As OnTB_gotoTop, but for the bottom button instead.
-def OnTB_gotoBottom(ev):
-    interfaces.stageMover.goToZ(savedBottom)
-
-## As OnTB_gotoTop, but for the middle button instead. 
-def OnTB_gotoCenter(ev):
-    target = savedBottom + ((savedTop - savedBottom) / 2.0)
-    interfaces.stageMover.goToZ(target)
-
 
 ## Event for when users type into one of the text boxes for the save top/bottom
 # controls. Automatically update the saved top and bottom values.
