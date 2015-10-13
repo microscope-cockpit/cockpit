@@ -871,3 +871,57 @@ def makeOutputWindow(self):
     _windowInstance = DSPOutputWindow(_deviceInstance, parent=wx.GetApp().GetTopWindow())
     _windowInstance.Show()
     
+
+import threading
+class BitToggler():
+    def __init__(self):
+        self.thread = None
+        self.run = None
+        self.offsets = []
+        self.lock = threading.Lock()
+
+    
+    def addBit(self, offset):
+        with self.lock:
+            if not offset in self.offsets:
+                self.offsets.append(offset)
+
+
+    def removeBit(self, offset):
+        with self.lock:
+            if offset in self.offsets:
+                self.offsets.remove(offset)
+
+
+    def start(self, t0, t1):
+        with self.lock:
+            if self.thread:
+                if self.thread.isAlive():
+                    self.thread.stop()
+                    self.thread.join()
+        self.run = True
+        self.thread = threading.Thread(target=self.toggleBits, args=(t0, t1))
+        self.thread.daemon = True
+        self.thread.start()
+
+
+    def stop(self):
+        self.run = False
+        if self.thread:
+            self.thread.join()
+
+
+    def toggleBits(self, t0, t1):
+        global _deviceInstance
+        d = _deviceInstance
+        while(self.run):
+            state = d.connection.ReadDigital()
+            bits = 0
+            with self.lock:
+                for offset in self.offsets:
+                    bits |= (1 << offset)
+            d.connection.WriteDigital(state ^ bits)
+            time.sleep(t0)
+            state = d.connection.ReadDigital()
+            d.connection.WriteDigital(state ^ bits)
+            time.sleep(t1)
