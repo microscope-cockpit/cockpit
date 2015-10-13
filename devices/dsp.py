@@ -877,15 +877,30 @@ class BitToggler():
     def __init__(self):
         self.thread = None
         self.run = None
+        self.offsets = []
+        self.lock = threading.Lock()
+
+    
+    def addBit(self, offset):
+        with self.lock:
+            if not offset in self.offsets:
+                self.offsets.append(offset)
 
 
-    def start(self, offset, t0, t1):
-        if self.thread:
-            if self.thread.isAlive():
-                self.thread.stop()
-                self.thread.join()
+    def removeBit(self, offset):
+        with self.lock:
+            if offset in self.offsets:
+                self.offsets.remove(offset)
+
+
+    def start(self, t0, t1):
+        with self.lock:
+            if self.thread:
+                if self.thread.isAlive():
+                    self.thread.stop()
+                    self.thread.join()
         self.run = True
-        self.thread = threading.Thread(target=self.toggleBit, args=(offset, t0, t1))
+        self.thread = threading.Thread(target=self.toggleBits, args=(t0, t1))
         self.thread.daemon = True
         self.thread.start()
 
@@ -896,16 +911,17 @@ class BitToggler():
             self.thread.join()
 
 
-    def toggleBit(self, offset, t0, t1):
+    def toggleBits(self, t0, t1):
         global _deviceInstance
         d = _deviceInstance
-        state0 = d.connection.ReadDigital()
-        state1 = state0 ^ (1 << offset)
         while(self.run):
             state = d.connection.ReadDigital()
-            d.connection.WriteDigital(state ^ (1 << offset))
-            time.sleep(t1)
-            state = d.connection.ReadDigital()
-            d.connection.WriteDigital(state ^ (1 << offset))
+            bits = 0
+            with self.lock:
+                for offset in self.offsets:
+                    bits |= (1 << offset)
+            d.connection.WriteDigital(state ^ bits)
             time.sleep(t0)
-
+            state = d.connection.ReadDigital()
+            d.connection.WriteDigital(state ^ bits)
+            time.sleep(t1)
