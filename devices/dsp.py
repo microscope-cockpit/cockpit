@@ -897,8 +897,7 @@ class BitToggler():
         with self.lock:
             if self.thread:
                 if self.thread.isAlive():
-                    self.thread.stop()
-                    self.thread.join()
+                    self.stop()
         self.run = True
         self.thread = threading.Thread(target=self.toggleBits, args=(t0, t1))
         self.thread.daemon = True
