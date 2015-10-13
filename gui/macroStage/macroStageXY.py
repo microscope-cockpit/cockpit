@@ -299,7 +299,16 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
     ## Double-clicked the left mouse button. Move to the clicked location.
     def OnLeftDoubleClick(self, event):
+        originalMover= interfaces.stageMover.mover.curHandlerIndex
+        #Quick hack to get deepsim working need to check if we can do it
+        #properly.  Should really check to see if we can move, and by that
+        #distance with exisiting mover
+        interfaces.stageMover.mover.curHandlerIndex = 0
+        
         interfaces.stageMover.goToXY(self.remapClick(event.GetPosition()))
+
+        #make sure we are back to the expected mover
+        interfaces.stageMover.mover.curHandlerIndex = originalMover
 
     def OnRightClick(self, event):
         position = interfaces.stageMover.getPosition()
