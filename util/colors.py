@@ -12,7 +12,7 @@ def wavelengthToColor(wavelength):
     value = max(.5, 1 - decay / 200.0)
     # Use saturation of 1, always.
     r, g, b = hsvToRgb(hue, 1, value)
-    return (r * 255, g * 255, b * 255)
+    return tuple(int(val * 255) for val in (r, g, b))
 
 
 ## Convert to RGB. Taken from Pyrel:

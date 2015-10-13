@@ -8,6 +8,8 @@ import gui.guiUtils
 import gui.keyboard
 import gui.toggleButton
 
+from util.colors import wavelengthToColor
+
 
 ## Maps dye names to colors to use for those dyes.
 DYE_TO_COLOR = {
@@ -125,13 +127,17 @@ class DrawerHandler(deviceHandler.DeviceHandler):
             for i, f in enumerate(filters):
                 self.settings.append(
                     DrawerSettings('drawer_%d' % (i), [cameraName], [f['dye']],
-                                   [DYE_TO_COLOR[f['dye']]], [f['wavelength']]))
+                                   [DYE_TO_COLOR.get(f['dye'], wavelengthToColor(f['wavelength']))], 
+                                   [f['wavelength']]))
         else:
             for i, drawer in enumerate(self.settings):
-                drawer.update(cameraName,
+                if i < len(filters):
+                    drawer.update(cameraName,
                               filters[i]['dye'],
-                              DYE_TO_COLOR[filters[i]['dye']],
+                              DYE_TO_COLOR.get(filters[i]['dye'], wavelengthToColor(filters[i]['wavelength'])),
                               filters[i]['wavelength'])
+                else:
+                    drawer.update(cameraName, 'Empty', ['Empty'], (127,127,127))
 
 
 ## This is a simple container class to describe a single drawer. 
