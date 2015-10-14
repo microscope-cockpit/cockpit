@@ -64,7 +64,7 @@ class ObjectiveDevice(device.Device):
                     tstr = parsed.groupdict()['transform']
                     ostr =  parsed.groupdict()['offset']
                     pixel_size = float(pstr)
-                    lensID = int(lstr)
+                    lensID = int(lstr) if lstr else 0
                     transform = eval(tstr) if tstr else (0,0,0)
                     offset = eval(ostr) if ostr else (0,0,0)
                 pixel_sizes.update({obj: pixel_size})
