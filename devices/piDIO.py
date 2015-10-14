@@ -53,8 +53,8 @@ class RaspberryPi(device.Device):
         ## Maps light modes to the mirror settings for those modes, as a list
         #IMD 20140806
         self.modeToFlips = collections.OrderedDict()
-        self.modeToFlips['Conventional'] = [(0, True)]
-        self.modeToFlips['Structured Illumination'] = [(0, False)]
+        self.modeToFlips['Conventional'] = [(2, True),(3,True)]
+        self.modeToFlips['Structured Illumination'] = [(2, False),(3,False)]
 
         self.lightPathButtons = []
         ## Current light path mode.
