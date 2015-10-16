@@ -240,7 +240,8 @@ class DSPDevice(device.Device):
                 
         for name in self.otherTriggers:
             handler = handlers.genericHandler.GenericHandler(
-                name, 'other triggers', True)
+                name, 'other triggers', True,
+                callbacks = {'triggerNow': lambda: self.triggerNow(self.nameToDigitalLine[name]),})
             self.handlerToDigitalLine[handler] = self.nameToDigitalLine[name]
             result.append(handler)
 
@@ -271,6 +272,12 @@ class DSPDevice(device.Device):
             self.activeLights.add(lightName)
         elif lightName in self.activeLights:
             self.activeLights.remove(lightName)
+
+
+    def triggerNow(self, line, dt=0.01):
+        self.connection.WriteDigital(self.connection.ReadDigital() ^ line)
+        time.sleep(dt)
+        self.connection.WriteDigital(self.connection.ReadDigital() ^ line)
 
 
     ## As toggleLight, but accepts a handler instead.

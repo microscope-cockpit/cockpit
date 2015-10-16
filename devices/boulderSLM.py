@@ -31,6 +31,7 @@ import gui.device
 import gui.guiUtils
 import gui.toggleButton
 import handlers
+import time
 import util
 from config import config
 
@@ -75,11 +76,15 @@ class BoulderSLMDevice(device.Device):
 
     def disable(self):
         self.connection.stop()
+        if self.elements.get('triggerButton'):
+            self.elements['triggerButton'].Disable()
 
 
     def enable(self):
         self.connection.run()
         self.position = self.getCurrentPosition()
+        if self.elements.get('triggerButton'):
+            self.elements['triggerButton'].Enable()
 
 
     def examineActions(self, name, table):
@@ -106,7 +111,7 @@ class BoulderSLMDevice(device.Device):
 
         # Step through the table and replace this handler with triggers.
         # Identify the SLM trigger(provided elsewhere, e.g. by DSP)
-        triggerHandler = depot.getHandlerWithName(CONFIG_NAME + ' trigger')
+        triggerHandler = self.getTriggerHandler()
 
         # Track sequence index set by last set of triggers.
         lastIndex = 0
@@ -188,6 +193,41 @@ class BoulderSLMDevice(device.Device):
             total += 1
 
 
+    def getTriggerHandler(self):
+        return depot.getHandlerWithName(CONFIG_NAME + ' trigger')
+
+
+    def getTriggerFunction(self, button=None):
+        """Returns a function to step the SLM, or None."""
+        triggerHandler = self.getTriggerHandler()
+        if not triggerHandler:
+            return None
+        triggerFunc = triggerHandler.callbacks.get('triggerNow' or None)
+        if not triggerFunc:
+            return None
+
+        def func(event):
+            """Trigger the SLM once, flashing a toggle button if provided."""
+            # Minimun time to flash the button.
+            dtMin = 0.1
+            # Button is found in outer scope.
+            if button:
+                button.activate()
+                button.Update()
+                # Store the current time.
+                t0 = time.time()
+            # Fire the trigger.
+            triggerFunc()
+            if button:
+                # Ensure the button was lit long enough to be seen.
+                dt = time.time() - t0
+                if dt < dtMin:
+                    time.sleep(dtMin - dt)
+                button.deactivate()
+
+        return func
+
+
     ### UI functions ###
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
@@ -207,6 +247,16 @@ class BoulderSLMDevice(device.Device):
                 parent=self.panel,
                 size=gui.device.DEFAULT_SIZE)
         self.elements['powerButton'] = powerButton
+        # Add a trigger button if we can trigger the SLM on demand.
+        triggerButton = gui.toggleButton.ToggleButton(
+                label='step',
+                parent=self.panel,
+                size=gui.device.DEFAULT_SIZE)
+        triggerFunc = self.getTriggerFunction(triggerButton)
+        if triggerFunc:
+            triggerButton.Bind(wx.EVT_LEFT_DOWN, triggerFunc)
+            self.elements['triggerButton'] = triggerButton
+            triggerButton.Disable()
         # Add a position display.
         posDisplay = gui.device.MultilineDisplay(parent=self.panel, numLines=3)
         posDisplay.Bind(wx.EVT_TIMER,
