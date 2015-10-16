@@ -42,6 +42,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         # error spew.
         self.shouldDraw = True
 
+        ## Should we show a crosshair (used for alignment)?
+        self.showCrosshair = False
+
         ## Edge length of one tile.
         self.tileSize = tileSize
 
@@ -339,6 +342,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 glPopMatrix()
 
                 self.drawHistogram()
+
+                if self.showCrosshair:
+                    self.drawCrosshair()
 
             glFlush()
             self.SwapBuffers()
