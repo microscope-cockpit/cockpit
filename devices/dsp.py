@@ -273,6 +273,12 @@ class DSPDevice(device.Device):
             self.activeLights.remove(lightName)
 
 
+    def triggerNow(self, line, dt=0.01):
+        self.connection.WriteDigital(self.connection.ReadDigital() ^ line)
+        time.sleep(dt)
+        self.connection.WriteDigital(self.connection.ReadDigital() ^ line)
+
+
     ## As toggleLight, but accepts a handler instead.
     def toggleLightHandler(self, handler, isEnabled):
         self.toggleLight(handler.name, isEnabled)
