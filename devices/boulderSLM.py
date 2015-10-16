@@ -237,8 +237,13 @@ class BoulderSLMDevice(device.Device):
         display = event.GetEventObject()
         if not hasattr(display, 'SetLabel'):
             display = display.GetOwner()
-        if self.position is not None and self.lastParms:
-            display.SetLabel(baseStr % self.lastParms[self.position])
+        try:
+            parms = self.lastParms[self.position]
+        except (IndexError, TypeError):
+            # SLM parms updated since last position fetched, or lastParms is None.
+            parms = None
+        if parms:
+            display.SetLabel(baseStr % parms)
         # Dispatch a call in new thread to fetch new values for next time
         self.updatePosition()
 
