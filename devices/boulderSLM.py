@@ -31,6 +31,7 @@ import gui.device
 import gui.guiUtils
 import gui.toggleButton
 import handlers
+import time
 import util
 from config import config
 
@@ -190,6 +191,37 @@ class BoulderSLMDevice(device.Device):
 
     def getTriggerHandler(self):
         return depot.getHandlerWithName(CONFIG_NAME + ' trigger')
+
+
+    def getTriggerFunction(self, button=None):
+        """Returns a function to step the SLM, or None."""
+        triggerHandler = self.getTriggerHandler()
+        if not triggerHandler:
+            return None
+        triggerFunc = triggerHandler.callbacks.get('triggerNow' or None)
+        if not triggerFunc:
+            return None
+
+        def func(event):
+            """Trigger the SLM once, flashing a toggle button if provided."""
+            # Minimun time to flash the button.
+            dtMin = 0.1
+            # Button is found in outer scope.
+            if button:
+                button.activate()
+                button.Update()
+                # Store the current time.
+                t0 = time.time()
+            # Fire the trigger.
+            triggerFunc()
+            if button:
+                # Ensure the button was lit long enough to be seen.
+                dt = time.time() - t0
+                if dt < dtMin:
+                    time.sleep(dtMin - dt)
+                button.deactivate()
+
+        return func
 
 
     ### UI functions ###
