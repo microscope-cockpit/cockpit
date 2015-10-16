@@ -76,11 +76,15 @@ class BoulderSLMDevice(device.Device):
 
     def disable(self):
         self.connection.stop()
+        if self.elements.get('triggerButton'):
+            self.elements['triggerButton'].Disable()
 
 
     def enable(self):
         self.connection.run()
         self.position = self.getCurrentPosition()
+        if self.elements.get('triggerButton'):
+            self.elements['triggerButton'].Enable()
 
 
     def examineActions(self, name, table):
