@@ -240,7 +240,8 @@ class DSPDevice(device.Device):
                 
         for name in self.otherTriggers:
             handler = handlers.genericHandler.GenericHandler(
-                name, 'other triggers', True)
+                name, 'other triggers', True,
+                callbacks = {'triggerNow': lambda: self.triggerNow(self.nameToDigitalLine[name]),})
             self.handlerToDigitalLine[handler] = self.nameToDigitalLine[name]
             result.append(handler)
 
