@@ -53,7 +53,7 @@ class ToggleButton(wx.StaticText):
         # Realign the label using our custom version of the function
         self.SetLabel(self.GetLabel())
         self.Bind(wx.EVT_LEFT_DOWN, lambda event: self.toggle())
-        self.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.toggle())
+        #self.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.toggle())
 
 
     ## Override of normal StaticText SetLabel, to try to vertically
