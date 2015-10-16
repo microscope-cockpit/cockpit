@@ -243,6 +243,16 @@ class BoulderSLMDevice(device.Device):
                 parent=self.panel,
                 size=gui.device.DEFAULT_SIZE)
         self.elements['powerButton'] = powerButton
+        # Add a trigger button if we can trigger the SLM on demand.
+        triggerButton = gui.toggleButton.ToggleButton(
+                label='step',
+                parent=self.panel,
+                size=gui.device.DEFAULT_SIZE)
+        triggerFunc = self.getTriggerFunction(triggerButton)
+        if triggerFunc:
+            triggerButton.Bind(wx.EVT_LEFT_DOWN, triggerFunc)
+            self.elements['triggerButton'] = triggerButton
+            triggerButton.Disable()
         # Add a position display.
         posDisplay = gui.device.MultilineDisplay(parent=self.panel, numLines=3)
         posDisplay.Bind(wx.EVT_TIMER,
