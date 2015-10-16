@@ -1,3 +1,4 @@
+# coding: utf-8
 """ This module makes Andor EMCCD camera devices available to Cockpit.
 
 Copyright 2014-2015 Mick Phillips (mick.phillips at gmail dot com)
@@ -93,6 +94,7 @@ class AndorCameraDevice(camera.CameraDevice):
         self.cached_settings={}
         self.settings = {}
         self.settings['exposureTime'] = 0.001
+        # Has water cooling? Default to False to ensure fan is active.
         self.settings['isWaterCooled'] = False
         self.settings['targetTemperature'] = -40
         self.settings['EMGain'] = 0
@@ -100,6 +102,7 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings['baseTransform'] = camConfig.get('baseTransform') or (0, 0, 0)
         self.settings['pathTransform'] = (0, 0, 0)
         self.settings['triggerMode'] = 1
+        self.lastTemperature = None
         self.experimentTriggerMode = TRIGGER_MODES[0]
         self.interactiveTrigger = TRIGGER_BEFORE
         self.enabled = False
@@ -311,6 +314,34 @@ class AndorCameraDevice(camera.CameraDevice):
         gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
+    def onRightMouse(self, event=None):
+        """Present a thermal management menu on right click."""
+        menu = wx.Menu()
+        menu.SetTitle('Thermal management')
+
+        # Check control to indicate/set water cooling availability.
+        menu.AppendCheckItem(0, 'water cooling')
+        menu.Check(0, self.settings.get('isWaterCooled', False))
+        wx.EVT_MENU(self.panel, 0, lambda event: self.toggleWaterCooling())
+
+        # Submenu of temperature set points.
+        tMenu = wx.Menu()
+        temperatures = [-40, -50, -60, -70, -80, -90, -100]
+        airCooledLimit = -50
+        for itemID, t in enumerate(temperatures, 100):
+            tMenu.AppendRadioItem(itemID, u'%d°C' % t)
+            if t == self.settings['targetTemperature']:
+                tMenu.Check(itemID, True)
+            if t < airCooledLimit and not self.settings.get('isWaterCooled'):
+                tMenu.Enable(itemID, False)
+            wx.EVT_MENU(self.panel, itemID, lambda event, target=t: self.setTargetTemperature(target))
+            itemID += 1
+
+        menu.AppendSubMenu(tMenu, 'sensor set point')
+
+        gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+
+
     def onTrigButton(self, event=None):
         menu = wx.Menu()
         menuID = 0
@@ -335,6 +366,17 @@ class AndorCameraDevice(camera.CameraDevice):
         self.updateUI()
 
 
+    def setTargetTemperature(self, temperature):
+        self.settings.update({'targetTemperature': temperature})
+        self.object.update_settings({'targetTemperature': temperature})
+
+
+    def toggleWaterCooling(self):
+        newSetting = not self.settings.get('isWaterCooled')
+        self.settings.update({'isWaterCooled': newSetting})
+        self.object.update_settings({'isWaterCooled': newSetting})
+
+
     def updateStatus(self):
         """Runs in a separate thread publish status updates."""
         updatePeriod = 0.2
@@ -348,6 +390,7 @@ class AndorCameraDevice(camera.CameraDevice):
                     # job to fix it. Set temperature to None to avoid bogus
                     # data.
                     temperature = None
+            self.lastTemperature = temperature
             events.publish("status update",
                            self.config.get('label', 'unidentifiedCamera'),
                            {'temperature': temperature,})
@@ -367,21 +410,27 @@ class AndorCameraDevice(camera.CameraDevice):
                 label="Mode:\n%s" % 'not set',
                 parent=self.panel)
         self.modeButton.Bind(wx.EVT_LEFT_DOWN, self.onModeButton)
+        self.modeButton.Unbind(wx.EVT_RIGHT_DOWN)
         rowSizer.Add(self.modeButton)
 
         self.gainButton = gui.toggleButton.ToggleButton(
                 label="EM Gain\n%d" % self.settings['EMGain'],
                 parent=self.panel)
         self.gainButton.Bind(wx.EVT_LEFT_DOWN, self.onGainButton)
+        self.gainButton.Unbind(wx.EVT_RIGHT_DOWN)
         rowSizer.Add(self.gainButton)
 
         self.trigButton = gui.toggleButton.ToggleButton(
                 label='exp. trigger:\n%s' % self.experimentTriggerMode.label,
                 parent=self.panel)
         self.trigButton.Bind(wx.EVT_LEFT_DOWN, self.onTrigButton)
+        self.trigButton.Unbind(wx.EVT_RIGHT_DOWN)
         rowSizer.Add(self.trigButton)
+
         sizer.Add(rowSizer)
         self.panel.SetSizerAndFit(sizer)
+        for child in self.panel.Children:
+            child.Bind(wx.EVT_RIGHT_DOWN, self.onRightMouse)
         self.hasUI = True
         return self.panel
 
