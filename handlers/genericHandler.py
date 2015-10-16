@@ -7,7 +7,7 @@ import depot
 # special abilities. Mostly it gives Devices objects they can shove into the
 # DeviceDepot and refer to in experiments.
 class GenericHandler(deviceHandler.DeviceHandler):
-    def __init__(self, name, groupName, isEligibleForExperiments):
+    def __init__(self, name, groupName, isEligibleForExperiments, callbacks={}):
         deviceHandler.DeviceHandler.__init__(self,
                 name, groupName, isEligibleForExperiments,
-                callbacks = {}, deviceType = depot.GENERIC_DEVICE)
+                callbacks=callbacks, deviceType = depot.GENERIC_DEVICE)
