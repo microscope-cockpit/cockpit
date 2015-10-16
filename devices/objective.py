@@ -8,10 +8,11 @@ import re
 from config import config
 CONFIG_NAME = 'objectives'
 PIXEL_PAT =  r"(?P<pixel_size>\d*[.]?\d*)"
+LENSID_PAT = r"(?P<lensID>\d*)"
 TRANSFORM_PAT = r"(?P<transform>\(\s*\d*\s*,\s*\d*\s*,\s*\d*\s*\))"
 OFFSET_PAT = r"(?P<offset>\(\s*[-]?\d*\s*,\s*[-]?\d*\s*,\s*[-]?\d*\s*\))?"
 
-CONFIG_PAT = PIXEL_PAT + r"(\s*(,|;)\s*)?" + TRANSFORM_PAT + r"(\s*(,|;)\s*)?" + OFFSET_PAT
+CONFIG_PAT = PIXEL_PAT + r"(\s*(,|;)\s*)?" + LENSID_PAT + r"(\s*(,|;)\s*)?" + TRANSFORM_PAT + r"(\s*(,|;)\s*)?" + OFFSET_PAT
 
 ## Maps objective names to the pixel sizes for those objectives. This is the 
 # amount of sample viewed by the pixel, not the physical size of the 
@@ -40,11 +41,13 @@ class ObjectiveDevice(device.Device):
         pixel_sizes = {}
         transforms = {}
         offsets = {}
+        lensIDs = {}
         if not config.has_section(CONFIG_NAME):
             # No objectives section in config
             pixel_sizes = DUMMY_OBJECTIVE_PIXEL_SIZES
             transforms = {obj: (0,0,0) for obj in pixel_sizes.keys()}
             offsets = {obj: (0,0,0) for obj in pixel_sizes.keys()}
+            lensIDs = {obj: 0 for obj in pixel_sizes.keys()}
 			
         else:
             objectives = config.options(CONFIG_NAME)
@@ -57,16 +60,23 @@ class ObjectiveDevice(device.Device):
                     # No transform tuple
                 else:    
                     pstr = parsed.groupdict()['pixel_size']
+                    lstr = parsed.groupdict()['lensID']
                     tstr = parsed.groupdict()['transform']
                     ostr =  parsed.groupdict()['offset']
                     pixel_size = float(pstr)
+                    lensID = int(lstr) if lstr else 0
                     transform = eval(tstr) if tstr else (0,0,0)
                     offset = eval(ostr) if ostr else (0,0,0)
                 pixel_sizes.update({obj: pixel_size})
+                lensIDs.update({obj: lensID})
                 transforms.update({obj: transform})
                 offsets.update({obj: offset})
 
         default = pixel_sizes.keys()[0]
 
-        return [handlers.objective.ObjectiveHandler("objective", 
-                "miscellaneous", pixel_sizes, transforms, offsets, default)]
+        return [handlers.objective.ObjectiveHandler("objective",
+                                                    "miscellaneous",
+                                                    pixel_sizes,
+                                                    transforms,
+                                                    offsets, lensIDs,
+                                                    default)]
