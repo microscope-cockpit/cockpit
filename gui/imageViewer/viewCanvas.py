@@ -490,7 +490,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def getMenuActions(self):
         return [('Reset view', self.resetView),
                 ('Fill viewer', lambda: self.resetView(True)),
-                ('Set histogram parameters', self.onSetHistogram)]
+                ('Set histogram parameters', self.onSetHistogram),
+                ('Toggle alignment crosshair', self.toggleCrosshair)]
 
 
     ## Let the user specify the blackpoint and whitepoint for image scaling.
@@ -505,6 +506,10 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.blackPoint = (values[0] - self.imageMin) / divisor
         self.whitePoint = (values[1] - self.imageMin) / divisor
         self.changeHistScale(shouldRefresh = True)
+
+
+    def toggleCrosshair(self, event=None):
+        self.showCrosshair = not(self.showCrosshair)
 
 
     ## Display information on the pixel under the mouse at the given
