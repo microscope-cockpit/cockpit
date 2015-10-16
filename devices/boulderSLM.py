@@ -106,7 +106,7 @@ class BoulderSLMDevice(device.Device):
 
         # Step through the table and replace this handler with triggers.
         # Identify the SLM trigger(provided elsewhere, e.g. by DSP)
-        triggerHandler = depot.getHandlerWithName(CONFIG_NAME + ' trigger')
+        triggerHandler = self.getTriggerHandler()
 
         # Track sequence index set by last set of triggers.
         lastIndex = 0
@@ -186,6 +186,10 @@ class BoulderSLMDevice(device.Device):
             if handler is not self.executor:
                 return total
             total += 1
+
+
+    def getTriggerHandler(self):
+        return depot.getHandlerWithName(CONFIG_NAME + ' trigger')
 
 
     ### UI functions ###
