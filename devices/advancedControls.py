@@ -36,7 +36,10 @@ class AdvancedControl(device.Device):
             return
 
     def initialize(self):
-        pass
+        import experiment.rotatorSweep
+        import experiment.experimentRegistry
+        experiment.experimentRegistry.registerModule(experiment.rotatorSweep)
+        
 
     def makeInitialPublications(self):
         pass
