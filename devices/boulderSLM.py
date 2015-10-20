@@ -3,19 +3,6 @@
 """ This module makes a BNS SLM  device available to Cockpit.
 
 Mick Phillips, University of Oxford, 2014.
-Historically, a single CameraDevice was used to address multiple
-cameras, using a number of dictionaries to map the camera name to
-its settings and methods.  Here, instead I have used a single
-CameraManager to keep track of one or more CameraDevices, which
-means that inheritance can be used for different camera types.
-
-All the handler functions are called with (self, name, *args...).
-Since we make calls to instance methods here, we don't need 'name',
-but it is left in the call so that we can continue to use camera
-modules that rely on dictionaries.
-
-Cockpit uses lowerCamelCase function names.
-Functions names as lower_case are remote camera object methods.
 """
 
 from collections import OrderedDict
