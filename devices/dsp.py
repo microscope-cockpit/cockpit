@@ -254,7 +254,8 @@ class DSPDevice(device.Device):
             "DSP experiment executor", "executor",
             {'examineActions': lambda *args: None, 
                 'getNumRunnableLines': self.getNumRunnableLines, 
-                'executeTable': self.executeTable}))
+                'executeTable': self.executeTable,
+                'registerAnalogue': self.registerAnalogueDevice},))
 
         self.handlers = set(result)
         return result
@@ -795,6 +796,19 @@ class DSPDevice(device.Device):
         self.connection.InitProfile(numReps)
         events.executeAndWaitFor("DSP done", self.connection.trigCollect)
             
+
+    def registerAnalogueDevice(self, axis, group, line, startup, sensitivity):
+        line = int(line)
+        # Generate a handler for the line.
+        handler = handlers.genericPositioner.GenericPositionerHandler(
+            axis, group, True, 
+            {'moveAbsolute': lambda handler, pos: self.setAnalogVoltage(line, pos),})
+        # Update mappings.
+        self.handlerToAnalogLine.update({handler:line})
+        self.alineToUnitsPerADU.update({line:sensitivity * 10.0 / 2**16 })
+        self.startupAnalogPositions[line] = startup
+        self.handlers.add(handler)
+        return handler
 
 
 ## This debugging window lets each digital lineout of the DSP be manipulated
