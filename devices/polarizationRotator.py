@@ -16,7 +16,7 @@ import device
 
 import decimal
 import events
-import handlers
+import handlers.analogueHandler, handlers.executor, handlers.genericPositioner
 import util
 from config import config
 
@@ -100,16 +100,18 @@ class PolarizationDevice(device.Device):
 
 
     def getHandlers(self):      
-        self.executor = ExecutorMoverHandler(
+        self.executor = MyHandler(
                 "SI angle",
                 "structured illumination",
+                True,
                 {'examineActions': self.examineActions,
                     'getNumRunnableLines': self.getNumRunnableLines,
                     'executeTable': self.executeTable,
                     'moveAbsolute': self.moveAbsolute, 
                     'moveRelative': self.moveRelative,
                     'getPosition': self.getPosition, 
-                    'getMovementTime': lambda name, start, delta: self.timings})
+                    'getMovementTime': lambda name, start, delta: self.timings,
+                    'getLineHandler': lambda: self.lineHandler})
 
         #return (self.executor, self.mover)
         return (self.executor,)
@@ -136,5 +138,7 @@ class PolarizationDevice(device.Device):
         self.moveAbsolute(self.curVoltage + delta)
 
 
-class ExecutorMoverHandler(handlers.executor.ExecutorHandler, handlers.genericPositioner.GenericPositionerHandler):
+class MyHandler(handlers.analogueHandler.AnalogueHandlerMixin,
+                handlers.executor.ExecutorHandler, 
+                handlers.genericPositioner.GenericPositionerHandler):
     pass
