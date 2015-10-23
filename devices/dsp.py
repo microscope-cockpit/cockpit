@@ -44,7 +44,7 @@ import handlers.stagePositioner
 import util.threads
 from config import config, LIGHTS, CAMERAS, AOUTS
 CLASS_NAME = 'DSPDevice'
-COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2, 'SI angle': -1}
+COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2}#, 'SI angle': -1}
 CONFIG_NAME = 'dsp'
 
 class DSPDevice(device.Device):
@@ -105,8 +105,9 @@ class DSPDevice(device.Device):
             self.alineToUnitsPerADU.update({\
                 aout['aline']: aout['sensitivity'] * VperADU, })
             ## Maps Cockpit axes (0: X, 1: Y, 2: Z) to DSP analog lines
-            self.axisMapper.update({\
-                COCKPIT_AXES[aout['cockpit_axis']]: int(aout['aline']), })
+            if aout['cockpit_axis'] in 'xyzXYZ':
+                self.axisMapper.update({\
+                    COCKPIT_AXES[aout['cockpit_axis']]: int(aout['aline']), })
         
         ## Position tuple of the piezos prior to experiment starting.
         self.preExperimentPosition = None
