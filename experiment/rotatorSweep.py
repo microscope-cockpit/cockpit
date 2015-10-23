@@ -14,22 +14,22 @@ EXPERIMENT_NAME = 'RotatorSweep'
 
 ## This class handles classic Z-stack experiments.
 class RotatorSweepExperiment(experiment.Experiment):
-    def __init__(self, angleHandler = None, settlingTime=0.1, *args, **kwargs):
+    def __init__(self, angleHandler=None, settlingTime=0.1, 
+                 startV=0, maxV=10, vSteps=100, *args, **kwargs):
         experiment.Experiment.__init__(self, *args, **kwargs)
         self.angleHandler = angleHandler
         self.settlingTime = settlingTime
+        # Look up the rotator analogue line handler.
+        self.lineHandler = angleHandler.getLineHandler()
+        self.vRange = (startV, maxV, vSteps)
 
 
-    ## Create the ActionTable needed to run the experiment. We simply move to 
-    # each Z-slice in turn, take an image, then move to the next.
+    ## Create the ActionTable needed to run the experiment.
     def generateActions(self):
         table = actionTable.ActionTable()
         curTime = 0
-        numZSlices = 1
-        vLessThan = 10.
-        vStart = 0.
-        vSteps = 100
-        dv = (vLessThan - vStart) / vSteps
+        vStart, vLessThan, vSteps = self.vRange
+        dv = float(vLessThan - vStart) / vSteps
         dt = decimal.Decimal(self.settlingTime)
 
         for step in xrange(vSteps):
@@ -59,15 +59,26 @@ class ExperimentUI(wx.Panel):
     def __init__(self, parent, configKey):
         wx.Panel.__init__(self, parent = parent)
         self.configKey = configKey
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer = wx.GridSizer(rows=2, cols=4)
         ## Maps strings to TextCtrls describing how to configure 
         # response curve experiments.
         self.settings = self.loadSettings()
-        self.responseArgs = {}
         self.settlingTimeControl = gui.guiUtils.addLabeledInput(
                                         self, sizer, label='settling time',
                                         defaultValue=self.settings['settlingTime'],)
         sizer.Add(self.settlingTimeControl)
+        self.vStepsControl = gui.guiUtils.addLabeledInput(
+                                        self, sizer, label='V steps',
+                                        defaultValue=self.settings['vSteps'],)
+        sizer.Add(self.vStepsControl)
+        self.startVControl = gui.guiUtils.addLabeledInput(
+                                        self, sizer, label='V start',
+                                        defaultValue=self.settings['startV'],)
+        sizer.Add(self.startVControl)
+        self.maxVControl = gui.guiUtils.addLabeledInput(
+                                        self, sizer, label='V max',
+                                        defaultValue=self.settings['maxV'],)
+        sizer.Add(self.maxVControl)
         self.SetSizerAndFit(sizer)
 
 
@@ -76,6 +87,9 @@ class ExperimentUI(wx.Panel):
     def augmentParams(self, params):
         self.saveSettings()
         params['settlingTime'] = gui.guiUtils.tryParseNum(self.settlingTimeControl)
+        params['startV'] = gui.guiUtils.tryParseNum(self.startVControl)
+        params['maxV'] = gui.guiUtils.tryParseNum(self.maxVControl)
+        params['vSteps'] = gui.guiUtils.tryParseNum(self.vStepsControl)
         params['angleHandler'] = depot.getHandlerWithName('SI angle')
         return params        
 
@@ -83,9 +97,12 @@ class ExperimentUI(wx.Panel):
     ## Load the saved experiment settings, if any.
     def loadSettings(self):
         return util.userConfig.getValue(
-                self.configKey + 'settlingTime',
+                self.configKey + 'RotatorSweepExperimentSettings',
                 default = {
-                    'settlingTime': '0.1', 
+                    'settlingTime': '0.1',
+                    'startV' : '0.0',
+                    'maxV': '10.0',
+                    'vSteps': '100',
                 }
         )
 
@@ -93,7 +110,10 @@ class ExperimentUI(wx.Panel):
     ## Generate a dict of our settings.
     def getSettingsDict(self):
         return {
-                'settlingTime': self.settlingTimeControl.GetValue(),}
+                'settlingTime': self.settlingTimeControl.GetValue(),
+                'startV': self.startVControl.GetValue(),
+                'maxV': self.maxVControl.GetValue(),
+                'vSteps': self.vStepsControl.GetValue(),}
 
 
     ## Save the current experiment settings to config.
@@ -101,5 +121,5 @@ class ExperimentUI(wx.Panel):
         if settings is None:
             settings = self.getSettingsDict()
         util.userConfig.setValue(
-                self.configKey + 'settlingTime',
+                self.configKey + 'RotatorSweepExperimentSettings',
                 settings)
