@@ -423,7 +423,14 @@ class DSPDevice(device.Device):
     def onPrepareForExperiment(self, *args):
         self.preExperimentPosition = self.curPosition.copy()
         self.lastDigitalVal = 0
-        self.lastAnalogPositions = [0] * 4
+        # Values in lastAnalogPositions are baselines for profiles.
+        # Piezo handlers specify moves as deltas. Others specify
+        # absolute voltages, so move these others to their start positions.
+        self.lastAnalogPositions = 4 * [0]
+        for h, line in self.handlerToAnalogLine.iteritems():
+            if line not in self.axisMapper.values():
+                h.moveAbsolute(self.startupAnalogPositions[line])
+                self.lastAnalogPositions[line] = self.startupAnalogPositions[line]
 
 
     ## Cleanup after an experiment completes: restore our cached position.
