@@ -8,25 +8,7 @@ import gui.guiUtils
 import gui.keyboard
 import gui.toggleButton
 
-from util.colors import wavelengthToColor
-
-
-## Maps dye names to colors to use for those dyes.
-DYE_TO_COLOR = {
-        'Cy5': (0, 255, 255),
-        'DAPI': (184, 0, 184),
-        'DIC': (128, 128, 128),
-        'FITC': (80,255,150),
-        'GFP': (0, 255, 0),
-        'mCherry': (255, 0, 0),
-        'RFP': (255, 0, 0),
-        'Rhod': (255,80,20),
-        'YFP': (255, 255, 0),
-        'TRITC': (255,165,0),
-        'ND': (200, 200, 200)
-}
-
-
+from util.colors import dyeToColor
 
 ## This handler is responsible for tracking what kinds of light each camera
 # receives, via the drawer system.
@@ -127,14 +109,14 @@ class DrawerHandler(deviceHandler.DeviceHandler):
             for i, f in enumerate(filters):
                 self.settings.append(
                     DrawerSettings('drawer_%d' % (i), [cameraName], [f['dye']],
-                                   [DYE_TO_COLOR.get(f['dye'], wavelengthToColor(f['wavelength']))], 
+                                   [dyeToColor(f['dye'], f['wavelength'])], 
                                    [f['wavelength']]))
         else:
             for i, drawer in enumerate(self.settings):
                 if i < len(filters):
                     drawer.update(cameraName,
                               filters[i]['dye'],
-                              DYE_TO_COLOR.get(filters[i]['dye'], wavelengthToColor(filters[i]['wavelength'])),
+                              dyeToColor(filters[i]['dye'], filters[i]['wavelength']),
                               filters[i]['wavelength'])
                 else:
                     drawer.update(cameraName, 'Empty', ['Empty'], (127,127,127))
