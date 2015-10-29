@@ -1,7 +1,7 @@
 """ Module to control ThorLabs fw102c filter wheels.
 
-This module makes one or more fw102c wheels available to 
-cockpiut to control emission filters.
+This module makes one or more filter wheels available to 
+cockpit to control emission filters.
 
 Copyright 2015 Mick Phillips (mick.phillips at gmail dot com)
 
@@ -25,7 +25,7 @@ from config import config
 import re
 import wx
 
-CLASS_NAME = 'ThorlabsFilterWheelManager'
+CLASS_NAME = 'FilterWheelManager'
 CONFIG_NAME = 'emission wheel'
 CONFIG_DELIMETERS = '[,;:\-]+ ?'
 
@@ -34,7 +34,7 @@ __DRAWERHANDLER__ = None
 Filter = namedtuple('Filter', 'dye, wavelength')
 
 
-class ThorlabsFilterWheelManager(device.Device):
+class FilterWheelManager(device.Device):
     def __init__(self):
         device.Device.__init__(self)
         # Must be initialized after the drawer.
@@ -43,11 +43,11 @@ class ThorlabsFilterWheelManager(device.Device):
         if not names:
             self.isActive = False
             return
-
         self.isActive = True
         self.wheels = []
         for name in names:
-            self.wheels.append(ThorlabsFilterWheelDevice(name))
+            self.wheels.append(FilterWheelDevice(name))
+
 
     def initialize(self):
         for w in self.wheels:
@@ -59,8 +59,7 @@ class ThorlabsFilterWheelManager(device.Device):
             w.finalizeInitialization()
 
 
-
-class ThorlabsFilterWheelDevice(device.Device):
+class FilterWheelDevice(device.Device):
     def __init__(self, name):
         self.name = name
         self.cameraNames = []
@@ -71,11 +70,11 @@ class ThorlabsFilterWheelDevice(device.Device):
 
 
     def finalizeInitialization(self):
-        # The drawer will now be initialized.
+        # The drawer is initialized by now.
         global __DRAWERHANDLER__
         __DRAWERHANDLER__ = depot.getHandlersOfType(depot.DRAWER)[0]
         print '__DRAWERHANDLER__: %s' % __DRAWERHANDLER__
-        # Cameras also initialized.
+        # Cameras also initialized by now.
         if config.has_option(self.name, 'camera'):
             cameras = [config.get(self.name, 'camera')]
         elif config.has_option(self.name, 'cameras'):
@@ -102,7 +101,7 @@ class ThorlabsFilterWheelDevice(device.Device):
         # Get the current position.
         self.curPosition = self.getPosition()
         # Start the timer that will detect manual position changes.
-        #self.timer.Start(1000)
+        self.timer.Start(1000)
 
 
     def setFilter(self, filter):
