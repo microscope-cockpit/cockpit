@@ -122,6 +122,12 @@ class DrawerHandler(deviceHandler.DeviceHandler):
                     drawer.update(cameraName, 'Empty', ['Empty'], (127,127,127))
 
 
+    ## Update the currently selected drawer on filter change by wheel.
+    def changeFilter(self, camera, dye, wavelength):
+        self.settings[self.settingIndex].update(
+                camera, dye, dyeToColor(dye, wavelength), wavelength)
+
+
 ## This is a simple container class to describe a single drawer. 
 class DrawerSettings:
     ## All parameters except the drawer name are lists, and the lists refer to
