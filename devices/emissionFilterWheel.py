@@ -16,6 +16,17 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+Sample config entry:
+
+    [emission wheel 1]
+    ipAddress = 127.0.0.1
+    port = 8002
+    id = dummy
+    cameras = dummy camera 1, dummy camera 2
+    slots = 6
+    1 = GFP, 525
+    2 = TRITC, 600
 """
 import depot
 import device
