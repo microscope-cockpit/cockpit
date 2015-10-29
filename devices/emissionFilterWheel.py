@@ -20,9 +20,14 @@ limitations under the License.
 import depot
 import device
 import events
+import gui
 from collections import namedtuple
 from config import config
+import Pyro4
 import re
+import threading
+import time
+import util
 import wx
 
 CLASS_NAME = 'FilterWheelManager'
@@ -47,6 +52,12 @@ class FilterWheelManager(device.Device):
         self.wheels = []
         for name in names:
             self.wheels.append(FilterWheelDevice(name))
+        # One timer keeps all displays current.
+        self.timer = wx.Timer()
+        self.timer.Bind(wx.EVT_TIMER, self.updateUI)
+        # One thread polls all wheels to keep positions current. We don't do
+        # this in updateUI because delays could cause the UI thread to block.
+        self.pollThread = threading.Thread(target=self.pollFunction)
 
 
     def initialize(self):
@@ -57,23 +68,53 @@ class FilterWheelManager(device.Device):
     def finalizeInitialization(self):
         for w in self.wheels:
             w.finalizeInitialization()
+        # Start the polling thread.
+        self.pollThread.start()
+
+
+    def makeUI(self, parent):
+        self.panel = wx.Panel(parent)
+        self.panel.SetDoubleBuffered(True)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        label = gui.device.Label(parent=self.panel, label='Filters')
+        sizer.Add(label)
+        for w in self.wheels:
+            display = w.makeUI(self.panel)
+            sizer.Add(display)
+        self.panel.SetSizerAndFit(sizer)
+        self.timer.Start(1000)
+        return self.panel
+
+
+    def pollFunction(self):
+        while True:
+            for w in self.wheels:
+                try:
+                    w.getPosition()
+                except:
+                    continue
+            time.sleep(1)
+
+
+    def updateUI(self, evt=None):
+        for w in self.wheels:
+            w.updateUI()
 
 
 class FilterWheelDevice(device.Device):
     def __init__(self, name):
         self.name = name
+        self.connection = None
         self.cameraNames = []
         self.filters = []
-        self.timer = wx.Timer()
-        self.timer.Bind(wx.EVT_TIMER, self.pollFunction)
         self.curPosition = None
+        self.lastPosition = None
 
 
     def finalizeInitialization(self):
         # The drawer is initialized by now.
         global __DRAWERHANDLER__
         __DRAWERHANDLER__ = depot.getHandlersOfType(depot.DRAWER)[0]
-        print '__DRAWERHANDLER__: %s' % __DRAWERHANDLER__
         # Cameras also initialized by now.
         if config.has_option(self.name, 'camera'):
             cameras = [config.get(self.name, 'camera')]
@@ -83,8 +124,6 @@ class FilterWheelDevice(device.Device):
             raise Exception('%s: no camera(s) defined for %s' % (CLASS_NAME, self.name))
         self.cameraNames = [c.name for c in depot.getHandlersOfType(depot.CAMERA)
                                 if c.name.lower() in cameras]
-        # Update the drawer.
-        self.updateDrawer()
 
 
     def initialize(self):
@@ -98,38 +137,58 @@ class FilterWheelDevice(device.Device):
             else:
                 f = Filter(None, None)
             self.filters.append(f)
-        # Get the current position.
-        self.curPosition = self.getPosition()
-        # Start the timer that will detect manual position changes.
-        self.timer.Start(1000)
-
-
-    def setFilter(self, filter):
-        # Move to specified filter.
-        pass
+        # Connect to the device.
+        ipAddress = config.get(self.name, 'ipAddress')
+        port = config.getint(self.name, 'port')
+        wheelId = config.get(self.name, 'id')
+        uri = "PYRO:%s@%s:%d" % (wheelId, ipAddress, port)
+        self.remote = Pyro4.Proxy(uri)
 
 
     def getPosition(self):
         # Fetch the current position.
-        return 0
-        pass
+        self.curPosition = self.remote.getPosition()
+        return self.curPosition
 
 
+    @util.threads.callInNewThread
     def setPosition(self, position):
         # Move to specified position.
-        pass
+        self.remote.setPosition(position)
 
 
     def updateDrawer(self):
         h = __DRAWERHANDLER__
-        f = self.filters[self.curPosition]
+        f = self.filters[self.curPosition-1]
         for camera in self.cameraNames:
             h.changeFilter(camera, f.dye, f.wavelength)
         events.publish("drawer change", h)
 
 
-    def pollFunction(self, evt):
-        lastPosition = self.curPosition
-        self.curPosition = self.getPosition()
-        if lastPosition != self.curPosition:
+    def updateUI(self):
+        if self.lastPosition != self.curPosition:
             self.updateDrawer()
+            dye = self.filters[self.curPosition-1].dye
+            if dye:
+                self.display.SetLabel(dye)
+            else:
+                self.display.SetLabel('no filter')
+
+
+    def makeUI(self, parent):
+        self.display = gui.toggleButton.ToggleButton(
+                        parent=parent, label='',
+                        size=gui.device.DEFAULT_SIZE, isBold=False)
+        self.display.Bind(wx.EVT_LEFT_DOWN, self.menuFunc)
+        return self.display
+
+
+    def menuFunc(self, evt=None):
+        items = ["%d: %s" % (i+1, f.dye) for i, f in enumerate(self.filters)]
+        menu = gui.device.Menu(items, self.menuCallback)
+        menu.show(evt)
+
+
+    def menuCallback(self, item):
+        index, dye = item.split(': ')
+        self.setPosition(int(index))
