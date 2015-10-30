@@ -319,7 +319,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 atMouse=True)
         newPos=[float(values[0]),float(values[1]),float(values[2])]
 #Work out if we will be ouside the limits of the current stage
-        posDelta = [position[0]-newPos[0],position[1]-newPos[1],position[2]-newPos[2]]
+        posDelta = [newPos[0]-position[0],newPos[1]-position[1],newPos[2]-position[2]]
         originalHandlerIndex = interfaces.stageMover.mover.curHandlerIndex
         currentHandlerIndex = originalHandlerIndex
         allPositions=interfaces.stageMover.getAllPositions()
