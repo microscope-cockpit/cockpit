@@ -503,6 +503,7 @@ class DSPDevice(device.Device):
         # Keep track of last action time and handler to detect conflicts.
         lastTime = None
         lastHandler = None
+        lastAction = None
         for time, handler, action in events:
             # Do the same "Decimal -> float -> rounded int" conversion
             time = int(float(time * self.actionsPerMillisecond) + .5)
@@ -510,9 +511,12 @@ class DSPDevice(device.Device):
             # handler on the same clock - if we do, the second action will
             # be lost.
             if time  == lastTime and handler == lastHandler:
-                raise Exception('%s: Simultaneous actions with same handler.' % CONFIG_NAME)
+                if action != lastAction:
+                    # This is not just a duplicate table entry.
+                    raise Exception('%s: Simultaneous actions with same handler.' % CONFIG_NAME)
             lastTime = time
             lastHandler = handler
+            lastAction = action
             index = times.index(time)
             # Ensure a valid (nonzero) digital value exists regardless of the
             # type of action, e.g. so analog actions don't zero the digital
