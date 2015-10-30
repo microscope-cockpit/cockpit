@@ -6,7 +6,8 @@ from config import config, LIGHTS, CAMERAS
 
 IPSTR = 'ipAddress'
 PORTSTR = 'port'
-FORMATSTR = '%22s  %6s  %s'
+#FORMATSTR = '%22s  %18s  %8s  %s'
+FORMATSTR = '{:<20}  {:>16}  {:<8}  {:<6}'
 
 def ping(host):
     """
@@ -68,9 +69,12 @@ for device, host in deviceToHost.iteritems():
     devicesUp[device] = 'open' if testPort(host, port) else 'closed'
 
 print '\n\n'
-print FORMATSTR % ('DEVICE', 'HOST', 'PORT')
-print FORMATSTR % ('=======', '====', '====')
+#print FORMATSTR % ('DEVICE', 'HOSTNAME', 'STATUS', 'PORT')
+#print FORMATSTR % ('======', '========', '======', '====')
+print FORMATSTR.format('DEVICE', 'HOSTNAME', 'STATUS', 'PORT')
+print FORMATSTR.format('======', '========', '======', '====')
 for device in sorted(deviceToHost.keys()):
     host = deviceToHost[device]
     port = deviceToPort[device]
-    print FORMATSTR % (device, hostsUp[host], devicesUp[device])
+    #print FORMATSTR % (device, host, hostsUp[host], devicesUp[device])
+    print FORMATSTR.format(device, host, hostsUp[host], devicesUp[device])
