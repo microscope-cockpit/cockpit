@@ -63,8 +63,6 @@ class DSPDevice(device.Device):
         self.handlers = set()
         ## Where we believe the stage piezos to be.
         self.curPosition = {}
-        ## Current voltage output for the variable retarder.
-        self.curRetarderVoltage = 0
         ## Names of cameras we trigger when taking an image.
         self.activeCameras = set()
         ## Names of light sources we trigger when taking an image.
@@ -96,8 +94,6 @@ class DSPDevice(device.Device):
         ## Conversion factor between microns and the units the DSP card
         # uses. The DSP has a 16-bit DAC (so 65536 ADUs (analog-digital units)
         # representing 0-10 volts).
-        ##HACK retarderVoltages
-        #self.retarderVoltages = [1,2,3]
         self.alineToUnitsPerADU = {}
         self.axisMapper = {}
         VperADU = 10.0 / 2**16
@@ -152,9 +148,7 @@ class DSPDevice(device.Device):
     # publish them. We want the Z piezo to be in the middle of its range
     # of motion.
     def makeInitialPublications(self):
-	#this crashes the pol-rotator so needs to be removed. It has no material benefit anyway
-        #self.moveRetarderAbsolute(None, 0)
-        pass
+	    pass
 
     ## User clicked the abort button.
     def onAbort(self):
@@ -222,23 +216,6 @@ class DSPDevice(device.Device):
                 result.append(handler)
                 self.curPosition.update({COCKPIT_AXES[aout['cockpit_axis']]: 0})
                 self.startupAnalogPositions[aout['aline']] = aout.get('startup_value')
-
-
-            if aout['cockpit_axis'].lower() == 'si angle':
-                pass
-                # Variable retarder.
-                #self.retarderHandler = handlers.genericPositioner.GenericPositionerHandler(
-                #    "SI angle", "structured illumination", True, 
-                #    {'moveAbsolute': self.moveRetarderAbsolute, 
-                #    'moveRelative': self.moveRetarderRelative,
-                #    'getPosition': self.getRetarderPos, 
-                #    'getMovementTime': self.getRetarderMovementTime})
-                #result.append(self.retarderHandler)
-                #self.handlerToAnalogLine[self.retarderHandler] = aout['aline']
-                #self.startupAnalogPositions[aout['aline']] = aout.get('startup_value')
-                #IMD 20150512 hack to get voltages in config file overload
-                #the Dletas list. 
-                #self.retarderVoltages = aout['deltas']
                 
         for name in self.otherTriggers:
             handler = handlers.genericHandler.GenericHandler(
@@ -369,30 +346,6 @@ class DSPDevice(device.Device):
     def getSLMStabilizationTime(self, name, prevPos, curPos):
         return (1, 30)
 
-
-    ## Move the variable retarder to the specified voltage.
-    #def moveRetarderAbsolute(self, name, pos):
-    #    self.curRetarderVoltage = pos
-    #    handler = depot.getHandlerWithName('SI angle')
-    #    aline = self.handlerToAnalogLine[handler]
-    #    # Convert from volts to ADUs.
-    #    self.connection.MoveAbsoluteADU(aline, int(pos * 6553.6))
-
-
-    ## Move the variable retarder by the specified voltage offset.
-    #def moveRetarderRelative(self, name, delta):
-    #    self.moveRetarderAbsolute(self.curRetarderVoltage + delta)
-
-
-    ## Get the current variable retarder voltage.
-    #def getRetarderPos(self, name):
-    #    return self.curRetarderVoltage
-
-
-    ### Get the time needed for the variable retarder to move to a new value.
-    #def getRetarderMovementTime(self, name, start, end):
-    #    return (1, 1)
-
     ## Take an image with the current light sources and active cameras.
     @util.threads.locked
     def takeImage(self):
@@ -482,13 +435,6 @@ class DSPDevice(device.Device):
             
         events.publish('update status light', 'device waiting',
                 'Waiting for\nDSP to finish', (255, 255, 0))
-        # InitProfile will declare the current analog positions as a "basis"
-        # and do all actions as offsets from those bases, so we need to
-        # ensure that the variable retarder is set to its startup pos first.
-        #retarderLine = self.handlerToAnalogLine[self.retarderHandler]
-        #self.setAnalogVoltage(retarderLine,
-        #                      self.startupAnalogPositions[retarderLine] )
-
         self.connection.InitProfile(numReps)
         events.executeAndWaitFor("DSP done", self.connection.trigCollect)
 
@@ -509,10 +455,6 @@ class DSPDevice(device.Device):
             # DSP isn't doing this on its own, even though our experiments end
             # with an all-zeros entry.
             self.connection.WriteDigital(0)
-            # Likewise, force the retarder back to startup value.
-            #retarderLine = self.handlerToAnalogLine[self.retarderHandler]
-            #self.setAnalogVoltage(retarderLine, self.startupAnalogPositions[retarderLine])
-
 
     ## Given a list of (time, handle, action) tuples, generate several Numpy
     # arrays: one of digital actions, and one each for each analog output.
@@ -594,13 +536,8 @@ class DSPDevice(device.Device):
                 digitalToLastVal[line] = action
             elif handler in self.handlerToAnalogLine:
                 # Analog lines step to the next position. 
-                # HACK: the variable retarder shows up here too, and for it
-                # we set specific voltage values depending on position.
                 aline = self.handlerToAnalogLine[handler]
                 value = 0
-                #if handler is self.retarderHandler:
-                #    value = int(self.retarderVoltages[action] * 6553.6)
-                #else:
                 value = self.convertMicronsToADUs(aline, action)
                 # If we're in the
                 # middle of an experiment, then these values need to be
@@ -805,12 +742,6 @@ class DSPDevice(device.Device):
 
         self.connection.profileSet(profileStr, digitals, *analogs)
         self.connection.DownloadProfile()
-        # InitProfile will declare the current analog positions as a "basis"
-        # and do all actions as offsets from those bases, so we need to
-        # ensure that the variable retarder is zeroed out first.
-        #retarderLine = self.axisMapper[self.handlerToAnalogAxis[self.retarderHandler]]
-        #self.setAnalogVoltage(retarderLine, self.startupAnalogPositions[retarderLine])
-
         self.connection.InitProfile(numReps)
         events.executeAndWaitFor("DSP done", self.connection.trigCollect)
             
