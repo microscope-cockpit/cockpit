@@ -513,7 +513,8 @@ class DSPDevice(device.Device):
             if time  == lastTime and handler == lastHandler:
                 if action != lastAction:
                     # This is not just a duplicate table entry.
-                    raise Exception('%s: Simultaneous actions with same handler.' % CONFIG_NAME)
+                    raise Exception('%s: Simultaneous actions with handler %s at time %s' %
+                                     (CONFIG_NAME, handler, time))
             lastTime = time
             lastHandler = handler
             lastAction = action
