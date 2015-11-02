@@ -223,11 +223,8 @@ class SIExperiment(experiment.Experiment):
             # SLM trigger
         if self.slmHandler is not None:
            ## Add SLM event ot set pattern for phase, angle and longestWavelength.
-           # The SLM handler will add triggering and settling delays when it 
-           # examines the action table by pushing back all subsequent events.
            table.addAction(curTime, self.slmHandler, (angle, phase, longestWavelength))
-           # Add a small delay so that the exposure falls after the SLM event.
-           curTime += decimal.Decimal('1e-6')
+           curTime += self.slmHandler.callbacks['getMovementTime']()
         return experiment.Experiment.expose(self, curTime, cameras, newPairs, table)
 
 
