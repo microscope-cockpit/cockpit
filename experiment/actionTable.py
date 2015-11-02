@@ -3,6 +3,8 @@ import decimal
 ## This class represents the actions performed during an experiment.
 # Each action has a timestamp and the parameters for the action to be performed.
 class ActionTable:
+    toggleTime = decimal.Decimal('.1')
+
     def __init__(self):
         ## List of (time, handler, parameter) tuples indicating what actions
         # must be taken at what times.
@@ -13,7 +15,6 @@ class ActionTable:
         self.firstActionTime = None
         ## Time of our last action.
         self.lastActionTime = None
-        self.toggleTime = decimal.Decimal('.1')
     
 
     ## Insert an element into self.actions.
