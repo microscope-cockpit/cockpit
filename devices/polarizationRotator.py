@@ -115,6 +115,7 @@ class PolarizationDevice(device.Device):
                     'getLineHandler': lambda: self.lineHandler})
 
         #return (self.executor, self.mover)
+        self.executor.deviceType = depot.EXECUTOR
         return (self.executor,)
 
 
