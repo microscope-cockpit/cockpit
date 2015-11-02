@@ -15,7 +15,7 @@ EXPERIMENT_NAME = 'RotatorSweep'
 ## This class handles classic Z-stack experiments.
 class RotatorSweepExperiment(experiment.Experiment):
     def __init__(self, angleHandler=None, settlingTime=0.1, 
-                 startV=0, maxV=10, vSteps=100, *args, **kwargs):
+                 startV=0.0, maxV=10., vSteps=100, *args, **kwargs):
         experiment.Experiment.__init__(self, *args, **kwargs)
         self.angleHandler = angleHandler
         self.settlingTime = settlingTime
@@ -29,7 +29,7 @@ class RotatorSweepExperiment(experiment.Experiment):
         table = actionTable.ActionTable()
         curTime = 0
         vStart, vLessThan, vSteps = self.vRange
-        dv = float(vLessThan - vStart) / vSteps
+        dv = float(vLessThan - vStart) / float(vSteps)
         dt = decimal.Decimal(self.settlingTime)
 
         for step in xrange(vSteps):
@@ -88,9 +88,9 @@ class ExperimentUI(wx.Panel):
     # experiment instance, augment them with our special parameters.
     def augmentParams(self, params):
         self.saveSettings()
-        params['settlingTime'] = gui.guiUtils.tryParseNum(self.settlingTimeControl)
-        params['startV'] = gui.guiUtils.tryParseNum(self.startVControl)
-        params['maxV'] = gui.guiUtils.tryParseNum(self.maxVControl)
+        params['settlingTime'] = gui.guiUtils.tryParseNum(self.settlingTimeControl, float)
+        params['startV'] = gui.guiUtils.tryParseNum(self.startVControl, float)
+        params['maxV'] = gui.guiUtils.tryParseNum(self.maxVControl, float)
         params['vSteps'] = gui.guiUtils.tryParseNum(self.vStepsControl)
         params['angleHandler'] = depot.getHandlerWithName('SI angle')
         return params        
@@ -111,7 +111,7 @@ class ExperimentUI(wx.Panel):
 
     ## Generate a dict of our settings.
     def getSettingsDict(self):
-        return {
+        return  {
                 'settlingTime': self.settlingTimeControl.GetValue(),
                 'startV': self.startVControl.GetValue(),
                 'maxV': self.maxVControl.GetValue(),
