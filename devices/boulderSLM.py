@@ -2,7 +2,7 @@
 # -*- coding: UTF8   -*-
 """ This module makes a BNS SLM  device available to Cockpit.
 
-Mick Phillips, University of Oxford, 2014.
+Mick Phillips, University of Oxford, 2014-2015.
 """
 
 from collections import OrderedDict
@@ -21,6 +21,7 @@ import handlers
 import time
 import util
 from config import config
+from experiment import actionTable
 
 CLASS_NAME = 'BoulderSLMDevice'
 CONFIG_NAME = 'slm'
@@ -40,7 +41,7 @@ class BoulderSLMDevice(device.Device):
         self.executor = None
         self.order = None
         self.position = None
-        self.settlingTime = decimal.Decimal('0.01')
+        self.settlingTime = decimal.Decimal('0.1')
         self.slmTimeout = int(config.get(CONFIG_NAME, 'timeout', default=10))
         self.slmRetryLimit = int(config.get(CONFIG_NAME, 'retryLimit', default=3))
         self.lastParms = None
@@ -121,6 +122,13 @@ class BoulderSLMDevice(device.Device):
                     numTriggers = sequenceLength - lastIndex - action
             else:
                 numTriggers = 0
+            """
+            Used to calculate time to execute triggers and settle here, 
+            then push back all later events, but that leads to very long
+            delays before the experiment starts. For now, comment out
+            this code, and rely on a fixed time passed back to the action
+            table generator (i.e. experiment class).
+
             # How long will the triggers take?
             # Time between triggers must be > table.toggleTime.
             dt = self.settlingTime + 2 * numTriggers * table.toggleTime
@@ -129,7 +137,11 @@ class BoulderSLMDevice(device.Device):
             for trig in xrange(numTriggers):
                 time = table.addToggle(time, triggerHandler)
                 time += table.toggleTime
-            # Update index tracker.
+            """
+            for trig in xrange(numTriggers):
+                time = table.addToggle(time, triggerHandler)
+                time += table.toggleTime
+
             lastIndex += numTriggers
             if lastIndex >= sequenceLength:
                 lastIndex = lastIndex % sequenceLength
@@ -167,6 +179,7 @@ class BoulderSLMDevice(device.Device):
                     'getNumRunnableLines': self.getNumRunnableLines,
                     'executeTable': self.executeTable,
                     'makeUI': self.makeUI})
+        self.executor.callbacks['getMovementTime'] = self.getMovementTime
         result.append(self.executor)
         return result
 
@@ -213,6 +226,10 @@ class BoulderSLMDevice(device.Device):
                 button.deactivate()
 
         return func
+
+
+    def getMovementTime(self):
+        return self.settlingTime + 2 * actionTable.ActionTable.toggleTime
 
 
     ### UI functions ###
