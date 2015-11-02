@@ -88,8 +88,8 @@ class PolarizationDevice(device.Device):
             # Action specifies an angle index.
             # Replace original event with analogue out event.
             table[i] = None
-            table.clearBadEntries()
             table.addAction(t, self.lineHandler, self.voltages[action])
+        table.clearBadEntries()
 
 
     def executeTable(self, name, table, startIndex, stopIndex, numReps,
