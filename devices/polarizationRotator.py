@@ -97,7 +97,7 @@ class PolarizationDevice(device.Device):
         for time, handler, action in table[startIndex:stopIndex]:
             if handler is self.executor:
                 # Shouldn't have to do anything here.
-                pass
+                raise Exception('%s: executeTable called - should never reach here.' % CLASS_NAME)
 
 
     def getHandlers(self):      
