@@ -59,7 +59,8 @@ class PolarizationDevice(device.Device):
             sens = 1
         # SI voltage map. Drop to defaults if missing.
         if config.has_option(CONFIG_NAME, 'siVoltages'):
-            siVoltages = config.get(CONFIG_NAME, 'siVoltages')
+            siVoltages = config.get(CONFIG_NAME, 'siVoltages').split(',')
+            siVoltages = [float(v) for v in siVoltages]
         else:
             siVoltages = [1., 2., 3.]
         if config.has_option(CONFIG_NAME, 'idleVoltage'):
