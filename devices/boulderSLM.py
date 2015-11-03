@@ -149,6 +149,17 @@ class BoulderSLMDevice(device.Device):
         # Store the parameters used to generate the sequence.
         self.lastParms = sequence
         self.connection.run()
+        # Fire a couple of triggers to ensure that the sequence is loaded.
+        triggerNow = self.getTriggerHandler().callbacks.get('triggerNow')
+        triggerNow()
+        time.sleep(0.002)
+        triggerNow()
+        # Ensure that we're at position 0.
+        self.position = self.getCurrentPosition()
+        while self.position != 0:
+            triggerNow()
+            time.sleep(0.002)
+            self.position = self.getCurrentPosition()
 
 
     ## Run some lines from the table.

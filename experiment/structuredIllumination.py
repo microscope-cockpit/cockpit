@@ -105,7 +105,9 @@ class SIExperiment(experiment.Experiment):
         if self.slmHandler is not None:
             # Add a first trigger of the SLM to get first new image.
             table.addAction(curTime, self.slmHandler, 0)
-        
+            # Wait a few ms for any necessary SLM triggers.
+            curTime = decimal.Decimal('5e-3')
+
         for angle, phase, z in self.genSIPositions():
             delayBeforeImaging = 0
             # Figure out which positions changed. They need to be held flat
@@ -113,7 +115,8 @@ class SIExperiment(experiment.Experiment):
             # then have some time to stabilize. Or, if we have an SLM, then we
             # need to trigger it and then wait for it to stabilize.
             # Ensure we truly are doing this after all exposure events are done.
-            curTime = table.getFirstAndLastActionTimes()[1] + decimal.Decimal('1e-6')
+            curTime = max(curTime, 
+                          table.getFirstAndLastActionTimes()[1] + decimal.Decimal('1e-6'))
             if angle != prevAngle and prevAngle is not None:
                 if self.angleHandler is not None:
                     motionTime, stabilizationTime = self.angleHandler.getMovementTime(prevAngle, angle)
@@ -195,8 +198,6 @@ class SIExperiment(experiment.Experiment):
             table.addAction(curTime + motionTime, self.phaseHandler, 0)
             finalWaitTime = max(finalWaitTime, motionTime + stabilizationTime)
         
- 
-
         return table
 
 
