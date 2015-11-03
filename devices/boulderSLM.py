@@ -116,7 +116,7 @@ class BoulderSLMDevice(device.Device):
                 # Next pattern does not match last, so step one pattern.
                     numTriggers = 1
             elif type(action) is int:
-                if action > lastIndex:
+                if action >= lastIndex:
                     numTriggers = action - lastIndex
                 else:
                     numTriggers = sequenceLength - lastIndex - action
