@@ -611,7 +611,10 @@ def makeHeaderForShape(shape, dtype, XYSize = None, ZSize = None,
     header.NumWaves = shape[0]
     header.Num = (shape[4], shape[3], shape[0] * shape[1] * shape[2])
     for i, wavelength in enumerate(wavelengths):
-        header.wave[i] = wavelength
+        if wavelength:
+            header.wave[i] = wavelength
+        else:
+            header.wave[i] = 0
     header.ImgSequence = 2
     header.d = [XYSize, XYSize, ZSize]
     return header
