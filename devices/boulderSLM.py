@@ -144,6 +144,7 @@ class BoulderSLMDevice(device.Device):
             lastIndex += numTriggers
             if lastIndex >= sequenceLength:
                 lastIndex = lastIndex % sequenceLength
+        table.clearBadEntries()
         # Wait until SLM has finished generating and loading patterns.
         self.wait(asyncResult, "SLM is generating pattern sequence.")
         # Store the parameters used to generate the sequence.
