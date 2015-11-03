@@ -117,8 +117,6 @@ class SIExperiment(experiment.Experiment):
             if angle != prevAngle and prevAngle is not None:
                 if self.angleHandler is not None:
                     motionTime, stabilizationTime = self.angleHandler.getMovementTime(prevAngle, angle)
-                    # Hold flat.
-                    table.addAction(curTime, self.angleHandler, prevAngle)
                     # Move to the next position.
                     table.addAction(curTime + motionTime, 
                             self.angleHandler, angle)
@@ -181,8 +179,7 @@ class SIExperiment(experiment.Experiment):
         table.addAction(curTime + finalWaitTime, self.zPositioner, 0)
 
         if self.angleHandler is not None:
-            # Ramp down angle        
-            table.addAction(curTime, self.angleHandler, prevAngle)
+            # Ramp down angle
             motionTime, stabilizationTime = self.angleHandler.getMovementTime(
                     prevAngle, 0)
             table.addAction(curTime + motionTime, self.angleHandler, 0)
