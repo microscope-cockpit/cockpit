@@ -38,7 +38,7 @@ class DrawerHandler(deviceHandler.DeviceHandler):
 
     ## Generate a row of buttons, one for each possible drawer.
     def makeUI(self, parent):
-        if self.callbacks or not self.settings:
+        if self.callbacks or not self.settings or len(self.settings) == 1:
             # Nothing to be done here.
             return None
         frame = wx.Frame(parent, title = "Drawers",

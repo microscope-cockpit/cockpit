@@ -26,6 +26,7 @@ def dyeToColor(dye, wavelength=None):
 
 ## Given a wavelength in nm, return an RGB color tuple. 
 def wavelengthToColor(wavelength):
+    wavelength = float(wavelength)
     # Convert wavelength to hue, with a color wheel that ranges from
     # blue (240 degrees) at 400nm to red (360 degrees) at 650nm by way of
     # green.
