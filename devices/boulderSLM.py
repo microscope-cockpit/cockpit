@@ -103,14 +103,13 @@ class BoulderSLMDevice(device.Device):
 
         # Track sequence index set by last set of triggers.
         lastIndex = 0
-        for i, (time, handler, action) in enumerate(table.actions):
+        for i, (t, handler, action) in enumerate(table.actions):
             if handler is not self.executor:
                 # Nothing to do
                 continue
             # Action specifies a target frame in the sequence.
             # Remove original event.
             table[i] = None
-            table.clearBadEntries()
             # How many triggers?
             if type(action) is tuple and action != sequence[lastIndex]:
                 # Next pattern does not match last, so step one pattern.
@@ -135,12 +134,12 @@ class BoulderSLMDevice(device.Device):
             ## Shift later table entries to allow for triggers and settling.
             table.shiftActionsBack(time, dt)
             for trig in xrange(numTriggers):
-                time = table.addToggle(time, triggerHandler)
-                time += table.toggleTime
+                t = table.addToggle(t, triggerHandler)
+                t += table.toggleTime
             """
             for trig in xrange(numTriggers):
-                time = table.addToggle(time, triggerHandler)
-                time += table.toggleTime
+                t = table.addToggle(t, triggerHandler)
+                t += table.toggleTime
 
             lastIndex += numTriggers
             if lastIndex >= sequenceLength:
