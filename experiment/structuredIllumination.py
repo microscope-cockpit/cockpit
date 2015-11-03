@@ -215,14 +215,17 @@ class SIExperiment(experiment.Experiment):
         for light, tExp in lightTimePairs:
             # SIM wavelength
             longestWavelength = max(longestWavelength, light.wavelength)
+            if longestWavelength in ['Ambient', 'ambient']:
+                # SoftWorx uses -50 to represent transmitted light.
+                longestWavelength = -50
             # Bleaching compensation
             tExpNew = tExp * (1 + decimal.Decimal(self.handlerToBleachCompensation[light]) * angle)
             newPairs.append((light, tExpNew))
             # SLM trigger
         if self.slmHandler is not None:
-           ## Add SLM event ot set pattern for phase, angle and longestWavelength.
-           table.addAction(curTime, self.slmHandler, (angle, phase, longestWavelength))
-           curTime += self.slmHandler.callbacks['getMovementTime']()
+            ## Add SLM event ot set pattern for phase, angle and longestWavelength.
+            table.addAction(curTime, self.slmHandler, (angle, phase, longestWavelength))
+            curTime += self.slmHandler.callbacks['getMovementTime']()
         return experiment.Experiment.expose(self, curTime, cameras, newPairs, table)
 
 
