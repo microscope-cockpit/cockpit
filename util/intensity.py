@@ -229,6 +229,7 @@ class IntensityProfilerFrame(wx.Frame):
         hbox.Add(self.canvas)
         # Plot canvas
         self.plotCanvas = plot.PlotCanvas(self, wx.ID_ANY, pos=(-1,-1))
+        self.plotCanvas.canvas.Bind(wx.EVT_LEFT_UP, self.onClickPlotCanvas)
         self.plotCanvas.MinSize=(512,512)
         self.plotCanvas.SetSize((512,512))
         hbox.Add(self.plotCanvas)
@@ -237,6 +238,7 @@ class IntensityProfilerFrame(wx.Frame):
 
         ## Status bar.
         self.sb = self.CreateStatusBar()
+        self.sb.SetFieldsCount(2)
 
         self.SetSizerAndFit(vbox)
 
@@ -275,7 +277,7 @@ class IntensityProfilerFrame(wx.Frame):
         else:
             xLabel = 'Z'
         gc = plot.PlotGraphics([peak, avg, first, second],
-                               'Intensity profiles', xLabel, 'arb. units')
+                               'Intensity profiles', xLabel, 'counts')
         # Clear any old graphs.
         self.plotCanvas.Clear()
         # Draw the graphics context.
@@ -314,6 +316,14 @@ class IntensityProfilerFrame(wx.Frame):
         # Update the canvas.
         self.plotCanvas.Clear()
         self.canvas.Draw(Force=True)
+
+
+    def onClickPlotCanvas(self, event):
+        """Show the mouse graph-space coords in status bar."""
+        pos = event.GetPosition()
+        uv = self.plotCanvas.PositionScreenToUser(pos)
+        #self.sb.SetStatusText('u:%3f, v:%3f' % uv, 1)
+        self.sb.SetStatusText('Z: {0[0]:3.3g},  counts: {0[1]:3.3g}'.format(uv), 1)
 
 
     def onClickCanvas(self, event):
