@@ -202,22 +202,47 @@ class IntensityProfilerFrame(wx.Frame):
                         "Open", "Open a dataset")
         toolbar.AddSeparator()
         # Number of phases
-        label = wx.StaticText(toolbar,
+        phaseLabel = wx.StaticText(toolbar,
                               wx.ID_ANY,
                               label='# phases: ',
                               style=wx.TRANSPARENT_WINDOW)
-        label.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: None)
-        toolbar.AddControl(label)
+        phaseLabel.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: None)
+        toolbar.AddControl(phaseLabel)
         phasesTool = wx.SpinCtrl(toolbar,
                                  wx.ID_ANY,
                                  value='5',
                                  size=(48, -1),
                                  min=1,
                                  max=5,
-                                 initial=5)
-        phasesTool.Bind(wx.EVT_SPIN,
-                        lambda event: self.profiler.setPhases(event.GetPosition()))
+                                 initial=5,
+                                 style = wx.SP_ARROW_KEYS | wx.WANTS_CHARS | wx.TE_PROCESS_ENTER)
+        phasesTool.Bind(wx.EVT_SPINCTRL,
+                        lambda event: self.profiler.setPhases(event.GetInt()))
+        phasesTool.Bind(wx.EVT_TEXT_ENTER,
+                        lambda event: self.profiler.setPhases(event.GetInt()))
         toolbar.AddControl(control=phasesTool)
+        toolbar.AddSeparator()
+        # Box size.
+        boxLabel = wx.StaticText(toolbar,
+                              wx.ID_ANY,
+                              label='box size: ',
+                              style=wx.TRANSPARENT_WINDOW)
+        boxLabel.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: None)
+        toolbar.AddControl(boxLabel)
+        boxTool = wx.SpinCtrl(toolbar,
+                                 wx.ID_ANY,
+                                 value='25',
+                                 size=(48, -1),
+                                 min=10,
+                                 max=2**16,
+                                 initial=25,
+                                 style = wx.SP_ARROW_KEYS | wx.WANTS_CHARS | wx.TE_PROCESS_ENTER)
+        boxTool.Bind(wx.EVT_TEXT_ENTER,
+                        lambda event: self.setBoxSize(event.GetInt()))
+        boxTool.Bind(wx.EVT_SPINCTRL,
+                        lambda event: self.setBoxSize(event.GetInt()))
+        toolbar.AddControl(control=boxTool)
+        self.boxTool = boxTool
         # Calculate profile.
         goTool = toolbar.AddSimpleTool(
                         wx.ID_ANY,
@@ -235,7 +260,7 @@ class IntensityProfilerFrame(wx.Frame):
         img = wx.EmptyImage(BITMAP_SIZE[0], BITMAP_SIZE[1], True)
         self.bitmap = self.canvas.AddBitmap(img, (0,0), 'cc', False)
         self.circle = self.canvas.AddCircle((0,0), 10, '#ff0000')
-        self.canvas.Draw()
+        self.rectangle = self.canvas.AddRectangle((0,0), (20,20), '#ff0000')
         self.canvas.Bind(FloatCanvas.EVT_LEFT_UP, self.onClickCanvas)
         hbox.Add(self.canvas)
         # Plot canvas
@@ -307,6 +332,7 @@ class IntensityProfilerFrame(wx.Frame):
             return
         # Set the profiler data source .
         self.profiler.setDataSource(filename)
+        self.boxTool.Value = self.profiler.getHalfWidth()
 
         # Guess a bead position
         xpos, ypos = self.profiler.guessBeadCentre()
@@ -326,7 +352,7 @@ class IntensityProfilerFrame(wx.Frame):
 
         # Update the canvas.
         self.plotCanvas.Clear()
-        self.canvas.Draw(Force=True)
+        self.updateCanvas()
 
 
     def onClickPlotCanvas(self, event):
@@ -343,10 +369,30 @@ class IntensityProfilerFrame(wx.Frame):
         pos = event.GetPosition()
         # Update profiler bead centre.
         self.profiler.setBeadCentre(pos)
-        # Redraw circle to mark bead. Need to translate from pixel to world co-ords.
-        self.circle.SetPoint(self.canvas.PixelToWorld(pos))
         # Update the canvas.
+        self.updateCanvas()
+
+
+    def updateCanvas(self):
+        pos = self.profiler.getBeadCentre()
+        w = self.profiler.getHalfWidth()
+        # Translate from pixel to world co-ords.
+        centre = self.canvas.PixelToWorld(pos)
+        wh = self.canvas.ScalePixelToWorld((w,w))
+        xy = centre - wh
+        # Redraw circle to mark bead.
+        self.circle.SetPoint(centre)
+        # Redraw the rectangle to mark data subset.
+        self.rectangle.SetShape(xy, 2 * wh)
+        # Redraw.
         self.canvas.Draw(Force=True)
+
+    def setBoxSize(self, value):
+        self.profiler.setHalfWidth(value)
+        # Update the canvas.
+        self.updateCanvas()
+
+
 
 
 def main():
