@@ -42,7 +42,8 @@ class IntensityProfiler(object):
     def __init__(self):
         self._data = None
         self._projection = None
-        self._beadCntre = None
+        self._beadCentre = None
+        self._halfWidth = 25
         self._phases = 5
         self.results = None
 
@@ -55,18 +56,19 @@ class IntensityProfiler(object):
             self.guessBeadCentre()
         nPhases = self._phases
         nz, ny, nx = self._data.shape
+        if not self._halfWidth:
+            self.setHalfWidth(min(nx/10, ny/10))
+        halfWidth = self.getHalfWidth()
         peakx, peaky = self._beadCentre
         # Use a the fifth of the data around the bead, or to edge of dataset.
         dataSubset = self._data[:,
-                                max(0, peaky - ny/10) : min(ny, peaky + ny/10),
-                                max(0, peakx - nx/10) : min(nx, peakx + nx/10)]
+                          max(0, peaky-halfWidth):min(ny, peaky+halfWidth),
+                          max(0, peakx-halfWidth):min(nx, peakx+halfWidth)]
         # Estimate background from image corners.
         bkg = np.min([np.mean(self._data[:,:nx/10,:ny/10]),
                       np.mean(self._data[:,:-nx/10,:ny/10]),
                       np.mean(self._data[:,:-nx/10,:-ny/10]),
                       np.mean(self._data[:,:nx/10,:-ny/10])])
-
-        # phaseArr = np.sum(np.sum(self._data - bkg, axis=2), axis=1)
         phaseArr = np.sum(np.sum(dataSubset - bkg, axis=2), axis=1)
         phaseArr = np.reshape(phaseArr, (-1, nPhases)).astype(np.float32)
         sepArr = np.dot(self.sepmatrix(), phaseArr.transpose())
