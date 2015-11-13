@@ -104,6 +104,7 @@ class IntensityProfiler(object):
         """Set data source, clearing invalidated variables."""
         self._data = Mrc.bindFile(filename)
         self.zDelta = self._data.Mrc.hdr.d[-1]
+        self.setHalfWidth(min(self._data.shape[1:])/10)
         self._projection = None
         self._beadCentre = None
         self._results = None
