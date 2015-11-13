@@ -157,14 +157,30 @@ class IntensityProfiler(object):
         return sepmat
 
 
+    def getBeadCentre(self):
+        """Return the bead centre co-ordinates."""
+        return self._beadCentre
+
+
     def setBeadCentre(self, pos):
         """Set the bead centre to a client-provided value."""
         self._beadCentre = pos
 
 
+    def getHalfWidth(self):
+        """Return the box half width."""
+        return self._halfWidth
+
+
+    def setHalfWidth(self, val):
+        """Set the box half width."""
+        self._halfWidth = val
+
+
     def setPhases(self, n):
         """Set the number of phases to use in sepmatrix."""
         self._phases = n
+
 
 
 class IntensityProfilerFrame(wx.Frame):
