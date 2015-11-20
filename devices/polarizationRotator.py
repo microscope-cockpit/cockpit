@@ -68,7 +68,7 @@ class PolarizationDevice(device.Device):
         else:
             idleVoltage = 0
         self.voltages = {n:siVoltages[n] for n in range(len(siVoltages))}
-        self.voltages[None] = idleVoltage
+        self.voltages[None] = float(idleVoltage)
         # Create the handler that drives the analogue line.
         self.lineHandler = executors[0].callbacks['registerAnalogue'](
                     'SI angle line', # axis
