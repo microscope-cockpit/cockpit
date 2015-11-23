@@ -180,8 +180,9 @@ class FilterWheelDevice(device.Device):
         if self.lastPosition != self.curPosition:
             self.updateDrawer()
             dye = self.filters[self.curPosition-1].dye
+            wavelength = self.filters[self.curPosition-1].wavelength or None
             if dye:
-                self.display.SetLabel(dye)
+                self.display.SetLabel('%s (%s)' % (dye, wavelength))
             else:
                 self.display.SetLabel('no filter')
 
@@ -195,7 +196,7 @@ class FilterWheelDevice(device.Device):
 
 
     def menuFunc(self, evt=None):
-        items = ["%d: %s" % (i+1, f.dye) for i, f in enumerate(self.filters)]
+        items = ["%d: %s (%s)" % (i+1, f.dye, f.wavelength) for i, f in enumerate(self.filters)]
         menu = gui.device.Menu(items, self.menuCallback)
         menu.show(evt)
 
