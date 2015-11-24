@@ -144,20 +144,35 @@ class IntensityProfiler(object):
             self.setHalfWidth(min(self._data.shape[1:])/10)
 
 
-    def guessBeadCentre(self):
-        """Estimate the bead centre from position of maximum data value."""
+    def guessBeadCentre(self, refine=True):
+        """Estimate the bead centre from position of maximum data value.
+
+        refine =
+            True: search around current _beadCentre
+            False: search around middle of dataset.
+        """
+        if self._dataSource is None:
+            return
         with self.openData():
-            if self._data is None:
-                return
             nz, ny, nx  = self._data.shape
-            middle = self._data[:,
-                               3*ny / 8 : 5*ny / 8,
-                               3*nx / 8 : 5*nx / 8]
-            slicesize = middle.shape[-1] * middle.shape[-2]
+            if self._beadCentre is None or not refine:
+                # Search around centre of dataset.
+                middle = self._data[:,
+                                    3*ny / 8 : 5*ny / 8,
+                                    3*nx / 8 : 5*nx / 8]
+                xOffset = nx/2 - middle.shape[-1]/2
+                yOffset = ny/2 - middle.shape[-2]/2
+            else:
+                # Search around current _beadCentre.
+                n = 24
+                x0, y0 = self._beadCentre
+                middle = self._data[:,
+                                    y0 - n/2 : y0 + n/2,
+                                    x0 - n/2 : x0 + n/2]
+                xOffset = x0 - n/2
+                yOffset = y0 - n/2
             peakPosition = np.argmax(middle)
             (z, y, x) = np.unravel_index(peakPosition, middle.shape)
-            xOffset = nx/2 - middle.shape[-1]/2
-            yOffset = ny/2 - middle.shape[-2]/2
             self._beadCentre = (x + xOffset, y + yOffset)
             return self._beadCentre
 
