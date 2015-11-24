@@ -27,9 +27,11 @@ as part of another wx app.
 
 from contextlib import contextmanager
 import gc
+from itertools import chain
 import matplotlib.pyplot as plt
 import Mrc
 import numpy as np
+from operator import add
 import sys
 import wx
 from wx.lib.floatcanvas import FloatCanvas
@@ -238,7 +240,6 @@ class IntensityProfiler(object):
         self._phases = n
 
 
-
 class IntensityProfilerFrame(wx.Frame):
     """This class provides a UI for IntensityProfiler."""
     def __init__(self, parent=None):
@@ -270,7 +271,7 @@ class IntensityProfilerFrame(wx.Frame):
                                  min=1,
                                  max=5,
                                  initial=5,
-                                 style = wx.SP_ARROW_KEYS | wx.WANTS_CHARS | wx.TE_PROCESS_ENTER)
+                                 style = wx.SP_ARROW_KEYS | wx.TE_PROCESS_ENTER)
         phasesTool.Bind(wx.EVT_SPINCTRL,
                         lambda event: self.profiler.setPhases(event.GetInt()))
         phasesTool.Bind(wx.EVT_TEXT_ENTER,
@@ -291,13 +292,14 @@ class IntensityProfilerFrame(wx.Frame):
                                  min=10,
                                  max=2**16,
                                  initial=25,
-                                 style = wx.SP_ARROW_KEYS | wx.WANTS_CHARS | wx.TE_PROCESS_ENTER)
+                                 style = wx.SP_ARROW_KEYS | wx.TE_PROCESS_ENTER)
         boxTool.Bind(wx.EVT_TEXT_ENTER,
                         lambda event: self.setBoxSize(event.GetInt()))
         boxTool.Bind(wx.EVT_SPINCTRL,
                         lambda event: self.setBoxSize(event.GetInt()))
         toolbar.AddControl(control=boxTool)
         self.boxTool = boxTool
+        toolbar.AddSeparator()
         # Calculate profile.
         goTool = toolbar.AddSimpleTool(
                         wx.ID_ANY,
@@ -311,13 +313,15 @@ class IntensityProfilerFrame(wx.Frame):
         ## Canvases
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         # Image canvas
-        self.canvas = FloatCanvas.FloatCanvas(self, size=(512,512))
+        self.canvas = FloatCanvas.FloatCanvas(self, size=(512,512),
+                                              style = wx.WANTS_CHARS)
         img = wx.EmptyImage(BITMAP_SIZE[0], BITMAP_SIZE[1], True)
         self.bitmap = self.canvas.AddBitmap(img, (0,0), 'cc', False)
         self.circle = self.canvas.AddCircle((0,0), 10, '#ff0000')
         self.rectangle = self.canvas.AddRectangle((0,0), (20,20), '#ff0000')
         self.canvas.Bind(FloatCanvas.EVT_LEFT_UP, self.onClickCanvas)
         hbox.Add(self.canvas)
+        self.canvas.Bind(wx.EVT_CHAR, self.onKeys)
         # Plot canvas
         self.plotCanvas = plot.PlotCanvas(self, wx.ID_ANY, pos=(-1,-1))
         self.plotCanvas.canvas.Bind(wx.EVT_LEFT_UP, self.onClickPlotCanvas)
@@ -330,11 +334,17 @@ class IntensityProfilerFrame(wx.Frame):
         ## Status bar.
         self.sb = self.CreateStatusBar()
         self.sb.SetFieldsCount(2)
-
+        self.sb.DefaultText = 'Cursors, PgUp/Dn to set box. '        \
+                              '(Shift) space to (global) find bead. '\
+                              'Enter or Return to calculate.'
+        self.sb.SetStatusText(self.sb.DefaultText)
         self.SetSizerAndFit(vbox)
 
+        toolbar.SetToolLongHelp(0, self.sb.DefaultText)
 
-    def calculate(self, event):
+        self.boxTool = boxTool
+
+    def calculate(self, event=None):
         """Calculate the profile."""
         # Check that the profiler has data.
         if not self.profiler.hasData():
@@ -383,7 +393,9 @@ class IntensityProfilerFrame(wx.Frame):
                             wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
+            self.sb.SetStatusText(self.sb.DefaultText)
         else:
+            self.sb.SetStatusText('Cancelled - no data loaded.')
             return
         # Set the profiler data source .
         self.profiler.setDataSource(filename)
@@ -442,10 +454,50 @@ class IntensityProfilerFrame(wx.Frame):
         # Redraw.
         self.canvas.Draw(Force=True)
 
+
     def setBoxSize(self, value):
         self.profiler.setHalfWidth(value)
         # Update the canvas.
         self.updateCanvas()
+
+
+    def onKeys(self, event):
+        keys= {'move': [wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_UP, wx.WXK_DOWN,],
+               'size': [wx.WXK_PAGEDOWN, wx.WXK_PAGEUP],
+               'calc': [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER],
+               'find': [wx.WXK_SPACE, wx.WXK_NUMPAD0, wx.WXK_NUMPAD_DECIMAL],}
+
+        keycode = event.KeyCode
+        keymod = event.GetModifiers()
+        if keycode not in [c for c in chain.from_iterable(keys.values())]:
+            return
+        elif keycode in keys['move']:
+            delta = [1, 6][keymod & wx.MOD_SHIFT > 0]
+            # Map keys to position changes.
+            dPos = {wx.WXK_LEFT:  (-delta, 0),
+                    wx.WXK_RIGHT: (delta, 0),
+                    wx.WXK_DOWN:  (0, delta),
+                    wx.WXK_UP:    (0, -delta),}
+
+            pos = self.profiler.getBeadCentre()
+            newPos = map(add, pos, dPos[keycode])
+
+            self.profiler.setBeadCentre(newPos)
+            self.updateCanvas()
+        elif keycode in keys['size']:
+            if keycode ==  wx.WXK_PAGEUP:
+                delta = [1, 6][keymod & wx.MOD_SHIFT > 0]
+            else:
+                delta = [-1, -6][keymod & wx.MOD_SHIFT > 0]
+            # Update spin control.
+            self.boxTool.SetValue(self.boxTool.GetValue() + delta)
+            # Set the box size. Spin control may limit value so use GetValue.
+            self.setBoxSize(self.boxTool.GetValue())
+        elif keycode in keys['calc']:
+            self.calculate()
+        elif keycode in keys['find']:
+            pos = self.profiler.guessBeadCentre(refine=keymod & wx.MOD_SHIFT == 0)
+            self.updateCanvas()
 
 
 
