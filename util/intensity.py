@@ -25,6 +25,8 @@ as part of another wx app.
 """
 
 
+from contextlib import contextmanager
+import gc
 import matplotlib.pyplot as plt
 import Mrc
 import numpy as np
@@ -41,11 +43,41 @@ class IntensityProfiler(object):
     """A class to profile intensity and store calculation variables."""
     def __init__(self):
         self._data = None
+        self._dataSource = None
         self._projection = None
         self._beadCentre = None
         self._halfWidth = 25
         self._phases = 5
         self.results = None
+
+
+    @contextmanager
+    def openData(self):
+        """A context manager to avoid holding files open.
+
+        Mrc.bindFile uses numpy mem-mapping. The only way to
+        close a mem-mapped file is to delete all references to
+        the memmap object, which will then be cleaned up by
+        the garbage collector.
+        """
+        try:
+            # Test if this is a reentrant call.
+            isOutermostCall = self._data is None
+            if isOutermostCall:
+                src = self._dataSource
+                self._data = Mrc.Mrc(src, 'r').data_withMrc(src)
+            yield
+        except IOError as e:
+            dlg = wx.MessageDialog(wx.GetTopLevelWindows()[0],
+                            "Could not open data file: it may have been moved or deleted.",
+                            caption="IO Error",
+                            style = wx.OK)
+            dlg.ShowModal()
+            yield
+        finally:
+            if isOutermostCall:
+                self._data = None
+                gc.collect()
 
 
     def calculateInstensity(self):
