@@ -82,9 +82,9 @@ class IntensityProfiler(object):
 
     def calculateInstensity(self):
         """Do the calculation."""
-        with self.openData():
-            if self._data is None:
+        if self._dataSource is None:
                 return False
+        with self.openData():
             if self._beadCentre is None:
                 self.guessBeadCentre()
             nPhases = self._phases
