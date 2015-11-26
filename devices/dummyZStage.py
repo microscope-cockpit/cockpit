@@ -14,6 +14,8 @@ class DummyZStage(device.Device):
         # Set priority to Inf to indicate that this is a dummy device.
         self.priority = float('inf')
         self.deviceType = "stage positioner"
+        # Is this device in use?
+        self.active = False
         self.axes = [2]
 
 
@@ -21,6 +23,7 @@ class DummyZStage(device.Device):
         # At this point we would normally get the true stage position from
         # the actual device, but of course we have no such device.
         events.subscribe('user abort', self.onAbort)
+        self.active = True
         pass
         
 
@@ -47,6 +50,8 @@ class DummyZStage(device.Device):
 
     ## Publish our current position.
     def makeInitialPublications(self):
+        if not self.active:
+            return
         axis = 2
         events.publish('stage mover', '%d dummy mover' % axis, axis,
                 self.curPosition)

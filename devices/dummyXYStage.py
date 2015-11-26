@@ -15,6 +15,8 @@ class DummyMoverDevice(device.Device):
         events.subscribe('user abort', self.onAbort)
         # Set priority to Inf to indicate that this is a dummy device.
         self.priority = float('inf')
+        # Is this device in use?
+        self.active = False
         self.deviceType = "stage positioner"
         self.axes = [0,1]
 
@@ -23,6 +25,7 @@ class DummyMoverDevice(device.Device):
         # At this point we would normally get the true stage position from
         # the actual device, but of course we have no such device.
         events.subscribe('user abort', self.onAbort)
+        self.active = True
         pass
         
 
@@ -48,6 +51,8 @@ class DummyMoverDevice(device.Device):
 
     ## Publish our current position.
     def makeInitialPublications(self):
+        if not self.active:
+            return
         for axis in xrange(2):
             events.publish('stage mover', '%d dummy mover' % axis, axis,
                     self.curPosition[axis])
