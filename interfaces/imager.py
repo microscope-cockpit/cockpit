@@ -95,8 +95,8 @@ class Imager:
                 events.executeAndWaitFor("new image %s" % (list(self.activeCameras)[0].name),
                         self.takeImage, 
                         shouldBlock = haveNonRoomLight, shouldStopVideo = False)
-            except Exception, e:
-                print "Video mode failed:",e
+            except Exception as e:
+                print "Video mode failed:", e
                 events.publish('video mode toggle', False)
                 traceback.print_exc()
                 break
