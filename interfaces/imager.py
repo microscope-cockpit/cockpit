@@ -71,9 +71,11 @@ class Imager:
     def videoMode(self):
         if not self.activeCameras:
             # No cameras, no video mode.
+            events.publish('video mode toggle', False)
             return
         if self.amInVideoMode:
             # Just cancel the current video mode.
+            events.publish('video mode toggle', False)
             self.shouldStopVideoMode = True
             self.amInVideoMode = False
             return
@@ -95,6 +97,7 @@ class Imager:
                         shouldBlock = haveNonRoomLight, shouldStopVideo = False)
             except Exception, e:
                 print "Video mode failed:",e
+                events.publish('video mode toggle', False)
                 traceback.print_exc()
                 break
 #            if haveNonRoomLight:
