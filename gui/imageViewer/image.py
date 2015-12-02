@@ -90,7 +90,18 @@ class Image:
         fBias = -self.imageMin / minMaxRange
         f = dtypeToMaxValMap[imgType] / minMaxRange
 
+        if self.textureID is None:
+            raise Exception('Texture was deleted and not rebound.')
+
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.textureID)
+
+        # Texture validation - should not be necessary.
+        # textureWidth = GL.glGetTexLevelParameteriv(GL.GL_TEXTURE_2D, 0, GL.GL_TEXTURE_WIDTH)
+        # textureHeight = GL.glGetTexLevelParameteriv(GL.GL_TEXTURE_2D, 0, GL.GL_TEXTURE_HEIGHT)
+        #if (textureWidth == 0) or (textureHeight == 0):
+        #    # Something happend to our texture. Delete and regenerate it.
+        #    self.wipe()
+        #    self.bindTexture()
 
         GL.glPixelTransferf(GL.GL_RED_SCALE,   f)
         GL.glPixelTransferf(GL.GL_GREEN_SCALE, f)
@@ -156,6 +167,7 @@ class Image:
     ## Free the allocated GL texture
     def wipe(self):
         GL.glDeleteTextures(self.textureID)
+        self.textureID = None
    
 
     ## Accept a new array of image data.
