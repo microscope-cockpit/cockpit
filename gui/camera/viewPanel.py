@@ -148,6 +148,9 @@ class ViewPanel(wx.Panel):
 
 
     ## Enable the specified camera.
+    # Need to disable video mode to prevent errors that seem to be due
+    # to updating a canvas before it has been created and sized.
+    @maintainVideoMode
     def enableCamera(self, camera):
         self.selector.SetLabel(camera.descriptiveName)
         self.selector.SetBackgroundColour(camera.color)
