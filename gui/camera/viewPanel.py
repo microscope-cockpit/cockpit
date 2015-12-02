@@ -157,7 +157,6 @@ class ViewPanel(wx.Panel):
         self.selector.Refresh()
         self.curCamera = camera
         self.curCamera.setEnabled(True)
-        events.subscribe("new image %s" % self.curCamera.name, self.onImage)
         events.publish('camera enable', self.curCamera, True)
 
         # NB the 512 here is the largest texture size our graphics card can
@@ -167,7 +166,9 @@ class ViewPanel(wx.Panel):
                 mouseHandler = self.onMouse)
         self.canvas.SetSize((VIEW_WIDTH, VIEW_HEIGHT))
         self.canvas.resetView()
-        
+
+        # Subscribe to new image events only after canvas is prepared.
+        events.subscribe("new image %s" % self.curCamera.name, self.onImage)
 
     ## React to the drawer changing, by updating our labels and colors.
     def onDrawerChange(self, drawerHandler):
