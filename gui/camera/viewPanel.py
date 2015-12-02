@@ -1,4 +1,5 @@
 import numpy
+import time
 import traceback
 import wx
 
@@ -7,6 +8,7 @@ import events
 import gui.guiUtils
 import gui.imageViewer.viewCanvas
 import interfaces.stageMover
+import interfaces.imager
 import util.logger
 
 ## Default viewer dimensions.
@@ -108,6 +110,13 @@ class ViewPanel(wx.Panel):
 
     ## Deactivate our current camera.
     def disableCamera(self, event = None):
+        # Need to ensure video mode is disabled.
+        wasInVideoMode = interfaces.imager.isVideoRunning()
+        if wasInVideoMode:
+            interfaces.imager.stopVideo()
+            while interfaces.imager.isVideoRunning():
+                time.sleep(0.1)
+
         self.selector.SetLabel("No camera")
         self.selector.SetBackgroundColour((180, 180, 180))
         self.selector.Refresh()
@@ -128,6 +137,8 @@ class ViewPanel(wx.Panel):
             self.canvas.clear(shouldDestroy = True)
             self.canvas = None
 
+        if wasInVideoMode:
+            interfaces.imager.videoMode()
 
     ## Enable the specified camera.
     def enableCamera(self, camera):
