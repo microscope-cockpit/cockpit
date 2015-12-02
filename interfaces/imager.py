@@ -84,6 +84,8 @@ class Imager:
         self.shouldStopVideoMode = False
         self.amInVideoMode = True
         while not self.shouldStopVideoMode:
+            if not self.activeLights:
+                break
             haveNonRoomLight = False
             for light in self.activeLights:
                 if light.name != 'Ambient light':
