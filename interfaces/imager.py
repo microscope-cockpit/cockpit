@@ -153,3 +153,10 @@ def takeImage(shouldBlock = False):
 def videoMode():
     imager.videoMode()
         
+
+def stopVideo():
+    imager.stopVideo()
+
+
+def isVideoRunning():
+    return imager.amInVideoMode
