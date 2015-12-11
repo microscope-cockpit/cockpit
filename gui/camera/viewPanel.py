@@ -1,4 +1,5 @@
 import numpy
+import time
 import traceback
 import wx
 
@@ -7,10 +8,26 @@ import events
 import gui.guiUtils
 import gui.imageViewer.viewCanvas
 import interfaces.stageMover
+import interfaces.imager
 import util.logger
 
 ## Default viewer dimensions.
 (VIEW_WIDTH, VIEW_HEIGHT) = (512, 552)
+
+def maintainVideoMode(function):
+    def wrappedFunc(*args, **kwargs):
+        # Need to ensure video mode is disabled.
+        wasInVideoMode = interfaces.imager.isVideoRunning()
+        if wasInVideoMode:
+            interfaces.imager.stopVideo()
+            while interfaces.imager.isVideoRunning():
+                time.sleep(0.1)
+        result = function(*args, **kwargs)
+        # Re-enable video mode
+        if wasInVideoMode:
+            interfaces.imager.videoMode()
+        return result
+    return wrappedFunc
 
 ## This class provides an interface for a single camera. It includes a
 # button at the top to select which camera to use, a viewing area to display
@@ -107,6 +124,7 @@ class ViewPanel(wx.Panel):
 
 
     ## Deactivate our current camera.
+    @maintainVideoMode
     def disableCamera(self, event = None):
         self.selector.SetLabel("No camera")
         self.selector.SetBackgroundColour((180, 180, 180))
@@ -130,13 +148,15 @@ class ViewPanel(wx.Panel):
 
 
     ## Enable the specified camera.
+    # Need to disable video mode to prevent errors that seem to be due
+    # to updating a canvas before it has been created and sized.
+    @maintainVideoMode
     def enableCamera(self, camera):
         self.selector.SetLabel(camera.descriptiveName)
         self.selector.SetBackgroundColour(camera.color)
         self.selector.Refresh()
         self.curCamera = camera
         self.curCamera.setEnabled(True)
-        events.subscribe("new image %s" % self.curCamera.name, self.onImage)
         events.publish('camera enable', self.curCamera, True)
 
         # NB the 512 here is the largest texture size our graphics card can
@@ -146,7 +166,9 @@ class ViewPanel(wx.Panel):
                 mouseHandler = self.onMouse)
         self.canvas.SetSize((VIEW_WIDTH, VIEW_HEIGHT))
         self.canvas.resetView()
-        
+
+        # Subscribe to new image events only after canvas is prepared.
+        events.subscribe("new image %s" % self.curCamera.name, self.onImage)
 
     ## React to the drawer changing, by updating our labels and colors.
     def onDrawerChange(self, drawerHandler):
