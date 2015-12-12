@@ -438,8 +438,10 @@ class MosaicWindow(wx.Frame):
         if size is None:
             xSize = ySize = 100000
         x, y = position
-        x = x-self.offset[0]
-        y = y-self.offset[1]
+        #if no offset defined we can't apply it!
+        if self.offset:
+            x = x-self.offset[0]
+            y = y-self.offset[1]
 
         # Draw the crosshairs
         glColor3f(*color)
