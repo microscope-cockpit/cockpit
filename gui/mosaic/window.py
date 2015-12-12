@@ -439,7 +439,7 @@ class MosaicWindow(wx.Frame):
             xSize = ySize = 100000
         x, y = position
         #if no offset defined we can't apply it!
-        if self.offset:
+        if self.offset is not None:
             x = x-self.offset[0]
             y = y-self.offset[1]
 
