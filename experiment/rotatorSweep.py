@@ -22,6 +22,9 @@ class RotatorSweepExperiment(experiment.Experiment):
         # Look up the rotator analogue line handler.
         self.lineHandler = angleHandler.getLineHandler()
         self.vRange = (startV, maxV, vSteps)
+        vDelta = float(maxV - startV) / vSteps
+        # Add voltage parameters to the metadata.
+        self.metadata = 'Rotator start and delta: [%f, %f]' % (startV, vDelta)
 
 
     ## Create the ActionTable needed to run the experiment.
