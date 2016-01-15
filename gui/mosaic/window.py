@@ -374,11 +374,12 @@ class MosaicWindow(wx.Frame):
         for safeties, color, stipple in [(softSafeties, (0, 1, 0), 0x5555),
                                          (hardSafeties, (0, 0, 1), 0xAAAA)]:
             x1, x2 = safeties[0]
-            x1 -=  self.offset[0]
-            x2 -=  self.offset[0]
             y1, y2 = safeties[1]
-            y1 -=  self.offset[1]
-            y2 -=  self.offset[1]
+            if hasattr (self, 'offset'):
+                x1 -=  self.offset[0]
+                x2 -=  self.offset[0]
+                y1 -=  self.offset[1]
+                y2 -=  self.offset[1]
             glLineStipple(3, stipple)
             glColor3f(*color)
             glBegin(GL_LINE_LOOP)
@@ -438,8 +439,10 @@ class MosaicWindow(wx.Frame):
         if size is None:
             xSize = ySize = 100000
         x, y = position
-        x = x-self.offset[0]
-        y = y-self.offset[1]
+        #if no offset defined we can't apply it!
+        if hasattr(self, 'offset'):
+            x = x-self.offset[0]
+            y = y-self.offset[1]
 
         # Draw the crosshairs
         glColor3f(*color)
