@@ -525,9 +525,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         coords[0] = self.GetClientSize()[1] - coords[0] - HISTOGRAM_HEIGHT
         # Apply zoom
         shape = numpy.array(self.imageShape)
-        coords -= shape / 2.0
+        coords = coords - ( shape / 2.0)
         coords /= self.zoom
-        coords += shape / 2.0
+        coords = coords + (shape / 2.0)
         # Apply pan
         coords -= [self.panY, self.panX]
         if numpy.all(coords < shape) and numpy.all(coords >= 0):
