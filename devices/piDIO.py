@@ -7,6 +7,8 @@ import collections
 import Pyro4
 import wx
 import re
+import threading
+import time
 
 from config import config
 CLASS_NAME = 'RaspberryPi'
@@ -53,12 +55,20 @@ class RaspberryPi(device.Device):
         ## Maps light modes to the mirror settings for those modes, as a list
         #IMD 20140806
         self.modeToFlips = collections.OrderedDict()
-        self.modeToFlips['Conventional'] = [(2, True),(3,True)]
-        self.modeToFlips['Structured Illumination'] = [(2, False),(3,False)]
+        self.modeToFlips['Conventional'] = [(0, True)]
+        self.modeToFlips['Structured Illumination'] = [(0, False)]
 
         self.lightPathButtons = []
         ## Current light path mode.
         self.curExMode = None
+
+        # A thread to publish status updates.
+        # This reads temperature updates from the RaspberryPi
+        self.statusThread = threading.Thread(target=self.updateStatus)
+        self.statusThread.Daemon = True
+        self.statusThread.start()
+
+        
 
         ## Connect to the remote program, and set widefield mode.
     def initialize(self):
@@ -144,14 +154,32 @@ class RaspberryPi(device.Device):
     def onObjectiveChange(self, name, pixelSize, transform, offset):
         if (name=='10x'):
             self.flipDownUp(0, 1)
-            self.flipDownUp(1, 0)
         elif (name=='60xwater'):
             self.flipDownUp(0, 0)
-            self.flipDownUp(1, 1)
         else: #default behaviour, mapping objective
             self.flipDownUp(0, 1)
-            self.flipDownUp(1, 0)
         print "piDIO objective change"
+
+    #function to read temperature at set update frequency. 
+    def updateStatus(self):
+        """Runs in a separate thread publish status updates."""
+        updatePeriod = 10.0
+        temperature = None
+        while True:
+            if self.RPiConnection:
+                try:
+                    temperature = self.RPiConnection.get_temperature()
+                except:
+                    ## There is a communication issue. It's not this thread's
+                    # job to fix it. Set temperature to None to avoid bogus
+                    # data.
+                    temperature = None
+            events.publish("status update",
+                           'RPi',
+                           {'temperature': temperature,})
+            time.sleep(updatePeriod)
+
+
 
 
 ## This debugging window lets each digital lineout of the DSP be manipulated
@@ -194,6 +222,7 @@ class piOutputWindow(wx.Frame):
                 self.pi.RPiConnection.flipDownUp(line, 0)
 
 
+                
 ## Debugging function: display a DSPOutputWindow.
 def makeOutputWindow(self):
     # HACK: the _deviceInstance object is created by the depot when this
