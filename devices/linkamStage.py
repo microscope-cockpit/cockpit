@@ -41,6 +41,7 @@ CLASS_NAME = 'CockpitLinkamStage'
 CONFIG_NAME = 'linkam'
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
 DEFAULT_LIMITS = ((0, 0), (11000, 3000))
+TEMPERATURE_LOGGING = False
 
 class CockpitLinkamStage(device.Device):
     def __init__(self):
@@ -61,6 +62,8 @@ class CockpitLinkamStage(device.Device):
         self.sendingPositionUpdates = False
         ## Status dict updated by remote.
         self.status = {}
+        ## Flag to show UI has been built.
+        self.hasUI = False
 
         self.isActive = config.has_section(CONFIG_NAME)
         if self.isActive:
@@ -84,27 +87,43 @@ class CockpitLinkamStage(device.Device):
             events.subscribe('user abort', self.onAbort)
 
 
-    @util.threads.locked
     def finalizeInitialization(self):
         """Finalize device initialization."""
-        ## Open an incoming connection with the remote object.
-        # Used for status updates.
-        server = depot.getHandlersOfType(depot.SERVER)[0]
-        uri = server.register(self.receiveStatus)
-        self.remote.setClient(uri)
+        self.statusThread = threading.Thread(target=self.pollStatus)
+        self.statusThread.start()
 
 
-    def receiveStatus(self, status):
-        """Called when the remote sends a status update."""
-        self.status.update(status)
-        if not status.get('connected', None):
-            # The stage is disconnected: values are bogus - set them to None.
-            keys = set(self.status.keys()).difference(set(['connected']))
-            self.status.update(map(lambda k: (k, None), keys))
-        events.publish("status update", __name__, self.status)
-        # Send position updates in case stage has been moved with paddle.
-        self.sendPositionUpdates()
-        self.updateUI()
+    def pollStatus(self):
+        """Fetch the status from the remote and update the UI.
+
+        Formerly, the remote periodically pushed status to a cockpit
+        server. This caused frequent Pyro timeout errors when cockpit
+        was busy doing other things.
+        """
+        while True:
+            status = self.remote.getStatus()
+            if not status.get('connected', None):
+                keys = set(status.keys()).difference(set(['connected']))
+                self.status.update(map(lambda k: (k, None), keys))
+            else:
+                self.status.update(status)
+            events.publish("status update", __name__, self.status)
+            self.sendPositionUpdates()
+            self.updateUI()
+            time.sleep(1)
+
+            if not TEMPERATURE_LOGGING:
+                continue
+
+            newTemps = '%.1f\t%.1f\t%.1f' % (self.status.get('dewarT'),
+                                             self.status.get('chamberT'),
+                                             self.status.get('bridgeT'))
+            if not hasattr(self, 'lastTemps'):
+                self.lastTemps = ''
+            if self.lastTemps != newTemps:
+                with open('linkLog.txt', 'a') as f:
+                    f.write('%f\t%s\n' % (self.status.get('time'), newTemps))
+                self.lastTemps = newTemps
 
 
     def initialize(self):
@@ -194,6 +213,7 @@ class CockpitLinkamStage(device.Device):
 
         ## Set the panel sizer and return.
         panel.SetSizerAndFit(sizer)
+        self.hasUI = True
         return panel
 
 
@@ -322,6 +342,9 @@ class CockpitLinkamStage(device.Device):
 
     def updateUI(self):
         """Update user interface elements."""
+        if not self.hasUI:
+            # UI not built yet
+            return
         status = self.status
         self.elements['bridge'].updateValue(self.status.get('bridgeT'))
         self.elements['chamber'].updateValue(self.status.get('chamberT'))
