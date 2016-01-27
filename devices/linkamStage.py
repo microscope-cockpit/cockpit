@@ -90,7 +90,7 @@ class CockpitLinkamStage(device.Device):
     def finalizeInitialization(self):
         """Finalize device initialization."""
         self.statusThread = threading.Thread(target=self.pollStatus)
-        self.statusThread.start()
+        events.subscribe('cockpit initialization complete', self.statusThread.start)
 
 
     def pollStatus(self):
@@ -101,7 +101,13 @@ class CockpitLinkamStage(device.Device):
         was busy doing other things.
         """
         while True:
-            status = self.remote.getStatus()
+            time.sleep(1)
+            try:
+                status = self.remote.getStatus()
+            except Pyro4.errors.ConnectionClosedError:
+                # Some dumb Pyro bug.
+                continue
+
             if not status.get('connected', None):
                 keys = set(status.keys()).difference(set(['connected']))
                 self.status.update(map(lambda k: (k, None), keys))
@@ -110,7 +116,6 @@ class CockpitLinkamStage(device.Device):
             events.publish("status update", __name__, self.status)
             self.sendPositionUpdates()
             self.updateUI()
-            time.sleep(1)
 
             if not TEMPERATURE_LOGGING:
                 continue
