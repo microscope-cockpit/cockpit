@@ -26,7 +26,7 @@ import Pyro4
 from config import CAMERAS
 
 CLASS_NAME = 'SoftCameraManager'
-SUPPORTED_CAMERAS = ['flycap2']
+SUPPORTED_CAMERAS = ['flycap2','picam']
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFTWARE) = range(4)
