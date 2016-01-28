@@ -22,7 +22,7 @@ import events
 import interfaces.valueLogger
 import gui.guiUtils
 import gui.keyboard
-import util.logging
+import util.files
 import matplotlib
 import matplotlib.dates
 matplotlib.use('WXAgg')
@@ -36,6 +36,7 @@ import threading
 import time
 import wx
 import datetime
+import os
 
 
 USER_CONFIG_ENTRY = 'ValueLogger.showKeys'
@@ -259,7 +260,7 @@ class ValueLoggerWindow(wx.Frame):
         """Open a log file"""
         if self.filehandle is None:
             interfaces.valueLogger.instance.filehandle=open(
-                generateLogFilename,'w')
+                self.generateLogFilename(),'w')
             self.filehandle=interfaces.valueLogger.instance.filehandle
         else:
             #file already open
