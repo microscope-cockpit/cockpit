@@ -85,8 +85,6 @@ class ValueLoggerWindow(wx.Frame):
 
         ## Subscribe to new logged values available events.
         events.subscribe("valuelogger update", self.draw)
-        ## subscribe to individual events to log them to a file.
-        events.subscribe("status update", self.logValues)
         ## Subscribe to user login events.
         events.subscribe("user login", self.loadShowKeysFromConfig)
 
@@ -260,15 +258,17 @@ class ValueLoggerWindow(wx.Frame):
         if self.filehandle is None:
             timestr=datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             filename="ValueLog"+timestr+".log"
-            self.filehandle=open(filename,'w')
+            interfaces.valueLogger.instance.filehandle=open(filename,'w')
+            self.filehandle=interfaces.valueLogger.instance.filehandle
         else:
             #file already open
+			pass
         
 
     def closeLogFile(self):
         """Close the open logfile"""
         if self.filehandle is not None:
-            self.filehandle.close
+            interfaces.valueLogger.instance.filehandle.close
             self.filehandle=None
 
 
