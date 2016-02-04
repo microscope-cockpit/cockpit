@@ -26,17 +26,32 @@ import threading
 import device
 import events
 import interfaces.stageMover
-import _winreg as winreg
-from ctypes.wintypes import WORD, UINT, DWORD
-from ctypes.wintypes import WCHAR as TCHAR
+
+#patch from David to stop it breaking when not on windows. 
+import os
+if os.name is 'nt':
+    import _winreg as winreg
+    from ctypes.wintypes import WORD, UINT, DWORD
+    from ctypes.wintypes import WCHAR as TCHAR
+else:
+    from ctypes import c_ushort as WORD
+    from ctypes import c_uint as UINT
+    from ctypes import c_ulong as DWORD
+    from ctypes import c_wchar as TCHAR
 
 CLASS_NAME = 'WindowsJoystickDevice'
 
 # Fetch function pointers
-joyGetNumDevs = ctypes.windll.winmm.joyGetNumDevs
-joyGetPos = ctypes.windll.winmm.joyGetPos
-joyGetPosEx = ctypes.windll.winmm.joyGetPosEx
-joyGetDevCaps = ctypes.windll.winmm.joyGetDevCapsW
+if os.name is 'nt':
+    joyGetNumDevs = ctypes.windll.winmm.joyGetNumDevs
+    joyGetPos = ctypes.windll.winmm.joyGetPos
+    joyGetPosEx = ctypes.windll.winmm.joyGetPosEx
+    joyGetDevCaps = ctypes.windll.winmm.joyGetDevCapsW
+else:
+    joyGetNumDevs = lambda : 0
+
+#end of patch from David
+
 
 # Define constants
 MAXPNAMELEN = 32
@@ -121,7 +136,7 @@ class WindowsJoystickDevice(device.Device):
         self.isActive = True
         self.priority = 100
         # Get the number of supported devices (usually 16).
-        num_devs = joyGetNumDevs()
+        self.num_devs = joyGetNumDevs()
         # Number of the joystick to open.
         joy_id = 0
         # Check if the joystick is plugged in.
@@ -166,12 +181,16 @@ class WindowsJoystickDevice(device.Device):
         self.enable_read = True
 
     def initialize(self):
-        ## Prepare a thread the reads joystick data and dispatches move events accordingly.
-        self.joystickThread = threading.Thread(target = self.readJoystickThread)
-        events.subscribe("cockpit initialization complete", self.start)
-        events.subscribe("stage position", self.onStageMoved)
-        events.subscribe("stage stopped", self.onStageStopped)
+        ##test to see if we have a joystick
+        if (self.num_devs > 0):
+            ## Prepare a thread the reads joystick data and dispatches move events accordingly.
+            self.joystickThread = threading.Thread(target = self.readJoystickThread)
+            events.subscribe("cockpit initialization complete", self.start)
+            events.subscribe("stage position", self.onStageMoved)
+            events.subscribe("stage stopped", self.onStageStopped)
 
+        else:
+            pass
 
     def onStageMoved(self, axis, target):
         self.enable_read = False
@@ -182,8 +201,11 @@ class WindowsJoystickDevice(device.Device):
         
 
     def start(self):
-        self.joystickThread.start()
-
+        if (self.num_devs >0):
+            self.joystickThread.start()
+        else:
+            pass
+        
 
     def readJoystickThread(self):
         # Fetch new joystick data until it returns non-0 (that is, it has been unplugged)
