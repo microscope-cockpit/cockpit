@@ -10,7 +10,7 @@ import util.logger
 
 import macroStageBase
 
-CIRCLE_SEGMENTS = 12
+CIRCLE_SEGMENTS = 32
 
 ## This class shows a high-level view of where the stage is in XY space, and
 # how it will move when controlled by the keypad. It includes displays
@@ -93,6 +93,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
     # - When moving, a blue arrow indicating our direction of motion
     # - A purple dot for each saved site
     # - A black dot for each tile in the mosaic
+    # - Device-defined primitives, e.g. to show individual sample locations.
     def onPaint(self, event = None):
         if not self.shouldDraw:
             return
@@ -178,6 +179,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glDisable(GL_LINE_STIPPLE)
 
             # Draw device-specific primitives.
+            glEnable(GL_LINE_STIPPLE)
+            glLineStipple(1, 0xAAAA)
+            glColor3f(0.4, 0.4, 0.4)
             primitives = interfaces.stageMover.getPrimitives()
             for p in primitives:
                 if p.type in ['c', 'C']:
@@ -187,7 +191,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 if p.type in ['r', 'R']:
                     # rectangle: x0, y0, width, height
                     self.drawScaledRectangle(*p.data)
-
+            glDisable(GL_LINE_STIPPLE)
 
             # Draw stage position
             motorPos = self.curStagePosition[:2]
