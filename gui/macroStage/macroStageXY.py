@@ -171,8 +171,12 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             primitives = interfaces.stageMover.getPrimitives()
             for p in primitives:
                 if p.type in ['c', 'C']:
+                    # circle: x0, y0, radius
                     self.drawScaledCircle(p.data[0], p.data[1], 
                                           p.data[2], CIRCLE_SEGMENTS)
+                if p.type in ['r', 'R']:
+                    # rectangle: x0, y0, width, height
+                    self.drawScaledRectangle(*p.data)
 
 
             # Draw stage position
