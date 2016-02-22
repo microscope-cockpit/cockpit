@@ -40,16 +40,26 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.stageHeight = self.maxY - self.minY
         ## Max of X or Y stage extents.
         self.maxExtent = max(self.stageWidth, self.stageHeight)
+        ## X and Y view extent.
+        if self.stageHeight > self.stageWidth:
+            self.viewExtent = 1.2 * self.stageHeight
+            self.viewDeltaY = self.stageHeight * 0.1
+        else:
+            self.viewExtent = 1.05 * self.stageWidth
+            self.viewDeltaY = self.stageHeight * 0.05
         # Push out the min and max values a bit to give us some room around
         # the stage to work with. In particular we need space below the display
         # to show our legend.
-        self.minX -= self.stageWidth * .05
-        self.maxX += self.stageWidth * .05
-        self.minY -= self.stageHeight * .2
-        self.maxY += self.stageHeight * .05
+        self.centreX = abs(self.maxX - self.minX) / 2
+        self.centreY = abs(self.maxY - self.minY) / 2
+        self.minX = self.centreX - self.viewExtent / 2
+        self.maxX = self.centreX + self.viewExtent / 2
+        self.minY = self.centreY - self.viewExtent / 2 - self.viewDeltaY
+        self.maxY = self.centreY + self.viewExtent / 2 - self.viewDeltaY
+
         ## Amount of vertical space, in stage coordinates, to allot to one
         # line of text.
-        self.textLineHeight = self.stageHeight * .05
+        self.textLineHeight = self.viewExtent * .05
         ## Size of text to draw. I confess I don't really understand how this
         # corresponds to anything, but it seems to work out.
         self.textSize = .004
@@ -222,14 +232,14 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glColor3f(0, 0, 0)
             glLineWidth(1)
             glBegin(GL_LINES)
-            yOffset = self.minY + self.stageHeight * .175
+            yOffset = self.minY + 0.9 * (self.viewDeltaY + 0.5 * (self.viewExtent - self.stageHeight))
             self.scaledVertex(hardLimits[0][0], yOffset)
             self.scaledVertex(hardLimits[0][1], yOffset)
             # Draw notches in the scale bar every 1mm.
             for scaleX in xrange(int(hardLimits[0][0]), int(hardLimits[0][1]) + 1000, 1000):
-                width = self.stageHeight * .025
+                width = self.viewExtent * .015
                 if scaleX % 5000 == 0:
-                    width = self.stageHeight * .05
+                    width = self.viewExtent * .025
                 y1 = yOffset - width / 2
                 y2 = yOffset + width / 2
                 self.scaledVertex(scaleX, y1)
@@ -239,8 +249,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
             # Draw stage coordinates. Use a different color for the mover
             # currently under keypad control.
-            coordsLoc = (self.maxX - self.stageWidth * .05, 
-                    self.minY + self.stageHeight * .1)
+            coordsLoc = (self.maxX - self.viewExtent * .05,
+                    self.minY + self.viewExtent * .1)
             allPositions = interfaces.stageMover.getAllPositions()
             curControl = interfaces.stageMover.getCurHandlerIndex()
             for axis in [0, 1]:
@@ -248,14 +258,14 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 if stepSizes[axis] is None:
                     step = 0
                 positions = [p[axis] for p in allPositions]
-                self.drawStagePosition(['X:', 'Y:'][axis], 
-                        positions, curControl, step, 
-                        (coordsLoc[0], coordsLoc[1] - axis * self.textLineHeight), 
-                        self.stageWidth * .25, self.stageWidth * .05, 
+                self.drawStagePosition(['X:', 'Y:'][axis],
+                        positions, curControl, step,
+                        (coordsLoc[0], coordsLoc[1] - axis * self.textLineHeight),
+                        self.viewExtent * .25, self.viewExtent * .05,
                         self.textSize)
 
             events.publish('macro stage xy draw', self)
-            
+
             glFlush()
             self.SwapBuffers()
             # Set the event, so our refreshWaiter() can update
