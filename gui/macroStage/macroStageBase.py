@@ -249,3 +249,18 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
             x = cosTheta * x - sinTheta * y
             y = sinTheta * xOld + cosTheta * y
         glEnd()
+
+
+    ## Draw a rectangle centred on x0, y0 of width w and height h.
+    def drawScaledRectangle(self, x0, y0, w, h):
+        dw = w / 2.
+        dh = h / 2.
+        ps = [(x0-dw, y0-dh),
+              (x0+dw, y0-dh),
+              (x0+dw, y0+dh),
+              (x0-dw, y0+dh)]
+
+        glBegin(GL_LINE_LOOP)
+        for i in xrange(-1, 4):
+            self.scaledVertex(*ps[i])
+        glEnd()
