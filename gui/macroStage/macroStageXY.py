@@ -25,7 +25,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.shouldDrawMosaic = True
         ## True if we're in the processing of changing the soft motion limits.
         self.amSettingSafeties = False
-        ## Position the mouse first clicked when setting safeties, or None if 
+        ## Position the mouse first clicked when setting safeties, or None if
         # we aren't setting safeties.
         self.firstSafetyMousePos = None
         ## Last seen mouse position
@@ -105,7 +105,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             self.SetCurrent(self.context)
 
             glViewport(0, 0, self.width, self.height)
-            
+
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             squareOffsets = [(0, 0), (0, 1), (1, 1), (1, 0)]
@@ -165,14 +165,14 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 self.scaledVertex(secondVertex[0], secondVertex[1])
             glEnd()
             glLineWidth(1)
-            # Now the coordinates. Only draw them if the soft limits aren't 
+            # Now the coordinates. Only draw them if the soft limits aren't
             # the hard limits, to avoid clutter.
             hardLimits = interfaces.stageMover.getHardLimits()[:2]
             if safeties != hardLimits:
                 for i, (dx, dy) in enumerate([(4000, -700), (2000, 400)]):
                     x = softLimits[i][0]
                     y = softLimits[i][1]
-                    self.drawTextAt((x + dx, y + dy), 
+                    self.drawTextAt((x + dx, y + dy),
                             "(%d, %d)" % (x, y), size = self.textSize * .75)
 
             glDisable(GL_LINE_STIPPLE)
@@ -182,7 +182,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             for p in primitives:
                 if p.type in ['c', 'C']:
                     # circle: x0, y0, radius
-                    self.drawScaledCircle(p.data[0], p.data[1], 
+                    self.drawScaledCircle(p.data[0], p.data[1],
                                           p.data[2], CIRCLE_SEGMENTS)
                 if p.type in ['r', 'R']:
                     # rectangle: x0, y0, width, height
@@ -216,8 +216,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             delta = motorPos - self.prevStagePosition[:2]
 
             if sum(numpy.fabs(delta)) > macroStageBase.MIN_DELTA_TO_DISPLAY:
-                self.drawArrow(motorPos, delta, (0, 0, 1), 
-                        arrowSize = self.maxExtent * .1, 
+                self.drawArrow(motorPos, delta, (0, 0, 1),
+                        arrowSize = self.maxExtent * .1,
                         arrowHeadSize = self.maxExtent * .025)
                 glLineWidth(1)
 
@@ -326,7 +326,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         #properly.  Should really check to see if we can move, and by that
         #distance with exisiting mover
         interfaces.stageMover.mover.curHandlerIndex = 0
-        
+
         interfaces.stageMover.goToXY(self.remapClick(event.GetPosition()))
 
         #make sure we are back to the expected mover
@@ -336,7 +336,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         position = interfaces.stageMover.getPosition()
         values=gui.dialogs.getNumberDialog.getManyNumbersFromUser(
                 self.GetParent(),
-                "Go To XYZ",('X','Y','Z'), 
+                "Go To XYZ",('X','Y','Z'),
                 position,
                 atMouse=True)
         newPos=[float(values[0]),float(values[1]),float(values[2])]
@@ -360,7 +360,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         interfaces.stageMover.mover.curHandlerIndex = originalHandlerIndex
         return True
 
-		
+
     ## Right-clicked the mouse. Toggle drawing of the mosaic tiles
     def OnRightDoubleClick(self, event):
         self.shouldDrawMosaic = not self.shouldDrawMosaic
