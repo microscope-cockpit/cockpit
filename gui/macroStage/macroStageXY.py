@@ -10,7 +10,7 @@ import util.logger
 
 import macroStageBase
 
-
+CIRCLE_SEGMENTS = 12
 
 ## This class shows a high-level view of where the stage is in XY space, and
 # how it will move when controlled by the keypad. It includes displays
@@ -73,7 +73,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         if axis in [0, 1]:
             wx.CallAfter(self.Refresh)
 
-        
+
     ## Draw the canvas. We draw the following:
     # - A blue dotted square representing the hard stage limits of
     #   [(4000, 4000), (25000, 25000)]
@@ -166,6 +166,14 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                             "(%d, %d)" % (x, y), size = self.textSize * .75)
 
             glDisable(GL_LINE_STIPPLE)
+
+            # Draw device-specific primitives.
+            primitives = interfaces.stageMover.getPrimitives()
+            for p in primitives:
+                if p.type in ['c', 'C']:
+                    self.drawScaledCircle(p.data[0], p.data[1], 
+                                          p.data[2], CIRCLE_SEGMENTS)
+
 
             # Draw stage position
             motorPos = self.curStagePosition[:2]
