@@ -3,6 +3,8 @@ import events
 
 import numpy
 import threading
+from collections import namedtuple
+
 
 ## Stage movement threshold (previously a hard-coded value).
 # There can be problems when this doesn't match a corresponding threshold
@@ -65,6 +67,8 @@ def deserializeSite(line):
     result.uniqueID = id
     return result
 
+# A class to store data for drawing primitives on the macrostage.
+Primitive = namedtuple('Primitive', ['device', 'type', 'data'])
 
 
 ## This class provides an interface between the rest of the UI and the Devices
@@ -83,6 +87,13 @@ class StageMover:
         self.nameToStoppedEvent = {}
         events.subscribe("stage mover", self.onMotion)
         events.subscribe("stage stopped", self.onStop)
+        ## Device-speficic primitives to draw on the macrostage.
+        self.primitives = set()
+        for h in depot.getHandlersOfType(depot.STAGE_POSITIONER):
+            ps = h.getPrimitives()
+            if ps:
+                self.primitives.update(ps) 
+        self.primitives.discard(None)
 
 
     ## Handle one of our devices moving. We just republish an abstracted
