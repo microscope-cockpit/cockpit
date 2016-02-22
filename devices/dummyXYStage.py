@@ -42,11 +42,20 @@ class DummyMoverDevice(device.Device):
                     'getPosition': self.getPosition, 
                     'getMovementTime': self.getMovementTime,
                     'cleanupAfterExperiment': self.cleanup,
-                    'setSafety': self.setSafety},
+                    'setSafety': self.setSafety,
+                    'getPrimitives': self.getPrimitives},
                 axis, [.01, .05, .1, .5, 1, 5, 10, 50, 100, 500, 1000, 5000],
                 2, (minVal, maxVal), (minVal, maxVal))
             result.append(handler)
         return result
+
+
+    def getPrimitives(self):
+        from interfaces.stageMover import Primitive
+        primitives = [Primitive(self, 'c', (5000, 6000, 3000)),
+                      Primitive(self, 'c', (20000, 6000, 3000)),
+                      Primitive(self, 'r', (12500, 6000, 3000, 3000))]
+        return primitives
 
 
     ## Publish our current position.
