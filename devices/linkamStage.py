@@ -24,7 +24,7 @@ import gui.guiUtils
 import gui.device
 import gui.toggleButton
 import handlers.stagePositioner
-import interfaces
+from interfaces.stageMover import Primitive
 import Pyro4
 import threading
 import util.logger as logger
@@ -91,6 +91,13 @@ class CockpitLinkamStage(device.Device):
         """Finalize device initialization."""
         self.statusThread = threading.Thread(target=self.pollStatus)
         events.subscribe('cockpit initialization complete', self.statusThread.start)
+
+
+    def getPrimitives(self):
+        primitives = [Primitive(self, 'c', (9000, 1500, 1500)), 
+                      Primitive(self, 'c', (5000, 1500, 1500)),
+                      Primitive(self, 'c', (1000, 1500, 1500))]
+        return primitives
 
 
     def pollStatus(self):
@@ -166,7 +173,8 @@ class CockpitLinkamStage(device.Device):
                     {'moveAbsolute': self.moveAbsolute,
                          'moveRelative': self.moveRelative,
                          'getPosition': self.getPosition,
-                         'setSafety': self.setSafety},
+                         'setSafety': self.setSafety, 
+                         'getPrimitives': self.getPrimitives},
                     axis,
                     [1, 2, 5, 10, 50, 100, 200], # step sizes
                     3, # initial step size index,
