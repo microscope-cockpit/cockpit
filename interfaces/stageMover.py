@@ -164,6 +164,18 @@ def makeInitialPublications():
 ## Various module-global functions for interacting with the objects in the 
 # Mover.
 
+def addPrimitive(*args):
+    mover.primitives.add(Primitive(*args))
+
+
+def getPrimitives():
+    return mover.primitives
+
+
+def removePrimitivesByDevice(device):
+    mover.primitives = set([m for m in mover.primitives
+                                    if m.device != device])
+
 
 ## Move one step with the current active handler in the specified direction(s).
 # \param direction A tuple/list of length equal to the number of axes of 
