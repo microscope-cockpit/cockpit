@@ -34,7 +34,7 @@ class DummyMoverDevice(device.Device):
     def getHandlers(self):
         result = []
         for axis, (minVal, maxVal) in enumerate(
-                [(0, 25000), (0, 25000)]):
+                [(0, 25000), (0, 12000)]):
             handler = handlers.stagePositioner.PositionerHandler(
                 "%d dummy mover" % axis, "%d stage motion" % axis, True, 
                 {'moveAbsolute': self.moveAbsolute,
