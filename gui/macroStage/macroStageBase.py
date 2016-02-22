@@ -12,6 +12,8 @@ import util.logger
 
 from cockpit import COCKPIT_PATH
 
+PI = 3.1415926
+
 ## @package gui.macroStage
 # This module contains the MacroStageBase base class, used by the MacroStageXY
 # and MacroStageZ classes, as well as some shared constants.
@@ -46,7 +48,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.shouldDraw = True
         ## Font for drawing text
         try:
-            path = os.path.join(COCKPIT_PATH, 'resources', 
+            path = os.path.join(COCKPIT_PATH, 'resources',
                                 'fonts', 'GeosansLight.ttf')
             self.font = FTGL.TextureFont(path)
             self.font.FaceSize(18)
@@ -92,7 +94,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         events.subscribe("stage step size", self.onStepSizeChange)
         events.subscribe("stage step index", self.onStepIndexChange)
 
-        
+
     ## Set up some set-once things for OpenGL.
     def initGL(self):
         (self.width, self.height) = self.GetClientSizeTuple()
@@ -231,3 +233,19 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
                 drawLoc[1]),
                 "step: %4.2fum" % stepSize, size = textSize)
 
+
+    ## Draw a circle of radius r centred on x0, y0 with n segments.
+    def drawScaledCircle(self, x0, y0, r, n):
+        dTheta = 2. * PI / n
+        cosTheta = numpy.cos(dTheta)
+        sinTheta = numpy.sin(dTheta)
+        x = r
+        y = 0.
+
+        glBegin(GL_LINE_LOOP)
+        for i in xrange(n):
+            self.scaledVertex(x0 + x, y0 + y)
+            xOld = x
+            x = cosTheta * x - sinTheta * y
+            y = sinTheta * xOld + cosTheta * y
+        glEnd()
