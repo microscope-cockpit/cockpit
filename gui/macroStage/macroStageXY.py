@@ -10,7 +10,7 @@ import util.logger
 
 import macroStageBase
 
-
+CIRCLE_SEGMENTS = 32
 
 ## This class shows a high-level view of where the stage is in XY space, and
 # how it will move when controlled by the keypad. It includes displays
@@ -25,7 +25,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.shouldDrawMosaic = True
         ## True if we're in the processing of changing the soft motion limits.
         self.amSettingSafeties = False
-        ## Position the mouse first clicked when setting safeties, or None if 
+        ## Position the mouse first clicked when setting safeties, or None if
         # we aren't setting safeties.
         self.firstSafetyMousePos = None
         ## Last seen mouse position
@@ -40,16 +40,26 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.stageHeight = self.maxY - self.minY
         ## Max of X or Y stage extents.
         self.maxExtent = max(self.stageWidth, self.stageHeight)
+        ## X and Y view extent.
+        if self.stageHeight > self.stageWidth:
+            self.viewExtent = 1.2 * self.stageHeight
+            self.viewDeltaY = self.stageHeight * 0.1
+        else:
+            self.viewExtent = 1.05 * self.stageWidth
+            self.viewDeltaY = self.stageHeight * 0.05
         # Push out the min and max values a bit to give us some room around
         # the stage to work with. In particular we need space below the display
         # to show our legend.
-        self.minX -= self.stageWidth * .05
-        self.maxX += self.stageWidth * .05
-        self.minY -= self.stageHeight * .2
-        self.maxY += self.stageHeight * .05
+        self.centreX = abs(self.maxX - self.minX) / 2
+        self.centreY = abs(self.maxY - self.minY) / 2
+        self.minX = self.centreX - self.viewExtent / 2
+        self.maxX = self.centreX + self.viewExtent / 2
+        self.minY = self.centreY - self.viewExtent / 2 - self.viewDeltaY
+        self.maxY = self.centreY + self.viewExtent / 2 - self.viewDeltaY
+
         ## Amount of vertical space, in stage coordinates, to allot to one
         # line of text.
-        self.textLineHeight = self.stageHeight * .05
+        self.textLineHeight = self.viewExtent * .05
         ## Size of text to draw. I confess I don't really understand how this
         # corresponds to anything, but it seems to work out.
         self.textSize = .004
@@ -73,7 +83,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         if axis in [0, 1]:
             wx.CallAfter(self.Refresh)
 
-        
+
     ## Draw the canvas. We draw the following:
     # - A blue dotted square representing the hard stage limits of
     #   [(4000, 4000), (25000, 25000)]
@@ -83,6 +93,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
     # - When moving, a blue arrow indicating our direction of motion
     # - A purple dot for each saved site
     # - A black dot for each tile in the mosaic
+    # - Device-defined primitives, e.g. to show individual sample locations.
     def onPaint(self, event = None):
         if not self.shouldDraw:
             return
@@ -95,7 +106,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             self.SetCurrent(self.context)
 
             glViewport(0, 0, self.width, self.height)
-            
+
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             squareOffsets = [(0, 0), (0, 1), (1, 1), (1, 0)]
@@ -155,16 +166,31 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 self.scaledVertex(secondVertex[0], secondVertex[1])
             glEnd()
             glLineWidth(1)
-            # Now the coordinates. Only draw them if the soft limits aren't 
+            # Now the coordinates. Only draw them if the soft limits aren't
             # the hard limits, to avoid clutter.
             hardLimits = interfaces.stageMover.getHardLimits()[:2]
             if safeties != hardLimits:
                 for i, (dx, dy) in enumerate([(4000, -700), (2000, 400)]):
                     x = softLimits[i][0]
                     y = softLimits[i][1]
-                    self.drawTextAt((x + dx, y + dy), 
+                    self.drawTextAt((x + dx, y + dy),
                             "(%d, %d)" % (x, y), size = self.textSize * .75)
 
+            glDisable(GL_LINE_STIPPLE)
+
+            # Draw device-specific primitives.
+            glEnable(GL_LINE_STIPPLE)
+            glLineStipple(1, 0xAAAA)
+            glColor3f(0.4, 0.4, 0.4)
+            primitives = interfaces.stageMover.getPrimitives()
+            for p in primitives:
+                if p.type in ['c', 'C']:
+                    # circle: x0, y0, radius
+                    self.drawScaledCircle(p.data[0], p.data[1],
+                                          p.data[2], CIRCLE_SEGMENTS)
+                if p.type in ['r', 'R']:
+                    # rectangle: x0, y0, width, height
+                    self.drawScaledRectangle(*p.data)
             glDisable(GL_LINE_STIPPLE)
 
             # Draw stage position
@@ -194,8 +220,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             delta = motorPos - self.prevStagePosition[:2]
 
             if sum(numpy.fabs(delta)) > macroStageBase.MIN_DELTA_TO_DISPLAY:
-                self.drawArrow(motorPos, delta, (0, 0, 1), 
-                        arrowSize = self.maxExtent * .1, 
+                self.drawArrow(motorPos, delta, (0, 0, 1),
+                        arrowSize = self.maxExtent * .1,
                         arrowHeadSize = self.maxExtent * .025)
                 glLineWidth(1)
 
@@ -210,14 +236,14 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glColor3f(0, 0, 0)
             glLineWidth(1)
             glBegin(GL_LINES)
-            yOffset = self.minY + self.stageHeight * .175
+            yOffset = self.minY + 0.9 * (self.viewDeltaY + 0.5 * (self.viewExtent - self.stageHeight))
             self.scaledVertex(hardLimits[0][0], yOffset)
             self.scaledVertex(hardLimits[0][1], yOffset)
             # Draw notches in the scale bar every 1mm.
             for scaleX in xrange(int(hardLimits[0][0]), int(hardLimits[0][1]) + 1000, 1000):
-                width = self.stageHeight * .025
+                width = self.viewExtent * .015
                 if scaleX % 5000 == 0:
-                    width = self.stageHeight * .05
+                    width = self.viewExtent * .025
                 y1 = yOffset - width / 2
                 y2 = yOffset + width / 2
                 self.scaledVertex(scaleX, y1)
@@ -227,8 +253,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
             # Draw stage coordinates. Use a different color for the mover
             # currently under keypad control.
-            coordsLoc = (self.maxX - self.stageWidth * .05, 
-                    self.minY + self.stageHeight * .1)
+            coordsLoc = (self.maxX - self.viewExtent * .05,
+                    self.minY + self.viewExtent * .1)
             allPositions = interfaces.stageMover.getAllPositions()
             curControl = interfaces.stageMover.getCurHandlerIndex()
             for axis in [0, 1]:
@@ -236,14 +262,14 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 if stepSizes[axis] is None:
                     step = 0
                 positions = [p[axis] for p in allPositions]
-                self.drawStagePosition(['X:', 'Y:'][axis], 
-                        positions, curControl, step, 
-                        (coordsLoc[0], coordsLoc[1] - axis * self.textLineHeight), 
-                        self.stageWidth * .25, self.stageWidth * .05, 
+                self.drawStagePosition(['X:', 'Y:'][axis],
+                        positions, curControl, step,
+                        (coordsLoc[0], coordsLoc[1] - axis * self.textLineHeight),
+                        self.viewExtent * .25, self.viewExtent * .05,
                         self.textSize)
 
             events.publish('macro stage xy draw', self)
-            
+
             glFlush()
             self.SwapBuffers()
             # Set the event, so our refreshWaiter() can update
@@ -304,7 +330,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         #properly.  Should really check to see if we can move, and by that
         #distance with exisiting mover
         interfaces.stageMover.mover.curHandlerIndex = 0
-        
+
         interfaces.stageMover.goToXY(self.remapClick(event.GetPosition()))
 
         #make sure we are back to the expected mover
@@ -314,7 +340,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         position = interfaces.stageMover.getPosition()
         values=gui.dialogs.getNumberDialog.getManyNumbersFromUser(
                 self.GetParent(),
-                "Go To XYZ",('X','Y','Z'), 
+                "Go To XYZ",('X','Y','Z'),
                 position,
                 atMouse=True)
         newPos=[float(values[0]),float(values[1]),float(values[2])]
@@ -338,7 +364,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         interfaces.stageMover.mover.curHandlerIndex = originalHandlerIndex
         return True
 
-		
+
     ## Right-clicked the mouse. Toggle drawing of the mosaic tiles
     def OnRightDoubleClick(self, event):
         self.shouldDrawMosaic = not self.shouldDrawMosaic
