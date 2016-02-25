@@ -16,16 +16,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 =============================================================================
 Cockpit-side module for Linkam stages. Tested with CMS196.
+
+Uses config section 'linkam' with following parameters:
+  ipAddress:    address of pyLinkam remote
+  port:         port that remote is listening on
+  primitives:   list of _c_ircles and _r_ectangles to draw on MacroStageXY 
+                view, defining one per line as
+                    c x0 y0 radius
+                    r x0 y0 width height
 """
 import depot
-import device
 import events
 import gui.guiUtils
 import gui.device
 import gui.toggleButton
 import handlers.stagePositioner
-from interfaces.stageMover import Primitive
 import Pyro4
+import stage
 import threading
 import util.logger as logger
 import util.threads
@@ -43,9 +50,10 @@ LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d
 DEFAULT_LIMITS = ((0, 0), (11000, 3000))
 TEMPERATURE_LOGGING = False
 
-class CockpitLinkamStage(device.Device):
+class CockpitLinkamStage(stage.StageDevice):
+    CONFIG_NAME = CONFIG_NAME
     def __init__(self):
-        device.Device.__init__(self)
+        super(CockpitLinkamStage, self).__init__()
         ## Connection to the XY stage controller (serial.Serial instance).
         self.remote = None
         ## Lock around sending commands to the XY stage controller.
@@ -91,13 +99,6 @@ class CockpitLinkamStage(device.Device):
         """Finalize device initialization."""
         self.statusThread = threading.Thread(target=self.pollStatus)
         events.subscribe('cockpit initialization complete', self.statusThread.start)
-
-
-    def getPrimitives(self):
-        primitives = [Primitive(self, 'c', (9000, 1500, 1500)), 
-                      Primitive(self, 'c', (5000, 1500, 1500)),
-                      Primitive(self, 'c', (1000, 1500, 1500))]
-        return primitives
 
 
     def pollStatus(self):
