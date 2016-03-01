@@ -187,6 +187,8 @@ class MainWindow(wx.Frame):
         # device code feels like adding.
         for light in lightToggles:
             lightPanel = wx.Panel(self.bottomPanel)
+            # Enable double-buffering so StaticText labels don't flicker.
+            lightPanel.SetDoubleBuffered(True)
             self.lightToPanel[light] = lightPanel
             columnSizer = wx.BoxSizer(wx.VERTICAL)
             haveOtherHandler = False
