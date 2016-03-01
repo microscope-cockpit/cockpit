@@ -195,7 +195,7 @@ class Experiment:
         interfaces.stageMover.mover.curHandlerIndex = zCurIndex
         #find curren pisition and requires movement.
         currentZ = interfaces.stageMover.getPositionForAxis(2)
-        zMovement = zBottom - currentZ
+        zMovement = self.zBottom - currentZ
         
         while ( ((interfaces.stageMover.getAllPositions()[zCurIndex][2]
                + zMovement ) > zHardLimits[zCurIndex][1]) or
@@ -206,7 +206,7 @@ class Experiment:
             #check we still have handlers to use.
             if (zCurIndex < 0 ):
                 raise RuntimeError("Not able to move to start Z positon [%d]."
-                                   % zBottom)
+                                   % self.zBottom)
             #are they eligible for experiments?
             handler = interfaces.stageMove.mover.axisToHandlers[2][zCurIndex]
             if not handler.getIsEligibleForExperiments():
