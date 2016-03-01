@@ -197,9 +197,9 @@ class Experiment:
         currentZ = interfaces.stageMover.getPositionForAxis(2)
         zMovement = zBottomm - currentZ
         
-        while ( ((interfaces.stageMover.getAllPositions().[zCurIndex][2]
+        while ( ((interfaces.stageMover.getAllPositions()[zCurIndex][2]
                + zMovement ) > zHardLimits[zCurIndex][1]) or
-            ((interfaces.stageMover.getAllPositions().[zCurIndex][2]
+            ((interfaces.stageMover.getAllPositions()[zCurIndex][2]
               + zMovement ) < zHardLimits[zCurIndex][0])):
             #cant reach with current handler so move to next biggest.
             zCurIndex -= 1
