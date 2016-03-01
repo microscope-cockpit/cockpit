@@ -552,10 +552,16 @@ class MosaicWindow(wx.Frame):
                 # Camera may have been deactivated.
                 self.exitMosaicLoop()
                 raise
+            pos=interfaces.stageMover.getPosition()
             events.executeAndWaitFor('mosaic canvas paint', 
                     self.canvas.addImage, data, 
-                    (-prevPosition[0] - width / 2, 
-                        prevPosition[1] - height / 2, curZ),
+                    # This assumes perfect positioning.
+                    #(-prevPosition[0] - width / 2,
+                    #    prevPosition[1] - height / 2, curZ),
+                    # Use the actual position, instead.
+                    ( -pos[0] - self.offset[0] - width/2,
+                      pos[1] - self.offset[1] - height/2,
+                      curZ,) ,
                     (width, height), scalings = (minVal, maxVal),
                     shouldRefresh = True)
             # Move to the next position in shifted coords.
