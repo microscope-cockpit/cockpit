@@ -69,6 +69,22 @@ class ToggleButton(wx.StaticText):
         wx.StaticText.SetLabel(self, newText, *args, **kwargs)
 
 
+    ## Update the button to match known state.
+    def updateState(self, isActive):
+        if isActive == self.isActive:
+            # Do nothing if state is correct.
+            return
+        if isActive:
+            color = self.activeColor
+            label = self.activeLabel or self.baseLabel
+        else:
+            color = self.inactiveColor
+            label = self.inactiveLabel or self.baseLabel
+        self.SetBackgroundColour(color)
+        self.SetLabel(label)
+        self.Refresh()
+
+
     ## Activate or deactivate based on the passed-in boolean
     def setActive(self, shouldActivate, extraText = ''):
         if shouldActivate:

@@ -309,6 +309,12 @@ class BoulderSLMDevice(device.Device):
             parms = None
         if parms:
             display.SetLabel(baseStr % parms)
+        isPowered = self.connection.get_power()
+        self.elements['powerButton'].updateState(isPowered)
+        if isPowered:
+            self.elements['triggerButton'].Enable()
+        else:
+            self.elements['triggerButton'].Disable()
         # Dispatch a call in new thread to fetch new values for next time
         self.updatePosition()
 
