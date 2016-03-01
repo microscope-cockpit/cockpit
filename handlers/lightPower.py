@@ -23,7 +23,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     # \param color Color to use in the UI to represent this light source.
     # \param isEnabled True iff the handler can be interacted with.
     # \param units Units to use to describe the power; defaults to "mW".
-    def __init__(self, name, groupName, callbacks, wavelength, 
+    def __init__(self, name, groupName, callbacks, wavelength,
             minPower, maxPower, curPower, color, isEnabled = True,
             units = 'mW'):
         deviceHandler.DeviceHandler.__init__(self, name, groupName,
@@ -63,8 +63,8 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     # power.
     def makeUI(self, parent):
         sizer = wx.BoxSizer(wx.VERTICAL)
-        button = gui.toggleButton.ToggleButton(inactiveColor = self.color, 
-                textSize = 12, label = self.name, size = (120, 80), 
+        button = gui.toggleButton.ToggleButton(inactiveColor = self.color,
+                textSize = 12, label = self.name, size = (120, 80),
                 parent = parent)
         # Respond to clicks on the button.
         wx.EVT_LEFT_DOWN(button, lambda event: self.makeMenu(parent))

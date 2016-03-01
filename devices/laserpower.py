@@ -17,7 +17,7 @@ limitations under the License.
 
 Handles communication with Deepstar and Cobalt device (or any laser that
 implements the required remote interface).  It doesn't create any LightSource
-handlers (those are created by the DSP device), but it does create the 
+handlers (those are created by the DSP device), but it does create the
 LightPowerHandlers. """
 
 import Pyro4
@@ -43,7 +43,7 @@ class LaserPowerDevice(device.Device):
         device.Device.__init__(self)
         ## IP address of the computer which talks to the lasers.
         self.ipAddress = config.get('lights', 'ipAddress')
-        
+
         ## Map wavelength to tuple(port, laser type).
         self.lights = {}
         for label, light in LIGHTS.iteritems():
@@ -104,7 +104,7 @@ class LaserPowerDevice(device.Device):
             self.nameToConnection[label] = Pyro4.Proxy(uri)
             # If the light config has minPower, use that, otherwise default to 1mW.
             minPower = light.get('minPower') or 1
-            # Just set maxPwer and curPower to zero. 
+            # Just set maxPwer and curPower to zero.
             # Reading them here only works if the laser is on, delays startup,
             # and _pollPower will update these soon enough, anyway.
             curPower = 0
@@ -117,7 +117,7 @@ class LaserPowerDevice(device.Device):
                     {
                         'setPower': self.setLaserPower
                     },
-                    light['wavelength'], 
+                    light['wavelength'],
                     minPower, maxPower, curPower,
                     light['color'],
                     isEnabled = isPowered)
@@ -130,7 +130,7 @@ class LaserPowerDevice(device.Device):
             self.nameToIsEnabled[label] = isEnabled
         self.hLock.release()
         return result
-                        
+
 
     ## Things to do when cockpit exits.
     def onExit(self):
@@ -159,7 +159,7 @@ class LaserPowerDevice(device.Device):
             # Light source is already in the desired state; no need to do
             # anything.
             return
-        
+
         connection = self.nameToConnection[label]
         if isEnabled:
             # Ensure that the LightPower handler has appropriate settings.
