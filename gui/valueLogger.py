@@ -22,6 +22,7 @@ import events
 import interfaces.valueLogger
 import gui.guiUtils
 import gui.keyboard
+import util.files
 import matplotlib
 import matplotlib.dates
 matplotlib.use('WXAgg')
@@ -34,6 +35,9 @@ import util.userConfig
 import threading
 import time
 import wx
+import datetime
+import os
+
 
 USER_CONFIG_ENTRY = 'ValueLogger.showKeys'
 
@@ -48,6 +52,10 @@ class ValueLoggerWindow(wx.Frame):
         self.lines = {}
         ## A mapping of name to labels.
         self.labels = {}
+        ## A filehandle to use for logging values to file.
+        self.filehandle = interfaces.valueLogger.instance.filehandle
+        ## Flag to say if we are logging values to file or not. 
+        self.logToFile = False
         ## matplotlib objects
         self.figure = Figure()
         self.axes = self.figure.add_subplot(111)
@@ -112,6 +120,16 @@ class ValueLoggerWindow(wx.Frame):
         i = 0
         menu.Append(i, 'Save to user config.')
         wx.EVT_MENU(menu, i, lambda event:self.saveShowKeysToConfig())
+        i += 1
+        #if no logfile open then show openlogfile option
+        if self.filehandle==None:
+            menu.Append(i, 'Open logfile.')
+            wx.EVT_MENU(menu, i, lambda event:self.openLogFile())
+        else:
+            #close logfile option
+            menu.Append(i, 'Close logfile.')
+            wx.EVT_MENU(menu, i, lambda event:self.closeLogFile())
+
         i += 1
         menu.AppendSeparator()
         for key, enabled in sorted(self.showKeys.items() ):
@@ -235,6 +253,32 @@ class ValueLoggerWindow(wx.Frame):
     def toggleShowKey(self, key):
         """Toggle the state of an entry in showKeys."""
         self.showKeys[key] = not self.showKeys[key]
+        
+
+    # File logging code.
+    def openLogFile(self):
+        """Open a log file"""
+        if self.filehandle is None:
+            interfaces.valueLogger.instance.filehandle=open(
+                self.generateLogFilename(),'w')
+            self.filehandle=interfaces.valueLogger.instance.filehandle
+        else:
+            #file already open
+			pass
+        
+
+    def closeLogFile(self):
+        """Close the open logfile"""
+        if self.filehandle is not None:
+            interfaces.valueLogger.instance.filehandle.close
+            self.filehandle=None
+
+    def generateLogFilename(self):
+        timestr=datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        filename="ValueLog"+timestr+".log"
+        filename = os.path.join(util.files.getLogDir(), filename)
+        return filename
+
         
 
 def makeWindow(parent):

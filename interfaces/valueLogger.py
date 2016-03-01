@@ -61,6 +61,8 @@ class ValueLogger(object):
         self.currentValues = {}
         ## Logged data series.
         self.series = {}
+        #filehandle for loggin to file
+        self.filehandle = None
         ## Time points for logged data series.
         self.times = deque(maxlen=self.historyLength)
         ## Last time at which point added to series.
@@ -88,6 +90,7 @@ class ValueLogger(object):
             if device not in self.series:
                 self.series[device] = deque(len(self.times) * [None],
                                             maxlen=self.historyLength)
+
         elif isinstance(data, types.ListType):
             # Data is a list of values. Map device name and integer to data.
             formatstr = '%s:%%.%dd' % (data, len(str(len(data))))
@@ -105,6 +108,10 @@ class ValueLogger(object):
                 if key not in self.series:
                     self.series[key] = deque(len(self.times) * [None],
                                              maxlen=self.historyLength)
+                #output value to logfile with timestamp
+                if self.filehandle is not None:
+                    timestamp=datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+                    self.filehandle.write(timestamp+', '+key+', '+str(value)+'\n')
         elif data is None:
             ## Device has published 'None': data for this device is
             # no longer current, so update the currentValues dict.
