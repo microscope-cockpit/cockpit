@@ -228,6 +228,7 @@ class LaserPowerDevice(device.Device):
 
 
     ## Set the power of a supported laser.
+    #@util.threads.callInNewThread
     @util.threads.locked
     @util.threads.callInNewThread
     def setLaserPower(self, name, val):
