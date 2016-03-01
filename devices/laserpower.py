@@ -17,7 +17,7 @@ limitations under the License.
 
 Handles communication with Deepstar and Cobalt device (or any laser that
 implements the required remote interface).  It doesn't create any LightSource
-handlers (those are created by the DSP device), but it does create the 
+handlers (those are created by the DSP device), but it does create the
 LightPowerHandlers. """
 
 import Pyro4
@@ -43,7 +43,7 @@ class LaserPowerDevice(device.Device):
         device.Device.__init__(self)
         ## IP address of the computer which talks to the lasers.
         self.ipAddress = config.get('lights', 'ipAddress')
-        
+
         ## Map wavelength to tuple(port, laser type).
         self.lights = {}
         for label, light in LIGHTS.iteritems():
@@ -56,6 +56,8 @@ class LaserPowerDevice(device.Device):
         ## Maps LightPower names to software connections on the Drill
         # computer.
         self.nameToConnection = {}
+        ## Map names to asynchronous connections
+        self.nameToAsync = {}
         ## Maps LightPower names to whether or not the corresponding
         # LightSource handler is currently enabled.
         self.nameToIsEnabled = {}
@@ -72,23 +74,52 @@ class LaserPowerDevice(device.Device):
 
 
     def _pollPower(self):
+        # Use asyncrhonous proxies so that comms delays occur in parallel.
         while True:
-            # Require hLock to prevent changes of nameToHandler dict.
+            asyncs = self.nameToAsync
+            with self.hLock:
+                powers = {}
+                setPoints = {}
+                for name, async in asyncs.iteritems():
+                    try:
+                        # Fetch current powers.
+                        powers[name] = async.getPower_mW()
+                        setPoints[name] = async.getSetPower_mW()
+                    except Pyro4.errors.PyroError:
+                        pass
+            # Wait for all calls to return.
+            for p in powers.itervalues():
+                p.wait()
+            for s in setPoints.itervalues():
+                s.wait()
             with self.hLock:
                 for name, h in self.nameToHandler.iteritems():
-                    try:
-		        h.setCurPower(self.nameToConnection[name].getPower_mW())
-		    except:
-		        # Comms error.
-			pass
+                    if name in powers:
+                        try:
+                            power = float(powers[name].value)
+                        except:
+                            # Got junk back.
+                            power = None
+                    else:
+                        power = None
+                    if name in setPoints:
+                        try:
+                            setPoint = float(setPoints[name].value)
+                        except:
+                            # Got junk back.
+                            setPoint = None
+                    else:
+                        setPoint = None
+                    h.setCurPower(power)
+                    h.powerSetPoint = setPoint
                     # Populate maxPower if not already set.
                     if not h.maxPower:
+                        maxPower = self.nameToConnection[name].getMaxPower_mW()
                         try:
-			    maxPower = self.nameToConnection[name].getMaxPower_mW()
                             h.setMaxPower(maxPower)
                             h.setMinPower(maxPower / h.numPowerLevels)
-			except:
-			    pass
+                        except:
+                            pass
             time.sleep(0.1)
 
 
@@ -101,10 +132,12 @@ class LaserPowerDevice(device.Device):
         #self.powerControl = depot.getDevice(devices.powerButtons)
         for label, light in self.lights.items():
             uri = 'PYRO:%s@%s:%d' % (light['device'], self.ipAddress, light['port'])
-            self.nameToConnection[label] = Pyro4.Proxy(uri)
+            proxy = Pyro4.Proxy(uri)
+            self.nameToConnection[label] = proxy
+            self.nameToAsync[label] = Pyro4.async(proxy)
             # If the light config has minPower, use that, otherwise default to 1mW.
             minPower = light.get('minPower') or 1
-            # Just set maxPwer and curPower to zero. 
+            # Just set maxPwer and curPower to zero.
             # Reading them here only works if the laser is on, delays startup,
             # and _pollPower will update these soon enough, anyway.
             curPower = 0
@@ -117,7 +150,7 @@ class LaserPowerDevice(device.Device):
                     {
                         'setPower': self.setLaserPower
                     },
-                    light['wavelength'], 
+                    light['wavelength'],
                     minPower, maxPower, curPower,
                     light['color'],
                     isEnabled = isPowered)
@@ -130,7 +163,7 @@ class LaserPowerDevice(device.Device):
             self.nameToIsEnabled[label] = isEnabled
         self.hLock.release()
         return result
-                        
+
 
     ## Things to do when cockpit exits.
     def onExit(self):
@@ -159,7 +192,7 @@ class LaserPowerDevice(device.Device):
             # Light source is already in the desired state; no need to do
             # anything.
             return
-        
+
         connection = self.nameToConnection[label]
         if isEnabled:
             # Ensure that the LightPower handler has appropriate settings.
@@ -195,8 +228,9 @@ class LaserPowerDevice(device.Device):
 
 
     ## Set the power of a supported laser.
+    #@util.threads.callInNewThread
     @util.threads.locked
-    @util.threads.callInNewThread
     def setLaserPower(self, name, val):
         label = name.strip(' power')
-        self.nameToConnection[label].setPower_mW(val)
+        if label in self.nameToConnection:
+            self.nameToConnection[label].setPower_mW(val)

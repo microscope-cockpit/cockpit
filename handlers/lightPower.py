@@ -23,7 +23,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     # \param color Color to use in the UI to represent this light source.
     # \param isEnabled True iff the handler can be interacted with.
     # \param units Units to use to describe the power; defaults to "mW".
-    def __init__(self, name, groupName, callbacks, wavelength, 
+    def __init__(self, name, groupName, callbacks, wavelength,
             minPower, maxPower, curPower, color, isEnabled = True,
             units = 'mW'):
         deviceHandler.DeviceHandler.__init__(self, name, groupName,
@@ -32,6 +32,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         self.minPower = minPower
         self.maxPower = maxPower
         self.curPower = curPower
+        self.powerSetPoint = None
         self.color = color
         self.isEnabled = isEnabled
         self.units = units
@@ -63,8 +64,8 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     # power.
     def makeUI(self, parent):
         sizer = wx.BoxSizer(wx.VERTICAL)
-        button = gui.toggleButton.ToggleButton(inactiveColor = self.color, 
-                textSize = 12, label = self.name, size = (120, 80), 
+        button = gui.toggleButton.ToggleButton(inactiveColor = self.color,
+                textSize = 12, label = self.name, size = (120, 80),
                 parent = parent)
         # Respond to clicks on the button.
         wx.EVT_LEFT_DOWN(button, lambda event: self.makeMenu(parent))
@@ -165,10 +166,30 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     ## Update our laser power display.
     def updateDisplay(self):
         # Show current power on the text display, if it exists.
+        if self.powerSetPoint and self.curPower:
+            matched = 0.95*self.powerSetPoint < self.curPower < 1.05*self.powerSetPoint
+        else:
+            matched = False
+
+        label = ''
+
+        if self.powerSetPoint is None:
+            label += "SET: ???%s\n" % (self.units)
+        else:
+            label += "SET: %.1f%s\n" % (self.powerSetPoint, self.units)
+
+        if self.curPower is None:
+            label += "OUT: ???%s" % (self.units)
+        else:
+            label += "OUT: %.1f%s" % (self.curPower, self.units)
+
         if self.powerText:
-            label = "%.1f%s" % (self.curPower, self.units)
-            if self.powerText.GetLabel() != label:
-                self.powerText.SetLabel(label)
+            self.powerText.SetLabel(label)
+            if matched:
+                self.powerText.SetBackgroundColour('#99FF99')
+            else:
+                self.powerText.SetBackgroundColour('#FF7777')
+
         # Enable or disable the powerToggle button, if it exists.
         if self.powerToggle:
             self.powerToggle.Enable(self.maxPower and self.isEnabled)
