@@ -185,7 +185,37 @@ class Experiment:
         # Ensure that we're the only ones moving things around.
         interfaces.stageMover.waitForStop()
         # Prepare our position.
-        interfaces.stageMover.goToZ(self.zBottom, shouldBlock = True)
+        # check if handler can't do experiments drop to finer zpos handler
+        # and move to z bottom. If this isnt possible generate an exception.
+        zOrigIndex = interfaces.stageMover.mover.curHandlerIndex
+        #check if finer controller exists. 
+        zHardLimits = interfaces.stageMover.getIndividualHardLimits(2)
+        #Set handle to the highest (ie smallest motion) 
+        zCurIndex = len(zHardLimits)-1
+        interfaces.stageMover.mover.curHandlerIndex = zCurIndex
+        #find curren pisition and requires movement.
+        currentZ = interfaces.stageMover.getPositionForAxis(2)
+        zMovement = zBottomm - currentZ
+        
+        while ( ((interfaces.stageMover.getAllPositions().[zCurIndex][2]
+               + zMovement ) > zHardLimits[zCurIndex][1]) or
+            ((interfaces.stageMover.getAllPositions().[zCurIndex][2]
+              + zMovement ) < zHardLimits[zCurIndex][0])):
+            #cant reach with current handler so move to next biggest.
+            zCurIndex -= 1
+            #check we still have handlers to use.
+            if (zCurIndex < 0 ):
+                raise RuntimeError("Not able to move to start Z positon [%d]."
+                                   % zBottom)
+            #are they eligible for experiments?
+            handler = interfaces.stageMove.mover.axisToHandlers[2][zCurIndex]
+            if not handler.getIsEligibleForExperiments():
+                raise RuntimeError("Handler [%s] is not usable in experiments."
+                                   % handler.name)
+        interfaces.stageMover.goToZ(self.zBottom,shouldblock = True)
+        #make sure we are back to the expected mover
+        interfaces.stageMover.mover.curHandlerIndex = zOrigIndex
+
         events.publish('prepare for experiment', self)
         # Prepare cameras.
         for camera in self.cameras:
