@@ -230,7 +230,7 @@ class LaserPowerDevice(device.Device):
     ## Set the power of a supported laser.
     #@util.threads.callInNewThread
     @util.threads.locked
-    @util.threads.callInNewThread
     def setLaserPower(self, name, val):
         label = name.strip(' power')
-        self.nameToConnection[label].setPower_mW(val)
+        if label in self.nameToConnection:
+            self.nameToConnection[label].setPower_mW(val)
