@@ -195,7 +195,7 @@ class Experiment:
         interfaces.stageMover.mover.curHandlerIndex = zCurIndex
         #find curren pisition and requires movement.
         currentZ = interfaces.stageMover.getPositionForAxis(2)
-        zMovement = zBottomm - currentZ
+        zMovement = zBottom - currentZ
         
         while ( ((interfaces.stageMover.getAllPositions()[zCurIndex][2]
                + zMovement ) > zHardLimits[zCurIndex][1]) or
