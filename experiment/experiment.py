@@ -212,7 +212,7 @@ class Experiment:
             if not handler.getIsEligibleForExperiments():
                 raise RuntimeError("Handler [%s] is not usable in experiments."
                                    % handler.name)
-        interfaces.stageMover.goToZ(self.zBottom,shouldblock = True)
+        interfaces.stageMover.goToZ(self.zBottom,shouldBlock = True)
         #make sure we are back to the expected mover
         interfaces.stageMover.mover.curHandlerIndex = zOrigIndex
 
