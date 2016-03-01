@@ -166,10 +166,30 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     ## Update our laser power display.
     def updateDisplay(self):
         # Show current power on the text display, if it exists.
+        if self.powerSetPoint and self.curPower:
+            matched = 0.95*self.powerSetPoint < self.curPower < 1.05*self.powerSetPoint
+        else:
+            matched = False
+
+        label = ''
+
+        if self.powerSetPoint is None:
+            label += "SET: ???%s\n" % (self.units)
+        else:
+            label += "SET: %.1f%s\n" % (self.powerSetPoint, self.units)
+
+        if self.curPower is None:
+            label += "OUT: ???%s" % (self.units)
+        else:
+            label += "OUT: %.1f%s" % (self.curPower, self.units)
+
         if self.powerText:
-            label = "%.1f%s" % (self.curPower, self.units)
-            if self.powerText.GetLabel() != label:
-                self.powerText.SetLabel(label)
+            self.powerText.SetLabel(label)
+            if matched:
+                self.powerText.SetBackgroundColour('#99FF99')
+            else:
+                self.powerText.SetBackgroundColour('#FF7777')
+
         # Enable or disable the powerToggle button, if it exists.
         if self.powerToggle:
             self.powerToggle.Enable(self.maxPower and self.isEnabled)
