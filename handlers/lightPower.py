@@ -32,6 +32,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         self.minPower = minPower
         self.maxPower = maxPower
         self.curPower = curPower
+        self.powerSetPoint = None
         self.color = color
         self.isEnabled = isEnabled
         self.units = units
