@@ -50,10 +50,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         # Push out the min and max values a bit to give us some room around
         # the stage to work with. In particular we need space below the display
         # to show our legend.
-        #self.centreX = abs(self.maxX - self.minX) / 2
-        #self.centreY = abs(self.maxY - self.minY) / 2
-        self.centreX =((self.maxX - self.minX) / 2) + self.minX
-        self.centreY = ((self.maxY - self.minY) / 2)+self.minY
+        self.centreX = ((self.maxX - self.minX) / 2) + self.minX
+        self.centreY = ((self.maxY - self.minY) / 2) + self.minY
         self.minX = self.centreX - self.viewExtent / 2
         self.maxX = self.centreX + self.viewExtent / 2
         self.minY = self.centreY - self.viewExtent / 2 - self.viewDeltaY
