@@ -1,4 +1,3 @@
-import device
 import events
 import gui.guiUtils
 import handlers.stagePositioner
@@ -7,6 +6,7 @@ import util.logger
 import util.threads
 import util.userConfig
 
+import stage
 from OpenGL.GL import *
 import serial
 import socket
@@ -59,7 +59,9 @@ BANNED_RECTANGLES = ()
 
 
 class PhysikInstrumenteM687(device.Device):
-    def __init__(self):
+    CONFIG_NAME = CONFIG_NAME
+	def __init__(self):
+		super(PhysikInstrumenteM687, self).__init__()
         device.Device.__init__(self)
         ## Connection to the XY stage controller (serial.Serial instance)
         self.xyConnection = None
