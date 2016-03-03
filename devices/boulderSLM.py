@@ -69,8 +69,35 @@ class BoulderSLMDevice(device.Device):
 
 
     def enable(self):
+        """Enable the SLM.
+
+        Often, after calling connection.run(), the SLM pattern and the image
+        index reported are not synchronised until a few triggers have been
+        sent, so we need to compensate for this. We do the best we can,
+        but any other trigger-device activity during this call can mean that
+        we miss the target frame by +/- 1.
+        """
+        # A function to trigger now.
+        triggerNow = self.getTriggerFunction()
+        # Target position
+        if self.lastParms == self.connection.get_sequence_parameters():
+            # Hardware and software sequences match
+            targetPosition = self.position
+        else:
+            targetPosition = 0
+        # Enable the hardware.
         self.connection.run()
-        self.position = self.getCurrentPosition()
+        # Send a few triggers to clear synch. errors.
+        for i in xrange(3):
+            triggerNow()
+            time.sleep(0.01)
+        # Cycle to the target position.
+        pos = self.getCurrentPosition()
+        delta = (targetPosition - pos) + (targetPosition < pos) * len(self.lastParms)
+        for i in xrange(delta):
+            triggerNow()
+            time.sleep(0.01)
+        # Update the display.
         if self.elements.get('triggerButton'):
             self.elements['triggerButton'].Enable()
 
