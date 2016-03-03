@@ -213,6 +213,8 @@ class Experiment:
                 raise RuntimeError("Handler [%s] is not usable in experiments."
                                    % handler.name)
         interfaces.stageMover.goToZ(self.zBottom,shouldBlock = True)
+        #store the Z motor we used for setup so we can restore it
+        self.prepareZIndex=zCurIndex
         #make sure we are back to the expected mover
         interfaces.stageMover.mover.curHandlerIndex = zOrigIndex
 
@@ -311,7 +313,14 @@ class Experiment:
         events.publish('cleanup after experiment')
         if self.initialZPos is not None:
             # Restore our initial Z position.
+            #first save current Zhandler index
+            zOrigIndex = interfaces.stageMover.mover.curHandlerIndex
+            #then set to the handler we used
+            interfaces.stageMover.mover.curHandlerIndex = self.prepareZIndex
             interfaces.stageMover.goToZ(self.initialZPos, shouldBlock = True)
+            #restore original Zhandler
+            interfaces.stageMover.mover.curHandlerIndex = zOrigIndex
+            
         events.publish('experiment complete')
         events.publish('update status light', 'device waiting',
                 '', (170, 170, 170))
