@@ -217,7 +217,7 @@ class BoulderSLMDevice(device.Device):
         if not triggerFunc:
             return None
 
-        def func(event):
+        def func(event=None):
             """Trigger the SLM once, flashing a toggle button if provided."""
             # Minimun time to flash the button.
             dtMin = 0.1
