@@ -41,6 +41,7 @@ class BoulderSLMDevice(device.Device):
         self.executor = None
         self.order = None
         self.position = None
+        self.wasPowered = None
         self.settlingTime = decimal.Decimal('0.1')
         self.slmTimeout = int(config.get(CONFIG_NAME, 'timeout', default=10))
         self.slmRetryLimit = int(config.get(CONFIG_NAME, 'retryLimit', default=3))
@@ -355,13 +356,24 @@ class BoulderSLMDevice(device.Device):
 
     def onPrepareForExperiment(self, *args):
         self.position = self.getCurrentPosition()
+        if 'powerButton' in self.elements:
+            self.wasPowered = self.elements['powerButton'].isActive
+
+
+    def cleanupAfterExperiment(self, *args):
+        powerButton = self.elements['powerButton']
+        if not self.wasPowered:
+            # SLM was not active prior to experiment.
+            if 'powerButton' in self.elements:
+                self.elements['powerButton'].deactivate()
+            else:
+                self.disable()
 
 
     def performSubscriptions(self):
         #events.subscribe('user abort', self.onAbort)
         events.subscribe('prepare for experiment', self.onPrepareForExperiment)
-        #events.subscribe('cleanup after experiment',
-        #        self.cleanupAfterExperiment)
+        events.subscribe('cleanup after experiment', self.cleanupAfterExperiment)
 
 
     def wait(self, asyncResult, message):
