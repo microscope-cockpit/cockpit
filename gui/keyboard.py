@@ -12,6 +12,7 @@ def setKeyboardHandlers(window):
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_MULTIPLY, 6903), # Rescale cameras
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_DIVIDE, 6904), # Switch stage control
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_DECIMAL, 6905), # Transfer image to mosaic
+        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_SUBTRACT, 6906), # Recentre fine motion
 
         # Move the stage with the keypad
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD1, 6311), # Z down
@@ -44,6 +45,9 @@ def setKeyboardHandlers(window):
             lambda event: interfaces.stageMover.changeMover())
     wx.EVT_MENU(window, 6905,
             lambda event: gui.mosaic.window.transferCameraImage())
+    wx.EVT_MENU(window, 6906,
+            lambda event: interfaces.stageMover.recenterFineMotion())
+			
 
     wx.EVT_MENU(window, 6313, 
             lambda event: interfaces.stageMover.changeStepSize(-1))
