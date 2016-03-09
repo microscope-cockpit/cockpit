@@ -68,6 +68,9 @@ class MosaicWindow(wx.Frame):
         ## Camera we last used for making a mosaic.
         self.prevMosaicCamera = None
 
+        ## Mosaic tile overlap
+        self.overlap = 0.0
+
         ## Size of the box to draw at the center of the crosshairs.
         self.crosshairBoxSize = 0
         ## Color to use when making new Site instances.
@@ -228,6 +231,8 @@ class MosaicWindow(wx.Frame):
         self.centerCanvas()
         self.scalebar=util.userConfig.getValue('mosaicScaleBar', isGlobal = False,
                                                default= 0)
+        self.overlap=util.userConfig.getValue('mosaicTileOverlap', isGlobal=False,
+                                               default = 0)
 
     ## Get updated about new stage position info or step size.
     # This requires redrawing the display, if the axis is the X or Y axes.
@@ -301,12 +306,16 @@ class MosaicWindow(wx.Frame):
             menuId = 1
             for label, color in SITE_COLORS:
                 menu.Append(menuId, "Mark site with %s marker" % label)
-                wx.EVT_MENU(self.panel, menuId, 
+                wx.EVT_MENU(self.panel, menuId,
                         lambda event, color = color: self.saveSite(color))
                 menuId += 1
             menu.Append(menuId, "Toggle mosaic scale bar")
-            wx.EVT_MENU(self.panel, menuId, 
+            wx.EVT_MENU(self.panel, menuId,
                         lambda event: self.togglescalebar())
+            menuId += 1
+            menu.Append(menuId, "Set % tile overlap.")
+            wx.EVT_MENU(self.panel, menuId,
+                        lambda event: self.setTileOverlap())
             gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
         self.prevMousePos = mousePos
@@ -470,6 +479,8 @@ class MosaicWindow(wx.Frame):
         i = 0
         while True:
             dx, dy = directions[i % 4]
+            dx *= 1 - (self.overlap / 100.)
+            dy *= 1 - (self.overlap / 100.)
             for j in xrange(1, curSpiralSize + 1):
                 yield (lastX + dx * j, lastY + dy * j)
             lastX += dx * curSpiralSize
@@ -584,6 +595,19 @@ class MosaicWindow(wx.Frame):
         self.amGeneratingMosaic = False
         self.nameToButton['Run mosaic'].SetLabel('Run mosaic')
         self.mosaicGenerationLock.release()
+
+
+    ## Display dialogue box to set tile overlap.
+    def setTileOverlap(self):
+        value = gui.dialogs.getNumberDialog.getNumberFromUser(
+                    self.GetParent(),
+                    "Set mosiac tile overlap.",
+                    "Tile overlap in %",
+                    self.overlap,
+                    atMouse=True)
+        self.overlap = float(value)
+        util.userConfig.setValue('mosaicTileOverlap', self.overlap, isGlobal=False)
+
 
 
     ## Transfer an image from the active camera (or first camera) to the
