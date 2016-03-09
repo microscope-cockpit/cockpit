@@ -233,7 +233,8 @@ class MosaicWindow(wx.Frame):
         self.centerCanvas()
         self.scalebar=util.userConfig.getValue('mosaicScaleBar', isGlobal = False,
                                                default= 0)
-
+        self.drawPrimitives=util.userConfig.getValue('mosaicDrawPrimitives', isGlobal = False, default = True)
+        
     ## Get updated about new stage position info or step size.
     # This requires redrawing the display, if the axis is the X or Y axes.
     def onAxisRefresh(self, axis, *args):
@@ -312,6 +313,9 @@ class MosaicWindow(wx.Frame):
             menu.Append(menuId, "Toggle mosaic scale bar")
             wx.EVT_MENU(self.panel, menuId, 
                         lambda event: self.togglescalebar())
+            menu.Append(menuId, "Toggle draw primitives")
+            wx.EVT_MENU(self.panel, menuId, 
+                        lambda event: self.toggleDrawPrimitives())
             gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
         self.prevMousePos = mousePos
@@ -669,6 +673,18 @@ class MosaicWindow(wx.Frame):
         util.userConfig.setValue('mosaicScaleBar',self.scalebar, isGlobal=False)
         self.Refresh()
 
+    def toggleDrawPrimitives(self):
+        #toggle the scale bar between 0 and 1.
+        if (self.drawPrimitives!=False):
+            self.drawPrimitives=False
+        else:
+            self.drawPrimitives = True
+        #store current state for future.
+        util.userConfig.setValue('mosaicDrawPrimitives',self.drawPrimitives,
+                                 isGlobal=False)
+        self.Refresh()
+        
+        
     ## Save the current stage position as a new site with the specified
     # color (or our currently-selected color if none is provided).
     def saveSite(self, color = None):
