@@ -34,6 +34,9 @@ SIDEBAR_WIDTH = 150
 
 ## Timeout for mosaic new image events
 CAMERA_TIMEOUT = 5
+##how good a circle to draw
+CIRCLE_SEGMENTS = 32
+PI = 3.141592654
 
 ## Simple structure for marking potential beads.
 BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
@@ -88,6 +91,8 @@ class MosaicWindow(wx.Frame):
 
         #default scale bar size is Zero
         self.scalebar = 0
+        #Default to drawing primitives
+        self.drawPrimitives = True
         ## Maps button names to wx.Button instances.
         self.nameToButton = {}
 
@@ -228,7 +233,8 @@ class MosaicWindow(wx.Frame):
         self.centerCanvas()
         self.scalebar=util.userConfig.getValue('mosaicScaleBar', isGlobal = False,
                                                default= 0)
-
+        self.drawPrimitives=util.userConfig.getValue('mosaicDrawPrimitives', isGlobal = False, default = True)
+        
     ## Get updated about new stage position info or step size.
     # This requires redrawing the display, if the axis is the X or Y axes.
     def onAxisRefresh(self, axis, *args):
@@ -307,6 +313,10 @@ class MosaicWindow(wx.Frame):
             menu.Append(menuId, "Toggle mosaic scale bar")
             wx.EVT_MENU(self.panel, menuId, 
                         lambda event: self.togglescalebar())
+            menuId += 1
+            menu.Append(menuId, "Toggle draw primitives")
+            wx.EVT_MENU(self.panel, menuId, 
+                        lambda event: self.toggleDrawPrimitives())
             gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
         self.prevMousePos = mousePos
@@ -430,8 +440,52 @@ class MosaicWindow(wx.Frame):
 
             # Restore the default font size.
             self.font.FaceSize(self.defaultFaceSize)
-            
+        #Draw stage primitives.
+        if(self.drawPrimitives):
+            # Draw device-specific primitives.
+            glEnable(GL_LINE_STIPPLE)
+            glLineStipple(1, 0xAAAA)
+            glColor3f(0.4, 0.4, 0.4)
+            primitives = interfaces.stageMover.getPrimitives()
+            for p in primitives:
+                if p.type in ['c', 'C']:
+                    # circle: x0, y0, radius
+                    self.drawScaledCircle(p.data[0], p.data[1],
+                                          p.data[2], CIRCLE_SEGMENTS)
+                if p.type in ['r', 'R']:
+                    # rectangle: x0, y0, width, height
+                    self.drawScaledRectangle(*p.data)
+            glDisable(GL_LINE_STIPPLE)
 
+    def drawScaledCircle(self, x0, y0, r, n):
+        dTheta = 2. * PI / n
+        cosTheta = numpy.cos(dTheta)
+        sinTheta = numpy.sin(dTheta)
+        x = r
+        y = 0.
+
+        glBegin(GL_LINE_LOOP)
+        for i in xrange(n):
+            glVertex2f(-(x0 + x), y0 + y)
+            xOld = x
+            x = cosTheta * x - sinTheta * y
+            y = sinTheta * xOld + cosTheta * y
+        glEnd()
+
+
+    ## Draw a rectangle centred on x0, y0 of width w and height h.
+    def drawScaledRectangle(self, x0, y0, w, h):
+        dw = w / 2.
+        dh = h / 2.
+        ps = [(x0-dw, y0-dh),
+              (x0+dw, y0-dh),
+              (x0+dw, y0+dh),
+              (x0-dw, y0+dh)]
+
+        glBegin(GL_LINE_LOOP)
+        for i in xrange(-1, 4):
+            glVertex2f(-ps[i][0], ps[i][1])
+        glEnd()
     # Draw a crosshairs at the specified position with the specified color.
     # By default make the size of the crosshairs be really big.
     def drawCrosshairs(self, position, color, size = None):
@@ -620,6 +674,18 @@ class MosaicWindow(wx.Frame):
         util.userConfig.setValue('mosaicScaleBar',self.scalebar, isGlobal=False)
         self.Refresh()
 
+    def toggleDrawPrimitives(self):
+        #toggle the scale bar between 0 and 1.
+        if (self.drawPrimitives!=False):
+            self.drawPrimitives=False
+        else:
+            self.drawPrimitives = True
+        #store current state for future.
+        util.userConfig.setValue('mosaicDrawPrimitives',self.drawPrimitives,
+                                 isGlobal=False)
+        self.Refresh()
+        
+        
     ## Save the current stage position as a new site with the specified
     # color (or our currently-selected color if none is provided).
     def saveSite(self, color = None):
