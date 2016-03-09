@@ -313,6 +313,7 @@ class MosaicWindow(wx.Frame):
             menu.Append(menuId, "Toggle mosaic scale bar")
             wx.EVT_MENU(self.panel, menuId, 
                         lambda event: self.togglescalebar())
+            menuId += 1
             menu.Append(menuId, "Toggle draw primitives")
             wx.EVT_MENU(self.panel, menuId, 
                         lambda event: self.toggleDrawPrimitives())
