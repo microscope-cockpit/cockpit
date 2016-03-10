@@ -41,6 +41,7 @@ class BoulderSLMDevice(device.Device):
         self.executor = None
         self.order = None
         self.position = None
+        self.wasPowered = None
         self.settlingTime = decimal.Decimal('0.1')
         self.slmTimeout = int(config.get(CONFIG_NAME, 'timeout', default=10))
         self.slmRetryLimit = int(config.get(CONFIG_NAME, 'retryLimit', default=3))
@@ -69,8 +70,35 @@ class BoulderSLMDevice(device.Device):
 
 
     def enable(self):
+        """Enable the SLM.
+
+        Often, after calling connection.run(), the SLM pattern and the image
+        index reported are not synchronised until a few triggers have been
+        sent, so we need to compensate for this. We do the best we can,
+        but any other trigger-device activity during this call can mean that
+        we miss the target frame by +/- 1.
+        """
+        # A function to trigger now.
+        triggerNow = self.getTriggerFunction()
+        # Target position
+        if self.lastParms == self.connection.get_sequence_parameters():
+            # Hardware and software sequences match
+            targetPosition = self.position
+        else:
+            targetPosition = 0
+        # Enable the hardware.
         self.connection.run()
-        self.position = self.getCurrentPosition()
+        # Send a few triggers to clear synch. errors.
+        for i in xrange(3):
+            triggerNow()
+            time.sleep(0.01)
+        # Cycle to the target position.
+        pos = self.getCurrentPosition()
+        delta = (targetPosition - pos) + (targetPosition < pos) * len(self.lastParms)
+        for i in xrange(delta):
+            triggerNow()
+            time.sleep(0.01)
+        # Update the display.
         if self.elements.get('triggerButton'):
             self.elements['triggerButton'].Enable()
 
@@ -217,7 +245,7 @@ class BoulderSLMDevice(device.Device):
         if not triggerFunc:
             return None
 
-        def func(event):
+        def func(event=None):
             """Trigger the SLM once, flashing a toggle button if provided."""
             # Minimun time to flash the button.
             dtMin = 0.1
@@ -328,13 +356,24 @@ class BoulderSLMDevice(device.Device):
 
     def onPrepareForExperiment(self, *args):
         self.position = self.getCurrentPosition()
+        if 'powerButton' in self.elements:
+            self.wasPowered = self.elements['powerButton'].isActive
+
+
+    def cleanupAfterExperiment(self, *args):
+        powerButton = self.elements['powerButton']
+        if not self.wasPowered:
+            # SLM was not active prior to experiment.
+            if 'powerButton' in self.elements:
+                self.elements['powerButton'].deactivate()
+            else:
+                self.disable()
 
 
     def performSubscriptions(self):
         #events.subscribe('user abort', self.onAbort)
         events.subscribe('prepare for experiment', self.onPrepareForExperiment)
-        #events.subscribe('cleanup after experiment',
-        #        self.cleanupAfterExperiment)
+        events.subscribe('cleanup after experiment', self.cleanupAfterExperiment)
 
 
     def wait(self, asyncResult, message):
