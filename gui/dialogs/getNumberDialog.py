@@ -7,11 +7,14 @@ import wx
 # wx.GetNumberFromUser except that we allow for floating point values as well.
 class GetNumberDialog(wx.Dialog):
     def __init__(self, parent, title, prompt, default, atMouse=False):
+        # Nothing checks how the window was closed, so the OK button should
+        # be the only way to close it.
+        style = wx.CAPTION
         if atMouse:
             mousePos = wx.GetMousePosition()
-            wx.Dialog.__init__(self, parent, -1, title, mousePos)
+            wx.Dialog.__init__(self, parent, -1, title, mousePos, style=style)
         else:
-            wx.Dialog.__init__(self, parent, -1, title)
+            wx.Dialog.__init__(self, parent, -1, title, style=style)
         
         mainSizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -25,9 +28,9 @@ class GetNumberDialog(wx.Dialog):
 
         buttonsBox = wx.BoxSizer(wx.HORIZONTAL)
 
-        cancelButton = wx.Button(self, wx.ID_CANCEL, "Cancel")
-        cancelButton.SetToolTipString("Close this window")
-        buttonsBox.Add(cancelButton, 0, wx.ALL, 5)
+        #cancelButton = wx.Button(self, wx.ID_CANCEL, "Cancel")
+        #cancelButton.SetToolTipString("Close this window")
+        #buttonsBox.Add(cancelButton, 0, wx.ALL, 5)
         
         startButton = wx.Button(self, wx.ID_OK, "Okay")
         buttonsBox.Add(startButton, 0, wx.ALL, 5)
@@ -47,11 +50,14 @@ class GetNumberDialog(wx.Dialog):
 ## As above, but we can accept any number of prompts for multiple numbers.
 class GetManyNumbersDialog(wx.Dialog):
     def __init__(self, parent, title, prompts, defaultValues, atMouse=False):
+        # Nothing checks how the window was closed, so the OK button should
+        # be the only way to close it.
+        style = wx.CAPTION
         if atMouse:
             mousePos = wx.GetMousePosition()
-            wx.Dialog.__init__(self, parent, -1, title, mousePos)
+            wx.Dialog.__init__(self, parent, -1, title, mousePos, style=style)
         else:
-            wx.Dialog.__init__(self, parent, -1, title)
+            wx.Dialog.__init__(self, parent, -1, title, style=style)
         
         mainSizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -68,9 +74,9 @@ class GetManyNumbersDialog(wx.Dialog):
 
         buttonsBox = wx.BoxSizer(wx.HORIZONTAL)
 
-        cancelButton = wx.Button(self, wx.ID_CANCEL, "Cancel")
-        cancelButton.SetToolTipString("Close this window")
-        buttonsBox.Add(cancelButton, 0, wx.ALL, 5)
+        #cancelButton = wx.Button(self, wx.ID_CANCEL, "Cancel")
+        #cancelButton.SetToolTipString("Close this window")
+        #buttonsBox.Add(cancelButton, 0, wx.ALL, 5)
         
         startButton = wx.Button(self, wx.ID_OK, "Okay")
         buttonsBox.Add(startButton, 0, wx.ALL, 5)
