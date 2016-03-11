@@ -477,13 +477,12 @@ class MosaicWindow(wx.Frame):
 
         glBegin(GL_LINE_LOOP)
         for i in xrange(n):
-            glVertex2f(-(x0 + x), y0 + y)
+            glVertex2f(-(x0 + x+self.offset[0]), y0 + y-self.offset[1])
             xOld = x
             x = cosTheta * x - sinTheta * y
             y = sinTheta * xOld + cosTheta * y
         glEnd()
-
-
+		
     ## Draw a rectangle centred on x0, y0 of width w and height h.
     def drawScaledRectangle(self, x0, y0, w, h):
         dw = w / 2.
@@ -495,7 +494,7 @@ class MosaicWindow(wx.Frame):
 
         glBegin(GL_LINE_LOOP)
         for i in xrange(-1, 4):
-            glVertex2f(-ps[i][0], ps[i][1])
+            glVertex2f(-ps[i][0]+self.offset[0], ps[i][1]-self.offset[1])
         glEnd()
     # Draw a crosshairs at the specified position with the specified color.
     # By default make the size of the crosshairs be really big.
