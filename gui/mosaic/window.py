@@ -472,12 +472,14 @@ class MosaicWindow(wx.Frame):
         dTheta = 2. * PI / n
         cosTheta = numpy.cos(dTheta)
         sinTheta = numpy.sin(dTheta)
+        x0=x0-self.offset[0]
+        y0 =y0+self.offset[1]
         x = r
         y = 0.
 
         glBegin(GL_LINE_LOOP)
         for i in xrange(n):
-            glVertex2f(-(x0 + x+self.offset[0]), y0 + y-self.offset[1])
+            glVertex2f(-(x0 + x), y0 + y)
             xOld = x
             x = cosTheta * x - sinTheta * y
             y = sinTheta * xOld + cosTheta * y
