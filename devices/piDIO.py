@@ -13,8 +13,8 @@ import time
 from config import config
 CLASS_NAME = 'RaspberryPi'
 CONFIG_NAME = 'rpi'
-DIO_LINES = ['Objective']
-LINES_PAT = r"(?P<lines>\'\s*\w*\s*\')"
+#DIO_LINES = ['Objective']
+#LINES_PAT = r"(?P<lines>\'\s*\w*\s*\')"
 
 
 
@@ -27,24 +27,30 @@ class RaspberryPi(device.Device):
         else:
             self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
             self.port = int(config.get(CONFIG_NAME, 'port'))
-            linestring = config.get(CONFIG_NAME, 'lines')
-            self.lines = linestring.split(',')
-			
-			
-			#DIO_LINES
-#            try :
-#                linestring = config.get(CONFIG_NAME, 'DIOlines')
-#                parsed = re.search(LINES_PAT, linestring)
-#                if not parsed:
-#                    # Could not parse config entry.
-#                    raise Exception('Bad config: PiDIO could not parse Lines spec.')
-#                    # No transform tuple
-#                else:    
-#                    lstr = parsed.groupdict()['lines']
-#                    self.softlimits=eval(lstr)
-#            except:
-#                print "No lines section setting default lines"
-#                self.lines = ['0']
+            paths_linesString = config.get(CONFIG_NAME, 'paths')
+            excitation=[]
+            excitationMaps=[]
+            objective=[]
+            objectiveMaps=[]
+            emission =[]
+            emissionMaps=[]
+            
+            for path in (paths_linesString.split(';')):
+                print path
+                parts = path.split(':')
+                print parts
+                if(parts[0]=='objective'):
+                    objective.append(parts[1])
+                    objectiveMaps.append(parts[2])
+                elif (parts[0]=='excitation'):
+                    excitation.append(parts[1])
+                    excitationMaps.append(parts[2])
+                elif (parts[0]=='emission'):
+                    emission.append(parts[1])
+                    emmisionMaps.append(parts[2])
+
+            print objective,objectiveMaps
+            print excitation,excitationMaps
             
         self.RPiConnection = None
         ## util.connection.Connection for the temperature sensors.
@@ -55,8 +61,12 @@ class RaspberryPi(device.Device):
         ## Maps light modes to the mirror settings for those modes, as a list
         #IMD 20140806
         self.modeToFlips = collections.OrderedDict()
-        self.modeToFlips['Conventional'] = [(2, True),(3,True)]
-        self.modeToFlips['Structured Illumination'] = [(2, False),(3,False)]
+        for i in xrange(len(excitation)):
+            self.modeToFlips[excitation[i]] = []
+            for flips in excitationMaps[i].split('|'):
+                flipsList=flips.split(',')
+                flipsInt=[int(flipsList[0]),int(flipsList[1])]
+                self.modeToFlips[excitation[i]].append(flipsInt)        
 
         self.lightPathButtons = []
         ## Current light path mode.
