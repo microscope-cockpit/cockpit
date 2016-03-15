@@ -28,29 +28,26 @@ class RaspberryPi(device.Device):
             self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
             self.port = int(config.get(CONFIG_NAME, 'port'))
             paths_linesString = config.get(CONFIG_NAME, 'paths')
-            excitation=[]
-            excitationMaps=[]
-            objective=[]
-            objectiveMaps=[]
-            emission =[]
-            emissionMaps=[]
+            self.excitation=[]
+            self.excitationMaps=[]
+            self.objective=[]
+            self.objectiveMaps=[]
+            self.emission =[]
+            self.emissionMaps=[]
             
             for path in (paths_linesString.split(';')):
                 print path
                 parts = path.split(':')
                 print parts
                 if(parts[0]=='objective'):
-                    objective.append(parts[1])
-                    objectiveMaps.append(parts[2])
+                    self.objective.append(parts[1])
+                    self.objectiveMaps.append(parts[2])
                 elif (parts[0]=='excitation'):
-                    excitation.append(parts[1])
-                    excitationMaps.append(parts[2])
+                    self.excitation.append(parts[1])
+                    self.excitationMaps.append(parts[2])
                 elif (parts[0]=='emission'):
-                    emission.append(parts[1])
-                    emmisionMaps.append(parts[2])
-
-            print objective,objectiveMaps
-            print excitation,excitationMaps
+                    self.emission.append(parts[1])
+                    self.emmisionMaps.append(parts[2])
             
         self.RPiConnection = None
         ## util.connection.Connection for the temperature sensors.
@@ -60,14 +57,23 @@ class RaspberryPi(device.Device):
 
         ## Maps light modes to the mirror settings for those modes, as a list
         #IMD 20140806
+        #map paths to flips. 
         self.modeToFlips = collections.OrderedDict()
-        for i in xrange(len(excitation)):
-            self.modeToFlips[excitation[i]] = []
-            for flips in excitationMaps[i].split('|'):
+        for i in xrange(len(self.excitation)):
+            self.modeToFlips[self.excitation[i]] = []
+            for flips in self.excitationMaps[i].split('|'):
                 flipsList=flips.split(',')
                 flipsInt=[int(flipsList[0]),int(flipsList[1])]
-                self.modeToFlips[excitation[i]].append(flipsInt)        
-
+                self.modeToFlips[self.excitation[i]].append(flipsInt)        
+        #map objectives to flips. 
+        self.objectiveToFlips = collections.OrderedDict()
+        for i in xrange(len(self.objective)):
+            self.objectiveToFlips[self.objective[i]] = []
+            for flips in self.objectiveMaps[i].split('|'):
+                flipsList=flips.split(',')
+                flipsInt=[int(flipsList[0]),int(flipsList[1])]
+                self.objectiveToFlips[self.objective[i]].append(flipsInt)
+                
         self.lightPathButtons = []
         ## Current light path mode.
         self.curExMode = None
@@ -108,7 +114,7 @@ class RaspberryPi(device.Device):
         label = wx.StaticText(parent, -1, "Excitation path:")
         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         sizer.Add(label)
-        for mode in ['Conventional', 'Structured Illumination']:
+        for mode in [self.excitation]:
             button = gui.toggleButton.ToggleButton( 
                     textSize = 12, label = mode, size = (180, 50), 
                     parent = parent)
@@ -161,16 +167,9 @@ class RaspberryPi(device.Device):
 
 
     def onObjectiveChange(self, name, pixelSize, transform, offset):
-        if (name=='10x'):
-            self.flipDownUp(0, 1)
-            self.flipDownUp(1, 0)
-        elif (name=='60xwater'):
-            self.flipDownUp(0, 0)
-            self.flipDownUp(1, 1)
-        else: #default behaviour, mapping objective
-            self.flipDownUp(0, 1)
-            self.flipDownUp(1, 0)
-        print "piDIO objective change"
+        for flips in self.objectiveToFlips[name]:
+            self.flipDownUp(flisp[0], flips[1])
+        print "piDIO objective change to ",name
 		
     #function to read temperature at set update frequency. 
     def updateStatus(self):
