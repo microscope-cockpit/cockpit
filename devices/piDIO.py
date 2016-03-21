@@ -147,14 +147,17 @@ class RaspberryPi(device.Device):
     #IMD 20150129 - flipping buttons for detection path also changes objective
     # set correct pixel size and image orientation
         objectiveHandler = depot.getHandlerWithName('objective')
-        if mode == 'with AO & 85 nm pixel size' :
-            if (objectiveHandler.curObjective != '63x85nm') :
-                objectiveHandler.changeObjective('63x85nm')
-                print "Change objective 85 nm pixel"
-        elif mode == 'w/o AO & 209 nm pixel size' :
-            if (objectiveHandler.curObjective != '63x209nm') :
-                objectiveHandler.changeObjective('63x209nm')
-                print "Change objective 209 nm pixel"
+
+# This code is obsolete on DeepSIM, need a better way to map it from
+# config files on OMXT
+#        if mode == 'with AO & 85 nm pixel size' :
+#            if (objectiveHandler.curObjective != '63x85nm') :
+#                objectiveHandler.changeObjective('63x85nm')
+#                print "Change objective 85 nm pixel"
+#        elif mode == 'w/o AO & 209 nm pixel size' :
+#            if (objectiveHandler.curObjective != '63x209nm') :
+#                objectiveHandler.changeObjective('63x209nm')
+#                print "Change objective 209 nm pixel"
         
 
 
