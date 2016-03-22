@@ -109,10 +109,19 @@ class PolarizationDevice(device.Device):
             if handler is not self.executor:
                 # Nothing to do
                 continue
-            # Action specifies an angle index.
+            # Action specifies a wavelength and an angle index.
+            wl, index = action
+            # Make sure wavelength is in the calibration table.
+            if wl not in self.voltages.keys():
+                if 'default' in self.voltagse.keys():
+                    # If not, try to drop to default values.
+                    wl = 'default'
+                else:
+                    # If no defaults, use idle values.
+                    wl = None
             # Replace original event with analogue out event.
             table[i] = None
-            table.addAction(t, self.lineHandler, self.voltages[action])
+            table.addAction(t, self.lineHandler, self.voltages[wl][index])
         table.clearBadEntries()
 
 
