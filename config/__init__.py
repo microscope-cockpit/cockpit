@@ -23,6 +23,7 @@ processed first, so will be over-ridden if a section with the same
 name appears in another file.
 """
 import os
+import time
 import shutil
 from ConfigParser import ConfigParser
 
@@ -63,7 +64,8 @@ class MyConfigParser(ConfigParser, object):
         if not filename:
             raise Exception("This section did not come from a file.")
         # Back up the old config file.
-        shutil.copyfile(filename, filename + '.bak')
+        timestamp = time.strftime('%Y%m%d-%H%M%S', time.localtime())
+        shutil.copyfile(filename, '.'.join( (filename, timestamp, 'bak') ))
         # Temporarily remove sections sourced from other files.
         for s in self._sections:
             if not s in self.fileToSections[filename]:
