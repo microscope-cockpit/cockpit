@@ -23,14 +23,56 @@ processed first, so will be over-ridden if a section with the same
 name appears in another file.
 """
 import os
+import shutil
 from ConfigParser import ConfigParser
 
-class MyConfigParser(ConfigParser):
+class MyConfigParser(ConfigParser, object):
+    def __init__(self):
+        super(MyConfigParser, self).__init__()
+        self.fileToSections = {}
+        self.sectionToFile = {}
+
+
 	def get(self, section, option, default=None):
 		if self.has_option(section, option) or default is None:
 			return  ConfigParser.get(self, section, option)
 		else:
 			return default
+
+
+    def read(self):
+        """Read in the config, tracking which file specifies each section.
+
+        This will update any settings and add any new sections found.
+        Note that:
+        * this function does not search for new files;
+        * sections/keys removed from files will not be removed from loaded config.
+        """
+        for f in _files:
+            lastSections = set(self.sections())
+            super(MyConfigParser, self).read(f)
+            self.fileToSections[f] = set(self.sections()).difference(lastSections)
+            for s in self.fileToSections[f]:
+                self.sectionToFile[s] = f
+
+
+    def writeSection(self, section):
+        """Update the sectino specified in its config file."""
+        # Which file provided this section?
+        filename = self.sectionToFile.get(section)
+        if not filename:
+            raise Exception("This section did not come from a file.")
+        # Back up the old config file.
+        shutil.copyfile(filename, filename + '.bak')
+        # Temporarily remove sections sourced from other files.
+        for s in self._sections:
+            if not s in self.fileToSections[filename]:
+                self.remove_section(s)
+        # Should now be left only with sections from our file. Write them out.
+        with open(filename, 'w') as file:
+            self.write(file)
+        # Re-read to recover discarded sections.
+        self.read()
 
 
 _path = __path__[0]
@@ -45,7 +87,7 @@ except:
     pass
 
 config = MyConfigParser()
-config.read(_files)
+config.read()
 
 try:
 	from lights import light_keys as _light_keys
