@@ -17,11 +17,15 @@ import device
 import decimal
 import events
 import handlers.analogueHandler, handlers.executor, handlers.genericPositioner
+import re
 import util
 from config import config
 
 CLASS_NAME = 'PolarizationDevice'
 CONFIG_NAME = 'polarizer'
+DECIMAL_PAT = '(?:\d+(?:\.\d*)?|\.\d+)'
+CALIB_PAT = '\s*(\S+)(?:[\s:,;]+)(%s(?:.*))+' % DECIMAL_PAT
+
 
 class PolarizationDevice(device.Device):
     def __init__(self):
@@ -36,6 +40,37 @@ class PolarizationDevice(device.Device):
         self.timings = (decimal.Decimal(0.01), decimal.Decimal(0.01))
         self.voltages = {}
         self.curVoltage = 0.0
+
+
+    def readVoltagesFromConfig(self):
+        # Re-read config files.
+        config.read()
+        # SI voltage map.
+        if config.has_option(CONFIG_NAME, 'siVoltages'):
+            for line in config.get(CONFIG_NAME, 'siVoltages').split('\n'):
+                match = re.match(CALIB_PAT, line)
+                if not match:
+                    continue
+                label = match.groups()[0].rstrip(':;,. ')
+                values = re.findall(DECIMAL_PAT, match.groups()[1])
+                try:
+                    # Try to cast from str to int if label is a wavelength.
+                    label = int(label)
+                except:
+                    pass
+                if len(values) == 3:
+                    self.voltages[label] = [float(v) for v in values]
+                elif len(values) == 1:
+                    self.voltages[label] = 3 * float(values[0])
+                else:
+                    raise Exception("%s: SI voltage spec. should be single value "
+                                    "or one for each of the three angles." % str(label))
+
+        if config.has_option(CONFIG_NAME, 'idleVoltage'):
+            idleVoltage = config.get(CONFIG_NAME, 'idleVoltage')
+        else:
+            idleVoltage = 0.
+        self.voltages[None] = 3 * [float(idleVoltage)]
 
 
     def initialize(self):
@@ -57,18 +92,7 @@ class PolarizationDevice(device.Device):
             sens = config.get(CONFIG_NAME, 'sensitivity')
         else:
             sens = 1
-        # SI voltage map. Drop to defaults if missing.
-        if config.has_option(CONFIG_NAME, 'siVoltages'):
-            siVoltages = config.get(CONFIG_NAME, 'siVoltages').split(',')
-            siVoltages = [float(v) for v in siVoltages]
-        else:
-            siVoltages = [1., 2., 3.]
-        if config.has_option(CONFIG_NAME, 'idleVoltage'):
-            idleVoltage = config.get(CONFIG_NAME, 'idleVoltage')
-        else:
-            idleVoltage = 0
-        self.voltages = {n:siVoltages[n] for n in range(len(siVoltages))}
-        self.voltages[None] = float(idleVoltage)
+        self.readVoltagesFromConfig()
         # Create the handler that drives the analogue line.
         self.lineHandler = executors[0].callbacks['registerAnalogue'](
                     'SI angle line', # axis
