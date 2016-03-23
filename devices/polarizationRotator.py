@@ -144,7 +144,7 @@ class PolarizationDevice(device.Device):
                     'moveAbsolute': self.moveAbsolute, 
                     'moveRelative': self.moveRelative,
                     'getPosition': self.getPosition, 
-                    'getMovementTime': lambda: self.timings,
+                    'getMovementTime': lambda: self.settlingTime,
                     'getLineHandler': lambda: self.lineHandler})
 
         #return (self.executor, self.mover)
