@@ -36,8 +36,8 @@ class PolarizationDevice(device.Device):
         if not self.isActive:
             return
         self.lineHandler = None
-        # Movement time, settling time.
-        self.timings = (decimal.Decimal(0.01), decimal.Decimal(0.01))
+        # Settling time.
+        self.settlingTime = decimal.Decimal(0.01)
         self.voltages = {}
         self.curVoltage = 0.0
 
@@ -95,10 +95,10 @@ class PolarizationDevice(device.Device):
         self.readVoltagesFromConfig()
         # Create the handler that drives the analogue line.
         self.lineHandler = executors[0].callbacks['registerAnalogue'](
-                    'SI angle line', # axis
+                    'SI polarizer line', # axis
                     'structured illumination', # group
                     line, # physical line
-                    self.voltages[None], # startup value
+                    self.voltages[None][0], # startup value
                     sens # sensitivity V/V
                     )
 
@@ -135,7 +135,7 @@ class PolarizationDevice(device.Device):
 
     def getHandlers(self):      
         self.executor = MyHandler(
-                "SI angle",
+                "SI polarizer",
                 "structured illumination",
                 True,
                 {'examineActions': self.examineActions,
@@ -144,7 +144,7 @@ class PolarizationDevice(device.Device):
                     'moveAbsolute': self.moveAbsolute, 
                     'moveRelative': self.moveRelative,
                     'getPosition': self.getPosition, 
-                    'getMovementTime': lambda name, start, delta: self.timings,
+                    'getMovementTime': lambda: self.timings,
                     'getLineHandler': lambda: self.lineHandler})
 
         #return (self.executor, self.mover)
