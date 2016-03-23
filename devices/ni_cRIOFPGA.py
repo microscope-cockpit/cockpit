@@ -451,15 +451,18 @@ class NIcRIO(device.Device):
         Get the number of actions from the provided table that we are
         capable of executing.
         '''
-        count = 0
-        for time, handler, parameter in table[index:]:
-            # Check for analog and digital devices we control.
-            if (handler not in self.handlers and 
-                    handler.name not in self.nameToDigitalLine):
-                # Found a device we don't control.
-                break
-            count += 1
-        return count
+        return 1000
+        # TODO: replace thsi method by a more sofisticated setup as the FPGA may
+        # control repetitiions and the duration
+#         count = 0
+#         for time, handler, parameter in table[index:]:
+#             # Check for analog and digital devices we control.
+#             if (handler not in self.handlers and 
+#                     handler.name not in self.nameToDigitalLine):
+#                 # Found a device we don't control.
+#                 break
+#             count += 1
+#         return count
 
 
     def executeTable(self, name, table, startIndex, stopIndex, numReps, repDuration):
@@ -469,16 +472,13 @@ class NIcRIO(device.Device):
         # Convert the desired portion of the table into a "profile" for
         # the FPGA.
         '''
-        print('executeTable called') # TODO: removethis
-        
+       
         profileStr, digitals, analogs = self.generateProfile(table[startIndex:stopIndex], repDuration)
         # Update our positioning values in case we have to make a new profile
         # in this same experiment. The analog values are a bit tricky, since
         # they're deltas from the values we used to create the profile.
         ## Not true for the FPGA
-        
-        print(profileStr) # TODO: removethis
-        
+                
         self.lastDigitalVal = digitals[-1, 1]
         for aline in xrange(4):
             self.lastAnalogPositions[aline] = analogs[aline][-1][1] #  + self.lastAnalogPositions[aline]
@@ -492,9 +492,7 @@ class NIcRIO(device.Device):
                 numpy.any(digitals != self.prevProfileSettings[1]) or
                 sum([numpy.any(analogs[i] != self.prevProfileSettings[2][i]) for i in xrange(4)])):
             # We can't just re-use the already-loaded profile.
-            print('going to sendTables') # TODO: removethis
             self.connection.sendTables(digitals, *analogs)
-            print(profileStr) # TODO: removethis
             self.prevProfileSettings = (profileStr, digitals, analogs)
             
         events.publish('update status light', 'device waiting',
@@ -536,7 +534,6 @@ class NIcRIO(device.Device):
     # We also generate the "profile string" that is used to describe these
     # arrays.
     def generateProfile(self, events, repDuration):
-        print('generateProfile called') # TODO: removethis
         # Maps digital lines to the most recent setting for that line.
         digitalToLastVal = {}
         # Maps analog lines to lists of (time, value) pairs. 
@@ -553,7 +550,6 @@ class NIcRIO(device.Device):
         times = sorted(list(set(times)))
         baseTime = times[0]
         
-        print('basetime: ' + str(baseTime)) # TODO: removethis
         
         # Take into account the desired rep duration -- if we have spare
         # time left over, then we insert a dummy action in to take up that
@@ -584,7 +580,6 @@ class NIcRIO(device.Device):
         for time, handler, action in events:
             # Do the same "Decimal -> float -> rounded int" conversion
             time = int(float(time * self.actionsPerMillisecond) + .5)
-            print('Time/handler/action: ' + str(time) + str(handler) + str(action)) # TODO: removethis
             index = times.index(time)
             # Ensure a valid (nonzero) digital value exists regardless of the
             # type of action, e.g. so analog actions don't zero the digital
@@ -887,7 +882,6 @@ class Connection():
         try:
             # Create an AF_INET, STREAM socket (TCP)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            print('socket created') # TODO: removethis
         except socket.error, msg:
             print 'Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
             return (1, '1')
@@ -895,7 +889,6 @@ class Connection():
         try:
             # Connect to remote server
             s.connect((host , port))
-            print('socket connected') # TODO: removethis
         except socket.error, msg:
             print 'Failed to establish connection. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
             return (1, '2')
@@ -947,16 +940,13 @@ class Connection():
         Return a tuple where first element is 0 if success and 1 if error.
         Second element is error code.
         '''
-        print('runCommand called') # TODO: removethis
         # Transform args into a list of strings of 20 chars
                                  
         try:
             # Send the actual message and arguments
             self.sendSocket.send(command)
-            print('sent command: ' + command) # TODO: removethis
             buf = str('').join(args)
             self.sendSocket.sendall(buf)
-            print('buffer sent') # TODO: removethis
         except socket.error, msg:
             #Send failed
             print 'Send failed. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
@@ -1060,19 +1050,12 @@ class Connection():
         print('sendTables called')
         # Convert the digitals numpy table into a list of messages for the TCP
         digitalsList = []
-        
-        progres = 0 # TODO: removethis
-        
+              
         for time, value in digitalsTable:
-            print progres # TODO: removethis
             digitalsValue = int(numpy.binary_repr(time, 32) + numpy.binary_repr(value, 32), 2)
             digitalsList.append(str(digitalsValue).rjust(20, '0'))
-            progres = progres + 1 # TODO: removethis
-        
-        print(digitalsList) # TODO: removethis
-                    
+                            
         # Send digitals
-        print('gonna runCommand') # TODO: removethis
         self.runCommand(self.commandDict['sendDigitals'], digitalsList, msgLength)
         
         # Send Analogues
