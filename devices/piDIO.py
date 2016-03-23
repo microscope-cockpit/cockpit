@@ -113,9 +113,7 @@ class RaspberryPi(device.Device):
         label = wx.StaticText(parent, -1, "Excitation path:")
         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         sizer.Add(label)
-        print len(self.excitation)
         for mode in self.excitation:
-            print mode
             button = gui.toggleButton.ToggleButton( 
                     textSize = 12, label = mode, size = (180, 50), 
                     parent = parent)
