@@ -36,9 +36,7 @@ class RaspberryPi(device.Device):
             self.emissionMaps=[]
             
             for path in (paths_linesString.split(';')):
-                print path
                 parts = path.split(':')
-                print parts
                 if(parts[0]=='objective'):
                     self.objective.append(parts[1])
                     self.objectiveMaps.append(parts[2])
@@ -91,7 +89,8 @@ class RaspberryPi(device.Device):
 
     ## Try to switch to widefield mode.
     def finalizeInitialization(self):
-        self.setExMode('Conventional')
+        #set the first excitation mode as the inital state.
+        self.setExMode(self.excitation[1])
         #Subscribe to objective change to map new detector path to new pixel sizes via fake objective
         events.subscribe('objective change', self.onObjectiveChange)
 
@@ -114,7 +113,9 @@ class RaspberryPi(device.Device):
         label = wx.StaticText(parent, -1, "Excitation path:")
         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         sizer.Add(label)
-        for mode in [self.excitation]:
+        print len(self.excitation)
+        for mode in self.excitation:
+            print mode
             button = gui.toggleButton.ToggleButton( 
                     textSize = 12, label = mode, size = (180, 50), 
                     parent = parent)
@@ -171,7 +172,7 @@ class RaspberryPi(device.Device):
 
     def onObjectiveChange(self, name, pixelSize, transform, offset):
         for flips in self.objectiveToFlips[name]:
-            self.flipDownUp(flisp[0], flips[1])
+            self.flipDownUp(flips[0], flips[1])
         print "piDIO objective change to ",name
 		
     #function to read temperature at set update frequency. 
