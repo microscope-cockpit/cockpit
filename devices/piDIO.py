@@ -177,7 +177,7 @@ class RaspberryPi(device.Device):
     def updateStatus(self):
         """Runs in a separate thread publish status updates."""
         updatePeriod = 10.0
-        temperature = None
+        temperature = []
         while True:
             if self.RPiConnection:
                 try:
@@ -186,10 +186,11 @@ class RaspberryPi(device.Device):
                     ## There is a communication issue. It's not this thread's
                     # job to fix it. Set temperature to None to avoid bogus
                     # data.
-                    temperature = None
-            events.publish("status update",
+                    temperature = []
+            for i in xrange(len(temperature)):
+                events.publish("status update",
                            'RPi',
-                           {'temperature': temperature,})
+                           {'temperature'+str(i): temperature[i],})
             time.sleep(updatePeriod)
 
 
