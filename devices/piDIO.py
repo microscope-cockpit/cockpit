@@ -7,12 +7,14 @@ import collections
 import Pyro4
 import wx
 import re
+import threading
+import time
 
 from config import config
 CLASS_NAME = 'RaspberryPi'
 CONFIG_NAME = 'rpi'
-DIO_LINES = ['Objective']
-LINES_PAT = r"(?P<lines>\'\s*\w*\s*\')"
+#DIO_LINES = ['Objective']
+#LINES_PAT = r"(?P<lines>\'\s*\w*\s*\')"
 
 
 
@@ -25,24 +27,25 @@ class RaspberryPi(device.Device):
         else:
             self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
             self.port = int(config.get(CONFIG_NAME, 'port'))
-            linestring = config.get(CONFIG_NAME, 'lines')
-            self.lines = linestring.split(',')
-			
-			
-			#DIO_LINES
-#            try :
-#                linestring = config.get(CONFIG_NAME, 'DIOlines')
-#                parsed = re.search(LINES_PAT, linestring)
-#                if not parsed:
-#                    # Could not parse config entry.
-#                    raise Exception('Bad config: PiDIO could not parse Lines spec.')
-#                    # No transform tuple
-#                else:    
-#                    lstr = parsed.groupdict()['lines']
-#                    self.softlimits=eval(lstr)
-#            except:
-#                print "No lines section setting default lines"
-#                self.lines = ['0']
+            paths_linesString = config.get(CONFIG_NAME, 'paths')
+            self.excitation=[]
+            self.excitationMaps=[]
+            self.objective=[]
+            self.objectiveMaps=[]
+            self.emission =[]
+            self.emissionMaps=[]
+            
+            for path in (paths_linesString.split(';')):
+                parts = path.split(':')
+                if(parts[0]=='objective'):
+                    self.objective.append(parts[1])
+                    self.objectiveMaps.append(parts[2])
+                elif (parts[0]=='excitation'):
+                    self.excitation.append(parts[1])
+                    self.excitationMaps.append(parts[2])
+                elif (parts[0]=='emission'):
+                    self.emission.append(parts[1])
+                    self.emmisionMaps.append(parts[2])
             
         self.RPiConnection = None
         ## util.connection.Connection for the temperature sensors.
@@ -52,13 +55,33 @@ class RaspberryPi(device.Device):
 
         ## Maps light modes to the mirror settings for those modes, as a list
         #IMD 20140806
+        #map paths to flips. 
         self.modeToFlips = collections.OrderedDict()
-        self.modeToFlips['Conventional'] = [(2, True),(3,True)]
-        self.modeToFlips['Structured Illumination'] = [(2, False),(3,False)]
-
+        for i in xrange(len(self.excitation)):
+            self.modeToFlips[self.excitation[i]] = []
+            for flips in self.excitationMaps[i].split('|'):
+                flipsList=flips.split(',')
+                flipsInt=[int(flipsList[0]),int(flipsList[1])]
+                self.modeToFlips[self.excitation[i]].append(flipsInt)        
+        #map objectives to flips. 
+        self.objectiveToFlips = collections.OrderedDict()
+        for i in xrange(len(self.objective)):
+            self.objectiveToFlips[self.objective[i]] = []
+            for flips in self.objectiveMaps[i].split('|'):
+                flipsList=flips.split(',')
+                flipsInt=[int(flipsList[0]),int(flipsList[1])]
+                self.objectiveToFlips[self.objective[i]].append(flipsInt)
+                
         self.lightPathButtons = []
         ## Current light path mode.
         self.curExMode = None
+
+        # A thread to publish status updates.
+        # This reads temperature updates from the RaspberryPi
+        self.statusThread = threading.Thread(target=self.updateStatus)
+        self.statusThread.Daemon = True
+        self.statusThread.start()
+ 
 
         ## Connect to the remote program, and set widefield mode.
     def initialize(self):
@@ -66,7 +89,8 @@ class RaspberryPi(device.Device):
 
     ## Try to switch to widefield mode.
     def finalizeInitialization(self):
-        self.setExMode('Conventional')
+        #set the first excitation mode as the inital state.
+        self.setExMode(self.excitation[1])
         #Subscribe to objective change to map new detector path to new pixel sizes via fake objective
         events.subscribe('objective change', self.onObjectiveChange)
 
@@ -89,7 +113,7 @@ class RaspberryPi(device.Device):
         label = wx.StaticText(parent, -1, "Excitation path:")
         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         sizer.Add(label)
-        for mode in ['Conventional', 'Structured Illumination']:
+        for mode in self.excitation:
             button = gui.toggleButton.ToggleButton( 
                     textSize = 12, label = mode, size = (180, 50), 
                     parent = parent)
@@ -122,14 +146,17 @@ class RaspberryPi(device.Device):
     #IMD 20150129 - flipping buttons for detection path also changes objective
     # set correct pixel size and image orientation
         objectiveHandler = depot.getHandlerWithName('objective')
-        if mode == 'with AO & 85 nm pixel size' :
-            if (objectiveHandler.curObjective != '63x85nm') :
-                objectiveHandler.changeObjective('63x85nm')
-                print "Change objective 85 nm pixel"
-        elif mode == 'w/o AO & 209 nm pixel size' :
-            if (objectiveHandler.curObjective != '63x209nm') :
-                objectiveHandler.changeObjective('63x209nm')
-                print "Change objective 209 nm pixel"
+
+# This code is obsolete on DeepSIM, need a better way to map it from
+# config files on OMXT
+#        if mode == 'with AO & 85 nm pixel size' :
+#            if (objectiveHandler.curObjective != '63x85nm') :
+#                objectiveHandler.changeObjective('63x85nm')
+#                print "Change objective 85 nm pixel"
+#        elif mode == 'w/o AO & 209 nm pixel size' :
+#            if (objectiveHandler.curObjective != '63x209nm') :
+#                objectiveHandler.changeObjective('63x209nm')
+#                print "Change objective 209 nm pixel"
         
 
 
@@ -142,16 +169,29 @@ class RaspberryPi(device.Device):
 
 
     def onObjectiveChange(self, name, pixelSize, transform, offset):
-        if (name=='10x'):
-            self.flipDownUp(0, 1)
-            self.flipDownUp(1, 0)
-        elif (name=='60xwater'):
-            self.flipDownUp(0, 0)
-            self.flipDownUp(1, 1)
-        else: #default behaviour, mapping objective
-            self.flipDownUp(0, 1)
-            self.flipDownUp(1, 0)
-        print "piDIO objective change"
+        for flips in self.objectiveToFlips[name]:
+            self.flipDownUp(flips[0], flips[1])
+        print "piDIO objective change to ",name
+		
+    #function to read temperature at set update frequency. 
+    def updateStatus(self):
+        """Runs in a separate thread publish status updates."""
+        updatePeriod = 10.0
+        temperature = None
+        while True:
+            if self.RPiConnection:
+                try:
+                   temperature = self.RPiConnection.get_temperature()
+                except:
+                    ## There is a communication issue. It's not this thread's
+                    # job to fix it. Set temperature to None to avoid bogus
+                    # data.
+                    temperature = None
+            events.publish("status update",
+                           'RPi',
+                           {'temperature': temperature,})
+            time.sleep(updatePeriod)
+
 
 
 ## This debugging window lets each digital lineout of the DSP be manipulated
