@@ -303,8 +303,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             configurator = depot.getHandlersOfType(depot.CONFIGURATOR)[0]
             spikeHeight = self.stageExtent * .02
             spikeLength = self.stageExtent * .2
-            for altitude in [configurator.getValue('slideAltitude'), 
-                    configurator.getValue('dishAltitude')]:
+            for altitude in [configurator.getValue('slidealtitude'), 
+                    configurator.getValue('dishaltitude')]:
                 glColor3f(0, 0, 0)
                 glBegin(GL_POLYGON)
                 self.scaledVertex(scaleX, altitude - spikeHeight / 2)
