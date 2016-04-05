@@ -43,7 +43,8 @@ class SIExperiment(experiment.Experiment):
     #        how much to increase their exposure times on successive angles,
     #        to compensate for bleaching.
     def __init__(self, numAngles, collectionOrder, bleachCompensations,
-            angleHandler = None, phaseHandler = None, slmHandler = None,
+            angleHandler = None, phaseHandler = None, polarizerHandler = None,
+            slmHandler = None,
             *args, **kwargs):
         # Store the collection order in the MRC header.
         metadata = 'SI order: %s' % collectionOrder
@@ -63,6 +64,7 @@ class SIExperiment(experiment.Experiment):
         self.collectionOrder = collectionOrder
         self.angleHandler = angleHandler
         self.phaseHandler = phaseHandler
+        self.polarizerHandler = polarizerHandler
         self.slmHandler = slmHandler
         self.handlerToBleachCompensation = bleachCompensations
 
@@ -194,7 +196,11 @@ class SIExperiment(experiment.Experiment):
                     prevAngle, 0)
             table.addAction(curTime + motionTime, self.phaseHandler, 0)
             finalWaitTime = max(finalWaitTime, motionTime + stabilizationTime)
-        
+        if self.polarizerHandler is not None:
+            # Return to idle voltage.
+            table.addAction(curTime, self.polarizerHandler, (None, 0))
+            finalWaitTime = finalWaitTime + decimal.Decimal(1e-6)
+
         return table
 
 
@@ -221,11 +227,18 @@ class SIExperiment(experiment.Experiment):
             # Bleaching compensation
             tExpNew = tExp * (1 + decimal.Decimal(self.handlerToBleachCompensation[light]) * angle)
             newPairs.append((light, tExpNew))
-            # SLM trigger
+        # Pre-exposure delay due to polarizer and SLM settling times.
+        delay = decimal.Decimal(0.)
+        # Set polarizer position
+        if self.polarizerHandler is not None:
+            table.addAction(curTime, self.polarizerHandler, (longestWavelength, angle))
+            delay = max(delay, self.polarizerHandler.callbacks['getMovementTime']())
+        # SLM trigger
         if self.slmHandler is not None:
             ## Add SLM event ot set pattern for phase, angle and longestWavelength.
             table.addAction(curTime, self.slmHandler, (angle, phase, longestWavelength))
-            curTime += self.slmHandler.callbacks['getMovementTime']()
+            delay = max(delay, self.slmHandler.callbacks['getMovementTime']())
+        curTime += delay
         return experiment.Experiment.expose(self, curTime, cameras, newPairs, table)
 
 
@@ -360,6 +373,7 @@ class ExperimentUI(wx.Panel):
         params['collectionOrder'] = self.siCollectionOrder.GetStringSelection()
         params['angleHandler'] = depot.getHandlerWithName('SI angle')
         params['phaseHandler'] = depot.getHandlerWithName('SI phase')
+        params['polarizerHandler'] = depot.getHandlerWithName('SI polarizer')
         params['slmHandler'] = depot.getHandlerWithName('slm executor')
         compensations = {}
         for i, light in enumerate(self.allLights):

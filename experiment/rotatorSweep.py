@@ -14,13 +14,13 @@ EXPERIMENT_NAME = 'RotatorSweep'
 
 ## This class handles classic Z-stack experiments.
 class RotatorSweepExperiment(experiment.Experiment):
-    def __init__(self, angleHandler=None, settlingTime=0.1, 
+    def __init__(self, polarizerHandler=None, settlingTime=0.1,
                  startV=0.0, maxV=10., vSteps=100, *args, **kwargs):
         experiment.Experiment.__init__(self, *args, **kwargs)
-        self.angleHandler = angleHandler
+        self.polarizerHandler = polarizerHandler
         self.settlingTime = settlingTime
         # Look up the rotator analogue line handler.
-        self.lineHandler = angleHandler.getLineHandler()
+        self.lineHandler = polarizerHandler.getLineHandler()
         self.vRange = (startV, maxV, vSteps)
         vDelta = float(maxV - startV) / vSteps
         # Add voltage parameters to the metadata.
@@ -65,7 +65,7 @@ class ExperimentUI(wx.Panel):
         wx.Panel.__init__(self, parent = parent)
         self.configKey = configKey
         sizer = wx.GridSizer(rows=2, cols=4)
-        ## Maps strings to TextCtrls describing how to configure 
+        ## Maps strings to TextCtrls describing how to configure
         # response curve experiments.
         self.settings = self.loadSettings()
         self.settlingTimeControl = gui.guiUtils.addLabeledInput(
@@ -95,8 +95,8 @@ class ExperimentUI(wx.Panel):
         params['startV'] = gui.guiUtils.tryParseNum(self.startVControl, float)
         params['maxV'] = gui.guiUtils.tryParseNum(self.maxVControl, float)
         params['vSteps'] = gui.guiUtils.tryParseNum(self.vStepsControl)
-        params['angleHandler'] = depot.getHandlerWithName('SI angle')
-        return params        
+        params['polarizerHandler'] = depot.getHandlerWithName('SI polarizer')
+        return params
 
 
     ## Load the saved experiment settings, if any.
