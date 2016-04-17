@@ -492,7 +492,7 @@ class NIcRIO(device.Device):
                 numpy.any(digitals != self.prevProfileSettings[1]) or
                 sum([numpy.any(analogs[i] != self.prevProfileSettings[2][i]) for i in xrange(4)])):
             # We can't just re-use the already-loaded profile.
-            self.connection.sendTables(digitals, *analogs)
+            self.connection.sendTables(digitalsTable = digitals, analogueTables = analogs)
             self.prevProfileSettings = (profileStr, digitals, analogs)
             
         events.publish('update status light', 'device waiting',
@@ -698,7 +698,7 @@ class NIcRIO(device.Device):
         # Convert volts -> ADUs
         adus = int(voltage * 3276.8)
         ## TODO: sensitivity
-        self.connection.writeAnalogueADU(adus, aline)
+        self.connection.writeAnalogueADU(aline, adus)
 
 
     ## Debugging function: plot the NI-FPGA profile we last used.
@@ -842,7 +842,9 @@ class Connection():
     '''
     def __init__(self, host, port):
         # Edit this dictionary of common commands after updating the NI RT-host settup
-        self.commandDict = {'abort' : '301',
+        self.commandDict = {'sendDigitals' : '101',
+                            'sendAnalogues' : '20X',
+                            'abort' : '301',
                             'reInit' : '302',
                             'reInitHost' : '303',
                             'reInitFPGA' : '304',
@@ -853,8 +855,6 @@ class Connection():
                             'writeDigitals' : '311',
                             'takeImage' : '312',
                             'writeAnalogue' : '34X',
-                            'sendDigitals' : '101',
-                            'sendAnalogues' : '20X',
                             }
         self.errorCodes = {'0' : None,
                            '1' : 'Could not create socket',
@@ -863,7 +863,7 @@ class Connection():
         self.host = host
         self.port = port # port is a tuple with two values
         self.sendSocket = self.createSendSocket(self.host, self.port[0])
-        self.receiveSocket = self.createReceiveSocket('10.90.90.21', self.port[1])
+        self.receiveSocket = self.createReceiveSocket('10.90.90.21', self.port[1]) #TODO: must move thsi IP to config file
 
 
 #        self.fn = fn
@@ -928,7 +928,7 @@ class Connection():
         pass
     
     
-    def runCommand(self, command, args = []):
+    def runCommand(self, command, args = [], msgLength = 20):
         '''
         This method sends a command message of three numbers followed by 
         associated arguments to the RT-host
@@ -940,19 +940,37 @@ class Connection():
         Return a tuple where first element is 0 if success and 1 if error.
         Second element is error code.
         '''
-        # Transform args into a list of strings of 20 chars
-                                 
+        # Transform args into a list of strings of msgLength chars
+        sendArgs = []
+        for arg in args:
+            if type(arg) == str and len(arg) <= msgLength:
+                sendArgs.append(arg.rjust(msgLength, '0'))
+            elif type(arg) == int and len(str(arg)) <= msgLength:
+                sendArgs.append(str(arg).rjust(msgLength, '0'))
+            else:
+                try:
+                    sendArgs.append(str(arg).rjust(msgLength, '0'))
+                except:
+                    print('Cannot send arguments to the executing device')
+
         try:
             # Send the actual message and arguments
+            #TODO: Implement into the protocol sending the message length
             self.sendSocket.send(command)
-            buf = str('').join(args)
+            print('Sent command: ' + str(command))
+            buf = str('').join(sendArgs)
             self.sendSocket.sendall(buf)
+            print('Sent buffer:')
+            print(str(buf))
+            error = self.sendSocket.recv(4)
+            print('error is ' + error)
+            return (0, int(error))
         except socket.error, msg:
             #Send failed
             print 'Send failed. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
             return (1, '3')
-
-        return (0,0)
+        
+#         return (0, 0)
     
     
     def writeParameter(self, parameter, value):
@@ -1026,25 +1044,25 @@ class Connection():
             self.runCommand(self.commandDict['reInitFPGA'])
 
          
-    def updateNReps(self, newCount):
+    def updateNReps(self, newCount, msgLength=20):
         '''
         Updates the number of repetitions to execute on the FPGA.
         
-        newCount must be a string of less than 48 characters
+        newCount must be msgLength characters or less
+        msgLength is an int indicating the length of newCount as a decimal string
         '''
+        newCount = [newCount]
         
-        # Convert newCount into a string
-        newCount = str(newCount)
+        self.runCommand(self.commandDict['updateNrReps'], newCount, msgLength)
         
-        self.runCommand(self.commandDict['updateNrReps'], newCount, msgLength=20)
         
-    def sendTables(self, digitalsTable, msgLength = 20, digitalsBitDepth = 32, analoguesBitDepth = 16, *analogueTables):
+    def sendTables(self, digitalsTable, analogueTables, msgLength = 20, digitalsBitDepth = 32, analoguesBitDepth = 16):
         '''
         Sends through TCP the digitals and analogue tables to the RT-host.
         
         Analogues lists must be ordered form 0 onward and without gaps. That is,
         (0), (0,1), (0,1,2) or (0,1,2,3). If a table is missing a dummy table must be introduced
-        
+        msgLength is an int indicating the length of every digital table element as a decimal string
         '''
         
         print('sendTables called')
@@ -1053,7 +1071,7 @@ class Connection():
               
         for time, value in digitalsTable:
             digitalsValue = int(numpy.binary_repr(time, 32) + numpy.binary_repr(value, 32), 2)
-            digitalsList.append(str(digitalsValue).rjust(20, '0'))
+            digitalsList.append(digitalsValue)
                             
         # Send digitals
         self.runCommand(self.commandDict['sendDigitals'], digitalsList, msgLength)
@@ -1067,7 +1085,7 @@ class Connection():
             
             for time, value in analogueTable:
                 analogueValue = int(numpy.binary_repr(time, 32) + numpy.binary_repr(value, 32), 2)
-                analogueList.append(str(analogueValue))
+                analogueList.append(analogueValue)
             
             command = self.commandDict['sendAnalogues'][0:2] + str(analogueChannel)
             self.runCommand(command, analogueList, msgLength)
@@ -1079,7 +1097,8 @@ class Connection():
                      digitalsStartIndex, 
                      digitalsStopIndex, 
                      analoguesStartIndexes, 
-                     analoguesStopIndexes):
+                     analoguesStopIndexes,
+                     msgLength = 20):
         '''
         Writes to the FPGA the start and stop indexes of the actionTables that
         have to be run on an experiment. Actually, multiple 'indexSets' can be used
@@ -1094,6 +1113,7 @@ class Connection():
         Included in the execution or the experiment. list or tuple of integers up to u32bit
         analoguesStopIndexes -- iterable containing the stop points of the analogues tables.
         NOT included in the execution or the experiment. list or tuple of integers up to u32bit
+        msgLength is an int indicating the length of every element as a decimal string
         '''
         # TODO: Verify the value of indexSet is between 0 and 15
         # TODO: Verify that analogues lists are the same length
@@ -1101,29 +1121,10 @@ class Connection():
         # Convert every index into a string of the appropriate length
         indexSet = str(indexSet).rjust(2, '0')
         
-        digitalsStartIndex = str(digitalsStartIndex).rjust(20, '0')
-        digitalsStopIndex = str(digitalsStopIndex).rjust(20, '0')
-        
-        newList = []        
-        for index in analoguesStartIndexes:
-            newList.append(str(index))
-        analoguesStartIndexes = newList
-        
-        newList = []        
-        for index in analoguesStopIndexes:
-            newList.append(str(index))
-        analoguesStopIndexes = newList
-        
         # Merge everything in a single list to send. Note that we interlace the 
         # analogue indexes (start, stop, start, stop,...) so in the future we can 
         # put an arbitrary number. For the moment the FPGA will use 4
         sendList = [indexSet, digitalsStartIndex, digitalsStopIndex]
-        
-        for index in analoguesStartIndexes:
-            sendList.append(index)
-        
-        for index in analoguesStopIndexes:
-            sendList.append(index)
         
         analoguesInterleaved = [x for t in zip(analoguesStartIndexes, analoguesStopIndexes) for x in t]
         
@@ -1131,7 +1132,7 @@ class Connection():
             sendList.append(index)
         
         # send indexes. 
-        self.runCommand(self.commandDict['sendStartStopIndexes'], sendList)
+        self.runCommand(self.commandDict['sendStartStopIndexes'], sendList, msgLength)
                    
     
     def readError(self):
@@ -1171,7 +1172,7 @@ class Connection():
         pass
     
     
-    def writeAnalogueADU(self, analogueValueADU, analogueChannel):
+    def writeAnalogueADU(self, analogueChannel, analogueValueADU, msgLength=20):
         '''
         Changes an analogueChannel output to the specified analogueValue value
         
@@ -1179,10 +1180,12 @@ class Connection():
         
         analogueChannel is an integer corresponding to the analogue in the FPGA 
         as specified in the config files
+        msgLength is an int indicating the max length of the analogue as a decimal string
+
         '''
-        analogue = [str(analogueChannel), str(analogueValueADU)]
+        analogue = [analogueChannel, analogueValueADU]
         
-        self.runCommand(self.commandDict['writeAnalogue'], analogue)
+        self.runCommand(self.commandDict['writeAnalogue'], analogue, msgLength)
     
     
     def writeAnalogueDelta(self, analogueDeltaValue, analogueChannel):
@@ -1210,12 +1213,15 @@ class Connection():
         return int(self.readStatus(analogueLine))
         
     
-    def writeDigitals(self, digitalValue):
+    def writeDigitals(self, digitalValue, msgLength=20):
         '''
         Write a specific value to the ensemble of the digitals through a 32bit
-        integer digitalValue.        
+        integer digitalValue.
+        msgLength is an int indicating the length of the digitalValue as a decimal string
+   
         '''
-        self.runCommand(self.commandDict['writeDigitals'], str(digitalValue))
+        digitalValue = [digitalValue]
+        self.runCommand(self.commandDict['writeDigitals'], digitalValue, msgLength)
 
     
     def readDigitals(self, digitalChannel = None):
@@ -1233,7 +1239,7 @@ class Connection():
             return int(value, 2)
     
     
-    def initProfile(self,numberReps, repDuration):
+    def initProfile(self,numberReps, repDuration, msgLength=20):
         '''
         Prepare the FPGA to run the loaded profile.
         Send a certain number of parameters:
@@ -1241,12 +1247,10 @@ class Connection():
         
         numberReps -- the number of repetitions to run
         repDuration -- the time interval between repetitions
+        msgLength -- int indicating the length of numberReps and repDuration as decimal strings
+
         '''
-        # Merge parameters into a list of strings to send
-        collectParameters = [str(numberReps).rjust(20,'0'),
-                             str(repDuration).rjust(20, '0')]
-                
-        self.runCommand(self.commandDict['initProfile'], collectParameters, msgLength=20)
+        self.runCommand(self.commandDict['initProfile'], [numberReps, repDuration], msgLength)
 
         
     def getframedata(self):
@@ -1263,11 +1267,11 @@ class Connection():
         self.runCommand(self.commandDict['triggerExperiment'])
         
         
-    def takeImage(self, cameras, lightTimePairs, actionsPerMillisecond=1000, digitalsBitDepth = 32):
+    def takeImage(self, cameras, lightTimePairs, actionsPerMillisecond=1000, digitalsBitDepth = 32, msgLength=20):
         '''
         Performs a snap with the selected cameras and light-time pairs
         
-        Generates a list of tiems and digitals that is sent to the FPGA to be run
+        Generates a list of times and digitals that is sent to the FPGA to be run
         
         Expose all lights at the start, then drop them out
         as their exposure times come to an end.
@@ -1306,9 +1310,10 @@ class Connection():
                 # binarize and concatenate time and digital value
                 value = numpy.binary_repr(time, 32) + numpy.binary_repr(light, digitalsBitDepth)
                 value = int(value, 2)
-                sendList.append(str(value))
+                sendList.append(value)
                 
-            self.runCommand(self.commandDict['takeImage'], sendList, msgLength=20)
+            print(sendList)  
+            self.runCommand(self.commandDict['takeImage'], sendList, msgLength)
             
 
 
