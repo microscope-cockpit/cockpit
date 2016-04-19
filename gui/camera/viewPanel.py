@@ -64,6 +64,7 @@ class ViewPanel(wx.Panel):
         # We need to respond to this event after the cameras do, since we
         # need them to have gotten their new names.
         events.subscribe("drawer change", self.onDrawerChange, priority = 1000)
+        self.SetDoubleBuffered(True)
 
 
     ## User interacted with our current image; on double-clicks we center
