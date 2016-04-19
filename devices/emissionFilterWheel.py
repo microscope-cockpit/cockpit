@@ -115,6 +115,7 @@ class FilterWheelManager(device.Device):
 class FilterWheelDevice(device.Device):
     def __init__(self, name):
         self.name = name
+        self.displayName = name.replace(CONFIG_NAME, '').lstrip()
         self.connection = None
         self.cameraNames = []
         self.filters = []
@@ -182,15 +183,14 @@ class FilterWheelDevice(device.Device):
             dye = self.filters[self.curPosition-1].dye
             wavelength = self.filters[self.curPosition-1].wavelength or None
             if dye:
-                self.display.SetLabel('%s (%s)' % (dye, wavelength))
+                self.display.SetLabel('%s\n%s (%s)' % (self.displayName, dye, wavelength))
             else:
-                self.display.SetLabel('no filter')
+                self.display.SetLabel('%s\nno filter' % self.displayName)
 
 
     def makeUI(self, parent):
         self.display = gui.toggleButton.ToggleButton(
-                        parent=parent, label='',
-                        size=gui.device.DEFAULT_SIZE, isBold=False)
+                        parent=parent, label='', isBold=False)
         self.display.Bind(wx.EVT_LEFT_DOWN, self.menuFunc)
         return self.display
 
