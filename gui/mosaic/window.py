@@ -34,13 +34,16 @@ SIDEBAR_WIDTH = 150
 
 ## Timeout for mosaic new image events
 CAMERA_TIMEOUT = 5
+##how good a circle to draw
+CIRCLE_SEGMENTS = 32
+PI = 3.141592654
 
 ## Simple structure for marking potential beads.
 BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 
 
 
-## This class handles the UI of the mosaic. 
+## This class handles the UI of the mosaic.
 class MosaicWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
@@ -51,7 +54,7 @@ class MosaicWindow(wx.Frame):
         self.prevMousePos = None
         ## Last click position of the mouse.
         self.lastClickPos = None
-        ## Function to call when tiles are selected. 
+        ## Function to call when tiles are selected.
         self.selectTilesFunc = None
         ## True if we're generating a mosaic.
         self.amGeneratingMosaic = False
@@ -78,19 +81,21 @@ class MosaicWindow(wx.Frame):
         ## Current selected sites for highlighting with crosshairs.
         self.selectedSites = set()
 
-        ## Parameters defining the focal plane -- a tuple of 
+        ## Parameters defining the focal plane -- a tuple of
         # (point on plane, normal vector to plane).
         self.focalPlaneParams = None
 
         ## Font to use for site labels.
         self.font = FTGL.TextureFont(
-                os.path.join(COCKPIT_PATH, 'resources', 
+                os.path.join(COCKPIT_PATH, 'resources',
                              'fonts', 'GeosansLight.ttf'))
         self.defaultFaceSize = 64
         self.font.FaceSize(self.defaultFaceSize)
 
         #default scale bar size is Zero
         self.scalebar = 0
+        #Default to drawing primitives
+        self.drawPrimitives = True
         ## Maps button names to wx.Button instances.
         self.nameToButton = {}
 
@@ -121,12 +126,12 @@ class MosaicWindow(wx.Frame):
                 ('Load mosaic', self.loadMosaic, None,
                  "Load a mosaic file that was previously saved. Make " +
                  "certain you load the .txt file, not the .mrc file."),
-                ('Calculate focal plane', self.setFocalPlane, self.clearFocalPlane, 
+                ('Calculate focal plane', self.setFocalPlane, self.clearFocalPlane,
                  "Calculate the focal plane of the sample, assuming that " +
                  "the currently-selected sites are all in focus, and that " +
-                 "the sample is flat. Right-click to clear the focal plane settings." + 
-                 "Once the focal plane is set, all motion in the mosaic " + 
-                 "window (including when making mosaics) will stay in the " + 
+                 "the sample is flat. Right-click to clear the focal plane settings." +
+                 "Once the focal plane is set, all motion in the mosaic " +
+                 "window (including when making mosaics) will stay in the " +
                  "focal plane."),
                 ('Mark bead centers', self.selectTilesForBeads, None,
                  "Allows you to select mosaic tiles and search for isolated " +
@@ -173,7 +178,7 @@ class MosaicWindow(wx.Frame):
 
         limits = interfaces.stageMover.getHardLimits()[:2]
         ## MosaicCanvas instance.
-        self.canvas = canvas.MosaicCanvas(self.panel, limits, self.drawOverlay, 
+        self.canvas = canvas.MosaicCanvas(self.panel, limits, self.drawOverlay,
                 self.onMouse)
         sizer.Add(self.canvas, 1, wx.EXPAND)
         self.panel.SetSizerAndFit(sizer)
@@ -208,7 +213,7 @@ class MosaicWindow(wx.Frame):
     def centerCanvas(self, event = None):
         curPosition = interfaces.stageMover.getPosition()[:2]
 
-        # Calculate the size of the box at the center of the crosshairs. 
+        # Calculate the size of the box at the center of the crosshairs.
         # \todo Should we necessarily assume a 512x512 area here?
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         self.crosshairBoxSize = 512 * objective.getPixelSize()
@@ -233,6 +238,8 @@ class MosaicWindow(wx.Frame):
                                                default= 0)
         self.overlap=util.userConfig.getValue('mosaicTileOverlap', isGlobal=False,
                                                default = 0)
+        self.drawPrimitives=util.userConfig.getValue('mosaicDrawPrimitives',
+                                            isGlobal = False, default = True)
 
     ## Get updated about new stage position info or step size.
     # This requires redrawing the display, if the axis is the X or Y axes.
@@ -250,7 +257,7 @@ class MosaicWindow(wx.Frame):
         self.Refresh()
 
 
-    ## Handle mouse events. 
+    ## Handle mouse events.
     def onMouse(self, event):
         if self.prevMousePos is None:
             # We can't perform some operations without having a prior mouse
@@ -280,7 +287,7 @@ class MosaicWindow(wx.Frame):
             elif event.LeftIsDown() and not event.LeftDown():
                 # Dragging the mouse with the left mouse button: drag or
                 # zoom, as appropriate.
-                delta = (mousePos[0] - self.prevMousePos[0], 
+                delta = (mousePos[0] - self.prevMousePos[0],
                         mousePos[1] - self.prevMousePos[1])
                 if event.ShiftDown():
                     # Use the vertical component of mouse motion to zoom.
@@ -309,13 +316,19 @@ class MosaicWindow(wx.Frame):
                 wx.EVT_MENU(self.panel, menuId,
                         lambda event, color = color: self.saveSite(color))
                 menuId += 1
+            menu.AppendSeparator()
+            menu.Append(menuId, "Set mosaic tile overlap")
+            wx.EVT_MENU(self.panel, menuId,
+                        lambda event: self.setTileOverlap())
+            menuId += 1
             menu.Append(menuId, "Toggle mosaic scale bar")
             wx.EVT_MENU(self.panel, menuId,
                         lambda event: self.togglescalebar())
             menuId += 1
-            menu.Append(menuId, "Set % tile overlap.")
+            menu.Append(menuId, "Toggle draw primitives")
             wx.EVT_MENU(self.panel, menuId,
-                        lambda event: self.setTileOverlap())
+                        lambda event: self.toggleDrawPrimitives())
+
             gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
         self.prevMousePos = mousePos
@@ -406,7 +419,7 @@ class MosaicWindow(wx.Frame):
             self.scalebar = 100*(10**math.floor(math.log(1/self.canvas.scale,10)))
             # Scale bar position, near the top left-hand corner.
             scalebarPos = [30,-10]
-            
+
             # Scale bar vertices.
             x1 = scalebarPos[0]/self.canvas.scale
             x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
@@ -439,8 +452,53 @@ class MosaicWindow(wx.Frame):
 
             # Restore the default font size.
             self.font.FaceSize(self.defaultFaceSize)
-            
+        #Draw stage primitives.
+        if(self.drawPrimitives):
+            # Draw device-specific primitives.
+            glEnable(GL_LINE_STIPPLE)
+            glLineStipple(1, 0xAAAA)
+            glColor3f(0.4, 0.4, 0.4)
+            primitives = interfaces.stageMover.getPrimitives()
+            for p in primitives:
+                if p.type in ['c', 'C']:
+                    # circle: x0, y0, radius
+                    self.drawScaledCircle(p.data[0], p.data[1],
+                                          p.data[2], CIRCLE_SEGMENTS)
+                if p.type in ['r', 'R']:
+                    # rectangle: x0, y0, width, height
+                    self.drawScaledRectangle(*p.data)
+            glDisable(GL_LINE_STIPPLE)
 
+    def drawScaledCircle(self, x0, y0, r, n):
+        dTheta = 2. * PI / n
+        cosTheta = numpy.cos(dTheta)
+        sinTheta = numpy.sin(dTheta)
+        x0=x0-self.offset[0]
+        y0 =y0+self.offset[1]
+        x = r
+        y = 0.
+
+        glBegin(GL_LINE_LOOP)
+        for i in xrange(n):
+            glVertex2f(-(x0 + x), y0 + y)
+            xOld = x
+            x = cosTheta * x - sinTheta * y
+            y = sinTheta * xOld + cosTheta * y
+        glEnd()
+		
+    ## Draw a rectangle centred on x0, y0 of width w and height h.
+    def drawScaledRectangle(self, x0, y0, w, h):
+        dw = w / 2.
+        dh = h / 2.
+        ps = [(x0-dw, y0-dh),
+              (x0+dw, y0-dh),
+              (x0+dw, y0+dh),
+              (x0-dw, y0+dh)]
+
+        glBegin(GL_LINE_LOOP)
+        for i in xrange(-1, 4):
+            glVertex2f(-ps[i][0]+self.offset[0], ps[i][1]-self.offset[1])
+        glEnd()
     # Draw a crosshairs at the specified position with the specified color.
     # By default make the size of the crosshairs be really big.
     def drawCrosshairs(self, position, color, size = None):
@@ -465,7 +523,7 @@ class MosaicWindow(wx.Frame):
         glBegin(GL_LINE_LOOP)
         # Draw the box.
         for i, j in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
-            glVertex2d(-x + i * self.crosshairBoxSize / 2, 
+            glVertex2d(-x + i * self.crosshairBoxSize / 2,
                     y + j * self.crosshairBoxSize / 2)
         glEnd()
 
@@ -507,8 +565,8 @@ class MosaicWindow(wx.Frame):
 
     ## Move the stage in a spiral pattern, stopping to take images at regular
     # intervals, to generate a stitched-together high-level view of the stage
-    # contents. This function is suspended when the Abort button (or the 
-    # Stop Mosaic button) is pressed, and can be resumed later. Only one 
+    # contents. This function is suspended when the Abort button (or the
+    # Stop Mosaic button) is pressed, and can be resumed later. Only one
     # such suspended thread is allowed to be active at a time.
     def generateMosaic2(self, camera):
         # Acquire the mosaic lock so no other mosaics can run.
@@ -556,7 +614,7 @@ class MosaicWindow(wx.Frame):
                 self.exitMosaicLoop()
                 raise
             # Get the scaling for the camera we're using, since they may
-            # have changed. 
+            # have changed.
             try:
                 minVal, maxVal = gui.camera.window.getCameraScaling(camera)
             except:
@@ -564,8 +622,8 @@ class MosaicWindow(wx.Frame):
                 self.exitMosaicLoop()
                 raise
             pos=interfaces.stageMover.getPosition()
-            events.executeAndWaitFor('mosaic canvas paint', 
-                    self.canvas.addImage, data, 
+            events.executeAndWaitFor('mosaic canvas paint',
+                    self.canvas.addImage, data,
                     # This assumes perfect positioning.
                     #(-prevPosition[0] - width / 2,
                     #    prevPosition[1] - height / 2, curZ),
@@ -644,6 +702,18 @@ class MosaicWindow(wx.Frame):
         util.userConfig.setValue('mosaicScaleBar',self.scalebar, isGlobal=False)
         self.Refresh()
 
+    def toggleDrawPrimitives(self):
+        #toggle the scale bar between 0 and 1.
+        if (self.drawPrimitives!=False):
+            self.drawPrimitives=False
+        else:
+            self.drawPrimitives = True
+        #store current state for future.
+        util.userConfig.setValue('mosaicDrawPrimitives',self.drawPrimitives,
+                                 isGlobal=False)
+        self.Refresh()
+
+
     ## Save the current stage position as a new site with the specified
     # color (or our currently-selected color if none is provided).
     def saveSite(self, color = None):
@@ -703,8 +773,8 @@ class MosaicWindow(wx.Frame):
                     magnitude = numpy.sqrt(sum(normal * normal))
                     normals.append(normal / magnitude)
 
-        # Ensure all normals point in the same direction. If they oppose, 
-        # their sum should be ~0; if they are aligned, it should be 
+        # Ensure all normals point in the same direction. If they oppose,
+        # their sum should be ~0; if they are aligned, it should be
         # ~2.
         normals = numpy.array(normals)
         base = normals[0]
@@ -727,12 +797,12 @@ class MosaicWindow(wx.Frame):
         self.focalPlaneParams = None
 
 
-    ## Go to the specified XY position. If we have a focus plane defined, 
+    ## Go to the specified XY position. If we have a focus plane defined,
     # go to the appropriate Z position to maintain focus.
     def goTo(self, target, shouldBlock = False):
         if self.focalPlaneParams:
             targetZ = self.getFocusZ(target)
-            interfaces.stageMover.goTo((target[0], target[1], targetZ), 
+            interfaces.stageMover.goTo((target[0], target[1], targetZ),
                     shouldBlock)
         else:
             #IMD 20150306 Save current mover, change to coarse to generate mosaic
@@ -981,14 +1051,14 @@ class MosaicWindow(wx.Frame):
 
 
     ## Examine the mosaic, trying to find isolated bead centers, and putting
-    # a site marker on each one. We partition each tile of the mosaic into 
+    # a site marker on each one. We partition each tile of the mosaic into
     # subsections, find connected components, and mark them if they
     # are isolated.
     def markBeadCenters(self, start, end):
         # Cancel selecting beads now that we have what we need.
         self.setSelectFunc(None)
         tiles = self.canvas.getTilesIntersecting(start, end)
-        statusDialog = wx.ProgressDialog(parent = self, 
+        statusDialog = wx.ProgressDialog(parent = self,
                 title = "Finding bead centers",
                 message = "Scanning mosaic...",
                 maximum = len(tiles),
@@ -1012,7 +1082,7 @@ class MosaicWindow(wx.Frame):
             pixelSize = tile.getPixelSize()
             median = numpy.median(data)
             std = numpy.std(data)
-            # Threshold the data so that background becomes 0 and signal 
+            # Threshold the data so that background becomes 0 and signal
             # becomes 1 -- admittedly the threshold value is somewhat
             # arbitrary.
             thresholded = numpy.zeros(data.shape, dtype = numpy.uint16)
@@ -1023,7 +1093,7 @@ class MosaicWindow(wx.Frame):
             for j in xrange(data.shape[0] / 3, 2 * data.shape[0] / 3, regionSize / 4):
                 for k in xrange(data.shape[1] / 3, 2 * data.shape[1] / 3, regionSize / 4):
                     region = thresholded[j : j + regionSize, k : k + regionSize]
-                    # Skip overly small regions (on the off-chance that 
+                    # Skip overly small regions (on the off-chance that
                     # regionSize is a significant portion of the tile size).
                     if region.shape[0] < regionSize or region.shape[1] < regionSize:
                         continue
@@ -1039,18 +1109,18 @@ class MosaicWindow(wx.Frame):
                     # it might be close to a bead in a different region. Note
                     # that our region iteration overlaps, so if a bead is truly
                     # isolated we'll pick it up on a different loop.
-                    if (x < regionSize * .25 or x > regionSize * .75 or 
+                    if (x < regionSize * .25 or x > regionSize * .75 or
                             y < regionSize * .25 or y > regionSize * .75):
                         continue
                     # Ensure that the bead is circular, by comparing the area
-                    # of the bead to the area of a circle containing all of 
+                    # of the bead to the area of a circle containing all of
                     # the bead's pixels.
                     xDists = [(x - xi) ** 2 for xi in xVals]
                     yDists = [(y - yi) ** 2 for yi in yVals]
                     maxDistSquared = max(map(sum, zip(xDists, yDists)))
                     # Area of a circle containing all pixels
                     area = numpy.pi * maxDistSquared
-                    # Reject beads whose area is less than 60% of the area of 
+                    # Reject beads whose area is less than 60% of the area of
                     # the circle.
                     if len(xVals) / area < .6:
                         continue
@@ -1058,11 +1128,11 @@ class MosaicWindow(wx.Frame):
                     # Go from the subregion coordinates to full-tile coordinates
                     x += k - data.shape[1] / 3
                     y += j - data.shape[0] / 3
-                    pos = numpy.array([-tile.pos[0] - x * pixelSize[0], 
+                    pos = numpy.array([-tile.pos[0] - x * pixelSize[0],
                             tile.pos[1] + y * pixelSize[1],
                             tile.pos[2]])
                     # Check for other marked beads that are close to this one.
-                    # \todo This process makes the entire system N^2 
+                    # \todo This process makes the entire system N^2
                     # (where N is the number of sites), so it's moderately
                     # expensive.
                     canKeep = True
@@ -1075,9 +1145,9 @@ class MosaicWindow(wx.Frame):
                     if not canKeep:
                         continue
                     # Record this potential bead. Its "size" is the number
-                    # of pixels in the component, and its intensity is the 
+                    # of pixels in the component, and its intensity is the
                     # average intensity of pixels in the component.
-                    newSite = BeadSite(pos, len(xVals), 
+                    newSite = BeadSite(pos, len(xVals),
                             numpy.mean(data[(yVals, xVals)]))
                     beadSites.append(newSite)
 
