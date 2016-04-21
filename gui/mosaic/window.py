@@ -316,13 +316,14 @@ class MosaicWindow(wx.Frame):
                 wx.EVT_MENU(self.panel, menuId,
                         lambda event, color = color: self.saveSite(color))
                 menuId += 1
+            menu.AppendSeparator()
+            menu.Append(menuId, "Set mosaic tile overlap")
+            wx.EVT_MENU(self.panel, menuId,
+                        lambda event: self.setTileOverlap())
+            menuId += 1
             menu.Append(menuId, "Toggle mosaic scale bar")
             wx.EVT_MENU(self.panel, menuId,
                         lambda event: self.togglescalebar())
-            menuId += 1
-            menu.Append(menuId, "Set % tile overlap.")
-            wx.EVT_MENU(self.panel, menuId,
-                        lambda event: self.setTileOverlap())
             menuId += 1
             menu.Append(menuId, "Toggle draw primitives")
             wx.EVT_MENU(self.panel, menuId,
