@@ -27,6 +27,7 @@ import decimal
 import matplotlib
 from string import rjust
 from _elementtree import Element
+from __builtin__ import str
 matplotlib.use('WXAgg')
 import matplotlib.backends.backend_wxagg
 import matplotlib.figure
@@ -852,6 +853,7 @@ class Connection():
                             'sendStartStopIndexes' : '306',
                             'initProfile' : '307',
                             'triggerExperiment' : '308',
+                            'flushFIFOs': '309',
                             'writeDigitals' : '311',
                             'takeImage' : '312',
                             'writeAnalogue' : '34X',
@@ -930,8 +932,12 @@ class Connection():
     
     def runCommand(self, command, args = [], msgLength = 20):
         '''
-        This method sends a command message of three numbers followed by 
-        associated arguments to the RT-host
+        This method sends to the RT-host a command message in the following way
+        - three numbers representing the command
+        - if there are arguments to send:
+            - 9not implemented yet9 the length of the messages to follow = msglength
+            - 9not implemented yet9 the amount of messages to follow
+        - receives acknowledgement of reception receiving an error code
         
         command is a 3 digits string obtained from commandDict
         
@@ -955,13 +961,23 @@ class Connection():
 
         try:
             # Send the actual message and arguments
-            #TODO: Implement into the protocol sending the message length
+            ## Send the actual command
             self.sendSocket.send(command)
             print('Sent command: ' + str(command))
+            
+#             if len(args):
+            ## Send the message length as a 4 digits string
+            self.sendSocket.send(str(msgLength).rjust(4, '0'))
+            ## Send as the first argument the length of the arguments list
+            self.sendSocket.send(str(len(sendArgs)).rjust(msgLength, '0'))
+            ## Send the actual arguments buffer
             buf = str('').join(sendArgs)
             self.sendSocket.sendall(buf)
             print('Sent buffer:')
             print(str(buf))
+            ## Send end of message
+            self.sendSocket.send('endofmessage')
+            ## receive confirmation error
             error = self.sendSocket.recv(4)
             print('error is ' + error)
             return (0, int(error))
@@ -1073,7 +1089,8 @@ class Connection():
             digitalsValue = int(numpy.binary_repr(time, 32) + numpy.binary_repr(value, 32), 2)
             digitalsList.append(digitalsValue)
                             
-        # Send digitals
+        # Send digitals after flushing the FPGA FIFOs
+        self.runCommand(self.commandDict['flushFIFOs'])
         self.runCommand(self.commandDict['sendDigitals'], digitalsList, msgLength)
         
         # Send Analogues
@@ -1089,7 +1106,7 @@ class Connection():
             
             command = self.commandDict['sendAnalogues'][0:2] + str(analogueChannel)
             self.runCommand(command, analogueList, msgLength)
-            analogueChannel =+1
+            analogueChannel = analogueChannel + 1
             
         
     def writeIndexes(self, 
@@ -1117,9 +1134,6 @@ class Connection():
         '''
         # TODO: Verify the value of indexSet is between 0 and 15
         # TODO: Verify that analogues lists are the same length
-        
-        # Convert every index into a string of the appropriate length
-        indexSet = str(indexSet).rjust(2, '0')
         
         # Merge everything in a single list to send. Note that we interlace the 
         # analogue indexes (start, stop, start, stop,...) so in the future we can 
@@ -1158,6 +1172,12 @@ class Connection():
         return int(self.readStatus(collectionLine))
 
 
+    def flushFIFOs(self):
+        '''
+        Flushes the FIFOs of the FPGA.
+        '''
+        self.runCommand(self.commandDict['flushFIFOs'])
+    
     def writeAnalogue(self, analogueValue, analogueChannel):
         '''
         Changes an analogueChannel output to the specified analogueValue value
@@ -1250,6 +1270,11 @@ class Connection():
         msgLength -- int indicating the length of numberReps and repDuration as decimal strings
 
         '''
+        # For some reason cockpit is passing a repDuration of none
+        if repDuration == None:
+            repDuration = 0
+            print('Changed repDuration')
+            
         self.runCommand(self.commandDict['initProfile'], [numberReps, repDuration], msgLength)
 
         
@@ -1312,7 +1337,7 @@ class Connection():
                 value = int(value, 2)
                 sendList.append(value)
                 
-            print(sendList)  
+            print(sendList)
             self.runCommand(self.commandDict['takeImage'], sendList, msgLength)
             
 
