@@ -173,6 +173,7 @@ class NIcRIO(device.Device):
         User clicked the abort button.
         '''
         self.connection.abort()
+        events.publish('NI-FPGA done')
 
 
     @util.threads.locked
@@ -1259,7 +1260,7 @@ class Connection():
             return int(value, 2)
     
     
-    def initProfile(self,numberReps, repDuration, msgLength=20):
+    def initProfile(self,numberReps, repDuration = 0, msgLength=20):
         '''
         Prepare the FPGA to run the loaded profile.
         Send a certain number of parameters:
@@ -1270,11 +1271,6 @@ class Connection():
         msgLength -- int indicating the length of numberReps and repDuration as decimal strings
 
         '''
-        # For some reason cockpit is passing a repDuration of none
-        if repDuration == None:
-            repDuration = 0
-            print('Changed repDuration')
-            
         self.runCommand(self.commandDict['initProfile'], [numberReps, repDuration], msgLength)
 
         
