@@ -66,32 +66,39 @@ class CockpitApp(wx.App):
             import util.user
             import util.userConfig
 
-            status.Update(1, "Initializing config...")
-
+            updateNum=1
+            status.Update(updateNum, "Initializing config...")
+            updateNum++
             util.userConfig.initialize()
 
-            status.Update(2, "Initializing devices...")
-
+            status.Update(updateNum, "Initializing devices...")
+            updateNum++
             for i, module in enumerate(depot.initialize()):
-                status.Update(2 + i, "Initializing devices...\n%s" % module)
-
-            status.Update(3 + i, "Initializing device interfaces...")
-            
+                status.Update(updateNum, "Initializing devices...\n%s" % module)
+                updateNum++
+            status.Update(updateNum, "Initializing device interfaces...")
+            updateNum++
             interfaces.initialize()
 
-            status.Update(4 + i, "Initializing user interface...")
-
+            status.Update(updateNum, "Initializing user interface...")
+            updateNum++
+                            
             frame = gui.mainWindow.makeWindow()
-            status.Update(5 + i, " ... camera window")
+            status.Update(updateNum, " ... camera window")
+            updateNum++
             self.SetTopWindow(frame)
             gui.camera.window.makeWindow(frame)
-            status.Update(6 + i, " ... mosaic window")
+            status.Update(updateNum, " ... mosaic window")
+            updateNum++
             gui.mosaic.window.makeWindow(frame)
-            status.Update(7 + i, " ... macrostage window")
+            status.Update(updateNum, " ... macrostage window")
+            updateNum++
             gui.macroStage.macroStageWindow.makeWindow(frame)
-            status.Update(8 + i, " ... shell window")
+            status.Update(updateNum, " ... shell window")
+            updateNum++
             gui.shellWindow.makeWindow(frame)
-            status.Update(9 + i, " ... statuslights window")
+            status.Update(updateNum, " ... statuslights window")
+            updateNum++
             gui.statusLightsWindow.makeWindow(frame)
 
             # At this point, we have all the main windows are displayed.
@@ -99,6 +106,9 @@ class CockpitApp(wx.App):
             # Now create secondary windows. These are single instance
             # windows that won't appear in the primary window marshalling
             # list.
+            status.Update(updateNum, " ... secondary windows")
+            updateNum++
+
             import gui.valueLogger
             gui.valueLogger.makeWindow(frame)
             from util import intensity
