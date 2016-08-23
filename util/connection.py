@@ -17,7 +17,6 @@ class Connection:
         self.callback = None
         ## Extant connection to the camera.
         self.connection = None
-        print('after init of connection class') # TODO: remove
 
 
     ## Establish a connection with the remote service, and tell

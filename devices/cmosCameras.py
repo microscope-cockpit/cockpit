@@ -19,8 +19,7 @@ SUPPORTED_CAMERAS = ['neo', 'zyla']
 
 
 ## Valid trigger modes for the cameras.
-#(TRIGGER_INTERNAL, TRIGGER_EXTERNAL, TRIGGER_EXTERNAL_EXPOSURE) = range(3) # TODO: move this to a config file
-(TRIGGER_INTERNAL, TRIGGER_EXTERNAL_START, TRIGGER_EXTERNAL_EXPOSURE, TRIGGER_SOFTWARE, TRIGGER_EXTERNAL) = (0, 2, 3, 4, 6)
+(TRIGGER_INTERNAL, TRIGGER_EXTERNAL_START, TRIGGER_EXTERNAL_EXPOSURE, TRIGGER_SOFTWARE, TRIGGER_EXTERNAL) = (0, 2, 3, 4, 6) # TODO: move this to a config file
 
 
 class AndorCMOSCameraDevice(camera.CameraDevice):
@@ -36,7 +35,7 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         if config.has_option('server', 'ipAddress'):
             serverIp = config.get('server', 'ipAddress')
         else:
-            serverIp = '10.90.90.21'
+            serverIp = '10.6.19.11'
         self.connobj = util.connection.Connection(
             'Andorcam', self.config.get('ipAddress'), self.config.get('port'),
             localIp = serverIp)
@@ -85,7 +84,7 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
 
     def getHandlers(self):
         """Returns the handler for the camera."""
-        #for name, ipAddress, port in [('Zyla', '10.0.0.2', 7000)]:
+        #for name, ipAddress, port in [('Zyla', '10.6.19.30', 7000)]:
         result = handlers.camera.CameraHandler(
             "%s" % self.config.get('label'), "sCMOS camera", 
             {'setEnabled': self.enableCamera, 
@@ -239,6 +238,7 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
 
     def prepareForExperiment(self, name, experiment):
         """Make the hardware ready for an experiment."""
+        print('prepareForExperiment called')
         exposureTime = experiment.getExposureTimeForCamera(self.handler)
         self.setExposureTime(name, exposureTime)
         self.connobj.connection.setTrigger(TRIGGER_EXTERNAL)
