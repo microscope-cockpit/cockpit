@@ -28,6 +28,7 @@ import matplotlib
 from string import rjust
 from _elementtree import Element
 from __builtin__ import str
+import json
 matplotlib.use('WXAgg')
 import matplotlib.backends.backend_wxagg
 import matplotlib.figure
@@ -843,21 +844,27 @@ class Connection():
     This class handles the connection with NI's RT-host computer
     '''
     def __init__(self, host, port):
-        # Edit this dictionary of common commands after updating the NI RT-host settup
-        self.commandDict = {'sendDigitals' : '101',
-                            'sendAnalogues' : '20X',
-                            'abort' : '301',
-                            'reInit' : '302',
-                            'reInitHost' : '303',
-                            'reInitFPGA' : '304',
-                            'updateNrReps' : '305',
-                            'sendStartStopIndexes' : '306',
-                            'initProfile' : '307',
-                            'triggerExperiment' : '308',
-                            'flushFIFOs': '309',
-                            'writeDigitals' : '311',
-                            'takeImage' : '312',
-                            'writeAnalogue' : '34X',
+        # Edit this dictionary of common commands after updating the NI RT-host setup
+        # We use a number of 3characters integers to define the commands
+        # Starting with 1 and 2 are sending digitals and analogues respectivelly
+        # Starting with 3 are asynchronous commands (mainly abort and reset signals
+        # that should operate at any moment.
+        # Starting with 4 are synchronous commands that can only operate when the
+        # FPGA is idle.
+        self.commandDict = {'sendDigitals' : 100,
+                            'sendAnalogues' : 200,
+                            'abort' : 301,
+                            'reInit' : 302,
+                            'reInitHost' : 303,
+                            'reInitFPGA' : 304,
+                            'updateNrReps' : 405,
+                            'sendStartStopIndexes' : 406,
+                            'initProfile' : 407,
+                            'triggerExperiment' : 408,
+                            'flushFIFOs': 409,
+                            'writeDigitals' : 410,
+                            'writeAnalogue' : 411,
+                            'takeImage' : 413,
                             }
         self.errorCodes = {'0' : None,
                            '1' : 'Could not create socket',
@@ -866,7 +873,7 @@ class Connection():
         self.host = host
         self.port = port # port is a tuple with two values
         self.sendSocket = self.createSendSocket(self.host, self.port[0])
-        self.receiveSocket = self.createReceiveSocket('10.90.90.21', self.port[1]) #TODO: must move thsi IP to config file
+        self.receiveSocket = self.createReceiveSocket('', self.port[1]) #TODO: must move thsi IP to config file
 
 
 #        self.fn = fn
@@ -933,11 +940,11 @@ class Connection():
     
     def runCommand(self, command, args = [], msgLength = 20):
         '''
-        This method sends to the RT-host a command message in the following way
+        This method sends to the RT-host a Json command message in the following way
         - three numbers representing the command
         - if there are arguments to send:
-            - 9not implemented yet9 the length of the messages to follow = msglength
-            - 9not implemented yet9 the amount of messages to follow
+            - the length of the messages to follow = msglength
+            - the amount of messages to follow
         - receives acknowledgement of reception receiving an error code
         
         command is a 3 digits string obtained from commandDict
@@ -959,29 +966,30 @@ class Connection():
                     sendArgs.append(str(arg).rjust(msgLength, '0'))
                 except:
                     print('Cannot send arguments to the executing device')
-
+                    
+        # Create a dictionary to be flattened and sent as json string
+        
+        messageCluster = {'Command': command,
+                          'Message Length': msgLength,
+                          'Number of Messages': len(sendArgs)
+                          }
+        
         try:
-            # Send the actual message and arguments
             ## Send the actual command
-            self.sendSocket.send(command)
-            print('Sent command: ' + str(command))
+            self.sendSocket.send(json.dumps(messageCluster))
+            self.sendSocket.send('\r\n')
+            print('Sent command: ' + json.dumps(messageCluster))
             
-#             if len(args):
-            ## Send the message length as a 4 digits string
-            self.sendSocket.send(str(msgLength).rjust(4, '0'))
-            ## Send as the first argument the length of the arguments list
-            self.sendSocket.send(str(len(sendArgs)).rjust(msgLength, '0'))
-            ## Send the actual arguments buffer
+            ## Send the actual messages buffer
             buf = str('').join(sendArgs)
             self.sendSocket.sendall(buf)
             print('Sent buffer:')
             print(str(buf))
-            ## Send end of message
-            self.sendSocket.send('endofmessage')
             ## receive confirmation error
-            error = self.sendSocket.recv(4)
+            errorLength = self.sendSocket.recv(4)
+            error = self.sendSocket.recv(int(errorLength))
             print('error is ' + error)
-            return (0, int(error))
+            return (0, error)
         except socket.error, msg:
             #Send failed
             print 'Send failed. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
@@ -1002,16 +1010,8 @@ class Connection():
         This method will listen to a UDP socket and get the status information
         of the RT-host and FPGA.
         
-        This information is returned as a dictionary. If a key is
-        specified the corresponding value is returned as a string
+        This information is returned as a json string and converted to a dictionary.
         
-        Keys are:
-        E0 to E9 - errors
-        C0 to C9 - collecting status
-        I00 to I99 - interlock status
-        T00 to T99 - temperatures
-        A00 to A99 - analogue output status
-        D0 to D9 - digital output status
         '''
         
         datagram = None
@@ -1023,15 +1023,16 @@ class Connection():
             datagram = self.receiveSocket.recvfrom(1024)
             
         
-        # parse datagram
-        datagramList = datagram[0].split('_')
-        
-        datagramDict = {}
-        
-        for element in datagramList:
-            element = element.split('=')
-            datagramDict[element[0]] = element[1]
-            
+        # parse json datagram
+        datagramDict = json.loads(datagram)
+#         datagramList = datagram[0].split('_')
+#         
+#         datagramDict = {}
+#         
+#         for element in datagramList:
+#             element = element.split('=')
+#             datagramDict[element[0]] = element[1]
+#             
         if key:
             return datagramDict[key]
         else:
@@ -1105,7 +1106,7 @@ class Connection():
                 analogueValue = int(numpy.binary_repr(time, 32) + numpy.binary_repr(value, 32), 2)
                 analogueList.append(analogueValue)
             
-            command = self.commandDict['sendAnalogues'][0:2] + str(analogueChannel)
+            command = str(int(self.commandDict['sendAnalogues']) + analogueChannel)
             self.runCommand(command, analogueList, msgLength)
             analogueChannel = analogueChannel + 1
             
@@ -1159,14 +1160,14 @@ class Connection():
         return self.getStatus('E0')       
         
     
-    def isCollecting(self, collectionLine = 'C1'):
+    def isCollecting(self, collectionLine = 'Action State'):
         '''
         Returns 1 if experiment is running and 0 if idle
         '''
         return int(self.readStatus(collectionLine))
     
     
-    def isAborted(self, collectionLine = 'C0'):
+    def isAborted(self, collectionLine = 'Aborted'):
         '''
         Returns 1 if FPGA is aborted and 0 if idle
         '''
@@ -1229,9 +1230,9 @@ class Connection():
         as entered in the analogue config files.
         '''
         
-        analogueLine = 'A' + str(analogueLine).rjust(2, '0')
+        analogueLine = 'Analogue ' + str(analogueLine)
         
-        return int(self.readStatus(analogueLine))
+        return int(self.readStatus(key = analogueLine))
         
     
     def writeDigitals(self, digitalValue, msgLength=20):
@@ -1251,7 +1252,7 @@ class Connection():
         
         If digitalChannel is specified, a 0 or 1 is returned.
         '''
-        value = Connection.readStatus(key = 'D0')
+        value = self.readStatus(key = 'Digitals')
         
         if digitalChannel:
             return int(value[-digitalChannel])
