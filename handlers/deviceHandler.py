@@ -8,6 +8,16 @@ from itertools import ifilter
 # to make your hardware accessible to the UI, you need to make a Device, and
 # implement its getHandlers() method so that it returns a list of
 # DeviceHandlers. 
+#
+# The device handler now supports multiple UI controls to en/disable those
+# devices that support this behaviour.
+# To add a toggle control anywhere in the UI:
+#  * Create a control with the method onEnabledEvent(enabled) that updates
+#    the control appearance depending on the device state.
+#  * Register the control with handler(addListener) so it receives
+#    device state updates.
+#  * Bind the control to handler(toggleState) so it can control device state.
+
 class DeviceHandler:
     ## \param name The name of the device being controlled. This should be
     #         unique, as it is used to indicate the specific DeviceHandler
