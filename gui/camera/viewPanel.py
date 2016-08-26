@@ -160,7 +160,7 @@ class ViewPanel(wx.Panel):
 
     ## Return True if we currently display a camera.
     def getIsEnabled(self):
-        return self.curCamera is not None and self.curCamera.getIsEnabled()
+        return self.curCamera is not None
 
 
     ## Get the black- and white-point for the view.
