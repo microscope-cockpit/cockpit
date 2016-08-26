@@ -14,6 +14,7 @@ import util.logger
 ## Default viewer dimensions.
 (VIEW_WIDTH, VIEW_HEIGHT) = (512, 552)
 
+
 ## This class provides an interface for a single camera. It includes a
 # button at the top to select which camera to use, a viewing area to display
 # the image the camera sees, and a histogram at the bottom.
@@ -83,7 +84,7 @@ class ViewPanel(wx.Panel):
         menu = wx.Menu()
         if self.curCamera is not None:
             item = menu.Append(-1, "Disable %s" % self.curCamera.descriptiveName)
-            self.Bind(wx.EVT_MENU, self.disableCamera, item)
+            self.Bind(wx.EVT_MENU, lambda event: self.curCamera.setEnabled(False), item)
             menu.InsertSeparator(1)
             items = self.canvas.getMenuActions()
             for label, action in items:
@@ -104,8 +105,7 @@ class ViewPanel(wx.Panel):
                 if not camera.getIsEnabled():
                     item = menu.Append(-1, "Enable %s" % camera.descriptiveName)
                     self.Bind(wx.EVT_MENU, 
-                            lambda event, camera = camera: self.enableCamera(camera),
-                            item)
+                            lambda event, cam=camera: cam.setEnabled(True), item)
         gui.guiUtils.placeMenuAtMouse(self, menu)
 
 
@@ -117,13 +117,7 @@ class ViewPanel(wx.Panel):
         if self.curCamera is not None:
             # Wrap this in a try/catch since it will fail if the initial
             # camera enabling failed.
-            try:
-                events.unsubscribe("new image %s" % self.curCamera.name, self.onImage)
-                self.curCamera.setEnabled(False)
-            except Exception, e:
-                util.logger.log.error("Error disabling camera: %s", e)
-                util.logger.log.error(traceback.format_exc())
-            events.publish('camera enable', self.curCamera, False)
+            events.unsubscribe("new image %s" % self.curCamera.name, self.onImage)
             self.curCamera = None
             self.canvas.clear()
         if self.canvas is not None:
