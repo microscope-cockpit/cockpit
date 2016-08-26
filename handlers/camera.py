@@ -91,6 +91,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
         # Subscribe / unsubscribe to the prepare-for-experiment event.
         func = [events.unsubscribe, events.subscribe][shouldEnable]
         func('prepare for experiment', self.prepareForExperiment)
+        events.publish('camera enable', self, self.isEnabled)
 
 
     ## Return self.isEnabled.
