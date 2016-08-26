@@ -23,7 +23,7 @@ class Connection:
     # it to send us its data.
     # By default we set a short timeout of 5s so that we find out fairly
     # quickly if something went wrong.
-    def connect(self, callback, timeout = 15):
+    def connect(self, callback, timeout = 300):
         self.callback = callback
         connection = Pyro4.Proxy(
                 'PYRO:%s@%s:%d' % (self.serviceName, self.ipAddress, self.port))

@@ -1,5 +1,5 @@
 import camera
-import depot
+# import depot
 import events
 import handlers.camera
 import util.connection
@@ -7,10 +7,10 @@ import util.threads
 
 import decimal
 import numpy
-import Pyro4
+# import Pyro4
 import Queue
-import threading
-import time
+# import threading
+# import time
 
 from config import config, CAMERAS
 
@@ -39,13 +39,6 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         self.connobj = util.connection.Connection(
             'Andorcam', self.config.get('ipAddress'), self.config.get('port'),
             localIp = serverIp)
-        print('called util.connection.Connection with:' + 
-              'Andorcam' + 
-              ' ipAdress' + 
-              self.config.get('ipAddress') + 
-              ' port: ' + 
-              str(self.config.get('port')) + 
-              ' localIp: ' + serverIp) ## TODO: remove
         ## List of valid image size strings.
         self.imageSizes = ['Full (2048x2048)', 'Quarter (1024x1024)',
                 '512x512', '256x256', '128x128']
@@ -185,7 +178,7 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
 
 
     def setExposureTime(self, name, newTime):
-        """Sets the exposure time, in milliseconds."""
+        '''Sets the exposure time, in milliseconds.'''
         # Input may be a decimal.Decimal object, but we can only operate on
         # floats.
         newTime = float(newTime)
@@ -219,7 +212,7 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
             return
         # Convert from seconds to milliseconds
         result = self.connobj.connection.getMinExposureTime() * 1000
-        print "Min exposure time is ",result
+        print('Min exposure time is: ', result)
         return result
 
 
@@ -237,8 +230,7 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
 
 
     def prepareForExperiment(self, name, experiment):
-        """Make the hardware ready for an experiment."""
-        print('prepareForExperiment called')
+        '''Make the hardware ready for an experiment.'''
         exposureTime = experiment.getExposureTimeForCamera(self.handler)
         self.setExposureTime(name, exposureTime)
         self.connobj.connection.setTrigger(TRIGGER_EXTERNAL)
