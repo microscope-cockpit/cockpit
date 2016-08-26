@@ -14,21 +14,6 @@ import util.logger
 ## Default viewer dimensions.
 (VIEW_WIDTH, VIEW_HEIGHT) = (512, 552)
 
-def maintainVideoMode(function):
-    def wrappedFunc(*args, **kwargs):
-        # Need to ensure video mode is disabled.
-        wasInVideoMode = interfaces.imager.isVideoRunning()
-        if wasInVideoMode:
-            interfaces.imager.stopVideo()
-            while interfaces.imager.isVideoRunning():
-                time.sleep(0.1)
-        result = function(*args, **kwargs)
-        # Re-enable video mode
-        if wasInVideoMode:
-            interfaces.imager.videoMode()
-        return result
-    return wrappedFunc
-
 ## This class provides an interface for a single camera. It includes a
 # button at the top to select which camera to use, a viewing area to display
 # the image the camera sees, and a histogram at the bottom.
@@ -125,7 +110,6 @@ class ViewPanel(wx.Panel):
 
 
     ## Deactivate our current camera.
-    @maintainVideoMode
     def disableCamera(self, event = None):
         self.selector.SetLabel("No camera")
         self.selector.SetBackgroundColour((180, 180, 180))
@@ -151,7 +135,6 @@ class ViewPanel(wx.Panel):
     ## Enable the specified camera.
     # Need to disable video mode to prevent errors that seem to be due
     # to updating a canvas before it has been created and sized.
-    @maintainVideoMode
     def enableCamera(self, camera):
         self.selector.SetLabel(camera.descriptiveName)
         self.selector.SetBackgroundColour(camera.color)
