@@ -136,3 +136,10 @@ class DeviceHandler:
                 thing.onEnabledEvent(enabled)
             except:
                 raise
+
+
+    ## A function that any control can call to toggle enabled/disabled state.
+    def toggleState(self, *args, **kwargs):
+        if not all([hasattr(self, 'setEnabled'), hasattr(self, 'getIsEnabled')]):
+            raise Exception('toggleState dependencies not implemented for %s.' % self.name)
+        self.setEnabled(not(self.getIsEnabled()))
