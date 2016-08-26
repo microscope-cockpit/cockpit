@@ -4,6 +4,7 @@ import wx
 import depot
 import deviceHandler
 import events
+import interfaces.imager
 
 
 ## Available trigger modes for triggering the camera.
@@ -81,6 +82,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
 
 
     ## Invoke our callback, and let everyone know that a new camera is online.
+    @interfaces.imager.pauseVideo
     @reset_cache
     def setEnabled(self, shouldEnable = True):
         self.callbacks['setEnabled'](self.name, shouldEnable)
