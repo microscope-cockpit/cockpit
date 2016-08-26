@@ -36,9 +36,10 @@ SMALL_FONT = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
 ## Background colour
 BACKGROUND = (128, 128, 128)
 
+
 class Button(wx.StaticText):
-    def __init__(self, 
-                 tooltip = '', textSize = 12, isBold = True, 
+    def __init__(self,
+                 tooltip = '', textSize = 12, isBold = True,
                  leftAction = None, rightAction = None,
                  **kwargs):
         # Default size:
@@ -76,7 +77,7 @@ class Button(wx.StaticText):
 
 class Label(wx.StaticText):
     """wx.StaticText with some default formatting.
-    
+
     This class does any default formatting, so device classes do not
     have to.
     """
@@ -94,7 +95,7 @@ class ValueDisplay(wx.BoxSizer):
         super(ValueDisplay, self).__init__(wx.HORIZONTAL)
         self.value = value
         label = Label(
-                parent=parent, label=(' ' + label.strip(':') + ':'), 
+                parent=parent, label=(' ' + label.strip(':') + ':'),
                 size=SMALL_SIZE, style=wx.ALIGN_LEFT)
         label.SetFont(SMALL_FONT)
         self.label = label
