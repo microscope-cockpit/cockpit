@@ -978,17 +978,19 @@ class Connection():
             ## Send the actual command
             self.sendSocket.send(json.dumps(messageCluster))
             self.sendSocket.send('\r\n')
-            print('Sent command: ' + json.dumps(messageCluster))
+#             print('Sent command: ' + json.dumps(messageCluster))
             
             ## Send the actual messages buffer
             buf = str('').join(sendArgs)
             self.sendSocket.sendall(buf)
-            print('Sent buffer:')
-            print(str(buf))
+#             print('Sent buffer:')
+#             print(str(buf))
             ## receive confirmation error
             errorLength = self.sendSocket.recv(4)
             error = self.sendSocket.recv(int(errorLength))
-            print('error is ' + error)
+#             # TODO:
+#             if error is true print this
+#                 print('error is ' + error)
             return (0, error)
         except socket.error, msg:
             #Send failed

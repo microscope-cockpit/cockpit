@@ -123,6 +123,9 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         if action == 'new image':
             # Received a new image in its entirety.
             (image, timestamp) = args
+            print('New image arrived')
+            print image[:10]
+            print image.shape
             self.imageQueue.put((image, timestamp, self.name))
         elif action == 'image component info':
             # We'll be receiving pieces of an image in multiple messages;
