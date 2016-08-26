@@ -1,3 +1,6 @@
+import events
+from itertools import ifilter
+
 ## A DeviceHandler acts as the interface between the GUI and the device module.
 # In other words, it tells the GUI what the device does, and translates GUI
 # events into commands for the device. A variety of stock DeviceHandler 
@@ -56,6 +59,8 @@ class DeviceHandler:
         self.callbacks = callbacks
         self.isEligibleForExperiments = isEligibleForExperiments
         self.deviceType = deviceType
+        # A set of controls that listen for device events.
+        self.listeners = None
 
 
     ## Construct any necessary UI widgets for this Device to perform its job.
@@ -105,3 +110,29 @@ class DeviceHandler:
     ## Debugging: print some pertinent info.
     def __repr__(self):
         return "<%s named %s in group %s>" % (self.deviceType, self.name, self.groupName)
+
+
+    ## Add a listener to our set of listeners.
+    def addListener(self, listener):
+        # If this is our first listener, subscribe this handler to enable event.
+        if self.listeners is None:
+            self.listeners = set()
+            events.subscribe(self.deviceType + ' enable', self.notifyListeners)
+        self.listeners.add(listener)
+
+
+    ## Notify listeners that our device's state has changed.
+    def notifyListeners(self, source, *args, **kwargs):
+        if source is not self:
+            return
+        enabled = args[0]
+        # Update our set of listeners to remove those that are no longer valid.
+        # (e.g. UI elements that have been destroyed)
+        self.listeners.difference_update(
+            [thing for thing in ifilter(lambda x: not(x), self.listeners)])
+        # Notify valid listeners.
+        for thing in self.listeners:
+            try:
+                thing.onEnabledEvent(enabled)
+            except:
+                raise
