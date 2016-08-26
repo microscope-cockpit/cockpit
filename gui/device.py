@@ -55,8 +55,10 @@ class Button(wx.StaticText):
         self.SetBackgroundColour(BACKGROUND)
         # Realign the label using our custom version of the function
         self.SetLabel(self.GetLabel())
-        self.Bind(wx.EVT_LEFT_DOWN, lambda event: leftAction(event))
-        self.Bind(wx.EVT_RIGHT_DOWN, lambda event: rightAction(event))
+        if leftAction:
+            self.Bind(wx.EVT_LEFT_UP, lambda event: leftAction(event))
+        if rightAction:
+            self.Bind(wx.EVT_RIGHT_DOWN, lambda event: rightAction(event))
 
 
     ## Override of normal StaticText SetLabel, to try to vertically
