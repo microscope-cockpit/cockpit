@@ -14,5 +14,5 @@ lights = [
 #    ('488nm', 488, WAVELENGTH_TO_COLOR[488], 1<<9, 9, 7776, 'deepstar'),
 #    ('561nm', 561, WAVELENGTH_TO_COLOR[561], 1<<13, 8),
 #    ('DIC', 'DIC', WAVELENGTH_TO_COLOR['white'], 1<<6),
-    ('488nm', 520, WAVELENGTH_TO_COLOR[488], 1<<9),
+    ('488nm', 488, WAVELENGTH_TO_COLOR[488], 1<<1),
 ]
