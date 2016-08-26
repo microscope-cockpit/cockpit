@@ -47,7 +47,7 @@ class ViewPanel(wx.Panel):
         # camera, and destroyed after.
         self.canvas = None
 
-        self.disableCamera()
+        self.disable()
         # We need to respond to this event after the cameras do, since we
         # need them to have gotten their new names.
         events.subscribe("drawer change", self.onDrawerChange, priority = 1000)
@@ -109,8 +109,8 @@ class ViewPanel(wx.Panel):
         gui.guiUtils.placeMenuAtMouse(self, menu)
 
 
-    ## Deactivate our current camera.
-    def disableCamera(self, event = None):
+    ## Deactivate the view.
+    def disable(self):
         self.selector.SetLabel("No camera")
         self.selector.SetBackgroundColour((180, 180, 180))
         self.selector.Refresh()
@@ -126,16 +126,12 @@ class ViewPanel(wx.Panel):
             self.canvas = None
 
 
-    ## Enable the specified camera.
-    # Need to disable video mode to prevent errors that seem to be due
-    # to updating a canvas before it has been created and sized.
-    def enableCamera(self, camera):
+    ## Activate the view and connect to a data source.
+    def enable(self, camera):
         self.selector.SetLabel(camera.descriptiveName)
         self.selector.SetBackgroundColour(camera.color)
         self.selector.Refresh()
         self.curCamera = camera
-        self.curCamera.setEnabled(True)
-        events.publish('camera enable', self.curCamera, True)
 
         # NB the 512 here is the largest texture size our graphics card can
         # gracefully handle.
