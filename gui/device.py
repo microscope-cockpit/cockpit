@@ -21,6 +21,7 @@ Class definitions for labels and value displays with default formatting.
 
 import wx
 import gui.guiUtils
+from toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 
 ## @package gui.device
 # Defines classes for common controls used by cockpit devices.
@@ -154,3 +155,14 @@ class Menu(wx.Menu):
 
     def show(self, event):
         gui.guiUtils.placeMenuAtMouse(event.GetEventObject(), self)
+
+
+class EnableButton(Button):
+    def onEnabledEvent(self, enabled):
+        if enabled:
+            self.SetLabel("ON")
+            self.SetBackgroundColour(ACTIVE_COLOR)
+        else:
+            self.SetLabel("OFF")
+            self.SetBackgroundColour(INACTIVE_COLOR)
+        self.Refresh()
