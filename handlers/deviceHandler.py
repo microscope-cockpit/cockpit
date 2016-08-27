@@ -1,4 +1,6 @@
 import events
+import threading
+import util.threads
 from itertools import ifilter
 
 ## A DeviceHandler acts as the interface between the GUI and the device module.
@@ -17,6 +19,14 @@ from itertools import ifilter
 #  * Register the control with handler(addListener) so it receives
 #    device state updates.
 #  * Bind the control to handler(toggleState) so it can control device state.
+
+## Device states
+class STATES():
+    error = -1
+    disabled = 0
+    enabled = 1
+    enabling = 2
+
 
 class DeviceHandler:
     ## \param name The name of the device being controlled. This should be
@@ -71,6 +81,7 @@ class DeviceHandler:
         self.deviceType = deviceType
         # A set of controls that listen for device events.
         self.listeners = None
+        self.enableLock = threading.Lock()
 
 
     ## Construct any necessary UI widgets for this Device to perform its job.
@@ -135,7 +146,12 @@ class DeviceHandler:
     def notifyListeners(self, source, *args, **kwargs):
         if source is not self:
             return
-        enabled = args[0]
+        if args[0] is True:
+            state = STATES.enabled
+        elif args[0] is False:
+            state = STATES.disabled
+        else:
+            state = args[0]
         # Update our set of listeners to remove those that are no longer valid.
         # (e.g. UI elements that have been destroyed)
         self.listeners.difference_update(
@@ -143,13 +159,23 @@ class DeviceHandler:
         # Notify valid listeners.
         for thing in self.listeners:
             try:
-                thing.onEnabledEvent(enabled)
+                thing.onEnabledEvent(state)
             except:
                 raise
 
 
     ## A function that any control can call to toggle enabled/disabled state.
+    @util.threads.callInNewThread
     def toggleState(self, *args, **kwargs):
         if not all([hasattr(self, 'setEnabled'), hasattr(self, 'getIsEnabled')]):
             raise Exception('toggleState dependencies not implemented for %s.' % self.name)
-        self.setEnabled(not(self.getIsEnabled()))
+        # Do nothing if lock locked as en/disable already in progress.
+        if self.enableLock.acquire(False):
+            try:
+                self.notifyListeners(self, STATES.enabling)
+                self.setEnabled(not(self.getIsEnabled()))
+            except:
+                self.notifyListeners(self, STATES.error)
+                raise Exception('Problem encountered en/disabling %s.' % self.name)
+            finally:
+                self.enableLock.release()
