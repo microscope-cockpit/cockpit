@@ -21,6 +21,7 @@ Class definitions for labels and value displays with default formatting.
 
 import wx
 import gui.guiUtils
+from handlers.deviceHandler import STATES
 from toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 
 ## @package gui.device
@@ -158,11 +159,28 @@ class Menu(wx.Menu):
 
 
 class EnableButton(Button):
-    def onEnabledEvent(self, enabled):
-        if enabled:
+    def enable(self, which):
+        if which is False:
+            self.Disable()
+            self.SetEvtHandlerEnabled(False)
+        else:
+            self.Enable()
+            self.SetEvtHandlerEnabled(True)
+
+
+    def onEnabledEvent(self, state):
+        if state is STATES.enabled:
+            self.enable(True)
             self.SetLabel("ON")
             self.SetBackgroundColour(ACTIVE_COLOR)
-        else:
+        elif state is STATES.disabled:
+            self.enable(True)
             self.SetLabel("OFF")
             self.SetBackgroundColour(INACTIVE_COLOR)
+        elif state is STATES.enabling:
+            self.enable(False)
+        elif state is STATES.error:
+            self.SetBackgroundColour((255, 0, 0))
+            self.enable(True)
+            self.SetLabel("ERROR")
         self.Refresh()
