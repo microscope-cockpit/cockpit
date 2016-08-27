@@ -15,7 +15,8 @@ from itertools import ifilter
 # devices that support this behaviour.
 # To add a toggle control anywhere in the UI:
 #  * Create a control with the method onEnabledEvent(enabled) that updates
-#    the control appearance depending on the device state.
+#    the control appearance depending on the device state. The function should
+#    import STATES and respond accordingly to each case.
 #  * Register the control with handler(addListener) so it receives
 #    device state updates.
 #  * Bind the control to handler(toggleState) so it can control device state.
