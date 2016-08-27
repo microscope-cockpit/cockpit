@@ -71,6 +71,8 @@ class DummyCameraDevice(device.Device):
 
     ## Handle a camera connecting or disconnecting.
     def enableCamera(self, name, isOn):
+        # Simulate typical camera-init. delay.
+        time.sleep(1)
         self.nameToIsReady[name] = isOn
 
 
