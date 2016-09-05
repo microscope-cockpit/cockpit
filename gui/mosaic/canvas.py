@@ -4,11 +4,13 @@ import time
 import traceback
 import wx.glcanvas
 
+import depot
 import events
 import tile
 import util.datadoc
 import util.logger
 import util.threads
+import itertools
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1
@@ -66,10 +68,21 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     def initGL(self):
         self.width, self.height = self.GetClientSizeTuple()
         glClearColor(1, 1, 1, 0)
-        for x in xrange(self.stageHardLimits[0][0], self.stageHardLimits[0][1], 
-                tile.megaTileMicronSize):
-            for y in xrange(self.stageHardLimits[1][0], self.stageHardLimits[1][1], 
-                    tile.megaTileMicronSize):
+
+        # Non-zero objective offsets require expansion of area covered
+        # by megatiles.
+        objs = depot.getHandlersOfType(depot.OBJECTIVE)
+        offsets = list(itertools.chain(*[ob.nameToOffset.values() for ob in objs]))
+        minmax = lambda l: (min(l), max(l))
+        xOffLim = minmax([offset[0] for offset in offsets])
+        yOffLim = minmax([offset[1] for offset in offsets])
+
+        for x in xrange(self.stageHardLimits[0][0] - max(0, xOffLim[1]),
+                        self.stageHardLimits[0][1] + min(0, xOffLim[0]) + tile.megaTileMicronSize,
+                        tile.megaTileMicronSize):
+            for y in xrange(self.stageHardLimits[1][0] - max(0, yOffLim[1]), 
+                            self.stageHardLimits[1][1] + min(0, yOffLim[0]) + tile.megaTileMicronSize, 
+                            tile.megaTileMicronSize):
                 self.megaTiles.append(tile.MegaTile((-x, y)))
         self.haveInitedGL = True
 
