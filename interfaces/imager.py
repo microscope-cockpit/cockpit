@@ -160,3 +160,20 @@ def stopVideo():
 
 def isVideoRunning():
     return imager.amInVideoMode
+
+
+## A wrapper for functions that should pause video mode.
+def pauseVideo(function):
+    def wrappedFunc(*args, **kwargs):
+        # Need to ensure video mode is disabled.
+        wasInVideoMode = isVideoRunning()
+        if wasInVideoMode:
+            stopVideo()
+            while isVideoRunning():
+                time.sleep(0.1)
+        result = function(*args, **kwargs)
+        # Re-enable video mode
+        if wasInVideoMode:
+            videoMode()
+        return result
+    return wrappedFunc

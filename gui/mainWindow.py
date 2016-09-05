@@ -131,7 +131,7 @@ class MainWindow(wx.Frame):
             # Clear cameraUI so we don't use previous value.
             cameraUI = None
             # See if the camera has a function to make UI elements.
-            uiFunc = camera.callbacks.get('makeUI', None)
+            uiFunc = camera.makeUI
             # If there is a UI function, evaluate it.
             if uiFunc:
                 cameraUI = uiFunc(topPanel)
@@ -141,6 +141,10 @@ class MainWindow(wx.Frame):
                 rowSizer.AddSpacer(COL_SPACER)
         # Make the UI elements for eveything else.
         for thing in otherThings:
+            if hasattr(thing, 'deviceType'):
+                if thing.deviceType is depot.CAMERA:
+                    # cameras are dealt with via their handlers.
+                    continue
             item = thing.makeUI(topPanel)
             if item is not None:
                 # Add it to the main controls display.

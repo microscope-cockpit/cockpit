@@ -14,20 +14,6 @@ import util.logger
 ## Default viewer dimensions.
 (VIEW_WIDTH, VIEW_HEIGHT) = (512, 552)
 
-def maintainVideoMode(function):
-    def wrappedFunc(*args, **kwargs):
-        # Need to ensure video mode is disabled.
-        wasInVideoMode = interfaces.imager.isVideoRunning()
-        if wasInVideoMode:
-            interfaces.imager.stopVideo()
-            while interfaces.imager.isVideoRunning():
-                time.sleep(0.1)
-        result = function(*args, **kwargs)
-        # Re-enable video mode
-        if wasInVideoMode:
-            interfaces.imager.videoMode()
-        return result
-    return wrappedFunc
 
 ## This class provides an interface for a single camera. It includes a
 # button at the top to select which camera to use, a viewing area to display
@@ -61,7 +47,7 @@ class ViewPanel(wx.Panel):
         # camera, and destroyed after.
         self.canvas = None
 
-        self.disableCamera()
+        self.disable()
         # We need to respond to this event after the cameras do, since we
         # need them to have gotten their new names.
         events.subscribe("drawer change", self.onDrawerChange, priority = 1000)
@@ -98,7 +84,7 @@ class ViewPanel(wx.Panel):
         menu = wx.Menu()
         if self.curCamera is not None:
             item = menu.Append(-1, "Disable %s" % self.curCamera.descriptiveName)
-            self.Bind(wx.EVT_MENU, self.disableCamera, item)
+            self.Bind(wx.EVT_MENU, lambda event: self.curCamera.setEnabled(False), item)
             menu.InsertSeparator(1)
             items = self.canvas.getMenuActions()
             for label, action in items:
@@ -119,27 +105,19 @@ class ViewPanel(wx.Panel):
                 if not camera.getIsEnabled():
                     item = menu.Append(-1, "Enable %s" % camera.descriptiveName)
                     self.Bind(wx.EVT_MENU, 
-                            lambda event, camera = camera: self.enableCamera(camera),
-                            item)
+                            lambda event, cam=camera: cam.setEnabled(True), item)
         gui.guiUtils.placeMenuAtMouse(self, menu)
 
 
-    ## Deactivate our current camera.
-    @maintainVideoMode
-    def disableCamera(self, event = None):
+    ## Deactivate the view.
+    def disable(self):
         self.selector.SetLabel("No camera")
         self.selector.SetBackgroundColour((180, 180, 180))
         self.selector.Refresh()
         if self.curCamera is not None:
             # Wrap this in a try/catch since it will fail if the initial
             # camera enabling failed.
-            try:
-                events.unsubscribe("new image %s" % self.curCamera.name, self.onImage)
-                self.curCamera.setEnabled(False)
-            except Exception, e:
-                util.logger.log.error("Error disabling camera: %s", e)
-                util.logger.log.error(traceback.format_exc())
-            events.publish('camera enable', self.curCamera, False)
+            events.unsubscribe("new image %s" % self.curCamera.name, self.onImage)
             self.curCamera = None
             self.canvas.clear()
         if self.canvas is not None:
@@ -148,17 +126,12 @@ class ViewPanel(wx.Panel):
             self.canvas = None
 
 
-    ## Enable the specified camera.
-    # Need to disable video mode to prevent errors that seem to be due
-    # to updating a canvas before it has been created and sized.
-    @maintainVideoMode
-    def enableCamera(self, camera):
+    ## Activate the view and connect to a data source.
+    def enable(self, camera):
         self.selector.SetLabel(camera.descriptiveName)
         self.selector.SetBackgroundColour(camera.color)
         self.selector.Refresh()
         self.curCamera = camera
-        self.curCamera.setEnabled(True)
-        events.publish('camera enable', self.curCamera, True)
 
         # NB the 512 here is the largest texture size our graphics card can
         # gracefully handle.
@@ -187,7 +160,7 @@ class ViewPanel(wx.Panel):
 
     ## Return True if we currently display a camera.
     def getIsEnabled(self):
-        return self.curCamera is not None and self.curCamera.getIsEnabled()
+        return self.curCamera is not None
 
 
     ## Get the black- and white-point for the view.

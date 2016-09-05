@@ -8,6 +8,8 @@ import decimal
 import numpy
 import scipy
 import time
+import wx
+import gui
 
 # An instance of this class is created if no real cameras are found by depot.
 CLASS_NAME = 'DummyCameraDevice'
@@ -58,7 +60,9 @@ class DummyCameraDevice(device.Device):
                     'getExposureTime': self.getExposureTime,
                     'setExposureTime': self.setExposureTime,
                     'getImageSizes': self.getImageSizes,
-                    'setImageSize': self.setImageSize},
+                    'setImageSize': self.setImageSize,
+                    'makeUI': self.makeUI,
+                    },
                 True))
             self.nameToIsReady[name] = False
             self.nameToImageSize[name] = 0 
@@ -67,6 +71,8 @@ class DummyCameraDevice(device.Device):
 
     ## Handle a camera connecting or disconnecting.
     def enableCamera(self, name, isOn):
+        # Simulate typical camera-init. delay.
+        time.sleep(1)
         self.nameToIsReady[name] = isOn
 
 
@@ -148,3 +154,18 @@ class DummyCameraDevice(device.Device):
             events.publish('new image %s' % name, image, time.time())
             self.imageCount += 1
 
+
+    def makeUI(self, parent):
+        devPanel = wx.Panel(parent)
+        devSizer = wx.BoxSizer(wx.VERTICAL)
+        label = gui.device.Label(
+                parent=devPanel, label='from device')
+        devSizer.Add(label)
+
+        devButton = gui.toggleButton.ToggleButton(
+                label="A button",
+                parent=devPanel)
+        devSizer.Add(devButton)
+
+        devPanel.SetSizerAndFit(devSizer)
+        return devPanel

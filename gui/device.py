@@ -21,6 +21,8 @@ Class definitions for labels and value displays with default formatting.
 
 import wx
 import gui.guiUtils
+from handlers.deviceHandler import STATES
+from toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 
 ## @package gui.device
 # Defines classes for common controls used by cockpit devices.
@@ -36,9 +38,10 @@ SMALL_FONT = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
 ## Background colour
 BACKGROUND = (128, 128, 128)
 
+
 class Button(wx.StaticText):
-    def __init__(self, 
-                 tooltip = '', textSize = 12, isBold = True, 
+    def __init__(self,
+                 tooltip = '', textSize = 12, isBold = True,
                  leftAction = None, rightAction = None,
                  **kwargs):
         # Default size:
@@ -55,8 +58,10 @@ class Button(wx.StaticText):
         self.SetBackgroundColour(BACKGROUND)
         # Realign the label using our custom version of the function
         self.SetLabel(self.GetLabel())
-        self.Bind(wx.EVT_LEFT_DOWN, lambda event: leftAction(event))
-        self.Bind(wx.EVT_RIGHT_DOWN, lambda event: rightAction(event))
+        if leftAction:
+            self.Bind(wx.EVT_LEFT_UP, lambda event: leftAction(event))
+        if rightAction:
+            self.Bind(wx.EVT_RIGHT_DOWN, lambda event: rightAction(event))
 
 
     ## Override of normal StaticText SetLabel, to try to vertically
@@ -74,7 +79,7 @@ class Button(wx.StaticText):
 
 class Label(wx.StaticText):
     """wx.StaticText with some default formatting.
-    
+
     This class does any default formatting, so device classes do not
     have to.
     """
@@ -92,7 +97,7 @@ class ValueDisplay(wx.BoxSizer):
         super(ValueDisplay, self).__init__(wx.HORIZONTAL)
         self.value = value
         label = Label(
-                parent=parent, label=(' ' + label.strip(':') + ':'), 
+                parent=parent, label=(' ' + label.strip(':') + ':'),
                 size=SMALL_SIZE, style=wx.ALIGN_LEFT)
         label.SetFont(SMALL_FONT)
         self.label = label
@@ -151,3 +156,31 @@ class Menu(wx.Menu):
 
     def show(self, event):
         gui.guiUtils.placeMenuAtMouse(event.GetEventObject(), self)
+
+
+class EnableButton(Button):
+    def enable(self, which):
+        if which is False:
+            self.Disable()
+            self.SetEvtHandlerEnabled(False)
+        else:
+            self.Enable()
+            self.SetEvtHandlerEnabled(True)
+
+
+    def onEnabledEvent(self, state):
+        if state is STATES.enabled:
+            self.enable(True)
+            self.SetLabel("ON")
+            self.SetBackgroundColour(ACTIVE_COLOR)
+        elif state is STATES.disabled:
+            self.enable(True)
+            self.SetLabel("OFF")
+            self.SetBackgroundColour(INACTIVE_COLOR)
+        elif state is STATES.enabling:
+            self.enable(False)
+        elif state is STATES.error:
+            self.SetBackgroundColour((255, 0, 0))
+            self.enable(True)
+            self.SetLabel("ERROR")
+        self.Refresh()

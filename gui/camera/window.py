@@ -30,7 +30,7 @@ class CamerasWindow(wx.Frame):
 
         self.SetPosition((675, 280))
 
-        events.subscribe("camera enable", lambda *args: self.resetGrid())
+        events.subscribe("camera enable", self.onCameraEnableEvent)
         events.subscribe("image pixel info", self.onImagePixelInfo)
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
@@ -64,6 +64,18 @@ class CamerasWindow(wx.Frame):
         for i, camName in enumerate(settings.get('camera view window', [])):
             camera = depot.getHandlerWithName(camName)
             self.views[i].enableCamera(camera)
+
+
+    def onCameraEnableEvent(self, camera, enabled):
+        activeViews = [view for view in self.views if view.getIsEnabled()]
+        if enabled and camera not in [view.curCamera for view in activeViews]:
+            inactiveViews = set(self.views).difference(activeViews)
+            inactiveViews.pop().enable(camera)
+        elif not(enabled):
+            for view in activeViews:
+                if view.curCamera is camera:
+                    view.disable()
+        self.resetGrid()
 
 
     ## When cameras are enabled/disabled, we resize the UI to suit. We want
