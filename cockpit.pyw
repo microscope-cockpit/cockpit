@@ -68,37 +68,37 @@ class CockpitApp(wx.App):
 
             updateNum=1
             status.Update(updateNum, "Initializing config...")
-            updateNum++
+            updateNum+=1
             util.userConfig.initialize()
 
             status.Update(updateNum, "Initializing devices...")
-            updateNum++
+            updateNum+=1
             for i, module in enumerate(depot.initialize()):
                 status.Update(updateNum, "Initializing devices...\n%s" % module)
-                updateNum++
+                updateNum+=1
             status.Update(updateNum, "Initializing device interfaces...")
-            updateNum++
+            updateNum+=1
             interfaces.initialize()
 
             status.Update(updateNum, "Initializing user interface...")
-            updateNum++
+            updateNum+=1
                             
             frame = gui.mainWindow.makeWindow()
             status.Update(updateNum, " ... camera window")
-            updateNum++
+            updateNum+=1
             self.SetTopWindow(frame)
             gui.camera.window.makeWindow(frame)
             status.Update(updateNum, " ... mosaic window")
-            updateNum++
+            updateNum+=1
             gui.mosaic.window.makeWindow(frame)
             status.Update(updateNum, " ... macrostage window")
-            updateNum++
+            updateNum+=1
             gui.macroStage.macroStageWindow.makeWindow(frame)
             status.Update(updateNum, " ... shell window")
-            updateNum++
+            updateNum+=1
             gui.shellWindow.makeWindow(frame)
             status.Update(updateNum, " ... statuslights window")
-            updateNum++
+            updateNum+=1
             gui.statusLightsWindow.makeWindow(frame)
 
             # At this point, we have all the main windows are displayed.
@@ -107,7 +107,7 @@ class CockpitApp(wx.App):
             # windows that won't appear in the primary window marshalling
             # list.
             status.Update(updateNum, " ... secondary windows")
-            updateNum++
+            updateNum+=1
 
             import gui.valueLogger
             gui.valueLogger.makeWindow(frame)
