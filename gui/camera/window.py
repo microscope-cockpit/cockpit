@@ -66,6 +66,7 @@ class CamerasWindow(wx.Frame):
             self.views[i].enableCamera(camera)
 
 
+    @util.threads.callInMainThread
     def onCameraEnableEvent(self, camera, enabled):
         activeViews = [view for view in self.views if view.getIsEnabled()]
         if enabled and camera not in [view.curCamera for view in activeViews]:
