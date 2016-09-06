@@ -7,7 +7,6 @@ import util.threads
 
 import decimal
 import numpy
-# import Pyro4
 import Queue
 # import threading
 # import time
@@ -17,10 +16,8 @@ from config import config, CAMERAS
 CLASS_NAME = 'CameraManager'
 SUPPORTED_CAMERAS = ['neo', 'zyla']
 
-
 ## Valid trigger modes for the cameras.
-(TRIGGER_INTERNAL, TRIGGER_EXTERNAL_START, TRIGGER_EXTERNAL_EXPOSURE, TRIGGER_SOFTWARE, TRIGGER_EXTERNAL) = (0, 2, 3, 4, 6) # TODO: move this to a config file
-
+(TRIGGER_INTERNAL, TRIGGER_SOFTWARE, TRIGGER_EXTERNAL, TRIGGER_EXTERNAL_START, TRIGGER_EXTERNAL_EXPOSURE) = (1, 4, 6, 2, 3) # TODO: move this to a config file
 
 class AndorCMOSCameraDevice(camera.CameraDevice):
     def __init__(self, camConfig):
@@ -45,7 +42,7 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         self.exposureTime = None
         self.timeBetweenExposures = None
         ## Current trigger mode for cameras.
-        self.curTriggerMode = TRIGGER_EXTERNAL_EXPOSURE
+        self.curTriggerMode = TRIGGER_EXTERNAL
         ## Queue of (image, timestamp, camera name) representing images
         # received from the camera computer(s).
         self.imageQueue = Queue.Queue()
@@ -61,22 +58,25 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
 
         self.publishImages()
 
-
     def cleanupAfterExperiment(self):
-        # Switch camera back to external exposure mode.
-        self.curTriggerMode = TRIGGER_EXTERNAL_EXPOSURE
+        '''
+        Switch camera back to external exposure mode.
+        '''
         if self.connobj.connection is not None:
             self.connobj.connection.setTrigger(self.curTriggerMode)
-
+        self.curTriggerMode = self.connobj.connection.getTrigger()
 
     def performSubscriptions(self):
-        """Perform subscriptions for this camera."""
+        '''
+        Perform subscriptions for this camera.
+        '''
         events.subscribe('cleanup after experiment',
                          self.cleanupAfterExperiment)
 
-
     def getHandlers(self):
-        """Returns the handler for the camera."""
+        '''
+        Returns the handler for the camera.
+        '''
         #for name, ipAddress, port in [('Zyla', '10.6.19.30', 7000)]:
         result = handlers.camera.CameraHandler(
             "%s" % self.config.get('label'), "sCMOS camera", 
@@ -93,9 +93,10 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         self.handler = result
         return result
 
-
     def enableCamera(self, name, isOn):
-        """Enable or disable the hardware."""
+        '''
+        Enable or disable the hardware.
+        '''
         if isOn:
             self.connobj.connect(lambda *args: self.receiveData(*args))
             # Set 512x512 image size.
@@ -106,9 +107,10 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
             self.connobj.disconnect()
         self.invalidateCaches()
 
-
-    ## Clear our caches for a given camera, so that they must be reacquired.
     def invalidateCaches(self):
+        '''
+        Clear our caches for a given camera, so that they must be reacquired.
+        '''
         self.exposureTime = None
         self.timeBetweenExposures = None
         # Reacquire values for the min exposure time now, since otherwise
@@ -116,16 +118,14 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         # at which point the camera's state has been changed; this makes
         # the experiment not work.
         self.getMinExposureTime(self.name)
-
-
-    ## Receive data from a camera. 
+ 
     def receiveData(self, action, *args):
+        '''
+        Receive data from a camera.
+        '''
         if action == 'new image':
             # Received a new image in its entirety.
             (image, timestamp) = args
-            print('New image arrived')
-            print image[:10]
-            print image.shape
             self.imageQueue.put((image, timestamp, self.name))
         elif action == 'image component info':
             # We'll be receiving pieces of an image in multiple messages;
@@ -143,27 +143,24 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
                     yOffset : yOffset + image.shape[1]] = image
         elif action == 'image complete':
             # Done receiving image components.
-            self.imageQueue.put(
-                    (self.partialImage, self.partialImageTimestamp, self.name)
-            )
+            self.imageQueue.put((self.partialImage, self.partialImageTimestamp, self.name))
 
-
-    ## Publish images we have received. We do this in a separate thread from
-    # the thread that receives the images to avoid keeping the network link
-    # to the camera computer occupied.
     @util.threads.callInNewThread
     def publishImages(self):
+        '''
+        Publish images we have received. We do this in a separate thread from
+        the thread that receives the images to avoid keeping the network link
+        to the camera computer occupied.
+        '''
         while True:
             # Wait for an image to arrive.
             image, timestamp, name = self.imageQueue.get(block = True,
                     timeout = None)
-#             events.publish("new image %s" % name, image, timestamp)
-
+            events.publish("new image %s" % name, image, timestamp)
 
     def getImageSize(self, name):
         """Read the image size from the camera."""
         return self.connobj.connection.getImageShape()
-
 
     def getTimeBetweenExposures(self, name, isExact = False):
         """Get the amount of time, in milliseconds, between exposures.
@@ -179,11 +176,11 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
             val = decimal.Decimal(val)
         return val
 
-
     def setExposureTime(self, name, newTime):
-        '''Sets the exposure time, in milliseconds.'''
-        # Input may be a decimal.Decimal object, but we can only operate on
-        # floats.
+        '''
+        Sets the exposure time, in milliseconds.
+        '''
+        # Input may be a decimal.Decimal object, but we can only operate on floats.
         newTime = float(newTime)
         # Coerce exposure time to be at least the minimum; convert from
         # millseconds to seconds.
@@ -193,51 +190,62 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
             # We're already there; don't bother.
             return
         self.connobj.connection.setExposureTime(newTime)
-        self.connobj.connection.setTrigger(self.curTriggerMode)
+#         self.takeBurst(name, 10)
+        self.connobj.connection.setTrigger(TRIGGER_EXTERNAL)
+        self.curTriggerMode = TRIGGER_EXTERNAL
         self.exposureTime = newTime
 
-
     def getExposureTime(self, name, isExact = False):
-        """Reads the camera's exposure time and returns the value, in
-        milliseconds."""
+        '''
+        Reads the camera's exposure time and returns the value, in milliseconds.
+        '''
         val = self.connobj.connection.getExposureTime()
         if isExact:
             return decimal.Decimal(val) * (decimal.Decimal(1000.0))
         return val * 1000.0
 
-
     def getMinExposureTime(self, name):
-        """Returns the minimum exposure time, in milliseconds, that is possible
+        '''
+        Returns the minimum exposure time, in milliseconds, that is possible
         for the camera.
-        """
+        '''
         if self.connobj.connection is None:
             # Can't do anything.
             return
         # Convert from seconds to milliseconds
-        result = self.connobj.connection.getMinExposureTime() * 1000
-        print('Min exposure time is: ', result)
-        return result
-
+        return self.connobj.connection.getMinExposureTime() * 1000
 
     def getImageSizes(self, name):
-        """Returns a list of strings describing available image sizes."""
+        '''
+        Returns a list of strings describing available image sizes.
+        '''
         return self.imageSizes
 
-
-    ## Set the image size for the camera.
     def setImageSize(self, name, size):
+        '''
+        Set the image size for the camera.
+        '''
         self.connobj.connection.setCrop(self.imageSizes.index(size))
         self.connobj.connection.setTrigger(self.curTriggerMode)
         # Readout time has changed.
         self.invalidateCaches()
 
-
     def prepareForExperiment(self, name, experiment):
-        '''Make the hardware ready for an experiment.'''
+        '''
+        Make the hardware ready for an experiment.
+        '''
+        print('Preparing for experiment')
         exposureTime = experiment.getExposureTimeForCamera(self.handler)
         self.setExposureTime(name, exposureTime)
         self.connobj.connection.setTrigger(TRIGGER_EXTERNAL)
         self.curTriggerMode = TRIGGER_EXTERNAL
+        
+    def takeBurst(self, name, frameCount):
+        self.connobj.connection.setFrameCount(frameCount)
+        print('FrameCount is: ' + str(self.connobj.connection.getFrameCount()))
+        print('Trigger Mode is: ' + str(self.connobj.connection.getTrigger()))
+        self.connobj.connection.startAcquisition()
+
 
 
 class CameraManager(camera.CameraManager):
