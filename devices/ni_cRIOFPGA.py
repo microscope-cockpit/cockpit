@@ -26,9 +26,8 @@
 import decimal
 import matplotlib
 from string import rjust
-from _elementtree import Element
-from __builtin__ import str
 import json
+from time import sleep
 matplotlib.use('WXAgg')
 import matplotlib.backends.backend_wxagg
 import matplotlib.figure
@@ -49,11 +48,15 @@ import handlers.genericPositioner
 import handlers.imager
 import handlers.lightSource
 import handlers.stagePositioner
+import threading
 import util.threads
 from config import config, LIGHTS, CAMERAS, AOUTS
 CLASS_NAME = 'NIcRIO'
 COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2, 'SI angle': -1}
 CONFIG_NAME = 'nicrio9068'
+FPGA_IDLE_STATE = 3
+FPGA_ABORTED_STATE = 4
+MASTER_IP = '10.6.19.11'
 
 class NIcRIO(device.Device):
     def __init__(self):
@@ -103,8 +106,8 @@ class NIcRIO(device.Device):
             self.nameToDigitalLine.update({name: 1 << t})
             self.otherTriggers.append(name)
         ## Resolution of actions we can take when running experiments.
-        # Changed to microsecond resolution. This fits better with the timed loops of the cRIO.
-        self.actionsPerMillisecond = 1000
+        # Changed to 10 microsecond resolution. This fits better with the timed loops of the cRIO.
+        self.actionsPerMillisecond = 100
         ## Conversion factor between microns and the units the cRIO C-module NI-9269
         # uses. The MI-9269 has a 16-bit DAC (so 65536 ADUs (analog-digital units)
         # representing -10 to +10 volts).
@@ -134,6 +137,7 @@ class NIcRIO(device.Device):
         self.lastAnalogPositions = [0] * 4
         ## Values for anologue positions at startup.
         self.startupAnalogPositions = [None] * 4
+    
 
     #TODO: Initialize socket connection: Test socket connection, reboot FPGA
     
@@ -142,10 +146,8 @@ class NIcRIO(device.Device):
         '''
         Connect to ni's RT-host computer.
         '''
-        connection = Connection(self.ipAddress, self.port)
         self.connection.abort()
-        
-    
+     
     def performSubscriptions(self):
         '''
         We care when cameras are enabled, since we control some of them 
@@ -156,9 +158,7 @@ class NIcRIO(device.Device):
         events.subscribe('light source enable', self.toggleLightHandler)
         events.subscribe('user abort', self.onAbort)
         events.subscribe('prepare for experiment', self.onPrepareForExperiment)
-        events.subscribe('cleanup after experiment',
-                self.cleanupAfterExperiment)
-
+        events.subscribe('cleanup after experiment', self.cleanupAfterExperiment)
     
     def makeInitialPublications(self):
         '''
@@ -168,14 +168,12 @@ class NIcRIO(device.Device):
         '''
         self.moveRetarderAbsolute(None, 0)
 
-
     def onAbort(self):
         '''
         User clicked the abort button.
         '''
         self.connection.abort()
-        events.publish('NI-FPGA done')
-
+        events.publish("DSP done") # TODO: change this to a FPGA-done
 
     @util.threads.locked
     def finalizeInitialization(self):
@@ -195,10 +193,12 @@ class NIcRIO(device.Device):
             pos = self.startupAnalogPositions[line]
             if pos is not None:
                 handler.moveAbsolute(pos)
-
-    ## We control which light sources are active, as well as a set of 
-    # stage motion piezos. 
+ 
     def getHandlers(self):
+        '''
+        We control which light sources are active, as well as a set of 
+        stage motion piezos.
+        '''
         result = []
         # The "Ambient" light source lets us specify exposure times for images
         # with no active illumination.
@@ -267,33 +267,40 @@ class NIcRIO(device.Device):
         self.handlers = set(result)
         return result
 
-
-    ## Receive data from the RT-host computer.
     def receiveData(self, action, *args):
+        '''
+        Receive data from the RT-host computer.
+        '''
         if action == 'NI-FPGA done':
             print "NI-FPGA done"
             events.publish("NI-FPGA done")
 
-    ## Enable/disable a specific light source.
     def toggleLight(self, lightName, isEnabled):
+        '''
+        Enable/disable a specific light source
+        '''
         if isEnabled:
             self.activeLights.add(lightName)
         elif lightName in self.activeLights:
             self.activeLights.remove(lightName)
 
-    ## As toggleLight, but accepts a handler instead.
     def toggleLightHandler(self, handler, isEnabled):
+        '''
+        As toggleLight, but accepts a handler instead.
+        '''
         self.toggleLight(handler.name, isEnabled)
 
-
-    ## Update the exposure time for a specific light source.
     def setExposureTime(self, name, value):
+        '''
+        Update the exposure time for a specific light source.
+        '''
         self.lightToExposureTime[name] = value
 
-    ## Retrieve the exposure time for a specific light source.
     def getExposureTime(self, name):
+        '''
+        Retrieve the exposure time for a specific light source.
+        '''
         return self.lightToExposureTime[name]
-
 
     def toggleCamera(self, camera, isEnabled):
         '''
@@ -304,7 +311,6 @@ class NIcRIO(device.Device):
         else:
             self.activeCameras.add(camera.name)
 
-
     def publishPiezoPosition(self, axis):
         '''
         Report the new position of a piezo.
@@ -312,9 +318,10 @@ class NIcRIO(device.Device):
         events.publish('stage mover', '%d piezo' % axis, 
                 axis, self.curPosition[axis])
 
-
-    ## Move a stage piezo to a given position.
     def movePiezoAbsolute(self, axis, pos):
+        '''
+        Move a stage piezo to a given position.
+        '''
         self.curPosition.update({axis: pos})
         # Convert from microns to ADUs.
         aline = self.axisMapper[axis]
@@ -326,16 +333,15 @@ class NIcRIO(device.Device):
         # TODO: we could establish a verification through the FPGA eg: connection.MoveAbsolute does not return until done
         events.publish('stage stopped', '%d piezo' % axis)
 
-
-    ## Move the stage piezo by a given delta.
-
     def movePiezoRelative(self, axis, delta):
+        '''Move the stage piezo by a given delta
+        '''
         self.movePiezoAbsolute(axis, self.curPosition[axis] + delta)
 
-    ## Get the current piezo position.
     def getPiezoPos(self, axis):
+        ''' Get the current Piezo position.
+        '''
         return self.curPosition[axis]
-
 
     def getPiezoMovementTime(self, axis, start, end):
         '''
@@ -348,7 +354,6 @@ class NIcRIO(device.Device):
         distance = abs(start - end)
         return (decimal.Decimal('.1'), decimal.Decimal(distance * 1000))
 
-
     def setSLMPattern(self, name, position):
         '''
         Set the SLM's position to a specific value. 
@@ -357,13 +362,11 @@ class NIcRIO(device.Device):
         '''
         pass
 
-
     def moveSLMPatternBy(self, name, delta):
         '''
         Adjust the SLM's position by the specified offset. Again, do nothing.
         '''
         pass
-
 
     def getCurSLMPattern(self, name):
         '''
@@ -372,7 +375,6 @@ class NIcRIO(device.Device):
         '''
         return 0
 
-
     def getSLMStabilizationTime(self, name, prevPos, curPos):
         '''
         Get the time to move to a new SLM position, and the stabilization time, 
@@ -380,7 +382,6 @@ class NIcRIO(device.Device):
         of the SLM.
         '''
         return (1, 30000)
-
 
     def moveRetarderAbsolute(self, name, pos):
         '''
@@ -393,26 +394,27 @@ class NIcRIO(device.Device):
         # TODO: add volts to ADUs in config files
         self.connection.writeAnalogueADU(aline, int(pos * 3276.8))
 
-
     def moveRetarderRelative(self, name, delta):
         '''
         Move the variable retarder by the specified voltage offset.
         '''
         self.moveRetarderAbsolute(self.curRetarderVoltage + delta)
 
-
-    ## Get the current variable retarder voltage.
     def getRetarderPos(self, name):
+        '''Get the current variable retarder voltage
+        '''
         return self.curRetarderVoltage
 
-
-    ## Get the time needed for the variable retarder to move to a new value.
     def getRetarderMovementTime(self, name, start, end):
+        '''Get the time needed for the variable retarder to move to a new value.
+        '''
         return (1, 1000)
 
-    ## Take an image with the current light sources and active cameras.
     @util.threads.locked
     def takeImage(self):
+        '''
+        Take an image with the current light sources and active cameras.
+        '''
         cameraMask = 0
         lightTimePairs = []
         maxTime = 0
@@ -428,6 +430,31 @@ class NIcRIO(device.Device):
                 handler = depot.getHandlerWithName(name)
                 handler.setExposureTime(maxTime)
         self.connection.takeImage(cameraMask, lightTimePairs)
+        
+    @util.threads.locked
+    def takeBurst(self, frameCount = 10):
+        '''
+        Use the internal triggering of the camera to take a burst of images
+        
+        Experimental
+        '''
+        cameraMask = 0
+        lightTimePairs = []
+        maxTime = 0
+        for handler, line in self.handlerToDigitalLine.iteritems():
+            if handler.name in self.activeLights:
+                maxTime = max(maxTime, handler.getExposureTime())
+                exposureTime = handler.getExposureTime()
+                lightTimePairs.append((line, exposureTime))
+                maxTime = max(maxTime, exposureTime)
+        for name, line in self.nameToDigitalLine.iteritems():
+            if name in self.activeCameras:
+                cameraMask += line
+                handler = depot.getHandlerWithName(name)
+                handler.setExposureTime(maxTime)
+            
+        sleep(5) 
+
 
 
     def onPrepareForExperiment(self, *args):
@@ -442,12 +469,12 @@ class NIcRIO(device.Device):
         self.lastDigitalVal = 0
         self.lastAnalogPositions = [0] * 4
 
-
-    ## Cleanup after an experiment completes: restore our cached position.
     def cleanupAfterExperiment(self, *args):
+        '''
+        Cleanup after an experiment completes: restore our cached position.
+        '''
         for axis, position in self.preExperimentPosition.iteritems():
             self.movePiezoAbsolute(axis, position)
-
 
     def getNumRunnableLines(self, name, table, index):
         '''
@@ -455,8 +482,8 @@ class NIcRIO(device.Device):
         capable of executing.
         '''
         return 1000
-        # TODO: replace thsi method by a more sofisticated setup as the FPGA may
-        # control repetitiions and the duration
+        # TODO: replace this method by a more sophisticated setup as the FPGA may
+        # control repetitions and the duration
 #         count = 0
 #         for time, handler, parameter in table[index:]:
 #             # Check for analog and digital devices we control.
@@ -467,15 +494,13 @@ class NIcRIO(device.Device):
 #             count += 1
 #         return count
 
-
     def executeTable(self, name, table, startIndex, stopIndex, numReps, repDuration):
         '''
         Actually execute the events in an experiment ActionTable, starting at
         startIndex and proceeding up to but not through stopIndex.
-        # Convert the desired portion of the table into a "profile" for
-        # the FPGA.
+        Convert the desired portion of the table into a "profile" for
+        the FPGA.
         '''
-       
         profileStr, digitals, analogs = self.generateProfile(table[startIndex:stopIndex], repDuration)
         # Update our positioning values in case we have to make a new profile
         # in this same experiment. The analog values are a bit tricky, since
@@ -498,8 +523,21 @@ class NIcRIO(device.Device):
             self.connection.sendTables(digitalsTable = digitals, analogueTables = analogs)
             self.prevProfileSettings = (profileStr, digitals, analogs)
             
+            # Now we can send the Indexes.
+            # The indexes will tell the FPGA where the table starts and ends. 
+            # This allows for more flexibility in teh future, as we can store more than 
+            # one experiment per table and just execute different parts of it.
+            analoguesStartIndexes = [1 for x in analogs]
+            analoguesStopIndexes = [len(x) for x in analogs]
+            self.connection.writeIndexes(indexSet=0, 
+                                         digitalsStartIndex=1, 
+                                         digitalsStopIndex=len(digitals), 
+                                         analoguesStartIndexes=analoguesStartIndexes,
+                                         analoguesStopIndexes=analoguesStopIndexes,
+                                         msgLength=20)
+            
         events.publish('update status light', 'device waiting',
-                'Waiting for\nFPGA to finish', (255, 255, 0))
+                'Waiting for\nDSP to finish', (255, 255, 0))
         # InitProfile will declare the current analog positions as a "basis"
         # and do all actions as offsets from those bases, so we need to
         # ensure that the variable retarder is zeroed out first.
@@ -508,14 +546,15 @@ class NIcRIO(device.Device):
         self.setAnalogVoltage(retarderLine, 0)
 
         self.connection.initProfile(numReps, repDuration)
-        events.executeAndWaitFor("NI-FPGA done", self.connection.triggerExperiment)
+        events.executeAndWaitFor("DSP done", self.connection.triggerExperiment)
 
         events.publish('experiment execution')
         return
 
-
-    ## Clean up after experiment is done.
     def cleanupPiezo(self, axis, isCleanupFinal):
+        '''
+        Clean up after the experiment is done
+        '''
         if isCleanupFinal:
             # The DSP may complain about still being in collection mode
             # even though it's told us it's done; wait a bit.
@@ -531,12 +570,13 @@ class NIcRIO(device.Device):
             retarderLine = self.handlerToAnalogLine[self.retarderHandler]
             self.setAnalogVoltage(retarderLine, 0)
 
-
-    ## Given a list of (time, handle, action) tuples, generate several Numpy
-    # arrays: one of digital actions, and one each for each analog output.
-    # We also generate the "profile string" that is used to describe these
-    # arrays.
     def generateProfile(self, events, repDuration):
+        '''
+        Given a list of (time, handle, action) tuples, generate several Numpy
+        arrays: one of digital actions, and one each for each analog output.
+        We also generate the "profile string" that is used to describe these
+        arrays.
+        '''
         # Maps digital lines to the most recent setting for that line.
         digitalToLastVal = {}
         # Maps analog lines to lists of (time, value) pairs. 
@@ -676,24 +716,19 @@ class NIcRIO(device.Device):
         
         return description.tostring(), digitals, analogs
             
-
-    ## Given a target position for the specified axis, generate an 
-    # appropriate value for the NI-FPGA's analog system.
     def convertMicronsToADUs(self, aline, position):
+        '''Given a target position for the specified axis, generate an 
+        appropriate value for the NI-FPGA's analog system.
+        '''
         return long(position / self.alineToUnitsPerADU[aline])
 
-
-    
     def setDigital(self, value):
         '''
         Debugging function: set the digital output for the NI-FPGA.
         '''
         self.connection.writeDigitals(value)
 
-
-    
-    # TODO: integrate this function into the configuration files
-    def setAnalogVoltage(self, aline, voltage):
+    def setAnalogVoltage(self, aline, voltage):    # TODO: integrate this function into the configuration files
         '''
         Debugging function: set the analog voltage output for one of the NI-FPGA's
         analog lines.
@@ -703,9 +738,10 @@ class NIcRIO(device.Device):
         ## TODO: sensitivity
         self.connection.writeAnalogueADU(aline, adus)
 
-
-    ## Debugging function: plot the NI-FPGA profile we last used.
     def plotProfile(self):
+        '''
+        Debugging function: plot the NI-FPGA profile we last used.
+        '''
         if not self.prevProfileSettings:
             return
         digitals = self.prevProfileSettings[1]
@@ -800,9 +836,10 @@ class NIcRIO(device.Device):
         canvas.draw()
         frame.Show()
 
-
-    ## Debugging function: advance the SLM.
     def advanceSLM(self, count = 1):
+        '''
+        Debugging function: advance the SLM.
+        '''
         handler = depot.getHandlerWithName('SI SLM')
         line = self.handlerToDigitalLine[handler]
         for i in xrange(count):
@@ -810,9 +847,10 @@ class NIcRIO(device.Device):
             self.setDigital(0)
             time.sleep(.1)
                     
-
-    ## Debugging function: load and execute a profile.
     def runProfile(self, digitals, analogs, numReps = 1, baseDigital = 0):
+        '''
+        load and execute a profile.
+        '''
         description = numpy.rec.array(None,
                 formats = "u4, f4, u4, u4, 4u4",
                 names = ('count', 'clock', 'InitDio', 'nDigital', 'nAnalog'),
@@ -837,8 +875,7 @@ class NIcRIO(device.Device):
 
         self.connection.initProfile(numReps)
         events.executeAndWaitFor("NI-FPGA done", self.connection.triggerExperiment)
-            
-            
+                       
 class Connection():
     '''
     This class handles the connection with NI's RT-host computer
@@ -866,16 +903,17 @@ class Connection():
                             'writeAnalogue' : 411,
                             'takeImage' : 413,
                             }
-        self.errorCodes = {'0' : None,
+        self.errorCodes = {'0' : None, # TODO: verify this
                            '1' : 'Could not create socket',
                            '2' : 'Could not create socket connection',
                            '3' : 'Send error'}
         self.host = host
         self.port = port # port is a tuple with two values
         self.sendSocket = self.createSendSocket(self.host, self.port[0])
-        self.receiveSocket = self.createReceiveSocket('', self.port[1]) #TODO: must move thsi IP to config file
-
-
+        ## Create a status instance to query the FPGA status and run it in a separate thread
+        self.status = FPGAStatus(self, MASTER_IP, self.port[1])
+        self.status.start()
+        
 #        self.fn = fn
 #        self.startCollectThread()
 #        self.reInit()
@@ -904,39 +942,12 @@ class Connection():
             return (1, '2')
         
         return s
-
-
-    def createReceiveSocket(self, host, port):
-        '''
-        Creates a UDP socket meant to receive status information
-        form the RT-host
         
-        returns the bound socket
-        '''
-        # TODO: define host to replace symbolic link ''
-        
-        try:
-            # Create an AF_INET, Datagram socket (UDP)
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        except socket.error, msg:
-            print 'Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
-        
-        try:
-            # Bind Socket to local host and port
-            s.bind((host , port))
-        except socket.error, msg:
-            print 'Failed to bind address. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
-        
-        return s
-
-        
-    
     def writeReply(self):
         '''
         For debugging
         '''
         pass
-    
     
     def runCommand(self, command, args = [], msgLength = 20):
         '''
@@ -951,8 +962,8 @@ class Connection():
         
         args is a list of strings containing the arguments associated.
                 
-        Return a tuple where first element is 0 if success and 1 if error.
-        Second element is error code.
+        Return a Dictionary with the error description:
+        Error Status, Error code and Error Description
         '''
         # Transform args into a list of strings of msgLength chars
         sendArgs = []
@@ -973,32 +984,33 @@ class Connection():
                           'Message Length': msgLength,
                           'Number of Messages': len(sendArgs)
                           }
-        
+#         # if the command is asynchronous, wait until FPGA is idle
+#         if command // 100 != 3:
+#             self.waitForIdle()
+#             
         try:
             ## Send the actual command
             self.sendSocket.send(json.dumps(messageCluster))
             self.sendSocket.send('\r\n')
-#             print('Sent command: ' + json.dumps(messageCluster))
+        except socket.error, msg:
+            print('Send messageCluster failed. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1])
             
+        try:
             ## Send the actual messages buffer
             buf = str('').join(sendArgs)
             self.sendSocket.sendall(buf)
-#             print('Sent buffer:')
-#             print(str(buf))
+        except socket.error, msg:
+            print('Send buffer failed. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1])
+
+        try:
             ## receive confirmation error
-            errorLength = self.sendSocket.recv(4)
+            errorLength = self.sendSocket.recv(3)
             error = self.sendSocket.recv(int(errorLength))
-#             # TODO:
-#             if error is true print this
-#                 print('error is ' + error)
-            return (0, error)
+            return error
         except socket.error, msg:
             #Send failed
-            print 'Send failed. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
+            print('Receiving error. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1])
             return (1, '3')
-        
-#         return (0, 0)
-    
     
     def writeParameter(self, parameter, value):
         '''
@@ -1006,47 +1018,16 @@ class Connection():
         '''
         pass
     
-    
-    def readStatus(self, key = None):
-        '''
-        This method will listen to a UDP socket and get the status information
-        of the RT-host and FPGA.
-        
-        This information is returned as a json string and converted to a dictionary.
-        
-        '''
-        
-        datagram = None
-        
-        while not datagram:
-            # Receive Datagram
-            print(self.receiveSocket.getsockname())
-            # print(self.receiveSocket.getsockopt(level, option))
-            datagram = self.receiveSocket.recvfrom(1024)
-            
-        
-        # parse json datagram
-        datagramDict = json.loads(datagram)
-#         datagramList = datagram[0].split('_')
-#         
-#         datagramDict = {}
-#         
-#         for element in datagramList:
-#             element = element.split('=')
-#             datagramDict[element[0]] = element[1]
-#             
-        if key:
-            return datagramDict[key]
-        else:
-            return datagramDict
-
+    def waitForIdle(self):
+        '''waits for the Idle status of the FPGA'''
+        while self.status.getStatus('FPGA Main State') != FPGA_IDLE_STATE:
+            time.sleep(0.1)
         
     def abort(self):
         '''
         Sends abort experiment command to FPGA
         '''
         self.runCommand(self.commandDict['abort'])
-        
     
     def reInit(self, unit = None):
         '''
@@ -1062,7 +1043,6 @@ class Connection():
             
         if unit == 'fpga':
             self.runCommand(self.commandDict['reInitFPGA'])
-
          
     def updateNReps(self, newCount, msgLength=20):
         '''
@@ -1074,7 +1054,6 @@ class Connection():
         newCount = [newCount]
         
         self.runCommand(self.commandDict['updateNrReps'], newCount, msgLength)
-        
         
     def sendTables(self, digitalsTable, analogueTables, msgLength = 20, digitalsBitDepth = 32, analoguesBitDepth = 16):
         '''
@@ -1108,10 +1087,9 @@ class Connection():
                 analogueValue = int(numpy.binary_repr(time, 32) + numpy.binary_repr(value, 32), 2)
                 analogueList.append(analogueValue)
             
-            command = str(int(self.commandDict['sendAnalogues']) + analogueChannel)
+            command = int(self.commandDict['sendAnalogues']) + analogueChannel
             self.runCommand(command, analogueList, msgLength)
             analogueChannel = analogueChannel + 1
-            
         
     def writeIndexes(self, 
                      indexSet, 
@@ -1141,7 +1119,7 @@ class Connection():
         
         # Merge everything in a single list to send. Note that we interlace the 
         # analogue indexes (start, stop, start, stop,...) so in the future we can 
-        # put an arbitrary number. For the moment the FPGA will use 4
+        # put an arbitrary number.
         sendList = [indexSet, digitalsStartIndex, digitalsStopIndex]
         
         analoguesInterleaved = [x for t in zip(analoguesStartIndexes, analoguesStopIndexes) for x in t]
@@ -1152,29 +1130,31 @@ class Connection():
         # send indexes. 
         self.runCommand(self.commandDict['sendStartStopIndexes'], sendList, msgLength)
                    
-    
     def readError(self):
         '''
         Gets error code from RT-host and FPGA
         
         Returns a tuple with the error code and the corresponding error message
         '''
-        return self.getStatus('E0')       
-        
+        return self.status.getStatus(['Error code', 'Error Description'])
     
-    def isCollecting(self, collectionLine = 'Action State'):
+    def isIdle(self):
         '''
-        Returns 1 if experiment is running and 0 if idle
+        Returns True if experiment is running and False if idle
         '''
-        return int(self.readStatus(collectionLine))
+        if self.status.getStatus('Action State') == FPGA_IDLE_STATE:
+            return True
+        else:
+            return False
     
-    
-    def isAborted(self, collectionLine = 'Aborted'):
+    def isAborted(self):
         '''
-        Returns 1 if FPGA is aborted and 0 if idle
+        Returns True if FPGA is aborted (in practice interlocked) and False if idle
         '''
-        return int(self.readStatus(collectionLine))
-
+        if self.status.getStatus('Aborted'):
+            return True
+        else:
+            return False
 
     def flushFIFOs(self):
         '''
@@ -1195,7 +1175,6 @@ class Connection():
         '''
         pass
     
-    
     def writeAnalogueADU(self, analogueChannel, analogueValueADU, msgLength=20):
         '''
         Changes an analogueChannel output to the specified analogueValue value
@@ -1211,7 +1190,6 @@ class Connection():
         
         self.runCommand(self.commandDict['writeAnalogue'], analogue, msgLength)
     
-    
     def writeAnalogueDelta(self, analogueDeltaValue, analogueChannel):
         '''
         Changes an analogueChannel output to the specified analogueValue delta-value
@@ -1222,7 +1200,6 @@ class Connection():
         as specified in the config files
         '''
         pass
-        
     
     def readAnalogue(self, analogueLine):
         '''
@@ -1231,11 +1208,9 @@ class Connection():
         analogueLine is an integer corresponding to the requested analogue on the FPGA
         as entered in the analogue config files.
         '''
-        
         analogueLine = 'Analogue ' + str(analogueLine)
         
-        return int(self.readStatus(key = analogueLine))
-        
+        return self.status.getStatus(analogueLine)
     
     def writeDigitals(self, digitalValue, msgLength=20):
         '''
@@ -1247,23 +1222,20 @@ class Connection():
         digitalValue = [digitalValue]
         self.runCommand(self.commandDict['writeDigitals'], digitalValue, msgLength)
 
-    
     def readDigitals(self, digitalChannel = None):
         '''
         Get the value of the current Digitals outputs as a 32bit integer.
         
         If digitalChannel is specified, a 0 or 1 is returned.
         '''
-        value = self.readStatus(key = 'Digitals')
+        value = numpy.binary_repr(self.status.getStatus('Digitals'))
         
-        if digitalChannel:
+        if digitalChannel is not None:
             return int(value[-digitalChannel])
-        
         else:
             return int(value, 2)
     
-    
-    def initProfile(self,numberReps, repDuration = 0, msgLength=20):
+    def initProfile(self, numberReps, repDuration = 0, msgLength=20):
         '''
         Prepare the FPGA to run the loaded profile.
         Send a certain number of parameters:
@@ -1276,13 +1248,11 @@ class Connection():
         '''
         self.runCommand(self.commandDict['initProfile'], [numberReps, repDuration], msgLength)
 
-        
     def getframedata(self):
         '''
         Get the current frame
         '''
         pass
-    
     
     def triggerExperiment(self):
         '''
@@ -1290,8 +1260,7 @@ class Connection():
         '''
         self.runCommand(self.commandDict['triggerExperiment'])
         
-        
-    def takeImage(self, cameras, lightTimePairs, actionsPerMillisecond=1000, digitalsBitDepth = 32, msgLength=20):
+    def takeImage(self, cameras, lightTimePairs, actionsPerMillisecond=100, digitalsBitDepth = 32, msgLength=20):
         '''
         Performs a snap with the selected cameras and light-time pairs
         
@@ -1300,7 +1269,6 @@ class Connection():
         Expose all lights at the start, then drop them out
         as their exposure times come to an end.
         '''
-        
         if lightTimePairs:
             # transform the times in FPGA time units
             lightTimePairs = [(light, int(time * actionsPerMillisecond)) for (light, time) in lightTimePairs]
@@ -1324,7 +1292,6 @@ class Connection():
             
             # Add a 0 at the end will stop the execution of the list    
             timingList.append((0, 0))
-
             
             lightTimePairs = timingList
             
@@ -1336,10 +1303,100 @@ class Connection():
                 value = int(value, 2)
                 sendList.append(value)
                 
-            print(sendList)
             self.runCommand(self.commandDict['takeImage'], sendList, msgLength)
-            
 
+
+class FPGAStatus(threading.Thread):
+    def __init__(self, parent, host, port):
+        threading.Thread.__init__(self)
+        self.parent = parent
+        ## Create a dictionary to store the FPGA status and a lock to access it
+        self.currentFPGAStatus = {}
+        self.FPGAStatusLock = threading.Lock()
+        
+        ## create a socket
+        self.socket = self.createReceiveSocket(host, port)
+        
+        ## Create a handle to stop the thread
+        self.shouldRun = True
+        
+    def createReceiveSocket(self, host, port):
+        '''
+        Creates a UDP socket meant to receive status information
+        form the RT-host
+        
+        returns the bound socket
+        '''
+        try:
+            # Create an AF_INET, Datagram socket (UDP)
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        except socket.error, msg:
+            print 'Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
+        
+        try:
+            # Bind Socket to local host and port
+            s.bind((host , port))
+        except socket.error, msg:
+            print 'Failed to bind address. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
+        
+        return s
+
+    def getStatus(self, key = None):
+        '''
+        Method to call from outside to get the status
+        '''
+        if key and self.currentFPGAStatus is not None:
+            try:
+                with self.FPGAStatusLock:
+                    return self.currentFPGAStatus[key]
+            except:
+                print('Key does not exist')
+        else:
+            with self.FPGAStatusLock:
+                return self.currentFPGAStatus
+        
+
+    def getFPGAStatus(self):
+        '''
+        This method polls to a UDP socket and get the status information
+        of the RT-host and FPGA.
+        
+        It will update the FPGAStatus dictionary.
+        '''
+        try:
+            # Receive Datagram
+            datagramLength = int(self.socket.recvfrom(4)[0])
+            datagram = self.socket.recvfrom(datagramLength)[0]
+        except:
+            print('No datagram')
+            return None
+        # parse json datagram
+        return json.loads(datagram)
+        
+    def publishFPGAStatusChanges(self, oldStatus, newStatus):
+        '''
+        FInd interesting changes in the FPGA status and publish them
+        '''
+        if newStatus["FPGA Main State"] != oldStatus["FPGA Main State"] and newStatus["FPGA Main State"] == FPGA_IDLE_STATE:
+            events.publish("DSP done")
+            print('FPGA done')
+
+    def run(self):
+        
+        self.currentFPGAStatus = self.getFPGAStatus()
+        
+        while self.shouldRun:
+            newFPGAStatus = self.getFPGAStatus()
+            with self.FPGAStatusLock:
+                if newFPGAStatus is not None and newFPGAStatus != self.currentFPGAStatus: 
+                    # Publish any interesting change and update
+                    self.publishFPGAStatusChanges(oldStatus = self.currentFPGAStatus, 
+                                                  newStatus = newFPGAStatus)
+                    self.currentFPGAStatus = newFPGAStatus
+            
+            ## wait for a period al least the broadcasting rate of the FPGA
+            time.sleep(.1)
+    
 
 
 # 
