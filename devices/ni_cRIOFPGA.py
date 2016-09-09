@@ -334,12 +334,14 @@ class NIcRIO(device.Device):
         events.publish('stage stopped', '%d piezo' % axis)
 
     def movePiezoRelative(self, axis, delta):
-        '''Move the stage piezo by a given delta
+        '''
+        Move the stage piezo by a given delta
         '''
         self.movePiezoAbsolute(axis, self.curPosition[axis] + delta)
 
     def getPiezoPos(self, axis):
-        ''' Get the current Piezo position.
+        '''
+        Get the current Piezo position.
         '''
         return self.curPosition[axis]
 
@@ -352,7 +354,7 @@ class NIcRIO(device.Device):
         we just say it takes 1ms per micron to stabilize and .1ms to move.
         '''
         distance = abs(start - end)
-        return (decimal.Decimal('.1'), decimal.Decimal(distance * 1000))
+        return (decimal.Decimal('.1'), decimal.Decimal(distance * 1))
 
     def setSLMPattern(self, name, position):
         '''
@@ -401,12 +403,14 @@ class NIcRIO(device.Device):
         self.moveRetarderAbsolute(self.curRetarderVoltage + delta)
 
     def getRetarderPos(self, name):
-        '''Get the current variable retarder voltage
+        '''
+        Get the current variable retarder voltage
         '''
         return self.curRetarderVoltage
 
     def getRetarderMovementTime(self, name, start, end):
-        '''Get the time needed for the variable retarder to move to a new value.
+        '''
+        Get the time needed for the variable retarder to move to a new value.
         '''
         return (1, 1000)
 
@@ -455,8 +459,6 @@ class NIcRIO(device.Device):
             
         sleep(5) 
 
-
-
     def onPrepareForExperiment(self, *args):
         '''
         Prepare to run an experiment: cache our current piezo positions so
@@ -467,7 +469,7 @@ class NIcRIO(device.Device):
         '''
         self.preExperimentPosition = self.curPosition.copy()
         self.lastDigitalVal = 0
-        self.lastAnalogPositions = [0] * 4
+        self.lastAnalogPositions[0] = self.preExperimentPosition[2] # TODO change this
 
     def cleanupAfterExperiment(self, *args):
         '''
@@ -509,7 +511,7 @@ class NIcRIO(device.Device):
                 
         self.lastDigitalVal = digitals[-1, 1]
         for aline in xrange(4):
-            self.lastAnalogPositions[aline] = analogs[aline][-1][1] #  + self.lastAnalogPositions[aline]
+            self.lastAnalogPositions[aline] = analogs[aline][-1][1] + self.lastAnalogPositions[aline]
 
         # Apologies for the messiness here; basically we're checking if any
         # aspect of the experiment profile has changed compared to the last
@@ -654,13 +656,14 @@ class NIcRIO(device.Device):
                     value = int(self.retarderVoltages[action] * 3276.8)
                 else:
                     value = self.convertMicronsToADUs(aline, action)
+                    # Add the start position as the experiment is generating deltas
+                    value += self.convertMicronsToADUs(aline, self.lastAnalogPositions[aline])
                 # If we're in the
                 # middle of an experiment, then these values need to be
                 # re-baselined based on where we started from, since when the
                 # DSP treats all analog positions as offsets of where it was
                 # when it started executing the profile.
-                ## not needed for teh FPGA
-                # value -= self.lastAnalogPositions[aline]
+                ## not needed for the FPGA
                 if aline not in alineToAnalogs:
                     alineToAnalogs[aline] = []
                 alineToAnalogs[aline].append((time - baseTime, value))
