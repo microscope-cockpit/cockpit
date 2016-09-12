@@ -1007,7 +1007,7 @@ class Connection():
 
         try:
             ## receive confirmation error
-            errorLength = self.sendSocket.recv(3)
+            errorLength = self.sendSocket.recv(4)
             error = self.sendSocket.recv(int(errorLength))
             return error
         except socket.error, msg:
