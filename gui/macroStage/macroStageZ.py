@@ -386,6 +386,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 bucketIndex = int((altitude - self.minY) / ALTITUDE_BUCKET_SIZE)
                 if bucketIndex < len(self.altitudeBuckets):
                     count = self.altitudeBuckets[bucketIndex]
+                else: ## TODO: fox this. Causes error when 'count'is referenced before asignment
+                    count = self.altitudeBuckets[bucketIndex]
                 width = int(float(count) / histogram.maxBucketSize * histogram.width)
                 drawAltitude = histogram.scale(altitude)
                 self.scaledVertex(histogram.xOffset, drawAltitude)
