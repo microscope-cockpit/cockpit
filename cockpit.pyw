@@ -117,10 +117,18 @@ class CockpitApp(wx.App):
             self.secondaryWindows = [w for w in wx.GetTopLevelWindows() if w not in self.primaryWindows]
 
             for w in self.secondaryWindows:
-                # Close secondary windows rather than kill them.
+                #bind close event to just hide for these windows
                 w.Bind(wx.EVT_CLOSE, lambda event: w.Hide())
-                # Hide the window until it is called up.
-                w.Hide()
+                # get saved state of secondary windows.
+                title=w.GetTitle()
+                windowstate=util.userConfig.getValue('windowState'+title,
+                                                isGlobal = False,
+                                                default= 0)
+                #if they were hidden then return them to hidden
+                if (windowstate is 0): 
+                    # Hide the window until it is called up.
+                    w.Hide()
+                
             
             # Now that the UI exists, we don't need this any more.
         	# Sometimes, status doesn't make it into the list, so test.
