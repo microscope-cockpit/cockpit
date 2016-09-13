@@ -9,6 +9,7 @@ import wx
 import events
 import interfaces.stageMover
 import util.logger
+import depot
 
 from cockpit import COCKPIT_PATH
 
@@ -79,7 +80,13 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.prevStepSizes = numpy.zeros(3)
         ## As above, but represents our knowledge of the current sizes.
         self.curStepSizes = numpy.zeros(3)
-
+        
+        ##objective offset info to get correct position and limits
+        self.objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+        self.listObj = list(self.objective.nameToOffset.keys())
+        self.listOffsets = list(self.objective.nameToOffset.values())
+        self.offset = self.objective.getOffset()
+ 
         ## Boolean to just force a redraw.
         self.shouldForceRedraw = False
 
