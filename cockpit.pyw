@@ -119,6 +119,18 @@ class CockpitApp(wx.App):
             for w in self.secondaryWindows:
                 #bind close event to just hide for these windows
                 w.Bind(wx.EVT_CLOSE, lambda event: w.Hide())
+            
+            # Now that the UI exists, we don't need this any more.
+        	# Sometimes, status doesn't make it into the list, so test.
+            if status in self.primaryWindows:
+            	self.primaryWindows.remove(status)
+            status.Destroy()
+
+            util.user.login(frame)
+            util.logger.log.debug("Login complete as %s", util.user.getUsername())
+
+            #now loop over secondary windows open and closeing as needed.
+            for w in self.secondaryWindows:
                 # get saved state of secondary windows.
                 title=w.GetTitle()
                 windowstate=util.userConfig.getValue('windowState'+title,
@@ -130,15 +142,6 @@ class CockpitApp(wx.App):
                     w.Hide()
                 
             
-            # Now that the UI exists, we don't need this any more.
-        	# Sometimes, status doesn't make it into the list, so test.
-            if status in self.primaryWindows:
-            	self.primaryWindows.remove(status)
-            status.Destroy()
-
-            util.user.login(frame)
-            util.logger.log.debug("Login complete as %s", util.user.getUsername())
-
             depot.makeInitialPublications()
             interfaces.makeInitialPublications()
             events.publish('cockpit initialization complete')
