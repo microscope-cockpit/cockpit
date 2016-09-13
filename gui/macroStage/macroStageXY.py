@@ -116,56 +116,61 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             hardLimits = interfaces.stageMover.getHardLimits()[:2]
             # Rearrange limits to (x, y) tuples.
             hardLimits = zip(hardLimits[0], hardLimits[1])
-            glLineWidth(4)
-            glEnable(GL_LINE_STIPPLE)
-            glLineStipple(3, 0xAAAA)
-            glColor3f(0, 0, 1)
-            glBegin(GL_LINE_LOOP)
-            for (xIndex, yIndex) in squareOffsets:
-                self.scaledVertex(hardLimits[xIndex][0],
-                        hardLimits[yIndex][1])
-            glEnd()
-            glDisable(GL_LINE_STIPPLE)
+            #Loop over objective offsets to draw limist in multiple colours.
+            for obj in self.listObj:
+                offset=self.objective.nameToOffset.get(obj)
+                colour=self.objective.nameToColour.get(obj)
+                glLineWidth(4)
+                glEnable(GL_LINE_STIPPLE)
+                glLineStipple(3, 0xAAAA)
+                glColor3f(*colour)
+                glBegin(GL_LINE_LOOP)
+                for (xIndex, yIndex) in squareOffsets:
+                    self.scaledVertex(hardLimits[xIndex][0]+offset[0],
+                                      hardLimits[yIndex][1]-offset[1])
+                glEnd()
+                glDisable(GL_LINE_STIPPLE)
 
-            # Draw soft stage motion limits -- a dotted box, solid black
-            # corners, and coordinates. If we're currently setting safeties,
-            # then the second corner is the current mouse position.
-            safeties = interfaces.stageMover.getSoftLimits()[:2]
-            x1, x2 = safeties[0]
-            y1, y2 = safeties[1]
-            if self.firstSafetyMousePos is not None:
-                x1, y1 = self.firstSafetyMousePos
-                x2, y2 = self.lastMousePos
-                if x1 > x2:
-                    x1, x2 = x2, x1
-                if y1 > y2:
-                    y1, y2 = y2, y1
-            softLimits = [(x1, y1), (x2, y2)]
+                # Draw soft stage motion limits -- a dotted box, solid black
+                # corners, and coordinates. If we're currently setting safeties,
+                # then the second corner is the current mouse position.
+                safeties = interfaces.stageMover.getSoftLimits()[:2]
+                x1, x2 = safeties[0]
+                y1, y2 = safeties[1]
+                if self.firstSafetyMousePos is not None:
+                    x1, y1 = self.firstSafetyMousePos
+                    x2, y2 = self.lastMousePos
+                    if x1 > x2:
+                        x1, x2 = x2, x1
+                    if y1 > y2:
+                        y1, y2 = y2, y1
+                softLimits = [(x1, y1), (x2, y2)]
 
-            # First the dotted green box.
-            glEnable(GL_LINE_STIPPLE)
-            glLineWidth(2)
-            glLineStipple(3, 0x5555)
-            glColor3f(0, 1, 0)
-            glBegin(GL_LINE_LOOP)
-            for (x, y) in [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]:
-                self.scaledVertex(x, y)
-            glEnd()
-            glDisable(GL_LINE_STIPPLE)
+                # First the dotted green box.
+                glEnable(GL_LINE_STIPPLE)
+                glLineWidth(2)
+                glLineStipple(3, 0x5555)
+                glColor3f(0, 1, 0)
+                glBegin(GL_LINE_LOOP)
+                for (x, y) in [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]:
+                    self.scaledVertex(x+offset[0], y-offset[1])
+                glEnd()
+                glDisable(GL_LINE_STIPPLE)
 
-            # Now the corners.
-            glColor3f(0, 0, 0)
-            glBegin(GL_LINES)
-            for (vx, vy), (dx, dy) in [
-                    (softLimits[0], (self.maxExtent * .1, 0)),
-                    (softLimits[0], (0, self.maxExtent * .1)),
-                    (softLimits[1], (-self.maxExtent * .1, 0)),
-                    (softLimits[1], (0, -self.maxExtent * .1))]:
-                secondVertex = [vx + dx, vy + dy]
-                self.scaledVertex(vx, vy)
-                self.scaledVertex(secondVertex[0], secondVertex[1])
-            glEnd()
-            glLineWidth(1)
+                # Now the corners.
+                glColor3f(0, 0, 0)
+                glBegin(GL_LINES)
+                for (vx, vy), (dx, dy) in [
+                        (softLimits[0], (self.maxExtent * .1, 0)),
+                        (softLimits[0], (0, self.maxExtent * .1)),
+                        (softLimits[1], (-self.maxExtent * .1, 0)),
+                        (softLimits[1], (0, -self.maxExtent * .1))]:
+                    secondVertex = [vx + dx, vy + dy]
+                    self.scaledVertex(vx+offset[0], vy-offset[1])
+                    self.scaledVertex(secondVertex[0]+offset[0],
+                                      secondVertex[1]-offset[1])
+                glEnd()
+                glLineWidth(1)
             # Now the coordinates. Only draw them if the soft limits aren't
             # the hard limits, to avoid clutter.
             hardLimits = interfaces.stageMover.getHardLimits()[:2]
@@ -193,15 +198,21 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                     self.drawScaledRectangle(*p.data)
             glDisable(GL_LINE_STIPPLE)
 
-            # Draw stage position
-            motorPos = self.curStagePosition[:2]
-            squareSize = self.maxExtent * .025
-            glColor3f(1, 0, 0)
-            glBegin(GL_LINE_LOOP)
-            for (x, y) in squareOffsets:
-                self.scaledVertex(motorPos[0] + squareSize * x - squareSize / 2,
-                                  motorPos[1] + squareSize * y - squareSize / 2)
-            glEnd()
+            for obj in self.listObj:
+                offset=self.objective.nameToOffset.get(obj)
+                colour=self.objective.nameToColour.get(obj)
+
+                # Draw stage position
+                motorPos = self.curStagePosition[:2]
+                squareSize = self.maxExtent * .025
+                glColor3f(*colour)
+                glBegin(GL_LINE_LOOP)
+                for (x, y) in squareOffsets:
+                    self.scaledVertex(motorPos[0]+offset[0] +
+                                      squareSize * x - squareSize / 2,
+                                      motorPos[1]-offset[1] +
+                                      squareSize * y - squareSize / 2)
+                glEnd()
 
             # Draw motion crosshairs
             glColor3f(1, 0, 0)
