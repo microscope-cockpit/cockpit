@@ -185,7 +185,39 @@ class Experiment:
         # Ensure that we're the only ones moving things around.
         interfaces.stageMover.waitForStop()
         # Prepare our position.
-        interfaces.stageMover.goToZ(self.zBottom, shouldBlock = True)
+        # check if handler can't do experiments drop to finer zpos handler
+        # and move to z bottom. If this isnt possible generate an exception.
+        zOrigIndex = interfaces.stageMover.mover.curHandlerIndex
+        #check if finer controller exists. 
+        zHardLimits = interfaces.stageMover.getIndividualHardLimits(2)
+        #Set handle to the highest (ie smallest motion) 
+        zCurIndex = len(zHardLimits)-1
+        interfaces.stageMover.mover.curHandlerIndex = zCurIndex
+        #find curren pisition and requires movement.
+        currentZ = interfaces.stageMover.getPositionForAxis(2)
+        zMovement = self.zBottom - currentZ
+        
+        while ( ((interfaces.stageMover.getAllPositions()[zCurIndex][2]
+               + zMovement ) > zHardLimits[zCurIndex][1]) or
+            ((interfaces.stageMover.getAllPositions()[zCurIndex][2]
+              + zMovement ) < zHardLimits[zCurIndex][0])):
+            #cant reach with current handler so move to next biggest.
+            zCurIndex -= 1
+            #check we still have handlers to use.
+            if (zCurIndex < 0 ):
+                raise RuntimeError("Not able to move to start Z positon [%d]."
+                                   % self.zBottom)
+            #are they eligible for experiments?
+            handler = interfaces.stageMove.mover.axisToHandlers[2][zCurIndex]
+            if not handler.getIsEligibleForExperiments():
+                raise RuntimeError("Handler [%s] is not usable in experiments."
+                                   % handler.name)
+        interfaces.stageMover.goToZ(self.zBottom,shouldBlock = True)
+        #store the Z motor we used for setup so we can restore it
+        self.prepareZIndex=zCurIndex
+        #make sure we are back to the expected mover
+        interfaces.stageMover.mover.curHandlerIndex = zOrigIndex
+
         events.publish('prepare for experiment', self)
         # Prepare cameras.
         for camera in self.cameras:
@@ -281,7 +313,14 @@ class Experiment:
         events.publish('cleanup after experiment')
         if self.initialZPos is not None:
             # Restore our initial Z position.
+            #first save current Zhandler index
+            zOrigIndex = interfaces.stageMover.mover.curHandlerIndex
+            #then set to the handler we used
+            interfaces.stageMover.mover.curHandlerIndex = self.prepareZIndex
             interfaces.stageMover.goToZ(self.initialZPos, shouldBlock = True)
+            #restore original Zhandler
+            interfaces.stageMover.mover.curHandlerIndex = zOrigIndex
+            
         events.publish('experiment complete')
         events.publish('update status light', 'device waiting',
                 '', (170, 170, 170))
