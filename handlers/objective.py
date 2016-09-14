@@ -54,9 +54,12 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
         panel = wx.Panel(frame)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         for name in sorted(self.nameToPixelSize.keys()):
+            colour = self.nameToColour.get(name)
+            colour= (colour[0]*255,colour[1]*255,colour[2]*255)
             button = gui.toggleButton.ToggleButton(
-                    label = name, parent = panel, 
-                    size = (80, 40))
+                activeColor = colour,
+                label = name, parent = panel, 
+                size = (80, 40))
             button.Bind(wx.EVT_LEFT_DOWN, 
                     lambda event, name = name: self.changeObjective(name))
             sizer.Add(button)
