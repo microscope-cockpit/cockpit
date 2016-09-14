@@ -70,7 +70,7 @@ class ObjectiveDevice(device.Device):
                     lensID = int(lstr) if lstr else 0
                     transform = eval(tstr) if tstr else (0,0,0)
                     offset = eval(ostr) if ostr else (0,0,0)
-                    colour = eval(cstr) if cstr else (1,1,1)
+                    colour = eval(cstr) if cstr else (1,0,0)
                 pixel_sizes.update({obj: pixel_size})
                 lensIDs.update({obj: lensID})
                 transforms.update({obj: transform})
