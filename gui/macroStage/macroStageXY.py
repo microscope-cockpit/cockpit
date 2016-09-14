@@ -70,6 +70,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         wx.EVT_RIGHT_UP(self, self.OnRightClick)
         wx.EVT_RIGHT_DCLICK(self, self.OnRightDoubleClick)
         events.subscribe("soft safety limit", self.onSafetyChange)
+        events.subscribe('objective change', self.onObjectiveChange)
         self.SetToolTipString("Left double-click to move the stage. " +
                 "Right click for gotoXYZ and double-click to toggle displaying of mosaic " +
                 "tiles.")
@@ -121,6 +122,10 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 offset=self.objective.nameToOffset.get(obj)
                 colour=self.objective.nameToColour.get(obj)
                 glLineWidth(4)
+                if obj is not self.objective.curObjective:
+                    colour = (min(1,colour[0]+0.5),min(1,colour[1]+0.5),
+                              min(1,colour[2]+0.5))
+                    glLineWidth(2)
                 glEnable(GL_LINE_STIPPLE)
                 glLineStipple(3, 0xAAAA)
                 glColor3f(*colour)
@@ -197,10 +202,15 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                     # rectangle: x0, y0, width, height
                     self.drawScaledRectangle(*p.data)
             glDisable(GL_LINE_STIPPLE)
-
+            #Draw possibloe stage positions for each objective
             for obj in self.listObj:
                 offset=self.objective.nameToOffset.get(obj)
                 colour=self.objective.nameToColour.get(obj)
+                glLineWidth(2)
+                if obj is not self.objective.curObjective:
+                    colour = (min(1,colour[0]+0.5),min(1,colour[1]+0.5),
+                              min(1,colour[2]+0.5))
+                    glLineWidth(1)
 
                 # Draw stage position
                 motorPos = self.curStagePosition[:2]
@@ -231,7 +241,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             delta = motorPos - self.prevStagePosition[:2]
 
             if sum(numpy.fabs(delta)) > macroStageBase.MIN_DELTA_TO_DISPLAY:
-                self.drawArrow(motorPos, delta, (0, 0, 1),
+                self.drawArrow(motorPos+ self.offset[:2], delta, (0, 0, 1),
                         arrowSize = self.maxExtent * .1,
                         arrowHeadSize = self.maxExtent * .025)
                 glLineWidth(1)
@@ -385,11 +395,16 @@ class MacroStageXY(macroStageBase.MacroStageBase):
     def remapClick(self, clickLoc):
         x = float(self.width - clickLoc[0]) / self.width * (self.maxX - self.minX) + self.minX
         y = float(self.height - clickLoc[1]) / self.height * (self.maxY - self.minY) + self.minY
-        return [x, y]
+        return [x-self.offset[0], y+self.offset[1]]
 
 
     ## Switch mode so that clicking sets the safeties
     def setSafeties(self, event = None):
         self.amSettingSafeties = True
+
+    ## Refresh display on objective change
+    def onObjectiveChange(self, name, pixelSize, transform, offset, **kwargs):
+        self.offset = offset
+        self.Refresh()
 
 
