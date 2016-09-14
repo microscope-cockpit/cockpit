@@ -17,9 +17,9 @@ class ConfiguratorDevice(device.Device):
  
         # Default values.
         configdict = {
-                'slideAltitude': 7370,
+                'slidealtitude': 7370,
                 'slideTouchdownAltitude': 7900,
-                'dishAltitude': 5750,
+                'dishaltitude': 5750,
                 'dataDirectory': os.path.join(root, 'AA_MUI_DATA'),
                 'logDirectory': os.path.join(root, 'AA_MUI_LOGS'),
                 'configDirectory': os.path.join(root, 'AA_MUI_CONFIG'),
@@ -31,8 +31,8 @@ class ConfiguratorDevice(device.Device):
             for opt in config.options(CONFIG_NAME):
                 if opt in configdict:
                     # Already exists. Make sure we keep the same type.
-                    dtype = type(config.get(opt))
-                    configdict.update({opt: type(config.get(CONFIG_NAME, opt))})
+                    dtype = type(configdict[opt])
+                    configdict.update({opt: dtype(config.get(CONFIG_NAME, opt))})
                 else:
                     configdict.update({opt: config.get(CONFIG_NAME, opt)})
 
