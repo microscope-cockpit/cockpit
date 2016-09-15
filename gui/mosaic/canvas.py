@@ -74,15 +74,27 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         objs = depot.getHandlersOfType(depot.OBJECTIVE)
         offsets = list(itertools.chain(*[ob.nameToOffset.values() for ob in objs]))
         minmax = lambda l: (min(l), max(l))
-        xOffLim = minmax([offset[0] for offset in offsets])
+        xOffLim = minmax([-offset[0] for offset in offsets])
         yOffLim = minmax([offset[1] for offset in offsets])
-
-        for x in xrange(self.stageHardLimits[0][0] - max(0, xOffLim[1]),
-                        self.stageHardLimits[0][1] + min(0, xOffLim[0]) + tile.megaTileMicronSize,
-                        tile.megaTileMicronSize):
-            for y in xrange(self.stageHardLimits[1][0] - max(0, yOffLim[1]), 
-                            self.stageHardLimits[1][1] + min(0, yOffLim[0]) + tile.megaTileMicronSize, 
-                            tile.megaTileMicronSize):
+        (xMin, xMax), (yMin, yMax) = self.stageHardLimits
+        # Bounds checks ensure we only increase the megatile area, not
+        # decrease it.
+        #
+        # We need to increase upper limit further so we don't miss tiles at
+        # the edges. We should just need to add megaTileMicronSize to each
+        # axis to make sure we add tiles up to and including our bounds. This
+        # works for the x-axis, but not y. For some reason, we need to add
+        # *four* times this value to the y-axis. The megaTile's y-origin is at
+        # its centre, whereas the x-origin is at an edge; as far as I can see,
+        # but this should require only up to three times the tilesize added to
+        # the upper limit, not four.
+        # Four works, though.
+        xMin += min(0, xOffLim[0])
+        xMax += max(0, xOffLim[1]) + tile.megaTileMicronSize
+        yMin += min(0, yOffLim[0])
+        yMax += max(0, yOffLim[1]) + 4 * tile.megaTileMicronSize
+        for x in xrange(xMin, xMax, tile.megaTileMicronSize):
+            for y in xrange(yMin, yMax, tile.megaTileMicronSize):
                 self.megaTiles.append(tile.MegaTile((-x, y)))
         self.haveInitedGL = True
 
