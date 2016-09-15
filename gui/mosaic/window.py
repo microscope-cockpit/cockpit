@@ -463,18 +463,21 @@ class MosaicWindow(wx.Frame):
                 if p.type in ['c', 'C']:
                     # circle: x0, y0, radius
                     self.drawScaledCircle(p.data[0], p.data[1],
-                                          p.data[2], CIRCLE_SEGMENTS)
+                                          p.data[2], CIRCLE_SEGMENTS,
+                                          offset=False)
                 if p.type in ['r', 'R']:
                     # rectangle: x0, y0, width, height
-                    self.drawScaledRectangle(*p.data)
+                    self.drawScaledRectangle(*p.data, offset=False)
             glDisable(GL_LINE_STIPPLE)
 
-    def drawScaledCircle(self, x0, y0, r, n):
+
+    def drawScaledCircle(self, x0, y0, r, n, offset=True):
         dTheta = 2. * PI / n
         cosTheta = numpy.cos(dTheta)
         sinTheta = numpy.sin(dTheta)
-        x0=x0-self.offset[0]
-        y0 =y0+self.offset[1]
+        if offset:
+            x0=x0-self.offset[0]
+            y0 =y0+self.offset[1]
         x = r
         y = 0.
 
@@ -487,11 +490,12 @@ class MosaicWindow(wx.Frame):
         glEnd()
 		
     ## Draw a rectangle centred on x0, y0 of width w and height h.
-    def drawScaledRectangle(self, x0, y0, w, h):
+    def drawScaledRectangle(self, x0, y0, w, h, offset=True):
         dw = w / 2.
         dh = h / 2.
-        x0 = x0-self.offset[0]
-        y0 = y0+self.offset[1]
+        if offset:
+            x0 = x0-self.offset[0]
+            y0 = y0+self.offset[1]
         ps = [(x0-dw, y0-dh),
               (x0+dw, y0-dh),
               (x0+dw, y0+dh),
