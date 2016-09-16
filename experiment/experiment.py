@@ -360,9 +360,14 @@ class Experiment:
     # We also need to enforce that any frame-transer cameras have not seen any
     # light since the last time they were blanked.
     # \param lightTimePairs List of (light, exposure time) tuples 
-    # describing how long to expose each light for. 
+    #        describing how long to expose each light for. 
+    # \param pseudoGlobalExposure Boolean for, in the case of using a rolling 
+    #        shutter, excite with the light only during the time all the pixels are
+    #        exposed.
+    # \param previousMovementTime This is the time used for the z movement
+    #        so we can take advantage of this time to start exposing the camera
     # \return The time at which all exposures are complete.
-    def expose(self, curTime, cameras, lightTimePairs, table):
+    def expose(self, curTime, cameras, lightTimePairs, table, pseudoGlobalExposure = False, previousMovementTime = 0):
         # First, determine which cameras are not ready to be exposed, because
         # they may have seen light they weren't supposed to see (due to 
         # bleedthrough from other cameras' exposures). These need
@@ -378,11 +383,14 @@ class Experiment:
         # involved: their exposure modes, readout times, and last trigger
         # times determine how soon we can next trigger them (see
         # getTimeWhenCameraCanExpose() for more information).
-        exposureStartTime = curTime
+        minExposureStartTime = curTime
         # Adjust the exposure start based on when the cameras are ready.
         for camera in cameras:
             camExposureReadyTime = self.getTimeWhenCameraCanExpose(table, camera)
-            exposureStartTime = max(exposureStartTime, camExposureReadyTime)
+            # we add the readout time to get when the light should be trigger to
+            # obtain pseudo global exposure
+            camPseudoGlobalReadyTime = camExposureReadyTime + self.cameraToReadoutTime[camera]
+            minExposureStartTime = max(minExposureStartTime, camExposureReadyTime)
 
         # Determine the maximum exposure time, which depends on our light
         # sources as well as how long we have to wait for the cameras to be
@@ -403,13 +411,13 @@ class Experiment:
                 # Ensure camera is exposing for long enough to finish reading
                 # out the last frame.
                 maxExposureTime = max(maxExposureTime,
-                        nextReadyTime - exposureStartTime)
+                        nextReadyTime - minExposureStartTime)
 
         # Open the shutters for the specified exposure times, centered within
         # the max exposure time.
         # Note that a None value here means the user wanted to expose the
         # cameras without any special light.
-        exposureEndTime = exposureStartTime + maxExposureTime
+        exposureEndTime = minExposureStartTime + maxExposureTime
         for light, exposureTime, in lightTimePairs:
             if light is not None: # i.e. not ambient light
                 # Center the light exposure.
@@ -431,11 +439,11 @@ class Experiment:
             if mode == handlers.camera.TRIGGER_AFTER:
                 table.addToggle(exposureEndTime, camera)
             elif mode == handlers.camera.TRIGGER_DURATION:
-                table.addAction(exposureStartTime, camera, True)
+                table.addAction(minExposureStartTime, camera, True)
                 table.addAction(exposureEndTime, camera,
                         False)
             else: # TRIGGER_BEFORE case.
-                table.addToggle(exposureStartTime, camera)
+                table.addToggle(minExposureStartTime, camera)
             self.cameraToImageCount[camera] += 1
         for camera in self.cameras:
             if (camera not in usedCams and

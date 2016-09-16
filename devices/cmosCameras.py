@@ -42,7 +42,7 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         self.exposureTime = None
         self.timeBetweenExposures = None
         ## Current trigger mode for cameras.
-        self.curTriggerMode = TRIGGER_EXTERNAL
+        self.curTriggerMode = TRIGGER_EXTERNAL_EXPOSURE
         ## Queue of (image, timestamp, camera name) representing images
         # received from the camera computer(s).
         self.imageQueue = Queue.Queue()
@@ -89,7 +89,7 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
              'getImageSizes': self.getImageSizes,
              'setImageSize': self.setImageSize,
              'getMinExposureTime': self.getMinExposureTime},
-            handlers.camera.TRIGGER_BEFORE)
+            handlers.camera.TRIGGER_DURATION)
         self.handler = result
         return result
 
@@ -190,9 +190,8 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
             # We're already there; don't bother.
             return
         self.connobj.connection.setExposureTime(newTime)
-#         self.takeBurst(name, 10)
-        self.connobj.connection.setTrigger(TRIGGER_EXTERNAL)
-        self.curTriggerMode = TRIGGER_EXTERNAL
+        self.connobj.connection.setTrigger(TRIGGER_EXTERNAL_EXPOSURE)
+        self.curTriggerMode = TRIGGER_EXTERNAL_EXPOSURE
         self.exposureTime = newTime
 
     def getExposureTime(self, name, isExact = False):
@@ -237,8 +236,8 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         print('Preparing for experiment')
         exposureTime = experiment.getExposureTimeForCamera(self.handler)
         self.setExposureTime(name, exposureTime)
-        self.connobj.connection.setTrigger(TRIGGER_EXTERNAL)
-        self.curTriggerMode = TRIGGER_EXTERNAL
+        self.connobj.connection.setTrigger(TRIGGER_EXTERNAL_EXPOSURE)
+        self.curTriggerMode = TRIGGER_EXTERNAL_EXPOSURE
         
     def takeBurst(self, name, frameCount):
         self.connobj.connection.setFrameCount(frameCount)
