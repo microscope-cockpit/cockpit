@@ -1,7 +1,7 @@
 ## This module handles interacting with the National Instruments cRIO-9068 that sends the digital and
 # analog signals that control our light sources, cameras, and piezos. In 
 # particular, it effectively is solely responsible for running our experiments.
-# As such it's a fairly complex module. 
+# As such it's a fairly complex module.
 # 
 # A few helpful features that need to be accessed from the commandline:
 # 1) A window that lets you directly control the digital and analog outputs
@@ -878,6 +878,7 @@ class NIcRIO(device.Device):
 
         self.connection.initProfile(numReps)
         events.executeAndWaitFor("NI-FPGA done", self.connection.triggerExperiment)
+       
                        
 class Connection():
     '''
