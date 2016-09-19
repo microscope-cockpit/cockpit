@@ -118,6 +118,10 @@ def martialWindows(parent):
                                                 if window.IsIconized() 
                                                 else ((window.Show(not window.IsShown()) ) and (util.userConfig.setValue('windowState'+window.GetTitle(),0,isGlobal=False)))))
         menuId += 1
+        subMenu.Append(menuId, "Move to mouse")
+        wx.EVT_MENU(parent, menuId,
+                lambda event, window = window: window.SetPosition(wx.GetMousePosition()))
+        menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
         menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
