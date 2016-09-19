@@ -56,6 +56,7 @@ COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2, 'SI angle': -1}
 CONFIG_NAME = 'nicrio9068'
 FPGA_IDLE_STATE = 3
 FPGA_ABORTED_STATE = 4
+FPGA_UPDATE_RATE = .1 # At which rate is the FPGA sending update status signals
 MASTER_IP = '10.6.19.11'
 
 class NIcRIO(device.Device):
@@ -422,6 +423,7 @@ class NIcRIO(device.Device):
         cameraMask = 0
         lightTimePairs = []
         maxTime = 0
+        cameraReadTime = 0
         for handler, line in self.handlerToDigitalLine.iteritems():
             if handler.name in self.activeLights:
                 maxTime = max(maxTime, handler.getExposureTime())
@@ -433,7 +435,8 @@ class NIcRIO(device.Device):
                 cameraMask += line
                 handler = depot.getHandlerWithName(name)
                 handler.setExposureTime(maxTime)
-        self.connection.takeImage(cameraMask, lightTimePairs)
+                cameraReadTime = max(cameraReadTime, handler.getTimeBetweenExposures())
+        self.connection.takeImage(cameraMask, lightTimePairs, cameraReadTime)
         
     @util.threads.locked
     def takeBurst(self, frameCount = 10):
@@ -1068,7 +1071,6 @@ class Connection():
         msgLength is an int indicating the length of every digital table element as a decimal string
         '''
         
-        print('sendTables called')
         # Convert the digitals numpy table into a list of messages for the TCP
         digitalsList = []
               
@@ -1264,32 +1266,37 @@ class Connection():
         '''
         self.runCommand(self.commandDict['triggerExperiment'])
         
-    def takeImage(self, cameras, lightTimePairs, actionsPerMillisecond=100, digitalsBitDepth = 32, msgLength=20):
+    def takeImage(self, cameras, lightTimePairs, cameraReadTime = 0, actionsPerMillisecond=100, digitalsBitDepth = 32, msgLength=20):
         '''
         Performs a snap with the selected cameras and light-time pairs
         
         Generates a list of times and digitals that is sent to the FPGA to be run
         
+        Trigger the camera and wait until all the pixels are exposed
         Expose all lights at the start, then drop them out
         as their exposure times come to an end.
         '''
         if lightTimePairs:
             # transform the times in FPGA time units
             lightTimePairs = [(light, int(time * actionsPerMillisecond)) for (light, time) in lightTimePairs]
+            cameraReadTime = int(numpy.ceil(cameraReadTime * actionsPerMillisecond))
             
             # Sort so that the longest exposure time comes last.
             lightTimePairs.sort(key = lambda a: a[1])
             
+            # at time 0 all the cameras are triggered
+            timingList = [(cameras, 0)]
+            
             # the first timepoint: all cameras and lights are turned on and time is 0
-            timingList = [(cameras + sum([p[0] for p in lightTimePairs]), 0)]
+            timingList.append((cameras + sum([p[0] for p in lightTimePairs]), cameraReadTime))
             
             # For similar exposure times, we just send the digitals values that turn off
             # all the lights
             for light, time in lightTimePairs:
                 if time == timingList[-1][1]:
-                    timingList[-1] = (timingList[-1][0] - light, time)
+                    timingList[-1] = (timingList[-1][0] - light, time + cameraReadTime)
                 else:
-                    timingList.append((timingList[-1][0] - light, time))
+                    timingList.append((timingList[-1][0] - light, time + cameraReadTime))
                     
             # In the last time point also the cameras should be turned off
             timingList[-1] = (timingList[-1][0] - cameras, timingList[-1][1])
@@ -1377,13 +1384,18 @@ class FPGAStatus(threading.Thread):
         # parse json datagram
         return json.loads(datagram)
         
-    def publishFPGAStatusChanges(self, oldStatus, newStatus):
+    def publishFPGAStatusChanges(self, newStatus):
         '''
-        FInd interesting changes in the FPGA status and publish them
+        FInd interesting status or status changes in the FPGA and publish them
+        
+        return the newStatus but with the status reseted so not to publish multiple times
         '''
-        if newStatus["FPGA Main State"] != oldStatus["FPGA Main State"] and newStatus["FPGA Main State"] == FPGA_IDLE_STATE:
-            events.publish("DSP done")
+        if newStatus['Event'] == 'FPGA done':
+            events.publish('DSP done')
+            newStatus['Event'] = ''
             print('FPGA done')
+            
+        return newStatus
 
     def run(self):
         
@@ -1394,12 +1406,10 @@ class FPGAStatus(threading.Thread):
             with self.FPGAStatusLock:
                 if newFPGAStatus is not None and newFPGAStatus != self.currentFPGAStatus: 
                     # Publish any interesting change and update
-                    self.publishFPGAStatusChanges(oldStatus = self.currentFPGAStatus, 
-                                                  newStatus = newFPGAStatus)
-                    self.currentFPGAStatus = newFPGAStatus
+                    self.currentFPGAStatus = self.publishFPGAStatusChanges(newStatus = newFPGAStatus)
             
-            ## wait for a period al least the broadcasting rate of the FPGA
-            time.sleep(.1)
+            ## wait for a period of half the broadcasting rate of the FPGA
+            time.sleep(FPGA_UPDATE_RATE / 2)
     
 
 

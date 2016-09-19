@@ -383,14 +383,14 @@ class Experiment:
         # involved: their exposure modes, readout times, and last trigger
         # times determine how soon we can next trigger them (see
         # getTimeWhenCameraCanExpose() for more information).
-        minExposureStartTime = curTime
+        exposureStartTime = curTime
         # Adjust the exposure start based on when the cameras are ready.
         for camera in cameras:
             camExposureReadyTime = self.getTimeWhenCameraCanExpose(table, camera)
             # we add the readout time to get when the light should be trigger to
             # obtain pseudo global exposure
             camPseudoGlobalReadyTime = camExposureReadyTime + self.cameraToReadoutTime[camera]
-            minExposureStartTime = max(minExposureStartTime, camExposureReadyTime)
+            exposureStartTime = max(exposureStartTime, camExposureReadyTime)
 
         # Determine the maximum exposure time, which depends on our light
         # sources as well as how long we have to wait for the cameras to be
@@ -411,13 +411,13 @@ class Experiment:
                 # Ensure camera is exposing for long enough to finish reading
                 # out the last frame.
                 maxExposureTime = max(maxExposureTime,
-                        nextReadyTime - minExposureStartTime)
+                        nextReadyTime - exposureStartTime)
 
         # Open the shutters for the specified exposure times, centered within
         # the max exposure time.
         # Note that a None value here means the user wanted to expose the
         # cameras without any special light.
-        exposureEndTime = minExposureStartTime + maxExposureTime
+        exposureEndTime = exposureStartTime + maxExposureTime
         for light, exposureTime, in lightTimePairs:
             if light is not None: # i.e. not ambient light
                 # Center the light exposure.
@@ -439,11 +439,15 @@ class Experiment:
             if mode == handlers.camera.TRIGGER_AFTER:
                 table.addToggle(exposureEndTime, camera)
             elif mode == handlers.camera.TRIGGER_DURATION:
-                table.addAction(minExposureStartTime, camera, True)
-                table.addAction(exposureEndTime, camera,
-                        False)
+                table.addAction(exposureStartTime, camera, True)
+                table.addAction(exposureEndTime, camera, False)
+            elif mode == handlers.camera.TRIGGER_DURATION_PSEUDOGLOBAL:
+                # We added some security time to the readout time that we have to remove now
+                cameraExposureStartTime = exposureStartTime - self.cameraToReadoutTime[camera] - decimal.Decimal(0.005)
+                table.addAction(cameraExposureStartTime, camera, True)
+                table.addAction(exposureEndTime, camera, False)
             else: # TRIGGER_BEFORE case.
-                table.addToggle(minExposureStartTime, camera)
+                table.addToggle(exposureStartTime, camera)
             self.cameraToImageCount[camera] += 1
         for camera in self.cameras:
             if (camera not in usedCams and
