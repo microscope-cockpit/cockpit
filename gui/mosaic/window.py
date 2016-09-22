@@ -634,7 +634,7 @@ class MosaicWindow(wx.Frame):
                     #(-prevPosition[0] - width / 2,
                     #    prevPosition[1] - height / 2, curZ),
                     # Use the actual position, instead.
-                    ( -pos[0] - self.offset[0] - width/2,
+                    ( -pos[0] + self.offset[0] - width/2,
                       pos[1] - self.offset[1] - height/2,
                       curZ,) ,
                     (width, height), scalings = (minVal, maxVal),
