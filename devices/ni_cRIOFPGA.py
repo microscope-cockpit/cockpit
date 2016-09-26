@@ -66,10 +66,10 @@ class NIcRIO(device.Device):
         if not self.isActive:
             return
         ## IP address of the NIcRIO RT-computer.
-        self.ipAddress = config.get('nicrio9068', 'ipAddress')
+        self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
         ## Port to use to send data to the NIcRIO RT-computer. Used in TCP
-        self.sendPort = int(config.get('nicrio9068', 'sendPort'))
-        self.receivePort = int(config.get('nicrio9068', 'receivePort'))
+        self.sendPort = int(config.get(CONFIG_NAME, 'sendPort'))
+        self.receivePort = int(config.get(CONFIG_NAME, 'receivePort'))
         self.port = [self.sendPort, self.receivePort]
         ## Create connection to the NIcRIO RT-computer
         self.connection = Connection(self.ipAddress, self.port)
@@ -140,8 +140,6 @@ class NIcRIO(device.Device):
         self.startupAnalogPositions = [None] * 4
     
 
-    #TODO: Initialize socket connection: Test socket connection, reboot FPGA
-    
     @util.threads.locked
     def initialize(self):
         '''
@@ -178,11 +176,6 @@ class NIcRIO(device.Device):
 
     @util.threads.locked
     def finalizeInitialization(self):
-        #Unnecessary for the NI-FPGA
-#         # Tell the remote DSP computer how to talk to us.
-#         server = depot.getHandlersOfType(depot.SERVER)[0]
-#         uri = server.register(self.receiveData)
-#         self.connection.receiveClient(uri)
         # Get all the other devices we can control, and add them to our
         # digital lines.
         for name, line in self.nameToDigitalLine.iteritems():
@@ -271,6 +264,7 @@ class NIcRIO(device.Device):
     def receiveData(self, action, *args):
         '''
         Receive data from the RT-host computer.
+        Not used by the FPGA
         '''
         if action == 'NI-FPGA done':
             print "NI-FPGA done"
@@ -284,6 +278,11 @@ class NIcRIO(device.Device):
             self.activeLights.add(lightName)
         elif lightName in self.activeLights:
             self.activeLights.remove(lightName)
+        
+    def triggerNow(self, line, dt=0.01):
+        self.connection.writeDigitals(self.connection.readDigitals() ^ line)
+        time.sleep(dt)
+        self.connection.writeDigitals(self.connection.readDigitals() ^ line)
 
     def toggleLightHandler(self, handler, isEnabled):
         '''
@@ -384,7 +383,7 @@ class NIcRIO(device.Device):
         in milliseconds. Note we assume that this requires only one triggering
         of the SLM.
         '''
-        return (1, 30000)
+        return (1, 30)
 
     def moveRetarderAbsolute(self, name, pos):
         '''
@@ -486,18 +485,17 @@ class NIcRIO(device.Device):
         Get the number of actions from the provided table that we are
         capable of executing.
         '''
-        return 1000
         # TODO: replace this method by a more sophisticated setup as the FPGA may
         # control repetitions and the duration
-#         count = 0
-#         for time, handler, parameter in table[index:]:
-#             # Check for analog and digital devices we control.
-#             if (handler not in self.handlers and 
-#                     handler.name not in self.nameToDigitalLine):
-#                 # Found a device we don't control.
-#                 break
-#             count += 1
-#         return count
+        count = 0
+        for time, handler, parameter in table[index:]:
+            # Check for analog and digital devices we control.
+            if (handler not in self.handlers and 
+                    handler.name not in self.nameToDigitalLine):
+                # Found a device we don't control.
+                break
+            count += 1
+        return count
 
     def executeTable(self, name, table, startIndex, stopIndex, numReps, repDuration):
         '''
@@ -507,11 +505,10 @@ class NIcRIO(device.Device):
         the FPGA.
         '''
         profileStr, digitals, analogs = self.generateProfile(table[startIndex:stopIndex], repDuration)
+
         # Update our positioning values in case we have to make a new profile
         # in this same experiment. The analog values are a bit tricky, since
         # they're deltas from the values we used to create the profile.
-        ## Not true for the FPGA
-                
         self.lastDigitalVal = digitals[-1, 1]
         for aline in xrange(4):
             self.lastAnalogPositions[aline] = analogs[aline][-1][1] + self.lastAnalogPositions[aline]
@@ -530,7 +527,7 @@ class NIcRIO(device.Device):
             
             # Now we can send the Indexes.
             # The indexes will tell the FPGA where the table starts and ends. 
-            # This allows for more flexibility in teh future, as we can store more than 
+            # This allows for more flexibility in the future, as we can store more than 
             # one experiment per table and just execute different parts of it.
             analoguesStartIndexes = [1 for x in analogs]
             analoguesStopIndexes = [len(x) for x in analogs]
@@ -542,7 +539,7 @@ class NIcRIO(device.Device):
                                          msgLength=20)
             
         events.publish('update status light', 'device waiting',
-                'Waiting for\nDSP to finish', (255, 255, 0))
+                'Waiting for\nFPGA to finish', (255, 255, 0))
         # InitProfile will declare the current analog positions as a "basis"
         # and do all actions as offsets from those bases, so we need to
         # ensure that the variable retarder is zeroed out first.
@@ -599,15 +596,16 @@ class NIcRIO(device.Device):
         baseTime = times[0]
         
         
-        # Take into account the desired rep duration -- if we have spare
-        # time left over, then we insert a dummy action in to take up that
-        # spare time.
-        # TODO: whay do do this. The FPGA will only change
+        # Take into account the desired rep duration 
+        # If the desired repDuration is shorter than the time the 
+        # experimental time, print a warning
         if repDuration is not None:
             repDuration *= self.actionsPerMillisecond
             waitTime = repDuration - (times[-1] - baseTime)
-            if waitTime > 0:
-                times.append(baseTime + repDuration)
+            if waitTime < 0:
+                print('WARNING!! The desired experiment timing does NOT')
+                print('fit into the requested repetition duration.')
+                print('OMX-T will acquire as fast as possible')
         # HACK: ensure that there's at least 2 timesteps in the experiment,
         # or else it won't run properly.
         havePaddedDigitals = False
@@ -687,22 +685,6 @@ class NIcRIO(device.Device):
             analogs[aline] = numpy.zeros((len(actions), 2), dtype = numpy.uint32)
             for i, (time, value) in enumerate(actions):
                 analogs[aline][i] = (time, value)
-
-        # HACK: if the last analog action comes at the same time as, or after,
-        # the last digital action, then we need to insert a dummy digital
-        # action, or else the last analog action (or possibly all analog
-        # actions after the last digital action) will not be performed. No,
-        # I have no idea why this is.
-        ## Not necessary in FPGA
-#         lastAnalogTime = max([a[-1, 0] for a in analogs])
-#         if lastAnalogTime >= digitals[-1, 0]:
-#             # Create a new array for the digital entries.
-#             temp = numpy.ones((digitals.shape[0] + 1, 2), dtype = digitals.dtype)
-#             # Fill in the old values
-#             temp[:-1] = digitals
-#             # Create a dummy action.
-#             temp[-1] = [lastAnalogTime + 1, curDigitalValue]
-#             digitals = temp
 
         # Generate the string that describes the profile we've created.
         description = numpy.rec.array(None,
