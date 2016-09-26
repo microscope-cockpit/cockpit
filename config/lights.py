@@ -1,4 +1,4 @@
-ipAddress = '172.16.0.21'
+ipAddress = '10.6.19.11'
 light_keys = ['label','wavelength', 'color', 'triggerLine','simtheta','port','device']
 WAVELENGTH_TO_COLOR = {
     405: (180, 30, 230),
