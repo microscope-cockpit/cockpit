@@ -283,6 +283,9 @@ class MosaicWindow(wx.Frame):
                 currentTarget = self.canvas.mapScreenToCanvas(mousePos)
                 newTarget = (currentTarget[0] + self.offset[0],
                              currentTarget[1] + self.offset[1])
+                #Stop mosaic if we are running one.
+                if self.amGeneratingMosaic:
+                    self.onAbort()
                 self.goTo(newTarget)
             elif event.LeftIsDown() and not event.LeftDown():
                 # Dragging the mouse with the left mouse button: drag or
