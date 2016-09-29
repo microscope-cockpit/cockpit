@@ -50,7 +50,7 @@ class ObjectiveDevice(device.Device):
             transforms = {obj: (0,0,0) for obj in pixel_sizes.keys()}
             offsets = {obj: (0,0,0) for obj in pixel_sizes.keys()}
             lensIDs = {obj: 0 for obj in pixel_sizes.keys()}
-            colours = {obj: (1,1,1) for obj in pixel_sizes.keys()}
+	    colours = {obj: (1,1,1) for obj in pixel_sizes.keys()}
         else:
             objectives = config.options(CONFIG_NAME)
             for obj in objectives:
