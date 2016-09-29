@@ -27,6 +27,8 @@ class RaspberryPi(device.Device):
         else:
             self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
             self.port = int(config.get(CONFIG_NAME, 'port'))
+            linestring = config.get(CONFIG_NAME, 'lines')
+            self.lines = linestring.split(',')
             paths_linesString = config.get(CONFIG_NAME, 'paths')
             self.excitation=[]
             self.excitationMaps=[]
