@@ -576,6 +576,7 @@ class MosaicWindow(wx.Frame):
     # such suspended thread is allowed to be active at a time.
     def generateMosaic2(self, camera):
         # Acquire the mosaic lock so no other mosaics can run.
+        events.publish('mosaic start')
         if not self.mosaicGenerationLock.acquire(False):
             # Do not block. Otherwise, multiple calls to generateMosaic
             # can result in multiple threads waiting here for the lock.
@@ -718,8 +719,6 @@ class MosaicWindow(wx.Frame):
         util.userConfig.setValue('mosaicDrawPrimitives',self.drawPrimitives,
                                  isGlobal=False)
         self.Refresh()
-
-
     ## Save the current stage position as a new site with the specified
     # color (or our currently-selected color if none is provided).
     def saveSite(self, color = None):
@@ -963,6 +962,7 @@ class MosaicWindow(wx.Frame):
         self.shouldPauseMosaic = False
         self.amGeneratingMosaic = True
         self.nameToButton['Run mosaic'].SetLabel('Stop mosaic')
+        events.publish('mosaic start') 
 
 
     ## Generate a menu where the user can select a camera to use to perform
@@ -1211,6 +1211,7 @@ class MosaicWindow(wx.Frame):
     def onAbort(self, *args):
         if self.amGeneratingMosaic:
             self.shouldPauseMosaic = True
+        events.publish('mosaic stop')
         self.nameToButton['Run mosaic'].SetLabel('Run mosaic')
         # Stop deleting tiles, while we're at it.
         self.onDeleteTiles(shouldForceStop = True)
