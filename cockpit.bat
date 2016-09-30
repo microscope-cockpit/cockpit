@@ -1,1 +1,1 @@
-python cockpit.pyw
+start /b python cockpit.pyw
