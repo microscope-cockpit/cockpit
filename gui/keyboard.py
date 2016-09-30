@@ -112,8 +112,11 @@ def martialWindows(parent):
         subMenu = wx.Menu()
         subMenu.Append(menuId, "Show/Hide")
         wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: (window.Restore() if window.IsIconized() 
-                                                else window.Show(not window.IsShown()) ) )
+                lambda event, window = window: ((window.Restore() and
+                    (util.userConfig.setValue('windowState'+window.GetTitle(),
+                                               1,isGlobal=False)))
+                                                if window.IsIconized() 
+                                                else ((window.Show(not window.IsShown()) ) and (util.userConfig.setValue('windowState'+window.GetTitle(),0,isGlobal=False)))))
         menuId += 1
         subMenu.Append(menuId, "Move to mouse")
         wx.EVT_MENU(parent, menuId,
