@@ -115,6 +115,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     ## Delete all tiles and textures, including the megatiles.
     def deleteAll(self):
         self.deleteTilesList(list(self.tiles))
+        events.publish('mosaic update')
 
 
     ## Get all tiles that intersect the specified box, pulling from the provided
@@ -191,7 +192,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     ## Delete all tiles that intersect the specified box.
     def deleteTilesIntersecting(self, start, end):
         self.deleteTilesList(self.getTilesIntersecting(start, end))
-
+        events.publish('mosaic update')
+               
 
     ## Delete a list of tiles.
     @util.threads.callInMainThread
@@ -210,6 +212,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                     break
         self.rerenderMegatiles(dirtied)
         self.Refresh()
+        events.publish('mosaic update')
 
 
     ## Add a new image to the mosaic.
@@ -231,6 +234,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.tilesToRefresh.add(newTile)
         if shouldRefresh:
             self.Refresh()
+        events.publish('mosaic update')
+
 
 
     ## Rescale the tiles.
@@ -477,7 +482,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                 break
             time.sleep(.1)
         wx.CallAfter(statusDialog.Destroy)
-
+        events.publish('mosaic update')
+               
 
     ## Return our list of Tiles.
     def getTiles(self):
