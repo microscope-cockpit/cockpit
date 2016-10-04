@@ -1,5 +1,6 @@
 import wx
 import wx.propgrid
+from collections import OrderedDict
 from itertools import ifilter
 import Pyro4
 
@@ -18,6 +19,7 @@ SETTINGS_TO_PROPTYPES = {'int': wx.propgrid.IntProperty,
 class SettingsEditor(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, wx.ID_ANY)
+        self.settings = None
         self.panel = wx.Panel(self, wx.ID_ANY, style=wx.WANTS_CHARS)
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.grid = wx.propgrid.PropertyGrid(self)
@@ -26,32 +28,72 @@ class SettingsEditor(wx.Frame):
         sizer.Add(self.grid)
         self.SetSizerAndFit(sizer)
 
-
     def onPropertyChange(self, event):
         prop = event.GetProperty()
-        value = event.GetProperty().GetValue()
+        name = event.GetPropertyName()
+        setting = self.settings[name]
+        # Fetch and validate the value.
         if prop.ClassName == 'wxEnumProperty':
             index = event.GetPropertyValue()
-            value = prop.ValueToString(index)
-        else:
+            # Look up value as the original type, not as str from the wxProperty.
+            # setting['values'] only contains allowed values, so this also
+            # serves as validation for enums.
+            value = setting['values'][index]
+        elif setting['type'] in (str(int), str(float), 'int', 'float'):
             value = event.GetPropertyValue()
-        name = event.GetPropertyName()
+            # Bound to min/max.
+            lims = setting['values']
+            value = sorted(lims + (value,))[1]
+        elif setting['type'] in (str(str), 'str'):
+            # Limit string length.
+            value = value[0, setting['values']]
+        elif setting['type'] in (str(bool), 'bool'):
+            value = event.GetPropertyValue()
+        else:
+            raise Exception('Unsupported type.')
+
+        print "Setting %s to %s" % (name, value)
         PROXY.set_setting(name, value)
-        self.grid.Clear()
-        self.populateGrid()
+        self.grid.SelectProperty(prop)
+        self.Freeze()
+        self.updateGrid()
+        #self.grid.Clear()
+        #self.populateGrid()
+        self.Thaw()
+
+
+    def updateGrid(self):
+        grid = self.grid
+        self.settings = OrderedDict(PROXY.describe_settings())
+        current = PROXY.get_all_settings()
+        # Update all values.
+        #grid.SetValues(current)
+        # Enable/disable
+        for prop in grid.Properties:
+            name = prop.GetName()
+            desc = self.settings[name]
+            if desc['type'] in ('enum'):
+                prop.SetChoices([str(v) for v in desc['values']],
+                                range(len(desc['values'])))
+                prop.SetValue(desc['values'].index(current[name]))
+            else:
+                prop.SetValue(current[name])
+            try:
+                prop.Enable(not self.settings[name]['readonly'])
+            except wx._core.PyAssertionError:
+                # Bug in wx in stc.EnsureCaretVisible, could not convert to a long.
+                pass
+
+
 
 
     def populateGrid(self):
         grid = self.grid
-        settings = PROXY.describe_settings()
+        self.settings = OrderedDict(PROXY.describe_settings())
         current = PROXY.get_all_settings()
-        for key, desc in settings:
+        for key, desc in self.settings.iteritems():
             value = current[key]
             propType = SETTINGS_TO_PROPTYPES.get(desc['type'])
-            #if propType in [wx.propgrid.IntProperty, wx.propgrid.FloatProperty]:
-            #    value = current[key]
-            #    limits = desc['values']
-            #elif propType in [wx.propgrid]
             if propType is wx.propgrid.EnumProperty:
                 prop = wx.propgrid.EnumProperty(label=key, name=key,
                                                 labels=[str(v) for v in desc['values']],
@@ -66,7 +108,6 @@ class SettingsEditor(wx.Frame):
             if desc['readonly']:
                 prop.Enable(False)
             grid.Append(prop)
-
 
 
 class MyApp(wx.App):
@@ -93,7 +134,9 @@ def update(*args, **kwargs):
 
 
 if __name__ == '__main__':
+    import wx.lib.inspection
     app = MyApp()
+    wx.lib.inspection.InspectionTool().Show()
     #e = wx.Timer(app, wx.ID_ANY)
     #e.Start(1000)
     #wx.EVT_TIMER(app, e.GetId(), update)  # call the on_timer function
