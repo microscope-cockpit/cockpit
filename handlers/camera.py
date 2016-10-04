@@ -11,7 +11,7 @@ import interfaces.imager
 ## Available trigger modes for triggering the camera.
 # Trigger at the end of an exposure; trigger before the exposure;
 # trigger for the duration of the exposure.
-(TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
+(TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFT) = range(4)
 
 
 
