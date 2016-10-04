@@ -109,6 +109,8 @@ class CockpitApp(wx.App):
             status.Update(updateNum, " ... secondary windows")
             updateNum+=1
 
+            import gui.touchscreen.touchscreen
+            gui.touchscreen.touchscreen.makeWindow(frame)
             import gui.valueLogger
             gui.valueLogger.makeWindow(frame)
             from util import intensity
