@@ -20,13 +20,26 @@ class SettingsEditor(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, wx.ID_ANY)
         self.settings = None
-        self.panel = wx.Panel(self, wx.ID_ANY, style=wx.WANTS_CHARS)
+        #self.panel = wx.Panel(self, wx.ID_ANY, style=wx.WANTS_CHARS)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        self.grid = wx.propgrid.PropertyGrid(self)
+
+        self.grid = wx.propgrid.PropertyGrid(self, )
         self.populateGrid()
         self.Bind(wx.propgrid.EVT_PG_CHANGED, self.onPropertyChange)
-        sizer.Add(self.grid)
+        sizer.Add(self.grid, 1, wx.EXPAND | wx.ALIGN_LEFT | wx.ALIGN_TOP)
+
+        sizer.AddSpacer(2)
+        closeButton = wx.Button(self, id=wx.ID_OK)
+        closeButton.Bind(wx.EVT_BUTTON, self.onClose)
+        sizer.Add(closeButton, 0, wx.ALIGN_RIGHT)
+
         self.SetSizerAndFit(sizer)
+        self.SetMaxSize((self.GetMinWidth(), -1))
+
+
+    def onClose(self, evt):
+        self.Close()
+        # Do stuff to update local device state.
 
     def onPropertyChange(self, event):
         prop = event.GetProperty()
@@ -52,13 +65,10 @@ class SettingsEditor(wx.Frame):
         else:
             raise Exception('Unsupported type.')
 
-        print "Setting %s to %s" % (name, value)
         PROXY.set_setting(name, value)
         self.grid.SelectProperty(prop)
         self.Freeze()
         self.updateGrid()
-        #self.grid.Clear()
-        #self.populateGrid()
         self.Thaw()
 
 
