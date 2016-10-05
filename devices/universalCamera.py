@@ -233,3 +233,4 @@ class UniversalCameraDevice(camera.CameraDevice):
 
 class UniversalCameraManager(camera.CameraManager):
     _CAMERA_CLASS = UniversalCameraDevice
+    _SUPPORTED_CAMERAS = 'universalCamera'
