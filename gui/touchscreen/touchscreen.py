@@ -240,7 +240,7 @@ class TouchScreenWindow(wx.Frame):
                                              style=wx.ALIGN_CENTER)
             laserSizer.Add(laserPowerText, 0, wx.EXPAND|wx.ALL,border=10)
 
-        cameraSizer=wx.BoxSizer(wx.HORIZONTAL)
+        cameraSizer=wx.GridSizer(cols=2)
         cameraVSizer=[None]*len(depot.getHandlersOfType(depot.CAMERA))
         self.camButton=[None]*len(depot.getHandlersOfType(depot.CAMERA))
         i=0
@@ -272,7 +272,7 @@ class TouchScreenWindow(wx.Frame):
 
         #run sizer fitting on button panel
         self.buttonPanel.SetSizerAndFit(rightSideSizer)        
-        sizer.Add(self.buttonPanel, 0, wx.EXPAND,wx.RAISED_BORDER)
+        sizer.Add(self.buttonPanel, 1, wx.EXPAND,wx.RAISED_BORDER)
 
         limits = interfaces.stageMover.getHardLimits()[:2]
         ## start a slaveCanvas instance.
@@ -287,9 +287,9 @@ class TouchScreenWindow(wx.Frame):
 
         ##start a TSmacrostageZ instance
         self.macroStageZ=slaveMacroStageZ.MacroStageZ(self,size=(300,300),id=-1)
-        leftSizer.Add(self.macroStageZ, 2,wx.EXPAND)
+        leftSizer.Add(self.macroStageZ, 1,wx.EXPAND)
 
-        sizer.Add(leftSizer,0,wx.EXPAND)
+        sizer.Add(leftSizer,2,wx.EXPAND)
         
         self.panel.SetSizerAndFit(sizer)
         self.SetRect((1280, 456, 878, 560))
