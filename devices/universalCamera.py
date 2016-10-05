@@ -54,7 +54,7 @@ class UniversalCameraDevice(camera.CameraDevice):
         self.config = cam_config
         # Pyro proxy
         self.proxy = Pyro4.Proxy('PYRO:%s@%s:%d' %
-                                 ('Device',
+                                 ('DeviceServer',
                                    cam_config.get('ipAddress') or cam_config.get('host'),
                                    cam_config.get('port')))
         self.listener = util.listener.Listener(self.proxy,
