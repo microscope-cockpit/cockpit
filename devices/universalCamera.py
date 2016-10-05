@@ -64,7 +64,7 @@ class UniversalCameraDevice(camera.CameraDevice):
         self.settings = {}
         self.cached_settings={}
         self.settings['transform'] = tuple(
-                         path_transform[i] ^ baseTransform[i] for i in range(3))
+                         self.path_transform[i] ^ self.base_transform[i] for i in range(3))
         self.settings['exposure_time'] = 0.001
 
 
