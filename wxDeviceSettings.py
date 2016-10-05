@@ -15,6 +15,7 @@ SETTINGS_TO_PROPTYPES = {'int': wx.propgrid.IntProperty,
                          str(bool): wx.propgrid.BoolProperty,
                          str(str): wx.propgrid.StringProperty,}
 
+Pyro4.config.SERIALIZER='pickle'
 
 class SettingsEditor(wx.Frame):
     def __init__(self):
@@ -66,10 +67,11 @@ class SettingsEditor(wx.Frame):
             raise Exception('Unsupported type.')
 
         PROXY.set_setting(name, value)
-        self.grid.SelectProperty(prop)
+        #self.grid.SelectProperty(prop)
         self.Freeze()
         self.updateGrid()
         self.Thaw()
+        #self.Refresh()
 
 
     def updateGrid(self):
@@ -77,7 +79,7 @@ class SettingsEditor(wx.Frame):
         self.settings = OrderedDict(PROXY.describe_settings())
         current = PROXY.get_all_settings()
         # Update all values.
-        #grid.SetValues(current)
+        # grid.SetValues(current)
         # Enable/disable
         for prop in grid.Properties:
             name = prop.GetName()
@@ -87,13 +89,15 @@ class SettingsEditor(wx.Frame):
                                 range(len(desc['values'])))
                 prop.SetValue(desc['values'].index(current[name]))
             else:
-                prop.SetValue(current[name])
+                value = current[name]
+                if type(value) is long:
+                    value = int(value)
+                prop.SetValue(value)
             try:
                 prop.Enable(not self.settings[name]['readonly'])
             except wx._core.PyAssertionError:
                 # Bug in wx in stc.EnsureCaretVisible, could not convert to a long.
                 pass
-
 
 
 
@@ -128,6 +132,7 @@ class MyApp(wx.App):
         self.panel.Bind(wx.EVT_LEFT_DOWN, self.onLeftClick)
         self.panel.Bind(wx.EVT_RIGHT_DOWN, self.onRightClick)
         self.frame.Show(True)
+
 
     def onLeftClick(self, evt):
         settings = PROXY.describe_settings()
