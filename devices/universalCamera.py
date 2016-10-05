@@ -23,7 +23,6 @@ Supports cameras which implement the interface defined in
 
 import collections
 import decimal
-import time
 import wx
 
 import camera
