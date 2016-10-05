@@ -20,22 +20,19 @@
 Supports cameras which implement the interface defined in 
   microscope.camera.Camera ."""
 
-
-import collections
 import decimal
+import Pyro4
 import wx
 
 import camera
 import events
-import handlers.camera
 import gui.device
 import gui.guiUtils
 import gui.toggleButton
-import Pyro4
+import handlers.camera
 import util.listener
 import util.threads
-
-from config import CAMERAS
+from gui.device import SettingsEditor
 
 CLASS_NAME = 'UniversalCameraManager'
 
@@ -66,6 +63,7 @@ class UniversalCameraDevice(camera.CameraDevice):
         self.settings['transform'] = tuple(
                          self.path_transform[i] ^ self.base_transform[i] for i in range(3))
         self.settings['exposure_time'] = 0.001
+        self.settings_editor = None
 
 
     def cleanupAfterExperiment(self):
@@ -206,26 +204,25 @@ class UniversalCameraDevice(camera.CameraDevice):
         pass
 
 
-    ### UI stuff ###
-    def onRightMouse(self, event=None):
-        """Present a panel of settings on right click."""
-        menu = wx.Menu()
-        menu.SetTitle('Thermal management')
-
-        # Check control to indicate/set water cooling availability.
-        menu.AppendCheckItem(0, 'water cooling')
-        menu.Check(0, self.settings.get('isWaterCooled', False))
-        wx.EVT_MENU(self.panel, 0, lambda event: self.toggleWaterCooling())
-
-        menu.AppendSubMenu(tMenu, 'sensor set point')
-
-        gui.guiUtils.placeMenuAtMouse(self.panel, menu)
-
 
    ### UI functions ###
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        adv_button = gui.device.Button(parent=self.panel,
+                                       label='settings',
+                                       leftAction=self.showSettings)
+        sizer.Add(adv_button)
+        self.panel.SetSizerAndFit(sizer)
         return self.panel
+
+
+    def showSettings(self, evt):
+        if not self.settings_editor:
+            self.settings_editor = SettingsEditor(self.proxy)
+            self.settings_editor.Show()
+        self.settings_editor.SetPosition(wx.GetMousePosition())
+        self.settings_editor.Raise()
 
 
     def updateUI(self):
