@@ -215,7 +215,8 @@ class TouchScreenWindow(wx.Frame):
         for light in lightToggles:
             button = self.makeLaserToggleButton(self.buttonPanel, light.name,
                                      light,
-                                     'laser_'+light.name+'_icon.png',
+                                     'laser_'+light.name+'-active.png',
+                                     'laser_'+light.name+'-inactive.png',
                                      "enable/disable this light")
             laserSizer.Add(button, 0, wx.EXPAND|wx.ALL,border=2)
             #To get powers we need to:
@@ -344,13 +345,15 @@ class TouchScreenWindow(wx.Frame):
         self.nameToButton[label] = button
         return button
 
-    def makeLaserToggleButton(self, parent, label, light, bitmap,
-                   helpText,size = (75, 75)):
-        bmp=wx.Bitmap(os.path.join( self.bitmapsPath, bitmap),
+    def makeLaserToggleButton(self, parent, label, light,
+                              bitmapActive, bitmapInactive, helpText,
+                              size = (75, 75)):
+        bmpActive=wx.Bitmap(os.path.join( self.bitmapsPath, bitmapActive),
                       wx.BITMAP_TYPE_ANY)
-
-        button = SToggleButton(parent, -1,  size = size)
-        button.SetLabel(light.name)
+        bmpInactive=wx.Bitmap(os.path.join( self.bitmapsPath, bitmapInactive),
+                              wx.BITMAP_TYPE_ANY)
+        button = SBitmapToggleButton(parent, -1, bitmap=bmpInactive, size = size)
+        button.SetBitmapSelected(bmpActive)
         button.SetToolTipString(helpText)
         #Note left action is called with true if down, false if up
         button.Bind(wx.EVT_BUTTON, lambda event: self.laserToggle(event,
