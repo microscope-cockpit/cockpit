@@ -175,8 +175,8 @@ class DeviceHandler:
             try:
                 self.notifyListeners(self, STATES.enabling)
                 self.setEnabled(not(self.getIsEnabled()))
-            except:
+            except Exception as e:
                 self.notifyListeners(self, STATES.error)
-                raise Exception('Problem encountered en/disabling %s.' % self.name)
+                raise Exception('Problem encountered en/disabling %s:\n%s' % (self.name % e))
             finally:
                 self.enableLock.release()
