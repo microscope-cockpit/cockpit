@@ -126,12 +126,12 @@ class UniversalCameraDevice(camera.CameraDevice):
             # Nothing to do.
             return
         # Use async call to allow hardware time to respond.
-        result = Pyro4.async(proxy).enable()
-        result.iferror(self.onPyroError)
+        result = Pyro4.async(self.proxy).enable()
         result.then(self.onEnableComplete)
+        result.iferror(self.onPyroError)
 
 
-    def onEnableComplete(self):
+    def onEnableComplete(self, *args):
         self.settings.update(self.proxy.get_all_settings())
         self.listener.connect()
         self.enabled = True
