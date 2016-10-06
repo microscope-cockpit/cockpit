@@ -197,7 +197,7 @@ class LightHandler(deviceHandler.DeviceHandler):
     @reset_cache
     def setExposureTime(self, value):
         self.callbacks['setExposureTime'](self.name, value)
-        events.publish('laser exposure update',self)
+        events.publish('laser exposure update')
 
 
     ## Get the current exposure time, in milliseconds.
