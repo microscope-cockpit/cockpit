@@ -15,7 +15,7 @@ if (distutils.version.LooseVersion(Pyro4.__version__) >=
     Pyro4.config.SERIALIZERS_ACCEPTED.discard('serpent')
     Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
     Pyro4.config.SERIALIZER = 'pickle'
-
+    Pyro4.config.REQUIRE_EXPOSE = False
 
 # We need these first to ensure that we can log failures during startup.
 import depot
