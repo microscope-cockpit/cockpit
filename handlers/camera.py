@@ -71,7 +71,6 @@ class CameraHandler(deviceHandler.DeviceHandler):
 
     @property
     def exposureMode(self):
-        print "property"
         return self._exposureMode
 
     @exposureMode.setter
