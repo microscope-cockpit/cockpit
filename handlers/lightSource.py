@@ -54,7 +54,7 @@ class LightHandler(deviceHandler.DeviceHandler):
 
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
-
+        events.subscribe('laser exposure update', self.setLabel)
 
     ## Save our settings in the provided dict.
     def onSaveSettings(self, settings):
@@ -198,7 +198,6 @@ class LightHandler(deviceHandler.DeviceHandler):
     def setExposureTime(self, value):
         self.callbacks['setExposureTime'](self.name, value)
         events.publish('laser exposure update',self)
-        self.setLabel()
 
 
     ## Get the current exposure time, in milliseconds.
