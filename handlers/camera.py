@@ -67,7 +67,26 @@ class CameraHandler(deviceHandler.DeviceHandler):
         ## True if the camera is currently receiving images.
         self.isEnabled = False
         events.subscribe('drawer change', self.onDrawerChange)
-        self.exposureMode = exposureMode
+        self._exposureMode = exposureMode
+
+    @property
+    def exposureMode(self):
+        print "property"
+        return self._exposureMode
+
+    @exposureMode.setter
+    def exposureMode(self, triggerType):
+        """Set exposure mode.
+
+        If the device set a softTrigger handler, subscribe to "dummy take image"
+        if exposureMode is TRIGGER_SOFT, otherwise unsubscribe."""
+        self._exposureMode = triggerType
+        softTrigger = self.callbacks.get('softTrigger', None)
+        if softTrigger:
+            func = (events.subscribe, events.unsubscribe)[softTrigger == TRIGGER_SOFT]
+            func("dummy take image", softTrigger)
+
+
 
 
     ## Update some of our properties based on the new drawer.
