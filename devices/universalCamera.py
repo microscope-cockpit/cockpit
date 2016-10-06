@@ -163,7 +163,7 @@ class UniversalCameraDevice(camera.CameraDevice):
 
     def getImageSizes(self, name):
         """Return a list of available image sizes."""
-        return None
+        return []
 
 
     def getSavefileInfo(self, name):
