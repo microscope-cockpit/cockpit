@@ -29,7 +29,7 @@ class STATES():
     enabling = 2
 
 
-class DeviceHandler:
+class DeviceHandler(object):
     ## \param name The name of the device being controlled. This should be
     #         unique, as it is used to indicate the specific DeviceHandler
     #         in many callback functions. 
