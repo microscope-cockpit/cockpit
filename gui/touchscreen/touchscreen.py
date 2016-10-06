@@ -219,6 +219,7 @@ class TouchScreenWindow(wx.Frame):
                                      'laser_'+light.name+'-inactive.png',
                                      "enable/disable this light")
             laserSizer.Add(button, 0, wx.EXPAND|wx.ALL,border=2)
+            laserPowerSizer=wx.BoxSizer(wx.VERTICAL)
             #To get powers we need to:
             lightHandlers=depot.getHandlersInGroup(light.groupName)
             if len(lightHandlers) >1:
@@ -233,13 +234,23 @@ class TouchScreenWindow(wx.Frame):
                 #self. so that we can change it at a later date
                 laserPowerText.SetLabel('\n%5.1f %s\n'%(powerHandler.curPower,
                                                   powerHandler.units))
-                self.nameToText[light.groupName]=laserPowerText
+                self.nameToText[light.groupName+'power']=laserPowerText
 
             else:
                 #add and empty text box to keep sixing the same
                 laserPowerText=wx.StaticText(self.buttonPanel,-1,
                                              style=wx.ALIGN_CENTER)
-            laserSizer.Add(laserPowerText, 0, wx.EXPAND|wx.ALL,border=10)
+            laserPowerSizer.Add(laserPowerText, 0, wx.EXPAND|wx.ALL,border=10)
+            #exposure times go with lights...
+            laserExpText = wx.StaticText(self.buttonPanel,-1,
+                                               style=wx.ALIGN_CENTER)
+            laserExpText.SetFont(font)
+            #Read current exposure time and store pointer in 
+            #self. so that we can change it at a later date
+            laserExpText.SetLabel('\n%5d ms\n'%(light.getExposureTime()))
+            self.nameToText[light.groupName+'exp']=laserExpText
+            laserPowerSizer.Add(laserExpText, 0, wx.EXPAND|wx.ALL,border=10)
+            laserSizer.Add(laserPowerSizer, 0, wx.EXPAND|wx.ALL,border=10)
 
         cameraSizer=wx.GridSizer(cols=2)
         cameraVSizer=[None]*len(depot.getHandlersOfType(depot.CAMERA))
@@ -306,6 +317,7 @@ class TouchScreenWindow(wx.Frame):
         events.subscribe('mosaic update', self.mosaicUpdate)
         events.subscribe('light source enable', self.lightSourceEnable)
         events.subscribe('laser power update', self.laserPowerUpdate)
+        events.subscribe('laser exposure update', self.laserExpUpdate)
         
 
         self.Bind(wx.EVT_SIZE, self.onSize)
@@ -395,7 +407,7 @@ class TouchScreenWindow(wx.Frame):
             button.SetOwnBackgroundColour(powerHandler.color)
     
     def laserPowerUpdate(self, light):
-        textString=self.nameToText[light.groupName]
+        textString=self.nameToText[light.groupName+'power']
         textString.SetLabel('\n%5.1f %s\n'%(light.curPower,
                                        light.units))
         if light.powerSetPoint and light.curPower:
@@ -407,7 +419,14 @@ class TouchScreenWindow(wx.Frame):
         else:
             textString.SetBackgroundColour(BACKGROUND_COLOUR)
         self.Refresh()
-            
+
+    #Update exposure time text on event.
+    def laserExpUpdate(self, light):
+        textString=self.nameToText[light.groupName+'exp']
+        textString.SetLabel('\n%5d ms\n'%(light.getExposureTime()))
+        self.Refresh()
+
+        
     ## Now that we've been created, recenter the canvas.
     def centerCanvas(self, event = None):
         curPosition = interfaces.stageMover.getPosition()[:2]
