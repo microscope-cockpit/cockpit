@@ -157,7 +157,8 @@ class UniversalCameraDevice(camera.CameraDevice):
 
     def getImageSize(self, name):
         """Read the image size from the camera."""
-        return self.proxy.get_roi_size()
+        rect = self.proxy.get_roi()
+        return rect[-2:]
 
 
     def getImageSizes(self, name):
