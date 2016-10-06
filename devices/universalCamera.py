@@ -95,15 +95,16 @@ class UniversalCameraDevice(camera.CameraDevice):
         result = handlers.camera.CameraHandler(
                 "%s" % self.config.get('label'), "iXon camera",
                 {'setEnabled': self.enableCamera,
-                    'getImageSize': self.getImageSize,
-                    'getTimeBetweenExposures': self.getTimeBetweenExposures,
-                    'prepareForExperiment': self.prepareForExperiment,
-                    'getExposureTime': self.getExposureTime,
-                    'setExposureTime': self.setExposureTime,
-                    'getImageSizes': self.getImageSizes,
-                    'setImageSize': self.setImageSize,
-                    'getSavefileInfo': self.getSavefileInfo,
-                    'makeUI': self.makeUI},
+                 'getImageSize': self.getImageSize,
+                 'getTimeBetweenExposures': self.getTimeBetweenExposures,
+                 'prepareForExperiment': self.prepareForExperiment,
+                 'getExposureTime': self.getExposureTime,
+                 'setExposureTime': self.setExposureTime,
+                 'getImageSizes': self.getImageSizes,
+                 'setImageSize': self.setImageSize,
+                 'getSavefileInfo': self.getSavefileInfo,
+                 'makeUI': self.makeUI,
+                 'softTrigger': self.proxy.soft_trigger},
                 TRIGGER_SOFT) # will be set with value from hardware later
         self.handler = result
         return result
@@ -133,6 +134,7 @@ class UniversalCameraDevice(camera.CameraDevice):
 
     def onEnableComplete(self, *args):
         self.settings.update(self.proxy.get_all_settings())
+        self.handler.exposureMode = self.proxy.get_trigger_type()
         self.listener.connect()
         self.enabled = True
         self.updateUI()
