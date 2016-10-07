@@ -104,8 +104,9 @@ class CameraHandler(deviceHandler.DeviceHandler):
     @interfaces.imager.pauseVideo
     @reset_cache
     def setEnabled(self, shouldEnable = True):
-        self.callbacks['setEnabled'](self.name, shouldEnable)
-        self.isEnabled = shouldEnable
+        self.isEnabled = self.callbacks['setEnabled'](self.name, shouldEnable)
+        if self.isEnabled != shouldEnable:
+            raise Exception("Problem enabling device with handler %s" % self)
         # Subscribe / unsubscribe to the prepare-for-experiment event.
         func = [events.unsubscribe, events.subscribe][shouldEnable]
         func('prepare for experiment', self.prepareForExperiment)
