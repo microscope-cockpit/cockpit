@@ -205,10 +205,12 @@ class SettingsEditor(wx.Frame):
                              str(str): wx.propgrid.StringProperty, }
 
 
-    def __init__(self, device):
+    def __init__(self, device, handler=None):
         wx.Frame.__init__(self, None, wx.ID_ANY)
         self.device = device
         self.settings = None
+        self.handler = handler
+        self.handler.addListener(self)
         #self.panel = wx.Panel(self, wx.ID_ANY, style=wx.WANTS_CHARS)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -225,6 +227,9 @@ class SettingsEditor(wx.Frame):
         self.SetSizerAndFit(sizer)
         self.SetMaxSize((self.GetMinWidth(), -1))
 
+    def onEnabledEvent(self, evt):
+        if self.IsShown():
+            self.updateGrid()
 
     def onClose(self, evt):
         self.Close()
