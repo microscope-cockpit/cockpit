@@ -104,7 +104,7 @@ class UniversalCameraDevice(camera.CameraDevice):
                  'setImageSize': self.setImageSize,
                  'getSavefileInfo': self.getSavefileInfo,
                  'makeUI': self.makeUI,
-                 'softTrigger': self.proxy.soft_trigger},
+                 'softTrigger': self.softTrigger},
                 TRIGGER_SOFT) # will be set with value from hardware later
         self.handler = result
         self.handler.addListener(self)
@@ -207,6 +207,11 @@ class UniversalCameraDevice(camera.CameraDevice):
 
     def setImageSize(self, name, imageSize):
         pass
+
+
+
+    def softTrigger(self, name=None):
+        self.proxy.soft_trigger()
 
 
 
