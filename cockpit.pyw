@@ -4,6 +4,7 @@
 # the GUI.
 
 import os
+import sys
 import threading
 import traceback
 import wx
