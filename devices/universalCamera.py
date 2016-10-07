@@ -119,7 +119,6 @@ class UniversalCameraDevice(camera.CameraDevice):
                 self.proxy.disable()
                 self.proxy.make_safe()
                 self.listener.disconnect()
-                self.updateUI()
                 return self.enabled
 
         # Enable the camera
@@ -139,7 +138,6 @@ class UniversalCameraDevice(camera.CameraDevice):
             self.settings.update(self.proxy.get_all_settings())
             self.handler.exposureMode = self.proxy.get_trigger_type()
             self.listener.connect()
-        self.updateUI()
 
 
     def onPyroError(self, err, *args):
@@ -239,12 +237,6 @@ class UniversalCameraDevice(camera.CameraDevice):
             self.settings_editor.Show()
         self.settings_editor.SetPosition(wx.GetMousePosition())
         self.settings_editor.Raise()
-
-
-    def updateUI(self):
-        if not self.panel:
-            # No UI to update.
-            return
 
 
 class UniversalCameraManager(camera.CameraManager):
