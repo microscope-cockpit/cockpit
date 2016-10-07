@@ -25,6 +25,7 @@ import Pyro4
 import wx
 
 import camera
+import numpy as np
 import events
 import gui.device
 import gui.guiUtils
@@ -194,7 +195,16 @@ class UniversalCameraDevice(camera.CameraDevice):
     def receiveData(self, *args):
         """This function is called when data is received from the hardware."""
         (image, timestamp) = args
-        events.publish('new image %s' % self.name, image, timestamp)
+        if not isinstance(image, Exception):
+            events.publish('new image %s' % self.name, image, timestamp)
+        else:
+            # Handle the dropped frame by publishing an empty image of the correct
+            # size. Use the handler to fetch the size, as this will use a cached value,
+            # if available.
+            events.publish('new image %s' % self.name,
+                           np.zeros(self.handler.getImageSize(), dtype=np.int16),
+                           timestamp)
+            raise image
 
 
     def setExposureTime(self, name, exposureTime):
