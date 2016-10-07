@@ -107,8 +107,8 @@ class UniversalCameraDevice(camera.CameraDevice):
                  'softTrigger': self.proxy.soft_trigger},
                 TRIGGER_SOFT) # will be set with value from hardware later
         self.handler = result
+        self.handler.addListener(self)
         return result
-
 
     def enableCamera(self, name, shouldEnable):
         """Enable the hardware."""
@@ -120,7 +120,7 @@ class UniversalCameraDevice(camera.CameraDevice):
                 self.proxy.make_safe()
                 self.listener.disconnect()
                 self.updateUI()
-                return
+                return self.enabled
 
         # Enable the camera
         if self.enabled:
@@ -128,19 +128,21 @@ class UniversalCameraDevice(camera.CameraDevice):
             return
         # Use async call to allow hardware time to respond.
         result = Pyro4.async(self.proxy).enable()
-        result.then(self.onEnableComplete)
-        result.iferror(self.onPyroError)
-
-
-    def onEnableComplete(self, *args):
-        self.settings.update(self.proxy.get_all_settings())
-        self.handler.exposureMode = self.proxy.get_trigger_type()
-        self.listener.connect()
+        result.wait(timeout=10)
+        #raise Exception("Problem enabling %s." % self.name)
         self.enabled = True
+        return self.enabled
+
+
+    def onEnabledEvent(self, evt=None):
+        if self.enabled:
+            self.settings.update(self.proxy.get_all_settings())
+            self.handler.exposureMode = self.proxy.get_trigger_type()
+            self.listener.connect()
         self.updateUI()
 
 
-    def onPyroError(err):
+    def onPyroError(self, err, *args):
         """Handle exceptions raised by aync. proxy."""
         raise err
 
@@ -222,7 +224,13 @@ class UniversalCameraDevice(camera.CameraDevice):
 
     def showSettings(self, evt):
         if not self.settings_editor:
-            self.settings_editor = SettingsEditor(self.proxy)
+            # TODO - there's a problem with abstraction here. The settings
+            # editor needs the describe/get/set settings functions from the
+            # proxy, but it also needs to be able to invalidate the cache
+            # on the handler. The handler should probably expose the
+            # settings interface. UniversalCamera is starting to look
+            # more and more like an interface translation.
+            self.settings_editor = SettingsEditor(self.proxy, handler=self.handler)
             self.settings_editor.Show()
         self.settings_editor.SetPosition(wx.GetMousePosition())
         self.settings_editor.Raise()
