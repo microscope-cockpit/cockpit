@@ -45,8 +45,8 @@ class DeviceHandler(object):
     #        DeviceHandler subclass. 
     # \param isEligibleForExperiments True if the device can be used in
     #        experiments (i.e. data collections).
-    @classmethod
-    def cached(cls, f):
+    @staticmethod
+    def cached(f):
         def wrapper(self, *args, **kwargs):
             key = (f, args, frozenset(sorted(kwargs.items())))
             # Previously, I checked for key existence and, if it wasn't
@@ -64,8 +64,8 @@ class DeviceHandler(object):
         return wrapper
 
 
-    @classmethod
-    def reset_cache(cls, f):
+    @staticmethod
+    def reset_cache(f):
         def wrapper(self, *args, **kwargs):
             self.__cache = {}
             return f(self, *args)
