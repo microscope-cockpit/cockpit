@@ -189,11 +189,11 @@ class TouchScreenWindow(wx.Frame):
                       "Center the mosaic view on the stage and reset the " +
                       "zoom level"),
                      ('Delete tiles', self.onDeleteTiles, self.onDeleteAllTiles,
-                      'erase_tiles.png',
+                      'erase_tiles.png','erase_tiles-active.png',
                 "Left-click and drag to select mosaic tiles to delete. " +
                 "This can free up graphics memory on the computer. Click " +
                 "this button again when you are done. Right-click to " +
-                      "delete every tile in the mosaic."),
+                      "delete every tile in the mosaic.",(75,75)),
                      ('Snap Image', self.snapImage, None,
                       'snap_image.png',
                 "Click to snap an image at the current stage positon and " +
