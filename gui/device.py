@@ -254,6 +254,8 @@ class SettingsEditor(wx.Frame):
         else:
             raise Exception('Unsupported type.')
 
+        if self.handler:
+            self.handler.reset_cache()
         self.device.set_setting(name, value)
         self.grid.SelectProperty(prop)
         self.Freeze()
