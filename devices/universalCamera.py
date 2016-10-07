@@ -147,7 +147,7 @@ class UniversalCameraDevice(camera.CameraDevice):
         raise err
 
 
-    def getExposureTime(self, name, isExact):
+    def getExposureTime(self, name=None, isExact=False):
         """Read the real exposure time from the camera."""
         # Camera uses times in s; cockpit uses ms.
         t = self.proxy.get_exposure_time()
