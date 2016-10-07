@@ -242,6 +242,13 @@ class TouchScreenWindow(wx.Frame):
                                              style=wx.ALIGN_CENTER)
             laserPowerSizer.Add(laserPowerText, 0, wx.EXPAND|wx.ALL,border=10)
             #exposure times go with lights...
+            #have minus button on left and plus button on right....
+            laserExpSizer=wx.BoxSizer(wx.HORIZONTAL)
+            laserMinusButton=self.makeButton(self.buttonPanel,light.name+'-10%',
+                                    lambda mylight=light: self.decreaseLaserExp(mylight),
+                                             None, 'minus.png',
+                                             'Decrease laser power by 10%',
+                                             size=(30,30))
             laserExpText = wx.StaticText(self.buttonPanel,-1,
                                                style=wx.ALIGN_CENTER)
             laserExpText.SetFont(font)
@@ -249,9 +256,19 @@ class TouchScreenWindow(wx.Frame):
             #self. so that we can change it at a later date
             laserExpText.SetLabel('\n%5d ms\n'%(light.getExposureTime()))
             self.nameToText[light.groupName+'exp']=laserExpText
-            laserPowerSizer.Add(laserExpText, 0, wx.EXPAND|wx.ALL,border=10)
-            laserSizer.Add(laserPowerSizer, 0, wx.EXPAND|wx.ALL,border=10)
+            laserPlusButton=self.makeButton(self.buttonPanel,light.name+'+10%',
+                                    lambda mylight=light: self.increaseLaserExp(mylight),
+                                             None, 'plus.png',
+                                             'Increase laser power by 10%',
+                                             size=(30,30))
 
+
+            laserExpSizer.Add(laserMinusButton,0, wx.EXPAND|wx.ALL)
+            laserExpSizer.Add(laserExpText,0, wx.EXPAND|wx.ALL)
+            laserExpSizer.Add(laserPlusButton,0, wx.EXPAND|wx.ALL)
+            laserPowerSizer.Add(laserExpSizer, 0, wx.EXPAND|wx.ALL)
+            laserSizer.Add(laserPowerSizer, 0, wx.EXPAND|wx.ALL)
+            
         cameraSizer=wx.GridSizer(cols=2)
         cameraVSizer=[None]*len(depot.getHandlersOfType(depot.CAMERA))
         self.camButton=[None]*len(depot.getHandlersOfType(depot.CAMERA))
@@ -425,6 +442,18 @@ class TouchScreenWindow(wx.Frame):
         textString=self.nameToText[light.groupName+'exp']
         textString.SetLabel('\n%5d ms\n'%(light.getExposureTime()))
         self.Refresh()
+
+    #function called by minus expsoure time button
+    def decreaseLaserExp(self,light):
+        currentExp=light.getExposureTime()
+        newExposure=int(currentExp*0.9)
+        light.setExposureTime(newExposure)
+
+    #function called by plus expsoure time button
+    def increaseLaserExp(self,light):
+        currentExp=light.getExposureTime()
+        newExposure=int(currentExp*1.1)
+        light.setExposureTime(newExposure)
 
         
     ## Now that we've been created, recenter the canvas.
