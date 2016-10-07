@@ -83,6 +83,7 @@ class DeviceHandler(object):
         # A set of controls that listen for device events.
         self.listeners = None
         self.enableLock = threading.Lock()
+        self.clear_cache = self.__cache.clear
 
 
     ## Construct any necessary UI widgets for this Device to perform its job.
