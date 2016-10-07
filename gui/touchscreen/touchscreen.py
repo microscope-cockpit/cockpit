@@ -222,11 +222,20 @@ class TouchScreenWindow(wx.Frame):
             laserPowerSizer=wx.BoxSizer(wx.VERTICAL)
             #To get powers we need to:
             lightHandlers=depot.getHandlersInGroup(light.groupName)
+            laserPSizer=wx.BoxSizer(wx.HORIZONTAL)
             if len(lightHandlers) >1:
                 #this is a laser and should have a power level
                 for handler in depot.getHandlersInGroup(light.groupName):
                     if handler is not light:
                         powerHandler=handler
+                #power down button, current power, power up button
+                laserMinusButton=self.makeButton(self.buttonPanel,
+                                                 light.name+'-10%',
+                                     lambda myPowerHandler=powerHandler: self.decreaseLaserPower(myPowerHandler),
+                                             None, 'minus.png',
+                                             'Decrease laser power by 10%',
+                                             size=(30,30))
+
                 laserPowerText = wx.StaticText(self.buttonPanel,-1,
                                                style=wx.ALIGN_CENTER)
                 laserPowerText.SetFont(font)
@@ -235,12 +244,22 @@ class TouchScreenWindow(wx.Frame):
                 laserPowerText.SetLabel('\n%5.1f %s\n'%(powerHandler.curPower,
                                                   powerHandler.units))
                 self.nameToText[light.groupName+'power']=laserPowerText
-
+                laserPlusButton=self.makeButton(self.buttonPanel,
+                                                 light.name+'-10%',
+                                    lambda myPowerHandler=powerHandler: self.increaseLaserPower(myPowerHandler),
+                                             None, 'minus.png',
+                                             'Decrease laser power by 10%',
+                                             size=(30,30))
+                laserPSizer.Add(laserMinusButton,0, wx.EXPAND|wx.ALL)
+                laserPSizer.Add(laserPowerText,0, wx.EXPAND|wx.ALL)
+                laserPSizer.Add(laserPlusButton,0, wx.EXPAND|wx.ALL)
             else:
                 #add and empty text box to keep sixing the same
                 laserPowerText=wx.StaticText(self.buttonPanel,-1,
                                              style=wx.ALIGN_CENTER)
-            laserPowerSizer.Add(laserPowerText, 0, wx.EXPAND|wx.ALL,border=10)
+                laserPSizer.Add(laserPowerText, 0, wx.EXPAND|wx.ALL)
+                
+            laserPowerSizer.Add(laserPSizer, 0, wx.EXPAND|wx.ALL,border=10)
             #exposure times go with lights...
             #have minus button on left and plus button on right....
             laserExpSizer=wx.BoxSizer(wx.HORIZONTAL)
@@ -454,6 +473,19 @@ class TouchScreenWindow(wx.Frame):
         currentExp=light.getExposureTime()
         newExposure=int(currentExp*1.1)
         light.setExposureTime(newExposure)
+
+    #function called by minus laser power button
+    def decreaseLaserPower(self,powerHandler):
+        currentPower=powerHandler.curPower
+        newPower=int(currentExp*0.9)
+        powerHandler.setPower(newPower)
+
+    #function called by plus expsoure time button
+    def increaseLaserPower(self,powerHandler):
+        currentPower=powerHandler.curPower
+        newPower=int(currentExp*1.1)
+        powerHandler.setPower(newPower)
+
 
         
     ## Now that we've been created, recenter the canvas.
