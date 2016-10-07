@@ -477,13 +477,13 @@ class TouchScreenWindow(wx.Frame):
     #function called by minus laser power button
     def decreaseLaserPower(self,powerHandler):
         currentPower=powerHandler.curPower
-        newPower=int(currentExp*0.9)
+        newPower=int(currentPower*0.9)
         powerHandler.setPower(newPower)
 
     #function called by plus expsoure time button
     def increaseLaserPower(self,powerHandler):
         currentPower=powerHandler.curPower
-        newPower=int(currentExp*1.1)
+        newPower=int(currentPower*1.1)
         powerHandler.setPower(newPower)
 
 
