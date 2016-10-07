@@ -123,7 +123,7 @@ class CockpitApp(wx.App):
             # Now that the UI exists, we don't need this any more.
         	# Sometimes, status doesn't make it into the list, so test.
             if status in self.primaryWindows:
-            	self.primaryWindows.remove(status)
+                self.primaryWindows.remove(status)
             status.Destroy()
 
             util.user.login(frame)
