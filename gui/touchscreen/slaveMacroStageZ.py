@@ -198,7 +198,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         if axis != 2:
             # We only care about the Z axis.
             return
-        macroStageBase.MacroStageBase.onMotion(self, axis, position)
+#        macroStageBase.MacroStageBase.onMotion(self, axis, position)
         # Ensure there's a histogram to work with based around current pos.
         self.makeBigHistogram(interfaces.stageMover.getPosition()[2])
         if self.shouldDraw:
@@ -226,7 +226,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                     elif len(self.histograms) > 1:
                         # Don't show the mini histogram since it's not in-range
                         self.histograms = self.histograms[:-1]
-
+                self.Refresh
             except Exception, e:
                 util.logger.log.error("Error updating macro stage Z status: %s", e)
                 util.logger.log.error(traceback.format_exc())
@@ -362,7 +362,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             self.SwapBuffers()
             # Set the event, so our refreshWaiter() can update
             # our stage position info.
-            self.drawEvent.set()
+#            self.drawEvent.set()
         except Exception, e:
             util.logger.log.error("Error drawing Z macro stage: %s", e)
             traceback.print_exc()
