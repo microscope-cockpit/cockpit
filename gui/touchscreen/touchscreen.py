@@ -212,13 +212,15 @@ class TouchScreenWindow(wx.Frame):
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         lightToggles = sorted(lightToggles, key = lambda l: l.wavelength)
         laserSizer=wx.GridSizer(rows=len(lightToggles), cols = 2)
+        font=wx.Font(12,wx.FONTFAMILY_DEFAULT, wx.FONTWEIGHT_NORMAL,
+                     wx.FONTSTYLE_NORMAL)
         for light in lightToggles:
             button = self.makeLaserToggleButton(self.buttonPanel, light.name,
                                      light,
                                      'laser_'+light.name+'-active.png',
                                      'laser_'+light.name+'-inactive.png',
                                      "enable/disable this light")
-            laserSizer.Add(button, 0, wx.EXPAND|wx.ALL,border=2)
+            laserSizer.Add(button, 0, wx.EXPAND|wx.ALL, border=2)
             laserPowerSizer=wx.BoxSizer(wx.VERTICAL)
             #To get powers we need to:
             lightHandlers=depot.getHandlersInGroup(light.groupName)
@@ -241,52 +243,53 @@ class TouchScreenWindow(wx.Frame):
                 laserPowerText.SetFont(font)
                 #need to read actual power and then export the object in
                 #self. so that we can change it at a later date
-                laserPowerText.SetLabel('\n%5.1f %s\n'%(powerHandler.curPower,
-                                                  powerHandler.units))
+                label = '%5.1f %s'%(powerHandler.curPower,powerHandler.units)
+                laserPowerText.SetLabel(label.rjust(10))
                 self.nameToText[light.groupName+'power']=laserPowerText
                 laserPlusButton=self.makeButton(self.buttonPanel,
                                                  light.name+'-10%',
                                     lambda myPowerHandler=powerHandler: self.increaseLaserPower(myPowerHandler),
-                                             None, 'minus.png',
-                                             'Decrease laser power by 10%',
+                                             None, 'plus.png',
+                                             'Increase laser power by 10%',
                                              size=(30,30))
                 laserPSizer.Add(laserMinusButton,0, wx.EXPAND|wx.ALL)
-                laserPSizer.Add(laserPowerText,0, wx.EXPAND|wx.ALL)
+                laserPSizer.Add(laserPowerText,0, wx.EXPAND|wx.ALL, border=3)
                 laserPSizer.Add(laserPlusButton,0, wx.EXPAND|wx.ALL)
             else:
-                #add and empty text box to keep sixing the same
+                #add and empty text box to keep sizing the same
                 laserPowerText=wx.StaticText(self.buttonPanel,-1,
                                              style=wx.ALIGN_CENTER)
                 laserPSizer.Add(laserPowerText, 0, wx.EXPAND|wx.ALL)
                 
-            laserPowerSizer.Add(laserPSizer, 0, wx.EXPAND|wx.ALL,border=10)
+            laserPowerSizer.Add(laserPSizer, 0, wx.EXPAND|wx.ALL)
             #exposure times go with lights...
             #have minus button on left and plus button on right....
             laserExpSizer=wx.BoxSizer(wx.HORIZONTAL)
             laserMinusButton=self.makeButton(self.buttonPanel,light.name+'-10%',
                                     lambda mylight=light: self.decreaseLaserExp(mylight),
                                              None, 'minus.png',
-                                             'Decrease laser power by 10%',
+                                             'Decrease exposure by 10%',
                                              size=(30,30))
             laserExpText = wx.StaticText(self.buttonPanel,-1,
                                                style=wx.ALIGN_CENTER)
             laserExpText.SetFont(font)
             #Read current exposure time and store pointer in 
             #self. so that we can change it at a later date
-            laserExpText.SetLabel('\n%5d ms\n'%(light.getExposureTime()))
+            label = '%5d ms'%(light.getExposureTime())
+            laserExpText.SetLabel(label.rjust(10))
             self.nameToText[light.groupName+'exp']=laserExpText
             laserPlusButton=self.makeButton(self.buttonPanel,light.name+'+10%',
                                     lambda mylight=light: self.increaseLaserExp(mylight),
                                              None, 'plus.png',
-                                             'Increase laser power by 10%',
+                                             'Increase exposure by 10%',
                                              size=(30,30))
 
 
             laserExpSizer.Add(laserMinusButton,0, wx.EXPAND|wx.ALL)
-            laserExpSizer.Add(laserExpText,0, wx.EXPAND|wx.ALL)
+            laserExpSizer.Add(laserExpText,0, wx.EXPAND|wx.ALL,border=3)
             laserExpSizer.Add(laserPlusButton,0, wx.EXPAND|wx.ALL)
-            laserPowerSizer.Add(laserExpSizer, 0, wx.EXPAND|wx.ALL)
-            laserSizer.Add(laserPowerSizer, 0, wx.EXPAND|wx.ALL)
+            laserPowerSizer.Add(laserExpSizer, 0, wx.EXPAND|wx.ALL,border=2)
+            laserSizer.Add(laserPowerSizer, 0, wx.EXPAND|wx.ALL,border=2)
             
         cameraSizer=wx.GridSizer(cols=2)
         cameraVSizer=[None]*len(depot.getHandlersOfType(depot.CAMERA))
@@ -444,8 +447,8 @@ class TouchScreenWindow(wx.Frame):
     
     def laserPowerUpdate(self, light):
         textString=self.nameToText[light.groupName+'power']
-        textString.SetLabel('\n%5.1f %s\n'%(light.curPower,
-                                       light.units))
+        label = '%5.1f %s'%(light.curPower, light.units)
+        textString.SetLabel(label.rjust(10))
         if light.powerSetPoint and light.curPower:
             matched = 0.95*light.powerSetPoint < light.curPower < 1.05*light.powerSetPoint
         else:
@@ -457,9 +460,15 @@ class TouchScreenWindow(wx.Frame):
         self.Refresh()
 
     #Update exposure time text on event.
-    def laserExpUpdate(self, light):
-        textString=self.nameToText[light.groupName+'exp']
-        textString.SetLabel('\n%5d ms\n'%(light.getExposureTime()))
+    def laserExpUpdate(self):
+        #Dont know which light is updated so update them all. 
+        lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
+        lightToggles = sorted(lightToggles, key = lambda l: l.wavelength)
+        for light in lightToggles:
+           textString=self.nameToText[light.groupName+'exp']
+           label = '%5d ms'%(light.getExposureTime())
+           textString.SetLabel(label.rjust(10))
+
         self.Refresh()
 
     #function called by minus expsoure time button
