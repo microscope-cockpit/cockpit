@@ -116,7 +116,8 @@ class TouchScreenWindow(wx.Frame):
         self.bitmapsPath = os.path.join(COCKPIT_PATH, 'resources',
                              'bitmaps')
 
-        self.buttonPanel=wx.Panel(self.panel, -1, size=(300,-1),style=wx.BORDER_RAISED)
+        self.buttonPanel=wx.Panel(self.panel, -1, size=(300,-1),
+                                  style=wx.BORDER_RAISED)
         self.buttonPanel.SetBackgroundColour(BACKGROUND_COLOUR)
         self.buttonPanel.SetDoubleBuffered(True)
         ##right side sizer is the button bar on right side of ts window
@@ -211,16 +212,17 @@ class TouchScreenWindow(wx.Frame):
         # Find out light devices we have to work with.
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         lightToggles = sorted(lightToggles, key = lambda l: l.wavelength)
-        laserSizer=wx.GridSizer(rows=len(lightToggles), cols = 2)
+        laserSizer=wx.BoxSizer(wx.VERTICAL)
         font=wx.Font(12,wx.FONTFAMILY_DEFAULT, wx.FONTWEIGHT_NORMAL,
                      wx.FONTSTYLE_NORMAL)
         for light in lightToggles:
+            lineSizer=wx.BoxSizer(wx.HORIZONTAL)
             button = self.makeLaserToggleButton(self.buttonPanel, light.name,
                                      light,
                                      'laser_'+light.name+'-active.png',
                                      'laser_'+light.name+'-inactive.png',
                                      "enable/disable this light")
-            laserSizer.Add(button, 0, wx.EXPAND|wx.ALL, border=2)
+            lineSizer.Add(button, 0, wx.EXPAND|wx.ALL, border=2)
             laserPowerSizer=wx.BoxSizer(wx.VERTICAL)
             #To get powers we need to:
             lightHandlers=depot.getHandlersInGroup(light.groupName)
@@ -288,8 +290,9 @@ class TouchScreenWindow(wx.Frame):
             laserExpSizer.Add(laserMinusButton,0, wx.EXPAND|wx.ALL)
             laserExpSizer.Add(laserExpText,0, wx.EXPAND|wx.ALL,border=3)
             laserExpSizer.Add(laserPlusButton,0, wx.EXPAND|wx.ALL)
-            laserPowerSizer.Add(laserExpSizer, 0, wx.EXPAND|wx.ALL,border=2)
-            laserSizer.Add(laserPowerSizer, 0, wx.EXPAND|wx.ALL,border=2)
+            laserPowerSizer.Add(laserExpSizer, 0, wx.CENTRE|wx.ALL,border=2)
+            lineSizer.Add(laserPowerSizer, 0, wx.EXPAND|wx.ALL,border=2)
+            laserSizer.Add(lineSizer,0,wx.EXPAND|wx.ALL,border=2)
             
         cameraSizer=wx.GridSizer(cols=2)
         cameraVSizer=[None]*len(depot.getHandlersOfType(depot.CAMERA))
