@@ -340,13 +340,13 @@ class TouchScreenWindow(wx.Frame):
         leftSizer.Add(self.macroStageXY,1, wx.EXPAND)
 
         ##start a TSmacrostageZ instance
-        self.macroStageZ=slaveMacroStageZ.MacroStageZ(self,size=(300,300),id=-1)
+        self.macroStageZ=slaveMacroStageZ.slaveMacroStageZ(self.panel)
         leftSizer.Add(self.macroStageZ, 1,wx.EXPAND)
 
-        sizer.Add(leftSizer,2,wx.EXPAND)
+        sizer.Add(leftSizer,1,wx.EXPAND)
         
         self.panel.SetSizerAndFit(sizer)
-        self.SetRect((1280, 456, 878, 560))
+        self.SetRect((0, 0, 1800, 1000))
 
         events.subscribe('stage position', self.onAxisRefresh)
         events.subscribe('stage step size', self.onAxisRefresh)
