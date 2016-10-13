@@ -397,10 +397,11 @@ class MosaicWindow(wx.Frame):
             x1, x2 = safeties[0]
             y1, y2 = safeties[1]
             if hasattr (self, 'offset'):
+                #once again consistancy of offset calculations. 
                 x1 -=  self.offset[0]
                 x2 -=  self.offset[0]
-                y1 +=  self.offset[1]
-                y2 +=  self.offset[1]
+                y1 -=  self.offset[1]
+                y2 -=  self.offset[1]
             glLineStipple(3, stipple)
             glColor3f(*color)
             glBegin(GL_LINE_LOOP)
