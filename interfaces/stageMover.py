@@ -264,8 +264,11 @@ def goToSite(uniqueID, shouldBlock = False):
     site = mover.idToSite[uniqueID]
     objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
     offset = objective.getOffset()
-    position=site.position-offset
-    goTo(position, shouldBlock)
+    offsetPosition=site.position
+    for i in range(len(offsetPosition)):
+        offsetPosition[i]=offsetPosition[i]+offset[i]
+    print offsetPosition
+    goTo(offsetPosition, shouldBlock)
     events.publish('arrive at site', site)
 
 
