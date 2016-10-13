@@ -349,8 +349,7 @@ class MosaicWindow(wx.Frame):
         for site in interfaces.stageMover.getAllSites():
             # Draw a crude circle.
             x, y = site.position[:2]
-            x = -x + self.offset[0]
-            y = y -self.offset[1]
+            x = -x 
             # Set line width based on zoom factor.
             lineWidth = max(1, self.canvas.scale * 1.5)
             glLineWidth(lineWidth)
@@ -400,8 +399,8 @@ class MosaicWindow(wx.Frame):
             if hasattr (self, 'offset'):
                 x1 -=  self.offset[0]
                 x2 -=  self.offset[0]
-                y1 -=  self.offset[1]
-                y2 -=  self.offset[1]
+                y1 +=  self.offset[1]
+                y2 +=  self.offset[1]
             glLineStipple(3, stipple)
             glColor3f(*color)
             glBegin(GL_LINE_LOOP)
@@ -507,6 +506,7 @@ class MosaicWindow(wx.Frame):
             xSize = ySize = 100000
         x, y = position
         #if no offset defined we can't apply it!
+        #sign consistancy! Here we have -(x-offset) = -x + offset!
         if hasattr(self, 'offset'):
             x = x-self.offset[0]
             y = y-self.offset[1]
@@ -586,7 +586,7 @@ class MosaicWindow(wx.Frame):
         pos=interfaces.stageMover.getPosition()
 #IMD 20150303 always work in shifted coords in mosaic
         centerX=pos[0]-self.offset[0]
-        centerY=pos[1]-self.offset[1]
+        centerY=pos[1]+self.offset[1]
         curZ=pos[2]-self.offset[2]
 #        centerX, centerY, curZ) = interfaces.stageMover.getPosition()+self.offset
         prevPosition = (centerX, centerY)
@@ -635,7 +635,7 @@ class MosaicWindow(wx.Frame):
                     shouldRefresh = True)
             # Move to the next position in shifted coords.
             target = (centerX +self.offset[0]+ dx * width,
-                      centerY +self.offset[1]+ dy * height)
+                      centerY -self.offset[1]+ dy * height)
             try:
                 self.goTo(target, True)
             except:
