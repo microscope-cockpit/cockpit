@@ -721,6 +721,9 @@ class MosaicWindow(wx.Frame):
         if color is None:
             color = self.siteColor
         position = interfaces.stageMover.getPosition()
+        position[0]=position[0]+self.offset[0]
+        position[1]=position[1]+self.offset[1]
+        position[2]=position[2]+self.offset[2]
         interfaces.stageMover.saveSite(
                 interfaces.stageMover.Site(position, None, color,
                         size = self.crosshairBoxSize))
