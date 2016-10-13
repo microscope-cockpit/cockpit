@@ -509,8 +509,9 @@ class TouchScreenWindow(wx.Frame):
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         self.crosshairBoxSize = 512 * objective.getPixelSize()
         self.offset = objective.getOffset()
+        scale= (1/objective.getPixelSize())*0.5
         self.canvas.zoomTo(-curPosition[0]+self.offset[0],
-                           curPosition[1]-self.offset[1], 1)
+                           curPosition[1]-self.offset[1], scale)
 
 
     ## Resize our canvas.
