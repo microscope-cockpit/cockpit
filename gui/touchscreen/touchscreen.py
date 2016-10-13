@@ -39,7 +39,7 @@ SITE_COLORS = [('green', (0, 1, 0)), ('red', (1, 0, 0)),
 
 ## Width of widgets in the sidebar.
 SIDEBAR_WIDTH = 150
-BACKGROUND_COLOUR = (120,120,120)
+BACKGROUND_COLOUR = (160,160,160)
 
 ## Timeout for mosaic new image events
 CAMERA_TIMEOUT = 5
