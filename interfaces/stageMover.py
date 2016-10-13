@@ -262,7 +262,10 @@ def waitForStop(timeout = 5):
 ## Move to the specified site.
 def goToSite(uniqueID, shouldBlock = False):
     site = mover.idToSite[uniqueID]
-    goTo(site.position, shouldBlock)
+    objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+    offset = objective.getOffset()
+    position=site.position-offset
+    goTo(position, shouldBlock)
     events.publish('arrive at site', site)
 
 
