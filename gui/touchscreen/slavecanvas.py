@@ -119,7 +119,7 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
 
     ## Delete all tiles and textures, including the megatiles.
     def deleteAll(self):
-        self.deleteTilesList(list(self.masterCanvas.tiles))
+        self.masterCanvas.deleteTilesList(list(self.masterCanvas.tiles))
 
 
     ## Generate a composite array of tile data surrounding the provided 
