@@ -1085,61 +1085,7 @@ class TouchScreenWindow(wx.Frame):
         return result
 
 
-    ## Delete the sites the user has selected in our sitebox.
-    def deleteSelectedSites(self, event = None):
-        # Go in reverse order so that removing items from the box doesn't
-        # invalidate future indices.
-        for item in self.sitesBox.GetSelections()[::-1]:
-            text = self.sitesBox.GetString(item)
-            siteID = int(text.split(':')[0])
-            self.selectedSites.remove(interfaces.stageMover.getSite(siteID))
-            interfaces.stageMover.deleteSite(siteID)
-            self.sitesBox.Delete(item)
-        self.Refresh()
 
-
-    ## Move the selected sites by an offset.
-    def offsetSelectedSites(self, event = None):
-        items = self.sitesBox.GetSelections()
-        if not items:
-            # No selected sites.
-            return
-        offset = gui.dialogs.offsetSitesDialog.showDialogModal(self)
-        if offset is not None:
-            for item in items:
-                siteID = int(self.sitesBox.GetString(item).split(':')[0])
-                site = interfaces.stageMover.getSite(siteID)
-                # Account for the fact that the site position may be a
-                # (non-mutable) tuple; cast it to a list before modifying it.
-                position = list(site.position)
-                for axis, value in enumerate(offset):
-                    position[axis] += value
-                site.position = tuple(position)
-            # Redisplay the sites in the sitesbox.
-            self.sitesBox.Clear()
-            for site in interfaces.stageMover.getAllSites():
-                self.onNewSiteCreated(site, shouldRefresh = False)
-            self.Refresh()
-
-
-    ## Save sites to a file.
-    def saveSitesToFile(self, event = None):
-        dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
-                message = "Please select where to save the file.",
-                defaultDir = util.user.getUserSaveDir())
-        if dialog.ShowModal() != wx.ID_OK:
-            return
-        interfaces.stageMover.writeSitesToFile(dialog.GetPath())
-
-
-    ## Load sites from a file.
-    def loadSavedSites(self, event = None):
-        dialog = wx.FileDialog(self, style = wx.FD_OPEN, wildcard = '*.txt',
-                message = "Please select the file to load.",
-                defaultDir = util.user.getUserSaveDir())
-        if dialog.ShowModal() != wx.ID_OK:
-            return
-        interfaces.stageMover.loadSites(dialog.GetPath())
 
 
     ## A new site was created (from any source); add it to our sites box.
