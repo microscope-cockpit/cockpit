@@ -413,7 +413,6 @@ class TouchScreenWindow(wx.Frame):
         button.Bind(wx.EVT_BUTTON, lambda event: self.laserToggle(event,
                                                                   light, button))
         self.nameToButton[label] = button
-        print "laserButton ",light.name, label
         return button
 
     def snapImage(self):
@@ -1169,16 +1168,17 @@ class TouchScreenWindow(wx.Frame):
                 #move with the smalled possible mover
                 self.moveZCheckMoverLimits(unloadPosition)
                 loaded=False
-        setSampleSateText(loaded)
+        self.setSampleStateText(loaded)
 
-                
+    #set sample state text and button state depending on if loaded or not.
     def setSampleStateText(self, loaded=False):
         if(loaded):
-            self.sampleStateText.SetLabel('Loaded')
+            self.sampleStateText.SetLabel('Loaded'.center(20))
             self.sampleStateText.SetBackgroundColour((255,0,0))
         else:
-            self.sampleStateText.SetLabel('Unloaded')
+            self.sampleStateText.SetLabel('Unloaded'.center(20))
             self.sampleStateText.SetBackgroundColour((0,255,0))
+        self.nameToButton['Load/Unload'].SetValue(loaded)
             
   
     def moveZCheckMoverLimits(self, target):
@@ -1188,21 +1188,25 @@ class TouchScreenWindow(wx.Frame):
         limits = interfaces.stageMover.getIndividualSoftLimits(2)
         currentPos= interfaces.stageMover.getPosition()[2]
         offset = target - currentPos
-
+        doneMove=False
         while (interfaces.stageMover.mover.curHandlerIndex >= 0):
-            if ((currentPos + offset)> limits[interfaces.stageMover.mover.curHandlerIndex][1] or
-                (currentPos + offset) < limits[interfaces.stageMover.mover.curHandlerIndex][0]):
-                # need to drop down a handler to see if next handler can do the move
-                interfaces.stageMover.mover.curHandlerIndex -= 1
-                if (interfaces.stageMover.mover.curHandlerIndex < 0):
-                    print "Move too large for coarse Z motion"
-            
-                else: 
-                    interfaces.stageMover.goToZ(target)
-                    break
+            if ((currentPos + offset)<
+                limits[interfaces.stageMover.mover.curHandlerIndex][1] and
+                (currentPos + offset) >
+                limits[interfaces.stageMover.mover.curHandlerIndex][0]):
 
-                #retrun to original active mover.
+                #Can do it with this mover...
+                interfaces.stageMover.goToZ(target)
                 interfaces.stageMover.mover.curHandlerIndex = originalMover
+                doneMove=True
+                break
+            else: 
+                interfaces.stageMover.mover.curHandlerIndex -= 1
+
+        if not doneMove:
+            print "cannot load/unload move too large for any Z axis!"
+        #retrun to original active mover.
+        interfaces.stageMover.mover.curHandlerIndex = originalMover
 
 
         
