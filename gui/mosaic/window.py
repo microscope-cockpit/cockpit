@@ -369,7 +369,8 @@ class MosaicWindow(wx.Frame):
             self.font.Render(str(site.uniqueID))
             glPopMatrix()
 
-        self.drawCrosshairs(interfaces.stageMover.getPosition()[:2], (1, 0, 0))
+        self.drawCrosshairs(interfaces.stageMover.getPosition()[:2], (1, 0, 0),
+                            offset=True)
 
         # If we're selecting tiles, draw the box the user is selecting.
         if self.selectTilesFunc is not None and self.lastClickPos is not None:
@@ -385,7 +386,8 @@ class MosaicWindow(wx.Frame):
 
         # Highlight selected sites with crosshairs.
         for site in self.selectedSites:
-            self.drawCrosshairs(site.position[:2], (0, 0, 1), 10000)
+            self.drawCrosshairs(site.position[:2], (0, 0, 1), 10000,
+                                offset=False)
 
         # Draw the soft and hard stage motion limits
         glEnable(GL_LINE_STIPPLE)
@@ -501,16 +503,18 @@ class MosaicWindow(wx.Frame):
         glEnd()
     # Draw a crosshairs at the specified position with the specified color.
     # By default make the size of the crosshairs be really big.
-    def drawCrosshairs(self, position, color, size = None):
+    def drawCrosshairs(self, position, color, size = None, offset=False):
         xSize = ySize = size
         if size is None:
             xSize = ySize = 100000
         x, y = position
-        #if no offset defined we can't apply it!
-        #sign consistancy! Here we have -(x-offset) = -x + offset!
-        if hasattr(self, 'offset'):
-            x = x-self.offset[0]
-            y = y-self.offset[1]
+        #offset applied for stage position but not marks!
+        if offset:
+            #if no offset defined we can't apply it!
+            if hasattr(self, 'offset'):
+                #sign consistancy! Here we have -(x-offset) = -x + offset!
+                x = x-self.offset[0]
+                y = y-self.offset[1]
 
         # Draw the crosshairs
         glColor3f(*color)
