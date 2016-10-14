@@ -724,8 +724,7 @@ class TouchScreenWindow(wx.Frame):
         for site in interfaces.stageMover.getAllSites():
             # Draw a crude circle.
             x, y = site.position[:2]
-            x = -x + self.offset[0]
-            y = y -self.offset[1]
+            x = -x
             # Set line width based on zoom factor.
             lineWidth = max(1, self.canvas.scale * 1.5)
             glLineWidth(lineWidth)
@@ -949,26 +948,15 @@ class TouchScreenWindow(wx.Frame):
         self.Refresh()
 
 
-    ## Save the current stage position as a new site with the specified
-    # color (or our currently-selected color if none is provided).
+    ## call main mosaic function and refresh
     def saveSite(self, color = None):
-        if color is None:
-            color = self.siteColor
-        position = interfaces.stageMover.getPosition()
-        interfaces.stageMover.saveSite(
-                interfaces.stageMover.Site(position, None, color,
-                        size = self.crosshairBoxSize))
+        self.masterMosaic.saveSite(gui.mosaic.window.window, color)
         self.Refresh()
 
 
     ## Set the site marker color.
     def setSiteColor(self, color):
-        self.siteColor = color
-        for label, altColor in SITE_COLORS:
-            if altColor == color:
-                self.nameToButton['Mark site'].SetLabel('Mark site (%s)' % label)
-                break
-
+        self.masterMosaic.setSiteColor(gui.mosaic.window.window, color)
 
     ## Display a menu that allows the user to control the appearance of
     # the markers used to mark sites.
@@ -981,55 +969,55 @@ class TouchScreenWindow(wx.Frame):
         gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
-    ## Calculate the focal plane of the sample.
-    def setFocalPlane(self, event = None):
-        sites = self.getSelectedSites()
-        positions = [s.position for s in sites]
-        if len(positions) < 3:
-            wx.MessageDialog(self,
-                    "Please select at least 3 in-focus sites.",
-                    "Insufficient input.").ShowModal()
-            return
-        positions = numpy.array(positions)
-        # Pick a point in the plane, as the average of all site positions.
-        center = positions.mean(axis = 0)
-        # Try every combinations of points, and average their resulting normal
-        # vectors together.
-        normals = []
-        for i in xrange(len(positions)):
-            p1 = positions[i] - center
-            for j in xrange(i + 1, len(positions)):
-                p2 = positions[j] - center
-                for k in xrange(j + 1, len(positions)):
-                    p3 = positions[k] - center
-                    points = numpy.rot90([p1, p2, p3])
-                    # Calculate normal vector, and normalize
-                    normal = numpy.cross(p2 - p1, p3 - p1)
-                    magnitude = numpy.sqrt(sum(normal * normal))
-                    normals.append(normal / magnitude)
+    # ## Calculate the focal plane of the sample.
+    # def setFocalPlane(self, event = None):
+    #     sites = self.getSelectedSites()
+    #     positions = [s.position for s in sites]
+    #     if len(positions) < 3:
+    #         wx.MessageDialog(self,
+    #                 "Please select at least 3 in-focus sites.",
+    #                 "Insufficient input.").ShowModal()
+    #         return
+    #     positions = numpy.array(positions)
+    #     # Pick a point in the plane, as the average of all site positions.
+    #     center = positions.mean(axis = 0)
+    #     # Try every combinations of points, and average their resulting normal
+    #     # vectors together.
+    #     normals = []
+    #     for i in xrange(len(positions)):
+    #         p1 = positions[i] - center
+    #         for j in xrange(i + 1, len(positions)):
+    #             p2 = positions[j] - center
+    #             for k in xrange(j + 1, len(positions)):
+    #                 p3 = positions[k] - center
+    #                 points = numpy.rot90([p1, p2, p3])
+    #                 # Calculate normal vector, and normalize
+    #                 normal = numpy.cross(p2 - p1, p3 - p1)
+    #                 magnitude = numpy.sqrt(sum(normal * normal))
+    #                 normals.append(normal / magnitude)
 
-        # Ensure all normals point in the same direction. If they oppose,
-        # their sum should be ~0; if they are aligned, it should be
-        # ~2.
-        normals = numpy.array(normals)
-        base = normals[0]
-        for normal in normals[1:]:
-            if sum(base + normal) < .5:
-                # Opposed normals.
-                normal *= -1
-        self.focalPlaneParams = (center, normals.mean(axis = 0))
-        deltas = []
-        for site in sites:
-            pos = numpy.array(site.position)
-            z = self.getFocusZ(pos)
-            deltas.append(pos[2] - z)
-            print "Delta for",pos,"is",(pos[2] - z)
-        print "Average delta is",numpy.mean(deltas),"with std",numpy.std(deltas)
+    #     # Ensure all normals point in the same direction. If they oppose,
+    #     # their sum should be ~0; if they are aligned, it should be
+    #     # ~2.
+    #     normals = numpy.array(normals)
+    #     base = normals[0]
+    #     for normal in normals[1:]:
+    #         if sum(base + normal) < .5:
+    #             # Opposed normals.
+    #             normal *= -1
+    #     self.focalPlaneParams = (center, normals.mean(axis = 0))
+    #     deltas = []
+    #     for site in sites:
+    #         pos = numpy.array(site.position)
+    #         z = self.getFocusZ(pos)
+    #         deltas.append(pos[2] - z)
+    #         print "Delta for",pos,"is",(pos[2] - z)
+    #     print "Average delta is",numpy.mean(deltas),"with std",numpy.std(deltas)
 
 
-    ## Clear the focal plane settings.
-    def clearFocalPlane(self):
-        self.focalPlaneParams = None
+    # ## Clear the focal plane settings.
+    # def clearFocalPlane(self):
+    #     self.focalPlaneParams = None
 
 
     ## Go to the specified XY position. If we have a focus plane defined,
