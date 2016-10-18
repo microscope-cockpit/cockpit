@@ -4,6 +4,7 @@
 # the GUI.
 
 import os
+import sys
 import threading
 import traceback
 import wx
@@ -145,7 +146,7 @@ class CockpitApp(wx.App):
             depot.makeInitialPublications()
             interfaces.makeInitialPublications()
             events.publish('cockpit initialization complete')
-            
+            self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
             return True
         except Exception, e:
             wx.MessageDialog(None,
@@ -158,6 +159,14 @@ class CockpitApp(wx.App):
             util.logger.log.error(traceback.format_exc())
             return False
 
+    def onActivateApp(self, event):
+        if not event.Active:
+            return
+        top = wx.GetApp().GetTopWindow()
+        windows = top.GetChildren()
+        for w in windows:
+            if w.IsShown(): w.Raise()
+        top.Raise()
 
     ## Startup failed; log the failure information and exit.
     def onStartupFail(self, *args):

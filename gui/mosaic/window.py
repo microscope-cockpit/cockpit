@@ -47,6 +47,7 @@ BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 class MosaicWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
+        self.SetWindowStyle(self.GetWindowStyle() | wx.FRAME_TOOL_WINDOW)
         self.panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
