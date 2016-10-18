@@ -11,7 +11,7 @@ import interfaces.imager
 ## Available trigger modes for triggering the camera.
 # Trigger at the end of an exposure; trigger before the exposure;
 # trigger for the duration of the exposure.
-(TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
+(TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFT) = range(4)
 
 
 
@@ -67,7 +67,25 @@ class CameraHandler(deviceHandler.DeviceHandler):
         ## True if the camera is currently receiving images.
         self.isEnabled = False
         events.subscribe('drawer change', self.onDrawerChange)
-        self.exposureMode = exposureMode
+        self._exposureMode = exposureMode
+
+    @property
+    def exposureMode(self):
+        return self._exposureMode
+
+    @exposureMode.setter
+    def exposureMode(self, triggerType):
+        """Set exposure mode.
+
+        If the device set a softTrigger handler, subscribe to "dummy take image"
+        if exposureMode is TRIGGER_SOFT, otherwise unsubscribe."""
+        self._exposureMode = triggerType
+        softTrigger = self.callbacks.get('softTrigger', None)
+        if softTrigger:
+            func = (events.subscribe, events.unsubscribe)[softTrigger == TRIGGER_SOFT]
+            func("dummy take image", softTrigger)
+
+
 
 
     ## Update some of our properties based on the new drawer.
@@ -86,8 +104,9 @@ class CameraHandler(deviceHandler.DeviceHandler):
     @interfaces.imager.pauseVideo
     @reset_cache
     def setEnabled(self, shouldEnable = True):
-        self.callbacks['setEnabled'](self.name, shouldEnable)
-        self.isEnabled = shouldEnable
+        self.isEnabled = self.callbacks['setEnabled'](self.name, shouldEnable)
+        if self.isEnabled != shouldEnable:
+            raise Exception("Problem enabling device with handler %s" % self)
         # Subscribe / unsubscribe to the prepare-for-experiment event.
         func = [events.unsubscribe, events.subscribe][shouldEnable]
         func('prepare for experiment', self.prepareForExperiment)
