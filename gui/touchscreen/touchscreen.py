@@ -347,16 +347,16 @@ class TouchScreenWindow(wx.Frame):
         zButtonSizer=wx.GridSizer(rows=2, cols=2)
 
         for args in [('Up', self.zMoveUp, None,
-                      'centre_view.png',
+                      'up.png',
                       "Move up one Z step"),
-                     ('Down', self.zMoveDown, None,
-                      'centre_view.png',
-                      "Move down one Z step"),
                      ('Inc Step', self.zIncStep, None,
-                      'centre_view.png',
+                      'plus.png',
                       "Increase Z step"),
+                     ('Down', self.zMoveDown, None,
+                      'down.png',
+                      "Move down one Z step"),
                      ('DecStep', self.zDecStep, None,
-                      'centre_view.png',
+                      'minus.png',
                       "Decrease Z step")]:
             button = self.makeButton(self.panel, *args)
             zButtonSizer.Add(button, 0, wx.EXPAND|wx.ALL,border=2)
@@ -537,13 +537,13 @@ class TouchScreenWindow(wx.Frame):
 
     #Zbutton functions
     def zMoveUp(self):
-        pass
+        interfaces.stageMover.step((0,0,1))
     def zMoveDown(self):
-        pass
+        interfaces.stageMover.step((0,0,-1))
     def zIncStep(self):
-        pass
+        interfaces.stageMover.changeStepSize(1)
     def zDecStep(self):
-        pass
+        interfaces.stageMover.changeStepSize(1)
     
 
     ## Resize our canvas.
