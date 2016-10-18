@@ -543,7 +543,7 @@ class TouchScreenWindow(wx.Frame):
     def zIncStep(self):
         interfaces.stageMover.changeStepSize(1)
     def zDecStep(self):
-        interfaces.stageMover.changeStepSize(1)
+        interfaces.stageMover.changeStepSize(-1)
     
 
     ## Resize our canvas.
