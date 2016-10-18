@@ -47,6 +47,7 @@ BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 class MosaicWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
+        self.SetWindowStyle(self.GetWindowStyle() | wx.FRAME_TOOL_WINDOW)
         self.panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -218,7 +219,11 @@ class MosaicWindow(wx.Frame):
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         self.crosshairBoxSize = 512 * objective.getPixelSize()
         self.offset = objective.getOffset()
+<<<<<<< HEAD
         scale= (1/objective.getPixelSize())*0.5
+=======
+        scale = (1/objective.getPixelSize())*0.5
+>>>>>>> master
         self.canvas.zoomTo(-curPosition[0]+self.offset[0],
                            curPosition[1]-self.offset[1], scale)
 
@@ -284,6 +289,9 @@ class MosaicWindow(wx.Frame):
                 currentTarget = self.canvas.mapScreenToCanvas(mousePos)
                 newTarget = (currentTarget[0] + self.offset[0],
                              currentTarget[1] + self.offset[1])
+                #Stop mosaic if we are running one.
+                if self.amGeneratingMosaic:
+                    self.onAbort()
                 self.goTo(newTarget)
             elif event.LeftIsDown() and not event.LeftDown():
                 # Dragging the mouse with the left mouse button: drag or
@@ -806,6 +814,9 @@ class MosaicWindow(wx.Frame):
     ## Go to the specified XY position. If we have a focus plane defined,
     # go to the appropriate Z position to maintain focus.
     def goTo(self, target, shouldBlock = False):
+        if self.amGeneratingMosaic:
+            self.onAbort()
+            self.amGeneratingMosaic = False
         if self.focalPlaneParams:
             targetZ = self.getFocusZ(target)
             interfaces.stageMover.goTo((target[0], target[1], targetZ),
