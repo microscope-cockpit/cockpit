@@ -50,7 +50,7 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
     ## Generate a row of buttons, one for each possible objective.
     def makeUI(self, parent):
         frame = wx.Frame(parent, title = "Objectives",
-                style = wx.RESIZE_BORDER | wx.CAPTION)
+                style = wx.RESIZE_BORDER | wx.CAPTION | wx.FRAME_TOOL_WINDOW)
         panel = wx.Panel(frame)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         for name in sorted(self.nameToPixelSize.keys()):

@@ -4,6 +4,7 @@
 # the GUI.
 
 import os
+import sys
 import threading
 import traceback
 import wx
@@ -15,7 +16,7 @@ if (distutils.version.LooseVersion(Pyro4.__version__) >=
     Pyro4.config.SERIALIZERS_ACCEPTED.discard('serpent')
     Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
     Pyro4.config.SERIALIZER = 'pickle'
-
+    Pyro4.config.REQUIRE_EXPOSE = False
 
 # We need these first to ensure that we can log failures during startup.
 import depot
@@ -125,7 +126,7 @@ class CockpitApp(wx.App):
             # Now that the UI exists, we don't need this any more.
         	# Sometimes, status doesn't make it into the list, so test.
             if status in self.primaryWindows:
-            	self.primaryWindows.remove(status)
+                self.primaryWindows.remove(status)
             status.Destroy()
 
             util.user.login(frame)
@@ -147,7 +148,7 @@ class CockpitApp(wx.App):
             depot.makeInitialPublications()
             interfaces.makeInitialPublications()
             events.publish('cockpit initialization complete')
-            
+            self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
             return True
         except Exception, e:
             wx.MessageDialog(None,
@@ -160,6 +161,14 @@ class CockpitApp(wx.App):
             util.logger.log.error(traceback.format_exc())
             return False
 
+    def onActivateApp(self, event):
+        if not event.Active:
+            return
+        top = wx.GetApp().GetTopWindow()
+        windows = top.GetChildren()
+        for w in windows:
+            if w.IsShown(): w.Raise()
+        top.Raise()
 
     ## Startup failed; log the failure information and exit.
     def onStartupFail(self, *args):
