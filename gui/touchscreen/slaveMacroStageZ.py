@@ -426,7 +426,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                             (0, delta), (0, 0, 1), 
                             self.stageExtent * .15, self.stageExtent * .03
                     )
-
+            self.prevStagePosition = self.curStagePosition
             glFlush()
             self.SwapBuffers()
             # Set the event, so our refreshWaiter() can update
