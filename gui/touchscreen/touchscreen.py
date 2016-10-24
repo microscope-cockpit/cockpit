@@ -125,8 +125,9 @@ class TouchScreenWindow(wx.Frame):
 
 
         ## objectiveSizer at top of rightSideSizer for objective stuff
-        font=wx.Font(12,wx.FONTFAMILY_DEFAULT, wx.FONTWEIGHT_NORMAL,
-                     wx.FONTSTYLE_NORMAL)
+        font=wx.Font(12,wx.FONTFAMILY_DEFAULT,wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
+#        font=wx.Font(12,wx.FONTFAMILY_DEFAULT, wx.FONTWEIGHT_NORMAL,
+#                     wx.FONTSTYLE_NORMAL)
         objectiveSizer=wx.GridSizer(rows=2, cols=2)
         
         button = self.makeToggleButton(self.buttonPanel, 'Load/Unload',
@@ -337,30 +338,52 @@ class TouchScreenWindow(wx.Frame):
         leftSizer= wx.BoxSizer(wx.VERTICAL)
         #add a macrostageXY overview section
         self.macroStageXY=slaveOverview.MacroStageXY(self.panel)
-        leftSizer.Add(self.macroStageXY,2, wx.EXPAND)
+        leftSizer.Add(self.macroStageXY,3, wx.EXPAND)
 
         ##start a TSmacrostageZ instance
         self.macroStageZ=slaveMacroStageZ.slaveMacroStageZ(self.panel)
-        leftSizer.Add(self.macroStageZ, 2,wx.EXPAND)
+        leftSizer.Add(self.macroStageZ, 3,wx.EXPAND)
 
         ## Z control buttons
-        zButtonSizer=wx.GridSizer(rows=2, cols=2)
+        zButtonSizer=wx.GridSizer(rows=3, cols=2)
 
         for args in [('Up', self.zMoveUp, None,
                       'up.png',
-                      "Move up one Z step"),
+                      "Move up one Z step",(30,30)),
                      ('Inc Step', self.zIncStep, None,
                       'plus.png',
-                      "Increase Z step"),
-                     ('Down', self.zMoveDown, None,
-                      'down.png',
-                      "Move down one Z step"),
-                     ('DecStep', self.zDecStep, None,
-                      'minus.png',
-                      "Decrease Z step")]:
+                      "Increase Z step",(30,30))]:
             button = self.makeButton(self.panel, *args)
             zButtonSizer.Add(button, 0, wx.EXPAND|wx.ALL,border=2)
-       
+        ##Text of position and step size
+        font=wx.Font(12,wx.FONTFAMILY_DEFAULT,wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
+        zPositionText = wx.StaticText(self.panel,-1,
+                                      style=wx.ALIGN_CENTER)
+        zPositionText.SetFont(font)
+        #Read current exposure time and store pointer in 
+        #self. so that we can change it at a later date
+        label = 'Z Pos %5.2f'%(interfaces.stageMover.getPosition()[2])
+        zPositionText.SetLabel(label.rjust(10))
+        self.nameToText['Zpos']=zPositionText
+        zButtonSizer.Add(zPositionText, 0, wx.EXPAND|wx.ALL,border=15)
+        zStepText = wx.StaticText(self.panel,-1,
+                                  style=wx.ALIGN_CENTER)
+        zStepText.SetFont(font)
+        #Read current exposure time and store pointer in 
+        #self. so that we can change it at a later date
+        label = 'Z Step %5d'%(interfaces.stageMover.getCurStepSizes()[2])
+        zStepText.SetLabel(label.rjust(10))
+        self.nameToText['ZStep']=zStepText
+        zButtonSizer.Add(zStepText, 0, wx.EXPAND|wx.ALL,border=15)
+        
+        for args in [('Down', self.zMoveDown, None,
+                      'down.png',
+                      "Move down one Z step",(30,30)),
+                     ('DecStep', self.zDecStep, None,
+                      'minus.png',
+                      "Decrease Z step",(30,30))]:
+            button = self.makeButton(self.panel, *args)
+            zButtonSizer.Add(button, 0, wx.EXPAND|wx.ALL,border=2)
         leftSizer.Add(zButtonSizer, 1,wx.EXPAND)
 
 
@@ -396,6 +419,7 @@ class TouchScreenWindow(wx.Frame):
                    helpText,size = (75,75)):
         bmp=wx.Bitmap(os.path.join( self.bitmapsPath, bitmap),
                       wx.BITMAP_TYPE_ANY)
+        print "size= ",size
         button = SBitmapButton(parent, -1, bitmap=bmp, size = size)
         button.SetToolTipString(helpText)
         button.Bind(wx.EVT_BUTTON, lambda event: leftAction())
@@ -571,8 +595,16 @@ class TouchScreenWindow(wx.Frame):
         if axis in [0, 1]:
             # Only care about the X and Y axes.
             wx.CallAfter(self.Refresh)
-
-
+        if axis is 2:
+            #Z axis updates
+            posString=self.nameToText['Zpos']
+            label = 'Z Pos %5.2f'%(interfaces.stageMover.getPosition()[2])
+            posString.SetLabel(label.rjust(10))
+            stepString=self.nameToText['ZStep']
+            label = 'Z Step %5.2f'%(interfaces.stageMover.getCurStepSizes()[2])
+            stepString.SetLabel(label.rjust(10))
+            wx.CallAfter(self.Refresh)
+            
     ## User changed the objective in use; resize our crosshair box to suit.
     def onObjectiveChange(self, name, pixelSize, transform, offset, **kwargs):
         self.crosshairBoxSize = 512 * pixelSize
