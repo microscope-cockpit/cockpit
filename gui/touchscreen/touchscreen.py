@@ -337,12 +337,35 @@ class TouchScreenWindow(wx.Frame):
         leftSizer= wx.BoxSizer(wx.VERTICAL)
         #add a macrostageXY overview section
         self.macroStageXY=slaveOverview.MacroStageXY(self.panel)
-        leftSizer.Add(self.macroStageXY,1, wx.EXPAND)
+        leftSizer.Add(self.macroStageXY,2, wx.EXPAND)
 
         ##start a TSmacrostageZ instance
         self.macroStageZ=slaveMacroStageZ.slaveMacroStageZ(self.panel)
-        leftSizer.Add(self.macroStageZ, 1,wx.EXPAND)
+        leftSizer.Add(self.macroStageZ, 2,wx.EXPAND)
 
+        ## Z control buttons
+        zButtonSizer=wx.GridSizer(rows=2, cols=2)
+
+        for args in [('Up', self.zMoveUp, None,
+                      'up.png',
+                      "Move up one Z step"),
+                     ('Inc Step', self.zIncStep, None,
+                      'plus.png',
+                      "Increase Z step"),
+                     ('Down', self.zMoveDown, None,
+                      'down.png',
+                      "Move down one Z step"),
+                     ('DecStep', self.zDecStep, None,
+                      'minus.png',
+                      "Decrease Z step")]:
+            button = self.makeButton(self.panel, *args)
+            zButtonSizer.Add(button, 0, wx.EXPAND|wx.ALL,border=2)
+       
+        leftSizer.Add(zButtonSizer, 1,wx.EXPAND)
+
+
+                     
+        
         sizer.Add(leftSizer,1,wx.EXPAND)
         
         self.panel.SetSizerAndFit(sizer)
@@ -512,6 +535,16 @@ class TouchScreenWindow(wx.Frame):
         self.canvas.zoomTo(-curPosition[0]+self.offset[0],
                            curPosition[1]-self.offset[1], scale)
 
+    #Zbutton functions
+    def zMoveUp(self):
+        interfaces.stageMover.step((0,0,1))
+    def zMoveDown(self):
+        interfaces.stageMover.step((0,0,-1))
+    def zIncStep(self):
+        interfaces.stageMover.changeStepSize(1)
+    def zDecStep(self):
+        interfaces.stageMover.changeStepSize(-1)
+    
 
     ## Resize our canvas.
     def onSize(self, event):
