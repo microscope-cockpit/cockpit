@@ -463,6 +463,19 @@ class TouchScreenWindow(wx.Frame):
         return button
 
     def snapImage(self):
+        #check that we have a camera and light source
+        cams=0
+        lights=0
+        for camera in depot.getHandlersOfType(depot.CAMERA):
+            if camera.getIsEnabled():
+                cams=cams+1
+        for light in depot.getHandlersOfType(depot.LIGHT_TOGGLE):
+            if light.getIsEnabled():
+                lights=lights+1
+        if (cams is 0) or (lights is 0):
+            print "Snap needs a light and a camera to opperate"
+            return
+            
         #take the image
         events.executeAndWaitFor("new image %s" %
                                  (list(interfaces.imager.imager.activeCameras)[0].name),
