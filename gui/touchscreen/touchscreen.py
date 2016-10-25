@@ -419,7 +419,6 @@ class TouchScreenWindow(wx.Frame):
                    helpText,size = (75,75)):
         bmp=wx.Bitmap(os.path.join( self.bitmapsPath, bitmap),
                       wx.BITMAP_TYPE_ANY)
-        print "size= ",size
         button = SBitmapButton(parent, -1, bitmap=bmp, size = size)
         button.SetToolTipString(helpText)
         button.Bind(wx.EVT_BUTTON, lambda event: leftAction())
@@ -485,7 +484,6 @@ class TouchScreenWindow(wx.Frame):
         self.Refresh()
 
     def laserToggle(self, event, light, button):
-        print "in set laser toggle",light.name
         if event.GetIsDown():
             light.setEnabled(True)
             events.publish('light source enable', light, True)
@@ -1301,7 +1299,6 @@ class TouchScreenWindow(wx.Frame):
             #more than 2 objectives so need to present a list
             showObjectiveMenu()
         
-        print "Changed to objective "+self.objective.curObjective     
         
 
     def showObjectiveMenu(self):
@@ -1330,7 +1327,6 @@ class TouchScreenWindow(wx.Frame):
         self.wavelength=camera.wavelength
         self.color=camera.color
         isEnabled=camera.isEnabled
-        print isEnabled, self.color,self.wavelength
         if isEnabled is True:
             self.camButton[i].SetLabel("ON")
             self.SetBackgroundColour(ACTIVE_COLOR)
