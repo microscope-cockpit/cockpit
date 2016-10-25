@@ -393,7 +393,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
                 events.publish('stage mover', '%d PI mover' % axis, axis,
                         self.axisSignMapper[axis] * val)
             curPosition = (x, y)
-            time.sleep(.1)
+            time.sleep(.01)
 
 
     ## Get the position of the specified axis, or both axes by default.
