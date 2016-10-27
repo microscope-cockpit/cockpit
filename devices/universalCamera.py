@@ -33,13 +33,15 @@ import gui.toggleButton
 import handlers.camera
 import util.listener
 import util.threads
+import util.userConfig
 from gui.device import SettingsEditor
 
 CLASS_NAME = 'UniversalCameraManager'
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFT) = range(4)
-
+# Pseudo-enum to track whether device defaults in place.
+(DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
 
 class UniversalCameraDevice(camera.CameraDevice):
     """A class to control Andor cameras via the pyAndor remote interface."""
@@ -65,6 +67,7 @@ class UniversalCameraDevice(camera.CameraDevice):
                          self.path_transform[i] ^ self.base_transform[i] for i in range(3))
         self.settings['exposure_time'] = 0.001
         self.settings_editor = None
+        self.defaults = DEFAULTS_NONE
 
 
     def cleanupAfterExperiment(self):
@@ -82,6 +85,8 @@ class UniversalCameraDevice(camera.CameraDevice):
                 self.cleanupAfterExperiment)
         events.subscribe('objective change',
                 self.onObjectiveChange)
+        events.subscribe('user login',
+                self.onUserLogin)
 
 
     def onObjectiveChange(self, name, pixelSize, transform, offset):
@@ -89,7 +94,35 @@ class UniversalCameraDevice(camera.CameraDevice):
         # Apply the change now if the camera is enabled.
         if self.enabled:
             self.proxy.update_settings(self.settings)
-    
+
+
+    def setAnyDefaults(self):
+        # Set any defaults found in userConfig.
+        # TODO - migrate defaults to a universalDevice base class.
+        if self.defaults != DEFAULTS_PENDING:
+            # notrhing to do
+            return
+        try:
+            self.proxy.update_settings(self.settings)
+        except Exception as e:
+            print e
+        else:
+            self.defaults = DEFAULTS_SENT
+
+
+    def onUserLogin(self, username):
+        # Apply user defaults on login.
+        idstr = self.handler.getIdentifier() + '_SETTINGS'
+        defaults = util.userConfig.getValue(idstr, isGlobal=False)
+        if defaults is None:
+            defaults = util.userConfig.getValue(idstr, isGlobal=True)
+        if defaults is None:
+            self.defaults = DEFAULTS_NONE
+            return
+        self.settings.update(defaults)
+        self.defaults = DEFAULTS_PENDING
+        self.setAnyDefaults()
+
 
     def getHandlers(self):
         """Return camera handlers."""
@@ -136,6 +169,7 @@ class UniversalCameraDevice(camera.CameraDevice):
 
     def onEnabledEvent(self, evt=None):
         if self.enabled:
+            self.setAnyDefaults()
             self.settings.update(self.proxy.get_all_settings())
             self.handler.exposureMode = self.proxy.get_trigger_type()
             self.listener.connect()
@@ -225,6 +259,7 @@ class UniversalCameraDevice(camera.CameraDevice):
 
    ### UI functions ###
     def makeUI(self, parent):
+        # TODO - this should probably live in a base deviceHandler.
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         adv_button = gui.device.Button(parent=self.panel,
@@ -234,7 +269,6 @@ class UniversalCameraDevice(camera.CameraDevice):
         self.panel.SetSizerAndFit(sizer)
         return self.panel
 
-
     def showSettings(self, evt):
         if not self.settings_editor:
             # TODO - there's a problem with abstraction here. The settings
@@ -243,6 +277,7 @@ class UniversalCameraDevice(camera.CameraDevice):
             # on the handler. The handler should probably expose the
             # settings interface. UniversalCamera is starting to look
             # more and more like an interface translation.
+            self.setAnyDefaults()
             self.settings_editor = SettingsEditor(self.proxy, handler=self.handler)
             self.settings_editor.Show()
         self.settings_editor.SetPosition(wx.GetMousePosition())
