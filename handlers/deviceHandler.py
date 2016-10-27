@@ -85,6 +85,9 @@ class DeviceHandler(object):
         self.enableLock = threading.Lock()
         self.clear_cache = self.__cache.clear
 
+    ## Return a string that identifies the device.
+    def getIdentifier(self):
+        return "%s:%s" % (self.deviceType, self.name)
 
     ## Construct any necessary UI widgets for this Device to perform its job.
     # Return a WX sizer holding the result, or None if nothing is to be 
