@@ -25,6 +25,7 @@ import wx.propgrid
 import gui.guiUtils
 from handlers.deviceHandler import STATES
 from toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
+from util import userConfig
 
 ## @package gui.device
 # Defines classes for common controls used by cockpit devices.
@@ -214,17 +215,29 @@ class SettingsEditor(wx.Frame):
         #self.panel = wx.Panel(self, wx.ID_ANY, style=wx.WANTS_CHARS)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.grid = wx.propgrid.PropertyGrid(self, )
+        self.grid = wx.propgrid.PropertyGrid(self,
+                                             style=wx.propgrid.PG_SPLITTER_AUTO_CENTER)
+        self.grid.SetColumnProportion(0, 2)
+        self.grid.SetColumnProportion(1, 1)
         self.populateGrid()
         self.Bind(wx.propgrid.EVT_PG_CHANGED, self.onPropertyChange)
         sizer.Add(self.grid, 1, wx.EXPAND | wx.ALIGN_LEFT | wx.ALIGN_TOP)
 
         sizer.AddSpacer(2)
+        buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
+        saveButton = wx.Button(self, id=wx.ID_SAVE)
+        saveButton.SetToolTipString("Save current settings as defaults.")
+        saveButton.Bind(wx.EVT_BUTTON, self.onSave)
+        buttonSizer.Add(saveButton, 0, wx.ALIGN_RIGHT, 0, 0)
+
         closeButton = wx.Button(self, id=wx.ID_OK)
         closeButton.Bind(wx.EVT_BUTTON, self.onClose)
-        sizer.Add(closeButton, 0, wx.ALIGN_RIGHT)
+        closeButton.SetToolTipString("Close this window.")
+        buttonSizer.Add(closeButton, 0, wx.ALIGN_RIGHT)
 
+        sizer.Add(buttonSizer, 0, wx.ALIGN_CENTER, 0, 0)
         self.SetSizerAndFit(sizer)
+        self.SetMinSize((256, -1))
         self.SetMaxSize((self.GetMinWidth(), -1))
 
     def onEnabledEvent(self, evt):
@@ -267,6 +280,13 @@ class SettingsEditor(wx.Frame):
         self.updateGrid()
         self.Thaw()
 
+    def onSave(self, event):
+        settings = self.grid.GetPropertyValues()
+        for name, value in settings.iteritems():
+            if self.settings[name]['type'] == 'enum':
+                settings[name] = self.settings[name]['values'][value]
+        userConfig.setValue(self.handler.getIdentifier() + '_SETTINGS',
+                            settings)
 
     def updateGrid(self):
         grid = self.grid
