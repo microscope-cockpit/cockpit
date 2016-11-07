@@ -159,26 +159,23 @@ class PicoMotorDevice(device.Device):
                                (self.axisMapper[axis]),endposition[axis],0)
             
 
-    ## Send a command to the XY stage controller, read the response, check
-    # for errors, and either raise an exception or return the response.
-    # Very similar to sendZCommand of course, but xyConnection is a Serial
-    # instance and zConnection is a Telnet instance.
-
-
+    ## Check for motion on a given controller. 
     def checkForMotion(self,controller):
         motorState1=self.sendXYCommand('%s>1 md' %
                                        (controller),1)
-        (tempstring,motorState1)=motorState1.split('>')
         motorState2=self.sendXYCommand('%s>2 md' %
                                        (controller),1)
-        (tempstring,motorState2)=motorState2.split('>')
+        #need to split of controller number if we have more than one. Use
+        #the format of axis 0 axisMapper string to check this. 
+        if(len(self.axisMapper[0].split('>'))==2):
+            (junk,motorState1)=motorState1.split('>')
+            (junk,motorState2)=motorState2.split('>')
+
         return(motorState1 or motorState2)
 
 
     ## Send a command to the XY stage controller, read the response, check
     # for errors, and either raise an exception or return the response.
-    # Very similar to sendZCommand of course, but xyConnection is a Serial
-    # instance and zConnection is a Telnet instance.
     def sendXYCommand(self, command, numExpectedLines = 1, shouldCheckErrors = True):
         with self.xyLock:
             self.xyConnection.sendall(command + '\n')
@@ -287,25 +284,38 @@ class PicoMotorDevice(device.Device):
             time.sleep(0.1)
 
 
-    ## Get the position of the specified axis, or both axes by default.
+    ## Get the position of the specified axis, or all axes by default.
     # If shouldUseCache is not set, then we will query the controller, which
     # takes some time.
     def getXYPosition(self, axis = None, shouldUseCache = True):
         #+++        self.xyPositionCache = (0, 0,0)
         if not shouldUseCache:
-            positions=self.sendXYCommand('1>1TP?;2TP?', 1, False)
-            (x,y)=positions.split(';')
-            positions=self.sendXYCommand('2>1TP?', 1, False)
-            z=positions
-            
-            # Positions are in steps, and we need microns.
-            x = -float(x) / self.STAGE_CAL
-            y = -float(y) / self.STAGE_CAL
-            z=float(z) / self.STAGE_CAL
-            self.xyPositionCache = (x, y, z)
-        if axis is None:
+            if axis:
+                position=self.sendXYCommand('%s TP?' % (self.axisMapper[axis]),
+                                            1, False)
+                if(len(self.axisMapper[axis].split('>'))==2):
+                    (junk,position)=position.split('>')
+                self.xyPositionCache[axis]=float(position)/self.STAGE_CAL
+                return self.xyPositionCache[axis]                
+            else:
+                #axis is None so grab all positions. 
+                for axis in range(len(axisMapper)):
+                    position=self.sendXYCommand('%s TP?' %
+                                                (self.axisMapper[axis]),
+                                                1, False)
+                    #have more than one controller so need to split
+                    #controller number from position.
+                    if(len(self.axisMapper[axis].split('>'))==2):
+                        (junk,position)=position.split('>')
+                    # Positions are in steps, and we need microns.
+                    self.xyPositionCache[axis]=float(position)/self.STAGE_CAL
+
+        #returning cached values, either single axis or all. 
+        if axis:
+            return self.xyPositionCache[axis]
+        else:
             return self.xyPositionCache
-        return self.xyPositionCache[axis]
+
 
 
     def setXYSafety(self, axis, value, isMax):
