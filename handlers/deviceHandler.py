@@ -65,10 +65,13 @@ class DeviceHandler(object):
 
 
     @staticmethod
-    def reset_cache(f):
+    def reset_cache(f=None):
         def wrapper(self, *args, **kwargs):
             self.__cache = {}
-            return f(self, *args)
+            if f is None:
+                return f
+            else:
+                return f(self, *args)
         return wrapper
 
 
