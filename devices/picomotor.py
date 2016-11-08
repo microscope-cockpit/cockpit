@@ -288,7 +288,7 @@ class PicoMotorDevice(device.Device):
                     "%d PI mover" % axis, "%d stage motion" % axis, False,
                     {'moveAbsolute': self.moveXYAbsolute,
                          'moveRelative': self.moveXYRelative,
-                         'getPosition': self.getXYPosition,
+                         'getPosition': lambda axis=axis: self.getXYPosition(axis=axis),
                          'setSafety': self.setXYSafety,
                          'getMovementTime' :self.getXYMovementTime},
                     axis, [.1, .5, 1, 5, 10, 50, 100, 500, 1000, 5000], 3,
