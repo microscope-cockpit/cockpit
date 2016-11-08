@@ -83,7 +83,7 @@ class PicoMotorDevice(device.Device):
         self.xyLock = threading.Lock()
         ## Cached copy of the stage's position. Initialized to an impossible
         # value; this will be modified in initialize.
-        self.xyPositionCache = (10 ** 100, 10 ** 100,7500)
+        self.xyPositionCache = [10 ** 100, 10 ** 100,7500]
         events.subscribe('user logout', self.onLogout)
         events.subscribe('user abort', self.onAbort)
 
