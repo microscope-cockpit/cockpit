@@ -59,9 +59,9 @@ class PicoMotorDevice(device.Device):
         if not self.isActive:
             return
         else:
-            self.STAGE_CAL = config.get(CONFIG_NAME, 'cal') # e.g. 13.750
+            self.STAGE_CAL = float(config.get(CONFIG_NAME, 'cal')) # e.g. 13.750
             self.PICO_CONTROLLER = config.get(CONFIG_NAME, 'ipAddress') # e.g. 172.16.0.30'
-            self.PICO_PORT = config.get(CONFIG_NAME, 'port') # e.g. 23
+            self.PICO_PORT = int(config.get(CONFIG_NAME, 'port')) # e.g. 23
 
         ## Maps the cockpit's axis ordering (0: X, 1: Y, 2: Z) to the
         # XY stage's ordering which is 
