@@ -349,7 +349,7 @@ class PicoMotorDevice(device.Device):
     def getXYPosition(self, axis = None, shouldUseCache = True):
         #+++        self.xyPositionCache = (0, 0,0)
         if not shouldUseCache:
-            if axis:
+            if axis is not None:
                 position=self.sendXYCommand('%s TP?' % (self.axisMapper[axis]),
                                             1, False)
                 if(len(self.axisMapper[axis].split('>'))==2):
@@ -370,7 +370,7 @@ class PicoMotorDevice(device.Device):
                     self.xyPositionCache[axis]=float(position)/self.STAGE_CAL
 
         #returning cached values, either single axis or all. 
-        if axis:
+        if axis is not None:
             return self.xyPositionCache[axis]
         else:
             return self.xyPositionCache
