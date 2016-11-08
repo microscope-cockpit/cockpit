@@ -358,7 +358,7 @@ class PicoMotorDevice(device.Device):
                 return self.xyPositionCache[axis]                
             else:
                 #axis is None so grab all positions. 
-                for axis in range(len(axisMapper)):
+                for axis in range(len(self.axisMapper)):
                     position=self.sendXYCommand('%s TP?' %
                                                 (self.axisMapper[axis]),
                                                 1, False)
