@@ -358,16 +358,16 @@ class PicoMotorDevice(device.Device):
                 return self.xyPositionCache[axis]                
             else:
                 #axis is None so grab all positions. 
-                for axis in range(len(self.axisMapper)):
+                for ax in range(len(self.axisMapper)):
                     position=self.sendXYCommand('%s TP?' %
-                                                (self.axisMapper[axis]),
+                                                (self.axisMapper[ax]),
                                                 1, False)
                     #have more than one controller so need to split
                     #controller number from position.
-                    if(len(self.axisMapper[axis].split('>'))==2):
+                    if(len(self.axisMapper[ax].split('>'))==2):
                         (junk,position)=position.split('>')
                     # Positions are in steps, and we need microns.
-                    self.xyPositionCache[axis]=float(position)/self.STAGE_CAL
+                    self.xyPositionCache[ax]=float(position)/self.STAGE_CAL
 
         #returning cached values, either single axis or all. 
         if axis is not None:
