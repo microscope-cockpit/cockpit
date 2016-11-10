@@ -231,7 +231,7 @@ class CockpitLinkamStage(stage.StageDevice):
         return panel
 
 
-    def menuCallback(self, item):
+    def menuCallback(self, index, item):
         p = r'(?P<speed>[0-9]*)./s'
         if item.lower() == 'home stage':
             self.homeMotors()

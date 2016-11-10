@@ -394,7 +394,7 @@ class BoulderSLMDevice(device.Device):
 
 
     ### Context menu and handlers ###
-    def menuCallback(self, item):
+    def menuCallback(self, index, item):
         func = self.menuItems[item]
         return func()
 
