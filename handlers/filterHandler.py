@@ -6,10 +6,35 @@ import wx
 from config import config
 
 
-## This class stands in for arbitrary devices that don't need any particular
-# special abilities. Mostly it gives Devices objects they can shove into the
-# DeviceDepot and refer to in experiments.
+class Filter(object):
+    """An individual filter."""
+
+    def __init__(self, position, *args):
+        self.position = position
+        # args describes the filter.
+        # The description can be one of
+        #   label, value
+        #   (label, value)
+        #   label
+        if hasattr(args[0], '__iter__'):
+            self.label = args[0][0]
+            if len(args[0]) > 1:
+                self.value = args[0][1]
+            else:
+                self.value = None
+        else:
+            self.label = args[0]
+            self.value = args[1]
+
+    def __repr__(self):
+        if self.value:
+            return '%d: %s, %s' % (self.position, self.label, self.value)
+        else:
+            return '%d: %s' % (self.position, self.label)
+
+
 class FilterHandler(deviceHandler.DeviceHandler):
+    """A handler for emission and ND filter wheels."""
     def __init__(self, device, groupName):
         self._device = device
         self.name = device.name
