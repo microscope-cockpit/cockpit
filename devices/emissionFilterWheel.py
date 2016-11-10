@@ -201,6 +201,6 @@ class FilterWheelDevice(device.Device):
         menu.show(evt)
 
 
-    def menuCallback(self, item):
-        index, dye = item.split(': ')
-        self.setPosition(int(index))
+    def menuCallback(self, index, item):
+        position, dye = item.split(': ')
+        self.setPosition(int(position))

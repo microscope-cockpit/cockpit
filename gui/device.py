@@ -151,12 +151,11 @@ class MultilineDisplay(wx.StaticText):
 class Menu(wx.Menu):
     def __init__(self, menuItems, menuCallback):
         """Initialise a menu of menuItems that are handled by menuCallback."""
-        ## Call wx.Menu.__init__(self)
         super(Menu, self).__init__()
         for i, item in enumerate(menuItems):
             if len(item):
                 self.Append(i, item, '')
-                wx.EVT_MENU(self, i, lambda event, item=item:menuCallback(item))
+                wx.EVT_MENU(self, i, lambda event, index=i, item=item:menuCallback(index, item))
             else:
                 self.AppendSeparator()
 
