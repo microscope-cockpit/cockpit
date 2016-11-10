@@ -198,30 +198,6 @@ class UniversalSwitchableDevice(UniversalBase):
 
 
 class UniversalFilterDevice(UniversalBase):
-    class Filter(object):
-        """An individual filter."""
-        def __init__(self, position, *args):
-            self.position = position
-            # args describes the filter.
-            # The description can be one of
-            #   label, value
-            #   (label, value)
-            #   label
-            if len(args) > 1:
-                self.label= args[0]
-                self.value = args[1]
-            else:
-                if hasattr(args[0], '__iter__'):
-                    self.label = args[0][0]
-                    self.value = args[0][1]
-                else:
-                    self.label = args[0]
-                    self.value = None
-
-        def __repr__(self):
-            return '%d: %s, %s' % (self.position, self.label, self.value)
-
-
     def __init__(self, *args, **kwargs):
         super(UniversalFilterDevice, self).__init__(*args, **kwargs)
         # Must be initialized after any drawer.
@@ -259,7 +235,7 @@ class UniversalFilterDevice(UniversalBase):
 
 
     def finalizeInitialization(self):
-        self.filters = [UniversalFilterDevice.Filter(*f)
+        self.filters = [handlers.filterHandler.Filter(*f)
                         for f in self._proxy.get_filters()]
         # Read configuration file.
         if config.has_option(self.name, 'camera'):
