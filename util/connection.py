@@ -23,7 +23,7 @@ class Connection:
     # it to send us its data.
     # By default we set a short timeout of 5s so that we find out fairly
     # quickly if something went wrong.
-    def connect(self, callback, timeout = 300):
+    def connect(self, callback, timeout = 5):
         self.callback = callback
         connection = Pyro4.Proxy(
                 'PYRO:%s@%s:%d' % (self.serviceName, self.ipAddress, self.port))
@@ -31,8 +31,6 @@ class Connection:
         self.connection = connection
         server = depot.getHandlersOfType(depot.SERVER)[0]
         uri = server.register(self.callback, self.localIp)
-        print(uri)
-        print(Pyro4.config.SERIALIZER)
         self.connection.receiveClient(uri)
 
 
