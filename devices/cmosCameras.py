@@ -78,10 +78,14 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         Returns the handler for the camera.
         '''
         result = handlers.camera.CameraHandler(
-            "%s" % self.config.get('label'), "sCMOS camera", 
-            {'setEnabled': self.enableCamera, 
-             'getImageSize': self.getImageSize, 
-             'getTimeBetweenExposures': self.getTimeBetweenExposures, 
+            "%s" % self.config.get('label'), "sCMOS camera",
+
+            {'setEnabled': self.enableCamera,
+
+             'getImageSize': self.getImageSize,
+
+             'getTimeBetweenExposures': self.getTimeBetweenExposures,
+
              'prepareForExperiment': self.prepareForExperiment,
              'getExposureTime': self.getExposureTime,
              'setExposureTime': self.setExposureTime,
@@ -117,7 +121,7 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         # at which point the camera's state has been changed; this makes
         # the experiment not work.
         self.getMinExposureTime(self.name)
- 
+
     def receiveData(self, action, *args):
         '''
         Receive data from a camera.
@@ -169,7 +173,8 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         if self.timeBetweenExposures is None:
             # Set the cached value.
             self.timeBetweenExposures = (
-                self.connobj.connection.getReadoutTime() * 1000 + .005) 
+                self.connobj.connection.getReadoutTime() * 1000 + .005)
+
                 # add 20 Sensor Speed Clock Cycles = .0002 at 100MHz so we stay in the save side
         val = self.timeBetweenExposures
         if isExact:
@@ -238,14 +243,12 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         self.setExposureTime(name, exposureTime)
         self.connobj.connection.setTrigger(TRIGGER_EXTERNAL_EXPOSURE)
         self.curTriggerMode = TRIGGER_EXTERNAL_EXPOSURE
-        
+
     def takeBurst(self, name, frameCount):
         self.connobj.connection.setFrameCount(frameCount)
         print('FrameCount is: ' + str(self.connobj.connection.getFrameCount()))
         print('Trigger Mode is: ' + str(self.connobj.connection.getTrigger()))
         self.connobj.connection.startAcquisition()
-
-
 
 class CameraManager(camera.CameraManager):
     _CAMERA_CLASS = AndorCMOSCameraDevice
