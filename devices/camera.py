@@ -70,4 +70,3 @@ class CameraManager(device.Device):
     def performSubscriptions(self):
         for camera in self.cameras:
             camera.performSubscriptions()
-            print('camera ' + str(camera) + ' is subscribed')
