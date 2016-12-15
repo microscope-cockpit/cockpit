@@ -137,7 +137,7 @@ class WindowsJoystickDevice(device.Device):
         self.priority = 100
         # Get the number of supported devices (usually 16).
         self.num_devs = joyGetNumDevs()
-        if num_devs == 0:
+        if self.num_devs == 0:
             print("Joystick driver not loaded.")
             #drop out of driver as we have no joystick (maybe not windows?)
             return
@@ -158,7 +158,7 @@ class WindowsJoystickDevice(device.Device):
 
             print("Failed to get device capabilities.")
 
-        print "Driver name:", caps.szPname
+        print "Driver name:", self.caps.szPname
 
 
         # Fetch the name from registry.
