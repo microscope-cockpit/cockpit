@@ -137,13 +137,30 @@ class WindowsJoystickDevice(device.Device):
         self.priority = 100
         # Get the number of supported devices (usually 16).
         self.num_devs = joyGetNumDevs()
+        if num_devs == 0:
+            print("Joystick driver not loaded.")
+            #drop out of driver as we have no joystick (maybe not windows?)
+            return
+
         # Number of the joystick to open.
         joy_id = 0
         # Check if the joystick is plugged in.
         self.info = JOYINFO()
         self.p_info = ctypes.pointer(self.info)
+
+        if joyGetPos(0, self.p_info) != 0:
+            print("Joystick %d not plugged in." % (joy_id + 1)) 
+            
         # Get device capabilities.
         self.caps = JOYCAPS()
+        if joyGetDevCaps(joy_id, ctypes.pointer(self.caps),
+                         ctypes.sizeof(JOYCAPS)) != 0:
+
+            print("Failed to get device capabilities.")
+
+        print "Driver name:", caps.szPname
+
+
         # Fetch the name from registry.
         self.key = None
         if len(self.caps.szRegKey) > 0:
