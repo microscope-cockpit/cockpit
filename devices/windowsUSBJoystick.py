@@ -73,7 +73,7 @@ JOY_USEDEADZONE = 0x800
 JOY_RETURNALL = JOY_RETURNX | JOY_RETURNY | JOY_RETURNZ | JOY_RETURNR | JOY_RETURNU | JOY_RETURNV | JOY_RETURNPOV | JOY_RETURNBUTTONS
 
 # This is the mapping for my XBox 360 controller.
-button_names = ['a', 'b', 'x', 'y', 'tl', 'tr', 'back', 'start', 'thumbl', 'thumbr']
+button_names = ['a', 'b', 'x', 'y', 'lb', 'rb', 'back', 'start', 'thumbl', 'thumbr']
 povbtn_names = ['dpad_up', 'dpad_right', 'dpad_down', 'dpad_left']
 
 # Define some structures from WinMM that we will use in function calls.
@@ -229,7 +229,7 @@ class WindowsJoystickDevice(device.Device):
     def readJoystickThread(self):
         # Fetch new joystick data until it returns non-0 (that is, it has been unplugged)
         buttons_text = " "
-        self.mosaic=gui.mosaic.window.window
+        curPosition = interfaces.stageMover.getPosition()
         x_threshold = 0.075
         y_threshold = 0.075
 
@@ -276,11 +276,9 @@ class WindowsJoystickDevice(device.Device):
             y = y if (abs(y) > y_threshold) else 0
 
             if abs(x) > 0 or abs(y) > 0:
-                if self.button_states["tl"] == True:
+                if self.button_states["lb"] == True:
                     interfaces.stageMover.moveRelative((-10*x, -10*y, 0), shouldBlock=False)
                     time.sleep(0.05)
                 else:
-                    curX=self.mosaic.canvas.dx
-                    curY=self.mosaic.canvas.dy
-                    gui.mosaic.window.window.canvas.zoomTo(-curX+x, curY+y, self.mosaic.canvas.scale)
+                    gui.mosaic.canvas.zoomTo(-curPosition[0]+x, curPosition[1]-y, 1)
                     time.sleep(0.05)
