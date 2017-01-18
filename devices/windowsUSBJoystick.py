@@ -26,8 +26,9 @@ import threading
 import device
 import events
 import interfaces.stageMover
+import gui.mosaic.window
 
-#patch from David to stop it breaking when not on windows. 
+#patch from David to stop it breaking when not on windows.
 import os
 if os.name is 'nt':
     import _winreg as winreg
@@ -149,8 +150,8 @@ class WindowsJoystickDevice(device.Device):
         self.p_info = ctypes.pointer(self.info)
 
         if joyGetPos(0, self.p_info) != 0:
-            print("Joystick %d not plugged in." % (joy_id + 1)) 
-            
+            print("Joystick %d not plugged in." % (joy_id + 1))
+
         # Get device capabilities.
         self.caps = JOYCAPS()
         if joyGetDevCaps(joy_id, ctypes.pointer(self.caps),
@@ -210,29 +211,30 @@ class WindowsJoystickDevice(device.Device):
             pass
 
     def onStageMoved(self, axis, target):
-        self.enable_read = False
-        
+        #self.enable_read = False
+        pass
+
 
     def onStageStopped(self, axis):
         self.enable_read = True
-        
+
 
     def start(self):
         if (self.num_devs >0):
             self.joystickThread.start()
         else:
             pass
-        
+
 
     def readJoystickThread(self):
         # Fetch new joystick data until it returns non-0 (that is, it has been unplugged)
         buttons_text = " "
-
+        self.mosaic=gui.mosaic.window.window
         x_threshold = 0.05
         y_threshold = 0.05
 
         while joyGetPosEx(0, self.p_info) == 0:
-            
+
             while not self.enable_read:
                 time.sleep(0.05)
 
@@ -272,7 +274,14 @@ class WindowsJoystickDevice(device.Device):
 
             x = x if (abs(x) > x_threshold) else 0
             y = y if (abs(y) > y_threshold) else 0
-            
+
             if abs(x) > 0 or abs(y) > 0:
-                interfaces.stageMover.moveRelative((-10*x, -10*y, 0), shouldBlock=False)
-                time.sleep(0.05)
+                if self.button_states["tl"] == True:
+                    interfaces.stageMover.moveRelative((-10*x, -10*y, 0), shouldBlock=False)
+                    time.sleep(0.05)
+            #if abs(x) > 0 or abs(y) > 0:
+                #curX=self.mosaic.canvas.dx
+                #curY=self.mosaic.canvas.dy
+                #gui.mosaic.window.window.canvas.zoomTo(-curX+x,
+                               #curY+y, self.mosaic.canvas.scale)
+                #time.sleep(0.05)
