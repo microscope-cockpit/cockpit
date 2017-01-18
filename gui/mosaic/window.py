@@ -810,9 +810,6 @@ class MosaicWindow(wx.Frame):
     ## Go to the specified XY position. If we have a focus plane defined,
     # go to the appropriate Z position to maintain focus.
     def goTo(self, target, shouldBlock = False):
-        if self.amGeneratingMosaic:
-            self.onAbort()
-            self.amGeneratingMosaic = False
         if self.focalPlaneParams:
             targetZ = self.getFocusZ(target)
             interfaces.stageMover.goTo((target[0], target[1], targetZ),
