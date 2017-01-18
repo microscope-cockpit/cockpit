@@ -230,8 +230,8 @@ class WindowsJoystickDevice(device.Device):
         # Fetch new joystick data until it returns non-0 (that is, it has been unplugged)
         buttons_text = " "
         self.mosaic=gui.mosaic.window.window
-        x_threshold = 0.05
-        y_threshold = 0.05
+        x_threshold = 0.075
+        y_threshold = 0.075
 
         while joyGetPosEx(0, self.p_info) == 0:
 
@@ -279,9 +279,8 @@ class WindowsJoystickDevice(device.Device):
                 if self.button_states["tl"] == True:
                     interfaces.stageMover.moveRelative((-10*x, -10*y, 0), shouldBlock=False)
                     time.sleep(0.05)
-            #if abs(x) > 0 or abs(y) > 0:
-                #curX=self.mosaic.canvas.dx
-                #curY=self.mosaic.canvas.dy
-                #gui.mosaic.window.window.canvas.zoomTo(-curX+x,
-                               #curY+y, self.mosaic.canvas.scale)
-                #time.sleep(0.05)
+                else:
+                    curX=self.mosaic.canvas.dx
+                    curY=self.mosaic.canvas.dy
+                    gui.mosaic.window.window.canvas.zoomTo(-curX+x, curY+y, self.mosaic.canvas.scale)
+                    time.sleep(0.05)
