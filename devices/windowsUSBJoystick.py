@@ -233,7 +233,7 @@ class WindowsJoystickDevice(device.Device):
         self.mosaic=gui.mosaic.window.window
         x_threshold = 0.075
         y_threshold = 0.075
-        mosaic_running = False
+        multiplier = 1.1
 
         while joyGetPosEx(0, self.p_info) == 0:
 
@@ -293,11 +293,14 @@ class WindowsJoystickDevice(device.Device):
 
             #Pressing the start button starts and stops the mosaic
             if self.button_states["start"] == True:
-                if mosaic_running == False:
-                    self.mosaic.generateMosaic()
-                    mosaic_running = True
-                elif mosaic_running == True:
-                    self.mosaic.exitMosaicLoop()
-                    mosaic_running = False
+                self.mosaic.displayMosaicMenu()
+                time.sleep(0.5)
+
+
+            #Pressing up and down on the D-pad zoom in/out respectively
+            if self.button_states['dpad_up'] == True:
+                self.mosaic.canvas.multiplyZoom(multiplier)
+            elif self.button_states['dpad_down'] == True:
+                self.mosaic.canvas.multiplyZoom(1/multiplier)
 
             time.sleep(0.05)
