@@ -332,5 +332,6 @@ class WindowsJoystickDevice(device.Device):
             #Mark sites with the A button
             if self.button_states['a'] == True:
                 self.mosaic.saveSite()
+                time.sleep(1)
 
             time.sleep(0.05)
