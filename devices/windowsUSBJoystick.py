@@ -233,6 +233,7 @@ class WindowsJoystickDevice(device.Device):
         self.mosaic=gui.mosaic.window.window
         x_threshold = 0.075
         y_threshold = 0.075
+        mosaic_running = False
 
         while joyGetPosEx(0, self.p_info) == 0:
 
@@ -276,14 +277,27 @@ class WindowsJoystickDevice(device.Device):
             x = x if (abs(x) > x_threshold) else 0
             y = y if (abs(y) > y_threshold) else 0
 
+            #Uses joystick to move either the mosaic or the stage
             if abs(x) > 0 or abs(y) > 0:
+                #If the left bumper is pressed, the stage is moved. Also functions
+                #as a dead-man switch.
                 if self.button_states["lb"] == True:
                     interfaces.stageMover.moveRelative((-10*x, -10*y, 0), shouldBlock=False)
+                #If the left bumper isn't pressed, the mosaic is moved.
                 else:
-                    self.mosaic.canvas.dragView([x, y])
+                    self.mosaic.canvas.dragView([10*x, 10*y])
 
-
-            if self.button_states["a"] == True:
+            #Pressing the right bumper centers the window on the current position
+            if self.button_states["rb"] == True:
                 self.mosaic.centerCanvas()
+
+            #Pressing the start button starts and stops the mosaic
+            if self.button_states["start"] == True:
+                if mosaic_running == False:
+                    self.mosaic.generateMosaic()
+                    mosaic_running = True
+                elif mosaic_running == True:
+                    self.mosaic.exitMosaicLoop()
+                    mosaic_running = False
 
             time.sleep(0.05)
