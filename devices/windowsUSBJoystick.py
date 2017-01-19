@@ -234,6 +234,13 @@ class WindowsJoystickDevice(device.Device):
         x_threshold = 0.075
         y_threshold = 0.075
         multiplier = 1.1
+        movement_speed_mosaic = 10
+        movement_speed_stage = 10
+        #Note that these values are set arbirarily for the moment. In the future
+        #they should be defined by the physical limits of the motors which move
+        #the stage.
+        max_speed_stage = 100
+        min_speed_stage = 1
 
         while joyGetPosEx(0, self.p_info) == 0:
 
@@ -282,10 +289,10 @@ class WindowsJoystickDevice(device.Device):
                 #If the left bumper is pressed, the stage is moved. Also functions
                 #as a dead-man switch.
                 if self.button_states["lb"] == True:
-                    interfaces.stageMover.moveRelative((-10*x, -10*y, 0), shouldBlock=False)
+                    interfaces.stageMover.moveRelative((-movement_speed_stage*x, -movement_speed_stage*y, 0), shouldBlock=False)
                 #If the left bumper isn't pressed, the mosaic is moved.
                 else:
-                    self.mosaic.canvas.dragView([10*x, 10*y])
+                    self.mosaic.canvas.dragView([movement_speed_mosaic*x, movement_speed_mosaic*y])
 
             #Pressing the right bumper centers the window on the current position
             if self.button_states["rb"] == True:
@@ -302,5 +309,25 @@ class WindowsJoystickDevice(device.Device):
                 self.mosaic.canvas.multiplyZoom(multiplier)
             elif self.button_states['dpad_down'] == True:
                 self.mosaic.canvas.multiplyZoom(1/multiplier)
+
+            #Pressing left and right on the D-pad increases/decreases movement speed
+            if self.button_states["lb"] == True:
+                if self.button_states['dpad_left'] == True:
+                    movement_speed_stage *= multiplier
+                elif self.button_states['dpad_right'] == True:
+                    movement_speed_stage /= multiplier
+                #Checks implimented to make sure the stage doesn't move faster
+                #than it's physically capable of or slower than the discrete teeth
+                #of the gears will let it.
+                if movement_speed_stage > max_speed_stage:
+                    movement_speed_stage = max_speed_stage
+                if movement_speed_stage < min_speed_stage:
+                    movement_speed_stage = min_speed_stage
+            else:
+                if self.button_states['dpad_left'] == True:
+                    movement_speed_mosaic *= multiplier
+                elif self.button_states['dpad_right'] == True:
+                    movement_speed_mosaic /= multiplier
+
 
             time.sleep(0.05)
