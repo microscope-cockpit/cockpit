@@ -329,5 +329,8 @@ class WindowsJoystickDevice(device.Device):
                 elif self.button_states['dpad_right'] == True:
                     movement_speed_mosaic /= multiplier
 
+            #Mark sites with the A button
+            if self.button_states['a'] == True:
+                self.mosaic.saveSite()
 
             time.sleep(0.05)
