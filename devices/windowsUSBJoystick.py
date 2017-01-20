@@ -1,5 +1,6 @@
 """
 Copyright 2014-2015 Mick Phillips (mick.phillips at gmail dot com)
+and Nicholas Hall (nicholas.hall at dtc dot ox dot ac dot uk)
 
 Based on code by rdb released under the Unlicense (unlicense.org)
 Further reading about the WinMM Joystick API:
