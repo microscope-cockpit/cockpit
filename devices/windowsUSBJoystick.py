@@ -303,6 +303,12 @@ class WindowsJoystickDevice(device.Device):
                 self.mosaic.displayMosaicMenu()
                 time.sleep(0.5)
 
+            #Pressing the back button takes an image
+            if self.button_states["back"] == True:
+                interfaces.imager.takeImage()
+                self.mosaic.transferCameraImage()
+                time.sleep(0.5)
+
 
             #Pressing up and down on the D-pad zoom in/out respectively
             if self.button_states['dpad_up'] == True:
@@ -330,7 +336,7 @@ class WindowsJoystickDevice(device.Device):
                     movement_speed_mosaic /= multiplier
 
             #Mark sites with the A button
-            if self.button_states['a'] == True:
+            if self.button_states['thumbl'] == True:
                 self.mosaic.saveSite()
                 time.sleep(1)
 
