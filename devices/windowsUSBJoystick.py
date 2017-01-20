@@ -27,6 +27,8 @@ import device
 import events
 import interfaces.stageMover
 import gui.mosaic.window
+import gui.camera
+import depot
 
 #patch from David to stop it breaking when not on windows.
 import os
@@ -230,7 +232,8 @@ class WindowsJoystickDevice(device.Device):
         # Fetch new joystick data until it returns non-0 (that is, it has been unplugged)
         buttons_text = " "
         curPosition = interfaces.stageMover.getPosition()
-        self.mosaic=gui.mosaic.window.window
+        self.mosaic = gui.mosaic.window.window
+        self.camera = gui.camera
         x_threshold = 0.075
         y_threshold = 0.075
         multiplier = 1.1
@@ -241,6 +244,7 @@ class WindowsJoystickDevice(device.Device):
         #the stage.
         max_speed_stage = 100
         min_speed_stage = 1
+        cameras=depot.getHandlersOfType(depot.CAMERA)
 
         while joyGetPosEx(0, self.p_info) == 0:
 
@@ -335,9 +339,29 @@ class WindowsJoystickDevice(device.Device):
                 elif self.button_states['dpad_right'] == True:
                     movement_speed_mosaic /= multiplier
 
-            #Mark sites with the A button
+            #Mark sites by clicking the left analogue stick
             if self.button_states['thumbl'] == True:
                 self.mosaic.saveSite()
                 time.sleep(1)
+
+            #Turn on camera 1 with A button
+            if self.button_states["a"] == True:
+                cameras[0].toggleState()
+                time.sleep(0.5)
+
+            #Turn on camera 1 with A button
+            if self.button_states["b"] == True:
+                cameras[1].toggleState()
+                time.sleep(0.5)
+
+            #Turn on camera 1 with A button
+            if self.button_states["x"] == True:
+                cameras[2].toggleState()
+                time.sleep(0.5)
+
+            #Turn on camera 1 with A button
+            if self.button_states["y"] == True:
+                cameras[3].toggleState()
+                time.sleep(0.5)
 
             time.sleep(0.05)
