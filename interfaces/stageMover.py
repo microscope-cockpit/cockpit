@@ -8,16 +8,16 @@ from collections import namedtuple
 
 ## Stage movement threshold (previously a hard-coded value).
 # There can be problems when this doesn't match a corresponding threshold
-# the stage device code.  
+# the stage device code.
 #TODO:  This should be defined in only one place, either here,
 # in the stage code, or in a config file.
 STAGE_MIN_MOVEMENT = 0.3
 
 ## This module handles general stage motion: "go to this position", "move by
-# this delta", "remember this position", "go to this remembered position", 
-# etc. The cockpit deals with this module instead of speaking direction to 
-# StagePositionerHandlers. 
-# Several of the functions in this module accept an "axis" parameter. The 
+# this delta", "remember this position", "go to this remembered position",
+# etc. The cockpit deals with this module instead of speaking direction to
+# StagePositionerHandlers.
+# Several of the functions in this module accept an "axis" parameter. The
 # mapping is 0: X; 1: Y; 2: Z.
 
 ## Auto-incrementing unique value to mark each Site instance.
@@ -25,7 +25,7 @@ uniqueSiteIndex = 0
 
 
 ## A Site is a simple container class that represents a saved location
-# on the stage. 
+# on the stage.
 class Site:
     ## \param position 3D location (Numpy vector) of the Site.
     # \param group String describing the group the Site belongs to.
@@ -72,10 +72,10 @@ Primitive = namedtuple('Primitive', ['device', 'type', 'data'])
 
 
 ## This class provides an interface between the rest of the UI and the Devices
-# that handle moving the stage. 
+# that handle moving the stage.
 class StageMover:
     def __init__(self):
-        ## Maps axis to the handlers for that axis, sorted by their range of 
+        ## Maps axis to the handlers for that axis, sorted by their range of
         # motion.
         self.axisToHandlers = depot.getSortedStageMovers()
         ## Indicates which stage handler is currently under control.
@@ -92,7 +92,7 @@ class StageMover:
         for h in depot.getHandlersOfType(depot.STAGE_POSITIONER):
             ps = h.getPrimitives()
             if ps:
-                self.primitives.update(ps) 
+                self.primitives.update(ps)
         self.primitives.discard(None)
 
 
@@ -112,7 +112,7 @@ class StageMover:
     ## Internal function to go to the specified location (specified as a list
     # of (axis, position) tuples). Wait for the axes to stop moving, if
     # shouldBlock is true.
-    # \todo Assumes that the target position is within the range of motion of 
+    # \todo Assumes that the target position is within the range of motion of
     # the current handler.
     def _goToAxes(self, position, shouldBlock = False):
         waiters = []
@@ -157,11 +157,11 @@ def makeInitialPublications():
         for isMax in [0, 1]:
             events.publish("soft safety limit", axis, limits[isMax],
                     bool(isMax))
-        events.publish("stage step size", axis, 
+        events.publish("stage step size", axis,
                 mover.axisToHandlers[axis][mover.curHandlerIndex].getStepSize())
 
 
-## Various module-global functions for interacting with the objects in the 
+## Various module-global functions for interacting with the objects in the
 # Mover.
 
 def addPrimitive(*args):
@@ -178,8 +178,8 @@ def removePrimitivesByDevice(device):
 
 
 ## Move one step with the current active handler in the specified direction(s).
-# \param direction A tuple/list of length equal to the number of axes of 
-#        motion, where each element is the number of steps (positive or 
+# \param direction A tuple/list of length equal to the number of axes of
+#        motion, where each element is the number of steps (positive or
 #        negative) to take along that axis.
 def step(direction):
     for axis, sign in enumerate(direction):
@@ -221,9 +221,9 @@ def recenterFineMotion():
             handler.moveAbsolute(target)
             totalDelta += target - curPosition
         handlers[0].moveRelative(-totalDelta)
-            
 
-## Move to the specified position using the current handler. 
+
+## Move to the specified position using the current handler.
 def goTo(position, shouldBlock = False):
     if len(position) != len(mover.axisToHandlers.keys()):
         raise RuntimeError("Asked to go to position with wrong number of axes (%d != %d)" % (len(position), len(mover.axisToHandlers.keys())))
@@ -330,7 +330,7 @@ def loadSites(filename):
             saveSite(site)
 
 
-## Return the exact stage position, as the aggregate of all handlers' 
+## Return the exact stage position, as the aggregate of all handlers'
 # positions.
 def getPosition():
     result = []
@@ -351,7 +351,7 @@ def getPositionForAxis(axis):
 
 ## Return a list of (X, Y, Z) tuples indicating the positions for all
 # handlers we have. If there's an axis with more handlers than the others,
-# then those axes will have None instead of a position towards the 
+# then those axes will have None instead of a position towards the
 # end of the list.
 def getAllPositions():
     mostMovers = max(map(len, mover.axisToHandlers.values()))
@@ -363,7 +363,7 @@ def getAllPositions():
                 current[axis] = handlers[i].getPosition()
         result.append(tuple(current))
     return result
-    
+
 
 ## Return a (dX, dY, dZ) tuple of the current step sizes.
 # If there's no controller for a given axis under the current step index,
@@ -392,7 +392,7 @@ def getHardLimitsForAxis(axis):
         low, high = handler.getHardLimits()
         lowLimit += low
         highLimit += high
-    return (lowLimit, highLimit) 
+    return (lowLimit, highLimit)
 
 
 ## Repeat the above for each axis.
@@ -417,7 +417,7 @@ def getSoftLimitsForAxis(axis):
         low, high = handler.getSoftLimits()
         lowLimit += low
         highLimit += high
-    return (lowLimit, highLimit) 
+    return (lowLimit, highLimit)
 
 
 ## Repeat the above for each axis.
@@ -460,7 +460,7 @@ def setSoftMax(axis, value):
 # visit the selected sites (i.e. try to solve the Traveling Salesman problem).
 # This could, theoretically, behave worse than just taking the list in
 # its default order, so we do check the default list's travel time and
-# use it if it's superior, on the assumption that users will typically 
+# use it if it's superior, on the assumption that users will typically
 # select sites in some basically sane order.
 # \param baseOrder List of site IDs.
 def optimizeSiteOrder(baseOrder):
@@ -470,8 +470,8 @@ def optimizeSiteOrder(baseOrder):
     curPoint = baseOrder[0]
     remainingPoints = set(baseOrder)
 
-    # Calculate the travel time between two sites. Since we move 
-    # simultaneously in each axis, this is simply the maximum 
+    # Calculate the travel time between two sites. Since we move
+    # simultaneously in each axis, this is simply the maximum
     # distance along any given axis.
     def distance(a, b):
         p1 = mover.idToSite[a].position
@@ -499,7 +499,7 @@ def optimizeSiteOrder(baseOrder):
     simpleTourCost += distance(baseOrder[0], baseOrder[-1])
 
     if simpleTourCost < totalTourCost:
-        # Nearest-neighbor is worse than just going in the 
+        # Nearest-neighbor is worse than just going in the
         # user-specified order
         return baseOrder
     return pointsInOrder
