@@ -345,24 +345,12 @@ class WindowsJoystickDevice(device.Device):
                 self.mosaic.saveSite()
                 time.sleep(1)
 
-            #Turn on camera 1 with A button
-            if self.button_states["a"] == True:
-                cameras[0].toggleState()
-                time.sleep(0.5)
-
-            #Turn on camera 1 with A button
-            if self.button_states["b"] == True:
-                cameras[1].toggleState()
-                time.sleep(0.5)
-
-            #Turn on camera 1 with A button
-            if self.button_states["x"] == True:
-                cameras[2].toggleState()
-                time.sleep(0.5)
-
-            #Turn on camera 1 with A button
-            if self.button_states["y"] == True:
-                cameras[3].toggleState()
-                time.sleep(0.5)
+            #Toggle cameras
+            i=0
+            for camera in cameras:
+                if self.button_states[button_names[i]] == True:
+                    camera.toggleState()
+                    time.sleep(0.5)
+                i = i + 1
 
             time.sleep(0.05)
