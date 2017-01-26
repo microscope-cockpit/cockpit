@@ -74,6 +74,7 @@ class DummyCameraDevice(device.Device):
         # Simulate typical camera-init. delay.
         time.sleep(1)
         self.nameToIsReady[name] = isOn
+        return isOn
 
 
     ## Get the size, in pixels, of the image this camera generates.
