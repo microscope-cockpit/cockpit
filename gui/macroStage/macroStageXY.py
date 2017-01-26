@@ -236,7 +236,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             delta = motorPos - self.prevStagePosition[:2]
 
             if sum(numpy.fabs(delta)) > macroStageBase.MIN_DELTA_TO_DISPLAY:
-                self.drawArrow(motorPos- self.offset[:2], delta, (0, 0, 1),
+                self.drawArrow((motorPos[0]- self.offset[0],
+                                motorPos[1]+self.offset[1]), delta, (0, 0, 1),
                         arrowSize = self.maxExtent * .1,
                         arrowHeadSize = self.maxExtent * .025)
                 glLineWidth(1)
