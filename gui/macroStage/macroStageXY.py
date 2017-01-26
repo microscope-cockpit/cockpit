@@ -70,6 +70,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         wx.EVT_RIGHT_UP(self, self.OnRightClick)
         wx.EVT_RIGHT_DCLICK(self, self.OnRightDoubleClick)
         events.subscribe("soft safety limit", self.onSafetyChange)
+        events.subscribe('objective change', self.onObjectiveChange)
         self.SetToolTipString("Left double-click to move the stage. " +
                 "Right click for gotoXYZ and double-click to toggle displaying of mosaic " +
                 "tiles.")
@@ -116,56 +117,65 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             hardLimits = interfaces.stageMover.getHardLimits()[:2]
             # Rearrange limits to (x, y) tuples.
             hardLimits = zip(hardLimits[0], hardLimits[1])
-            glLineWidth(4)
-            glEnable(GL_LINE_STIPPLE)
-            glLineStipple(3, 0xAAAA)
-            glColor3f(0, 0, 1)
-            glBegin(GL_LINE_LOOP)
-            for (xIndex, yIndex) in squareOffsets:
-                self.scaledVertex(hardLimits[xIndex][0],
-                        hardLimits[yIndex][1])
-            glEnd()
-            glDisable(GL_LINE_STIPPLE)
+            #Loop over objective offsets to draw limist in multiple colours.
+            for obj in self.listObj:
+                offset=self.objective.nameToOffset.get(obj)
+                colour=self.objective.nameToColour.get(obj)
+                glLineWidth(4)
+                if obj is not self.objective.curObjective:
+                    colour = (min(1,colour[0]+0.7),min(1,colour[1]+0.7),
+                              min(1,colour[2]+0.7))
+                    glLineWidth(2)
+                glEnable(GL_LINE_STIPPLE)
+                glLineStipple(3, 0xAAAA)
+                glColor3f(*colour)
+                glBegin(GL_LINE_LOOP)
+                for (xIndex, yIndex) in squareOffsets:
+                    self.scaledVertex(hardLimits[xIndex][0]-offset[0],
+                                      hardLimits[yIndex][1]+offset[1])
+                glEnd()
+                glDisable(GL_LINE_STIPPLE)
 
-            # Draw soft stage motion limits -- a dotted box, solid black
-            # corners, and coordinates. If we're currently setting safeties,
-            # then the second corner is the current mouse position.
-            safeties = interfaces.stageMover.getSoftLimits()[:2]
-            x1, x2 = safeties[0]
-            y1, y2 = safeties[1]
-            if self.firstSafetyMousePos is not None:
-                x1, y1 = self.firstSafetyMousePos
-                x2, y2 = self.lastMousePos
-                if x1 > x2:
-                    x1, x2 = x2, x1
-                if y1 > y2:
-                    y1, y2 = y2, y1
-            softLimits = [(x1, y1), (x2, y2)]
+                # Draw soft stage motion limits -- a dotted box, solid black
+                # corners, and coordinates. If we're currently setting safeties,
+                # then the second corner is the current mouse position.
+                safeties = interfaces.stageMover.getSoftLimits()[:2]
+                x1, x2 = safeties[0]
+                y1, y2 = safeties[1]
+                if self.firstSafetyMousePos is not None:
+                    x1, y1 = self.firstSafetyMousePos
+                    x2, y2 = self.lastMousePos
+                    if x1 > x2:
+                        x1, x2 = x2, x1
+                    if y1 > y2:
+                        y1, y2 = y2, y1
+                softLimits = [(x1, y1), (x2, y2)]
 
-            # First the dotted green box.
-            glEnable(GL_LINE_STIPPLE)
-            glLineWidth(2)
-            glLineStipple(3, 0x5555)
-            glColor3f(0, 1, 0)
-            glBegin(GL_LINE_LOOP)
-            for (x, y) in [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]:
-                self.scaledVertex(x, y)
-            glEnd()
-            glDisable(GL_LINE_STIPPLE)
+                # First the dotted green box.
+                glEnable(GL_LINE_STIPPLE)
+                glLineWidth(2)
+                glLineStipple(3, 0x5555)
+                glColor3f(0, 1, 0)
+                glBegin(GL_LINE_LOOP)
+                for (x, y) in [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]:
+                    self.scaledVertex(x-offset[0], y+offset[1])
+                glEnd()
+                glDisable(GL_LINE_STIPPLE)
 
-            # Now the corners.
-            glColor3f(0, 0, 0)
-            glBegin(GL_LINES)
-            for (vx, vy), (dx, dy) in [
-                    (softLimits[0], (self.maxExtent * .1, 0)),
-                    (softLimits[0], (0, self.maxExtent * .1)),
-                    (softLimits[1], (-self.maxExtent * .1, 0)),
-                    (softLimits[1], (0, -self.maxExtent * .1))]:
-                secondVertex = [vx + dx, vy + dy]
-                self.scaledVertex(vx, vy)
-                self.scaledVertex(secondVertex[0], secondVertex[1])
-            glEnd()
-            glLineWidth(1)
+                # Now the corners.
+                glColor3f(0, 0, 0)
+                glBegin(GL_LINES)
+                for (vx, vy), (dx, dy) in [
+                        (softLimits[0], (self.maxExtent * .1, 0)),
+                        (softLimits[0], (0, self.maxExtent * .1)),
+                        (softLimits[1], (-self.maxExtent * .1, 0)),
+                        (softLimits[1], (0, -self.maxExtent * .1))]:
+                    secondVertex = [vx + dx, vy + dy]
+                    self.scaledVertex(vx-offset[0], vy+offset[1])
+                    self.scaledVertex(secondVertex[0]-offset[0],
+                                      secondVertex[1]+offset[1])
+                glEnd()
+                glLineWidth(1)
             # Now the coordinates. Only draw them if the soft limits aren't
             # the hard limits, to avoid clutter.
             hardLimits = interfaces.stageMover.getHardLimits()[:2]
@@ -192,15 +202,21 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                     # rectangle: x0, y0, width, height
                     self.drawScaledRectangle(*p.data)
             glDisable(GL_LINE_STIPPLE)
-
+            #Draw possibloe stage positions for current objective
+            obj = self.objective.curObjective
+            offset=self.objective.nameToOffset.get(obj)
+            colour=self.objective.nameToColour.get(obj)
+            glLineWidth(2)
             # Draw stage position
             motorPos = self.curStagePosition[:2]
             squareSize = self.maxExtent * .025
-            glColor3f(1, 0, 0)
+            glColor3f(*colour)
             glBegin(GL_LINE_LOOP)
             for (x, y) in squareOffsets:
-                self.scaledVertex(motorPos[0] + squareSize * x - squareSize / 2,
-                                  motorPos[1] + squareSize * y - squareSize / 2)
+                self.scaledVertex(motorPos[0]-offset[0] +
+                                  squareSize * x - squareSize / 2,
+                                  motorPos[1]+offset[1] +
+                                  squareSize * y - squareSize / 2)
             glEnd()
 
             # Draw motion crosshairs
@@ -220,7 +236,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             delta = motorPos - self.prevStagePosition[:2]
 
             if sum(numpy.fabs(delta)) > macroStageBase.MIN_DELTA_TO_DISPLAY:
-                self.drawArrow(motorPos, delta, (0, 0, 1),
+                self.drawArrow((motorPos[0]- self.offset[0],
+                                motorPos[1]+self.offset[1]), delta, (0, 0, 1),
                         arrowSize = self.maxExtent * .1,
                         arrowHeadSize = self.maxExtent * .025)
                 glLineWidth(1)
@@ -229,7 +246,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             # so ensure that at least one pixel in the middle
             # gets drawn.
             glBegin(GL_POINTS)
-            self.scaledVertex(motorPos[0], motorPos[1])
+            self.scaledVertex(motorPos[0]-self.offset[0],
+                              motorPos[1]+self.offset[1])
             glEnd()
 
             # Draw scale bar
@@ -374,11 +392,16 @@ class MacroStageXY(macroStageBase.MacroStageBase):
     def remapClick(self, clickLoc):
         x = float(self.width - clickLoc[0]) / self.width * (self.maxX - self.minX) + self.minX
         y = float(self.height - clickLoc[1]) / self.height * (self.maxY - self.minY) + self.minY
-        return [x, y]
+        return [x+self.offset[0], y-self.offset[1]]
 
 
     ## Switch mode so that clicking sets the safeties
     def setSafeties(self, event = None):
         self.amSettingSafeties = True
+
+    ## Refresh display on objective change
+    def onObjectiveChange(self, name, pixelSize, transform, offset, **kwargs):
+        self.offset = offset
+        self.Refresh()
 
 
