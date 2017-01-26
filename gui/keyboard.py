@@ -15,13 +15,13 @@ def setKeyboardHandlers(window):
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_SUBTRACT, 6906), # Recentre fine motion
 
         # Move the stage with the keypad
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD1, 6311), # Z down
+        (wx.ACCEL_NORMAL, wx.WXK_DOWN, 6311), # Z down
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD2, 6312), # Y down
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD3, 6313), # Decrease delta
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD4, 6314), # X up
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD5, 6315), # Stop motion
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD6, 6316), # X down
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD7, 6317), # Z up
+        (wx.ACCEL_NORMAL, wx.WXK_UP, 6317), # Z up
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD8, 6318), # Y up
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD9, 6319), # Increase delta
 
@@ -112,8 +112,15 @@ def martialWindows(parent):
         subMenu = wx.Menu()
         subMenu.Append(menuId, "Show/Hide")
         wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: (window.Restore() if window.IsIconized() 
-                                                else window.Show(not window.IsShown()) ) )
+                lambda event, window = window: ((window.Restore() and
+                    (util.userConfig.setValue('windowState'+window.GetTitle(),
+                                               1,isGlobal=False)))
+                                                if window.IsIconized() 
+                                                else ((window.Show(not window.IsShown()) ) and (util.userConfig.setValue('windowState'+window.GetTitle(),0,isGlobal=False)))))
+        menuId += 1
+        subMenu.Append(menuId, "Move to mouse")
+        wx.EVT_MENU(parent, menuId,
+                lambda event, window = window: window.SetPosition(wx.GetMousePosition()))
         menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.

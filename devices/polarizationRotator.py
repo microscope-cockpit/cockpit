@@ -113,7 +113,7 @@ class PolarizationDevice(device.Device):
             wl, index = action
             # Make sure wavelength is in the calibration table.
             if wl not in self.voltages.keys():
-                if 'default' in self.voltagse.keys():
+                if 'default' in self.voltages.keys():
                     # If not, try to drop to default values.
                     wl = 'default'
                 else:

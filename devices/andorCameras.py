@@ -165,12 +165,12 @@ class AndorCameraDevice(camera.CameraDevice):
                 self.object.make_safe()
                 self.listener.disconnect()
                 self.updateUI()
-                return
+                return self.enabled
 
         # Enable the camera
         if self.enabled:
             # Nothing to do.
-            return
+            return self.enabled
 
         # We don't want fast triggers or frame transfer outside of experiments.
         self.settings['frameTransfer'] = False
@@ -196,6 +196,7 @@ class AndorCameraDevice(camera.CameraDevice):
             self.amplifierModes = self.object.get_amplifier_modes()
         # Update the UI.
         self.updateUI()
+        return self.enabled
 
 
     def getExposureTime(self, name, isExact):

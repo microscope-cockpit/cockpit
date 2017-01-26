@@ -4,6 +4,7 @@
 # the GUI.
 
 import os
+import sys
 import threading
 import traceback
 import wx
@@ -15,7 +16,7 @@ if (distutils.version.LooseVersion(Pyro4.__version__) >=
     Pyro4.config.SERIALIZERS_ACCEPTED.discard('serpent')
     Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
     Pyro4.config.SERIALIZER = 'pickle'
-
+    Pyro4.config.REQUIRE_EXPOSE = False
 
 # We need these first to ensure that we can log failures during startup.
 import depot
@@ -117,24 +118,35 @@ class CockpitApp(wx.App):
             self.secondaryWindows = [w for w in wx.GetTopLevelWindows() if w not in self.primaryWindows]
 
             for w in self.secondaryWindows:
-                # Close secondary windows rather than kill them.
+                #bind close event to just hide for these windows
                 w.Bind(wx.EVT_CLOSE, lambda event: w.Hide())
-                # Hide the window until it is called up.
-                w.Hide()
             
             # Now that the UI exists, we don't need this any more.
         	# Sometimes, status doesn't make it into the list, so test.
             if status in self.primaryWindows:
-            	self.primaryWindows.remove(status)
+                self.primaryWindows.remove(status)
             status.Destroy()
 
             util.user.login(frame)
             util.logger.log.debug("Login complete as %s", util.user.getUsername())
 
+            #now loop over secondary windows open and closeing as needed.
+            for w in self.secondaryWindows:
+                # get saved state of secondary windows.
+                title=w.GetTitle()
+                windowstate=util.userConfig.getValue('windowState'+title,
+                                                isGlobal = False,
+                                                default= 0)
+                #if they were hidden then return them to hidden
+                if (windowstate is 0): 
+                    # Hide the window until it is called up.
+                    w.Hide()
+                
+            
             depot.makeInitialPublications()
             interfaces.makeInitialPublications()
             events.publish('cockpit initialization complete')
-            
+            self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
             return True
         except Exception, e:
             wx.MessageDialog(None,
@@ -147,6 +159,14 @@ class CockpitApp(wx.App):
             util.logger.log.error(traceback.format_exc())
             return False
 
+    def onActivateApp(self, event):
+        if not event.Active:
+            return
+        top = wx.GetApp().GetTopWindow()
+        windows = top.GetChildren()
+        for w in windows:
+            if w.IsShown(): w.Raise()
+        top.Raise()
 
     ## Startup failed; log the failure information and exit.
     def onStartupFail(self, *args):

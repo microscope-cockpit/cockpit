@@ -11,9 +11,7 @@ import interfaces.imager
 ## Available trigger modes for triggering the camera.
 # Trigger at the end of an exposure; trigger before the exposure;
 # trigger for the duration of the exposure.
-(TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
-
-
+(TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFT, TRIGGER_DURATION_PSEUDOGLOBAL) = range(5)
 
 ## This handler is for cameras, of course. Cameras provide images to the 
 # microscope, and are assumed to be usable during experiments. 
@@ -40,12 +38,15 @@ class CameraHandler(deviceHandler.DeviceHandler):
     # - Optional: getMinExposureTime(name): returns the minimum exposure time
     #   the camera is capable of performing, in milliseconds. If not available,
     #   0ms is used.
-    # \param exposureMode One of TRIGGER_AFTER, TRIGGER_BEFORE, or
-    #   TRIGGER_DURATION. The first two are for external-trigger cameras, which
-    #   may be frame-transfer (trigger at end of exposure, and expose
+    # \param exposureMode One of TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION
+    #   or TRIGGER_DURATION_PSEUDOGLOBAL. The first two are for external-trigger
+    #   cameras, which may be frame-transfer (trigger at end of exposure, and expose
     #   continuously) or not (trigger at beginning of exposure and expose for
-    #   a pre-configured duration). The last is for external-exposure cameras,
+    #   a pre-configured duration). The last two are for external-exposure cameras,
     #   which expose for as long as you tell them to, based on the TTL line.
+    #   The TRIGGER_DURATION_PSEUDOGLOBAL is for using the rolling shutter and we
+    #   only want to excite the sample in the time that all of the pixels are
+    #   exposed.
     # \param minExposureTime Minimum exposure duration, in milliseconds.
     #   Typically only applicable if doExperimentsExposeContinuously is True.
     
@@ -67,7 +68,25 @@ class CameraHandler(deviceHandler.DeviceHandler):
         ## True if the camera is currently receiving images.
         self.isEnabled = False
         events.subscribe('drawer change', self.onDrawerChange)
-        self.exposureMode = exposureMode
+        self._exposureMode = exposureMode
+
+    @property
+    def exposureMode(self):
+        return self._exposureMode
+
+    @exposureMode.setter
+    def exposureMode(self, triggerType):
+        """Set exposure mode.
+
+        If the device set a softTrigger handler, subscribe to "dummy take image"
+        if exposureMode is TRIGGER_SOFT, otherwise unsubscribe."""
+        self._exposureMode = triggerType
+        softTrigger = self.callbacks.get('softTrigger', None)
+        if softTrigger:
+            func = (events.subscribe, events.unsubscribe)[softTrigger == TRIGGER_SOFT]
+            func("dummy take image", softTrigger)
+
+
 
 
     ## Update some of our properties based on the new drawer.
@@ -86,8 +105,9 @@ class CameraHandler(deviceHandler.DeviceHandler):
     @interfaces.imager.pauseVideo
     @reset_cache
     def setEnabled(self, shouldEnable = True):
-        self.callbacks['setEnabled'](self.name, shouldEnable)
-        self.isEnabled = shouldEnable
+        self.isEnabled = self.callbacks['setEnabled'](self.name, shouldEnable)
+        if self.isEnabled != shouldEnable:
+            raise Exception("Problem enabling device with handler %s" % self)
         # Subscribe / unsubscribe to the prepare-for-experiment event.
         func = [events.unsubscribe, events.subscribe][shouldEnable]
         func('prepare for experiment', self.prepareForExperiment)

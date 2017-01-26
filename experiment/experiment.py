@@ -13,28 +13,27 @@ import threading
 import time
 import wx
 
-
 TIME_FORMAT_STR = '%Y-%m-%d %H:%M:%S'
 
 ## Purely for debugging purposes, a copy of the last Experiment that was
 # executed.
 lastExperiment = None
 
-
 ## A track of files generated in previous experiments, so they can be
 # viewed in the UI. A list of lists, since each experiment can generate
 # multiple files.
 generatedFilenames = []
 
+## This class is the root class for generating and running experiments.
 
-## This class is the root class for generating and running experiments. 
 # You should make a subclass of this class to implement a specific experiment
 # type.
 class Experiment:
     ## This constructor accepts certain parameters that will be shared
     # by all experiment types.
     # \param numReps Number of repetitions of the experiment to perform.
-    # \param repDuration Amount of time to spend on each repetition, or 
+    # \param repDuration Amount of time to spend on each repetition, or
+
     #        0 to spend as little as possible. In seconds.
     # \param zPositioner StagePositioner handler to use to move in Z.
     # \param zBottom Altitude of the stage at the bottom of the stack.
@@ -46,13 +45,17 @@ class Experiment:
     #        tuples describing how to take images.
     # \param otherHandlers List of miscellaneous handlers that are involved in
     #        the experiment.
-    # \param metadata String of extra metadata to insert into the "titles" 
+    # \param metadata String of extra metadata to insert into the "titles"
+
     #        section of the saved file.
     # \param savePath Path to save image data to. If this isn't provided then
     #        no data will be saved.
-    def __init__(self, numReps, repDuration, 
-            zPositioner, zBottom, zHeight, sliceHeight, 
-            cameras, lights, exposureSettings, otherHandlers = [], 
+    def __init__(self, numReps, repDuration,
+
+            zPositioner, zBottom, zHeight, sliceHeight,
+
+            cameras, lights, exposureSettings, otherHandlers = [],
+
             metadata = '', savePath = ''):
         self.numReps = numReps
         self.repDuration = repDuration
@@ -86,9 +89,12 @@ class Experiment:
         ## Maps camera handlers to their minimum time between exposures.
         # Must be populated after exposure time has been set on camera.
         self.cameraToReadoutTime = {}
-        ## Maps cameras to whether or not they need to be blanked before they 
-        # next take an image (because they expose continuously and other 
-        # cameras have taken images while they were waiting). 
+        ## Maps cameras to whether or not they need to be blanked before they
+
+        # next take an image (because they expose continuously and other
+
+        # cameras have taken images while they were waiting).
+
         self.cameraToIsReady = dict([(c, True) for c in self.cameras])
         ## Maps camera handlers to how many images we'll be taking with that
         # camera.
@@ -108,11 +114,9 @@ class Experiment:
         # when setting the "titles" in the MRC header.
         self.lightToExposureTime = dict([(l, set()) for l in self.lights])
 
-
     ## Cancel the experiment, if it's running.
     def onAbort(self):
         self.shouldAbort = True
-
 
     ## Run the experiment. We spin off the actual execution and cleanup
     # into separate threads.
@@ -123,12 +127,12 @@ class Experiment:
                     ("The file:\n%s\nalready exists. " % self.savePath) +
                     "Are you sure you want to overwrite it?"):
                 return
-        
+
         global lastExperiment
         lastExperiment = self
         self.sanityCheckEnvironment()
         self.prepareHandlers()
-        
+
         self.cameraToReadoutTime = dict([(c, c.getTimeBetweenExposures(isExact = True)) for c in self.cameras])
         for camera, readTime in self.cameraToReadoutTime.iteritems():
             if type(readTime) is not decimal.Decimal:
@@ -138,9 +142,9 @@ class Experiment:
         for camera in self.cameras:
             if camera.getExposureMode() == handlers.camera.TRIGGER_AFTER:
                 self.cameraToIsReady[camera] = False
-       
+
         self.createValidActionTable()
-       
+
         self.lastMinuteActions()
 
         runThread = threading.Thread(target = self.execute)
@@ -148,19 +152,20 @@ class Experiment:
         saveThread = None
         if self.savePath and max(self.cameraToImageCount.values()):
             # This experiment will generate images, which need to be saved.
-            saver = dataSaver.DataSaver(self.cameras, self.numReps, 
-                    self.cameraToImageCount, self.cameraToIgnoredImageIndices, 
+            saver = dataSaver.DataSaver(self.cameras, self.numReps,
+
+                    self.cameraToImageCount, self.cameraToIgnoredImageIndices,
+
                     runThread, self.savePath,
                     self.sliceHeight, self.generateTitles())
             saver.startCollecting()
             saveThread = threading.Thread(target = saver.executeAndSave)
             saveThread.start()
             generatedFilenames.append(saver.getFilenames())
-            
+
         runThread.start()
         # Start up a thread to clean up after the experiment finishes.
         threading.Thread(target = self.cleanup, args = [runThread, saveThread]).start()
-
 
     ## Create an ActionTable by calling self.generateActions, and give our
     # Devices a chance to sign off on it.
@@ -171,12 +176,10 @@ class Experiment:
         self.table.sort()
         self.table.enforcePositiveTimepoints()
 
-
     ## Perform any necessary sanity checks to ensure that the environment is
     # set up properly. Raise an exception if anything is wrong.
     def sanityCheckEnvironment(self):
         pass
-
 
     ## Prepare all of the handlers needed in the experiment so that they're
     # in the correct mode.
@@ -195,25 +198,21 @@ class Experiment:
             exposureTime = float(self.getExposureTimeForCamera(camera))
             camera.setExposureTime(exposureTime)
 
-
     ## Allow devices to examine the ActionTable we will be running, and modify
     # it if necessary.
     def examineActions(self):
         for handler in depot.getHandlersOfType(depot.EXECUTOR):
             handler.examineActions(self.table)
 
-
     ## Do any last-minute actions immediately before starting the experiment.
     # Return False if anything goes wrong.
     def lastMinuteActions(self):
         pass
 
-
     ## Generate an ActionTable of events to perform during the experiment.
     # Return the ActionTable instance.
     def generateActions(self):
         return None
-
 
     ## Run the experiment. Return True if it was successful.
     def execute(self):
@@ -249,8 +248,10 @@ class Experiment:
                 elif bestLen == 0:
                     raise RuntimeError("Found a line that no executor could handle: %s" % str(self.table.actions[curIndex]))
                 util.logger.log.warn("Handing %d lines to %s with %d reps at %.2f" % (bestLen, best, numReps, time.time()))
-                events.executeAndWaitFor('experiment execution', 
-                        best.executeTable, self.table, curIndex, 
+                events.executeAndWaitFor('experiment execution',
+
+                        best.executeTable, self.table, curIndex,
+
                         curIndex + bestLen, numReps, repDuration)
                 curIndex += bestLen
             if shouldStop:
@@ -266,7 +267,6 @@ class Experiment:
         time.sleep(1.)
         util.logger.log.warn("Experiment.execute completed.")
         return True
-
 
     ## Wait for the provided thread(s) to finish, then clean up our handlers.
     def cleanup(self, runThread = None, saveThread = None):
@@ -290,7 +290,6 @@ class Experiment:
         # to pile up and then the GC has more work to do, which can interfere
         # with future experiments.
         gc.collect()
-        
 
     ## Generate the "titles" that provide extra miscellaneous information
     # about the experiment. These are part of the MRC file format spec:
@@ -308,7 +307,7 @@ class Experiment:
             for filterHandler in filters:
                 if filterHandler.getWavelength() == wavelength:
                     typeToHandlers[depot.LIGHT_FILTER].append(filterHandler)
-                    
+
         for handler in self.allHandlers:
             # We don't care about stage positioners because we always include
             # the complete stage position anyway.
@@ -327,7 +326,7 @@ class Experiment:
             substring = self.metadata[i * 80 : (i + 1) * 80]
             if substring:
                 titles.append(substring)
-        
+
         for deviceType, handlers in typeToHandlers.iteritems():
             handlers = sorted(handlers, key = lambda a: a.name)
             entries = []
@@ -341,7 +340,8 @@ class Experiment:
             if entries:
                 entry = "[%s: %s]" % (deviceType, ';'.join(entries))
                 while len(entry) > 80:
-                    # Must split it across lines. 
+                    # Must split it across lines.
+
                     # \todo For now doing this in an optimally-space-saving
                     # method that will result in ugly titles since we split
                     # lines in the middle of a word.
@@ -352,22 +352,32 @@ class Experiment:
             raise RuntimeError("Have too much miscellaneous information to fit into the \"titles\" section of the MRC file (max 10 lines). Lines are:\n%s" % "\n".join(titles))
         return titles
 
-
     ## Add an exposure to the provided ActionTable. We're provided with the
     # cameras and lights to use for the exposure, as well as how long to
     # expose each light for and when we're allowed to start. We need to
     # enforce that all of the cameras are ready to go before we trigger them.
     # We also need to enforce that any frame-transer cameras have not seen any
     # light since the last time they were blanked.
-    # \param lightTimePairs List of (light, exposure time) tuples 
-    # describing how long to expose each light for. 
+    # \param lightTimePairs List of (light, exposure time) tuples
+
+    #        describing how long to expose each light for.
+
+    # \param pseudoGlobalExposure Boolean for, in the case of using a rolling
+
+    #        shutter, excite with the light only during the time all the pixels are
+    #        exposed.
+    # \param previousMovementTime This is the time used for the z movement
+    #        so we can take advantage of this time to start exposing the camera
     # \return The time at which all exposures are complete.
-    def expose(self, curTime, cameras, lightTimePairs, table):
+    def expose(self, curTime, cameras, lightTimePairs, table, pseudoGlobalExposure = False, previousMovementTime = 0):
         # First, determine which cameras are not ready to be exposed, because
-        # they may have seen light they weren't supposed to see (due to 
+        # they may have seen light they weren't supposed to see (due to
+
         # bleedthrough from other cameras' exposures). These need
-        # to be triggered (and we need to record that we want to throw away 
-        # those images) before we can proceed with the real exposure. 
+        # to be triggered (and we need to record that we want to throw away
+
+        # those images) before we can proceed with the real exposure.
+
         camsToReset = set()
         for camera in cameras:
             if not self.cameraToIsReady[camera]:
@@ -382,6 +392,9 @@ class Experiment:
         # Adjust the exposure start based on when the cameras are ready.
         for camera in cameras:
             camExposureReadyTime = self.getTimeWhenCameraCanExpose(table, camera)
+            # we add the readout time to get when the light should be trigger to
+            # obtain pseudo global exposure
+            camPseudoGlobalReadyTime = camExposureReadyTime + self.cameraToReadoutTime[camera]
             exposureStartTime = max(exposureStartTime, camExposureReadyTime)
 
         # Determine the maximum exposure time, which depends on our light
@@ -394,7 +407,8 @@ class Experiment:
         # into account for when the exposure can end. Additionally, if they
         # are frame-transfer cameras, then we need to adjust maxExposureTime
         # to ensure that our triggering of the camera does not come too soon
-        # (while it is still reading out the previous frame). 
+        # (while it is still reading out the previous frame).
+
         for camera in cameras:
             maxExposureTime = max(maxExposureTime,
                     camera.getMinExposureTime(isExact = True))
@@ -423,7 +437,8 @@ class Experiment:
 
         # Trigger the cameras. Keep track of which cameras we *aren't* using
         # here; if they are continuous-exposure cameras, then they may have
-        # seen light that they shouldn't have, and need to be invalidated. 
+        # seen light that they shouldn't have, and need to be invalidated.
+
         usedCams = set()
         for camera in cameras:
             usedCams.add(camera)
@@ -432,8 +447,12 @@ class Experiment:
                 table.addToggle(exposureEndTime, camera)
             elif mode == handlers.camera.TRIGGER_DURATION:
                 table.addAction(exposureStartTime, camera, True)
-                table.addAction(exposureEndTime, camera,
-                        False)
+                table.addAction(exposureEndTime, camera, False)
+            elif mode == handlers.camera.TRIGGER_DURATION_PSEUDOGLOBAL:
+                # We added some security time to the readout time that we have to remove now
+                cameraExposureStartTime = exposureStartTime - self.cameraToReadoutTime[camera] - decimal.Decimal(0.005)
+                table.addAction(cameraExposureStartTime, camera, True)
+                table.addAction(exposureEndTime, camera, False)
             else: # TRIGGER_BEFORE case.
                 table.addToggle(exposureStartTime, camera)
             self.cameraToImageCount[camera] += 1
@@ -443,9 +462,8 @@ class Experiment:
                 # Camera is a continuous-exposure/frame-transfer camera
                 # and therefore saw light it shouldn't have; invalidate it.
                 self.cameraToIsReady[camera] = False
-                
-        return exposureEndTime
 
+        return exposureEndTime
 
     ## Given a set of cameras and a time, trigger the cameras and record that
     # we want to throw away the resulting image. This blanks the camera
@@ -459,7 +477,8 @@ class Experiment:
             # maximum of the min exposure time and the current exposure time.
             # \todo Is it possible for getExposureTime() to be less than
             # getMinExposureTime()? That would be a bug, right?
-            minExposureTime = max(decimal.Decimal('.1'), 
+            minExposureTime = max(decimal.Decimal('.1'),
+
                     camera.getMinExposureTime(isExact = True),
                     camera.getExposureTime(isExact = True))
             exposureMode = camera.getExposureMode()
@@ -475,7 +494,6 @@ class Experiment:
             self.cameraToIgnoredImageIndices[camera].add(self.cameraToImageCount[camera])
             self.cameraToIsReady[camera] = True
         return resetEndTime + decimal.Decimal('1e-6')
-
 
     ## Given a camera handle, return the next time that it will be safe
     # to start an exposure with that camera, based on its last trigger time,
@@ -506,7 +524,6 @@ class Experiment:
         nextUseTime += self.cameraToReadoutTime[camera] + decimal.Decimal(0.1)
         return nextUseTime
 
-
     ## Return a calculated exposure time for the specified camera handler,
     # based on our exposure settings.
     def getExposureTimeForCamera(self, camera):
@@ -515,8 +532,6 @@ class Experiment:
             if camera in cameras and lightTimePairs:
                 exposureTime = max(exposureTime, max(lightTimePairs, key = lambda a: a[1])[1])
         return exposureTime
-
-
 
 ## Return a list of the files generated by the most recent experiment.
 def getLastFilenames():

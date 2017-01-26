@@ -165,6 +165,8 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
 
     ## Update our laser power display.
     def updateDisplay(self):
+        #Publish a power update event
+        events.publish('laser power update',self)
         # Show current power on the text display, if it exists.
         if self.powerSetPoint and self.curPower:
             matched = 0.95*self.powerSetPoint < self.curPower < 1.05*self.powerSetPoint

@@ -1,5 +1,6 @@
 """
 Copyright 2014-2015 Mick Phillips (mick.phillips at gmail dot com)
+and Nicholas Hall (nicholas.hall at dtc dot ox dot ac dot uk)
 
 Based on code by rdb released under the Unlicense (unlicense.org)
 Further reading about the WinMM Joystick API:
@@ -26,8 +27,11 @@ import threading
 import device
 import events
 import interfaces.stageMover
+import gui.mosaic.window
+import gui.camera
+import depot
 
-#patch from David to stop it breaking when not on windows. 
+#patch from David to stop it breaking when not on windows.
 import os
 if os.name is 'nt':
     import _winreg as winreg
@@ -72,7 +76,7 @@ JOY_USEDEADZONE = 0x800
 JOY_RETURNALL = JOY_RETURNX | JOY_RETURNY | JOY_RETURNZ | JOY_RETURNR | JOY_RETURNU | JOY_RETURNV | JOY_RETURNPOV | JOY_RETURNBUTTONS
 
 # This is the mapping for my XBox 360 controller.
-button_names = ['a', 'b', 'x', 'y', 'tl', 'tr', 'back', 'start', 'thumbl', 'thumbr']
+button_names = ['a', 'b', 'x', 'y', 'lb', 'rb', 'back', 'start', 'thumbl', 'thumbr']
 povbtn_names = ['dpad_up', 'dpad_right', 'dpad_down', 'dpad_left']
 
 # Define some structures from WinMM that we will use in function calls.
@@ -137,13 +141,30 @@ class WindowsJoystickDevice(device.Device):
         self.priority = 100
         # Get the number of supported devices (usually 16).
         self.num_devs = joyGetNumDevs()
+        if self.num_devs == 0:
+            print("Joystick driver not loaded.")
+            #drop out of driver as we have no joystick (maybe not windows?)
+            return
+
         # Number of the joystick to open.
         joy_id = 0
         # Check if the joystick is plugged in.
         self.info = JOYINFO()
         self.p_info = ctypes.pointer(self.info)
+
+        if joyGetPos(0, self.p_info) != 0:
+            print("Joystick %d not plugged in." % (joy_id + 1))
+
         # Get device capabilities.
         self.caps = JOYCAPS()
+        if joyGetDevCaps(joy_id, ctypes.pointer(self.caps),
+                         ctypes.sizeof(JOYCAPS)) != 0:
+
+            print("Failed to get device capabilities.")
+
+        print "Driver name:", self.caps.szPname
+
+
         # Fetch the name from registry.
         self.key = None
         if len(self.caps.szRegKey) > 0:
@@ -193,29 +214,41 @@ class WindowsJoystickDevice(device.Device):
             pass
 
     def onStageMoved(self, axis, target):
-        self.enable_read = False
-        
+        #self.enable_read = False
+        pass
+
 
     def onStageStopped(self, axis):
         self.enable_read = True
-        
+
 
     def start(self):
         if (self.num_devs >0):
             self.joystickThread.start()
         else:
             pass
-        
+
 
     def readJoystickThread(self):
         # Fetch new joystick data until it returns non-0 (that is, it has been unplugged)
         buttons_text = " "
-
-        x_threshold = 0.05
-        y_threshold = 0.05
+        curPosition = interfaces.stageMover.getPosition()
+        self.mosaic = gui.mosaic.window.window
+        self.camera = gui.camera
+        x_threshold = 0.075
+        y_threshold = 0.075
+        multiplier = 1.1
+        movement_speed_mosaic = 10
+        movement_speed_stage = 10
+        #Note that these values are set arbirarily for the moment. In the future
+        #they should be defined by the physical limits of the motors which move
+        #the stage.
+        max_speed_stage = 100
+        min_speed_stage = 1
+        cameras=depot.getHandlersOfType(depot.CAMERA)
 
         while joyGetPosEx(0, self.p_info) == 0:
-            
+
             while not self.enable_read:
                 time.sleep(0.05)
 
@@ -255,7 +288,69 @@ class WindowsJoystickDevice(device.Device):
 
             x = x if (abs(x) > x_threshold) else 0
             y = y if (abs(y) > y_threshold) else 0
-            
+
+            #Uses joystick to move either the mosaic or the stage
             if abs(x) > 0 or abs(y) > 0:
-                interfaces.stageMover.moveRelative((-10*x, -10*y, 0), shouldBlock=False)
-                time.sleep(0.05)
+                #If the left bumper is pressed, the stage is moved. Also functions
+                #as a dead-man switch.
+                if self.button_states["lb"] == True:
+                    interfaces.stageMover.moveRelative((-movement_speed_stage*x, -movement_speed_stage*y, 0), shouldBlock=False)
+                #If the left bumper isn't pressed, the mosaic is moved.
+                else:
+                    self.mosaic.canvas.dragView([movement_speed_mosaic*x, movement_speed_mosaic*y])
+
+            #Pressing the right bumper centers the window on the current position
+            if self.button_states["rb"] == True:
+                self.mosaic.centerCanvas()
+
+            #Pressing the start button starts and stops the mosaic
+            if self.button_states["start"] == True:
+                self.mosaic.displayMosaicMenu()
+                time.sleep(0.5)
+
+            #Pressing the back button takes an image
+            if self.button_states["back"] == True:
+                interfaces.imager.takeImage()
+                self.mosaic.transferCameraImage()
+                time.sleep(0.5)
+
+
+            #Pressing up and down on the D-pad zoom in/out respectively
+            if self.button_states['dpad_up'] == True:
+                self.mosaic.canvas.multiplyZoom(multiplier)
+            elif self.button_states['dpad_down'] == True:
+                self.mosaic.canvas.multiplyZoom(1/multiplier)
+
+            #Pressing left and right on the D-pad increases/decreases movement speed
+            if self.button_states["lb"] == True:
+                if self.button_states['dpad_left'] == True:
+                    movement_speed_stage *= multiplier
+                elif self.button_states['dpad_right'] == True:
+                    movement_speed_stage /= multiplier
+                #Checks implimented to make sure the stage doesn't move faster
+                #than it's physically capable of or slower than the discrete teeth
+                #of the gears will let it.
+                if movement_speed_stage > max_speed_stage:
+                    movement_speed_stage = max_speed_stage
+                if movement_speed_stage < min_speed_stage:
+                    movement_speed_stage = min_speed_stage
+            else:
+                if self.button_states['dpad_left'] == True:
+                    movement_speed_mosaic *= multiplier
+                elif self.button_states['dpad_right'] == True:
+                    movement_speed_mosaic /= multiplier
+
+            #Mark sites by clicking the left analogue stick
+            if self.button_states['thumbl'] == True:
+                self.mosaic.saveSite()
+                time.sleep(1)
+
+            #Toggle cameras
+            i=0
+            for camera in cameras:
+                if self.button_states[button_names[i]] == True:
+                    camera.toggleState()
+                    time.sleep(0.5)
+                i = i + 1
+
+            time.sleep(0.05)

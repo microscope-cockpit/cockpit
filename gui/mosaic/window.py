@@ -47,6 +47,7 @@ BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 class MosaicWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
+        self.SetWindowStyle(self.GetWindowStyle() | wx.FRAME_TOOL_WINDOW)
         self.panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -218,8 +219,9 @@ class MosaicWindow(wx.Frame):
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         self.crosshairBoxSize = 512 * objective.getPixelSize()
         self.offset = objective.getOffset()
+        scale = (1/objective.getPixelSize())*0.5
         self.canvas.zoomTo(-curPosition[0]+self.offset[0],
-                           curPosition[1]-self.offset[1], 1)
+                           curPosition[1]-self.offset[1], scale)
 
 
     ## Resize our canvas.
@@ -283,6 +285,9 @@ class MosaicWindow(wx.Frame):
                 currentTarget = self.canvas.mapScreenToCanvas(mousePos)
                 newTarget = (currentTarget[0] + self.offset[0],
                              currentTarget[1] + self.offset[1])
+                #Stop mosaic if we are running one.
+                if self.amGeneratingMosaic:
+                    self.onAbort()
                 self.goTo(newTarget)
             elif event.LeftIsDown() and not event.LeftDown():
                 # Dragging the mouse with the left mouse button: drag or
@@ -465,18 +470,21 @@ class MosaicWindow(wx.Frame):
                 if p.type in ['c', 'C']:
                     # circle: x0, y0, radius
                     self.drawScaledCircle(p.data[0], p.data[1],
-                                          p.data[2], CIRCLE_SEGMENTS)
+                                          p.data[2], CIRCLE_SEGMENTS,
+                                          offset=False)
                 if p.type in ['r', 'R']:
                     # rectangle: x0, y0, width, height
-                    self.drawScaledRectangle(*p.data)
+                    self.drawScaledRectangle(*p.data, offset=False)
             glDisable(GL_LINE_STIPPLE)
 
-    def drawScaledCircle(self, x0, y0, r, n):
+
+    def drawScaledCircle(self, x0, y0, r, n, offset=True):
         dTheta = 2. * PI / n
         cosTheta = numpy.cos(dTheta)
         sinTheta = numpy.sin(dTheta)
-        x0=x0-self.offset[0]
-        y0 =y0+self.offset[1]
+        if offset:
+            x0=x0-self.offset[0]
+            y0 =y0+self.offset[1]
         x = r
         y = 0.
 
@@ -489,9 +497,12 @@ class MosaicWindow(wx.Frame):
         glEnd()
 		
     ## Draw a rectangle centred on x0, y0 of width w and height h.
-    def drawScaledRectangle(self, x0, y0, w, h):
+    def drawScaledRectangle(self, x0, y0, w, h, offset=True):
         dw = w / 2.
         dh = h / 2.
+        if offset:
+            x0 = x0-self.offset[0]
+            y0 = y0+self.offset[1]
         ps = [(x0-dw, y0-dh),
               (x0+dw, y0-dh),
               (x0+dw, y0+dh),
@@ -499,7 +510,7 @@ class MosaicWindow(wx.Frame):
 
         glBegin(GL_LINE_LOOP)
         for i in xrange(-1, 4):
-            glVertex2f(-ps[i][0]+self.offset[0], ps[i][1]-self.offset[1])
+            glVertex2f(-ps[i][0], ps[i][1])
         glEnd()
     # Draw a crosshairs at the specified position with the specified color.
     # By default make the size of the crosshairs be really big.
@@ -575,6 +586,7 @@ class MosaicWindow(wx.Frame):
     # such suspended thread is allowed to be active at a time.
     def generateMosaic2(self, camera):
         # Acquire the mosaic lock so no other mosaics can run.
+        events.publish('mosaic start')
         if not self.mosaicGenerationLock.acquire(False):
             # Do not block. Otherwise, multiple calls to generateMosaic
             # can result in multiple threads waiting here for the lock.
@@ -633,7 +645,7 @@ class MosaicWindow(wx.Frame):
                     #(-prevPosition[0] - width / 2,
                     #    prevPosition[1] - height / 2, curZ),
                     # Use the actual position, instead.
-                    ( -pos[0] - self.offset[0] - width/2,
+                    ( -pos[0] + self.offset[0] - width/2,
                       pos[1] - self.offset[1] - height/2,
                       curZ,) ,
                     (width, height), scalings = (minVal, maxVal),
@@ -717,8 +729,6 @@ class MosaicWindow(wx.Frame):
         util.userConfig.setValue('mosaicDrawPrimitives',self.drawPrimitives,
                                  isGlobal=False)
         self.Refresh()
-
-
     ## Save the current stage position as a new site with the specified
     # color (or our currently-selected color if none is provided).
     def saveSite(self, color = None):
@@ -965,6 +975,7 @@ class MosaicWindow(wx.Frame):
         self.shouldPauseMosaic = False
         self.amGeneratingMosaic = True
         self.nameToButton['Run mosaic'].SetLabel('Stop mosaic')
+        events.publish('mosaic start') 
 
 
     ## Generate a menu where the user can select a camera to use to perform
@@ -1213,6 +1224,7 @@ class MosaicWindow(wx.Frame):
     def onAbort(self, *args):
         if self.amGeneratingMosaic:
             self.shouldPauseMosaic = True
+        events.publish('mosaic stop')
         self.nameToButton['Run mosaic'].SetLabel('Run mosaic')
         # Stop deleting tiles, while we're at it.
         self.onDeleteTiles(shouldForceStop = True)

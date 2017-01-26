@@ -13,7 +13,8 @@ import viewPanel
 ## This class provides a grid of camera displays.
 class CamerasWindow(wx.Frame):
     def __init__(self, parent):
-        wx.Frame.__init__(self, parent, title = "Camera views")
+        wx.Frame.__init__(self, parent, title = "Camera views",
+                          style=wx.FRAME_TOOL_WINDOW | wx.CAPTION)
         
         self.numCameras = len(depot.getHandlersOfType(depot.CAMERA))
 
