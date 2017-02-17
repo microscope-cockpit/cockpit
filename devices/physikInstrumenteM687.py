@@ -382,7 +382,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
             prevX, prevY = self.xyPositionCache
             x, y = self.getXYPosition(shouldUseCache = False)
             delta = abs(x - prevX) + abs(y - prevY)
-            if delta < .1:
+            if delta < 5.:
                 # No movement since last time; done moving.
                 for axis in [0, 1]:
                     events.publish('stage stopped', '%d PI mover' % axis)
