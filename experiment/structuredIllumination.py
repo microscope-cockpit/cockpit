@@ -279,12 +279,15 @@ class SIExperiment(experiment.Experiment):
             targetAMult = self.numPhases * self.numZSlices
             targetPMult = 1
             targetZMult = self.numPhases
+            print "reorder mode"
+            print self.collectionOrder
             for angle in xrange(self.numAngles):
                 for phase in xrange(self.numPhases):
                     for z in xrange(self.numZSlices):
                         source = angle * sourceAMult + phase * sourcePMult + z * sourceZMult
                         target = angle * targetAMult + phase * targetPMult + z * targetZMult
                         newData[:, :, target] = doc.imageArray[:, :, source]
+                        print "source , targe = ", source, target
                         if doc.imageHeader.next > 0:
                             extTgt = target * extImgBytes
                             extSrc = 1024 + source * extImgBytes
