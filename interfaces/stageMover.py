@@ -122,20 +122,22 @@ class StageMover:
             for i, handler in enumerate(self.axisToHandlers[axis]):
                 if i != self.curHandlerIndex:
                     offset += handler.getPosition()
-            handler = self.axisToHandlers[axis][self.curHandlerIndex]
-            # Check if we need to bother moving.
-            if abs(handler.getPosition() - (target - offset)) > STAGE_MIN_MOVEMENT:
-                event = threading.Event()
-                waiters.append(event)
-                self.nameToStoppedEvent[handler.name] = event
-                handler.moveAbsolute(target - offset)
-        if shouldBlock:
-            for event in waiters:
-                try:
-                    event.wait(30)
-                except Exception, e:
-                    print "Failed waiting for stage to stop after 30s"
-
+            #check if we have a mover on this axis at this level
+            if(self.curHandlerIndex < len(self.axisToHandlers[axis])):
+                handler = self.axisToHandlers[axis][self.curHandlerIndex]
+                # Check if we need to bother moving.
+                if abs(handler.getPosition() - (target - offset)) > STAGE_MIN_MOVEMENT:
+                    event = threading.Event()
+                    waiters.append(event)
+                    self.nameToStoppedEvent[handler.name] = event
+                    handler.moveAbsolute(target - offset)
+                if shouldBlock:
+                    for event in waiters:
+                        try:
+                            event.wait(30)
+                        except Exception, e:
+                            print "Failed waiting for stage to stop after 30s"
+                            
 
 
 ## Global singleton.
