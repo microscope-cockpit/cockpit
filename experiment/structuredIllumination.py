@@ -255,7 +255,6 @@ class SIExperiment(experiment.Experiment):
             doc = util.datadoc.DataDoc(self.savePath)
             newData = numpy.zeros(doc.imageArray.shape,
                                   dtype = doc.imageArray.dtype)
-            print "shape",doc.imageArray.shape
             if doc.imageHeader.next > 0:
                 # Assumes that the file was written out in the native byte
                 # order (currently that is true).
@@ -283,18 +282,12 @@ class SIExperiment(experiment.Experiment):
             targetPMult = 1
             targetZMult = self.numPhases
             imagesPerW=self.numPhases*self.numZSlices*self.numAngles
-            print "images per wavelength", imagesPerW
-            print "numWavelengths", self.numWavelengths
-            print "reorder mode"
-            print self.collectionOrder
             for w in xrange(self.numWavelengths):
-                print w
                 for angle in xrange(self.numAngles):
                     for phase in xrange(self.numPhases):
                         for z in xrange(self.numZSlices):
                             source = angle * sourceAMult + phase * sourcePMult + z * sourceZMult
                             target = angle * targetAMult + phase * targetPMult + z * targetZMult
-                            print "source , targe = ", source, target
                             newData[ w, :, target] = doc.imageArray[w, :, source]
 
                             if doc.imageHeader.next > 0:
@@ -303,13 +296,12 @@ class SIExperiment(experiment.Experiment):
                                 newExt[extTgt:extTgt + extImgBytes] = oldExt[
                                     extSrc:extSrc + extImgBytes]
 
-            print newData.shape
             # Write the data out.
             header = util.datadoc.makeHeaderForShape(newData.shape,
                     dtype = newData.dtype, XYSize = doc.imageHeader.d[0],
                     ZSize = doc.imageHeader.d[2],
                     wavelengths = doc.imageHeader.wave)
-            #reset shape order as sofdtworx seems to want this. 
+            #reset shape order as softworx seems to want this. 
             header.ImgSequence=1
             header.next = doc.imageHeader.next
             if header.next > 0:
