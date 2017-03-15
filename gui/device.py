@@ -26,6 +26,7 @@ import gui.guiUtils
 from handlers.deviceHandler import STATES
 from toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 from util import userConfig
+import gui.loggingWindow as log
 
 ## @package gui.device
 # Defines classes for common controls used by cockpit devices.
@@ -319,6 +320,10 @@ class SettingsEditor(wx.Frame):
         current = self.device.get_all_settings()
         for key, desc in self.settings.iteritems():
             value = current[key]
+            # For some reason, a TypeError is thrown on creation of prop if value
+            # is a zero-length string.
+            if value == '':
+                value  = ' '
             propType = SettingsEditor._SETTINGS_TO_PROPTYPES.get(desc['type'])
             if propType is wx.propgrid.EnumProperty:
                 prop = wx.propgrid.EnumProperty(label=key, name=key,
@@ -330,7 +335,13 @@ class SettingsEditor(wx.Frame):
                     prop = propType(label=key, name=key, value=(value or 0))
                 except OverflowError:
                     # Int too large.
-                    prop = wx.propgrid.FloatProperty(label=key, name=key, value=(value or 0))
+                    prop = wx.propgrid.FloatProperty(label=key, name=key, value=str(value or 0))
+                except Exception as e:
+                    log.window.write(log.window.stdErr,
+                                     "populateGrid threw exception for key %s with value %s: %s" %
+                                     (key, value, e.message))
+                    continue
+
             if desc['readonly']:
                 prop.Enable(False)
             grid.Append(prop)
