@@ -68,6 +68,10 @@ class UniversalCameraDevice(camera.CameraDevice):
         self.settings['exposure_time'] = 0.001
         self.settings_editor = None
         self.defaults = DEFAULTS_NONE
+        self.get_all_settings = self.proxy.get_all_settings
+        self.get_setting = self.proxy.get_setting
+        self.set_setting = self.proxy.set_setting
+        self.describe_settings = self.proxy.describe_settings
 
 
     def cleanupAfterExperiment(self):
@@ -270,6 +274,7 @@ class UniversalCameraDevice(camera.CameraDevice):
         return self.panel
 
     def showSettings(self, evt):
+        click_pos = wx.GetMousePosition()
         if not self.settings_editor:
             # TODO - there's a problem with abstraction here. The settings
             # editor needs the describe/get/set settings functions from the
@@ -278,9 +283,9 @@ class UniversalCameraDevice(camera.CameraDevice):
             # settings interface. UniversalCamera is starting to look
             # more and more like an interface translation.
             self.setAnyDefaults()
-            self.settings_editor = SettingsEditor(self.proxy, handler=self.handler)
+            self.settings_editor = SettingsEditor(self, handler=self.handler)
             self.settings_editor.Show()
-        self.settings_editor.SetPosition(wx.GetMousePosition())
+        self.settings_editor.SetPosition(click_pos)
         self.settings_editor.Raise()
 
 
