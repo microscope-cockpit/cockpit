@@ -62,6 +62,11 @@ class UniversalBase(device.Device):
         self.settings_editor = None
         self.defaults = DEFAULTS_NONE
         self.enabled = True
+        self.get_all_settings = self._proxy.get_all_settings
+        self.get_setting = self._proxy.get_setting
+        self.set_setting = self._proxy.set_setting
+        self.describe_settings = self._proxy.describe_settings
+
 
 
     def getHandlers(self):
@@ -84,7 +89,7 @@ class UniversalBase(device.Device):
             # settings interface. UniversalCamera is starting to look
             # more and more like an interface translation.
             self.setAnyDefaults()
-            self.settings_editor = SettingsEditor(self._proxy, handler=self.handler)
+            self.settings_editor = SettingsEditor(self, handler=self.handler)
             self.settings_editor.Show()
         self.settings_editor.SetPosition(wx.GetMousePosition())
         self.settings_editor.Raise()

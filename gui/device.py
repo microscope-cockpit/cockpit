@@ -209,6 +209,7 @@ class SettingsEditor(wx.Frame):
     def __init__(self, device, handler=None):
         wx.Frame.__init__(self, None, wx.ID_ANY)
         self.device = device
+        self.SetTitle("Settings for %s." % device.name)
         self.settings = None
         self.handler = handler
         self.handler.addListener(self)
@@ -238,7 +239,7 @@ class SettingsEditor(wx.Frame):
         sizer.Add(buttonSizer, 0, wx.ALIGN_CENTER, 0, 0)
         self.SetSizerAndFit(sizer)
         self.SetMinSize((256, -1))
-        self.SetMaxSize((self.GetMinWidth(), -1))
+        #self.SetMaxSize((self.GetMinWidth(), -1))
 
     def onEnabledEvent(self, evt):
         if self.IsShown():
