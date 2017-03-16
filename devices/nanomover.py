@@ -11,33 +11,55 @@ import time
 import wx
 
 CLASS_NAME = 'NanomoverDevice'
-
-
-## Positions for the coffin fiber positioner for full field and spotlight
-# modes, respectively.
-coffinPositions = [16.5, 5.38]
-## Positions for the crypt fiber positioner, same.
-cryptPositions = [11.505, .210]
-## Minimum movement distance; if we're within this much of the target then
-# we don't bother moving.
-MIN_FIBER_MOTION_DELTA = .001
-
+CONFIG_NAME = 'nanomover'
+LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
 
 class NanomoverDevice(device.Device):
     def __init__(self):
         device.Device.__init__(self)
         ## Current stage position information.
         self.curPosition = [14500, 14500, 14500]
-        ## IP address and port of the Nanomover controller program.
-        self.ipAddress = '192.168.12.50'
-        self.port = 7766
         ## Connection to the Nanomover controller program.
         self.connection = None
         ## Soft safety motion limits. 
-        self.safeties = [[4000, 25000], [4000, 25000], [7300, 25000]]
-        ## List of ToggleButton instances for the fiber selector.
-        self.fiberModeButtons = []
+#        self.safeties = [[4000, 25000], [4000, 25000], [7300, 25000]]
+        # Maps the cockpit's axis ordering (0: X, 1: Y, 2: Z) to the
+        # XY stage's ordering (1: Y, 2: X,0: Z)
+ 
+        self.axisMapper = {0: 2, 1: 1, 2: 0}
+        ## Maps cockpit axis ordering to a +-1 multiplier to apply to motion,
+        # since some of our axes are flipped.
+        self.axisSignMapper = {0: -1, 1: 1, 2: 1}
+        ## Time of last action using the piezo; used for tracking if we should
+        # disable closed loop.
+         
+        self.isActive = config.has_section(CONFIG_NAME)
+        if self.isActive:
+            self.port = config.get(CONFIG_NAME, 'port')
+            self.baud = config.getint(CONFIG_NAME, 'baud')
+            self.timeout = config.getfloat(CONFIG_NAME, 'timeout')
+            try :
+                limitString = config.get(CONFIG_NAME, 'softlimits')
+                parsed = re.search(LIMITS_PAT, limitString)
+                if not parsed:
+                    # Could not parse config entry.
+                    raise Exception('Bad config: PhysikInstrumentsM687 Limits.')
+                    # No transform tuple
+                else:    
+                    lstr = parsed.groupdict()['limits']
+                    self.softlimits=eval(lstr)
+            except:
+                print "No softlimits section setting default limits"
+                self.softlimits = ((4000, 25000),
+                                   (4000, 25000),
+                                   (7300, 25000))
+            events.subscribe('user logout', self.onLogout)
+            events.subscribe('user abort', self.onAbort)
+            events.subscribe('macro stage xy draw', self.onMacroStagePaint)
+            events.subscribe('cockpit initialization complete',
+                    self.promptExerciseStage)
 
+        
 
     def initialize(self):
         self.connection = util.connection.Connection(
@@ -73,36 +95,36 @@ class NanomoverDevice(device.Device):
         # with a 3-degree offset. NB we assume that the user will never
         # want anything but a fully-open diaphragm because we have the
         # fiber mode selector which accomplishes the same purpose, but better.
-        self.connection.connection.fd_move(93, 4)
+#        self.connection.connection.fd_move(93, 4)
 
 
-    ## Generate the fiber mode selector control.
-    def makeUI(self, parent):
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(parent, -1, "Fiber mode:")
-        label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        sizer.Add(label)
-        for mode in ['Full field', 'Spotlight']:
-            button = gui.toggleButton.ToggleButton(
-                    textSize = 12, label = mode, size = (100, 50),
-                    parent = parent)
-            button.Bind(wx.EVT_LEFT_DOWN,
-                    lambda event, mode = mode: self.setFiberMode(mode))
-            sizer.Add(button)
-            self.fiberModeButtons.append(button)
-        return sizer
+    # ## Generate the fiber mode selector control.
+    # def makeUI(self, parent):
+    #     sizer = wx.BoxSizer(wx.VERTICAL)
+    #     label = wx.StaticText(parent, -1, "Fiber mode:")
+    #     label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+    #     sizer.Add(label)
+    #     for mode in ['Full field', 'Spotlight']:
+    #         button = gui.toggleButton.ToggleButton(
+    #                 textSize = 12, label = mode, size = (100, 50),
+    #                 parent = parent)
+    #         button.Bind(wx.EVT_LEFT_DOWN,
+    #                 lambda event, mode = mode: self.setFiberMode(mode))
+    #         sizer.Add(button)
+    #         self.fiberModeButtons.append(button)
+    #     return sizer
 
 
     def performSubscriptions(self):
-        events.subscribe('IR remote start', self.onRemoteStart)
-        events.subscribe('IR remote stop', self.onAbort)
+#        events.subscribe('IR remote start', self.onRemoteStart)
+#        events.subscribe('IR remote stop', self.onAbort)
         events.subscribe('user abort', self.onAbort)
 
 
     def makeInitialPublications(self):
         events.publish('new status light', 'stage vertical position', '')
         self.publishPosition()
-        self.setFiberMode('Full field')
+#        self.setFiberMode('Full field')
 
 
     def getHandlers(self):
@@ -142,28 +164,28 @@ class NanomoverDevice(device.Device):
                 label, color)
 
 
-    ## Set the fiber mode. We can switch between a fiber that fully illuminates
-    # the sample, and one that focuses light on a small area.
-    def setFiberMode(self, mode):
-        index = int(mode == 'Full field')
-        self.moveFiberCoffin(coffinPositions[index])
-        self.moveFiberCrypt(cryptPositions[index])
-        for button in self.fiberModeButtons:
-            button.setActive(button.GetLabel() == mode)
+    # ## Set the fiber mode. We can switch between a fiber that fully illuminates
+    # # the sample, and one that focuses light on a small area.
+    # def setFiberMode(self, mode):
+    #     index = int(mode == 'Full field')
+    #     self.moveFiberCoffin(coffinPositions[index])
+    #     self.moveFiberCrypt(cryptPositions[index])
+    #     for button in self.fiberModeButtons:
+    #         button.setActive(button.GetLabel() == mode)
 
 
-    ## Move the fiber motor in the coffin (optical table with all the lasers).
-    def moveFiberCoffin(self, position):
-        delta = abs(position - self.connection.connection.fiberSelector_pos())
-        if delta > MIN_FIBER_MOTION_DELTA:
-            self.connection.connection.fiberSelector_move(position, 2.5)
+    # ## Move the fiber motor in the coffin (optical table with all the lasers).
+    # def moveFiberCoffin(self, position):
+    #     delta = abs(position - self.connection.connection.fiberSelector_pos())
+    #     if delta > MIN_FIBER_MOTION_DELTA:
+    #         self.connection.connection.fiberSelector_move(position, 2.5)
 
             
-    ## Move the fiber motor in the crypt (closet with the objective and sample)
-    def moveFiberCrypt(self, position):
-        delta = abs(position - self.connection.connection.vp_getPosStatus()[0])
-        if delta > MIN_FIBER_MOTION_DELTA:
-            self.connection.connection.vp_move(position, 20)
+    # ## Move the fiber motor in the crypt (closet with the objective and sample)
+    # def moveFiberCrypt(self, position):
+    #     delta = abs(position - self.connection.connection.vp_getPosStatus()[0])
+    #     if delta > MIN_FIBER_MOTION_DELTA:
+    #         self.connection.connection.vp_move(position, 20)
 
 
     ## Receive information from the Nanomover control program.
@@ -208,5 +230,5 @@ class NanomoverDevice(device.Device):
     ## User is interacting with the remote; start motion in the specified
     # direction.
     # \param direction -1 for negative, +1 for positive.
-    def onRemoteStart(self, axis, direction):
-        self.moveAbsolute(axis, self.safeties[axis][direction > 0])
+#    def onRemoteStart(self, axis, direction):
+#        self.moveAbsolute(axis, self.safeties[axis][direction > 0])
