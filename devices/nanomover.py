@@ -10,11 +10,12 @@ import threading
 import time
 import wx
 
+from config import config
 CLASS_NAME = 'NanomoverDevice'
 CONFIG_NAME = 'nanomover'
-LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
+LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*\))"
 
-class NanomoverDevice(device.Device):
+class NanomoverDevice(stage.StageDevice):
     def __init__(self):
         device.Device.__init__(self)
         ## Current stage position information.
@@ -35,25 +36,29 @@ class NanomoverDevice(device.Device):
          
         self.isActive = config.has_section(CONFIG_NAME)
         if self.isActive:
-            self.port = config.get(CONFIG_NAME, 'port')
-            self.baud = config.getint(CONFIG_NAME, 'baud')
+            self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
+            self.port = int(config.get(CONFIG_NAME, 'port'))
             self.timeout = config.getfloat(CONFIG_NAME, 'timeout')
             try :
                 limitString = config.get(CONFIG_NAME, 'softlimits')
                 parsed = re.search(LIMITS_PAT, limitString)
                 if not parsed:
                     # Could not parse config entry.
-                    raise Exception('Bad config: PhysikInstrumentsM687 Limits.')
+                    raise Exception('Bad config: Nanomover Limits.')
                     # No transform tuple
                 else:    
                     lstr = parsed.groupdict()['limits']
                     self.softlimits=eval(lstr)
+                    self.safeties=eval(lstr)
             except:
                 print "No softlimits section setting default limits"
-                self.softlimits = ((4000, 25000),
-                                   (4000, 25000),
-                                   (7300, 25000))
-            events.subscribe('user logout', self.onLogout)
+                self.softlimits = [[4000, 25000],
+                                   [4000, 25000],
+                                   [7300, 25000]]
+                self.safeties = [[4000, 25000],
+                                   [4000, 25000],
+                                   [7300, 25000]]
+#            events.subscribe('user logout', self.onLogout)
             events.subscribe('user abort', self.onAbort)
             events.subscribe('macro stage xy draw', self.onMacroStagePaint)
             events.subscribe('cockpit initialization complete',
@@ -62,33 +67,36 @@ class NanomoverDevice(device.Device):
         
 
     def initialize(self):
+        print "in init"
         self.connection = util.connection.Connection(
                 'nano', self.ipAddress, self.port)
         self.connection.connect(self.receiveData)
+        self.connection.connection.startOMX()
         self.curPosition[:] = self.connection.connection.posXYZ_OMX()
-        for axis, (minVal, maxVal) in enumerate(self.safeties):
-            try:
-                self.connection.connection.setSafetyMinOMX(axis, minVal)
-            except Exception, e:
-                newTarget = int(self.curPosition[axis]) - 1
-                wx.MessageDialog(None,
-                        ("The %s axis " % ['X', 'Y', 'Z'][axis]) +
-                        ("is below the default safety min of %.2f, " % minVal) +
-                        ("so the safety min is being set to %d" % newTarget),
-                        style = wx.ICON_EXCLAMATION | wx.OK).ShowModal()
-                self.connection.connection.setSafetyMinOMX(axis, newTarget)
-                self.safeties[axis][0] = newTarget
-            try:
-                self.connection.connection.setSafetyMaxOMX(axis, maxVal)
-            except Exception, e:
-                newTarget = int(self.curPosition[axis]) + 1
-                wx.MessageDialog(None,
-                        ("The %s axis " % ['X', 'Y', 'Z'][axis]) +
-                        ("is below the default safety min of %.2f, " % minVal) +
-                        ("so the safety min is being set to %d" % newTarget),
-                        style = wx.ICON_EXCLAMATION | wx.OK).ShowModal()
-                self.connection.connection.setSafetyMaxOMX(axis, newTarget)
-                self.safeties[axis][1] = newTarget
+        print self.curPosition
+#        for axis, (minVal, maxVal) in enumerate(self.safeties):
+#            try:
+#                self.connection.connection.setSafetyMinOMX(axis, minVal)
+#            except Exception, e:
+#                newTarget = int(self.curPosition[axis]) - 1
+#                wx.MessageDialog(None,
+#                        ("The %s axis " % ['X', 'Y', 'Z'][axis]) +
+#                        ("is below the default safety min of %.2f, " % minVal) #+
+#                        ("so the safety min is being set to %d" % newTarget),
+#                        style = wx.ICON_EXCLAMATION | wx.OK).ShowModal()
+#                self.connection.connection.setSafetyMinOMX(axis, newTarget)
+#                self.safeties[axis][0] = newTarget
+#            try:
+#                self.connection.connection.setSafetyMaxOMX(axis, maxVal)
+#            except Exception, e:
+#                newTarget = int(self.curPosition[axis]) + 1
+#                wx.MessageDialog(None,
+#                        ("The %s axis " % ['X', 'Y', 'Z'][axis]) +
+#                        ("is below the default safety min of %.2f, " % minVal) #+
+#                        ("so the safety min is being set to %d" % newTarget),
+#                        style = wx.ICON_EXCLAMATION | wx.OK).ShowModal()
+#                self.connection.connection.setSafetyMaxOMX(axis, newTarget)
+#                self.safeties[axis][1] = newTarget
 
         # Set the field diaphragm to fully open.
         # Angles for the various diaphragm positions are 45 degrees apart,
@@ -115,6 +123,43 @@ class NanomoverDevice(device.Device):
     #     return sizer
 
 
+    ## We want to periodically exercise the XY stage to spread the grease
+    # around on its bearings; check how long it's been since the stage was
+    # last exercised, and prompt the user if it's been more than a week.
+    def promptExerciseStage(self):
+        lastExerciseTimestamp = util.userConfig.getValue(
+                'NanomoverLastExerciseTimestamp',
+                isGlobal = True, default = 0)
+        curTime = time.time()
+        delay = curTime - lastExerciseTimestamp
+        daysPassed = delay / float(24 * 60 * 60)
+        if (daysPassed > 7 and
+                gui.guiUtils.getUserPermission(
+                    ("It has been %.1f days since " % daysPassed) +
+                    "the stage was last exercised. Please exercise " +
+                    "the stage regularly.\n\nExercise stage?",
+                    "Please exercise the stage")):
+            # Move to the middle of the stage, then to one corner, then to
+            # the opposite corner, repeat a few times, then back to the middle,
+            # then to where we started from. Positions are actually backed off
+            # slightly from the true safeties. Moving to the middle is
+            # necessary to avoid the banned rectangles, in case the stage is
+            # in them when we start.
+            initialPos = tuple(self.xyPositionCache)
+#            interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
+            for i in xrange(5):
+                print "Rep %d of 5..." % i
+                for position in self.softlimits:
+                    interfaces.stageMover.goToXY(position, shouldBlock = True)
+            interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
+            interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
+            print "Exercising complete. Thank you!"
+            
+            util.userConfig.setValue('NanomoverLastExerciseTimestamp',
+                    time.time(), isGlobal = True)
+
+
+
     def performSubscriptions(self):
 #        events.subscribe('IR remote start', self.onRemoteStart)
 #        events.subscribe('IR remote stop', self.onAbort)
@@ -125,6 +170,18 @@ class NanomoverDevice(device.Device):
         events.publish('new status light', 'stage vertical position', '')
         self.publishPosition()
 #        self.setFiberMode('Full field')
+
+    ## The XY Macro Stage view is painting itself; draw the banned
+    # rectangles as pink excluded zones.
+    def onMacroStagePaint(self, stage):
+        glColor3f(1, .6, .6)
+        glBegin(GL_QUADS)
+        for (x1, y1), (x2, y2) in BANNED_RECTANGLES:
+            stage.scaledVertex(x1, y1)
+            stage.scaledVertex(x1, y2)
+            stage.scaledVertex(x2, y2)
+            stage.scaledVertex(x2, y1)
+        glEnd()
 
 
     def getHandlers(self):
