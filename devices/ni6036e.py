@@ -110,7 +110,8 @@ class NI6036eDevice(device.Device):
         self.setExMode('Conventional')
 #        self.setStageMode('Inverted')
         #set default emission path
-        self.setDetMode('w/o AO & 209 nm pixel size')
+#IMD 20170316 comment out as this is a hack for OMXT
+#        self.setDetMode('w/o AO & 209 nm pixel size')
         #Subscribe to objective change to map new detector path to new pixel sizes via fake objective
         events.subscribe('objective change', self.onObjectiveChange)
 
@@ -307,7 +308,7 @@ class NI6036eDevice(device.Device):
         color = [(170, 170, 170), (255, 255, 0)][isOn]
  #       events.publish('update status light', 'room light', text, color)
         
-    def onObjectiveChange(self, newName, newPixelSize, transform, offset):
+    def onObjectiveChange(self, newName, pixelSize, transform, offset):
         if (newName=='63x85nm'):
             self.setDetMode('with AO & 85 nm pixel size')
         elif (newName=='63x209nm'):
