@@ -23,11 +23,8 @@ class NanomoverDevice(stage.StageDevice):
         self.curPosition = [14500, 14500, 14500]
         ## Connection to the Nanomover controller program.
         self.connection = None
-        ## Soft safety motion limits. 
-#        self.safeties = [[4000, 25000], [4000, 25000], [7300, 25000]]
         # Maps the cockpit's axis ordering (0: X, 1: Y, 2: Z) to the
         # XY stage's ordering (1: Y, 2: X,0: Z)
- 
         self.axisMapper = {0: 2, 1: 1, 2: 0}
         ## Maps cockpit axis ordering to a +-1 multiplier to apply to motion,
         # since some of our axes are flipped.
@@ -105,30 +102,6 @@ class NanomoverDevice(stage.StageDevice):
 #                self.connection.connection.setSafetyMaxOMX(axis, newTarget)
 #                self.safeties[axis][1] = newTarget
 
-        # Set the field diaphragm to fully open.
-        # Angles for the various diaphragm positions are 45 degrees apart,
-        # with a 3-degree offset. NB we assume that the user will never
-        # want anything but a fully-open diaphragm because we have the
-        # fiber mode selector which accomplishes the same purpose, but better.
-#        self.connection.connection.fd_move(93, 4)
-
-
-    # ## Generate the fiber mode selector control.
-    # def makeUI(self, parent):
-    #     sizer = wx.BoxSizer(wx.VERTICAL)
-    #     label = wx.StaticText(parent, -1, "Fiber mode:")
-    #     label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-    #     sizer.Add(label)
-    #     for mode in ['Full field', 'Spotlight']:
-    #         button = gui.toggleButton.ToggleButton(
-    #                 textSize = 12, label = mode, size = (100, 50),
-    #                 parent = parent)
-    #         button.Bind(wx.EVT_LEFT_DOWN,
-    #                 lambda event, mode = mode: self.setFiberMode(mode))
-    #         sizer.Add(button)
-    #         self.fiberModeButtons.append(button)
-    #     return sizer
-
 
     ## We want to periodically exercise the XY stage to spread the grease
     # around on its bearings; check how long it's been since the stage was
@@ -158,7 +131,7 @@ class NanomoverDevice(stage.StageDevice):
                 print "Rep %d of 5..." % i
                 for position in self.softlimits:
                     interfaces.stageMover.goToXY(position, shouldBlock = True)
-            interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
+            interfaces.stageMover.goToXY(self.middleXY, shouldBlock = True)
             interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
             print "Exercising complete. Thank you!"
             
@@ -247,30 +220,6 @@ class NanomoverDevice(stage.StageDevice):
             curPosition = (x, y)
             time.sleep(.1)
 
-        
-    # ## Set the fiber mode. We can switch between a fiber that fully illuminates
-    # # the sample, and one that focuses light on a small area.
-    # def setFiberMode(self, mode):
-    #     index = int(mode == 'Full field')
-    #     self.moveFiberCoffin(coffinPositions[index])
-    #     self.moveFiberCrypt(cryptPositions[index])
-    #     for button in self.fiberModeButtons:
-    #         button.setActive(button.GetLabel() == mode)
-
-
-    # ## Move the fiber motor in the coffin (optical table with all the lasers).
-    # def moveFiberCoffin(self, position):
-    #     delta = abs(position - self.connection.connection.fiberSelector_pos())
-    #     if delta > MIN_FIBER_MOTION_DELTA:
-    #         self.connection.connection.fiberSelector_move(position, 2.5)
-
-            
-    # ## Move the fiber motor in the crypt (closet with the objective and sample)
-    # def moveFiberCrypt(self, position):
-    #     delta = abs(position - self.connection.connection.vp_getPosStatus()[0])
-    #     if delta > MIN_FIBER_MOTION_DELTA:
-    #         self.connection.connection.vp_move(position, 20)
-
 
     ## Receive information from the Nanomover control program.
     def receiveData(self, *args):
@@ -315,8 +264,4 @@ class NanomoverDevice(stage.StageDevice):
     def home(self):
         self.connection.connection.findHome_OMX()
         
-    ## User is interacting with the remote; start motion in the specified
-    # direction.
-    # \param direction -1 for negative, +1 for positive.
-#    def onRemoteStart(self, axis, direction):
-#        self.moveAbsolute(axis, self.safeties[axis][direction > 0])
+
