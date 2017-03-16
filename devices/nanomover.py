@@ -26,6 +26,9 @@ class NanomoverDevice(stage.StageDevice):
         # Maps the cockpit's axis ordering (0: X, 1: Y, 2: Z) to the
         # XY stage's ordering (1: Y, 2: X,0: Z)
         self.axisMapper = {0: 2, 1: 1, 2: 0}
+        ## Cached copy of the stage's position. Initialized to an impossible
+        # value; this will be modified in initialize.
+        self.xyPositionCache = (10 ** 100, 10 ** 100)
         ## Maps cockpit axis ordering to a +-1 multiplier to apply to motion,
         # since some of our axes are flipped.
         self.axisSignMapper = {0: -1, 1: 1, 2: 1}
@@ -58,8 +61,8 @@ class NanomoverDevice(stage.StageDevice):
                                    [7300, 25000]]
 
             #a usful middle position for after a home
-            self.middleXY=( (self.safeties[0,1]-self.safteies[0,0])/2.0,
-                            self.safeties[0,1]-self.safteies[0,0])/2.0)
+            self.middleXY=( (self.safeties[0][1]-self.safeties[0][0])/2.0,
+                            (self.safeties[0][1]-self.safeties[0][0])/2.0)
                 #            events.subscribe('user logout', self.onLogout)
             events.subscribe('user abort', self.onAbort)
 #            events.subscribe('macro stage xy draw', self.onMacroStagePaint)
@@ -219,6 +222,16 @@ class NanomoverDevice(stage.StageDevice):
                         self.axisSignMapper[axis] * val)
             curPosition = (x, y)
             time.sleep(.1)
+
+    def getXYPosition(self, axis = None, shouldUseCache = True):
+        if not shouldUseCache:
+            position = self.connection.connection.posXYZ_OMX()
+            x = float(position[self.axisMapper[0]]) * self.axisSignMapper[0]
+            y = float(position[self.axisMapper[1]]) * self.axisSignMapper[1]
+            self.xyPositionCache = (x, y)
+        if axis is None:
+            return self.xyPositionCache
+        return self.xyPositionCache[axis]
 
 
     ## Receive information from the Nanomover control program.
