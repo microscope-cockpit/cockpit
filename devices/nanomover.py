@@ -1,4 +1,5 @@
 import device
+import stage
 import events
 import gui.toggleButton
 import handlers.genericPositioner
@@ -60,7 +61,7 @@ class NanomoverDevice(stage.StageDevice):
                                    [7300, 25000]]
 #            events.subscribe('user logout', self.onLogout)
             events.subscribe('user abort', self.onAbort)
-            events.subscribe('macro stage xy draw', self.onMacroStagePaint)
+#            events.subscribe('macro stage xy draw', self.onMacroStagePaint)
             events.subscribe('cockpit initialization complete',
                     self.promptExerciseStage)
 
@@ -173,15 +174,15 @@ class NanomoverDevice(stage.StageDevice):
 
     ## The XY Macro Stage view is painting itself; draw the banned
     # rectangles as pink excluded zones.
-    def onMacroStagePaint(self, stage):
-        glColor3f(1, .6, .6)
-        glBegin(GL_QUADS)
-        for (x1, y1), (x2, y2) in BANNED_RECTANGLES:
-            stage.scaledVertex(x1, y1)
-            stage.scaledVertex(x1, y2)
-            stage.scaledVertex(x2, y2)
-            stage.scaledVertex(x2, y1)
-        glEnd()
+#    def onMacroStagePaint(self, stage):
+#        glColor3f(1, .6, .6)
+#        glBegin(GL_QUADS)
+#        for (x1, y1), (x2, y2) in BANNED_RECTANGLES:
+#            stage.scaledVertex(x1, y1)
+#            stage.scaledVertex(x1, y2)
+#            stage.scaledVertex(x2, y2)
+#            stage.scaledVertex(x2, y1)
+#        glEnd()
 
 
     def getHandlers(self):
