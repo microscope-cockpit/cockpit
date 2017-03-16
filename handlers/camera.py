@@ -82,9 +82,9 @@ class CameraHandler(deviceHandler.DeviceHandler):
         if exposureMode is TRIGGER_SOFT, otherwise unsubscribe."""
         self._exposureMode = triggerType
         softTrigger = self.callbacks.get('softTrigger', None)
+        events.unsubscribe("dummy take image", softTrigger)
         if softTrigger:
-            func = (events.subscribe, events.unsubscribe)[softTrigger == TRIGGER_SOFT]
-            func("dummy take image", softTrigger)
+            events.subscribe("dummy take image", softTrigger)
 
 
 
