@@ -253,7 +253,8 @@ class SIExperiment(experiment.Experiment):
             return
         if self.savePath is not None:
             doc = util.datadoc.DataDoc(self.savePath)
-            newData = numpy.zeros(doc.imageArray.shape, dtype = doc.imageArray.dtype)
+            newData = numpy.zeros(doc.imageArray.shape,
+                                  dtype = doc.imageArray.dtype)
             if doc.imageHeader.next > 0:
                 # Assumes that the file was written out in the native byte
                 # order (currently that is true).
@@ -267,6 +268,7 @@ class SIExperiment(experiment.Experiment):
             # Determine how to index into the source dataset. The slowest-
             # changing value has the largest multiplier.
             ordering = COLLECTION_ORDERS[self.collectionOrder]
+            self.numWavelengths=doc.imageArray.shape[0]
             tmp = (self.numAngles, self.numPhases, self.numZSlices)
             # Reorder based on ordering.
             tmp = [tmp[i] for i in ordering]
@@ -279,30 +281,35 @@ class SIExperiment(experiment.Experiment):
             targetAMult = self.numPhases * self.numZSlices
             targetPMult = 1
             targetZMult = self.numPhases
-            for angle in xrange(self.numAngles):
-                for phase in xrange(self.numPhases):
-                    for z in xrange(self.numZSlices):
-                        source = angle * sourceAMult + phase * sourcePMult + z * sourceZMult
-                        target = angle * targetAMult + phase * targetPMult + z * targetZMult
-                        newData[:, :, target] = doc.imageArray[:, :, source]
-                        if doc.imageHeader.next > 0:
-                            extTgt = target * extImgBytes
-                            extSrc = 1024 + source * extImgBytes
-                            newExt[extTgt:extTgt + extImgBytes] = oldExt[
-                                extSrc:extSrc + extImgBytes]
+            imagesPerW=self.numPhases*self.numZSlices*self.numAngles
+            for w in xrange(self.numWavelengths):
+                for angle in xrange(self.numAngles):
+                    for phase in xrange(self.numPhases):
+                        for z in xrange(self.numZSlices):
+                            source = angle * sourceAMult + phase * sourcePMult + z * sourceZMult
+                            target = angle * targetAMult + phase * targetPMult + z * targetZMult
+                            newData[ w, :, target] = doc.imageArray[w, :, source]
+
+                            if doc.imageHeader.next > 0:
+                                extTgt = target * extImgBytes
+                                extSrc = 1024 + source * extImgBytes
+                                newExt[extTgt:extTgt + extImgBytes] = oldExt[
+                                    extSrc:extSrc + extImgBytes]
 
             # Write the data out.
             header = util.datadoc.makeHeaderForShape(newData.shape,
                     dtype = newData.dtype, XYSize = doc.imageHeader.d[0],
                     ZSize = doc.imageHeader.d[2],
                     wavelengths = doc.imageHeader.wave)
+            #reset shape order as softworx seems to want this. 
+            header.ImgSequence=1
             header.next = doc.imageHeader.next
             if header.next > 0:
                 header.NumIntegers = doc.imageHeader.NumIntegers
                 header.NumFloats = doc.imageHeader.NumFloats
             header.mmm1 = doc.imageHeader.mmm1
             for i in xrange(1, newData.shape[0]):
-                nm = 'mm%d' % i + 1
+                nm = 'mm%d' %(i + 1)
                 setattr(header, nm, getattr(doc.imageHeader, nm))
             header.NumTitles = doc.imageHeader.NumTitles
             header.title = doc.imageHeader.title            
