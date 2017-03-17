@@ -5,6 +5,7 @@ import gui.toggleButton
 import handlers.genericPositioner
 import handlers.stagePositioner
 import util.connection
+import interfaces
 
 import numpy
 import threading
