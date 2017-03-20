@@ -26,12 +26,37 @@ class NI6036eDevice(device.Device):
         else:
             self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
             self.port = int(config.get(CONFIG_NAME, 'port'))
-           #IMD 20150208 comment out to make this work, need to fix
-           # self.PLOT_COLORS = config.get(CONFIG_NAME, 'PLOT_COLORS')
-           # self.LEGENDS = config.get(CONFIG_NAME, 'LEGENDS')
-           # self.DATA_REORDER = config.get(CONFIG_NAME, 'DATA_REORDER')
+
+            #get DIO control lines from config file
+            linestring = config.get(CONFIG_NAME, 'lines')
+            self.lines = linestring.split(',')
+            #Get microscope paths from config file.
+            paths_linesString = config.get(CONFIG_NAME, 'paths')
+            self.excitation=[]
+            self.excitationMaps=[]
+            self.objective=[]
+            self.objectiveMaps=[]
+            self.emission =[]
+            self.emissionMaps=[]
             
-            #IMD 20150208 this should go into confiog file but dont understand how t define an array there
+            for path in (paths_linesString.split(';')):
+                parts = path.split(':')
+                if(parts[0]=='objective'):
+                    self.objective.append(parts[1])
+                    self.objectiveMaps.append(parts[2])
+                elif (parts[0]=='excitation'):
+                    self.excitation.append(parts[1])
+                    self.excitationMaps.append(parts[2])
+                elif (parts[0]=='emission'):
+                    self.emission.append(parts[1])
+                    self.emmisionMaps.append(parts[2])
+            
+            #IMD 20150208 comment out to make this work, need to fix
+            # self.PLOT_COLORS = config.get(CONFIG_NAME, 'PLOT_COLORS')
+            # self.LEGENDS = config.get(CONFIG_NAME, 'LEGENDS')
+            # self.DATA_REORDER = config.get(CONFIG_NAME, 'DATA_REORDER')
+            
+            #IMD 20150208 this should go into config file but dont understand how t define an array there
             #this stuff just gets set as a raw string. 
             self.PLOT_COLORS = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
             ## Labels to use for lines in the plot.
@@ -40,6 +65,10 @@ class NI6036eDevice(device.Device):
             # sensors in order.
             #DATA_REORDER = [1, 2, 4, 0, 5, 3]
             self.DATA_REORDER = [0,1]
+
+
+        self.makeOutputWindow = makeOutputWindow
+        self.buttonName='ni6036e'
 
         device.Device.__init__(self)
         # We want to delay initialization until after the power buttons system
@@ -55,35 +84,45 @@ class NI6036eDevice(device.Device):
         
         ## Maps light modes to the mirror settings for those modes, as a list
         #IMD 20140806
-        # of (mirror index, is up) tuples. The mirrors are:
-        # 0: mirror for conventional illumination in AO path. (Flipper 1)
-        # 1: Flip to long detetcti path by stage (Flipper 5)
-        # 2: Flipper to SLM (flipper 3)
-        # 3: Flip on short detectuion path (Flipper 4)
-        # 4: NOT CONNECTED flipper 2 between inverted and upright stage
+        #map paths to flips. 
         self.modeToFlips = collections.OrderedDict()
-        self.modeToFlips['Conventional'] = [(0, True), (2, False)]
-        self.modeToFlips['Structured Illumination'] = [(0, False), (2, True)]
-        self.modeToFlips['dSTORM'] = [(0, True), (2, False)]
-        self.modeToFlips['w/o AO & 209 nm pixel size'] = [(3, False), (1, True)]
-        self.modeToFlips['with AO & 85 nm pixel size'] = [(3, True), (1, False)]
-        ## List of buttons for setting the light path.
+        for i in xrange(len(self.excitation)):
+            self.modeToFlips[self.excitation[i]] = []
+            for flips in self.excitationMaps[i].split('|'):
+                flipsList=flips.split(',')
+                flipsInt=[int(flipsList[0]),int(flipsList[1])]
+                self.modeToFlips[self.excitation[i]].append(flipsInt)        
+        #map objectives to flips. 
+        self.objectiveToFlips = collections.OrderedDict()
+        for i in xrange(len(self.objective)):
+            self.objectiveToFlips[self.objective[i]] = []
+            for flips in self.objectiveMaps[i].split('|'):
+                flipsList=flips.split(',')
+                flipsInt=[int(flipsList[0]),int(flipsList[1])]
+                self.objectiveToFlips[self.objective[i]].append(flipsInt)
+                
         self.lightPathButtons = []
- #       self.stagePathButtons = []
-        self.detPathButtons = []
+
+        # A thread to publish status updates.
+        # This reads temperature updates from the RaspberryPi
+        self.statusThread = threading.Thread(target=self.updateStatus)
+        self.statusThread.Daemon = True
+        self.statusThread.start()
+ 
         ## Current light path mode.
         self.curExMode = None
         self.curStageMode = None
         self.curDetMode = None
 
-        
-        ## Matplotlib Figure of temperature data.
-        self.figure = None
-        ## Matplotlib canvas for the plot.
-        self.canvas = None
-        ## History of data we have received. Most recent datapoints are at
-        # the beginning of the array.
-        self.temperatureHistory = numpy.zeros((2, 10))
+
+        #Now done via the value logger.
+        # ## Matplotlib Figure of temperature data.
+        # self.figure = None
+        # ## Matplotlib canvas for the plot.
+        # self.canvas = None
+        # ## History of data we have received. Most recent datapoints are at
+        # # the beginning of the array.
+        # self.temperatureHistory = numpy.zeros((2, 10))
 
 
     ## Connect to the remote program, and set widefield mode.
@@ -107,7 +146,7 @@ class NI6036eDevice(device.Device):
 
     ## Try to switch to widefield mode.
     def finalizeInitialization(self):
-        self.setExMode('Conventional')
+        self.setExMode(self.excitation[0])
 #        self.setStageMode('Inverted')
         #set default emission path
 #IMD 20170316 comment out as this is a hack for OMXT
@@ -133,10 +172,10 @@ class NI6036eDevice(device.Device):
         label = wx.StaticText(parent, -1, "Excitation path:")
         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         sizer.Add(label)
-        for mode in ['Conventional', 'Structured Illumination', 'dSTORM']:
+        for mode in self.excitation:
             button = gui.toggleButton.ToggleButton( 
-                    textSize = 12, label = mode, size = (180, 50), 
-                    parent = parent)
+                textSize = 12, label = mode, size = (180, 50), 
+                parent = parent)
             # Respond to clicks on the button.
             wx.EVT_LEFT_DOWN(button, lambda event, mode = mode: self.setExMode(mode))
             sizer.Add(button)
@@ -144,50 +183,56 @@ class NI6036eDevice(device.Device):
             if mode == self.curExMode:
                 button.activate()
         rowSizer.Add(sizer)
-
-#IMD 20130227 - added new button stack
-        # stageSizer=wx.BoxSizer(wx.VERTICAL)
-        # label = wx.StaticText(parent, -1, "Stage:")
-        # label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        # stageSizer.Add(label)
-        # for mode in ['Inverted', 'Upright']:
-            # button = gui.toggleButton.ToggleButton( 
-                    # textSize = 12, label = mode, size = (180, 50), 
-                    # parent = parent)
-
-            # wx.EVT_LEFT_DOWN(button, lambda event, mode = mode: self.setStageMode(mode))
-            # stageSizer.Add(button)
-            # self.stagePathButtons.append(button)
-            # if mode == self.curStageMode:
-                # button.activate()
-#        rowSizer.Add(stageSizer)
-
-#RK 20130227 - added new button stack
-        detSizer=wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(parent, -1, "Detection path:")
-        label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        detSizer.Add(label)
-        for mode in ['with AO & 85 nm pixel size', 'w/o AO & 209 nm pixel size']:
-            button = gui.toggleButton.ToggleButton( 
-                    textSize = 12, label = mode, size = (180, 50), 
-                    parent = parent)
-
-            wx.EVT_LEFT_DOWN(button, lambda event, mode = mode: self.setDetMode(mode))
-            detSizer.Add(button)
-            self.detPathButtons.append(button)
-            if mode == self.curDetMode:
-                button.activate()
-        rowSizer.Add(detSizer)
-
-        plotFrame = wx.Frame(parent, title = "Temperature sensor plot",
-                style = wx.RESIZE_BORDER | wx.FRAME_TOOL_WINDOW | wx.CAPTION)
-        self.figure = matplotlib.figure.Figure((6, 4), dpi = 100,
-                facecolor = (1, 1, 1))
-        self.canvas = matplotlib.backends.backend_wxagg.FigureCanvasWxAgg(
-                plotFrame, -1, self.figure)
-        self.updatePlot()
-        plotFrame.Show()
         return rowSizer
+
+
+    #IMD commented out 20170320 as we asre moving all this to config file.
+    
+#     #IMD 20130227 - added new button stack
+#         # stageSizer=wx.BoxSizer(wx.VERTICAL)
+#         # label = wx.StaticText(parent, -1, "Stage:")
+#         # label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+#         # stageSizer.Add(label)
+#         # for mode in ['Inverted', 'Upright']:
+#             # button = gui.toggleButton.ToggleButton( 
+#                     # textSize = 12, label = mode, size = (180, 50), 
+#                     # parent = parent)
+
+#             # wx.EVT_LEFT_DOWN(button, lambda event, mode = mode: self.setStageMode(mode))
+#             # stageSizer.Add(button)
+#             # self.stagePathButtons.append(button)
+#             # if mode == self.curStageMode:
+#                 # button.activate()
+# #        rowSizer.Add(stageSizer)
+
+# #RK 20130227 - added new button stack
+#         detSizer=wx.BoxSizer(wx.VERTICAL)
+#         label = wx.StaticText(parent, -1, "Detection path:")
+#         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+#         detSizer.Add(label)
+#         for mode in ['with AO & 85 nm pixel size', 'w/o AO & 209 nm pixel size']:
+#             button = gui.toggleButton.ToggleButton( 
+#                     textSize = 12, label = mode, size = (180, 50), 
+#                     parent = parent)
+
+#             wx.EVT_LEFT_DOWN(button, lambda event, mode = mode: self.setDetMode(mode))
+#             detSizer.Add(button)
+#             self.detPathButtons.append(button)
+#             if mode == self.curDetMode:
+#                 button.activate()
+#         rowSizer.Add(detSizer)
+
+
+        # #IMX 20170320 commented out as should be moved to valuelogger.
+        # plotFrame = wx.Frame(parent, title = "Temperature sensor plot",
+        #         style = wx.RESIZE_BORDER | wx.FRAME_TOOL_WINDOW | wx.CAPTION)
+        # self.figure = matplotlib.figure.Figure((6, 4), dpi = 100,
+        #         facecolor = (1, 1, 1))
+        # self.canvas = matplotlib.backends.backend_wxagg.FigureCanvasWxAgg(
+        #         plotFrame, -1, self.figure)
+        # self.updatePlot()
+        # plotFrame.Show()
+        # return rowSizer
 
 
     ## Set the light path to the specified mode.
@@ -253,63 +298,65 @@ class NI6036eDevice(device.Device):
         values = args[2]
         # Push all existing data over one timepoint and insert the new
         # data at the beginning.
+        for i in xrange(len(values)):
+                           events.publish("status update",
+                           'NIcard',
+                           {'temperature'+str(i): values[i],})
 
-        length=self.temperatureHistory.shape[0]
-        for i in range(self.temperatureHistory.shape[0]-1):
-            self.temperatureHistory[length-i-1]=self.temperatureHistory[length-i-2]
-  #      self.temperatureHistory[1:][:] = self.temperatureHistory[:-1][:]
-        self.temperatureHistory[0] = list(values)
-        self.updatePlot()
+    def onObjectiveChange(self, name, pixelSize, transform, offset):
+        for flips in self.objectiveToFlips[name]:
+            self.flipDownUp(flips[0], flips[1])
+        print "NIcard objective change to ",name
+#    def onObjectiveChange(self, newName, pixelSize, transform, offset):
+#        if (newName=='63x85nm'):
+#            self.setDetMode('with AO & 85 nm pixel size')
+#        elif (newName=='63x209nm'):
+#            self.setDetMode('w/o AO & 209 nm pixel size')
+
+class niOutputWindow(wx.Frame):
+    def __init__(self, ni6063e, parent, *args, **kwargs):
+        wx.Frame.__init__(self, parent, *args, **kwargs)
+        ## piDevice instance.
+        self.nicard = ni6036e
+        # Contains all widgets.
+        panel = wx.Panel(self)
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
+        buttonSizer = wx.GridSizer(2, 4, 1, 1)
+
+        ## Maps buttons to their lines.
+        self.buttonToLine = {}
+
+        # Set up the digital lineout buttons.
+        for i in range(len(nicard.lines)) :
+            button = gui.toggleButton.ToggleButton(
+                    parent = panel, label = str(incard.lines[i]),
+                    activateAction = self.toggle,
+                    deactivateAction = self.toggle,
+                    size = (140, 80))
+            buttonSizer.Add(button, 1, wx.EXPAND)
+            self.buttonToLine[button] = i
+        mainSizer.Add(buttonSizer)
+
+        panel.SetSizerAndFit(mainSizer)
+        self.SetClientSize(panel.GetSize())
 
 
-    ## Plot our current temperature data.
-    def updatePlot(self):
-        if not numpy.any(self.temperatureHistory != 0) or not self.figure:
-            # No temperature data to display, or no figure to display it on.
-            print "no temp data"
-            return
-        # Remove existing plots.
-        self.figure.clear()
-        axes = self.figure.gca()
-        axes.set_xlabel("Minutes ago")
-        axes.set_ylabel(u"Temperature (\u00b0C)")
-        # Figure out how many datapoints we actually have, in the case that
-        # the temperature sensor program was restarted recently and is thus
-        # short on data. This is indicated by a sensor having no data (i.e.
-        # still initialized to 0).
-        firstZero = len(self.temperatureHistory)
-#        zeros = numpy.where(self.temperatureHistory == 0)[1]
-#        if len(zeros):
-#            firstZero = zeros[0]
-        xMin, xMax = -10, .1
-        if firstZero is not None:
-            xMin = -firstZero / 6.0
-        yMin = self.temperatureHistory[:firstZero,0:].min()
-        yMax = self.temperatureHistory[:firstZero,0:].max()
-        yMin=-2
-        yMax=5
-        if yMax - yMin < 5:
-            # Ensure the graph is at least 5 degrees tall.
-            yMax += (5 - yMax + yMin) / 2.0
-            yMin -= (5 - yMax + yMin) / 2.0
-        axes.axis([xMin, xMax, yMin, yMax])
-        xVals = numpy.arange(0, -firstZero /6.0, -.16667)
-#        print xVals,self.temperatureHistory[:firstZero, 0]
-        for i in xrange(0, self.temperatureHistory.shape[1]):
-            axes.plot(xVals, self.temperatureHistory[:firstZero, i],
-                    self.PLOT_COLORS[i], label = self.LEGENDS[i])
-        self.canvas.draw()
-        
+    ## One of our buttons was clicked; update the DSP's output.
+    def toggle(self):
+        output = 0
+        for button, line in self.buttonToLine.iteritems():
+            if button.getIsActive():
+                self.pi.RPiConnection.flipDownUp(line, 1)
+            else:
+                self.pi.RPiConnection.flipDownUp(line, 0)
 
-    ## Receive light sensor data from the remote program's sensors.
-    def receiveLightData(self, *args):
-        isOn = not args[1]
-        text = "Room light %s" % ['OFF', 'ON'][isOn]
-        color = [(170, 170, 170), (255, 255, 0)][isOn]
- #       events.publish('update status light', 'room light', text, color)
-        
-    def onObjectiveChange(self, newName, pixelSize, transform, offset):
-        if (newName=='63x85nm'):
-            self.setDetMode('with AO & 85 nm pixel size')
-        elif (newName=='63x209nm'):
-            self.setDetMode('w/o AO & 209 nm pixel size')
+
+
+
+            
+## Debugging function: display a DSPOutputWindow.
+def makeOutputWindow(self):
+    # HACK: the _deviceInstance object is created by the depot when this
+    # device is initialized.
+    global _deviceInstance
+    niOutputWindow(_deviceInstance, parent = wx.GetApp().GetTopWindow()).Show()
