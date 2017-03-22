@@ -3,6 +3,7 @@ import depot
 import events
 import gui.toggleButton
 import util.connection
+import threading
 
 import collections
 import matplotlib
@@ -95,19 +96,21 @@ class NI6036eDevice(device.Device):
         #map objectives to flips. 
         self.objectiveToFlips = collections.OrderedDict()
         for i in xrange(len(self.objective)):
+            print self.objectiveMaps
             self.objectiveToFlips[self.objective[i]] = []
-            for flips in self.objectiveMaps[i].split('|'):
-                flipsList=flips.split(',')
-                flipsInt=[int(flipsList[0]),int(flipsList[1])]
-                self.objectiveToFlips[self.objective[i]].append(flipsInt)
+            if(self.objectiveMaps[i]):
+                for flips in self.objectiveMaps[i].split('|'):
+                    flipsList=flips.split(',')
+                    flipsInt=[int(flipsList[0]),int(flipsList[1])]
+                    self.objectiveToFlips[self.objective[i]].append(flipsInt)
                 
         self.lightPathButtons = []
 
-        # A thread to publish status updates.
-        # This reads temperature updates from the RaspberryPi
-        self.statusThread = threading.Thread(target=self.updateStatus)
-        self.statusThread.Daemon = True
-        self.statusThread.start()
+#        # A thread to publish status updates.
+#        # This reads temperature updates from the RaspberryPi
+#        self.statusThread = threading.Thread(target=self.updateStatus)
+#        self.statusThread.Daemon = True
+#        self.statusThread.start()
  
         ## Current light path mode.
         self.curExMode = None
@@ -314,7 +317,7 @@ class NI6036eDevice(device.Device):
 #            self.setDetMode('w/o AO & 209 nm pixel size')
 
 class niOutputWindow(wx.Frame):
-    def __init__(self, ni6063e, parent, *args, **kwargs):
+    def __init__(self, ni6036e, parent, *args, **kwargs):
         wx.Frame.__init__(self, parent, *args, **kwargs)
         ## piDevice instance.
         self.nicard = ni6036e
@@ -327,9 +330,9 @@ class niOutputWindow(wx.Frame):
         self.buttonToLine = {}
 
         # Set up the digital lineout buttons.
-        for i in range(len(nicard.lines)) :
+        for i in range(len(self.nicard.lines)) :
             button = gui.toggleButton.ToggleButton(
-                    parent = panel, label = str(incard.lines[i]),
+                    parent = panel, label = str(self.nicard.lines[i]),
                     activateAction = self.toggle,
                     deactivateAction = self.toggle,
                     size = (140, 80))
@@ -346,9 +349,9 @@ class niOutputWindow(wx.Frame):
         output = 0
         for button, line in self.buttonToLine.iteritems():
             if button.getIsActive():
-                self.pi.RPiConnection.flipDownUp(line, 1)
+                self.nicard.niConnection.flipDownUp(line, 1)
             else:
-                self.pi.RPiConnection.flipDownUp(line, 0)
+                self.nicard.niConnection.flipDownUp(line, 0)
 
 
 
