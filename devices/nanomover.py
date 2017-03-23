@@ -10,6 +10,7 @@ import numpy
 import threading
 import time
 import wx
+import copy
 
 from config import config
 CLASS_NAME = 'NanomoverDevice'
@@ -25,13 +26,13 @@ class NanomoverDevice(stage.StageDevice):
         self.connection = None
         # Maps the cockpit's axis ordering (0: X, 1: Y, 2: Z) to the
         # XY stage's ordering (1: Y, 2: X,0: Z)
-        self.axisMapper = {0: 2, 1: 1, 2: 0}
+        self.axisMapper = {0: 0, 1: 1, 2: 2}
         ## Cached copy of the stage's position. Initialized to an impossible
         # value; this will be modified in initialize.
-        self.xyPositionCache = (10 ** 100, 10 ** 100)
+        self.positionCache = (10, 10, 10)
         ## Maps cockpit axis ordering to a +-1 multiplier to apply to motion,
         # since some of our axes are flipped.
-        self.axisSignMapper = {0: -1, 1: 1, 2: 1}
+        self.axisSignMapper = {0: 1, 1: 1, 2: 1}
         ## Time of last action using the piezo; used for tracking if we should
         # disable closed loop.
          
@@ -53,11 +54,11 @@ class NanomoverDevice(stage.StageDevice):
                     self.safeties=eval(lstr)
             except:
                 print "No softlimits section setting default limits"
-                self.softlimits = [[4000, 25000],
-                                   [4000, 25000],
+                self.softlimits = [[0, 25000],
+                                   [0, 25000],
                                    [7300, 25000]]
-                self.safeties = [[4000, 25000],
-                                   [4000, 25000],
+                self.safeties = [[0, 25000],
+                                   [0, 25000],
                                    [7300, 25000]]
 
             #a usful middle position for after a home
@@ -79,8 +80,8 @@ class NanomoverDevice(stage.StageDevice):
         if self.curPosition == [0,0,0]:
             print "Homing Nanomover"
             self.connection.connection.startOMX()
+            self.home()
             interfaces.stageMover.goToXY(self.middleXY, shouldBlock = True)
-        print self.curPosition
 #        for axis, (minVal, maxVal) in enumerate(self.safeties):
 #            try:
 #                self.connection.connection.setSafetyMinOMX(axis, minVal)
@@ -128,11 +129,11 @@ class NanomoverDevice(stage.StageDevice):
             # slightly from the true safeties. Moving to the middle is
             # necessary to avoid the banned rectangles, in case the stage is
             # in them when we start.
-            initialPos = tuple(self.xyPositionCache)
+            initialPos = tuple(self.positionCache)
 #            interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
             for i in xrange(5):
                 print "Rep %d of 5..." % i
-                for position in self.softlimits:
+                for position in self.softlimits[0:2]:
                     interfaces.stageMover.goToXY(position, shouldBlock = True)
             interfaces.stageMover.goToXY(self.middleXY, shouldBlock = True)
             interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
@@ -176,6 +177,7 @@ class NanomoverDevice(stage.StageDevice):
                 # Add smaller step sizes for the Z axis.
                 stepSizes = [.01, .02, .05] + stepSizes
             lowLimit, highLimit = self.safeties[axis]
+            softLowLimit , softHighLimit = self.softlimits[axis]
             result.append(handlers.stagePositioner.PositionerHandler(
                 "%d nanomover" % axis, "%d stage motion" % axis, False, 
                 {'moveAbsolute': self.moveAbsolute, 
@@ -183,7 +185,7 @@ class NanomoverDevice(stage.StageDevice):
                     'getPosition': self.getPosition,
                     'setSafety': self.setSafety}, 
                 axis, stepSizes, 3, 
-                (4000, 25000), (lowLimit, highLimit)))
+                (softLowLimit, softHighLimit), (lowLimit, highLimit)))
         return result
 
 
@@ -209,29 +211,31 @@ class NanomoverDevice(stage.StageDevice):
     @util.threads.callInNewThread
     def sendXYPositionUpdates(self):
         while True:
-            prevX, prevY = self.xyPositionCache
-            x, y = self.getXYPosition(shouldUseCache = False)
+            prevX, prevY = self.positionCache[:2]
+            x, y, z = self.getPosition(shouldUseCache = False)
             delta = abs(x - prevX) + abs(y - prevY)
-            if delta < 5.:
+            if delta < 0.5:
                 # No movement since last time; done moving.
                 for axis in [0, 1]:
                     events.publish('stage stopped', '%d nanomover' % axis)
+                    print "updates Sttopped"
                 return
             for axis, val in enumerate([x, y]):
-                events.publish('stage mover', '%d nanomover' % axis, axis,
-                        self.axisSignMapper[axis] * val)
-            curPosition = (x, y)
+                events.publish('stage mover', '%d nanomover' % axis, 
+                               axis, self.axisSignMapper[axis] * val)
+                print axis,val
             time.sleep(.1)
 
-    def getXYPosition(self, axis = None, shouldUseCache = True):
+    def getPosition(self, axis = None, shouldUseCache = True):
         if not shouldUseCache:
             position = self.connection.connection.posXYZ_OMX()
             x = float(position[self.axisMapper[0]]) * self.axisSignMapper[0]
             y = float(position[self.axisMapper[1]]) * self.axisSignMapper[1]
-            self.xyPositionCache = (x, y)
+            z = float(position[self.axisMapper[2]]) * self.axisSignMapper[2]
+            self.positionCache = (x, y, z)
         if axis is None:
-            return self.xyPositionCache
-        return self.xyPositionCache[axis]
+            return self.positionCache
+        return self.positionCache[axis]
 
 
     ## Receive information from the Nanomover control program.
@@ -246,18 +250,20 @@ class NanomoverDevice(stage.StageDevice):
 
     ## Move a specific axis to a given position.
     def moveAbsolute(self, axis, pos):
-        self.connection.connection.moveOMX_axis(axis, pos)
         self.sendXYPositionUpdates()
+        self.connection.connection.moveOMX_axis(axis, pos)
+
 
 
     ## Move a specific axis by a given amount.
     def moveRelative(self, axis, delta):
-        self.connection.connection.moveOMX_dAxis(axis, delta)
         self.sendXYPositionUpdates()
+        self.connection.connection.moveOMX_dAxis(axis, delta)
+
 
     ## Get the position along the given axis.
-    def getPosition(self, axis):
-        return self.curPosition[axis]
+#    def getPosition(self, axis):
+#        return self.positionCache[axis]
 
 
     ## Set the soft motion limit (min or max) for the specified axis.
@@ -273,8 +279,18 @@ class NanomoverDevice(stage.StageDevice):
     def onAbort(self, *args):
         self.connection.connection.stopOMX()
 
-    #functiojn to home stage if needed.
+    #function to home stage if needed.
     def home(self):
+        #keep a copy of the softlimits.
+#        realSoftlimits= copy.copy(self.softlimits)
+#        self.softlimits = [[-25000, 25000],
+#                           [-25000, 25000],
+#                           [7300, 50000]]
+        #home the stage which moves to lrage negative positon until it 
+        #hits the hard limit switch 
         self.connection.connection.findHome_OMX()
-        
+        self.sendXYPositionUpdates()
+        self.positionCache = self.getPosition(shouldUseCache = False)
+        #reset softlimits to their original value
+#        self.softlimits=realSoftlimits
 
