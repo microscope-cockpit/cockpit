@@ -82,30 +82,6 @@ class NanomoverDevice(stage.StageDevice):
             self.connection.connection.startOMX()
             self.home()
             interfaces.stageMover.goToXY(self.middleXY, shouldBlock = True)
-#        for axis, (minVal, maxVal) in enumerate(self.safeties):
-#            try:
-#                self.connection.connection.setSafetyMinOMX(axis, minVal)
-#            except Exception, e:
-#                newTarget = int(self.curPosition[axis]) - 1
-#                wx.MessageDialog(None,
-#                        ("The %s axis " % ['X', 'Y', 'Z'][axis]) +
-#                        ("is below the default safety min of %.2f, " % minVal) #+
-#                        ("so the safety min is being set to %d" % newTarget),
-#                        style = wx.ICON_EXCLAMATION | wx.OK).ShowModal()
-#                self.connection.connection.setSafetyMinOMX(axis, newTarget)
-#                self.safeties[axis][0] = newTarget
-#            try:
-#                self.connection.connection.setSafetyMaxOMX(axis, maxVal)
-#            except Exception, e:
-#                newTarget = int(self.curPosition[axis]) + 1
-#                wx.MessageDialog(None,
-#                        ("The %s axis " % ['X', 'Y', 'Z'][axis]) +
-#                        ("is below the default safety min of %.2f, " % minVal) #+
-#                        ("so the safety min is being set to %d" % newTarget),
-#                        style = wx.ICON_EXCLAMATION | wx.OK).ShowModal()
-#                self.connection.connection.setSafetyMaxOMX(axis, newTarget)
-#                self.safeties[axis][1] = newTarget
-
 
     ## We want to periodically exercise the XY stage to spread the grease
     # around on its bearings; check how long it's been since the stage was
@@ -145,8 +121,6 @@ class NanomoverDevice(stage.StageDevice):
 
 
     def performSubscriptions(self):
-#        events.subscribe('IR remote start', self.onRemoteStart)
-#        events.subscribe('IR remote stop', self.onAbort)
         events.subscribe('user abort', self.onAbort)
 
 
@@ -154,7 +128,6 @@ class NanomoverDevice(stage.StageDevice):
         events.publish('new status light', 'stage vertical position', '')
         self.publishPosition()
         self.sendXYPositionUpdates()
-#        self.setFiberMode('Full field')
 
     ## The XY Macro Stage view is painting itself; draw the banned
     # rectangles as pink excluded zones.
@@ -214,16 +187,14 @@ class NanomoverDevice(stage.StageDevice):
             prevX, prevY = self.positionCache[:2]
             x, y, z = self.getPosition(shouldUseCache = False)
             delta = abs(x - prevX) + abs(y - prevY)
-            if delta < 0.5:
+            if delta < 2:
                 # No movement since last time; done moving.
                 for axis in [0, 1]:
                     events.publish('stage stopped', '%d nanomover' % axis)
-                    print "updates Sttopped"
                 return
             for axis, val in enumerate([x, y]):
                 events.publish('stage mover', '%d nanomover' % axis, 
                                axis, self.axisSignMapper[axis] * val)
-                print axis,val
             time.sleep(.1)
 
     def getPosition(self, axis = None, shouldUseCache = True):
@@ -259,11 +230,6 @@ class NanomoverDevice(stage.StageDevice):
     def moveRelative(self, axis, delta):
         self.sendXYPositionUpdates()
         self.connection.connection.moveOMX_dAxis(axis, delta)
-
-
-    ## Get the position along the given axis.
-#    def getPosition(self, axis):
-#        return self.positionCache[axis]
 
 
     ## Set the soft motion limit (min or max) for the specified axis.
