@@ -27,6 +27,7 @@ from handlers.deviceHandler import STATES
 from toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 from util import userConfig
 import gui.loggingWindow as log
+import events
 
 ## @package gui.device
 # Defines classes for common controls used by cockpit devices.
@@ -69,6 +70,18 @@ class Button(wx.StaticText):
             self.Bind(wx.EVT_RIGHT_DOWN, lambda event: rightAction(event))
 
 
+    def updateLabel(self, value=None, **kwargs):
+        """Update the label.
+
+        self.value may be a function or a string."""
+        if value is not None:
+            self.value = value
+        if callable(self.value):
+            self.SetLabel(self.value())
+        else:
+            self.SetLabel(self.value)
+
+
     ## Override of normal StaticText SetLabel, to try to vertically
     # align the text.
     def SetLabel(self, text, *args, **kwargs):
@@ -103,14 +116,14 @@ class ValueDisplay(wx.BoxSizer):
         super(ValueDisplay, self).__init__(wx.HORIZONTAL)
         self.value = value
         label = Label(
-                parent=parent, label=(' ' + label.strip(':') + ':'),
-                size=SMALL_SIZE, style=wx.ALIGN_LEFT)
+            parent=parent, label=(' ' + label.strip(':') + ':'),
+            size=SMALL_SIZE, style=wx.ALIGN_LEFT)
         label.SetFont(SMALL_FONT)
         self.label = label
         self.Add(label)
         self.valDisplay = Label(
-                parent=parent, label=str(value),
-                size=SMALL_SIZE, style=(wx.ALIGN_RIGHT | wx.ST_NO_AUTORESIZE))
+            parent=parent, label=str(value),
+            size=SMALL_SIZE, style=(wx.ALIGN_RIGHT | wx.ST_NO_AUTORESIZE))
         self.valDisplay.SetFont(SMALL_FONT)
         self.Add(self.valDisplay)
         self.formatStr = (formatStr or r'%.6s') + (unitStr or '') + ' '
@@ -130,11 +143,15 @@ class ValueDisplay(wx.BoxSizer):
 
 
     def updateValue(self, value=None):
+        """Update the displayed value.
+
+        self.value may be a function or a string."""
         if value is not None:
-            if self.value == value:
-                return
             self.value = value
-        self.valDisplay.SetLabel(self.formatStr % self.value)
+        if callable(self.value):
+            self.valDisplay.SetLabel(self.formatStr % self.value())
+        else:
+            self.valDisplay.SetLabel(self.formatStr % self.value)
 
 
 class MultilineDisplay(wx.StaticText):
@@ -240,10 +257,18 @@ class SettingsEditor(wx.Frame):
         self.SetSizerAndFit(sizer)
         self.SetMinSize((256, -1))
         #self.SetMaxSize((self.GetMinWidth(), -1))
+        events.subscribe("%s settings changed" % self.device, self.onSettingsChanged)
+
+
+    def onSettingsChanged(self, source=None):
+        if source != self and self.IsShown():
+            self.updateGrid()
+
 
     def onEnabledEvent(self, evt):
         if self.IsShown():
             self.updateGrid()
+
 
     def onClose(self, evt):
         self.Close()
@@ -277,9 +302,8 @@ class SettingsEditor(wx.Frame):
             self.handler.reset_cache()
         self.device.set_setting(name, value)
         self.grid.SelectProperty(prop)
-        self.Freeze()
         self.updateGrid()
-        self.Thaw()
+
 
     def onSave(self, event):
         settings = self.grid.GetPropertyValues()
@@ -290,6 +314,7 @@ class SettingsEditor(wx.Frame):
                             settings)
 
     def updateGrid(self):
+        self.Freeze()
         grid = self.grid
         self.settings = OrderedDict(self.device.describe_settings())
         current = self.device.get_all_settings()
@@ -313,6 +338,8 @@ class SettingsEditor(wx.Frame):
             except wx._core.PyAssertionError:
                 # Bug in wx in stc.EnsureCaretVisible, could not convert to a long.
                 pass
+        self.Thaw()
+        events.publish("%s settings changed" % self.device, source=self)
 
 
     def populateGrid(self):
