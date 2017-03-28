@@ -10,7 +10,6 @@ import traceback
 # mode.
 
 
-
 ## Simple container class.
 class Imager:
     def __init__(self):
@@ -32,6 +31,28 @@ class Imager:
         ## Boolean that indicates if we're currently in video mode.
         self.amInVideoMode = False
         events.subscribe('user abort', self.stopVideo)
+        # Update exposure times on certain events.
+        events.subscribe('laser exposure update', self.updateExposureTime)
+        events.subscribe('light source enable', lambda *args: self.updateExposureTime())
+        events.subscribe('camera enable', lambda *args: self.updateExposureTime())
+
+
+
+
+    ## Update exposure times on cameras.
+    def updateExposureTime(self):
+        e_times = [l.getExposureTime() for l in self.activeLights]
+        if not e_times:
+            return
+        e_max = max(e_times)
+        wasInVideoMode = self.amInVideoMode
+        if self.amInVideoMode:
+            self.shouldStopVideoMode = True
+            while self.amInVideoMode:
+                time.sleep(0.1)
+        [c.setExposureTime(e_max) for c in self.activeCameras]
+        if wasInVideoMode:
+            self.videoMode()
 
 
     ## Add or remove the provided object from the specified set.
