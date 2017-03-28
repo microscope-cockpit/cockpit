@@ -10,6 +10,22 @@ import traceback
 # mode.
 
 
+def pauseVideo(func):
+    """A wrapper to pause and resume video."""
+    def wrapper(*args, **kwargs):
+        wasInVideoMode = imager.amInVideoMode
+        if wasInVideoMode:
+            imager.shouldStopVideoMode = True
+            while imager.amInVideoMode:
+                time.sleep(0.05)
+        result = func(*args, **kwargs)
+        if wasInVideoMode:
+            imager.videoMode()
+        return result
+
+    return wrapper
+
+
 ## Simple container class.
 class Imager:
     def __init__(self):
@@ -40,19 +56,13 @@ class Imager:
 
 
     ## Update exposure times on cameras.
+    @pauseVideo
     def updateExposureTime(self):
         e_times = [l.getExposureTime() for l in self.activeLights]
         if not e_times:
             return
         e_max = max(e_times)
-        wasInVideoMode = self.amInVideoMode
-        if self.amInVideoMode:
-            self.shouldStopVideoMode = True
-            while self.amInVideoMode:
-                time.sleep(0.1)
         [c.setExposureTime(e_max) for c in self.activeCameras]
-        if wasInVideoMode:
-            self.videoMode()
 
 
     ## Add or remove the provided object from the specified set.
