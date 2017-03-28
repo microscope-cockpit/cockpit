@@ -75,7 +75,7 @@ class UniversalCameraDevice(camera.CameraDevice):
         self.describe_setting = self.proxy.describe_setting
         self.describe_settings = self.proxy.describe_settings
         try:
-            self.updateSettings(self.get_all_settings())
+            self.updateSettings()
         except:
             pass
         if self.settings.has_key('readout mode'):
@@ -84,14 +84,15 @@ class UniversalCameraDevice(camera.CameraDevice):
             self.modes = None
 
 
-    def updateSettings(self, settings):
-        self.settings.update(settings)
+    def updateSettings(self, settings=None):
+        if settings is not None:
+            self.proxy.update_settings(settings)
+        self.settings.update(self.proxy.get_all_settings())
         events.publish("%s settings changed" % str(self))
 
 
     def parseMode(self):
         mode_str = self.settings.get('readout mode', None)
-        print mode_str
         if mode_str is None:
             return '???'
         mode_re = r'(^|.*[^a-zA-Z0-9])(EM)|((M|m)ult)'
@@ -119,7 +120,7 @@ class UniversalCameraDevice(camera.CameraDevice):
         """Restore settings as they were prior to experiment."""
         if self.enabled:
             self.updateSettings(self.cached_settings)
-            self.proxy.update_settings(self.settings)
+            #self.proxy.update_settings(self.settings)
             self.proxy.enable()
         self.handler.exposureMode = self.proxy.get_trigger_type()
 
@@ -205,7 +206,7 @@ class UniversalCameraDevice(camera.CameraDevice):
             # Nothing to do.
             return
         self.setAnyDefaults()
-        self.updateSettings(self.proxy.get_all_settings())
+        self.updateSettings()
         # Use async call to allow hardware time to respond.
         result = Pyro4.async(self.proxy).enable()
         result.wait(timeout=10)
@@ -307,32 +308,22 @@ class UniversalCameraDevice(camera.CameraDevice):
         # TODO - this should probably live in a base deviceHandler.
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        if self.settings.has_key('readout mode'):
-            self.modeButton = gui.device.Button(parent=self.panel,
-                                                label=self.parseMode(),
-                                                leftAction=self.onModeButton,
-                                                rightAction=None)
-            self.modeButton.updateLabel(self.parseMode)
-            events.subscribe("%s settings changed" % self, self.modeButton.updateLabel)
-            sizer.Add(self.modeButton)
-        #
-        # self.gainButton = gui.toggleButton.ToggleButton(
-        #         label="EM Gain\n%d" % self.settings['EMGain'],
-        #         parent=self.panel)
-        # self.gainButton.Bind(wx.EVT_LEFT_DOWN, self.onGainButton)
-        # self.gainButton.Unbind(wx.EVT_RIGHT_DOWN)
-        # rowSizer.Add(self.gainButton)
-        #
-        #
-        #
-        #
-        # if self.settings.has_key('gain'):
+        modeButton = gui.device.Button(parent=self.panel,
+                                            label=self.parseMode(),
+                                            leftAction=self.onModeButton,
+                                            rightAction=None,
+                                            size=gui.device.TALL_SIZE)
+        modeButton.updateLabel(self.parseMode)
+        events.subscribe("%s settings changed" % self, modeButton.updateLabel)
+        sizer.Add(modeButton)
+
         adv_button = gui.device.Button(parent=self.panel,
                                        label='settings',
                                        leftAction=self.showSettings)
         sizer.Add(adv_button)
         self.panel.SetSizerAndFit(sizer)
         return self.panel
+
 
     def onModeButton(self, evt):
         menu = wx.Menu()
@@ -352,19 +343,12 @@ class UniversalCameraDevice(camera.CameraDevice):
 
     def setReadoutModeByIndex(self, index):
         self.proxy.set_readout_mode(self.modes[index])
-        self.updateSettings(self.get_all_settings())
+        self.updateSettings()
 
 
     def showSettings(self, evt):
         click_pos = wx.GetMousePosition()
         if not self.settings_editor:
-            # TODO - there's a problem with abstraction here. The settings
-            # editor needs the describe/get/set settings functions from the
-            # proxy, but it also needs to be able to invalidate the cache
-            # on the handler. The handler should probably expose the
-            # settings interface. UniversalCamera is starting to look
-            # more and more like an interface translation.
-            #self.setAnyDefaults()
             self.settings_editor = SettingsEditor(self, handler=self.handler)
             self.settings_editor.Show()
         self.settings_editor.SetPosition(click_pos)
