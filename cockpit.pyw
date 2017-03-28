@@ -148,7 +148,7 @@ class CockpitApp(wx.App):
             events.publish('cockpit initialization complete')
             self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
             return True
-        except Exception, e:
+        except Exception as e:
             wx.MessageDialog(None,
                     "An error occurred during initialization:\n\n" +
                     ("%s\n\n" % e) +
