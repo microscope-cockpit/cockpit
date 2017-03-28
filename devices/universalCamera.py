@@ -313,9 +313,18 @@ class UniversalCameraDevice(camera.CameraDevice):
                                             leftAction=self.onModeButton,
                                             rightAction=None,
                                             size=gui.device.TALL_SIZE)
-        modeButton.updateLabel(self.parseMode)
-        events.subscribe("%s settings changed" % self, modeButton.updateLabel)
+        modeButton.update(self.parseMode)
+        events.subscribe("%s settings changed" % self, modeButton.update)
         sizer.Add(modeButton)
+
+        gainButton = gui.device.Button(parent=self.panel,
+                                              label='Gain',
+                                              leftAction=self.onGainButton,
+                                              rightAction=None
+                                        )
+        gainButton.update(lambda: 'Gain:\t%s' % self.settings.get('gain', None))
+        events.subscribe("%s settings changed" % self, gainButton.update)
+        sizer.Add(gainButton)
 
         adv_button = gui.device.Button(parent=self.panel,
                                        label='settings',
@@ -323,6 +332,18 @@ class UniversalCameraDevice(camera.CameraDevice):
         sizer.Add(adv_button)
         self.panel.SetSizerAndFit(sizer)
         return self.panel
+
+
+    def onGainButton(self, evt):
+        if not self.settings.get('gain', False):
+            return
+        desc = self.describe_setting('gain')
+        mingain, maxgain = desc['values']
+        gain = wx.GetNumberFromUser('Gain', '', 'Set gain', value=self.settings.get('gain', 0),
+                                    min=mingain, max=maxgain)
+        if gain == -1:
+            return
+        self.updateSettings({'gain': gain})
 
 
     def onModeButton(self, evt):
