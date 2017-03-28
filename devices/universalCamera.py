@@ -36,6 +36,7 @@ import util.threads
 import util.userConfig
 import re
 from gui.device import SettingsEditor
+from interfaces.imager import pauseVideo
 
 CLASS_NAME = 'UniversalCameraManager'
 
@@ -79,6 +80,12 @@ class UniversalCameraDevice(camera.CameraDevice):
             self.modes = self.describe_setting('readout mode')['values']
         else:
             self.modes = None
+
+
+    def finalizeInitialization(self):
+        # Decorate updateSettings. Can't do this from the outset, as camera
+        # is initialized before interfaces.imager.
+        self.updateSettings = pauseVideo(self.updateSettings)
 
 
     def updateSettings(self, settings=None):
@@ -187,6 +194,8 @@ class UniversalCameraDevice(camera.CameraDevice):
         self.handler.addListener(self)
         return result
 
+
+    @pauseVideo
     def enableCamera(self, name, shouldEnable):
         """Enable the hardware."""
         if not shouldEnable:
