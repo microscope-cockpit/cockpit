@@ -64,9 +64,6 @@ class UniversalCameraDevice(camera.CameraDevice):
         self.path_transform = (0, 0, 0)
         self.settings = {}
         self.cached_settings={}
-        self.settings['transform'] = tuple(
-                         self.path_transform[i] ^ self.base_transform[i] for i in range(3))
-        self.settings['exposure_time'] = 0.001
         self.settings_editor = None
         self.defaults = DEFAULTS_NONE
         self.get_all_settings = self.proxy.get_all_settings
@@ -290,7 +287,6 @@ class UniversalCameraDevice(camera.CameraDevice):
     def setExposureTime(self, name, exposureTime):
         """Set the exposure time."""
         # Camera uses times in s; cockpit uses ms.
-        print "Setting exposure time."
         self.proxy.set_exposure_time(exposureTime / 1000.0)
 
 
