@@ -72,7 +72,7 @@ class Button(wx.StaticText):
             self.Bind(wx.EVT_RIGHT_DOWN, lambda event: rightAction(event))
 
 
-    def updateLabel(self, value=None):
+    def update(self, value=None):
         """Update the label.
 
         self.value may be a function or a string."""
@@ -144,7 +144,7 @@ class ValueDisplay(wx.BoxSizer):
         return self.valDisplay.Enable()
 
 
-    def updateValue(self, value=None):
+    def update(self, value=None):
         """Update the displayed value.
 
         self.value may be a function or a string."""
