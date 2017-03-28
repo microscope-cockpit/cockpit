@@ -65,6 +65,7 @@ class UniversalCameraDevice(camera.CameraDevice):
         self.path_transform = (0, 0, 0)
         self.settings = {}
         self.cached_settings={}
+        self.settings['transform'] = tuple(self.path_transform[i] ^ self.base_transform[i] for i in range(3))
         self.settings_editor = None
         self.defaults = DEFAULTS_NONE
         self.get_all_settings = self.proxy.get_all_settings
