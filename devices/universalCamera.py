@@ -368,6 +368,7 @@ class UniversalCameraDevice(camera.CameraDevice):
         gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
+    @pauseVideo
     def setReadoutModeByIndex(self, index):
         self.proxy.set_readout_mode(self.modes[index])
         self.updateSettings()
