@@ -216,8 +216,13 @@ class BoulderSLMDevice(device.Device):
                 "slm",
                 {'examineActions': self.examineActions,
                     'getNumRunnableLines': self.getNumRunnableLines,
-                    'executeTable': self.executeTable,
-                    'makeUI': self.makeUI})
+                    'executeTable': self.executeTable,})
+                    # If we add makeUI to the handler, it will be called twice:
+                    # once from the device, and once from the handler. We could catch
+                    # it, but shouldn't have to: abstraction is broken. We should
+                    # decide whether handlers or devices are responsible for drawing
+                    # UI.
+                    #'makeUI': self.makeUI})
         self.executor.callbacks['getMovementTime'] = self.getMovementTime
         result.append(self.executor)
         return result
