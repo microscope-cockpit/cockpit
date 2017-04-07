@@ -66,7 +66,7 @@ class AerotechZStage(device.Device):
             self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')   
             # Controller port.
             self.port = config.getint(CONFIG_NAME, 'port')
-			#
+            #
             try :
                 limitString = config.get(CONFIG_NAME, 'softlimits')
                 parsed = re.search(LIMITS_PAT, limitString)
@@ -80,8 +80,8 @@ class AerotechZStage(device.Device):
             except:
                 print "No softlimits section setting default limits"
                 self.softlimits = (-30000,7000)
-			
-			
+
+
             # Subscribe to abort events.
             events.subscribe('user abort', self.onAbort)
             # The cockpit axis does this stage moves along.
@@ -137,7 +137,7 @@ class AerotechZStage(device.Device):
     def getHandlers(self):
         result = []
         axis = self.axis
-		#IMD 2015-03-02 changed hard limits to reflect DeepSIM should go into config file
+        #IMD 2015-03-02 changed hard limits to reflect DeepSIM should go into config file
         minVal = self.softlimits[0]
         maxVal = self.softlimits[1]
         handler = handlers.stagePositioner.PositionerHandler(
