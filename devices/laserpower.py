@@ -132,9 +132,11 @@ class LaserPowerDevice(device.Device):
         #self.powerControl = depot.getDevice(devices.powerButtons)
         for label, light in self.lights.items():
             uri = 'PYRO:%s@%s:%d' % (light['device'], self.ipAddress, light['port'])
-            proxy = Pyro4.Proxy(uri)
-            self.nameToConnection[label] = proxy
-            self.nameToAsync[label] = Pyro4.async(proxy)
+            # Create a synchronous proxy
+            self.nameToConnection[label] = Pyro4.Proxy(uri)
+            # Create an asynchronous proxy
+            self.nameToAsync[label] = Pyro4.Proxy(uri)
+            self.nameToAsync[label]._pyroAsync()
             # If the light config has minPower, use that, otherwise default to 1mW.
             minPower = light.get('minPower') or 1
             # Just set maxPwer and curPower to zero.

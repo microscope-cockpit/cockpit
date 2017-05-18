@@ -38,6 +38,7 @@ class BoulderSLMDevice(device.Device):
         self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
         self.port = int(config.get(CONFIG_NAME, 'port'))
         self.connection = None
+        self.async = None
         self.executor = None
         self.order = None
         self.position = None
@@ -57,6 +58,8 @@ class BoulderSLMDevice(device.Device):
     def initialize(self):
         uri = "PYRO:pyroSLM@%s:%d" % (self.ipAddress, self.port)
         self.connection = Pyro4.Proxy(uri)
+        self.async = Pyro4.Proxy(uri)
+        self.async._pyroAsync()
         # If there's a diffraction angle in the config, set it on the remote.
         if config.has_option(CONFIG_NAME, 'diffractionAngle'):
             theta = config.get(CONFIG_NAME, 'diffractionAngle')
@@ -122,8 +125,7 @@ class BoulderSLMDevice(device.Device):
                 break
         sequence = reducedParams[0:sequenceLength]
         ## Tell the SLM to prepare the pattern sequence.
-        asyncProxy = Pyro4.async(self.connection)
-        asyncResult = asyncProxy.set_sim_sequence(sequence)
+        asyncResult = self.async.set_sim_sequence(sequence)
 
         # Step through the table and replace this handler with triggers.
         # Identify the SLM trigger(provided elsewhere, e.g. by DSP)
@@ -430,8 +432,7 @@ class BoulderSLMDevice(device.Device):
         else:
             raise ValueError('Order must be 0 or 1.')
         ## Tell the SLM to prepare the pattern sequence.
-        asyncProxy = Pyro4.async(self.connection)
-        asyncResult = asyncProxy.set_sim_sequence(params)
+        asyncResult = self.async.set_sim_sequence(params)
         self.wait(asyncResult, "SLM is generating pattern sequence.")
         self.lastParms = params
 

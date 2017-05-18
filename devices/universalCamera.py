@@ -216,7 +216,11 @@ class UniversalCameraDevice(camera.CameraDevice):
         self.setAnyDefaults()
         self.updateSettings()
         # Use async call to allow hardware time to respond.
-        result = Pyro4.async(self.proxy).enable()
+        # Pyro4.async API changed - now modifies original rather than returning
+        # a copy. This workaround from Pyro4 maintainer.
+        asproxy = Pyro4.Proxy(self.proxy._pyroUri)
+        asproxy._pyroAsync()
+        result = asproxy.enable()
         result.wait(timeout=10)
         #raise Exception("Problem enabling %s." % self.name)
         self.enabled = True
