@@ -68,8 +68,8 @@ class NanomoverDevice(stage.StageDevice):
                 #            events.subscribe('user logout', self.onLogout)
             events.subscribe('user abort', self.onAbort)
 #            events.subscribe('macro stage xy draw', self.onMacroStagePaint)
-            events.subscribe('cockpit initialization complete',
-                    self.promptExerciseStage)
+#            events.subscribe('cockpit initialization complete',
+#                    self.promptExerciseStage)
 
         
 
@@ -188,7 +188,7 @@ class NanomoverDevice(stage.StageDevice):
             prevX, prevY = self.positionCache[:2]
             x, y, z = self.getPosition(shouldUseCache = False)
             delta = abs(x - prevX) + abs(y - prevY)
-            if delta < 2:
+            if delta < 0.5:
                 # No movement since last time; done moving.
                 for axis in [0, 1]:
                     events.publish('stage stopped', '%d nanomover' % axis)
@@ -198,7 +198,7 @@ class NanomoverDevice(stage.StageDevice):
                                axis, self.axisSignMapper[axis] * val)
             time.sleep(.1)
 
-    def getPosition(self, axis = None, shouldUseCache = True):
+    def getPosition(self, axis = None, shouldUseCache = False):
         if not shouldUseCache:
             position = self.connection.connection.posXYZ_OMX()
             x = float(position[self.axisMapper[0]]) * self.axisSignMapper[0]
