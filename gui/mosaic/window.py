@@ -541,9 +541,22 @@ class MosaicWindow(wx.Frame):
 
         glBegin(GL_LINE_LOOP)
         # Draw the box.
+        #get cams and objective opbjects
+        cams = depot.getAllActiveCameras()
+        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+        #if there is a camera us its real pixel count
+        if (len(cams)>0):
+            width, height = cams[0].getImageSize()
+            width = wdith*objective.getPixelSize()
+            height = heigth*objective.getPixelSize()
+        else:
+            #else use the default which is 512Xpixel size from objective
+            width =self.crosshairBoxSize
+            height=self.crosshairBoxSize
+        
         for i, j in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
-            glVertex2d(-x + i * self.crosshairBoxSize / 2,
-                    y + j * self.crosshairBoxSize / 2)
+            glVertex2d(-x + i * width / 2,
+                    y + j * height / 2)
         glEnd()
 
 
