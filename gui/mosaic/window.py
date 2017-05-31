@@ -454,7 +454,10 @@ class MosaicWindow(wx.Frame):
             glTranslatef(labelPosX, labelPosY, 0)
             fontScale = 1 / self.canvas.scale
             glScalef(fontScale, fontScale, 1)
-            self.font.Render('%d um' % self.scalebar)
+            if (self.scalebar>1.0):
+                self.font.Render('%d um' % self.scalebar)
+            else:
+                self.font.Render('%.3f um' % self.scalebar)
             glPopMatrix()
 
             # Restore the default font size.
