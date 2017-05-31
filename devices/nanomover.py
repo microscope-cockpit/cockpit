@@ -260,4 +260,3 @@ class NanomoverDevice(stage.StageDevice):
         self.positionCache = self.getPosition(shouldUseCache = False)
         #reset softlimits to their original value
 #        self.softlimits=realSoftlimits
-
