@@ -68,8 +68,8 @@ class NanomoverDevice(stage.StageDevice):
                 #            events.subscribe('user logout', self.onLogout)
             events.subscribe('user abort', self.onAbort)
 #            events.subscribe('macro stage xy draw', self.onMacroStagePaint)
-#            events.subscribe('cockpit initialization complete',
-#                    self.promptExerciseStage)
+            events.subscribe('cockpit initialization complete',
+                    self.promptExerciseStage)
 
         
 
@@ -260,4 +260,3 @@ class NanomoverDevice(stage.StageDevice):
         self.positionCache = self.getPosition(shouldUseCache = False)
         #reset softlimits to their original value
 #        self.softlimits=realSoftlimits
-
