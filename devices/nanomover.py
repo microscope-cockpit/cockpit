@@ -82,7 +82,8 @@ class NanomoverDevice(stage.StageDevice):
             print "Homing Nanomover"
             self.connection.connection.startOMX()
             self.home()
-            interfaces.stageMover.goToXY(self.middleXY, shouldBlock = True)
+            self.moveAbsolute(self.axisMapper[0], self.middleXY[0])
+            self.moveAbsolute(self.axisMapper[1], self.middleXY[1])
 
     ## We want to periodically exercise the XY stage to spread the grease
     # around on its bearings; check how long it's been since the stage was
@@ -188,7 +189,7 @@ class NanomoverDevice(stage.StageDevice):
             prevX, prevY = self.positionCache[:2]
             x, y, z = self.getPosition(shouldUseCache = False)
             delta = abs(x - prevX) + abs(y - prevY)
-            if delta < 2:
+            if delta < 1.0:
                 # No movement since last time; done moving.
                 for axis in [0, 1]:
                     events.publish('stage stopped', '%d nanomover' % axis)
@@ -256,7 +257,11 @@ class NanomoverDevice(stage.StageDevice):
         #home the stage which moves to lrage negative positon until it 
         #hits the hard limit switch 
         self.connection.connection.findHome_OMX()
-        self.sendXYPositionUpdates()
+        homeStatus = self.connection.connection.GetOMX_Home_status()
+        # Wait until all 3 axes are homed
+        while (homeStatus[1:4] != ["homedOK","homedOK","homedOK"]):
+            self.sendXYPositionUpdates()
+            homeStatus = self.connection.connection.GetOMX_Home_status()
         self.positionCache = self.getPosition(shouldUseCache = False)
         #reset softlimits to their original value
 #        self.softlimits=realSoftlimits
