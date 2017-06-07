@@ -217,9 +217,11 @@ class MosaicWindow(wx.Frame):
         # Calculate the size of the box at the center of the crosshairs.
         # \todo Should we necessarily assume a 512x512 area here?
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        self.crosshairBoxSize = 512 * objective.getPixelSize()
+        #if we havent previously set crosshairBoxSize (maybe no camera active)
+        if (self.crosshairBoxSize == 0):
+            self.crosshairBoxSize = 512 * objective.getPixelSize()
         self.offset = objective.getOffset()
-        scale = (1/objective.getPixelSize())*0.5
+        scale = (1/objective.getPixelSize())*(10./self.crosshairBoxSize)
         self.canvas.zoomTo(-curPosition[0]+self.offset[0],
                            curPosition[1]-self.offset[1], scale)
 
@@ -454,7 +456,10 @@ class MosaicWindow(wx.Frame):
             glTranslatef(labelPosX, labelPosY, 0)
             fontScale = 1 / self.canvas.scale
             glScalef(fontScale, fontScale, 1)
-            self.font.Render('%d um' % self.scalebar)
+            if (self.scalebar>1.0):
+                self.font.Render('%d um' % self.scalebar)
+            else:
+                self.font.Render('%.3f um' % self.scalebar)
             glPopMatrix()
 
             # Restore the default font size.
@@ -538,9 +543,23 @@ class MosaicWindow(wx.Frame):
 
         glBegin(GL_LINE_LOOP)
         # Draw the box.
+        #get cams and objective opbjects
+        cams = depot.getActiveCameras()
+        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+        #if there is a camera us its real pixel count
+        if (len(cams)>0):
+            width, height = cams[0].getImageSize()
+            self.crosshairBoxSize = width*objective.getPixelSize()
+            width = self.crosshairBoxSize
+            height = height*objective.getPixelSize()
+        else:
+            #else use the default which is 512Xpixel size from objective
+            width =self.crosshairBoxSize
+            height=self.crosshairBoxSize
+        
         for i, j in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
-            glVertex2d(-x + i * self.crosshairBoxSize / 2,
-                    y + j * self.crosshairBoxSize / 2)
+            glVertex2d(-x + i * width / 2,
+                    y + j * height / 2)
         glEnd()
 
 
