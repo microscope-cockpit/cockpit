@@ -27,15 +27,15 @@ ZOOM_SWITCHOVER = 1
 CIRCLE_SEGMENTS = 32
 PI = 3.141592654
 
-## This class handles drawing the mosaic. Mosaics consist of collections of 
+## This class handles drawing the mosaic. Mosaics consist of collections of
 # images from the cameras.
 class SlaveCanvas(wx.glcanvas.GLCanvas):
-    ## \param stageHardLimits An ((xMin, xMax), (yMin, yMax)) tuple 
+    ## \param stageHardLimits An ((xMin, xMax), (yMin, yMax)) tuple
     #         describing the limits of motion, in microns, of the stage.
     # \param overlayCallback Function to call, during rendering, to draw
     #        the overlay on top of the mosaic.
     # \param mouseCallback Function to propagate mouse events to.
-    def __init__(self, parent, stageHardLimits, overlayCallback, 
+    def __init__(self, parent, stageHardLimits, overlayCallback,
             mouseCallback, *args, **kwargs):
         wx.glcanvas.GLCanvas.__init__(self, parent, *args, **kwargs)
 
@@ -58,18 +58,18 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
 
         events.subscribe("stage position", self.onMotion)
 
-        
+
         ## Set to True once we've done some initialization.
         self.haveInitedGL = False
         ## Controls whether we rerender tiles during our onPaint.
         self.shouldRerender = True
-        #get a refernce to the master canvas to access the openGL calls. 
+        #get a refernce to the master canvas to access the openGL calls.
         self.masterCanvas=gui.mosaic.window.window.canvas
         #this assumes that mastercanvas has already init'd
         ## WX rendering context
         self.context = self.masterCanvas.context
 
-        
+
 #        #OpenGL tiles are defined by the master mosaic canvas.
 #        ## List of MegaTiles. These will be created in self.initGL.
 #        self.megaTiles = []
@@ -90,15 +90,15 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
 
 
     ## Now that OpenGL's ready to go, perform any necessary initialization.
-    # We can now create textures, for example, so it's time to create our 
+    # We can now create textures, for example, so it's time to create our
     # MegaTiles.
     def initGL(self):
         self.width, self.height = self.GetClientSizeTuple()
         glClearColor(1, 1, 1, 0)
         #tiles defined by main mosaic canvas.
-        #        for x in xrange(self.stageHardLimits[0][0], self.stageHardLimits[0][1], 
+        #        for x in xrange(self.stageHardLimits[0][0], self.stageHardLimits[0][1],
 #                tile.megaTileMicronSize):
-#            for y in xrange(self.stageHardLimits[1][0], self.stageHardLimits[1][1], 
+#            for y in xrange(self.stageHardLimits[1][0], self.stageHardLimits[1][1],
 #                    tile.megaTileMicronSize):
 #                self.megaTiles.append(tile.MegaTile((-x, y)))
         self.haveInitedGL = True
@@ -122,7 +122,7 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
         self.masterCanvas.deleteTilesList(list(self.masterCanvas.tiles))
 
 
-    ## Generate a composite array of tile data surrounding the provided 
+    ## Generate a composite array of tile data surrounding the provided
     # tile, pulling only from the provided list of allowed tiles (or all
     # tiles, if no list is provided).
     def getCompositeTileData(self, tile, allowedTiles = None):
@@ -142,7 +142,7 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
         if self.renderError is not None:
             return
 
-        try: 
+        try:
             dc = wx.PaintDC(self)
             self.SetCurrent(self.context)
             if not self.haveInitedGL:
@@ -189,13 +189,13 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
             traceback.print_exc()
             self.renderError = e
 
-       
+
 
 
     def onMotion(self, axis, position):
         self.curStagePosition[axis] = position
         self.Refresh()
-        
+
     ## Change our view transform.
     def zoomTo(self, x, y, scale):
         # Paranoia
@@ -230,7 +230,7 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
 
     ## Remap an (X, Y) tuple of screen coordinates to a location on the stage.
     def mapScreenToCanvas(self, pos):
-        return ((self.dx - pos[0]) / self.scale, 
+        return ((self.dx - pos[0]) / self.scale,
                 -(self.dy - self.height + pos[1]) / self.scale)
 
 
