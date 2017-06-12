@@ -122,7 +122,7 @@ class CockpitApp(wx.App):
                 w.Bind(wx.EVT_CLOSE, lambda event: w.Hide())
             
             # Now that the UI exists, we don't need this any more.
-        	# Sometimes, status doesn't make it into the list, so test.
+            # Sometimes, status doesn't make it into the list, so test.
             if status in self.primaryWindows:
                 self.primaryWindows.remove(status)
             status.Destroy()
