@@ -25,11 +25,11 @@ def drawArrow(self, baseLoc, vector, color, arrowSize, arrowHeadSize):
     delta = vector / numpy.sqrt(numpy.vdot(vector, vector)) * arrowSize
     # Calculate angle, for the head of the arrow
     angle = numpy.arctan2(delta[1], delta[0])
-    
+
     pointLoc = baseLoc + delta
     headLoc1 = pointLoc - numpy.array([numpy.cos(angle + ARROWHEAD_ANGLE), numpy.sin(angle + ARROWHEAD_ANGLE)]) * arrowHeadSize
     headLoc2 = pointLoc - numpy.array([numpy.cos(angle - ARROWHEAD_ANGLE), numpy.sin(angle - ARROWHEAD_ANGLE)]) * arrowHeadSize
-        
+
     # Draw
     glColor3f(color[0], color[1], color[2])
     glLineWidth(ARROW_LINE_THICKNESS)
@@ -45,8 +45,8 @@ def drawArrow(self, baseLoc, vector, color, arrowSize, arrowHeadSize):
     self.scaledVertex(headLoc2[0], headLoc2[1])
     self.scaledVertex(pointLoc[0], pointLoc[1])
     glEnd()
-    
-            
+
+
 ## Draw some text at the specified location
 def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
     loc = self.scaledVertex(loc[0], loc[1], True)
@@ -77,7 +77,7 @@ def drawScaledCircle(self, x0, y0, r, n, offset=True):
             x = cosTheta * x - sinTheta * y
             y = sinTheta * xOld + cosTheta * y
         glEnd()
-		
+
     ## Draw a rectangle centred on x0, y0 of width w and height h.
     def drawScaledRectangle(self, x0, y0, w, h, offset=True):
         dw = w / 2.
