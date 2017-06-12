@@ -37,7 +37,7 @@ class CockpitApp(wx.App):
             import events
             events.subscribe('program startup failure', self.onStartupFail)
             events.subscribe('program exit', self.onExit)
-            
+
             # If I don't import util here, then if initialization fails
             # due to one of the other imports, Python complains about
             # local variable 'util' being used before its assignment,
@@ -53,7 +53,7 @@ class CockpitApp(wx.App):
                     message = "Importing modules...",
                     maximum = 5 + depot.getNumModules())
             status.Show()
-            
+
             import gui.camera.window
             import gui.loggingWindow
             # Do this early so we can see output while initializing.
@@ -83,7 +83,7 @@ class CockpitApp(wx.App):
 
             status.Update(updateNum, "Initializing user interface...")
             updateNum+=1
-                            
+
             frame = gui.mainWindow.makeWindow()
             status.Update(updateNum, " ... camera window")
             updateNum+=1
@@ -130,7 +130,7 @@ class CockpitApp(wx.App):
                                                 isGlobal = False,
                                                 default= 0)
                 #if they were hidden then return them to hidden
-                if (windowstate is 0): 
+                if (windowstate is 0):
                     # Hide the window until it is called up.
                     w.Hide()
 
@@ -151,11 +151,11 @@ class CockpitApp(wx.App):
                                                 isGlobal = False,
                                                 default= 0)
                 #if they were hidden then return them to hidden
-                if (windowstate is 0): 
+                if (windowstate is 0):
                     # Hide the window until it is called up.
                     w.Hide()
-                
-            
+
+
             depot.makeInitialPublications()
             interfaces.makeInitialPublications()
             events.publish('cockpit initialization complete')
@@ -196,7 +196,7 @@ class CockpitApp(wx.App):
         # can catch some windows that are spawned by WX and then abandoned,
         # typically because of bugs in the program. If we don't do this, then
         # sometimes the program will continue running, invisibly, and must
-        # be killed via Task Manager. 
+        # be killed via Task Manager.
         for window in wx.GetTopLevelWindows():
             util.logger.log.error("Destroying %s" % window)
             window.Destroy()
@@ -214,10 +214,10 @@ class CockpitApp(wx.App):
 if __name__ == '__main__':
     CockpitApp(redirect = False).MainLoop()
     # HACK: manually exit the program. If we don't do this, then there's a small
-    # possibility that non-daemonic threads (i.e. ones that don't exit when the 
+    # possibility that non-daemonic threads (i.e. ones that don't exit when the
     # main thread exits) will hang around uselessly, forcing the program to be
     # manually shut down via Task Manager or equivalent. Why do we have non-daemonic
-    # threads? That's tricky to track down. Daemon status is inherited from the 
+    # threads? That's tricky to track down. Daemon status is inherited from the
     # parent thread, and must be manually set otherwise. Since it's easy to get
     # wrong, we'll just leave this here to catch any failures to set daemon
     # status.
