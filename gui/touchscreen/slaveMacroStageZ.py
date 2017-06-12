@@ -85,14 +85,13 @@ class Histogram():
         altitude = float(altitude - self.minAltitude) / (self.maxAltitude - self.minAltitude)
         altitude = altitude * (self.maxY - self.minY - self.margin * 2) + self.minY + self.margin
         return altitude
-        
 
 
 ## This class shows a high-level view of where the stage is in Z space. It
 # includes the current stage position, hard and soft motion limits, and Z
 # tower position information.
 class slaveMacroStageZ(wx.glcanvas.GLCanvas):
-    ## Instantiate the MacroStageZ. 
+    ## Instantiate the MacroStageZ.
     def __init__(self, parent, *args, **kwargs):
         wx.glcanvas.GLCanvas.__init__(self, parent, *args, **kwargs)
 
@@ -134,7 +133,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         except Exception, e:
             print "Failed to make font:",e
 
-        ## Vertical size of the canvas in microns -- slightly larger than the 
+        ## Vertical size of the canvas in microns -- slightly larger than the
         # stage's range of motion.
         # Note that since our width has no direct meaning, we'll just make it
         # the same as our height, and do everything proportionally.
@@ -148,7 +147,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         self.textSize = .005
         ## Horizontal position of the main Z position indicator
         self.zHorizOffset = self.maxX - self.stageExtent * .25
-        ## Horizontal length of a "marker line" indicating the position of 
+        ## Horizontal length of a "marker line" indicating the position of
         # something on the Z scale.
         self.horizLineLength = self.stageExtent * .1
 
@@ -157,8 +156,8 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         ## List of histograms for drawing: one zoomed-out, one zoomed-in.
         self.histograms = []
         ## Dummy histogram that matches the range for the Z macro stage
-        self.dummyHistogram = Histogram(self.minY, self.maxY, 
-                self.zHorizOffset, self.minY, 
+        self.dummyHistogram = Histogram(self.minY, self.maxY,
+                self.zHorizOffset, self.minY,
                 self.maxY, 0, False, 0)
 
         self.calculateHistogram()
@@ -193,7 +192,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
     ## Calculate the histogram buckets and min/max settings
     # based on self.experimentAltitudes
     def calculateHistogram(self):
-        self.experimentAltitudes = list(util.userConfig.getValue('experimentAltitudes', 
+        self.experimentAltitudes = list(util.userConfig.getValue('experimentAltitudes',
                 default = [], isGlobal = True))
         ## Set of buckets, by altitude, of the experiments
         self.altitudeBuckets = [0 for i in range(int(self.minY),
@@ -241,12 +240,12 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             minorPos= interfaces.stageMover.getAllPositions()[1][2]
             histogramMin = altitude-(minorPos-minorLimits[1][0]) - HISTOGRAM_MIN_PADDING
             histogramMax = altitude+(-minorPos+minorLimits[1][1])+HISTOGRAM_MIN_PADDING
-        else: 
+        else:
             histogramMin = altitude-(SECONDARY_HISTOGRAM_SIZE/2.0)- HISTOGRAM_MIN_PADDING
             histogramMax = altitude+(SECONDARY_HISTOGRAM_SIZE/2.0)+HISTOGRAM_MIN_PADDING
-        histogram = Histogram(histogramMin, histogramMax, 
-                self.zHorizOffset - self.stageExtent * .4, 
-                self.minY, self.maxY, 
+        histogram = Histogram(histogramMin, histogramMax,
+                self.zHorizOffset - self.stageExtent * .4,
+                self.minY, self.maxY,
                 self.stageExtent * .2, True, self.stageExtent * .05,
                 self.altitudeBuckets)
         if not self.histograms:
@@ -259,9 +258,9 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
     def onStepSizeChange(self,axis,newSize):
         if axis is 2:
             self.Refresh()
-        
 
-    ## Overrides the parent function, since we may need to also generate a 
+
+    ## Overrides the parent function, since we may need to also generate a
     # histogram based on the new Z position.
     def onMotion(self, axis, position):
         if axis != 2:
@@ -274,18 +273,18 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             try:
                 motorPos = self.curStagePosition[2]
                 if motorPos != self.prevStagePosition[2]:
-                    # Check if we need to draw a new mini histogram (that 
+                    # Check if we need to draw a new mini histogram (that
                     # scrolls with the stage's Z position).
                     zMin = motorPos - 25
                     zMax = motorPos + 25
                     if zMax < self.histograms[0].maxAltitude:
-                        # Stage has entered into the area covered by the 
+                        # Stage has entered into the area covered by the
                         # histogram, so show a zoomed-in version.
                         histogram = Histogram(zMin - MINI_HISTOGRAM_PADDING,
                                 zMax + MINI_HISTOGRAM_PADDING,
-                                self.zHorizOffset - self.stageExtent * .8, 
+                                self.zHorizOffset - self.stageExtent * .8,
                                 self.minY, self.maxY, self.stageExtent * .2,
-                                False, self.stageExtent * .05, 
+                                False, self.stageExtent * .05,
                                 self.altitudeBuckets)
                         # \todo There must surely be a better way to do this.
                         if len(self.histograms) == 2:
@@ -301,7 +300,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                 util.logger.log.error(traceback.format_exc())
                 self.shouldDraw = False
 
-        
+
     ## Draw the following:
     # - A red line at the current stage height
     # - A purple line at the current Z tower height (or at a ceiling height if
@@ -323,7 +322,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             self.SetCurrent(self.context)
 
             glViewport(0, 0, self.width, self.height)
-            
+
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             motorPos = self.curStagePosition[2]
@@ -345,7 +344,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             # Draw histograms. We do this first so that other lines can be drawn
             # on top.
             self.drawHistograms()
-            
+
             # Draw scale bar
             glColor3f(0, 0, 0)
             glLineWidth(1)
@@ -365,14 +364,14 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                 self.scaledVertex(x2, scaleY)
             glEnd()
             glLineWidth(1)
-            
+
             glLineWidth(HEIGHT_LINE_WIDTH)
 
             # Draw spikes for the histogram peaks.
             configurator = depot.getHandlersOfType(depot.CONFIGURATOR)[0]
             spikeHeight = self.stageExtent * .02
             spikeLength = self.stageExtent * .2
-            for altitude in [configurator.getValue('slidealtitude'), 
+            for altitude in [configurator.getValue('slidealtitude'),
                     configurator.getValue('dishaltitude')]:
                 glColor3f(0, 0, 0)
                 glBegin(GL_POLYGON)
@@ -380,7 +379,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                 self.scaledVertex(scaleX - spikeLength, altitude)
                 self.scaledVertex(scaleX, altitude + spikeHeight / 2)
                 glEnd()
-            
+
             #Draw top and bottom positions of stack in blue.
             self.stackdef=[gui.saveTopBottomPanel.savedTop,
                           gui.saveTopBottomPanel.savedBottom]
@@ -388,11 +387,11 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                 if pos is not None:
                     self.drawLine(pos, color = (0, 0, 1))
 
-			
+
             # Draw current stage position
             self.drawLine(motorPos, color = (1, 0, 0),
                     label = str(int(motorPos)), isLabelOnLeft = True)
-            
+
             # Draw hard stage motion limits
             self.drawLine(minY, stipple = 0xAAAA,
                           color = (0, 0, 1), label = '%d' % minY)
@@ -410,9 +409,9 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                 glLineWidth(1)
                 glColor3f(1, 0, 0)
                 glBegin(GL_LINES)
-                self.scaledVertex(scaleX + self.horizLineLength / 2, 
+                self.scaledVertex(scaleX + self.horizLineLength / 2,
                         motorPos + stepSize)
-                self.scaledVertex(scaleX + self.horizLineLength / 2, 
+                self.scaledVertex(scaleX + self.horizLineLength / 2,
                         motorPos - stepSize)
                 glEnd()
 
@@ -422,8 +421,8 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                 if abs(delta) > macroStageBase.MIN_DELTA_TO_DISPLAY:
                     lineCenterX = scaleX + self.horizLineLength / 2
                     self.drawArrow(
-                            (lineCenterX, motorPos), 
-                            (0, delta), (0, 0, 1), 
+                            (lineCenterX, motorPos),
+                            (0, delta), (0, 0, 1),
                             self.stageExtent * .15, self.stageExtent * .03
                     )
             self.prevStagePosition = self.curStagePosition
@@ -462,7 +461,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             glEnd()
             glLineWidth(1)
 
-            # HACK: For some reason the left edge of the histogram is jagged. 
+            # HACK: For some reason the left edge of the histogram is jagged.
             # Cover it up.
             glBegin(GL_LINES)
             self.scaledVertex(histogram.xOffset, minY)
@@ -472,13 +471,13 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             # Draw histogram min/max
             if histogram.shouldLabel:
                 lineHeight = self.stageExtent * .05
-                self.drawTextAt((histogram.xOffset + self.stageExtent * .05, 
+                self.drawTextAt((histogram.xOffset + self.stageExtent * .05,
                         minY - self.textLineHeight / 4),
                         str(int(histogram.minAltitude)), size = self.textSize)
-                self.drawTextAt((histogram.xOffset + self.stageExtent * .05, 
+                self.drawTextAt((histogram.xOffset + self.stageExtent * .05,
                         maxY - self.textLineHeight / 4),
                         str(int(histogram.maxAltitude)), size = self.textSize)
-            
+
             # Draw histogram stage motion delta
             stepSize = interfaces.stageMover.getCurStepSizes()[2]
             if stepSize is not None:
@@ -486,12 +485,12 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                 glLineWidth(1)
                 glBegin(GL_LINES)
                 glColor3f(1, 0, 0)
-                self.scaledVertex(histogram.xOffset + self.stageExtent * .01, 
+                self.scaledVertex(histogram.xOffset + self.stageExtent * .01,
                         histogram.scale(motorPos + stepSize))
-                self.scaledVertex(histogram.xOffset + self.stageExtent * .01, 
+                self.scaledVertex(histogram.xOffset + self.stageExtent * .01,
                         histogram.scale(motorPos - stepSize))
                 glEnd()
-            
+
             # Draw lines showing how the histogram relates to the
             # less zoomed-in view to its left.
             leftBottom = prevHistogram.scale(histogram.minAltitude)
@@ -517,7 +516,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         else:
             glVertex2f(newX, newY)
 
-            
+
     ## Draw some text at the specified location
     def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
         loc = self.scaledVertex(loc[0], loc[1], True)
@@ -539,7 +538,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         pointLoc = baseLoc + delta
         headLoc1 = pointLoc - numpy.array([numpy.cos(angle + ARROWHEAD_ANGLE), numpy.sin(angle + ARROWHEAD_ANGLE)]) * arrowHeadSize
         headLoc2 = pointLoc - numpy.array([numpy.cos(angle - ARROWHEAD_ANGLE), numpy.sin(angle - ARROWHEAD_ANGLE)]) * arrowHeadSize
-        
+
         # Draw
         glColor3f(color[0], color[1], color[2])
         glLineWidth(ARROW_LINE_THICKNESS)
@@ -566,7 +565,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         drawAltitude = altitude
         leftEdge = self.zHorizOffset + self.horizLineLength / 2
         rightEdge = self.zHorizOffset - self.horizLineLength / 2
-        
+
         if stipple is not None:
             glEnable(GL_LINE_STIPPLE)
             glLineStipple(3, stipple)
@@ -587,7 +586,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         glEnd()
         if stipple is not None:
             glDisable(GL_LINE_STIPPLE)
-            
+
         if label:
             glLineWidth(1)
             labelX = rightEdge - self.stageExtent * .01
@@ -596,7 +595,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             if shouldLabelMainView:
                 # Draw a text label next to the line, in the line's color.
                 self.drawTextAt(
-                        (labelX, drawAltitude - self.textLineHeight / 4), 
+                        (labelX, drawAltitude - self.textLineHeight / 4),
                         label, size = self.textSize, color = color)
             if shouldLabelHistogram:
                 # Draw the label for the histograms too.
@@ -626,10 +625,10 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                     scale = (histogram.minAltitude, histogram.maxAltitude)
                     # not first hist so revert to current mover whatever that
                     #might be
-                    interfaces.stageMover.mover.curHandlerIndex = originalMover                
+                    interfaces.stageMover.mover.curHandlerIndex = originalMover
                     break # fall through as we have found which
                           # histogram we clicked on
-                
+
 
             weight = float(self.height - clickLoc[1]) / self.height
             altitude = (scale[1] - scale[0]) * weight + scale[0]
@@ -648,7 +647,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
 
 
 
-# ## This class shows a key for the MacroStageZ. It's a separate class 
+# ## This class shows a key for the MacroStageZ. It's a separate class
 # # primarily because of layout issues -- it's wider than the MacroStageZ itself,
 # # and therefore needs to have its own canvas.
 # class MacroStageZKey(macroStageBase.MacroStageBase):
@@ -656,13 +655,13 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
 #     def __init__(self, parent, *args, **kwargs):
 #         macroStageBase.MacroStageBase.__init__(self, parent, *args, **kwargs)
 #         ## Still no idea how this relates to anything, but this value seems
-#         # to work well. 
+#         # to work well.
 #         self.textSize = .03
 #         self.xExtent = self.maxX - self.minX
 #         self.yExtent = self.maxY - self.minY
 #         ## Amount of space to allocate per line of text.
 #         self.textLineHeight = self.yExtent * .2
-#         ## X offset for text. 
+#         ## X offset for text.
 #         self.xOffset = self.xExtent * .9
 #         ## Y offset for text. Ditto.
 #         self.yOffset = self.yExtent * .75
@@ -689,9 +688,9 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
 #             positions = interfaces.stageMover.getAllPositions()
 #             positions = [p[2] for p in positions]
 #             stepSize = interfaces.stageMover.getCurStepSizes()[2]
-#             self.drawStagePosition('Z:', positions, 
-#                     interfaces.stageMover.getCurHandlerIndex(), stepSize, 
-#                     (self.xOffset, self.yOffset), self.xExtent * .26, 
+#             self.drawStagePosition('Z:', positions,
+#                     interfaces.stageMover.getCurHandlerIndex(), stepSize,
+#                     (self.xOffset, self.yOffset), self.xExtent * .26,
 #                     self.xExtent * .05, self.textSize)
 
 #             glFlush()

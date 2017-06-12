@@ -70,7 +70,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
 #        ## Thread that ensures we don't spam redisplaying ourselves.
 #        self.redrawTimerThread = threading.Thread(target = self.refreshWaiter)
 #        self.redrawTimerThread.start()
-        
+
 
         hardLimits = interfaces.stageMover.getHardLimits()
         self.minX, self.maxX = hardLimits[0]
@@ -107,7 +107,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
 
 
         wx.EVT_PAINT(self, self.onPaint)
-        #self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event)           
+        #self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event)
         wx.EVT_SIZE(self, lambda event: event)
         wx.EVT_ERASE_BACKGROUND(self, lambda event: event) # Do nothing, to avoid flashing
         wx.EVT_MOTION(self, self.OnMouseMotion)
@@ -297,7 +297,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
                 glLineWidth(1)
             #update prev stage positoion so we redraw arrows
             self.prevStagePosition[:] = self.curStagePosition
-            #                
+            #
             # The crosshairs don't always draw large enough to show,
             # so ensure that at least one pixel in the middle
             # gets drawn.
@@ -345,7 +345,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
 #            time.sleep(.1)
 
 
-            
+
     ## Set one part of the stage motion limits.
     def setXYLimit(self, pos = None):
         if pos is None:
@@ -385,7 +385,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
         pointLoc = baseLoc + delta
         headLoc1 = pointLoc - numpy.array([numpy.cos(angle + ARROWHEAD_ANGLE), numpy.sin(angle + ARROWHEAD_ANGLE)]) * arrowHeadSize
         headLoc2 = pointLoc - numpy.array([numpy.cos(angle - ARROWHEAD_ANGLE), numpy.sin(angle - ARROWHEAD_ANGLE)]) * arrowHeadSize
-        
+
         # Draw
         glColor3f(color[0], color[1], color[2])
         glLineWidth(ARROW_LINE_THICKNESS)
@@ -412,7 +412,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
     def onStepSizeChange(self, axis, newSize):
         self.curStepSizes[axis] = newSize
 
-            
+
     ## Moved the mouse. Record its position
     def OnMouseMotion(self, event):
         self.lastMousePos = self.remapClick(event.GetPosition())

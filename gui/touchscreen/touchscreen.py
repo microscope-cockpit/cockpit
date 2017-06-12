@@ -68,7 +68,7 @@ class TouchScreenWindow(wx.Frame):
         self.selectTilesFunc = None
         ## True if we're generating a mosaic.
         self.amGeneratingMosaic = False
-        ## get an objective handeler and list of all objectives. 
+        ## get an objective handeler and list of all objectives.
         self.objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         self.listObj = list(self.objective.nameToOffset.keys())
         ## Lock on generating mosaics.
@@ -129,7 +129,7 @@ class TouchScreenWindow(wx.Frame):
 #        font=wx.Font(12,wx.FONTFAMILY_DEFAULT, wx.FONTWEIGHT_NORMAL,
 #                     wx.FONTSTYLE_NORMAL)
         objectiveSizer=wx.GridSizer(rows=2, cols=2)
-        
+
         button = self.makeToggleButton(self.buttonPanel, 'Load/Unload',
                                        self.loadUnload, None,
                                        'load.png','unload.png',
@@ -174,7 +174,7 @@ class TouchScreenWindow(wx.Frame):
         textSizer2.Add(self.objectiveSelectedText, 0, wx.CENTER|wx.ALL,border=5)
 
         objectiveSizer.Add(textSizer2, 0, wx.EXPAND|wx.ALL, border=5)
-            
+
         ##mosaic control button panel
         mosaicButtonSizer=wx.GridSizer(rows=2, cols=2)
 
@@ -201,15 +201,15 @@ class TouchScreenWindow(wx.Frame):
                 "Click to snap an image at the current stage positon and " +
                       "transfer it directly into the mosaic.")]:
 
-            if len(args) is 7:         
+            if len(args) is 7:
                 button = self.makeToggleButton(self.buttonPanel, *args)
             elif len(args) is 5:
                 button = self.makeButton(self.buttonPanel, *args)
             mosaicButtonSizer.Add(button, 0, wx.EXPAND|wx.ALL,border=2)
-       
+
         ## laserSizer in middle of rightSideSizer for laser stuff
-        
- 
+
+
         # Find out light devices we have to work with.
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         lightToggles = sorted(lightToggles, key = lambda l: l.wavelength)
@@ -263,7 +263,7 @@ class TouchScreenWindow(wx.Frame):
                 laserPowerText=wx.StaticText(self.buttonPanel,-1,
                                              style=wx.ALIGN_CENTER)
                 laserPSizer.Add(laserPowerText, 0, wx.EXPAND|wx.ALL)
-                
+
             laserPowerSizer.Add(laserPSizer, 0, wx.EXPAND|wx.ALL)
             #exposure times go with lights...
             #have minus button on left and plus button on right....
@@ -276,7 +276,7 @@ class TouchScreenWindow(wx.Frame):
             laserExpText = wx.StaticText(self.buttonPanel,-1,
                                                style=wx.ALIGN_CENTER)
             laserExpText.SetFont(font)
-            #Read current exposure time and store pointer in 
+            #Read current exposure time and store pointer in
             #self. so that we can change it at a later date
             label = '%5d ms'%(light.getExposureTime())
             laserExpText.SetLabel(label.rjust(10))
@@ -294,7 +294,7 @@ class TouchScreenWindow(wx.Frame):
             laserPowerSizer.Add(laserExpSizer, 0, wx.CENTRE|wx.ALL,border=2)
             lineSizer.Add(laserPowerSizer, 0, wx.EXPAND|wx.ALL,border=2)
             laserSizer.Add(lineSizer,0,wx.EXPAND|wx.ALL,border=2)
-            
+
         cameraSizer=wx.GridSizer(cols=2)
         cameraVSizer=[None]*len(depot.getHandlersOfType(depot.CAMERA))
         self.camButton=[None]*len(depot.getHandlersOfType(depot.CAMERA))
@@ -313,7 +313,7 @@ class TouchScreenWindow(wx.Frame):
             cameraVSizer[i].Add(self.camButton[i])
             cameraSizer.Add(cameraVSizer[i],0,wx.CENTRE|wx.ALL,border=5)
             i=i+1
-            
+
         rightSideSizer.Add(objectiveSizer,0,wx.EXPAND,wx.SUNKEN_BORDER)
         rightSideSizer.Add(wx.StaticLine(self.buttonPanel),
                            0, wx.ALL|wx.EXPAND, 5)
@@ -326,7 +326,7 @@ class TouchScreenWindow(wx.Frame):
         rightSideSizer.Add(cameraSizer,0,wx.EXPAND)
 
         #run sizer fitting on button panel
-        self.buttonPanel.SetSizerAndFit(rightSideSizer)        
+        self.buttonPanel.SetSizerAndFit(rightSideSizer)
         sizer.Add(self.buttonPanel, 1, wx.EXPAND,wx.RAISED_BORDER)
 
         limits = interfaces.stageMover.getHardLimits()[:2]
@@ -360,7 +360,7 @@ class TouchScreenWindow(wx.Frame):
         zPositionText = wx.StaticText(self.panel,-1,
                                       style=wx.ALIGN_CENTER)
         zPositionText.SetFont(font)
-        #Read current exposure time and store pointer in 
+        #Read current exposure time and store pointer in
         #self. so that we can change it at a later date
         label = 'Z Pos %5.2f'%(interfaces.stageMover.getPosition()[2])
         zPositionText.SetLabel(label.rjust(10))
@@ -369,13 +369,13 @@ class TouchScreenWindow(wx.Frame):
         zStepText = wx.StaticText(self.panel,-1,
                                   style=wx.ALIGN_CENTER)
         zStepText.SetFont(font)
-        #Read current exposure time and store pointer in 
+        #Read current exposure time and store pointer in
         #self. so that we can change it at a later date
         label = 'Z Step %5d'%(interfaces.stageMover.getCurStepSizes()[2])
         zStepText.SetLabel(label.rjust(10))
         self.nameToText['ZStep']=zStepText
         zButtonSizer.Add(zStepText, 0, wx.EXPAND|wx.ALL,border=15)
-        
+
         for args in [('Down', self.zMoveDown, None,
                       'down.png',
                       "Move down one Z step",(30,30)),
@@ -387,10 +387,10 @@ class TouchScreenWindow(wx.Frame):
         leftSizer.Add(zButtonSizer, 1,wx.EXPAND)
 
 
-                     
-        
+
+
         sizer.Add(leftSizer,1,wx.EXPAND)
-        
+
         self.panel.SetSizerAndFit(sizer)
         self.SetRect((0, 0, 1800, 1000))
 
@@ -406,7 +406,7 @@ class TouchScreenWindow(wx.Frame):
         events.subscribe('light source enable', self.lightSourceEnable)
         events.subscribe('laser power update', self.laserPowerUpdate)
         events.subscribe('laser exposure update', self.laserExpUpdate)
-        
+
 
         self.Bind(wx.EVT_SIZE, self.onSize)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
@@ -474,11 +474,11 @@ class TouchScreenWindow(wx.Frame):
         if (cams is 0) or (lights is 0):
             print "Snap needs a light and a camera to opperate"
             return
-            
+
         #take the image
         events.executeAndWaitFor("new image %s" %
                                  (list(interfaces.imager.imager.activeCameras)[0].name),
-                                 interfaces.imager.imager.takeImage, 
+                                 interfaces.imager.imager.takeImage,
                                  shouldStopVideo = False)
         gui.mosaic.window.transferCameraImage()
         self.Refresh()
@@ -504,7 +504,7 @@ class TouchScreenWindow(wx.Frame):
         #if there is a powerHandler set the colour of the active button
         if powerHandler:
             button.SetOwnBackgroundColour(powerHandler.color)
-    
+
     def laserPowerUpdate(self, light):
         textString=self.nameToText[light.groupName+'power']
         label = '%5.1f %s'%(light.curPower, light.units)
@@ -521,7 +521,7 @@ class TouchScreenWindow(wx.Frame):
 
     #Update exposure time text on event.
     def laserExpUpdate(self):
-        #Dont know which light is updated so update them all. 
+        #Dont know which light is updated so update them all.
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         lightToggles = sorted(lightToggles, key = lambda l: l.wavelength)
         for light in lightToggles:
@@ -556,7 +556,7 @@ class TouchScreenWindow(wx.Frame):
         powerHandler.setPower(newPower)
 
 
-        
+
     ## Now that we've been created, recenter the canvas.
     def centerCanvas(self, event = None):
         curPosition = interfaces.stageMover.getPosition()[:2]
@@ -579,7 +579,7 @@ class TouchScreenWindow(wx.Frame):
         interfaces.stageMover.changeStepSize(1)
     def zDecStep(self):
         interfaces.stageMover.changeStepSize(-1)
-    
+
 
     ## Resize our canvas.
     def onSize(self, event):
@@ -615,7 +615,7 @@ class TouchScreenWindow(wx.Frame):
             label = 'Z Step %5.2f'%(interfaces.stageMover.getCurStepSizes()[2])
             stepString.SetLabel(label.rjust(10))
             wx.CallAfter(self.Refresh)
-            
+
     ## User changed the objective in use; resize our crosshair box to suit.
     def onObjectiveChange(self, name, pixelSize, transform, offset, **kwargs):
         self.crosshairBoxSize = 512 * pixelSize
@@ -861,7 +861,7 @@ class TouchScreenWindow(wx.Frame):
             x = cosTheta * x - sinTheta * y
             y = sinTheta * xOld + cosTheta * y
         glEnd()
-		
+
     ## Draw a rectangle centred on x0, y0 of width w and height h.
     def drawScaledRectangle(self, x0, y0, w, h, offset=True):
         dw = w / 2.
@@ -1115,7 +1115,7 @@ class TouchScreenWindow(wx.Frame):
 
     def mosaicUpdate(self):
         self.Refresh()
-            
+
     ## Set the function to use when the user selects tiles.
     def setSelectFunc(self, func):
         self.selectTilesFunc = func
@@ -1165,7 +1165,7 @@ class TouchScreenWindow(wx.Frame):
     def loadUnload(self):
         #toggle to load or unload the sample
         configurator = depot.getHandlersOfType(depot.CONFIGURATOR)[0]
-        currentZ=interfaces.stageMover.getPosition()[2]         
+        currentZ=interfaces.stageMover.getPosition()[2]
 
         if (configurator.getValue('loadPosition') and
             configurator.getValue('unloadPosition')):
@@ -1190,8 +1190,8 @@ class TouchScreenWindow(wx.Frame):
             self.sampleStateText.SetLabel('Unloaded'.center(20))
             self.sampleStateText.SetBackgroundColour((0,255,0))
         self.nameToButton['Load/Unload'].SetValue(loaded)
-            
-  
+
+
     def moveZCheckMoverLimits(self, target):
         #Need to check current mover limits, see if we exceed them and if
         #so drop down to lower mover handler.
@@ -1211,7 +1211,7 @@ class TouchScreenWindow(wx.Frame):
                 interfaces.stageMover.mover.curHandlerIndex = originalMover
                 doneMove=True
                 break
-            else: 
+            else:
                 interfaces.stageMover.mover.curHandlerIndex -= 1
 
         if not doneMove:
@@ -1220,7 +1220,7 @@ class TouchScreenWindow(wx.Frame):
         interfaces.stageMover.mover.curHandlerIndex = originalMover
 
 
-        
+
     ##Function to load/unload objective
     def changeObjective(self):
         #if we have only two objectioves, then simply flip them
@@ -1232,8 +1232,8 @@ class TouchScreenWindow(wx.Frame):
         else:
             #more than 2 objectives so need to present a list
             showObjectiveMenu()
-        
-        
+
+
 
     def showObjectiveMenu(self):
         i=0
@@ -1267,8 +1267,8 @@ class TouchScreenWindow(wx.Frame):
         elif isEnabled is False:
             self.camButton[i].SetLabel("OFF")
             self.SetBackgroundColour(INACTIVE_COLOR)
-            
-        
+
+
 
 ## Global window singleton.
 TSwindow = None
