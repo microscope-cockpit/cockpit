@@ -413,12 +413,22 @@ class TouchScreenWindow(wx.Frame):
         for item in [self, self.panel, self.canvas]:
             gui.keyboard.setKeyboardHandlers(item)
 
-
+    ##function ot check if a bitmpa exists or return a generic missing
+    ##file bitmap
+    def checkBitmap(self,bitmap):
+        if (os.path.isfile(os.path.join( self.bitmapsPath, bitmap))):
+            bmp=wx.Bitmap(os.path.join( self.bitmapsPath, bitmap),
+                          wx.BITMAP_TYPE_ANY)
+        else:
+            bmp=wx.Bitmap(os.path.join( self.bitmapsPath,
+                                        'broken-file.png'),
+                          wx.BITMAP_TYPE_ANY)
+        return bmp
+        
     ## Create a button with the appropriate properties.
     def makeButton(self, parent, label, leftAction, rightAction, bitmap,
                    helpText,size = (75,75)):
-        bmp=wx.Bitmap(os.path.join( self.bitmapsPath, bitmap),
-                      wx.BITMAP_TYPE_ANY)
+        bmp=self.checkBitmap(bitmap)
         button = SBitmapButton(parent, -1, bitmap=bmp, size = size)
         button.SetToolTipString(helpText)
         button.Bind(wx.EVT_BUTTON, lambda event: leftAction())
@@ -430,11 +440,9 @@ class TouchScreenWindow(wx.Frame):
     ## Create a button with the appropriate properties.
     def makeToggleButton(self, parent, label, leftAction, rightAction, bitmap,
                          bitmapSelected,helpText,size = (75, 75)):
-        bmp=wx.Bitmap(os.path.join( self.bitmapsPath, bitmap),
-                      wx.BITMAP_TYPE_ANY)
+        bmp=self.checkBitmap(bitmap)
         button = SBitmapToggleButton(parent, -1, bitmap=bmp, size = size)
-        bmpSelected=wx.Bitmap(os.path.join( self.bitmapsPath, bitmapSelected),
-                      wx.BITMAP_TYPE_ANY)
+        bmpSelected=self.checkBitmap(bitmapSelected)
         button.SetBitmapSelected(bmpSelected)
 
         button.SetToolTipString(helpText)
@@ -448,10 +456,8 @@ class TouchScreenWindow(wx.Frame):
     def makeLaserToggleButton(self, parent, label, light,
                               bitmapActive, bitmapInactive, helpText,
                               size = (75, 75)):
-        bmpActive=wx.Bitmap(os.path.join( self.bitmapsPath, bitmapActive),
-                      wx.BITMAP_TYPE_ANY)
-        bmpInactive=wx.Bitmap(os.path.join( self.bitmapsPath, bitmapInactive),
-                              wx.BITMAP_TYPE_ANY)
+        bmpActive=self.checkBitmap(bitmapActive)
+        bmpInactive=self.checkBitmap(bitmapInactive)
         button = SBitmapToggleButton(parent, -1, bitmap=bmpInactive, size = size)
         button.SetBitmapSelected(bmpActive)
         button.SetToolTipString(helpText)
