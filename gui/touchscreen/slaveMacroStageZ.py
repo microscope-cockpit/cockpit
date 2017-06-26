@@ -632,11 +632,16 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
 
             weight = float(self.height - clickLoc[1]) / self.height
             altitude = (scale[1] - scale[0]) * weight + scale[0]
-            zHardMax = interfaces.stageMover.getIndividualHardLimits(2)[0][1]
-            interfaces.stageMover.goToZ(min(zHardMax, altitude))
+            # Spurious clicks are problematic on a touchscreen. Rather than
+            # moving directly to the clicked position, step in that direction
+            # to avoid large moves that may cause damage.
+            if altitude > interfaces.stageMover.getAllPositions()[-1]:
+                direction = (0, 0, -1)
+            else:
+                direction = (0, 0, 1)
+            interfaces.stageMover.step(direction)
             #make sure we are back to the expected mover
             interfaces.stageMover.mover.curHandlerIndex = originalMover
-
 
 
     ## Remap an XY tuple to stage coordinates.
