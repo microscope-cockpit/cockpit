@@ -214,8 +214,7 @@ class TouchScreenWindow(wx.Frame):
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         lightToggles = sorted(lightToggles, key = lambda l: l.wavelength)
         laserSizer=wx.BoxSizer(wx.VERTICAL)
-        font=wx.Font(12,wx.FONTFAMILY_DEFAULT, wx.FONTWEIGHT_NORMAL,
-                     wx.FONTSTYLE_NORMAL)
+        font=wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         for light in lightToggles:
             lineSizer=wx.BoxSizer(wx.HORIZONTAL)
             button = self.makeLaserToggleButton(self.buttonPanel, light.name,
