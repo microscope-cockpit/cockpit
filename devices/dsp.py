@@ -168,7 +168,8 @@ class DSPDevice(device.Device):
         # digital lines.
         for name, line in self.nameToDigitalLine.iteritems():
             handler = depot.getHandlerWithName(name)
-            self.handlerToDigitalLine[handler] = line
+            if handler is not None:
+                self.handlerToDigitalLine[handler] = line
 
         # Move analogue lines to initial positions, if given in config.
         for handler, line in self.handlerToAnalogLine.iteritems():
