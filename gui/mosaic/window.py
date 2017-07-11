@@ -228,7 +228,7 @@ class MosaicWindow(wx.Frame):
 
     ## Resize our canvas.
     def onSize(self, event):
-        size = self.GetClientSizeTuple()
+        size = self.GetClientSize()
         self.panel.SetSize(size)
         # Subtract off the pixels dedicated to the sidebar.
         self.canvas.setSize((size[0] - SIDEBAR_WIDTH, size[1]))

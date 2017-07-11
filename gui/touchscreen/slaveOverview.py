@@ -127,7 +127,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
 
     ## Set up some set-once things for OpenGL.
     def initGL(self):
-        (self.width, self.height) = self.GetClientSizeTuple()
+        (self.width, self.height) = self.GetClientSize()
         self.SetCurrent(self.context)
         glClearColor(1.0, 1.0, 1.0, 0.0)
 
