@@ -294,7 +294,7 @@ class TouchScreenWindow(wx.Frame):
             lineSizer.Add(laserPowerSizer, 0, wx.EXPAND|wx.ALL,border=2)
             laserSizer.Add(lineSizer,0,wx.EXPAND|wx.ALL,border=2)
 
-        cameraSizer=wx.GridSizer(2, 1, 1)
+        cameraSizer=wx.GridSizer(cols=2, vgap=1, hgap=1)
         cameraVSizer=[None]*len(depot.getHandlersOfType(depot.CAMERA))
         self.camButton=[None]*len(depot.getHandlersOfType(depot.CAMERA))
         i=0
