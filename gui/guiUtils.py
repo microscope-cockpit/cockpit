@@ -77,7 +77,7 @@ def showHelpDialog(parent, text):
 def addHelperString(parent, sizer, text, border = 0, flags = wx.ALL):
     label = wx.StaticText(parent, -1, " (What is this?)")
     label.SetForegroundColour((100, 100, 255))
-    label.SetToolTipString(text)
+    label.SetToolTip(text)
     sizer.Add(label, 0, flags, border)
 
 
