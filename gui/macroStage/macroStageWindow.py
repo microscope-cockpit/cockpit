@@ -67,7 +67,7 @@ class MacroStageWindow(wx.Frame):
         # causes us to save the comments. This saves us from
         # writing the config file too often
         self.commentsTimer = wx.Timer(self, -1)
-        wx.EVT_TIMER(self, self.commentsTimer.GetId(), self.onCommentsTimer)
+        self.Bind(wx.EVT_TIMER, self.onCommentsTimer, self.commentsTimer)
 
         self.saveTopBottomPanel = gui.saveTopBottomPanel.createSaveTopBottomPanel(self)
         self.sizer.Add(self.saveTopBottomPanel, (6, 8), (2, 3))
