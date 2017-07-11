@@ -128,7 +128,7 @@ class TouchScreenWindow(wx.Frame):
         font=wx.Font(12,wx.FONTFAMILY_DEFAULT,wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
 #        font=wx.Font(12,wx.FONTFAMILY_DEFAULT, wx.FONTWEIGHT_NORMAL,
 #                     wx.FONTSTYLE_NORMAL)
-        objectiveSizer=wx.GridSizer(rows=2, cols=2)
+        objectiveSizer=wx.GridSizer(2, 2, 1)
 
         button = self.makeToggleButton(self.buttonPanel, 'Load/Unload',
                                        self.loadUnload, None,
@@ -176,7 +176,7 @@ class TouchScreenWindow(wx.Frame):
         objectiveSizer.Add(textSizer2, 0, wx.EXPAND|wx.ALL, border=5)
 
         ##mosaic control button panel
-        mosaicButtonSizer=wx.GridSizer(rows=2, cols=2)
+        mosaicButtonSizer=wx.GridSizer(2, 2, 1)
 
         for args in [('Run mosaic',self.displayMosaicMenu,
                       self.continueMosaic,
@@ -294,7 +294,7 @@ class TouchScreenWindow(wx.Frame):
             lineSizer.Add(laserPowerSizer, 0, wx.EXPAND|wx.ALL,border=2)
             laserSizer.Add(lineSizer,0,wx.EXPAND|wx.ALL,border=2)
 
-        cameraSizer=wx.GridSizer(cols=2)
+        cameraSizer=wx.GridSizer(2, 1, 1)
         cameraVSizer=[None]*len(depot.getHandlersOfType(depot.CAMERA))
         self.camButton=[None]*len(depot.getHandlersOfType(depot.CAMERA))
         i=0
@@ -344,7 +344,7 @@ class TouchScreenWindow(wx.Frame):
         leftSizer.Add(self.macroStageZ, 3,wx.EXPAND)
 
         ## Z control buttons
-        zButtonSizer=wx.GridSizer(rows=3, cols=2)
+        zButtonSizer=wx.GridSizer(3, 2, 1)
 
         for args in [('Up', self.zMoveUp, None,
                       'up.png',
