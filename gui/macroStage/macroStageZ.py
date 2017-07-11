@@ -123,7 +123,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         wx.EVT_MOUSE_EVENTS(self, self.OnMouse)
         events.subscribe("experiment complete", self.onExperimentComplete)
         events.subscribe("soft safety limit", self.onSafetyChange)
-        self.SetToolTipString("Double-click to move in Z")
+        self.SetToolTip("Double-click to move in Z")
 
 
     ## Calculate the histogram buckets and min/max settings

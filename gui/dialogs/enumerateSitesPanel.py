@@ -24,7 +24,7 @@ class EnumerateSitesPanel(wx.Panel):
                 sizer = sizer,
                 label = label, defaultValue = '',
                 size = size, minSize = minSize)
-        self.sites.SetToolTipString("Comma-delimited, or with range " +
+        self.sites.SetToolTip("Comma-delimited, or with range " +
                 "indicators, for example:\n1, 3, 5-10, 14, 17-23\n" +
                 "You may also include frequencies in parentheses, e.g.\n" +
                 "1-4,5(2),6-10(4)\n" +

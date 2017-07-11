@@ -146,7 +146,7 @@ class ExperimentConfigPanel(wx.Panel):
         simultaneousSizer.Add(timeSizer)
         useCurrentButton = wx.Button(self.simultaneousExposurePanel, -1, 
                 "Use current settings")
-        useCurrentButton.SetToolTipString("Use the same settings as are currently used to take images with the '+' button")
+        useCurrentButton.SetToolTip("Use the same settings as are currently used to take images with the '+' button")
         useCurrentButton.Bind(wx.EVT_BUTTON, self.onUseCurrentExposureSettings)
         simultaneousSizer.Add(useCurrentButton)
 
@@ -198,7 +198,7 @@ class ExperimentConfigPanel(wx.Panel):
                 rowSizer, label = "Filename:", size = (200, -1))
         self.generateFilename()
         updateButton = wx.Button(self.filePanel, -1, 'Update')
-        updateButton.SetToolTipString(
+        updateButton.SetToolTip(
                 "Generate a new filename based on the current time " +
                 "and file suffix."
         )
