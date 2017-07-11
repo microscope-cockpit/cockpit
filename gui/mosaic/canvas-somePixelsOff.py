@@ -63,7 +63,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     # We can now create textures, for example, so it's time to create our 
     # MegaTiles.
     def initGL(self):
-        self.width, self.height = self.GetClientSizeTuple()
+        self.width, self.height = self.GetClientSize()
         glClearColor(1, 1, 1, 0)
         for x in xrange(self.stageHardLimits[0][0], self.stageHardLimits[0][1], 
                 tile.megaTileMicronSize):
