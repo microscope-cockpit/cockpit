@@ -342,7 +342,7 @@ class SettingsEditor(wx.Frame):
             if desc['type'] in ('enum'):
                 choices = wx.propgrid.PGChoices([str(v) for v in desc['values']],
                                 range(len(desc['values'])))
-		prop.SetChoices(choices)
+                prop.SetChoices(choices)
                 if self.current[name] in desc['values']:
                     index = desc['values'].index(self.current[name])
                     prop.SetValue(index)
