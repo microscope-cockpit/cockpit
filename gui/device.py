@@ -28,6 +28,7 @@ from toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 from util import userConfig
 import gui.loggingWindow as log
 import events
+from distutils import version
 
 ## @package gui.device
 # Defines classes for common controls used by cockpit devices.
@@ -340,8 +341,13 @@ class SettingsEditor(wx.Frame):
             name = prop.GetName()
             desc = self.settings[name]
             if desc['type'] in ('enum'):
-                choices = wx.propgrid.PGChoices([str(v) for v in desc['values']],
-                                range(len(desc['values'])))
+                if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
+                    choices = wx.propgrid.PGChoices()
+                    for i, d in enumerate(desc['values']):
+                        choices.Add(str(d), i)
+                else:
+                    choices = wx.propgrid.PGChoices([str(v) for v in desc['values']],
+                                                    range(len(desc['values'])))
                 prop.SetChoices(choices)
                 if self.current[name] in desc['values']:
                     index = desc['values'].index(self.current[name])
