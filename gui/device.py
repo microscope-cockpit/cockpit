@@ -342,8 +342,14 @@ class SettingsEditor(wx.Frame):
             if desc['type'] in ('enum'):
                 choices = wx.propgrid.PGChoices([str(v) for v in desc['values']],
                                 range(len(desc['values'])))
-                prop.SetChoices(choices)
-                prop.SetValue(desc['values'].index(self.current[name]))
+		prop.SetChoices(choices)
+                if self.current[name] in desc['values']:
+                    index = desc['values'].index(self.current[name])
+                    prop.SetValue(index)
+                else:
+                    # Indicate a problem with this item.
+                    print(self.current[name])
+                    prop.SetTextColour('red')
             else:
                 value = self.current[name]
                 if type(value) is long:
@@ -369,10 +375,16 @@ class SettingsEditor(wx.Frame):
                 value  = ' '
             propType = SettingsEditor._SETTINGS_TO_PROPTYPES.get(desc['type'])
             if propType is wx.propgrid.EnumProperty:
-                prop = wx.propgrid.EnumProperty(label=key, name=key,
-                                                labels=[str(v) for v in desc['values']],
-                                                values=range(len(desc['values'])),
-                                                value=desc['values'].index(value))
+                if value in desc['values']:
+                    index = desc['values'].index(value)
+                    prop = wx.propgrid.EnumProperty(label=key, name=key,
+                                                    labels=[str(v) for v in desc['values']],
+                                                    values=range(len(desc['values'])),
+                                                    value=index)
+                else:
+                    prop = wx.propgrid.EnumProperty(label=key, name=key,
+                                                    labels=[str(v) for v in desc['values']],
+                                                    values=range(len(desc['values'])))
             else:
                 try:
                     prop = propType(label=key, name=key, value=(value or 0))
