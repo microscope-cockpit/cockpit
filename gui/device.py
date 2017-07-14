@@ -348,7 +348,6 @@ class SettingsEditor(wx.Frame):
                     prop.SetValue(index)
                 else:
                     # Indicate a problem with this item.
-                    print(self.current[name])
                     prop.SetTextColour('red')
             else:
                 value = self.current[name]
