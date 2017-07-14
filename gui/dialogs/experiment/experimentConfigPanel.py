@@ -159,7 +159,8 @@ class ExperimentConfigPanel(wx.Panel):
         self.cameraToExposureTimes = {}
         sequenceSizer = wx.FlexGridSizer(
                 len(self.settings['sequencedExposureSettings']) + 1,
-                len(self.settings['sequencedExposureSettings'][0]) + 1)
+                len(self.settings['sequencedExposureSettings'][0]) + 1,
+                1)
         for label in [''] + [str(l.name) for l in self.allLights]:
             sequenceSizer.Add(
                     wx.StaticText(self.sequencedExposurePanel, -1, label),

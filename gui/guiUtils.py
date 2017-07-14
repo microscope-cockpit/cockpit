@@ -53,7 +53,7 @@ def makeHeader(parent, label, helpString = '',
 ## Generate a set of small text boxes for controlling individual lights.
 # Return a list of the controls, and the sizer they are contained in.
 def makeLightsControls(parent, labels, defaults):
-    sizer = wx.FlexGridSizer(2, len(labels))
+    sizer = wx.FlexGridSizer(2, len(labels), 0)
     for label in labels:
         sizer.Add(wx.StaticText(parent, -1, label),
                 0, wx.ALIGN_RIGHT | wx.ALL, 5)
