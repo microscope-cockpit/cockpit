@@ -252,10 +252,10 @@ class IntensityProfilerFrame(wx.Frame):
         ## Toolbar
         toolbar = wx.ToolBar(self, -1)
         # Open file
-        openTool = toolbar.AddSimpleTool(
+        openTool = toolbar.AddTool(
                         wx.ID_ANY,
-                        wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR, ICON_SIZE),
-                        "Open", "Open a dataset")
+                        bitmap=wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR, ICON_SIZE),
+                        label="Open", shortHelp="Open a dataset")
         toolbar.AddSeparator()
         # Number of phases
         phaseLabel = wx.StaticText(toolbar,
@@ -301,10 +301,10 @@ class IntensityProfilerFrame(wx.Frame):
         self.boxTool = boxTool
         toolbar.AddSeparator()
         # Calculate profile.
-        goTool = toolbar.AddSimpleTool(
+        goTool = toolbar.AddTool(
                         wx.ID_ANY,
-                        wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_TOOLBAR, ICON_SIZE),
-                        "Go", "Evaluate intensity profile")
+                        bitmap=wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_TOOLBAR, ICON_SIZE),
+                        label="Go", shortHelp="Evaluate intensity profile")
         toolbar.Realize()
         self.Bind(wx.EVT_TOOL, self.loadFile, openTool)
         self.Bind(wx.EVT_TOOL, self.calculate, goTool)
@@ -315,7 +315,7 @@ class IntensityProfilerFrame(wx.Frame):
         # Image canvas
         self.canvas = FloatCanvas.FloatCanvas(self, size=(512,512),
                                               style = wx.WANTS_CHARS)
-        img = wx.EmptyImage(BITMAP_SIZE[0], BITMAP_SIZE[1], True)
+        img = wx.Image(BITMAP_SIZE[0], BITMAP_SIZE[1], clear=True)
         self.bitmap = self.canvas.AddBitmap(img, (0,0), 'cc', False)
         self.circle = self.canvas.AddCircle((0,0), 10, '#ff0000')
         self.rectangle = self.canvas.AddRectangle((0,0), (20,20), '#ff0000')
