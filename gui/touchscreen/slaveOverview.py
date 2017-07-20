@@ -118,10 +118,10 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
         events.subscribe("stage position", self.onMotion)
         events.subscribe("stage step size", self.onStepSizeChange)
         events.subscribe("stage position", self.onMotion)
-        self.SetToolTip("Left double-click to move the stage. " +
+        self.SetToolTip(wx.ToolTip("Left double-click to move the stage. " +
                 "Right click for gotoXYZ and double-click to toggle " +
                 "displaying of mosaic " +
-                "tiles.")
+                "tiles."))
 
 
     ## Set up some set-once things for OpenGL.

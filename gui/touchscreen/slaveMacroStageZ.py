@@ -172,7 +172,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         events.subscribe("stage step size", self.onStepSizeChange)
         events.subscribe("experiment complete", self.onExperimentComplete)
         events.subscribe("soft safety limit", self.onSafetyChange)
-        self.SetToolTip("Double-click to move in Z")
+        self.SetToolTip(wx.ToolTip("Double-click to move in Z"))
 
     ## Set up some set-once things for OpenGL.
     def initGL(self):

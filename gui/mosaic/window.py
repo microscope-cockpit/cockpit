@@ -202,7 +202,7 @@ class MosaicWindow(wx.Frame):
     def makeButton(self, parent, label, leftAction, rightAction, helpText,
             size = (-1, -1)):
         button = wx.Button(parent, -1, label, size = size)
-        button.SetToolTip(helpText)
+        button.SetToolTip(wx.ToolTip(helpText))
         button.Bind(wx.EVT_BUTTON, lambda event: leftAction())
         if rightAction is not None:
             button.Bind(wx.EVT_RIGHT_DOWN, lambda event: rightAction())
