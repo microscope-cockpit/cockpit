@@ -163,10 +163,10 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         self.calculateHistogram()
 
         #wx events to update display.
-        wx.EVT_PAINT(self, self.onPaint)
-        wx.EVT_SIZE(self, lambda event: event)
-        wx.EVT_ERASE_BACKGROUND(self, lambda event: event) # Do nothing, to avoid flashing
-        wx.EVT_MOUSE_EVENTS(self, self.OnMouse)
+        self.Bind(wx.EVT_PAINT, self.onPaint)
+        self.Bind(wx.EVT_SIZE, lambda event: event)
+        self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event) # Do nothing, to avoid flashing
+        self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
         events.subscribe("soft safety limit", self.onSafetyChange)
         events.subscribe("stage position", self.onMotion)
         events.subscribe("stage step size", self.onStepSizeChange)
