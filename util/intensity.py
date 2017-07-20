@@ -34,6 +34,7 @@ from operator import add
 import wx
 from wx.lib.floatcanvas import FloatCanvas
 import wx.lib.plot as plot
+from distutils import version
 
 ICON_SIZE = (16,16)
 BITMAP_SIZE = (512,512)
@@ -313,7 +314,11 @@ class IntensityProfilerFrame(wx.Frame):
         # Image canvas
         self.canvas = FloatCanvas.FloatCanvas(self, size=(512,512),
                                               style = wx.WANTS_CHARS)
-        img = wx.Image(BITMAP_SIZE[0], BITMAP_SIZE[1], clear=True)
+
+        if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
+            img = wx.EmptyImage(BITMAP_SIZE[0], BITMAP_SIZE[1], clear=True)
+        else:
+            img = wx.Image(BITMAP_SIZE[0], BITMAP_SIZE[1], clear=True)
         self.bitmap = self.canvas.AddBitmap(img, (0,0), 'cc', False)
         self.circle = self.canvas.AddCircle((0,0), 10, '#ff0000')
         self.rectangle = self.canvas.AddRectangle((0,0), (20,20), '#ff0000')
