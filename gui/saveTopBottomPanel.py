@@ -78,14 +78,14 @@ def createSaveTopBottomPanel(parent):
     bottomPosControl.SetValue("%.1f" % savedBottom)
     updateZStackHeight()
     
-    wx.EVT_BUTTON(parent, 8911, OnTB_saveTop)
-    wx.EVT_BUTTON(parent, 8912, OnTB_saveBottom)
-    wx.EVT_BUTTON(parent, 8915, OnTB_gotoTop)
-    wx.EVT_BUTTON(parent, 8916, OnTB_gotoBottom)
-    wx.EVT_TEXT(parent, 8913, OnTB_TextEdit)
-    wx.EVT_TEXT(parent, 8914, OnTB_TextEdit)
+    parent.Bind(wx.EVT_BUTTON, OnTB_saveTop, id=8911 )
+    parent.Bind(wx.EVT_BUTTON, OnTB_saveBottom, id=8912)
+    parent.Bind(wx.EVT_BUTTON, OnTB_gotoTop, id=8915)
+    parent.Bind(wx.EVT_BUTTON, OnTB_gotoBottom, id=8916)
+    parent.Bind(wx.EVT_TEXT, OnTB_TextEdit, id=8913)
+    parent.Bind(wx.EVT_TEXT, OnTB_TextEdit, id=8914)
 
-    wx.EVT_BUTTON(parent, 8917, OnTB_gotoCenter)
+    parent.Bind(wx.EVT_BUTTON, OnTB_gotoCenter, id=8917)
     return panel
     
 
