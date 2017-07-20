@@ -635,7 +635,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             # Spurious clicks are problematic on a touchscreen. Rather than
             # moving directly to the clicked position, step in that direction
             # to avoid large moves that may cause damage.
-            if altitude > interfaces.stageMover.getAllPositions()[-1]:
+            if altitude < interfaces.stageMover.getPosition()[-1]:
                 direction = (0, 0, -1)
             else:
                 direction = (0, 0, 1)
