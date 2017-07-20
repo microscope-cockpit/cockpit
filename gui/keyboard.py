@@ -5,6 +5,7 @@ import gui.guiUtils
 import gui.mosaic.window
 import interfaces.stageMover
 import util.user
+from distutils import version
 
 ## Given a wx.Window instance, set up keyboard controls for that instance.
 def setKeyboardHandlers(window):
@@ -87,7 +88,10 @@ def martialWindows(parent):
         menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
-        menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
+        if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
+            menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        else:
+            menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
         menuId += 1
 
     menu.AppendSeparator()
@@ -113,7 +117,10 @@ def martialWindows(parent):
         menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
-        menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
+        if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
+            menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        else:
+            menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
         menuId += 1
 
     menu.AppendSeparator()
