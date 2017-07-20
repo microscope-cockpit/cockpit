@@ -120,7 +120,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 
         self.calculateHistogram()
 
-        wx.EVT_MOUSE_EVENTS(self, self.OnMouse)
+        self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
         events.subscribe("experiment complete", self.onExperimentComplete)
         events.subscribe("soft safety limit", self.onSafetyChange)
         self.SetToolTip("Double-click to move in Z")
