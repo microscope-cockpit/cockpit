@@ -429,7 +429,7 @@ class TouchScreenWindow(wx.Frame):
                    helpText,size = (75,75)):
         bmp=self.checkBitmap(bitmap)
         button = SBitmapButton(parent, -1, bitmap=bmp, size = size)
-        button.SetToolTip(helpText)
+        button.SetToolTip(wx.ToolTip(helpText))
         button.Bind(wx.EVT_BUTTON, lambda event: leftAction())
         if rightAction is not None:
             button.Bind(wx.EVT_RIGHT_DOWN, lambda event: rightAction())
@@ -444,7 +444,7 @@ class TouchScreenWindow(wx.Frame):
         bmpSelected=self.checkBitmap(bitmapSelected)
         button.SetBitmapSelected(bmpSelected)
 
-        button.SetToolTip(helpText)
+        button.SetToolTip(wx.ToolTip(helpText))
         #Note left action is called with true if down, false if up
         button.Bind(wx.EVT_BUTTON, lambda event: leftAction())
         if rightAction is not None:
@@ -459,7 +459,7 @@ class TouchScreenWindow(wx.Frame):
         bmpInactive=self.checkBitmap(bitmapInactive)
         button = SBitmapToggleButton(parent, -1, bitmap=bmpInactive, size = size)
         button.SetBitmapSelected(bmpActive)
-        button.SetToolTip(helpText)
+        button.SetToolTip(wx.ToolTip(helpText))
         #Note left action is called with true if down, false if up
         button.Bind(wx.EVT_BUTTON, lambda event: self.laserToggle(event,
                                                                   light, button))

@@ -71,9 +71,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.Bind(wx.EVT_RIGHT_DCLICK, self.OnRightDoubleClick)
         events.subscribe("soft safety limit", self.onSafetyChange)
         events.subscribe('objective change', self.onObjectiveChange)
-        self.SetToolTip("Left double-click to move the stage. " +
+        self.SetToolTip(wx.ToolTip("Left double-click to move the stage. " +
                 "Right click for gotoXYZ and double-click to toggle displaying of mosaic " +
-                "tiles.")
+                "tiles."))
 
 
     ## Safety limits have changed, which means we need to force a refresh.

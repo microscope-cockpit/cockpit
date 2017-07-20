@@ -85,14 +85,14 @@ class MacroStageWindow(wx.Frame):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         button = wx.Button(self, -1, "Set safeties")
-        button.SetToolTip("Click twice on the XY Macro Stage view " +
-                "to set the XY motion limits.")
+        button.SetToolTip(wx.ToolTip("Click twice on the XY Macro Stage view " +
+                "to set the XY motion limits."))
         button.Bind(wx.EVT_BUTTON, self.macroStageXY.setSafeties)
         sizer.Add(button)
         
         self.motionControllerButton = wx.Button(self, -1, "Switch control")
-        self.motionControllerButton.SetToolTip(
-                "Change which stage motion device the keypad controls.")
+        self.motionControllerButton.SetToolTip(wx.ToolTip(
+                "Change which stage motion device the keypad controls."))
         self.motionControllerButton.Bind(wx.EVT_BUTTON, 
                 lambda event: interfaces.stageMover.changeMover())
         sizer.Add(self.motionControllerButton)
@@ -113,7 +113,7 @@ class MacroStageWindow(wx.Frame):
         
         button = wx.Button(self, -1, "Touch down")
         touchdownAltitude = depot.getHandlersOfType(depot.CONFIGURATOR)[0].getValue('slideTouchdownAltitude')
-        button.SetToolTip(u"Bring the stage down to %d\u03bcm" % touchdownAltitude)
+        button.SetToolTip(wx.ToolTip(u"Bring the stage down to %d\u03bcm" % touchdownAltitude))
         button.Bind(wx.EVT_BUTTON, 
                 lambda event: interfaces.stageMover.goToZ(touchdownAltitude))
         sizer.Add(button)

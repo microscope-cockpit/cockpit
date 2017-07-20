@@ -63,7 +63,7 @@ class Button(wx.StaticText):
         if not isBold:
             flag = wx.FONTWEIGHT_NORMAL
         self.SetFont(wx.Font(textSize,wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, flag))
-        self.SetToolTip(tooltip)
+        self.SetToolTip(wx.ToolTip(tooltip))
         self.SetBackgroundColour(BACKGROUND)
         # Realign the label using our custom version of the function
         self.SetLabel(self.GetLabel())
@@ -247,22 +247,22 @@ class SettingsEditor(wx.Frame):
         sizer.AddSpacer(2)
         buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
         #saveButton = wx.Button(self, id=wx.ID_SAVE)
-        #saveButton.SetToolTip("Save current settings as defaults.")
+        #saveButton.SetToolTip(wx.ToolTip("Save current settings as defaults."))
         #saveButton.Bind(wx.EVT_BUTTON, self.onSave)
         #buttonSizer.Add(saveButton, 0, wx.ALIGN_RIGHT, 0, 0)
 
         okButton = wx.Button(self, id=wx.ID_OK)
         okButton.Bind(wx.EVT_BUTTON, self.onClose)
-        okButton.SetToolTip("Apply settings and close this window.")
+        okButton.SetToolTip(wx.ToolTip("Apply settings and close this window."))
         buttonSizer.Add(okButton, 0, wx.ALIGN_RIGHT)
 
         cancelButton = wx.Button(self, id=wx.ID_CANCEL)
         cancelButton.Bind(wx.EVT_BUTTON, self.onClose)
-        cancelButton.SetToolTip("Close this window without applying settings.")
+        cancelButton.SetToolTip(wx.ToolTip("Close this window without applying settings."))
         buttonSizer.Add(cancelButton, 0, wx.ALIGN_RIGHT)
 
         applyButton = wx.Button(self, id=wx.ID_APPLY)
-        applyButton.SetToolTip("Apply these settings.")
+        applyButton.SetToolTip(wx.ToolTip("Apply these settings."))
         applyButton.Bind(wx.EVT_BUTTON, lambda evt: self.device.updateSettings(self.current))
         buttonSizer.Add(applyButton, 0, wx.ALIGN_RIGHT)
 
