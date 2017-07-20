@@ -60,8 +60,8 @@ def martialWindows(parent):
     menu = wx.Menu()
     menuId = 1
     menu.Append(menuId, "Reset window positions")
-    wx.EVT_MENU(parent, menuId,
-            lambda event: util.user.setWindowPositions())
+    parent.Bind(wx.EVT_MENU,
+                lambda e: util.user.setWindowPositions(), id= menuId)
     menuId += 1
     #for i, window in enumerate(windows):
     for i, window in enumerate(primaryWindows):
@@ -73,20 +73,21 @@ def martialWindows(parent):
             continue
         subMenu = wx.Menu()
         subMenu.Append(menuId, "Raise to top")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.Raise())
+        parent.Bind(wx.EVT_MENU,
+                    lambda e, window = window: window.Raise(),id=menuId)
         menuId += 1
         subMenu.Append(menuId, "Move to mouse")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.SetPosition(wx.GetMousePosition()))
+        parent.Bind(wx.EVT_MENU,
+                lambda e, window = window: window.SetPosition(wx.GetMousePosition()), id=menuId)
         menuId += 1
         subMenu.Append(menuId, "Move to top-left corner")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.SetPosition((0, 0)))
+        parent.Bind(wx.EVT_MENU,
+                lambda e, window = window: window.SetPosition((0, 0)),
+                    id=menuId)
         menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
-        menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
         menuId += 1
 
     menu.AppendSeparator()
@@ -99,20 +100,20 @@ def martialWindows(parent):
             continue
         subMenu = wx.Menu()
         subMenu.Append(menuId, "Show/Hide")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: ((window.Restore() and
+        parent.Bind(wx.EVT_MENU,
+                lambda e, window = window: ((window.Restore() and
                     (util.userConfig.setValue('windowState'+window.GetTitle(),
                                                1,isGlobal=False)))
                                                 if window.IsIconized() 
-                                                else ((window.Show(not window.IsShown()) ) and (util.userConfig.setValue('windowState'+window.GetTitle(),0,isGlobal=False)))))
+                                                else ((window.Show(not window.IsShown()) ) and (util.userConfig.setValue('windowState'+window.GetTitle(),0,isGlobal=False)))), id=menuId)
         menuId += 1
         subMenu.Append(menuId, "Move to mouse")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.SetPosition(wx.GetMousePosition()))
+        parent.Bind(wx.EVT_MENU,
+                lambda e, window = window: window.SetPosition(wx.GetMousePosition()), id=menuId)
         menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
-        menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
         menuId += 1
 
     menu.AppendSeparator()
@@ -127,20 +128,21 @@ def martialWindows(parent):
             continue
         subMenu = wx.Menu()
         subMenu.Append(menuId, "Raise to top")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.Raise())
+        parent.Bind(wx.EVT_MENU,
+                    lambda e, window = window: window.Raise(), id=menuId)
         menuId += 1
         subMenu.Append(menuId, "Move to mouse")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.SetPosition(wx.GetMousePosition()))
+        parent.Bind(wx.EVT_MENU,
+                    lambda e, window = window: window.SetPosition(wx.GetMousePosition()), id=menuId)
         menuId += 1
         subMenu.Append(menuId, "Move to top-left corner")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.SetPosition((0, 0)))
+        parent.Bind(wx.EVT_MENU,
+                lambda e, window = window: window.SetPosition((0, 0))
+                    , id=menuId)
         menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
-        menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
         menuId += 1
 
 
