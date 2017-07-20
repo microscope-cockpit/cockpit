@@ -244,17 +244,22 @@ class IntensityProfilerFrame(wx.Frame):
     def __init__(self, parent=None):
         super(IntensityProfilerFrame, self).__init__(parent, title="SIM intensity profile")
         self.profiler = IntensityProfiler()
-
         # Outermost sizer.
         vbox = wx.BoxSizer(wx.VERTICAL)
 
         ## Toolbar
         toolbar = wx.ToolBar(self, -1)
+        # Choose a function to create tools for the toolbar.
+        if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
+            make_tool = toolbar.AddLabelTool
+        else:
+            make_tool = toolbar.AddTool
         # Open file
-        openTool = toolbar.AddTool(
-                        wx.ID_ANY,
-                        bitmap=wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR, ICON_SIZE),
-                        label="Open", shortHelp="Open a dataset")
+        openTool = make_tool(
+                            wx.ID_ANY,
+                            "Open",
+                            wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR, ICON_SIZE),
+                            shortHelp="Open a dataset.")
         toolbar.AddSeparator()
         # Number of phases
         phaseLabel = wx.StaticText(toolbar,
@@ -300,10 +305,11 @@ class IntensityProfilerFrame(wx.Frame):
         self.boxTool = boxTool
         toolbar.AddSeparator()
         # Calculate profile.
-        goTool = toolbar.AddTool(
+        goTool = make_tool(
                         wx.ID_ANY,
-                        bitmap=wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_TOOLBAR, ICON_SIZE),
-                        label="Go", shortHelp="Evaluate intensity profile")
+                        "Go",
+                        wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_TOOLBAR, ICON_SIZE),
+                        shortHelp="Evaluate intensity profile")
         toolbar.Realize()
         self.Bind(wx.EVT_TOOL, self.loadFile, openTool)
         self.Bind(wx.EVT_TOOL, self.calculate, goTool)
