@@ -106,15 +106,14 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
         self.textSize = .004
 
 
-        wx.EVT_PAINT(self, self.onPaint)
-        #self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event)
-        wx.EVT_SIZE(self, lambda event: event)
-        wx.EVT_ERASE_BACKGROUND(self, lambda event: event) # Do nothing, to avoid flashing
-        wx.EVT_MOTION(self, self.OnMouseMotion)
-        wx.EVT_LEFT_UP(self, self.OnLeftClick)
-        wx.EVT_LEFT_DCLICK(self, self.OnLeftDoubleClick)
-        wx.EVT_RIGHT_UP(self, self.OnRightClick)
-        wx.EVT_RIGHT_DCLICK(self, self.OnRightDoubleClick)
+        self.Bind(wx.EVT_PAINT, self.onPaint)
+        self.Bind(wx.EVT_SIZE, lambda event: event)
+        self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event) # Do nothing, to avoid flashing
+        self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
+        self.Bind(wx.EVT_LEFT_UP, self.OnLeftClick)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnLeftDoubleClick)
+        self.Bind(wx.EVT_RIGHT_UP, self.OnRightClick)
+        self.Bind(wx.EVT_RIGHT_DCLICK, self.OnRightDoubleClick)
         events.subscribe("soft safety limit", self.onSafetyChange)
         events.subscribe("stage position", self.onMotion)
         events.subscribe("stage step size", self.onStepSizeChange)
