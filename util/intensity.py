@@ -28,11 +28,9 @@ as part of another wx app.
 from contextlib import contextmanager
 import gc
 from itertools import chain
-import matplotlib.pyplot as plt
 import Mrc
 import numpy as np
 from operator import add
-import sys
 import wx
 from wx.lib.floatcanvas import FloatCanvas
 import wx.lib.plot as plot
