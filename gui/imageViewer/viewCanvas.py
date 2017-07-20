@@ -531,7 +531,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         # Apply pan
         coords -= [self.panY, self.panX]
         if numpy.all(coords < shape) and numpy.all(coords >= 0):
-            value = self.imageData[tuple(coords)]
+            value = self.imageData[int(coords[0]),int(coords[1])]
             events.publish("image pixel info", coords[::-1], value)
         
 
