@@ -123,7 +123,7 @@ class CockpitApp(wx.App):
 
             for w in self.secondaryWindows:
                 #bind close event to just hide for these windows
-                w.Bind(wx.EVT_CLOSE, lambda event: w.Hide())
+                w.Bind(wx.EVT_CLOSE, lambda event, w=w: w.Hide())
                 # get saved state of secondary windows.
                 title=w.GetTitle()
                 windowstate=util.userConfig.getValue('windowState'+title,
