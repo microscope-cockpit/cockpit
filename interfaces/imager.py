@@ -90,6 +90,8 @@ class Imager:
                 return
         for handler in self.imageHandlers:
             handler.takeImage()
+            # And trigger any cameras listening for software triggers.
+            events.publish("dummy take image")
         self.lastImageTime = time.time()
 
 
