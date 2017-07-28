@@ -39,7 +39,7 @@ from gui.device import SettingsEditor
 from interfaces.imager import pauseVideo
 
 CLASS_NAME = 'UniversalCameraManager'
-SUPPORTED_CAMERAS = ['TestCamera', 'AndorSDK3', 'PVCamera']
+SUPPORTED_CAMERAS = ['TestCamera', 'AndorSDK3', 'PVCamera','XimeaCamera']
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFT) = range(4)
