@@ -167,9 +167,14 @@ class LightHandler(deviceHandler.DeviceHandler):
         menu = wx.Menu()
         for i, value in enumerate(EXPOSURE_TIMES):
             menu.Append(i + 1, str(value))
-            wx.EVT_MENU(parent, i + 1, lambda event, value = value: self.setExposureTime(value))
+            parent.Bind(wx.EVT_MENU,
+                        lambda event,
+                        value = value: self.setExposureTime(value),
+                        id= i + 1)
         menu.Append(len(EXPOSURE_TIMES) + 1, '...')
-        wx.EVT_MENU(parent, len(EXPOSURE_TIMES) + 1, lambda event: self.setCustomExposureTime(parent))
+        parent.Bind(wx.EVT_MENU,
+                    lambda event: self.setCustomExposureTime(parent),
+                    id= len(EXPOSURE_TIMES) + 1)
         gui.guiUtils.placeMenuAtMouse(parent, menu)
 
 
