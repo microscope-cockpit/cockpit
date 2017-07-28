@@ -68,8 +68,8 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
                 textSize = 12, label = self.name, size = (120, 80),
                 parent = parent)
         # Respond to clicks on the button.
-        wx.EVT_LEFT_DOWN(button, lambda event: self.makeMenu(parent))
-        wx.EVT_RIGHT_DOWN(button, lambda event: self.makeMenu(parent))
+        button.Bind(wx.EVT_LEFT_DOWN, lambda event: self.makeMenu(parent))
+        button.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.makeMenu(parent))
         self.powerToggle = button
         sizer.Add(button)
         self.powerText = wx.StaticText(parent, -1,
@@ -97,9 +97,12 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
                               powerDelta)
         for i, power in enumerate(powers):
             menu.Append(i + 1, "%d%s" % (min(power, self.maxPower), self.units))
-            wx.EVT_MENU(parent, i + 1, lambda event, power = power: self.setPower(power))
+            parent.Bind(wx.EVT_MENU,
+                        lambda event, power = power: self.setPower(power),
+                        id=i + 1)
         menu.Append(i + 2, '...')
-        wx.EVT_MENU(parent, i + 2, lambda event: self.setPowerArbitrary(parent))
+        parent.Bind(wx.EVT_MENU, lambda event: self.setPowerArbitrary(parent),
+                    id= i + 2)
 
         gui.guiUtils.placeMenuAtMouse(parent, menu)
 
