@@ -120,7 +120,8 @@ class RaspberryPi(device.Device):
                     textSize = 12, label = mode, size = (180, 50), 
                     parent = parent)
             # Respond to clicks on the button.
-            wx.EVT_LEFT_DOWN(button, lambda event, mode = mode: self.setExMode(mode))
+            button.Bind(wx.EVT_LEFT_DOWN,
+                        lambda event, mode = mode: self.setExMode(mode))
             sizer.Add(button)
             self.lightPathButtons.append(button)
             if mode == self.curExMode:
