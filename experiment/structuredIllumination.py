@@ -29,12 +29,12 @@ COLLECTION_ORDERS = {
 ## This class handles SI experiments.
 class SIExperiment(experiment.Experiment):
     ## \param numAngles How many angles to perform -- sometimes we only want
-    # to do 1 angle, for example. 
+    # to do 1 angle, for example.
     # \param collectionOrder Key from COLLECTION_ORDERS that indicates what
     #        order we change the angle, phase, and Z step in.
     # \param angleHandler DeviceHandler for the device that handles rotations
     #        of the illumination pattern.
-    # \param phaseHandler DeviceHandler for the device that handles phase 
+    # \param phaseHandler DeviceHandler for the device that handles phase
     #        changes in the illumination pattern.
     # \param slmHandler Optionally, both angle and phase can be handled by an
     #        SLM or similar pattern-generating device instead. Each handler
@@ -84,8 +84,8 @@ class SIExperiment(experiment.Experiment):
                     yield (angle, phase, z * self.sliceHeight)
 
 
-    ## Create the ActionTable needed to run the experiment. We do three 
-    # Z-stacks for three different angles, and take five images at each 
+    ## Create the ActionTable needed to run the experiment. We do three
+    # Z-stacks for three different angles, and take five images at each
     # Z-slice, one for each phase.
     def generateActions(self):
         table = actionTable.ActionTable()
@@ -103,7 +103,7 @@ class SIExperiment(experiment.Experiment):
             curTime += decimal.Decimal('1e-6')
         table.addAction(curTime, self.zPositioner, 0)
         curTime += decimal.Decimal('1e-6')
-		
+
         if self.slmHandler is not None:
             # Add a first trigger of the SLM to get first new image.
             table.addAction(curTime, self.slmHandler, 0)
@@ -117,15 +117,15 @@ class SIExperiment(experiment.Experiment):
             # then have some time to stabilize. Or, if we have an SLM, then we
             # need to trigger it and then wait for it to stabilize.
             # Ensure we truly are doing this after all exposure events are done.
-            curTime = max(curTime, 
+            curTime = max(curTime,
                           table.getFirstAndLastActionTimes()[1] + decimal.Decimal('1e-6'))
             if angle != prevAngle and prevAngle is not None:
                 if self.angleHandler is not None:
                     motionTime, stabilizationTime = self.angleHandler.getMovementTime(prevAngle, angle)
                     # Move to the next position.
-                    table.addAction(curTime + motionTime, 
+                    table.addAction(curTime + motionTime,
                             self.angleHandler, angle)
-                    delayBeforeImaging = max(delayBeforeImaging, 
+                    delayBeforeImaging = max(delayBeforeImaging,
                             motionTime + stabilizationTime)
                 # Advance time slightly so all actions are sorted (e.g. we
                 # don't try to change angle and phase in the same timestep).
@@ -137,23 +137,23 @@ class SIExperiment(experiment.Experiment):
                     # Hold flat.
                     table.addAction(curTime, self.phaseHandler, prevPhase)
                     # Move to the next position.
-                    table.addAction(curTime + motionTime, 
+                    table.addAction(curTime + motionTime,
                             self.phaseHandler, phase)
-                    delayBeforeImaging = max(delayBeforeImaging, 
+                    delayBeforeImaging = max(delayBeforeImaging,
                             motionTime + stabilizationTime)
                 # Advance time slightly so all actions are sorted (e.g. we
                 # don't try to change angle and phase in the same timestep).
                 curTime += decimal.Decimal('.001')
-                
+
             if z != prevZ:
                 if prevZ is not None:
                     motionTime, stabilizationTime = self.zPositioner.getMovementTime(prevZ, z)
                     # Hold flat.
                     table.addAction(curTime, self.zPositioner, prevZ)
                     # Move to the next position.
-                    table.addAction(curTime + motionTime, 
+                    table.addAction(curTime + motionTime,
                             self.zPositioner, z)
-                    delayBeforeImaging = max(delayBeforeImaging, 
+                    delayBeforeImaging = max(delayBeforeImaging,
                             motionTime + stabilizationTime)
                 # Advance time slightly so all actions are sorted (e.g. we
                 # don't try to change angle and phase in the same timestep).
@@ -171,7 +171,7 @@ class SIExperiment(experiment.Experiment):
             # pattern optimised for each wavelength.
             for cameras, lightTimePairs in self.exposureSettings:
                 curTime = self.expose(curTime, cameras, lightTimePairs, angle, phase, table)
-                
+
         # Hold Z, angle, and phase steady through to the end, then ramp down
         # to 0 to prep for the next experiment.
         table.addAction(curTime, self.zPositioner, prevZ)
@@ -205,18 +205,18 @@ class SIExperiment(experiment.Experiment):
 
 
     ## Wrapper around Experiment.expose() that:
-    # 1: adjusts exposure times based on the current angle, to compensate for 
+    # 1: adjusts exposure times based on the current angle, to compensate for
     # bleaching;
-    # 2: uses an SLM (if available) to optimise SIM for each exposure.    
+    # 2: uses an SLM (if available) to optimise SIM for each exposure.
     def expose(self, curTime, cameras, lightTimePairs, angle, phase, table):
         # new lightTimePairs with exposure times adjusted for bleaching.
         newPairs = []
-        # If a SIM pattern puts the 1st-order spots for a given wavelength at 
+        # If a SIM pattern puts the 1st-order spots for a given wavelength at
         # the edge of the back pupil, the 1st-order spots from longer wave-
-        # lengths will fall beyond the edge of the pupil. Therefore, we use the 
+        # lengths will fall beyond the edge of the pupil. Therefore, we use the
         # longest wavelength in a given exposure to determine the SIM pattern.
-        longestWavelength = 0   
-        # Using tExp rather than 'time' to avoid confusion between table event 
+        longestWavelength = 0
+        # Using tExp rather than 'time' to avoid confusion between table event
         # times and exposure durations.
         for light, tExp in lightTimePairs:
             # SIM wavelength
@@ -301,7 +301,7 @@ class SIExperiment(experiment.Experiment):
                     dtype = newData.dtype, XYSize = doc.imageHeader.d[0],
                     ZSize = doc.imageHeader.d[2],
                     wavelengths = doc.imageHeader.wave)
-            #reset shape order as softworx seems to want this. 
+            #reset shape order as softworx seems to want this.
             header.ImgSequence=1
             header.next = doc.imageHeader.next
             if header.next > 0:
@@ -312,10 +312,10 @@ class SIExperiment(experiment.Experiment):
                 nm = 'mm%d' %(i + 1)
                 setattr(header, nm, getattr(doc.imageHeader, nm))
             header.NumTitles = doc.imageHeader.NumTitles
-            header.title = doc.imageHeader.title            
+            header.title = doc.imageHeader.title
             del doc
             del oldExt
-            
+
             # Write the new data to a new file, then remove the old file
             # and put the new one where it was.
             tempPath = self.savePath + str(os.getpid())
@@ -342,7 +342,7 @@ class ExperimentUI(wx.Panel):
         self.configKey = configKey
         self.allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         self.settings = self.loadSettings()
-        
+
         sizer = wx.BoxSizer(wx.VERTICAL)
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.shouldOnlyDoOneAngle = wx.CheckBox(self,
@@ -368,7 +368,7 @@ class ExperimentUI(wx.Panel):
         self.siCollectionOrder.SetSelection(self.settings['siCollectionOrder'])
         sizer.Add(rowSizer)
         self.SetSizerAndFit(sizer)
-        
+
 
     ## Given a parameters dict (parameter name to value) to hand to the
     # experiment instance, augment them with our special parameters.
@@ -398,7 +398,7 @@ class ExperimentUI(wx.Panel):
     def loadSettings(self):
         allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         result = util.userConfig.getValue(
-                self.configKey + 'SIExperimentSettings', 
+                self.configKey + 'SIExperimentSettings',
                 default = {
                     'bleachCompensations': ['' for l in self.allLights],
                     'shouldOnlyDoOneAngle': False,
@@ -418,7 +418,7 @@ class ExperimentUI(wx.Panel):
                 'shouldOnlyDoOneAngle': self.shouldOnlyDoOneAngle.GetValue(),
                 'siCollectionOrder': self.siCollectionOrder.GetSelection(),
         }
-    
+
 
     ## Save the current experiment settings to config.
     def saveSettings(self, settings = None):
