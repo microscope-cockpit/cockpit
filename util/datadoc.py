@@ -86,6 +86,8 @@ class DataDoc:
         # action is necessary.
         self.alignCallbacks = []
 
+    def getNPlanes(self):
+        return numpy.prod(self.size[0:2])
 
     ## Convert the loaded MRC image data into a 5D array of pixel data in
     # WTZYX order.

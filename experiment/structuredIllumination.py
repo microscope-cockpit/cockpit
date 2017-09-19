@@ -9,6 +9,7 @@ import decimal
 import math
 import numpy
 import os
+import tempfile
 import wx
 
 ## Provided so the UI knows what to call this experiment.
@@ -24,6 +25,18 @@ COLLECTION_ORDERS = {
         "Z, Phase, Angle": (2, 1, 0),
 }
 
+def collection_order_tuple(order_str):
+    """Return collection order in a tuple of 1 character.
+
+    A bit more sensible, lower-case, one character, tuple.
+    """
+    to1char = {
+        0 : "a",
+        1 : "p",
+        2 : "z",
+    }
+    z_order = [to1char[x] for x in COLLECTION_ORDERS[order_str]]
+    return tuple(z_order)
 
 
 ## This class handles SI experiments.
@@ -241,6 +254,98 @@ class SIExperiment(experiment.Experiment):
         curTime += delay
         return experiment.Experiment.expose(self, curTime, cameras, newPairs, table)
 
+    def reorder_img_file(self):
+        """Reorder the Z dimension in the file.
+
+        Priism and Softworx are only capable to handle five
+        dimensions so angle and phase get mixed in the Z dimension.
+        In addition, their reconstruction  programs are only capable
+        to handle them in angle-z-phase order.
+        """
+        if self.collectionOrder == "Angle, Z, Phase":
+            # Already in order; don't do anything.
+            return
+
+        z_order = collection_order_tuple(self.collectionOrder)
+        length_getters = {
+            "a" : self.numAngles(),
+            "z" : self.numZSlices(),
+            "p" : self.numPhases(),
+        }
+        z_lengths = tuple([length_getters[d] for d in z_order])
+
+        ## To fix the order of the Z dimension, we reshape the numpy
+        ## array into the real 7 dimensions array that it is, tranpose
+        ## it as necessary, and then reshape it back into the fake 5
+        ## dimensions required by the MRC file format.
+
+        ## Read all the data from file.  The extended header is an
+        ## array of structs, one per plane, and its order also needs
+        ## to be corrected.
+        doc = util.datadoc.DataDoc(self.savePath)
+        ext_header_stride = 4 * (doc.imageHeader.NumIntegers +
+                                 doc.imageHeader.NumFloats)
+        ext_header_dtype = "b%d" % (ext_header_stride)
+        with open(self.savePath, "rb") as fh:
+            base_header = fh.read(1024)
+            ext_header = numpy.fromfile(fh, count=doc.getNPlanes,
+                                        dtype=ext_header_dtype)
+        img_data = doc.imageArray
+
+        nfake_z = numpy.prod(z_lengths)
+        assert im_data.shape[2] == nfake_z, \
+            ("expected 3rd dimension of length %d but got %d instead"
+             % (nfake_z, img_data.shape[2]))
+
+        order_in = ("w", "t") + z_order + ("y", "x")
+        order_out = ("w", "t", "a", "z", "p", "y", "x")
+
+        ## Reshape to 7 dimensions
+        fake_shape = img_data.shape
+        real_shape = fake_shape[0:2] + z_lengths + fake_shape[3:]
+        img_data = img_data.reshape(real_shape)
+
+        ## Transpose accordingly
+        dim_map = dict(zip(order_in, range(len(order_in))))
+        img_data = numpy.transpose(img_data, [dim_map[i] for i in order_out])
+
+        ## Reshape back to 5 dimensions
+        img_data = img_data.reshape(fake_shape)
+
+        ## Do it for the extended header too (no X and Y)
+        ext_header = ext_header.reshape(real_shape[0:5])
+        dim_map = dict(zip(order_in[0:5], range(5)))
+        ext_header = numpy.transpose(ext_header,
+                                     [dim_map[i] for i in order_out[0:5]])
+
+        ## Build a new header from old doc data
+        header = util.datadoc.makeHeaderForShape(fake_shape, img_data.dtype,
+                                                 XYSize=doc.imageHeader.d[0],
+                                                 ZSize=doc.imageHeader.d[2],
+                                                 wavelengths=doc.imageHeader.wave)
+        ## reset shape order as softworx seems to want this.
+        header.ImgSequence=1
+        header.next = doc.imageHeader.next
+        header.NumIntegers = doc.imageHeader.NumIntegers
+        header.NumFloats = doc.imageHeader.NumFloats
+        header.mmm1 = doc.imageHeader.mmm1
+        for i in range(1, fake_shape[0]):
+            nm = 'mm%d' %(i + 1)
+            setattr(header, nm, getattr(doc.imageHeader, nm))
+            header.NumTitles = doc.imageHeader.NumTitles
+            header.title = doc.imageHeader.title
+
+        ## Save to a new file
+        tmp_fh = tempfile.NamedTemporaryFile(delete=False)
+        util.datadoc.writeMrcHeader(header, tmp_fh)
+        tmp_fh.write(ext_header)
+        tmp_fh.write(img_data)
+        tmp_fh.close()
+        ## Windows needs to have the file removed first.
+        if os.name == "nt":
+            os.remove(self.savePath)
+        os.rename(tmp_fh.name, self.savePath)
+
 
     ## As part of cleanup, we have to modify the saved file to have its images
     # be in the order that Priism expects them to be in so that it can
@@ -248,86 +353,9 @@ class SIExperiment(experiment.Experiment):
     # order, whatever it may be, to Angle-Z-Phase order.
     def cleanup(self, runThread = None, saveThread = None):
         experiment.Experiment.cleanup(self, runThread, saveThread)
-        if self.collectionOrder == "Angle, Z, Phase":
-            # Already in order; don't do anything.
-            return
-        if self.savePath is not None:
-            doc = util.datadoc.DataDoc(self.savePath)
-            newData = numpy.zeros(doc.imageArray.shape,
-                                  dtype = doc.imageArray.dtype)
-            if doc.imageHeader.next > 0:
-                # Assumes that the file was written out in the native byte
-                # order (currently that is true).
-                oldExt = numpy.fromfile(
-                    self.savePath, dtype=numpy.dtype('u1'),
-                    count=1024+doc.imageHeader.next)
-                newExt = numpy.zeros(
-                    doc.imageHeader.next, dtype=numpy.dtype('u1'))
-                extImgBytes = 4 * (doc.imageHeader.NumIntegers +
-                                   doc.imageHeader.NumFloats)
-            # Determine how to index into the source dataset. The slowest-
-            # changing value has the largest multiplier.
-            ordering = COLLECTION_ORDERS[self.collectionOrder]
-            self.numWavelengths=doc.imageArray.shape[0]
-            tmp = (self.numAngles, self.numPhases, self.numZSlices)
-            # Reorder based on ordering.
-            tmp = [tmp[i] for i in ordering]
-            stepToMultiplier = {}
-            for i, index in enumerate(ordering):
-                stepToMultiplier[index] = numpy.product(tmp[i + 1:])
-            sourceAMult = stepToMultiplier[0]
-            sourcePMult = stepToMultiplier[1]
-            sourceZMult = stepToMultiplier[2]
-            targetAMult = self.numPhases * self.numZSlices
-            targetPMult = 1
-            targetZMult = self.numPhases
-            imagesPerW=self.numPhases*self.numZSlices*self.numAngles
-            for w in xrange(self.numWavelengths):
-                for angle in xrange(self.numAngles):
-                    for phase in xrange(self.numPhases):
-                        for z in xrange(self.numZSlices):
-                            source = angle * sourceAMult + phase * sourcePMult + z * sourceZMult
-                            target = angle * targetAMult + phase * targetPMult + z * targetZMult
-                            newData[ w, :, target] = doc.imageArray[w, :, source]
-
-                            if doc.imageHeader.next > 0:
-                                extTgt = target * extImgBytes
-                                extSrc = 1024 + source * extImgBytes
-                                newExt[extTgt:extTgt + extImgBytes] = oldExt[
-                                    extSrc:extSrc + extImgBytes]
-
-            # Write the data out.
-            header = util.datadoc.makeHeaderForShape(newData.shape,
-                    dtype = newData.dtype, XYSize = doc.imageHeader.d[0],
-                    ZSize = doc.imageHeader.d[2],
-                    wavelengths = doc.imageHeader.wave)
-            #reset shape order as softworx seems to want this.
-            header.ImgSequence=1
-            header.next = doc.imageHeader.next
-            if header.next > 0:
-                header.NumIntegers = doc.imageHeader.NumIntegers
-                header.NumFloats = doc.imageHeader.NumFloats
-            header.mmm1 = doc.imageHeader.mmm1
-            for i in xrange(1, newData.shape[0]):
-                nm = 'mm%d' %(i + 1)
-                setattr(header, nm, getattr(doc.imageHeader, nm))
-            header.NumTitles = doc.imageHeader.NumTitles
-            header.title = doc.imageHeader.title
-            del doc
-            del oldExt
-
-            # Write the new data to a new file, then remove the old file
-            # and put the new one where it was.
-            tempPath = self.savePath + str(os.getpid())
-            handle = open(tempPath, 'wb')
-            util.datadoc.writeMrcHeader(header, handle)
-            if header.next > 0:
-                handle.write(newExt)
-            handle.write(newData)
-            handle.close()
-            os.remove(self.savePath)
-            os.rename(tempPath, self.savePath)
-
+        if self.savePath:
+            self.reorder_img_file()
+        return
 
 
 ## A consistent name to use to refer to the class itself.
