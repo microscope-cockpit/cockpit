@@ -268,9 +268,9 @@ class SIExperiment(experiment.Experiment):
 
         z_order = collection_order_tuple(self.collectionOrder)
         length_getters = {
-            "a" : self.numAngles(),
-            "z" : self.numZSlices(),
-            "p" : self.numPhases(),
+            "a" : self.numAngles,
+            "z" : self.numZSlices,
+            "p" : self.numPhases,
         }
         z_lengths = tuple([length_getters[d] for d in z_order])
 
@@ -283,22 +283,30 @@ class SIExperiment(experiment.Experiment):
         ## array of structs, one per plane, and its order also needs
         ## to be corrected.
         doc = util.datadoc.DataDoc(self.savePath)
-        ext_header_stride = 4 * (doc.imageHeader.NumIntegers +
-                                 doc.imageHeader.NumFloats)
-        ext_header_dtype = "b%d" % (ext_header_stride)
+        ## We just fake a dtype with the right number of bytes per
+        ## plane for the extended header.  We are not really privy to
+        ## the order of Integer and Floats within each plane in there.
+        ext_header_stride = 4 * (doc.imageHeader.NumIntegers
+                                 + doc.imageHeader.NumFloats)
+        ext_header_dtype = ",".join(['u1']*ext_header_stride)
         with open(self.savePath, "rb") as fh:
             base_header = fh.read(1024)
-            ext_header = numpy.fromfile(fh, count=doc.getNPlanes,
+            ext_header = numpy.fromfile(fh, count=doc.getNPlanes(),
                                         dtype=ext_header_dtype)
         img_data = doc.imageArray
 
         nfake_z = numpy.prod(z_lengths)
-        assert im_data.shape[2] == nfake_z, \
+        assert img_data.shape[2] == nfake_z, \
             ("expected 3rd dimension of length %d but got %d instead"
              % (nfake_z, img_data.shape[2]))
 
+        ## datadoc promised the imageArray would be in WTZYX order
         order_in = ("w", "t") + z_order + ("y", "x")
-        order_out = ("w", "t", "a", "z", "p", "y", "x")
+
+        ## Not sure if TZWYX is really important for softworx, maybe
+        ## only the order within Z is important.  But whatever it is,
+        ## it will need to match the ImgSequence in the header.
+        order_out = ("t", "a", "z", "p", "w", "y", "x")
 
         ## Reshape to 7 dimensions
         fake_shape = img_data.shape
@@ -306,6 +314,10 @@ class SIExperiment(experiment.Experiment):
         img_data = img_data.reshape(real_shape)
 
         ## Transpose accordingly
+        assert sorted(order_in) == sorted(order_out), \
+            "ORDER_IN and ORDER do not have same elements"
+        assert len(set(order_in)) == len(order_in), \
+            "ORDER_IN and ORDER_OUT can't have repeated elements"
         dim_map = dict(zip(order_in, range(len(order_in))))
         img_data = numpy.transpose(img_data, [dim_map[i] for i in order_out])
 
@@ -323,8 +335,7 @@ class SIExperiment(experiment.Experiment):
                                                  XYSize=doc.imageHeader.d[0],
                                                  ZSize=doc.imageHeader.d[2],
                                                  wavelengths=doc.imageHeader.wave)
-        ## reset shape order as softworx seems to want this.
-        header.ImgSequence=1
+        header.ImgSequence=1 # WZT (or TZW in C index style)
         header.next = doc.imageHeader.next
         header.NumIntegers = doc.imageHeader.NumIntegers
         header.NumFloats = doc.imageHeader.NumFloats
@@ -335,9 +346,17 @@ class SIExperiment(experiment.Experiment):
             header.NumTitles = doc.imageHeader.NumTitles
             header.title = doc.imageHeader.title
 
+        ## Destroy it otherwise we can't overwrite the file.
+        del doc
+
         ## Save to a new file
         tmp_fh = tempfile.NamedTemporaryFile(delete=False)
         util.datadoc.writeMrcHeader(header, tmp_fh)
+        ## Make sure the data is actually ordered for writing,
+        ## otherwise at this point the arrays might be making use of
+        ## views.
+        ext_header = numpy.ascontiguousarray(ext_header)
+        img_data = numpy.ascontiguousarray(img_data)
         tmp_fh.write(ext_header)
         tmp_fh.write(img_data)
         tmp_fh.close()
