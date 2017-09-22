@@ -39,6 +39,47 @@ def collection_order_tuple(order_str):
     return tuple(z_order)
 
 
+def pack_z_dim(data, order):
+    """Pack the angle and phase dimensions into Z.
+
+    Returns a new numpy array with two less dimensions.  The angle and
+    phase dimensions get packed into Z.  The order of those three
+    dimensions are not changed, so reorder them first if needed.
+
+    Args:
+        data - numpy.array with at least 3 dimensions
+        order - tuple of 1 characters, corresponding to the dimensions
+            of data.  Must have at least 'a', 'z', and 'p'
+    """
+    assert len(order) == data.ndim, \
+        ("length of ORDER '%d' differs from DATA ndims '%d'"
+         % (len(order), data.ndim))
+    zd_idx = [order.index(d) for d in ("a", "z", "p")].sort()
+    assert all(numpy.diff(zd_idx) == 1), \
+        "Alpha, Z, and Phase dimensions not in consecutive dimensions"
+    shape_unpacked = data.shape
+    z_length_packed = numpy.prod(shape_unpacked[zd_idx[0]:zd_idx[-1]+1])
+    shape_packed = (shape_unpacked[0:zd_idx[0]]
+                    + (z_length_packed,)
+                    + shape_unpacked[zd_idx[-1]+1:])
+    return data.reshape(shape_packed)
+
+def unpack_z_dim(data, order, z_lengths):
+    """Unpack the angle and phase dimensions out of Z.
+
+    Args:
+        data - numpy.array
+        order - tuple with 1 letter characters corresponding to the
+            dimensions in data.  Must have at least 'z'.
+        z_lengths - tuple with the length of alpha, phase, and z
+            dimensions, currently packed in the z dimension.
+    """
+    z_idx = order.index("z")
+    packed_shape = data.shape
+    unpacked_shape = packed_shape[0:z_idx] + z_lengths + packed_shape[z_idx+1:]
+    return data.reshape(unpacked_shape)
+
+
 ## This class handles SI experiments.
 class SIExperiment(experiment.Experiment):
     ## \param numAngles How many angles to perform -- sometimes we only want
@@ -301,34 +342,33 @@ class SIExperiment(experiment.Experiment):
              % (nfake_z, img_data.shape[2]))
 
         ## datadoc promised the imageArray would be in WTZYX order
-        order_in = ("w", "t") + z_order + ("y", "x")
+        order_in_packed = ("w", "t", "z", "y", "x")
+        order_in_unpacked = ("w", "t") + z_order + ("y", "x")
 
         ## Not sure if TZWYX is really important for softworx, maybe
         ## only the order within Z is important.  But whatever it is,
         ## it will need to match the ImgSequence in the header.
-        order_out = ("t", "a", "z", "p", "w", "y", "x")
+        order_out_packed = ("t", "z", "w", "y", "x")
+        order_out_unpacked = ("t", "a", "z", "p", "w", "y", "x")
 
-        ## Reshape to 7 dimensions
-        fake_shape = img_data.shape
-        real_shape = fake_shape[0:2] + z_lengths + fake_shape[3:]
-        img_data = img_data.reshape(real_shape)
+        ## The new order for the array axes
+        dim_map = dict(zip(order_in_unpacked, range(len(order_in_unpacked))))
+        axes_order = [dim_map[i] for i in order_out_unpacked]
 
-        ## Transpose accordingly
-        assert sorted(order_in) == sorted(order_out), \
+        assert sorted(order_in_unpacked) == sorted(order_out_unpacked), \
             "ORDER_IN and ORDER do not have same elements"
-        assert len(set(order_in)) == len(order_in), \
+        assert len(set(order_in_unpacked)) == len(order_in_unpacked), \
             "ORDER_IN and ORDER_OUT can't have repeated elements"
-        dim_map = dict(zip(order_in, range(len(order_in))))
-        img_data = numpy.transpose(img_data, [dim_map[i] for i in order_out])
 
-        ## Reshape back to 5 dimensions
-        img_data = img_data.reshape(fake_shape)
+        ## Reorder the image data
+        img_data = unpack_z_dim(img_data, order_in_packed, z_lengths)
+        img_data = numpy.transpose(img_data, axes_order)
+        img_data = pack_z_dim(img_data, order_out_unpacked)
 
         ## Do it for the extended header too (no X and Y)
-        ext_header = ext_header.reshape(real_shape[0:5])
-        dim_map = dict(zip(order_in[0:5], range(5)))
-        ext_header = numpy.transpose(ext_header,
-                                     [dim_map[i] for i in order_out[0:5]])
+        ext_header = unpack_z_dim(ext_header, order_in_packed[:-2], z_lengths)
+        ext_header = numpy.transpose(ext_header, axes_order[:-2])
+        ext_header = pack_z_dim(ext_header, order_out_unpacked[:-2])
 
         ## Build a new header from old doc data
         header = util.datadoc.makeHeaderForShape(fake_shape, img_data.dtype,
