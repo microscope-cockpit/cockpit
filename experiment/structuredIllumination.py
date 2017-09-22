@@ -54,7 +54,8 @@ def pack_z_dim(data, order):
     assert len(order) == data.ndim, \
         ("length of ORDER '%d' differs from DATA ndims '%d'"
          % (len(order), data.ndim))
-    zd_idx = [order.index(d) for d in ("a", "z", "p")].sort()
+    zd_idx = [order.index(d) for d in ("a", "z", "p")]
+    zd_idx.sort()
     assert all(numpy.diff(zd_idx) == 1), \
         "Alpha, Z, and Phase dimensions not in consecutive dimensions"
     shape_unpacked = data.shape
