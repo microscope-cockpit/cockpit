@@ -10,6 +10,7 @@ import math
 import numpy
 import os
 import tempfile
+import shutil
 import wx
 
 ## Provided so the UI knows what to call this experiment.
@@ -26,7 +27,7 @@ COLLECTION_ORDERS = {
 }
 
 def collection_order_tuple(order_str):
-    """Return collection order in a tuple of 1 character.
+    """Return collection order in a tuple of 1 character c-style index.
 
     A bit more sensible, lower-case, one character, tuple.
     """
@@ -39,46 +40,45 @@ def collection_order_tuple(order_str):
     return tuple(z_order)
 
 
-def pack_z_dim(data, order):
-    """Pack the angle and phase dimensions into Z.
+def reorder_z_dim(data, order_packed, z_lengths, z_order, z_wanted):
+    """Reorder the Z dimension of a numpy array.
 
-    Returns a new numpy array with two less dimensions.  The angle and
-    phase dimensions get packed into Z.  The order of those three
-    dimensions are not changed, so reorder them first if needed.
-
-    Args:
-        data - numpy.array with at least 3 dimensions
-        order - tuple of 1 characters, corresponding to the dimensions
-            of data.  Must have at least 'a', 'z', and 'p'
-    """
-    assert len(order) == data.ndim, \
-        ("length of ORDER '%d' differs from DATA ndims '%d'"
-         % (len(order), data.ndim))
-    zd_idx = [order.index(d) for d in ("a", "z", "p")]
-    zd_idx.sort()
-    assert all(numpy.diff(zd_idx) == 1), \
-        "Alpha, Z, and Phase dimensions not in consecutive dimensions"
-    shape_unpacked = data.shape
-    z_length_packed = numpy.prod(shape_unpacked[zd_idx[0]:zd_idx[-1]+1])
-    shape_packed = (shape_unpacked[0:zd_idx[0]]
-                    + (z_length_packed,)
-                    + shape_unpacked[zd_idx[-1]+1:])
-    return data.reshape(shape_packed)
-
-def unpack_z_dim(data, order, z_lengths):
-    """Unpack the angle and phase dimensions out of Z.
+    To fix the order of the Z dimension, we reshape the numpy array
+    into the real 7 dimensions array that it is, tranpose it as
+    necessary, and then reshape it back into the fake 5 dimensions.
 
     Args:
         data - numpy.array
-        order - tuple with 1 letter characters corresponding to the
-            dimensions in data.  Must have at least 'z'.
-        z_lengths - tuple with the length of alpha, phase, and z
-            dimensions, currently packed in the z dimension.
+        order_packed - tuple of 1 character
+        z_lengths - tuple of 3 elements with the length of each of the
+            dimensions packed in z, same order as z_order
+        z_order - a 3 element tuple of 1 character, the order of the z
+            dimension.
+        z_wanted - a 3 element tuple of 1 character, with the wanted
+            order of the z dimension.
     """
-    z_idx = order.index("z")
+    assert data.ndim == len(order_packed), \
+        "DATA ndims different from lenght of ORDER_PACKED"
+    assert sorted(z_order) == ['a', 'p', 'z'], \
+        "Z_ORDER does not have only 'a, z, p'"
+    assert sorted(z_order) == sorted(z_wanted), \
+        "Z_ORDER not same elements as Z_WANTED"
+
+    z_idx = order_packed.index("z")
+    order_in = order_packed[0:z_idx] + z_order + order_packed[z_idx+1:]
+    order_out = order_packed[0:z_idx] + z_wanted + order_packed[z_idx+1:]
+
     packed_shape = data.shape
     unpacked_shape = packed_shape[0:z_idx] + z_lengths + packed_shape[z_idx+1:]
-    return data.reshape(unpacked_shape)
+
+    ## The new order for the array axes
+    dim_map = dict(zip(order_in, range(len(order_in))))
+    axes_order = [dim_map[i] for i in order_out]
+
+    data = data.reshape(unpacked_shape)
+    data = numpy.transpose(data, axes_order)
+    data = data.reshape(packed_shape)
+    return data
 
 
 ## This class handles SI experiments.
@@ -296,19 +296,21 @@ class SIExperiment(experiment.Experiment):
         curTime += delay
         return experiment.Experiment.expose(self, curTime, cameras, newPairs, table)
 
+
     def reorder_img_file(self):
         """Reorder the Z dimension in the file.
 
-        Priism and Softworx are only capable to handle five
-        dimensions so angle and phase get mixed in the Z dimension.
-        In addition, their reconstruction  programs are only capable
-        to handle them in angle-z-phase order.
+        Priism and Softworx are only capable to handle five dimensions
+        so angle and phase get mixed in the Z dimension.  In addition,
+        their reconstruction programs are only capable to handle them
+        in angle-z-phase order.
         """
-        if self.collectionOrder == "Angle, Z, Phase":
+        z_order = collection_order_tuple(self.collectionOrder)
+        z_wanted = ('a', 'z', 'p')
+        if z_order == z_wanted:
             # Already in order; don't do anything.
             return
 
-        z_order = collection_order_tuple(self.collectionOrder)
         length_getters = {
             "a" : self.numAngles,
             "z" : self.numZSlices,
@@ -316,83 +318,44 @@ class SIExperiment(experiment.Experiment):
         }
         z_lengths = tuple([length_getters[d] for d in z_order])
 
-        ## To fix the order of the Z dimension, we reshape the numpy
-        ## array into the real 7 dimensions array that it is, tranpose
-        ## it as necessary, and then reshape it back into the fake 5
-        ## dimensions required by the MRC file format.
-
-        ## Read all the data from file.  The extended header is an
-        ## array of structs, one per plane, and its order also needs
-        ## to be corrected.
         doc = util.datadoc.DataDoc(self.savePath)
-        ## We just fake a dtype with the right number of bytes per
-        ## plane for the extended header.  We are not really privy to
-        ## the order of Integer and Floats within each plane in there.
+        order_in = tuple(doc.image.Mrc.axisOrderStr())
+
+        ## Read the extended header again separately.  It our case,
+        ## this is a struct made of int32 and float32, one per plane.
+        ## Its order also needs to be corrected.  We just fake a dtype
+        ## with the right number of bytes per plane for the extended
+        ## header.  We fake the struct by using multiple u1 per
+        ## element.
         ext_header_stride = 4 * (doc.imageHeader.NumIntegers
                                  + doc.imageHeader.NumFloats)
         ext_header_dtype = ",".join(['u1']*ext_header_stride)
         with open(self.savePath, "rb") as fh:
-            base_header = fh.read(1024)
+            fh.seek(1024) # skip base header
             ext_header = numpy.fromfile(fh, count=doc.getNPlanes(),
                                         dtype=ext_header_dtype)
-        img_data = doc.imageArray
+        assert doc.imageHeader.next == ext_header.nbytes, \
+            "next value from datadoc differs from computed length"
+        assert order_in[-2:] == ('y', 'x'), \
+            "ORDER_IN two last dimensions are not Y and X"
+        ext_header = ext_header.reshape(doc.image.shape[:-2])
 
         nfake_z = numpy.prod(z_lengths)
-        assert img_data.shape[2] == nfake_z, \
-            ("expected 3rd dimension of length %d but got %d instead"
-             % (nfake_z, img_data.shape[2]))
+        assert doc.size[2] == nfake_z, \
+            "num Z of doc differs from expected Z length"
 
-        ## datadoc promised the imageArray would be in WTZYX order
-        order_in_packed = ("w", "t", "z", "y", "x")
-        order_in_unpacked = ("w", "t") + z_order + ("y", "x")
-
-        ## Not sure if TZWYX is really important for softworx, maybe
-        ## only the order within Z is important.  But whatever it is,
-        ## it will need to match the ImgSequence in the header.
-        order_out_packed = ("t", "z", "w", "y", "x")
-        order_out_unpacked = ("t", "a", "z", "p", "w", "y", "x")
-
-        ## The new order for the array axes
-        dim_map = dict(zip(order_in_unpacked, range(len(order_in_unpacked))))
-        axes_order = [dim_map[i] for i in order_out_unpacked]
-
-        assert sorted(order_in_unpacked) == sorted(order_out_unpacked), \
-            "ORDER_IN and ORDER do not have same elements"
-        assert len(set(order_in_unpacked)) == len(order_in_unpacked), \
-            "ORDER_IN and ORDER_OUT can't have repeated elements"
-
-        ## Reorder the image data
-        img_data = unpack_z_dim(img_data, order_in_packed, z_lengths)
-        img_data = numpy.transpose(img_data, axes_order)
-        img_data = pack_z_dim(img_data, order_out_unpacked)
-
-        ## Do it for the extended header too (no X and Y)
-        ext_header = unpack_z_dim(ext_header, order_in_packed[:-2], z_lengths)
-        ext_header = numpy.transpose(ext_header, axes_order[:-2])
-        ext_header = pack_z_dim(ext_header, order_out_unpacked[:-2])
+        ## Finally, reorder the things.
+        img_data = reorder_z_dim(doc.image, order_in, z_lengths,
+                                 z_order, z_wanted)
+        ext_header = reorder_z_dim(ext_header, order_in[:-2], z_lengths,
+                                   z_order, z_wanted)
 
         ## Build a new header from old doc data
-        header = util.datadoc.makeHeaderForShape(fake_shape, img_data.dtype,
-                                                 XYSize=doc.imageHeader.d[0],
-                                                 ZSize=doc.imageHeader.d[2],
-                                                 wavelengths=doc.imageHeader.wave)
-        header.ImgSequence=1 # WZT (or TZW in C index style)
-        header.next = doc.imageHeader.next
-        header.NumIntegers = doc.imageHeader.NumIntegers
-        header.NumFloats = doc.imageHeader.NumFloats
-        header.mmm1 = doc.imageHeader.mmm1
-        for i in range(1, fake_shape[0]):
-            nm = 'mm%d' %(i + 1)
-            setattr(header, nm, getattr(doc.imageHeader, nm))
-            header.NumTitles = doc.imageHeader.NumTitles
-            header.title = doc.imageHeader.title
 
-        ## Destroy it otherwise we can't overwrite the file.
-        del doc
-
-        ## Save to a new file
+        ## Save to a new file, reusing the original base header since
+        ## we don't actually changed anything there.
         tmp_fh = tempfile.NamedTemporaryFile(delete=False)
-        util.datadoc.writeMrcHeader(header, tmp_fh)
+        util.datadoc.writeMrcHeader(doc.imageHeader, tmp_fh)
         ## Make sure the data is actually ordered for writing,
         ## otherwise at this point the arrays might be making use of
         ## views.
@@ -401,16 +364,19 @@ class SIExperiment(experiment.Experiment):
         tmp_fh.write(ext_header)
         tmp_fh.write(img_data)
         tmp_fh.close()
+
+        ## We are going to swap the files now, so destroy the old
+        ## datadoc which memmaps the old file or we won't be able to
+        ## overwrite.
+        del doc
+
         ## Windows needs to have the file removed first.
         if os.name == "nt":
             os.remove(self.savePath)
-        os.rename(tmp_fh.name, self.savePath)
+        shutil.move(tmp_fh.name, self.savePath)
+        return
 
 
-    ## As part of cleanup, we have to modify the saved file to have its images
-    # be in the order that Priism expects them to be in so that it can
-    # reconstruct them correctly. That means converting from our collection
-    # order, whatever it may be, to Angle-Z-Phase order.
     def cleanup(self, runThread = None, saveThread = None):
         experiment.Experiment.cleanup(self, runThread, saveThread)
         if self.savePath:
