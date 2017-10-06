@@ -2,7 +2,7 @@
 # programming perspective. I (Chris Weisiger) originally wrote it for the OMX
 # Editor program, since I needed to be able to construct multiple views and
 # transformations of data on the fly. It's since expanded to provide multiple
-# utility functions for reading and writing MRC files and headers. 
+# utility functions for reading and writing MRC files and headers.
 
 import Mrc
 
@@ -15,10 +15,10 @@ DIMENSION_LABELS = ['Wavelength', 'Time', 'Z', 'Y', 'X']
 
 
 
-## The DataDoc class is, broadly, a wrapper around the Mrc module. When it 
-# loads a file, it loads all of the data in that file, and then makes it 
+## The DataDoc class is, broadly, a wrapper around the Mrc module. When it
+# loads a file, it loads all of the data in that file, and then makes it
 # available as an array in WTZYX order (regardless of the order in which the
-# data is stored in the MRC file). It additionally exposes some attributes of 
+# data is stored in the MRC file). It additionally exposes some attributes of
 # the MRC metadata, and provides functions for transforming and projecting
 # the data array.
 class DataDoc:
@@ -43,14 +43,14 @@ class DataDoc:
         # instead of a tuple (from self.imageArray.shape) is occasionally
         # handy.
         self.size = numpy.array([self.numWavelengths, numTimepoints, numZ, numY, numX], dtype = numpy.int)
-        ## 5D array of pixel data, indexed as 
+        ## 5D array of pixel data, indexed as
         # self.imageArray[wavelength][time][z][y][x]
-        # In other words, in WTZYX order. In general we try to treat 
+        # In other words, in WTZYX order. In general we try to treat
         # Z and time as "just another axis", but wavelength is dealt with
         # specially.
         self.imageArray = self.getImageArray()
         ## Two arrays, one for ints, one for floats, for the extended header.
-        # Indexed as 
+        # Indexed as
         # self.extendedHeaderInts[wavelength, time, z, i]
         # Either may be empty, depending on how big the extended header is.
         self.extendedHeaderInts, self.extendedHeaderFloats = getExtendedHeader(
@@ -68,14 +68,14 @@ class DataDoc:
         self.cropMin = numpy.array([0, 0, 0, 0, 0], numpy.int32)
         ## Upper boundary of the cropped data.
         self.cropMax = numpy.array(self.size, numpy.int32)
-        
+
         ## Index of the single pixel that is visible in all different data
         # views.
         self.curViewIndex = numpy.array(self.size / 2, numpy.int)
         # Initial time view is at 0
         self.curViewIndex[1] = 0
 
-        ## Parameters for transforming different wavelengths so they align 
+        ## Parameters for transforming different wavelengths so they align
         # with each other. Order is dx, dy, dz, angle, zoom
         self.alignParams = numpy.zeros((self.size[0], 5), numpy.float32)
         # Default zoom to 1.0
@@ -86,11 +86,13 @@ class DataDoc:
         # action is necessary.
         self.alignCallbacks = []
 
+    def getNPlanes(self):
+        return numpy.prod(self.size[0:3])
 
     ## Convert the loaded MRC image data into a 5D array of pixel data in
     # WTZYX order.
     def getImageArray(self):
-        # This is a string describing the dimension ordering as stored in 
+        # This is a string describing the dimension ordering as stored in
         # the file.
         return reorderArray(self.image, self.size, self.image.Mrc.axisOrderStr())
 
@@ -103,14 +105,14 @@ class DataDoc:
     ## As takeSlice, but do a max-intensity projection across one axis. This
     # becomes impossible to do efficiently if we have rotation or scaling in
     # a given wavelength, so we just have to transform the entire volume. It
-    # gets *really* expensive if we want to do projections across time with 
+    # gets *really* expensive if we want to do projections across time with
     # this...
     # \todo We could be a bit more efficient here since only the wavelengths
-    # with nonzero rotation/scaling need to be transformed as volumes. 
+    # with nonzero rotation/scaling need to be transformed as volumes.
     def takeProjectedSlice(self, axes, projectionAxis, shouldTransform,
             order = 1):
-        if (projectionAxis == 2 or 
-                (numpy.all(self.alignParams[:,3] == 0) and 
+        if (projectionAxis == 2 or
+                (numpy.all(self.alignParams[:,3] == 0) and
                  numpy.all(self.alignParams[:,4] == 1))):
             # Scaling/rotation doesn't affect the projection; lucky us!
             data = self.imageArray.max(axis = projectionAxis)
@@ -132,8 +134,8 @@ class DataDoc:
             data = []
             for wavelength in xrange(self.size[0]):
                 data.append(self.transformArray(
-                        self.imageArray[wavelength, curTimepoint], 
-                        *self.alignParams[wavelength], 
+                        self.imageArray[wavelength, curTimepoint],
+                        *self.alignParams[wavelength],
                         order = 1))
                 dialog.Update(wavelength)
             data = numpy.array(data, dtype = self.dtype)
@@ -151,14 +153,14 @@ class DataDoc:
                 timeData = []
                 for wavelength in xrange(self.size[0]):
                     volume = self.transformArray(
-                            self.imageArray[wavelength, timepoint], 
-                            *self.alignParams[wavelength], 
+                            self.imageArray[wavelength, timepoint],
+                            *self.alignParams[wavelength],
                             order = 1)
                     timeData.append(volume)
                     dialog.Update(timepoint * self.size[0] + wavelength)
                 timeData = numpy.array(timeData, dtype = self.dtype)
                 data.append(timeData)
-                
+
             data = numpy.array(data, dtype = self.dtype)
             data = data.max(axis = 0)
             dialog.Destroy()
@@ -172,13 +174,13 @@ class DataDoc:
 
 
     ## Generate a 2D slice of the given data in each wavelength. Since the
-    # data is 5D (wavelength/time/Z/Y/X), there are three axes to be 
-    # perpendicular to, one of which is always wavelength. The "axes" 
-    # argument maps the other two axis indices to the coordinate the slice 
+    # data is 5D (wavelength/time/Z/Y/X), there are three axes to be
+    # perpendicular to, one of which is always wavelength. The "axes"
+    # argument maps the other two axis indices to the coordinate the slice
     # should pass through.
     # E.g. passing in {1: 10, 2: 32} means to take a WXY slice at timepoint
     # 10 through Z index 32.
-    # This was fairly complicated for me to figure out, since I'm not a 
+    # This was fairly complicated for me to figure out, since I'm not a
     # scientific programmer, so I'm including my general process here:
     # - Figure out which axes the slice cuts across, and generate an array
     #   of the appropriate shape to hold the results.
@@ -217,7 +219,7 @@ class DataDoc:
                     presets[i] = axes[i]
 
             # Create a matrix of size (NxMx3) where N and M are the width
-            # and height of the desired slice, and the remaining dimension 
+            # and height of the desired slice, and the remaining dimension
             # holds the desired XYZ coordinates for each pixel in the slice,
             # pre-transform. Note this is wavelength-agnostic.
             targetCoords = numpy.empty(targetShape[1:] + [3])
@@ -226,10 +228,10 @@ class DataDoc:
             for axis in [2, 3, 4]:
                 if axis in targetAxes:
                     basis = numpy.arange(data.shape[axis])
-                    if (data.shape[axis] == targetCoords.shape[0] and 
+                    if (data.shape[axis] == targetCoords.shape[0] and
                             not haveAlreadyResized):
                         # Reshape into a column vector. We only want to do this
-                        # once, but unfortunately can't tell solely with the 
+                        # once, but unfortunately can't tell solely with the
                         # length of the array in the given axis since it's not
                         # uncommon for e.g. X and Y to have the same size.
                         basis.shape = data.shape[axis], 1
@@ -257,12 +259,12 @@ class DataDoc:
     # \param targetCoords 4D array of WXYZ coordinates.
     # \param targetShape Shape of the resulting slice.
     # \param axes Axes the slice cuts along.
-    # \param order Spline order to use when mapping. Lower is faster but 
+    # \param order Spline order to use when mapping. Lower is faster but
     #        less accurate
     def mapCoords(self, data, targetCoords, targetShape, axes, order):
         # Reshape into a 2D list of the desired coordinates
         targetCoords.shape = numpy.product(targetShape[1:]), 3
-        # Insert a dummy 4th dimension so we can use translation in an 
+        # Insert a dummy 4th dimension so we can use translation in an
         # affine transformation.
         tmp = numpy.empty((targetCoords.shape[0], 4))
         tmp[:,:3] = targetCoords
@@ -272,14 +274,14 @@ class DataDoc:
         transforms = self.getTransformationMatrices()
         inverseTransforms = [numpy.linalg.inv(matrix) for matrix in transforms]
         transposedCoords = targetCoords.T
-        # XYZ center, which needs to be added and subtracted from the 
+        # XYZ center, which needs to be added and subtracted from the
         # coordinates before/after transforming so that rotation is done
         # about the center of the image.
         center = numpy.array(data.shape[2:][::-1]).reshape(3, 1) / 2.0
         transposedCoords[:3,:] -= center
         result = numpy.zeros(targetShape, dtype = self.dtype)
         for wavelength in xrange(data.shape[0]):
-            # Transform the coordinates according to the alignment 
+            # Transform the coordinates according to the alignment
             # parameters for the specific wavelength.
             transformedCoords = numpy.dot(inverseTransforms[wavelength],
                     transposedCoords)
@@ -300,24 +302,24 @@ class DataDoc:
                 transformedCoords[0,:] = axes[1]
 
             resultVals = scipy.ndimage.map_coordinates(
-                    data[wavelength], transformedCoords, 
+                    data[wavelength], transformedCoords,
                     order = order, cval = self.averages[wavelength])
             resultVals.shape = targetShape[1:]
             result[wavelength] = resultVals
-            
+
         return result
 
 
-    ## Return the value for each wavelength at the specified TZYX coordinate, 
+    ## Return the value for each wavelength at the specified TZYX coordinate,
     # taking transforms into account. Also return the transformed coordinates.
     # \todo This copies a fair amount of logic from self.mapCoords.
     def getValuesAt(self, coord):
         transforms = self.getTransformationMatrices()
         inverseTransforms = [numpy.linalg.inv(matrix) for matrix in transforms]
         # Reorder to XYZ and add a dummy 4th dimension.
-        transposedCoord = numpy.array([[coord[3]], [coord[2]], 
+        transposedCoord = numpy.array([[coord[3]], [coord[2]],
             [coord[1]], [1]])
-        # XYZ center, which needs to be added and subtracted from the 
+        # XYZ center, which needs to be added and subtracted from the
         # coordinates before/after transforming so that rotation is done
         # about the center of the image.
         center = (self.size[2:][::-1] / 2.0).reshape(3, 1)
@@ -325,14 +327,14 @@ class DataDoc:
         resultVals = numpy.zeros(self.numWavelengths, dtype = self.dtype)
         resultCoords = numpy.zeros((self.numWavelengths, 4))
         for wavelength in xrange(self.numWavelengths):
-            # Transform the coordinates according to the alignment 
+            # Transform the coordinates according to the alignment
             # parameters for the specific wavelength.
             transformedCoord = numpy.dot(inverseTransforms[wavelength],
                     transposedCoord)
             transformedCoord[:3,:] += center
             # Reorder to ZYX and insert the time dimension.
-            transformedCoord = numpy.array([coord[0], 
-                    transformedCoord[2], transformedCoord[1], 
+            transformedCoord = numpy.array([coord[0],
+                    transformedCoord[2], transformedCoord[1],
                     transformedCoord[0]],
                 dtype = numpy.int
             )
@@ -340,12 +342,12 @@ class DataDoc:
             transformedCoord.shape = 4, 1
 
             resultVals[wavelength] = scipy.ndimage.map_coordinates(
-                    self.imageArray[wavelength], transformedCoord, 
+                    self.imageArray[wavelength], transformedCoord,
                     order = 1, cval = self.averages[wavelength])[0]
         return resultVals, resultCoords
 
 
-    ## Take a default slice through our view indices perpendicular to the 
+    ## Take a default slice through our view indices perpendicular to the
     # given axes.
     def takeDefaultSlice(self, perpendicularAxes, shouldTransform = True):
         targetCoords = self.getSliceCoords(perpendicularAxes)
@@ -390,7 +392,7 @@ class DataDoc:
         self.alignCallbacks.append(callback)
 
 
-    ## Update the alignment parameters, then invoke our callbacks. 
+    ## Update the alignment parameters, then invoke our callbacks.
     def setAlignParams(self, wavelength, params):
         self.alignParams[wavelength] = params
         for callback in self.alignCallbacks:
@@ -411,7 +413,7 @@ class DataDoc:
     # \todo The extended header is not preserved. On the flip side, according
     # to Eric we don't currently use the extended header anyway, so it was
     # just wasting space.
-    def alignAndCrop(self, wavelengths = [], timepoints = [], 
+    def alignAndCrop(self, wavelengths = [], timepoints = [],
             savePath = None):
         if not wavelengths:
             wavelengths = range(self.size[0])
@@ -428,7 +430,7 @@ class DataDoc:
 
         newHeader = Mrc.makeHdrArray()
         Mrc.initHdrArrayFrom(newHeader, self.imageHeader)
-        newHeader.Num = (croppedShape[4], croppedShape[3], 
+        newHeader.Num = (croppedShape[4], croppedShape[3],
                 croppedShape[2] * len(timepoints) * len(wavelengths))
         newHeader.NumTimes = len(timepoints)
         newHeader.NumWaves = len(wavelengths)
@@ -454,11 +456,11 @@ class DataDoc:
         volumeSlices = []
         for min, max in zip(self.cropMin[2:], self.cropMax[2:]):
             volumeSlices.append(slice(min, max))
-        
+
         for timepoint in timepoints:
             for waveIndex, wavelength in enumerate(wavelengths):
                 volume = self.imageArray[wavelength][timepoint]
-                
+
                 dx, dy, dz, angle, zoom = self.alignParams[wavelength]
                 if dz and self.size[2] == 1:
                     # HACK: no Z translate in 2D files. Even
@@ -519,7 +521,7 @@ class DataDoc:
                 self.curViewIndex[i] = targetVal
 
 
-    ## Move the crop box by the specified amount, ensuring that we stay 
+    ## Move the crop box by the specified amount, ensuring that we stay
     # in-bounds.
     def moveCropbox(self, offset, isMin):
         if isMin:
@@ -530,7 +532,7 @@ class DataDoc:
             self.cropMax += offset
             for i, val in enumerate(self.cropMax):
                 self.cropMax[i] = max(0, min(self.size[i], val))
-            
+
 
     ## Multiply the given XYZ offsets by our pixel sizes to get offsets
     # in microns.
@@ -569,7 +571,7 @@ class DataDoc:
 
 
 
-## Generate an MRC header object based on the provided Numpy array. 
+## Generate an MRC header object based on the provided Numpy array.
 # The input array must be five-dimensional, in WTZYX order.
 # Just a passthrough to makeHeaderForShape, really.
 # \param data Array of pixels in (W, T, Z, Y, X) order.
@@ -580,9 +582,9 @@ class DataDoc:
 def makeHeaderFor(data, shouldSetMinMax = True, **kwargs):
     header = makeHeaderForShape(data.shape, data.dtype.type, **kwargs)
     if shouldSetMinMax:
-        # Set the min/max values. This is a bit ugly because they're in 
+        # Set the min/max values. This is a bit ugly because they're in
         # differently-named fields on a per-wavelength basis...and the first
-        # wavelength gets extra data stored, to boot. 
+        # wavelength gets extra data stored, to boot.
         for i in xrange(data.shape[0]):
             minVal = data[i].min()
             maxVal = data[i].max()
@@ -593,9 +595,9 @@ def makeHeaderFor(data, shouldSetMinMax = True, **kwargs):
     return header
 
 
-## Generate an MRC header, filling in some values. 
+## Generate an MRC header, filling in some values.
 # \param shape 5D tuple describing the shape of the data. Must be in
-#        (W, T, Z, Y, X) order. 
+#        (W, T, Z, Y, X) order.
 # \param dtype Datatype of the pixel data.
 # \param XYSize Size of the (assumed square) pixels. Defaults to our current
 #        camera pixel size.
@@ -629,12 +631,12 @@ def writeMrcHeader(header, filehandle):
 ## Write out the provided data array as if it were an MRC file. Note that
 # the input array must be in WTZYX order; if the array has insufficient
 # dimensions it will be augmented with dimensions of size 1 starting from
-# the left (e.g. a 512x512 array becomes a 1x1x1x512x512 array). 
+# the left (e.g. a 512x512 array becomes a 1x1x1x512x512 array).
 def writeDataAsMrc(data, filename, XYSize = None, ZSize = None, wavelengths = []):
     while len(data.shape) < 5:
         # Fill in missing dimensions in the data.
         data.shape = [1] + list(data.shape)
-    header = makeHeaderFor(data, XYSize = XYSize, ZSize = ZSize, 
+    header = makeHeaderFor(data, XYSize = XYSize, ZSize = ZSize,
             wavelengths = wavelengths)
     handle = open(filename, 'wb')
     writeMrcHeader(header, handle)
@@ -670,7 +672,7 @@ def getExtendedHeader(data, header):
     # Cast to appropriate datatypes.
     intArray.dtype = numpy.int32
     floatArray.dtype = numpy.float32
-    
+
     # Set the array dimensions as if the arrays were of image data.
     # Use the X axis to store the ints/floats (the Y axis is unused).
     orderStr = Mrc.axisOrderStr(header)
@@ -708,7 +710,7 @@ def loadHeader(path):
     numBytes = header.next
     extendedData = data[1024:1024 + numBytes]
     ints, floats = getExtendedHeader(extendedData, header)
-    return header, headerBuffer, ints, floats    
+    return header, headerBuffer, ints, floats
 
 
 ## Given an input array, an expected final array shape, and a sequence
