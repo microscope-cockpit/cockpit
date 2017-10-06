@@ -369,6 +369,7 @@ class SIExperiment(experiment.Experiment):
         ## datadoc which memmaps the old file or we won't be able to
         ## overwrite.
         del doc
+        del img_data
 
         ## Windows needs to have the file removed first.
         if os.name == "nt":
