@@ -62,7 +62,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
         ## Color to use when camera is displayed. Depends on current drawer.
         self.color = None
         ## Descriptive name for camera. Depends on current drawer.
-        self.descriptiveName = None
+        self.descriptiveName = name
         ## Wavelength of light we receive. Depends on current drawer.
         self.wavelength = None
         ## True if the camera is currently receiving images.
