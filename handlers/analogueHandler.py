@@ -12,6 +12,6 @@ class AnalogueHandlerMixin(deviceHandler.DeviceHandler):
                 depot.GENERIC_DEVICE)
 
 
-    ## Retrieve the current position.
+    ## Retrieve the real analogue line handler.
     def getLineHandler(self):
         return self.callbacks['getLineHandler']()
