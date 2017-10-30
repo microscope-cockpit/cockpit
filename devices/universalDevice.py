@@ -46,17 +46,12 @@ CONFIG_NAME = 'universal'
 
 class UniversalBase(device.Device):
     """A class to communicate with the UniversalDevice interface."""
-    def __init__(self, name, uri_or_proxy):
-        super(UniversalBase, self).__init__()
-        self.name = name
-        self.handler = None
+    def __init__(self, name, config):
+        super(UniversalBase, self).__init__(name, config)
+        self.handlers = []
         self.panel = None
         # Pyro proxy
-        # Retain URI support for device creation at command line.
-        if isinstance(uri_or_proxy, Pyro4.Proxy):
-            self._proxy = uri_or_proxy
-        else:
-            self._proxy = Pyro4.Proxy(uri_or_proxy)
+        self._proxy = Pyro4.Proxy(config.get('uri'))
         self.settings = {}
         self.cached_settings={}
         self.settings_editor = None
