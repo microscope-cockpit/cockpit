@@ -63,7 +63,6 @@ class UniversalBase(device.Device):
         self.describe_settings = self._proxy.describe_settings
 
 
-
     def getHandlers(self):
         """Return device handlers. Derived classes may override this."""
         result = handlers.deviceHandler.DeviceHandler(
@@ -71,8 +70,8 @@ class UniversalBase(device.Device):
             False,
             {'makeUI': self.makeUI},
             depot.GENERIC_DEVICE)
-        self.handler = result
-        return result
+        self.handlers = [result]
+        return [result]
 
 
     def showSettings(self, evt):
@@ -158,8 +157,8 @@ class UniversalGenericDevice(UniversalBase):
             False,
             {'makeUI': self.makeUI},
             depot.GENERIC_DEVICE)
-        self.handler = result
-        return result
+        self.handlers = [result]
+        return [result]
 
 
     ### UI functions ###
@@ -174,7 +173,6 @@ class UniversalGenericDevice(UniversalBase):
         return self.panel
 
 
-
 class UniversalSwitchableDevice(UniversalBase):
     def getHandlers(self):
         """Return device handlers."""
@@ -183,8 +181,8 @@ class UniversalSwitchableDevice(UniversalBase):
             False,
             {'makeUI': self.makeUI},
             depot.GENERIC_DEVICE)
-        self.handler = result
-        return result
+        self.handlers = [result]
+        return [result]
 
 
     ### UI functions ###
@@ -217,8 +215,8 @@ class UniversalFilterDevice(UniversalBase):
     def getHandlers(self):
         """Return device handlers."""
         result = handlers.filterHandler.FilterHandler(self, "universal devices")
-        self.handler = result
-        return result
+        self.handlers = [result]
+        return [result]
 
 
     def setFilterByIndex(self, index, callback=None):
