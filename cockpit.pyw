@@ -48,10 +48,13 @@ class CockpitApp(wx.App):
             import util
             import depot
 
+            numDevices = len(config.sections()) + 1 # + 1 is for dummy devs.
+            numNonDevices = 10
             status = wx.ProgressDialog(parent = None,
                     title = "Initializing OMX Cockpit",
                     message = "Importing modules...",
-                    maximum = 5 + depot.getNumModules())
+                    ## Fix maximum: + 1 is for dummy devices
+                    maximum = numDevices + numNonDevices)
             status.Show()
 
             import gui.camera.window
@@ -74,9 +77,10 @@ class CockpitApp(wx.App):
 
             status.Update(updateNum, "Initializing devices...")
             updateNum+=1
-            for i, module in enumerate(depot.initialize()):
-                status.Update(updateNum, "Initializing devices...\n%s" % module)
+            for i, device in enumerate(depot.initialize(config)):
+                status.Update(updateNum, "Initializing devices...\n%s" % device)
                 updateNum+=1
+            #depot.initialize(config)
             status.Update(updateNum, "Initializing device interfaces...")
             updateNum+=1
             interfaces.initialize()
