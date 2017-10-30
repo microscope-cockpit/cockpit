@@ -112,7 +112,7 @@ class UniversalBase(device.Device):
 
     def onUserLogin(self, username):
         # Apply user defaults on login.
-        idstr = self.handler.getIdentifier() + '_SETTINGS'
+        idstr = self.name + '_SETTINGS'
         defaults = util.userConfig.getValue(idstr, isGlobal=False)
         if defaults is None:
             defaults = util.userConfig.getValue(idstr, isGlobal=True)
