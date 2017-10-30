@@ -13,7 +13,7 @@ import Queue
 
 from config import config, CAMERAS
 
-CLASS_NAME = 'CameraManager'
+CLASS_NAME = 'CMOSCameraManager'
 SUPPORTED_CAMERAS = ['neo', 'zyla']
 
 ## Valid trigger modes for the cameras.
@@ -250,6 +250,6 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         print('Trigger Mode is: ' + str(self.connobj.connection.getTrigger()))
         self.connobj.connection.startAcquisition()
 
-class CameraManager(camera.CameraManager):
+class CMOSCameraManager(camera.CameraManager):
     _CAMERA_CLASS = AndorCMOSCameraDevice
     _SUPPORTED_CAMERAS = SUPPORTED_CAMERAS
