@@ -30,6 +30,8 @@ import gui.guiUtils
 import gui.toggleButton
 import handlers.deviceHandler
 import handlers.filterHandler
+import handlers.lightPower
+import handlers.lightSource
 import util.listener
 import util.userConfig
 from gui.device import SettingsEditor
@@ -200,6 +202,42 @@ class UniversalSwitchableDevice(UniversalBase):
     def finalizeInitialization(self):
         super(UniversalSwitchableDevice, self).finalizeInitialization()
         self.enabled = self._proxy.get_is_enabled()
+
+
+class UniversalLaserDevice(UniversalBase):
+    def _setEnabled(self, on):
+        if on:
+            self._proxy.enable()
+        else:
+            self._proxy.disable()
+
+    def getHandlers(self):
+        """Return device handlers. Derived classes may override this."""
+        self.handlers.append(handlers.lightPower.LightPowerHandler(
+            self.name + ' power',  # name
+            self.name + ' light source',  # groupName
+            {
+                'setPower': self._proxy.set_power_mw
+            },
+            488,#'light['wavelength'],
+            0, 100, 20,#minPower, maxPower, curPower,
+            '0xaaffaa',#light['color'],
+            isEnabled=True))
+        if self.config.get('triggersource', False):
+            pass
+        else:
+            ## TODO - exposure time handling on remote.
+            self.handlers.append(handlers.lightSource.LightHandler(
+                self.name + ' toggle',
+                self.name + 'light source',
+                {'setEnabled': lambda name, on: self._setEnabled(on),
+                 'setExposureTime': lambda name, value: None,
+                 'getExposureTime': lambda name: 100,
+                 'setExposing': lambda name, isOn: None,},
+                self.config.get('wavelength', None),
+                100))
+
+        return self.handlers
 
 
 class UniversalFilterDevice(UniversalBase):
