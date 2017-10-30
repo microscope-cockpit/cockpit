@@ -84,10 +84,17 @@ class UniversalBase(device.Device):
             # settings interface. UniversalCamera is starting to look
             # more and more like an interface translation.
             self.setAnyDefaults()
-            self.settings_editor = SettingsEditor(self, handler=self.handler)
+            self.settings_editor = SettingsEditor(self, handler=self.handlers[0])
             self.settings_editor.Show()
         self.settings_editor.SetPosition(wx.GetMousePosition())
         self.settings_editor.Raise()
+
+
+    def updateSettings(self, settings=None):
+        if settings is not None:
+            self._proxy.update_settings(settings)
+        self.settings.update(self._proxy.get_all_settings())
+        events.publish("%s settings changed" % str(self))
 
 
     def setAnyDefaults(self):
