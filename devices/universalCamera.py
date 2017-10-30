@@ -194,7 +194,7 @@ class UniversalCameraDevice(camera.CameraDevice):
                 TRIGGER_SOFT) # will be set with value from hardware later
         self.handler = result
         self.handler.addListener(self)
-        return result
+        return [result]
 
 
     @pauseVideo
