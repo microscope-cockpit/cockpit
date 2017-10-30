@@ -27,6 +27,8 @@ util.files.initialize()
 util.files.ensureDirectoriesExist()
 util.logger.makeLogger()
 
+from config import config
+
 COCKPIT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 class CockpitApp(wx.App):
