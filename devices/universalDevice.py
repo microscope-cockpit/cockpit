@@ -226,13 +226,14 @@ class UniversalLaserDevice(UniversalBase):
         if self.config.get('triggersource', False):
             pass
         else:
+            self._exposureTime = 100
             ## TODO - exposure time handling on remote.
             self.handlers.append(handlers.lightSource.LightHandler(
                 self.name + ' toggle',
                 self.name + 'light source',
                 {'setEnabled': lambda name, on: self._setEnabled(on),
-                 'setExposureTime': lambda name, value: None,
-                 'getExposureTime': lambda name: 100,
+                 'setExposureTime': lambda name, value: setattr(self, '_exposureTime', value),
+                 'getExposureTime': lambda name: self._exposureTime,
                  'setExposing': lambda name, isOn: None,},
                 self.config.get('wavelength', None),
                 100))
