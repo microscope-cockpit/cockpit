@@ -2,8 +2,7 @@
 # are initialized and registered from here, and if a part of the UI wants to 
 # interact with a specific kind of device, they can find it through the depot.
 
-import util.importer
-
+import ast
 import importlib
 import os
 
@@ -26,12 +25,17 @@ STAGE_POSITIONER = "stage positioner"
 DEVICE_FOLDER = 'devices'
 THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
 
+SKIP_CONFIG = ['objectives', 'server']
+
 class DeviceDepot:
     ## Initialize the Depot. Find all the other modules in the "devices" 
     # directory and initialize them.
     def __init__(self):
-        ## Maps modules to the devices for those modules.
-        self.moduleToDevice = {}
+        self._configurator = None
+        ## Maps device classes to their module
+        self.classToModule = {}
+        ## Maps config section names to device
+        self.nameToDevice = {}
         ## Maps devices to their handlers.
         self.deviceToHandlers = {}
         ## Maps handlers back to their devices.
@@ -44,113 +48,121 @@ class DeviceDepot:
         ## Maps handler names to handlers with those names. NB we enforce that
         # there only be one handler per name when we load the handlers.
         self.nameToHandler = {}
-        ## Maps handler group names to lists of the handlers in those groups.
-        self.groupNameToHandlers = {}
-
-
-    ## Return the number of device modules we have to work with.
-    def getNumModules(self):
-        return len(util.importer.getModulesFrom(DEVICE_FOLDER,
-                ['__init__', 'device', 'camera', 'stage']))
-
-
-    ## Instantiate all of the Device instances that front our hardware.
-    # We examine all of the modules in the local directory, and try to
-    # create a Device subclass from each (barring a few).
-    def generateDevices(self):
-        modules = util.importer.getModulesFrom(DEVICE_FOLDER, 
-                ['__init__', 'device', 'camera', 'stage'])
-        for module in modules:
-            self.loadDeviceModule(module)
-
 
     ## HACK: load any Configurator device that may be stored in a
     # "configurator.py" module. This is needed because config must be loaded
     # before any other Device, so that logfiles can be stored properly.
     def loadConfig(self):
+        if self._configurator:
+            return
         if os.path.exists(os.path.join(THIS_FOLDER,
                                        DEVICE_FOLDER,
                                        'configurator.py')):
-            path = '.'.join([DEVICE_FOLDER, 'configurator'])
-            module = importlib.import_module(path)
-            device = self.loadDeviceModule(module)
-            if device is not None: # i.e. device is active.
-                self.initDevice(device)
-
-
-    ## Load the specified device module.
-    def loadDeviceModule(self, module):
-        if module in self.moduleToDevice:
-            # Specially loaded this module earlier (e.g. for config).
-            return
-        instance = module.__dict__[module.CLASS_NAME]()
-        if instance.getIsActive():
-            self.moduleToDevice[module] = instance
-            # For debugging purposes it can be handy to have easy access
-            # to the device instance without needing to go through the
-            # Depot, so we put a copy here.
-            module._deviceInstance = instance
-            return instance
+            import devices.configurator
+            self._configurator = devices.configurator.ConfiguratorDevice()
+            self.initDevice(self._configurator)
 
 
     ## Call the initialize() method for each registered device, then get
     # the device's Handler instances and insert them into our various
     # containers. Yield the names of the modules holding the Devices as we go.
-    def initialize(self):
-        self.generateDevices()
-        # Initialize devices in order of their priorities
-        modulesAndDevices = sorted(self.moduleToDevice.items(),
-                key = lambda pair: pair[1].priority)
-        for module, device in modulesAndDevices:
-            # Check if we've already initialized the device (currently only
-            # an issue for Configurators).
-            if device not in self.deviceToHandlers:
-                yield module.__name__
-                self.initDevice(device)
+    def initialize(self, config):
+        # Parse device files to map classes to their module.
+        modfiles = [fn for fn in os.listdir(DEVICE_FOLDER) if fn.endswith('.py')]
+        for m in modfiles:
+            modname = m.rstrip('.py')
+            with open(os.path.join(DEVICE_FOLDER, m), 'r') as f:
+                # Extract class definitions from the module
+                try:
+                    classes = [c for c in ast.parse(f.read()).body
+                                    if isinstance(c, ast.ClassDef)]
+                except Exception as e:
+                    raise Exception("Error parsing device module %s.\n%s" % (modname, e))
+
+            for c in classes:
+                if c.name in self.classToModule.keys():
+                    raise Exception('Duplicate class definition for %s in %s and %s' %
+                                    (c.name, self.classToModule[c.name], modname))
+                else:
+                    self.classToModule[c.name] = modname
+
+        # Create our server
+        import devices.server
+        if config.has_section('server'):
+            sconf = dict(config.items('server'))
+        else:
+            sconf = {}
+        self.nameToDevice['server'] = devices.server.CockpitServer('server', sconf)
+
+
+        # Parse config to create device instances.
+        for name in config.sections():
+            if name in SKIP_CONFIG:
+                continue
+            classname = config.get(name, 'type')
+            modname = self.classToModule.get(classname, None)
+            if not modname:
+                raise Exception("No module found for device with name %s." % name)
+            try:
+                mod = importlib.import_module('devices.' + modname)
+            except Exception as e:
+                print("Importing %s failed with %s" % (modname, e))
+            else:
+                cls = getattr(mod, classname)
+                try:
+                    self.nameToDevice[name] = cls(name, dict(config.items(name)))
+                except Exception as e:
+                    raise Exception("In device %s" % name, e)
+
+        # Initialize devices in order of dependence.
+        devices = self.nameToDevice.values()
+        while devices:
+            # TODO - catch circular dependencies and throw exception.
+            d = devices.pop(0)
+            depends = set([d.config.get('triggersource')])
+            if len(depends.intersection(devices)):
+                devices.append(d)
+                continue
+            self.initDevice(d)
+            yield d.name
+
+        # Add dummy devices as required.
+        dummies = []
+        # Dummy objectives
+        if not getHandlersOfType(OBJECTIVE):
+            import devices.objective
+            if config.has_section('objectives'):
+                objs = dict(config.items('objectives'))
+            else:
+                objs = {}
+            dummies.append(devices.objective.ObjectiveDevice('objectives', objs))
+        # Dummy stages
+        axes = self.getSortedStageMovers().keys()
+        if 2 not in axes:
+            import devices.dummyZStage
+            dummies.append(devices.dummyZStage.DummyZStage())
+        if (0 not in axes) or (1 not in axes):
+            import devices.dummyXYStage
+            dummies.append(devices.dummyXYStage.DummyMoverDevice())
+        # Cameras
+        if not getHandlersOfType(CAMERA):
+            import devices.dummyCamera
+            dummies.append(devices.dummyCamera.DummyCameraDevice())
+        # Dummy imager
+        if not getHandlersOfType(IMAGER):
+            import devices.imager
+            dummies.append(devices.imager.DummyImagerDevice())
+        # Initialise dummies.
+        for d in dummies:
+            self.nameToDevice[d.name] = d
+            self.initDevice(d)
+
         self.finalizeInitialization()
+        yield 'dummy-devices'
 
 
     ## Initialize a Device.
     def initDevice(self, device):
-        if device.priority == float('inf'):
-            # This is a dummy device.  Figure out if it's needed.
-            needDummy = True
-            try:
-                deviceType = device.deviceType
-            except:
-                raise Exception("Dummy device %s must declare its deviceType."
-                                 % (device.__class__))
-                needDummy = False
-
-            if ((device.deviceType == STAGE_POSITIONER)
-                and self.deviceTypeToHandlers.has_key(STAGE_POSITIONER) ):
-                # If we already have a handler for this axis, then
-                # we don't need the dummy handler.
-                try:
-                    axes = device.axes
-                except:
-                    raise Exception("Dummy mover device must declare its axes.")
-                    needDummy = False
-
-                if self.deviceTypeToHandlers.has_key(STAGE_POSITIONER):
-                    for other_handler in self.deviceTypeToHandlers[STAGE_POSITIONER]:
-                        if other_handler.axis in axes:
-                            # There is already a handler for this axis.
-                            needDummy = False
-                            
-            elif self.deviceTypeToHandlers.has_key(deviceType):
-                    # For anything else, we don't need a dummy handler if
-                    # we already have any handlers of this type.
-                    needDummy = False
-
-            if not needDummy:
-                print "Skipping dummy module: %s." % device.__module__
-                return
-            else:
-                print "Using dummy module: %s." % device.__module__
-
-        # Initialize and perform subscriptions
-        # *after* we know the device is required.
         device.initialize()
         device.performSubscriptions()
 
@@ -164,26 +176,26 @@ class DeviceDepot:
             if handler.deviceType not in self.deviceTypeToHandlers:
                 self.deviceTypeToHandlers[handler.deviceType] = []
             self.deviceTypeToHandlers[handler.deviceType].append(handler)
-            if handler.groupName not in self.groupNameToHandlers:
-                self.groupNameToHandlers[handler.groupName] = []
+            # if handler.groupName not in self.groupNameToHandlers:
+            #     self.groupNameToHandlers[handler.groupName] = []
             if handler.name in self.nameToHandler:
-                # We enforce unique names.
+                # We enforce unique names, but multiple devices may reference
+                # the same handler, e.g. where a device A is triggered by signals
+                # from device B, device B provides the handler that generates the
+                # signals, and device A will reference that handler.
                 otherHandler = self.nameToHandler[handler.name]
-                otherDevice = self.handlerToDevice[otherHandler]
-                raise RuntimeError("Multiple handlers with the same name [%s] from devices [%s] and [%s]" %
-                    (handler.name, str(device), str(otherDevice)))
+                if handler is not otherHandler:
+                    otherDevice = self.handlerToDevice[otherHandler]
+                    raise RuntimeError("Multiple handlers with the same name [%s] from devices [%s] and [%s]" %
+                                       (handler.name, str(device), str(otherDevice)))
             self.nameToHandler[handler.name] = handler
             self.handlerToDevice[handler] = device
-            
-            self.groupNameToHandlers[handler.groupName].append(handler)
-
-    
 
     ## Let each device publish any initial events it needs. It's assumed this
     # is called after all the handlers have set up their UIs, so that they can
     # be adjusted to match the current configuration. 
     def makeInitialPublications(self):
-        for device in self.moduleToDevice.values():
+        for device in self.nameToDevice.values():
             device.makeInitialPublications()
         for handler in self.handlersList:
             handler.makeInitialPublications()
@@ -192,7 +204,8 @@ class DeviceDepot:
     ## Do any extra initialization needed now that everything is properly
     # set up.
     def finalizeInitialization(self):
-        for device in sorted(self.moduleToDevice.values(), key = lambda d: d.priority):
+        # for device in sorted(self.nameToDevice.values(), key = lambda d: d.priority):
+        for device in self.nameToDevice.values():
             device.finalizeInitialization()
         for handler in self.handlersList:
             handler.finalizeInitialization()
@@ -232,9 +245,9 @@ def getNumModules():
 
 
 ## Simple passthrough.
-def initialize():
-    for module in deviceDepot.initialize():
-        yield module
+def initialize(config):
+    for device in deviceDepot.initialize(config):
+        yield device
 
 
 ## Simple passthrough.
@@ -253,8 +266,8 @@ def getHandlersOfType(deviceType):
 
 
 ## Return all registered device handlers in the appropriate group.
-def getHandlersInGroup(groupName):
-    return deviceDepot.groupNameToHandlers.get(groupName, [])
+# def getHandlersInGroup(groupName):
+#     return deviceDepot.groupNameToHandlers.get(groupName, [])
 
 
 ## Get all registered device handlers.
@@ -264,7 +277,7 @@ def getAllHandlers():
 
 ## Get all registered devices.
 def getAllDevices():
-    return deviceDepot.moduleToDevice.values()
+    return deviceDepot.nameToDevice.values()
 
 
 ## Simple passthrough.
@@ -283,8 +296,8 @@ def getActiveCameras():
 
 
 ## Get the Device instance associated with the given module.
-def getDevice(module):
-    return deviceDepot.moduleToDevice[module]
+#def getDevice(module):
+#    return deviceDepot.moduleToDevice[module]
 
 
 ## Debugging function: reload the specified module to pick up any changes to 
@@ -293,12 +306,12 @@ def getDevice(module):
 # referred to in any number of places in the rest of the code). Most Devices
 # won't support this (reflected by the base Device class's shutdown() function
 # raising an exception). 
-def reloadModule(module):
-    device = deviceDepot.moduleToDevice[module]
-    handlers = deviceDepot.deviceToHandlers[device]
-    device.shutdown()
-    reload(module)
-    newDevice = module.__dict__[module.CLASS_NAME]()
-    newDevice.initFromOldDevice(device, handlers)
+# def reloadModule(module):
+#     device = deviceDepot.moduleToDevice[module]
+#     handlers = deviceDepot.deviceToHandlers[device]
+#     device.shutdown()
+#     reload(module)
+#     newDevice = module.__dict__[module.CLASS_NAME]()
+#     newDevice.initFromOldDevice(device, handlers)
 
 
