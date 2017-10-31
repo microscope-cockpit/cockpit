@@ -9,7 +9,7 @@ CLASS_NAME = 'DummyMoverDevice'
 
 class DummyMoverDevice(device.Device):
     def __init__(self):
-        device.Device.__init__(self)
+        device.Device.__init__(self, 'dummy XY stage')
         # List of 2 doubles indicating our X/Y position.
         self.curPosition = [1000, 1000]
         events.subscribe('user abort', self.onAbort)
