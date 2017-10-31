@@ -99,8 +99,8 @@ except:
     LIGHTS = {}
 else:
     LIGHTS = {light[0]: dict(zip(_light_keys, light)) for light in _lights}
-    config.add_section('lights')
-    config.set('lights', 'ipAddress', _lightsIpAddress)
+    #config.add_section('lights')
+    #config.set('lights', 'ipAddress', _lightsIpAddress)
 
 try:
     from cameras import camera_keys as _camera_keys
