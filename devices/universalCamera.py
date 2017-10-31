@@ -48,18 +48,17 @@ SUPPORTED_CAMERAS = ['TestCamera', 'AndorSDK3', 'PVCamera']
 
 class UniversalCameraDevice(camera.CameraDevice):
     """A class to control Andor cameras via the pyAndor remote interface."""
-    def __init__(self, cam_config):
+    def __init__(self, name, cam_config):
         # camConfig is a dict with containing configuration parameters.
-        super(UniversalCameraDevice, self).__init__(cam_config)
+        super(UniversalCameraDevice, self).__init__(name, cam_config)
+        print(name, self.name)
         self.handler = None        
         self.enabled = False
         self.panel = None
         self.config = cam_config
         # Pyro proxy
-        self.proxy = Pyro4.Proxy('PYRO:%s@%s:%d' %
-                                 (cam_config.get('model'),
-                                  cam_config.get('ipAddress') or cam_config.get('host'),
-                                  cam_config.get('port')))
+
+        self.proxy = Pyro4.Proxy(self.uri)
         self.listener = util.listener.Listener(self.proxy,
                                                lambda *args: self.receiveData(*args))
         self.base_transform = cam_config.get('baseTransform') or (0, 0, 0)
@@ -179,7 +178,7 @@ class UniversalCameraDevice(camera.CameraDevice):
     def getHandlers(self):
         """Return camera handlers."""
         result = handlers.camera.CameraHandler(
-                "%s" % self.config.get('label'), "iXon camera",
+                "%s" % self.name, "universal camera",
                 {'setEnabled': self.enableCamera,
                  'getImageSize': self.getImageSize,
                  'getTimeBetweenExposures': self.getTimeBetweenExposures,
