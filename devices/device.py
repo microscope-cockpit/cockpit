@@ -4,17 +4,21 @@
 # largely left up to the client; this class simply provides a framework of 
 # stub functions that must be implemented. 
 class Device(object):
-    def __init__(self, name=None, config=None):
+    def __init__(self, name='', config={}):
         ## Set to False to disable this device. Disabled devices will not be 
         # initialized on startup. 
         self.isActive = True
-        ## Priority for initializing this device. Devices with lower priorities
-        # are initialized first. This is useful if you have Devices that 
-        # rely on other Devices. 
-        self.priority = 100
         self.name = name
         self.config = config
-
+        ip = config.get('ipaddress', False)
+        if ip:
+            self.ipAddress = ip
+        port = config.get('port', False)
+        if port:
+            self.port = port
+        uri = config.get('uri', False)
+        if uri:
+            self.uri = uri
 
     ## Perform any necessary initialization (e.g. connecting to hardware).
     def initialize(self):
