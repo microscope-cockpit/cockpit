@@ -2,13 +2,10 @@ import Pyro4
 import threading
 import traceback
 
-import depot
 import device
 import handlers.server
 import util.logger
 import util.threads
-
-from config import config
 
 CLASS_NAME = 'CockpitServer'
 
@@ -19,17 +16,11 @@ CLASS_NAME = 'CockpitServer'
 # It handles selecting the ports that are used by these other devices,
 # so that each incoming connection is on its own port.
 class CockpitServer(device.Device):
-    def __init__(self):
+    def __init__(self, name, config={}):
         device.Device.__init__(self)
-        ## We need to be initialized before any devices that want to use the
-        # util.connection module, which requires us to exist. Note default
-        # priority is 100.
-        self.priority = 10
         ## IP address of the cockpit computer.
-        if config.has_option('server', 'ipAddress'):
-            self.ipAddress = config.get('server', 'ipAddress')
-        else:
-            self.ipAddress = '127.0.0.1'
+        if not(hasattr(self, 'ipAddress')):
+            self.ipAddress = "127.0.0.1"
         ## Name used to represent us to the outside world.
         self.name = 'mui'
         ## Auto-incrementing port ID.
