@@ -17,9 +17,8 @@ class CameraDevice(device.Device):
     Transform = namedtuple('Transform', 'rot90, flip_h, flip_v')
 
 
-    def __init__(self, camConfig):
-        super(CameraDevice, self).__init__()
-        self.name = camConfig.get('label')
+    def __init__(self, name, camConfig):
+        super(CameraDevice, self).__init__(name, camConfig)
         # Set transform according to config, or default to null transform.
         transform = camConfig.get('transform', '')
         if not transform:
