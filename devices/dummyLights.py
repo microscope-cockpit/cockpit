@@ -8,7 +8,7 @@ CLASS_NAME = 'DummyLightsDevice'
 
 class DummyLightsDevice(device.Device):
     def __init__(self):
-        device.Device.__init__(self)
+        device.Device.__init__(self, 'dummy lights')
         ## Maps lightsource names to their exposure times.
         self.nameToExposureTime = dict()
         # Set priority to Inf to indicate that this is a dummy device.

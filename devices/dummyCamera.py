@@ -23,7 +23,7 @@ IMAGE_SIZES = ['512x512','256x512']
 # exactly that system in place.
 class DummyCameraDevice(device.Device):
     def __init__(self):
-        device.Device.__init__(self)
+        device.Device.__init__(self, 'dummy cameras')
         ## Mapping of camera name to that camera's image size in pixels 
         # (as an index into IMAGE_SIZES).
         self.nameToImageSize = {}
