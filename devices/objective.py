@@ -27,16 +27,12 @@ DUMMY_OBJECTIVE_PIXEL_SIZES = {
 }
 
 
-
 CLASS_NAME = 'ObjectiveDevice'
 
 class ObjectiveDevice(device.Device):
-    def __init__(self):
-        device.Device.__init__(self)
+    def __init__(self, name='objectives', config={}):
+        device.Device.__init__(self, name, config)
         # Set priority to Inf to indicate that this is a dummy device.
-        self.priority = float('inf')
-        self.deviceType = "objective"
-
 
     def getHandlers(self):
         pixel_sizes = {}
@@ -44,7 +40,7 @@ class ObjectiveDevice(device.Device):
         offsets = {}
         lensIDs = {}
         colours = {}
-        if not config.has_section(CONFIG_NAME):
+        if not self.config:
             # No objectives section in config
             pixel_sizes = DUMMY_OBJECTIVE_PIXEL_SIZES
             transforms = {obj: (0,0,0) for obj in pixel_sizes.keys()}
@@ -52,9 +48,7 @@ class ObjectiveDevice(device.Device):
             lensIDs = {obj: 0 for obj in pixel_sizes.keys()}
             colours = {obj: (1,1,1) for obj in pixel_sizes.keys()}
         else:
-            objectives = config.options(CONFIG_NAME)
-            for obj in objectives:
-                cfg = config.get(CONFIG_NAME, obj)
+            for obj, cfg in self.config.items():
                 parsed = re.search(CONFIG_PAT, cfg)
                 if not parsed:
                     # Could not parse config entry.
