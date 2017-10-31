@@ -58,7 +58,7 @@ class MyConfigParser(ConfigParser, object):
 
 
     def writeSection(self, section):
-        """Update the sectino specified in its config file."""
+        """Update the section specified in its config file."""
         # Which file provided this section?
         filename = self.sectionToFile.get(section)
         if not filename:
