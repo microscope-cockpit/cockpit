@@ -38,9 +38,9 @@ class MainWindow(wx.Frame):
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         lightToggles = sorted(lightToggles, key = lambda l: l.wavelength)
         # Set of objects that are in the same group as any light toggle.
-        lightAssociates = set()
-        for toggle in lightToggles:
-            lightAssociates.update(depot.getHandlersInGroup(toggle.groupName))
+        # lightAssociates = set()
+        # for toggle in lightToggles:
+        #     lightAssociates.update(depot.getHandlersInGroup(toggle.groupName))
 
         ## Maps LightSource handlers to their associated panels of controls.
         self.lightToPanel = dict()
@@ -116,7 +116,8 @@ class MainWindow(wx.Frame):
         # ordered slots, giving the user control over exposure order.
         cameraThings = depot.getHandlersOfType(depot.CAMERA)
         # Ignore anything that is handled specially.
-        ignoreThings = lightToggles + list(lightAssociates) + lightPowerThings
+        #ignoreThings = lightToggles + list(lightAssociates) + lightPowerThings
+        ignoreThings = lightToggles + lightPowerThings
         ignoreThings += cameraThings
         # Remove ignoreThings from the full list of devices.
         otherThings = depot.getAllDevices()
@@ -196,14 +197,14 @@ class MainWindow(wx.Frame):
             self.lightToPanel[light] = lightPanel
             columnSizer = wx.BoxSizer(wx.VERTICAL)
             haveOtherHandler = False
-            for otherHandler in depot.getHandlersInGroup(light.groupName):
-                if otherHandler is not light:
-                    columnSizer.Add(otherHandler.makeUI(lightPanel))
-                    haveOtherHandler = True
-                    break
-            if not haveOtherHandler:
-                # Put a spacer in so this widget has the same vertical size.
-                columnSizer.Add((-1, 1), 1, wx.EXPAND)
+            # for otherHandler in depot.getHandlersInGroup(light.groupName):
+            #     if otherHandler is not light:
+            #         columnSizer.Add(otherHandler.makeUI(lightPanel))
+            #         haveOtherHandler = True
+            #         break
+            # if not haveOtherHandler:
+            #     # Put a spacer in so this widget has the same vertical size.
+            #     columnSizer.Add((-1, 1), 1, wx.EXPAND)
             lightUI = light.makeUI(lightPanel)
             lightWidth = lightUI.GetSize()[0]
                 
