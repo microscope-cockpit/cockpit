@@ -48,6 +48,8 @@ class DeviceDepot:
         ## Maps handler names to handlers with those names. NB we enforce that
         # there only be one handler per name when we load the handlers.
         self.nameToHandler = {}
+        ## Maps group name to handlers.
+        self.groupNameToHandlers = {}
 
     ## HACK: load any Configurator device that may be stored in a
     # "configurator.py" module. This is needed because config must be loaded
@@ -176,8 +178,6 @@ class DeviceDepot:
             if handler.deviceType not in self.deviceTypeToHandlers:
                 self.deviceTypeToHandlers[handler.deviceType] = []
             self.deviceTypeToHandlers[handler.deviceType].append(handler)
-            # if handler.groupName not in self.groupNameToHandlers:
-            #     self.groupNameToHandlers[handler.groupName] = []
             if handler.name in self.nameToHandler:
                 # We enforce unique names, but multiple devices may reference
                 # the same handler, e.g. where a device A is triggered by signals
@@ -190,6 +190,9 @@ class DeviceDepot:
                                        (handler.name, str(device), str(otherDevice)))
             self.nameToHandler[handler.name] = handler
             self.handlerToDevice[handler] = device
+            if handler.groupName not in self.groupNameToHandlers:
+                self.groupNameToHandlers[handler.groupName] = []
+            self.groupNameToHandlers[handler.groupName].append(handler)
 
     ## Let each device publish any initial events it needs. It's assumed this
     # is called after all the handlers have set up their UIs, so that they can
@@ -266,8 +269,8 @@ def getHandlersOfType(deviceType):
 
 
 ## Return all registered device handlers in the appropriate group.
-# def getHandlersInGroup(groupName):
-#     return deviceDepot.groupNameToHandlers.get(groupName, [])
+def getHandlersInGroup(groupName):
+    return deviceDepot.groupNameToHandlers.get(groupName, [])
 
 
 ## Get all registered device handlers.
