@@ -25,19 +25,17 @@ def dyeToColor(dye, wavelength=None):
 
 
 ## Given a wavelength in nm, return an RGB color tuple. 
-def wavelengthToColor(wavelength):
+def wavelengthToColor(wavelength, saturation=1):
     wavelength = float(wavelength)
     # Convert wavelength to hue, with a color wheel that ranges from
     # blue (240 degrees) at 400nm to red (360 degrees) at 650nm by way of
     # green.
-    hue = max(0, min(300, (650 - wavelength))) / 250.0
-    hue *= 240
+    hue = max(0, min(300, (650 - wavelength)))
     # Make value decrease as we leave the visible spectrum.
     decay = max(0, max(400 - wavelength, wavelength - 650))
     # Don't let value decay too much.
     value = max(.5, 1 - decay / 200.0)
-    # Use saturation of 1, always.
-    r, g, b = hsvToRgb(hue, 1, value)
+    r, g, b = hsvToRgb(hue, saturation, value)
     return tuple(int(val * 255) for val in (r, g, b))
 
 
