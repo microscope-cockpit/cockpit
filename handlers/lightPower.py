@@ -1,14 +1,16 @@
+import concurrent.futures as futures
 import numpy
+import time
 import wx
 
 import depot
 import deviceHandler
 import events
-
 import gui.guiUtils
 import gui.toggleButton
 import util.logger
 import util.userConfig
+import util.threads
 
 
 
@@ -16,27 +18,52 @@ import util.userConfig
 # controlled through software.
 class LightPowerHandler(deviceHandler.DeviceHandler):
     ## callbacks should fill in the following functions:
-    # - setPower(name, value): Set the filter's position.
+    # - setPower(value): Set power level.
+    # - getPower(value): Get current power level.
     # \param minPower Minimum output power in milliwatts.
     # \param maxPower Maximum output power in milliwatts.
     # \param curPower Initial output power.
     # \param color Color to use in the UI to represent this light source.
     # \param isEnabled True iff the handler can be interacted with.
     # \param units Units to use to describe the power; defaults to "mW".
+
+    # A list of instances. Could use weakrefs, but no need since
+    # lights not destroyed until we exit.
+    _instances = []
+    # A class method to update lastPower by querying hardware.
+    # Querying power status can hang threads while I/O is pending,
+    # so we use a threadpool.
+    @classmethod
+    @util.threads.callInNewThread
+    def _updater(cls):
+        # A map of lights to queries.
+        queries = {}
+        with futures.ThreadPoolExecutor() as executor:
+            while True:
+                time.sleep(0.1)
+                for light in cls._instances:
+                    if light not in queries.keys():
+                        queries[light] = executor.submit(light.callbacks['getPower'])
+                    elif queries[light].done():
+                        light.lastPower = queries[light].result()
+                        light.updateDisplay()
+                        queries[light] = executor.submit(light.callbacks['getPower'])
+
+
     def __init__(self, name, groupName, callbacks, wavelength,
             minPower, maxPower, curPower, color, isEnabled = True,
             units = 'mW'):
         deviceHandler.DeviceHandler.__init__(self, name, groupName,
                 False, callbacks, depot.LIGHT_POWER)
+        LightPowerHandler._instances.append(self)
         self.wavelength = wavelength
         self.minPower = minPower
         self.maxPower = maxPower
-        self.curPower = curPower
+        self.lastPower = curPower
         self.powerSetPoint = None
         self.color = color
         self.isEnabled = isEnabled
         self.units = units
-
         ## ToggleButton for selecting the current power level.
         self.powerToggle = None
         ## wx.StaticText describing the current power level.
@@ -48,7 +75,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
         events.subscribe('user login', self.onLogin)
-
 
     ## User logged in; load their settings.
     def onLogin(self, username):
@@ -73,7 +99,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         self.powerToggle = button
         sizer.Add(button)
         self.powerText = wx.StaticText(parent, -1,
-                '%.1f%s' % (self.curPower, self.units),
+                '%.1f%s' % (self.lastPower, self.units),
                 style = wx.ALIGN_CENTRE_HORIZONTAL | wx.ST_NO_AUTORESIZE | wx.SUNKEN_BORDER,
                 size = (120, 40))
         self.powerToggle.Enable(self.isEnabled)
@@ -83,6 +109,8 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
             self.powerToggle.Enable(False)
         self.powerText.Enable(self.isEnabled)
         sizer.Add(self.powerText)
+        events.subscribe(self.name + ' update', self.updateDisplay)
+
         return sizer
 
 
@@ -106,7 +134,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
 
     ## Save our settings in the provided dict.
     def onSaveSettings(self, settings):
-        settings[self.name] = self.curPower
+        settings[self.name] = self.powerSetPoint
 
 
     ## Load our settings from the provided dict.
@@ -131,13 +159,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         return self.isEnabled
 
 
-    ## Set a new value for curPower.
-    def setCurPower(self, curPower):
-        self.curPower = curPower
-        util.userConfig.setValue(self.name + '-lightPower', curPower)
-        self.updateDisplay()
-
-
     ## Set a new value for minPower.
     def setMinPower(self, minPower):
         self.minPower = minPower
@@ -152,24 +173,26 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     def setPower(self, power):
         if power < self.minPower or power > self.maxPower:
             raise RuntimeError("Tried to set invalid power %f for light %s (range %f to %f)" % (power, self.name, self.minPower, self.maxPower))
-        self.callbacks['setPower'](self.name, power)
+        self.callbacks['setPower'](power)
+        self.powerSetPoint = power
+        util.userConfig.setValue(self.name + '-lightPower', power)
+        events.publish(self.name + ' update', self)
 
 
     ## Select an arbitrary power output.
     def setPowerArbitrary(self, parent):
         value = gui.dialogs.getNumberDialog.getNumberFromUser(
                 parent, "Select a power in milliwatts between 0 and %s:" % self.maxPower,
-                "Power (%s):" % self.units, self.curPower)
+                "Power (%s):" % self.units, self.powerSetPoint)
         self.setPower(float(value))
 
 
     ## Update our laser power display.
-    def updateDisplay(self):
-        #Publish a power update event
-        events.publish('laser power update',self)
+    @util.threads.callInMainThread
+    def updateDisplay(self, *args, **kwargs):
         # Show current power on the text display, if it exists.
-        if self.powerSetPoint and self.curPower:
-            matched = 0.95*self.powerSetPoint < self.curPower < 1.05*self.powerSetPoint
+        if self.powerSetPoint and self.lastPower:
+            matched = 0.95*self.powerSetPoint < self.lastPower < 1.05*self.powerSetPoint
         else:
             matched = False
 
@@ -180,11 +203,12 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         else:
             label += "SET: %.1f%s\n" % (self.powerSetPoint, self.units)
 
-        if self.curPower is None:
+        if self.lastPower is None:
             label += "OUT: ???%s" % (self.units)
         else:
-            label += "OUT: %.1f%s" % (self.curPower, self.units)
+            label += "OUT: %.1f%s" % (self.lastPower, self.units)
 
+        # Update the power label, if it exists.
         if self.powerText:
             self.powerText.SetLabel(label)
             if matched:
@@ -204,4 +228,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
 
     ## Experiments should include the laser power.
     def getSavefileInfo(self):
-        return "%s: %.1f%s" % (self.name, self.curPower, self.units)
+        return "%s: %.1f%s" % (self.name, self.lastPower, self.units)
+
+# Fire up the status updater.
+LightPowerHandler._updater()
