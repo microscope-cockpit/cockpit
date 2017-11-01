@@ -217,7 +217,8 @@ class UniversalLaserDevice(UniversalBase):
             self.name + ' power',  # name
             self.name + ' light source',  # groupName
             {
-                'setPower': self._proxy.set_power_mw
+                'setPower': self._proxy.set_power_mw,
+                'getPower': self._proxy.get_power_mw, # Synchronous - can hang threads.
             },
             488,#'light['wavelength'],
             0, 100, 20,#minPower, maxPower, curPower,
@@ -230,7 +231,7 @@ class UniversalLaserDevice(UniversalBase):
             ## TODO - exposure time handling on remote.
             self.handlers.append(handlers.lightSource.LightHandler(
                 self.name + ' toggle',
-                self.name + 'light source',
+                self.name + ' light source',
                 {'setEnabled': lambda name, on: self._setEnabled(on),
                  'setExposureTime': lambda name, value: setattr(self, '_exposureTime', value),
                  'getExposureTime': lambda name: self._exposureTime,
