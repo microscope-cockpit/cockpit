@@ -32,6 +32,7 @@ import handlers.deviceHandler
 import handlers.filterHandler
 import handlers.lightPower
 import handlers.lightSource
+import util.colors
 import util.listener
 import util.userConfig
 from gui.device import SettingsEditor
@@ -212,6 +213,11 @@ class UniversalLaserDevice(UniversalBase):
             self._proxy.disable()
 
     def getHandlers(self):
+        wl = self.config.get('wavelength', None)
+        if wl:
+            col = util.colors.wavelengthToColor(wl, 0.8)
+        else:
+            col = '0xaaaaaa'
         """Return device handlers. Derived classes may override this."""
         self.handlers.append(handlers.lightPower.LightPowerHandler(
             self.name + ' power',  # name
@@ -220,9 +226,9 @@ class UniversalLaserDevice(UniversalBase):
                 'setPower': self._proxy.set_power_mw,
                 'getPower': self._proxy.get_power_mw, # Synchronous - can hang threads.
             },
-            488,#'light['wavelength'],
+            wl,# wavelength,
             0, 100, 20,#minPower, maxPower, curPower,
-            '0xaaffaa',#light['color'],
+            col, #colour
             isEnabled=True))
         if self.config.get('triggersource', False):
             pass
