@@ -197,14 +197,14 @@ class MainWindow(wx.Frame):
             self.lightToPanel[light] = lightPanel
             columnSizer = wx.BoxSizer(wx.VERTICAL)
             haveOtherHandler = False
-            # for otherHandler in depot.getHandlersInGroup(light.groupName):
-            #     if otherHandler is not light:
-            #         columnSizer.Add(otherHandler.makeUI(lightPanel))
-            #         haveOtherHandler = True
-            #         break
-            # if not haveOtherHandler:
-            #     # Put a spacer in so this widget has the same vertical size.
-            #     columnSizer.Add((-1, 1), 1, wx.EXPAND)
+            for otherHandler in depot.getHandlersInGroup(light.groupName):
+                if otherHandler is not light:
+                    columnSizer.Add(otherHandler.makeUI(lightPanel))
+                    haveOtherHandler = True
+                    break
+            if not haveOtherHandler:
+                # Put a spacer in so this widget has the same vertical size.
+                columnSizer.Add((-1, 1), 1, wx.EXPAND)
             lightUI = light.makeUI(lightPanel)
             lightWidth = lightUI.GetSize()[0]
                 
