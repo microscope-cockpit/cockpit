@@ -13,7 +13,6 @@ import util.userConfig
 import util.threads
 
 
-
 ## This handler is for light sources where the power of the light can be
 # controlled through software.
 class LightPowerHandler(deviceHandler.DeviceHandler):
@@ -27,32 +26,43 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     # \param isEnabled True iff the handler can be interacted with.
     # \param units Units to use to describe the power; defaults to "mW".
 
-    # A list of instances. Could use weakrefs, but no need since
-    # lights not destroyed until we exit.
+    ## We use a class method to monitor output power by querying hardware.
+    # A list of instances. Light persist until exit, so don't need weakrefs.
     _instances = []
-    # A class method to update lastPower by querying hardware.
-    # Querying power status can hang threads while I/O is pending,
-    # so we use a threadpool.
     @classmethod
     @util.threads.callInNewThread
     def _updater(cls):
+        ## Monitor output power and tell controls to update their display.
+        # Querying power status can block while I/O is pending, so we use a
+        # threadpool.
         # A map of lights to queries.
         queries = {}
         with futures.ThreadPoolExecutor() as executor:
             while True:
                 time.sleep(0.1)
                 for light in cls._instances:
+                    getPower = light.callbacks['getPower']
                     if light not in queries.keys():
-                        queries[light] = executor.submit(light.callbacks['getPower'])
+                        queries[light] = executor.submit(getPower)
                     elif queries[light].done():
                         light.lastPower = queries[light].result()
                         light.updateDisplay()
-                        queries[light] = executor.submit(light.callbacks['getPower'])
+                        queries[light] = executor.submit(getPower)
 
 
     def __init__(self, name, groupName, callbacks, wavelength,
             minPower, maxPower, curPower, color, isEnabled = True,
             units = 'mW'):
+        # Validation:
+        required = set(['getPower', 'setPower'])
+        missing = required.difference(callbacks)
+        if missing:
+            e = Exception('%s %s missing callbacks: %s.' %
+                            (self.__class__.__name__,
+                             name,
+                             ' '.join(missing)))
+            raise e
+
         deviceHandler.DeviceHandler.__init__(self, name, groupName,
                 False, callbacks, depot.LIGHT_POWER)
         LightPowerHandler._instances.append(self)
