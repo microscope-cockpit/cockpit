@@ -16,10 +16,10 @@ EXPERIMENT_NAME = 'Structured Illumination'
 
 ## Maps possible collection orders to their ordering (0: angle, 1: phase, 2: z).
 COLLECTION_ORDERS = {
-        "Angle, Phase, Z": (0, 1, 2),
-        "Angle, Z, Phase": (0, 2, 1),
-        "Phase, Angle, Z": (1, 0, 2),
-        "Phase, Z, Angle": (1, 2, 0),
+#        "Angle, Phase, Z": (0, 1, 2),
+#        "Angle, Z, Phase": (0, 2, 1),
+#        "Phase, Angle, Z": (1, 0, 2),
+#       "Phase, Z, Angle": (1, 2, 0),
         "Z, Angle, Phase": (2, 0, 1),
         "Z, Phase, Angle": (2, 1, 0),
 }
