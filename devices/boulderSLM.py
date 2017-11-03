@@ -43,7 +43,7 @@ class BoulderSLMDevice(device.Device):
         self.order = None
         self.position = None
         self.wasPowered = None
-        self.settlingTime = decimal.Decimal('0.1')
+        self.settlingTime = decimal.Decimal('10.0')
         self.slmTimeout = int(config.get(CONFIG_NAME, 'timeout', default=10))
         self.slmRetryLimit = int(config.get(CONFIG_NAME, 'retryLimit', default=3))
         self.lastParms = None
