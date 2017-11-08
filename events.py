@@ -1,5 +1,4 @@
 import threading
-import time
 
 ## This module handles the event-passing system between the UI and the 
 # devices. Objects may publish events, subscribe to them, and unsubscribe from
