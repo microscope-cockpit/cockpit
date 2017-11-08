@@ -17,8 +17,6 @@ CONTINUOUS_COLOR = (255, 170, 0)
 ## Size of the button we make in the UI.
 BUTTON_SIZE = (120, 40)
 
-
-
 ## This handler is for lightsource toggle buttons and exposure time settings,
 # to control if a given illumination source is currently active (and for how
 # long).
@@ -33,10 +31,22 @@ class LightHandler(deviceHandler.DeviceHandler):
     #   (i.e. without regard for what the camera(s) are doing). 
     # \param wavelength Wavelength of light the source emits, if appropriate.
     # \param exposureTime Default exposure time.
+    # \param trigHandler: Optional. Sets up an auxilliary trigger source.
+    # \param trigLine: Optional. May be required by aux. trig. source.
 
     ## Shortcuts to decorators defined in parent class.
     reset_cache = deviceHandler.DeviceHandler.reset_cache
     cached = deviceHandler.DeviceHandler.cached
+
+    ## Keep track of shutters in class variables.
+    __shutterToLights = {} # 1:many
+    __lightToShutter = {} # 1:1
+    @classmethod
+    def addShutter(cls, shutter, lights=[]):
+        cls.__shutterToLights[shutter] = set(lights)
+        for l in lights:
+            cls.__lightToShutter[l] = shutter
+
 
     def __init__(self, name, groupName, callbacks, wavelength, exposureTime,
                  trigHandler=None, trigLine=None):
@@ -51,7 +61,9 @@ class LightHandler(deviceHandler.DeviceHandler):
         self.activeButton = None
         ## A text widget describing our exposure time and providing a
         # menu for changing it.
+        # TODO - separate handler from ui; exposureTime is a widget, not a parameter.
         self.exposureTime = None
+        # Set up trigger handling.
         if trigHandler and trigLine:
             trigHandler.registerDigital(self, trigLine)
             self.triggerNow = lambda: trigHandler.triggerDigital(self)
@@ -202,11 +214,22 @@ class LightHandler(deviceHandler.DeviceHandler):
 
     ## Set a new exposure time, in milliseconds.
     @reset_cache
-    def setExposureTime(self, value):
+    def setExposureTime(self, value, outermost=True):
+        ## Set the exposure time on self and update that on lights
+        # that share the same shutter if this is the outermost call.
+        # \param value: new exposure time
+        # \param outermost: flag indicating that we should update others.
         self.callbacks['setExposureTime'](self.name, value)
         # Publish event to update control labels.
         events.publish('light exposure update', self)
-
+        # Update exposure times for lights that share the same shutter.
+        s = self.__class__.__lightToShutter.get(self, None)
+        if s and outermost:
+            if hasattr(s, 'setExposureTime'):
+                s.setExposureTime(value)
+            for other in self.__class__.__shutterToLights[s].difference([self]):
+                other.setExposureTime(value, outermost=False)
+                events.publish('light exposure update', other)
 
     ## Get the current exposure time, in milliseconds.
     @cached
