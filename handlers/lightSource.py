@@ -38,7 +38,8 @@ class LightHandler(deviceHandler.DeviceHandler):
     reset_cache = deviceHandler.DeviceHandler.reset_cache
     cached = deviceHandler.DeviceHandler.cached
 
-    def __init__(self, name, groupName, callbacks, wavelength, exposureTime):
+    def __init__(self, name, groupName, callbacks, wavelength, exposureTime,
+                 trigHandler=None, trigLine=None):
         # Note we assume all light sources are eligible for experiments.
         # However there's no associated callbacks for a light source.
         deviceHandler.DeviceHandler.__init__(self, name, groupName, True, 
@@ -51,6 +52,11 @@ class LightHandler(deviceHandler.DeviceHandler):
         ## A text widget describing our exposure time and providing a
         # menu for changing it.
         self.exposureTime = None
+        if trigHandler and trigLine:
+            trigHandler.registerDigital(self, trigLine)
+            self.triggerNow = lambda: trigHandler.triggerDigital(self)
+        else:
+            self.triggerNow = lambda: None
 
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
