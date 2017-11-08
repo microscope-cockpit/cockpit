@@ -72,8 +72,9 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
 
 
 class DigitalMixin(object):
+    ## Digital handler mixin.
+
     ## Register a client device that is connected to one of our lines.
-    # Return a wrapped copy of self that abstracts out line.
     def registerDigital(self, client, line):
         self.digitalClients[client] = line
 
@@ -90,13 +91,31 @@ class DigitalMixin(object):
 
 
 class AnalogMixin(object):
+    ## Analog handler mixin.
+    # Consider OUTput in volts, amps or ADUS, and input
+    # in experimental units (e.g. um or deg).
+    # OUT = GAIN * (OFFSET + IN)
+    # GAIN is in units of OUT per experimental unit.
+    # OFFSET is in experimental units.
+
     ## Register a client device that is connected to one of our lines.
-    # Return a wrapped copy of self that abstracts out line.
-    def registerAnalog(self, client, line):
-        self.analogClients[client] = line
+    def registerAnalog(self, client, line, offset=0, gain=1):
+        self.analogClients[client] = (line, offset, gain)
 
     def setAnalog(self, line, level):
         self.callbacks['setAnalog'](line, level)
+
+    def getAnalog(self, line):
+        return self.callbacks['getAnalog'](line)
+
+    def setAnalogClient(self, client, value):
+        line, offset, gain = self.analogClients[client]
+        self.callbacks['setAnalog'](line, gain * (offset + value))
+
+    def getAnalogClient(self, client):
+        line, offset, gain = self.analogClients[client]
+        raw = self.callbacks['getAnalog'](line)
+        return (raw / gain) - offset
 
 
 class DigitalExecutorHandler(DigitalMixin, ExecutorHandler):
