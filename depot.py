@@ -5,6 +5,7 @@
 import ast
 import importlib
 import os
+from six import string_types
 
 ## Different eligible device handler types. These correspond 1-to-1 to
 # subclasses of the DeviceHandler class.
@@ -299,6 +300,33 @@ def getActiveCameras():
             result.append(camera)
     return result
 
+
+## Get a device by its name.
+def getDeviceWithName(name):
+    return deviceDepot.nameToDevice.get(name)
+
+
+## Get the handlers of a specific type for a device.
+def getHandler(nameOrDevice, handlerType):
+    if isinstance(nameOrDevice, string_types):
+        dev = getDeviceWithName(nameOrDevice)
+    else:
+        dev = nameOrDevice
+
+    handlers = set(getHandlersOfType(handlerType))
+    devHandlers = set(deviceDepot.deviceToHandlers.get(dev, []))
+    handlers = handlers.intersection(devHandlers)
+    if len(handlers) == 0:
+        return None
+    elif len(handlers) == 1:
+        return handlers.pop()
+    else:
+        return list(handlers)
+
+
+## Sort handlers in order of abstraction
+def getSortedHandlers():
+    h = getAllHandlers()
 
 ## Get the Device instance associated with the given module.
 #def getDevice(module):
