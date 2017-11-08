@@ -404,7 +404,7 @@ class TouchScreenWindow(wx.Frame):
         events.subscribe('mosaic update', self.mosaicUpdate)
         events.subscribe('light source enable', self.lightSourceEnable)
         events.subscribe('laser power update', self.laserPowerUpdate)
-        events.subscribe('laser exposure update', self.laserExpUpdate)
+        events.subscribe('light exposure update', self.laserExpUpdate)
 
 
         self.Bind(wx.EVT_SIZE, self.onSize)
@@ -525,7 +525,10 @@ class TouchScreenWindow(wx.Frame):
         self.Refresh()
 
     #Update exposure time text on event.
-    def laserExpUpdate(self):
+    def laserExpUpdate(self, source=None):
+        # TODO: fix this to use the handler reference passed in source
+        # i.e. we *do* know which light is update.
+
         #Dont know which light is updated so update them all.
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         lightToggles = sorted(lightToggles, key = lambda l: l.wavelength)
