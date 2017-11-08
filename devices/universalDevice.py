@@ -230,20 +230,24 @@ class UniversalLaserDevice(UniversalBase):
             0, 100, 20,#minPower, maxPower, curPower,
             col, #colour
             isEnabled=True))
-        if self.config.get('triggersource', False):
-            pass
+        trigsource = self.config.get('triggersource', None)
+        trigline = self.config.get('triggerline', None)
+        if trigsource:
+            trighandler = depot.getHandler(trigsource, depot.EXECUTOR)
         else:
-            self._exposureTime = 100
-            ## TODO - exposure time handling on remote.
-            self.handlers.append(handlers.lightSource.LightHandler(
-                self.name + ' toggle',
-                self.name + ' light source',
-                {'setEnabled': lambda name, on: self._setEnabled(on),
-                 'setExposureTime': lambda name, value: setattr(self, '_exposureTime', value),
-                 'getExposureTime': lambda name: self._exposureTime,
-                 'setExposing': lambda name, isOn: None,},
-                self.config.get('wavelength', None),
-                100))
+            trighandler = None
+        self._exposureTime = 100
+        self.handlers.append(handlers.lightSource.LightHandler(
+            self.name + ' toggle',
+            self.name + ' light source',
+            {'setEnabled': lambda name, on: self._setEnabled(on),
+             'setExposureTime': lambda name, value: setattr(self, '_exposureTime', value),
+             'getExposureTime': lambda name: self._exposureTime,
+             'setExposing': lambda name, isOn: None,},
+            self.config.get('wavelength', None),
+            100,
+            trighandler,
+            trigline))
 
         return self.handlers
 
