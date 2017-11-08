@@ -19,8 +19,21 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
         # we pass False for isEligibleForExperiments here.
         deviceHandler.DeviceHandler.__init__(self, name, groupName, False,
                 callbacks, depot.EXECUTOR)
+        # Base class contains empty dicts used by mixins so that methods like
+        # getNumRunnableLines can be implemented here for all mixin combos.
         self.digitalClients = {}
         self.analogClients = {}
+        if not isinstance(self, DigitalMixin):
+            self.registerDigital = self._noDigital
+            self.getDigital = self._noDigital
+            self.setDigital = self._noDigital
+            self.triggerDigital = self._noDigital
+        if not isinstance(self, AnalogMixin):
+            self.registerAnalog = self._noAnalog
+            self.setAnalog = self._noAnalog
+            self.getAnalog = self._noAnalog
+            self.setAnalogClient = self._noAnalog
+            self.getAnalogClient = self._noAnalog
 
     def examineActions(self, table):
         return self.callbacks['examineActions'](self.name, table)
@@ -38,18 +51,11 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
                 break
         return count
 
-    def registerDigital(self, client, line):
+    def _noDigital(self, *args, **kwargs):
         raise Exception("Digital lines not supported.")
 
-    def setDigital(self, line, state):
-        raise Exception("Digital lines not supported.")
-
-    def registerAnalog(self, client, line):
-        raise Exception("Analog lines not supported.")
-
-    def setAnalog(self, line, level):
-        raise Exception("Analog lines not supported.")
-
+    def _noAnalog(self, *args, **kwargs):
+        raise Exception("Analog lines not supported")
 
     ## Run a portion of a table describing the actions to perform in a given
     # experiment.
