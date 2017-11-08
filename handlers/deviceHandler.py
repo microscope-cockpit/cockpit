@@ -71,7 +71,7 @@ class DeviceHandler(object):
             if f is None:
                 return f
             else:
-                return f(self, *args)
+                return f(self, *args, **kwargs)
         return wrapper
 
 
