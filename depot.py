@@ -116,16 +116,18 @@ class DeviceDepot:
                 except Exception as e:
                     raise Exception("In device %s" % name, e)
 
-        # Initialize devices in order of dependence.
+        # Initialize devices in order of dependence
         devices = self.nameToDevice.values()
+        done = []
         while devices:
-            # TODO - catch circular dependencies and throw exception.
+            # TODO - catch circular dependencies.
             d = devices.pop(0)
-            depends = set([d.config.get('triggersource')])
-            if len(depends.intersection(devices)):
+            depends = d.config.get('triggersource')
+            if depends and depends not in done:
                 devices.append(d)
                 continue
             self.initDevice(d)
+            done.append(d.name)
             yield d.name
 
         # Add dummy devices as required.
