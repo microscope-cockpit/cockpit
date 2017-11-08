@@ -1,9 +1,9 @@
 import depot
 import deviceHandler
+import util.threads
+import time
 
-
-
-## This handler is responsible for executing portions of experiments. 
+## This handler is responsible for executing portions of experiments.
 class ExecutorHandler(deviceHandler.DeviceHandler):
     ## callbacks must include the following:
     # - examineActions(name, table): Perform any necessary validation or
@@ -19,14 +19,36 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
         # we pass False for isEligibleForExperiments here.
         deviceHandler.DeviceHandler.__init__(self, name, groupName, False,
                 callbacks, depot.EXECUTOR)
-
+        self.digitalClients = {}
+        self.analogClients = {}
 
     def examineActions(self, table):
         return self.callbacks['examineActions'](self.name, table)
 
-
     def getNumRunnableLines(self, table, index):
-        return self.callbacks['getNumRunnableLines'](self.name, table, index)
+        ## Return number of lines this handler can run.
+        count = 0
+        for time, handler, parameter in table[index:]:
+            # Check for analog and digital devices we control.
+            count += 1
+            if (handler is not self and
+                   handler not in self.digitalClients and
+                   handler not in self.analogClients):
+                # Found a device we don't control.
+                break
+        return count
+
+    def registerDigital(self, client, line):
+        raise Exception("Digital lines not supported.")
+
+    def setDigital(self, line, state):
+        raise Exception("Digital lines not supported.")
+
+    def registerAnalog(self, client, line):
+        raise Exception("Analog lines not supported.")
+
+    def setAnalog(self, line, level):
+        raise Exception("Analog lines not supported.")
 
 
     ## Run a portion of a table describing the actions to perform in a given
@@ -43,3 +65,41 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
                 stopIndex, numReps, repDuration)
 
 
+class DigitalMixin(object):
+    ## Register a client device that is connected to one of our lines.
+    # Return a wrapped copy of self that abstracts out line.
+    def registerDigital(self, client, line):
+        self.digitalClients[client] = line
+
+    def setDigital(self, line, state):
+        self.callbacks['setDigital'](line, state)
+
+    def triggerDigital(self, client, dt=0.01):
+        ## Trigger a client line now.
+        line = self.digitalClients.get(client, None)
+        if line:
+            self.setDigital(line, True)
+            time.sleep(dt)
+            self.setDigital(line, False)
+
+
+class AnalogMixin(object):
+    ## Register a client device that is connected to one of our lines.
+    # Return a wrapped copy of self that abstracts out line.
+    def registerAnalog(self, client, line):
+        self.analogClients[client] = line
+
+    def setAnalog(self, line, level):
+        self.callbacks['setAnalog'](line, level)
+
+
+class DigitalExecutorHandler(DigitalMixin, ExecutorHandler):
+    pass
+
+
+class AnalogExecutorHandler(AnalogMixin, ExecutorHandler):
+    pass
+
+
+class AnalogDigitalExecutorHandler(AnalogMixin, DigitalMixin, ExecutorHandler):
+    pass

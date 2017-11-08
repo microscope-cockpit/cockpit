@@ -7,8 +7,6 @@ import time
 
 CLASS_NAME = 'ExperimentExecutorDevice'
 
-
-
 class ExperimentExecutorDevice(device.Device):
     def __init__(self):
         device.Device.__init__(self)
