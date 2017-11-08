@@ -249,9 +249,7 @@ class Experiment:
                     raise RuntimeError("Found a line that no executor could handle: %s" % str(self.table.actions[curIndex]))
                 util.logger.log.warn("Handing %d lines to %s with %d reps at %.2f" % (bestLen, best, numReps, time.time()))
                 events.executeAndWaitFor('experiment execution',
-
                         best.executeTable, self.table, curIndex,
-
                         curIndex + bestLen, numReps, repDuration)
                 curIndex += bestLen
             if shouldStop:
