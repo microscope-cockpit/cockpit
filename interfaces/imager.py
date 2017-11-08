@@ -48,7 +48,7 @@ class Imager:
         self.amInVideoMode = False
         events.subscribe('user abort', self.stopVideo)
         # Update exposure times on certain events.
-        events.subscribe('laser exposure update', self.updateExposureTime)
+        events.subscribe('light exposure update', self.updateExposureTime)
         events.subscribe('light source enable', lambda *args: self.updateExposureTime())
         events.subscribe('camera enable', lambda *args: self.updateExposureTime())
 
@@ -57,7 +57,7 @@ class Imager:
 
     ## Update exposure times on cameras.
     @pauseVideo
-    def updateExposureTime(self):
+    def updateExposureTime(self, source=None):
         e_times = [l.getExposureTime() for l in self.activeLights]
         if not e_times:
             return
