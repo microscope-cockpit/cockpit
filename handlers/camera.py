@@ -6,6 +6,7 @@ import depot
 import deviceHandler
 import events
 import interfaces.imager
+import util.colors
 
 
 ## Available trigger modes for triggering the camera.
@@ -54,21 +55,30 @@ class CameraHandler(deviceHandler.DeviceHandler):
     reset_cache = deviceHandler.DeviceHandler.reset_cache
     cached = deviceHandler.DeviceHandler.cached
 
-    def __init__(self, name, groupName, callbacks,
-            exposureMode):
+    def __init__(self, name, groupName, callbacks, exposureMode):
         # Note we assume that cameras are eligible for experiments.
         deviceHandler.DeviceHandler.__init__(self, name, groupName, True, 
                 callbacks, depot.CAMERA)
-        ## Color to use when camera is displayed. Depends on current drawer.
-        self.color = None
-        ## Descriptive name for camera. Depends on current drawer.
-        self.descriptiveName = name
-        ## Wavelength of light we receive. Depends on current drawer.
-        self.wavelength = None
         ## True if the camera is currently receiving images.
         self.isEnabled = False
-        events.subscribe('drawer change', self.onDrawerChange)
         self._exposureMode = exposureMode
+        self.wavelength = None
+        self.dye = None
+
+
+    @property
+    def color(self):
+        if self.wavelength is not None:
+            return util.colors.wavelengthToColor(self.wavelength, 0.8)
+        else:
+            return (127,)*3
+
+    @property
+    def descriptiveName(self):
+        if self.dye is not None:
+            return ("%s (%s)" % (self.name, self.dye))
+        else:
+            return self.name
 
     @property
     def exposureMode(self):
@@ -87,18 +97,11 @@ class CameraHandler(deviceHandler.DeviceHandler):
             events.subscribe("dummy take image", softTrigger)
 
 
-
-
-    ## Update some of our properties based on the new drawer.
-    # \param newSettings A devices.handlers.drawer.DrawerSettings instance.
-    def onDrawerChange(self, drawerHandler):
-        self.color = drawerHandler.getColorForCamera(self.name)
-        dyeName = drawerHandler.getDyeForCamera(self.name)
-        if dyeName:
-            self.descriptiveName = dyeName + " (%s)" % self.name
-        else:
-            self.descriptiveName = self.name
-        self.wavelength = drawerHandler.getWavelengthForCamera(self.name)
+    def updateFilter(self, dye, wavelength=None):
+        ## Update the filter for this camera.
+        self.dye = dye
+        self.wavelength = wavelength
+        events.publish('filter change')
 
 
     ## Invoke our callback, and let everyone know that a new camera is online.
