@@ -3,14 +3,12 @@ import depot
 import events
 import gui
 import wx
-from config import config
-
 
 class Filter(object):
     """An individual filter."""
 
     def __init__(self, position, *args):
-        self.position = position
+        self.position = int(position)
         # args describes the filter.
         # The description can be one of
         #   label, value
@@ -35,12 +33,14 @@ class Filter(object):
 
 class FilterHandler(deviceHandler.DeviceHandler):
     """A handler for emission and ND filter wheels."""
-    def __init__(self, device, groupName):
-        self._device = device
-        self.name = device.name
+    def __init__(self, name, groupName, isEligibleForExperiments, callbacks, cameras, lights):
         deviceHandler.DeviceHandler.__init__(self,
-                self.name, groupName, False, {},
-                deviceType=depot.GENERIC_DEVICE)
+                                             name, groupName,
+                                             isEligibleForExperiments,
+                                             callbacks,
+                                             depot.LIGHT_FILTER)
+        self.cameras = cameras
+        self.lights = lights
 
 
     ### UI functions ####
@@ -48,33 +48,40 @@ class FilterHandler(deviceHandler.DeviceHandler):
         self.display = gui.toggleButton.ToggleButton(
                         parent=parent, label='', isBold=False)
         self.display.Bind(wx.EVT_LEFT_DOWN, self.menuFunc)
-        self.display.Bind(wx.EVT_RIGHT_DOWN, self._device.showSettings)
-        self.updateDisplay()
+        #self.display.Bind(wx.EVT_RIGHT_DOWN, self._device.showSettings)
+        self.updateAfterMove()
         return self.display
 
 
-    def updateDisplay(self, *args):
+    def currentFilter(self):
+        position = self.callbacks['getPosition']()
+        filters = self.callbacks['getFilters']()
+        for f in filters:
+            if f.position == position:
+                return f
+
+
+    def updateAfterMove(self, *args):
         # Accept *args so that can be called directly as a Pyro callback
         # or an event handler.
-        self.display.SetLabel('%s\n%s' % (self.name, self._device.getFilter()))
-        if self._device.cameras:
+        f = self.currentFilter()
+        self.display.SetLabel('%s\n%s' % (self.name, f))
+        if self.cameras:
             # Emission filter
-            drawer = depot.getHandlersOfType(depot.DRAWER)[0]
-            f = self._device.getFilter()
-            for camera in self._device.cameras:
-                drawer.changeFilter(camera, f.label, f.value)
-            events.publish("drawer change", drawer)
+            for camera in self.cameras:
+                h = depot.getHandler(camera, depot.CAMERA)
+                h.updateFilter(f.label, f.value)
 
-        if self._device.lights:
+        if self.lights:
             # Excitation filter
             pass
 
 
     def menuFunc(self, evt=None):
-        items = [str(f) for f in self._device.filters]
+        items = [str(f) for f in self.callbacks['getFilters']()]
         menu = gui.device.Menu(items, self.menuCallback)
         menu.show(evt)
 
 
     def menuCallback(self, index, item):
-        self._device.setFilterByIndex(index, callback=self.updateDisplay)
+        self.callbacks['setPosition'](index, callback=self.updateAfterMove)
