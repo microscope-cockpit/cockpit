@@ -37,6 +37,7 @@ import util.listener
 import util.userConfig
 from gui.device import SettingsEditor
 from future.utils import iteritems
+import re
 
 CLASS_NAME = 'UniversalDeviceManager'
 CONFIG_NAME = 'universal'
@@ -255,21 +256,37 @@ class UniversalLaserDevice(UniversalBase):
 class UniversalFilterDevice(UniversalBase):
     def __init__(self, *args, **kwargs):
         super(UniversalFilterDevice, self).__init__(*args, **kwargs)
-        # Must be initialized after any drawer.
-        self.name = args[0]
-        self.priority = 500
-        self.cameras = None
-        self.lights = None
+        # Cameras
+        cdefs = self.config.get('cameras', None)
+        if cdefs:
+            self.cameras = re.split('[,;]\s*', cdefs)
+        else:
+            self.cameras = None
+
+        # Lights
+        ldefs = self.config.get('lights', None)
+        if ldefs:
+            self.lights = re.split('[,;]\s*', ldefs)
+        else:
+            self.lights = None
+
+        # Filters - will populate later.
+        self.filters = []
 
 
     def getHandlers(self):
         """Return device handlers."""
-        result = handlers.filterHandler.FilterHandler(self, "universal devices")
-        self.handlers = [result]
-        return [result]
+        h = handlers.filterHandler.FilterHandler(self.name, 'filters', False,
+                                                 {'setPosition': self.setPosition,
+                                                  'getPosition': self.getPosition,
+                                                  'getFilters': self.getFilters},
+                                                 self.cameras,
+                                                 self.lights)
+        self.handlers = [h]
+        return self.handlers
 
 
-    def setFilterByIndex(self, index, callback=None):
+    def setPosition(self, index, callback=None):
         # position refers to wheel position.
         # index refers to an element in the list of filters.
         #self._proxy.set_setting('position', self.filters[index].position)
@@ -283,32 +300,20 @@ class UniversalFilterDevice(UniversalBase):
         return self._proxy.get_setting('position')
 
 
-    def getFilter(self):
-        position = self.getPosition()
-        for f in self.filters:
-            if f.position == position:
-                return f
+    def getFilters(self):
+        return self.filters
 
 
     def finalizeInitialization(self):
-        self.filters = [handlers.filterHandler.Filter(*f)
-                        for f in self._proxy.get_filters()]
-        # Read configuration file.
-        if config.has_option(self.name, 'camera'):
-            cameras = [config.get(self.name, 'camera')]
-        elif config.has_option(self.name, 'cameras'):
-            cameras = re.split(CONFIG_DELIMETERS, config.get(self.name, 'cameras'))
+        # Filters
+        fdefs = self.config.get('filters', None)
+        if fdefs:
+            fdefs = [re.split(':\s*', f) for f in re.split('[,;]\s*', fdefs)]
         else:
-            pass
-        self.cameras = [c.name for c in depot.getHandlersOfType(depot.CAMERA)]
-
-        if config.has_option(self.name, 'light'):
-            lights = [config.get(self.name, 'light')]
-        elif config.has_option(self.name, 'lights'):
-            lights = re.split(CONFIG_DELIMETERS, config.get(self.name, 'lights'))
-        else:
-            pass
-        self.lights = [c.name for c in depot.getHandlersOfType(depot.CAMERA)]
+            fdefs = self._proxy.get_filters()
+        if not fdefs:
+            raise Exception ("No local or remote filter definitions for %s." % self.name)
+        self.filters = [handlers.filterHandler.Filter(*f) for f in fdefs]
 
 
 # Type maps.
