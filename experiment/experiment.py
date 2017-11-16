@@ -216,7 +216,7 @@ class Experiment:
 
     ## Run the experiment. Return True if it was successful.
     def execute(self):
-        util.logger.log.warn("Experiment.execute started.")
+        util.logger.log.info("Experiment.execute started.")
         # Iteratively find the ExperimentExecutor that can tackle the largest
         # portion of self.table, have them run it, and wait for them to finish.
         executors = depot.getHandlersOfType(depot.EXECUTOR)
@@ -231,7 +231,7 @@ class Experiment:
                     util.logger.log.error("Cancelling on rep %d after %d actions due to user abort" % (rep, curIndex))
                     break
                 best = None
-                bestLen = None
+                bestLen = 0
                 for executor in executors:
                     numLines = executor.getNumRunnableLines(self.table, curIndex)
                     if best is None or numLines > bestLen:
@@ -245,16 +245,34 @@ class Experiment:
                     shouldStop = True
                     # Expand from seconds to milliseconds
                     repDuration = self.repDuration * 1000
-                elif bestLen == 0:
-                    raise RuntimeError("Found a line that no executor could handle: %s" % str(self.table.actions[curIndex]))
-                util.logger.log.warn("Handing %d lines to %s with %d reps at %.2f" % (bestLen, best, numReps, time.time()))
-                events.executeAndWaitFor('experiment execution',
-                        best.executeTable, self.table, curIndex,
-                        curIndex + bestLen, numReps, repDuration)
-                curIndex += bestLen
+
+                if bestLen == 0:
+                    # No executor can run this line. See if we can fall back to software.
+                    fn = None
+                    t, h, action = self.table[curIndex]
+                    if h.deviceType == depot.CAMERA and 'softTrigger' in h.callbacks:
+                        fn = lambda: h.callbacks['softTrigger']()
+                    elif h.deviceType == depot.STAGE_POSITIONER:
+                        fn = lambda: h.moveRelative(action)
+
+                    if fn is None:
+                        raise RuntimeError("Found a line that no executor could handle: %s" % str(self.table.actions[curIndex]))
+
+                    util.logger.log.debug(
+                        "Running 1 line in software for %s with %d reps at %.2f" % (h, numReps, time.time()))
+                    fn()
+                    curIndex += 1
+                else:
+                    util.logger.log.debug(
+                        "Handing %d lines to %s with %d reps at %.2f" % (bestLen, best, numReps, time.time()))
+                    events.executeAndWaitFor('experiment execution',
+                            best.executeTable, self.table, curIndex,
+                            curIndex + bestLen, numReps, repDuration)
+                    curIndex += bestLen
+                    count += 1
             if shouldStop:
                 # All reps handled by an executor.
-                util.logger.log.warn("Stopping now at %.2f" % time.time())
+                util.logger.log.debug("Stopping now at %.2f" % time.time())
                 break
             # Wait for the end of the rep.
             if rep != self.numReps - 1:
@@ -263,7 +281,7 @@ class Experiment:
         ## TODO: figure out how long we should wait for the last captures to complete.
         # For now, wait 1s.
         time.sleep(1.)
-        util.logger.log.warn("Experiment.execute completed.")
+        util.logger.log.info("Experiment.execute completed.")
         return True
 
     ## Wait for the provided thread(s) to finish, then clean up our handlers.
@@ -451,8 +469,12 @@ class Experiment:
                 cameraExposureStartTime = exposureStartTime - self.cameraToReadoutTime[camera] - decimal.Decimal(0.005)
                 table.addAction(cameraExposureStartTime, camera, True)
                 table.addAction(exposureEndTime, camera, False)
-            else: # TRIGGER_BEFORE case.
+            elif mode == handlers.camera.TRIGGER_BEFORE: # TRIGGER_BEFORE case.
                 table.addToggle(exposureStartTime, camera)
+            elif mode == handlers.camera.TRIGGER_SOFT:
+                table.addAction(exposureStartTime, camera, True)
+            else:
+                raise Exception ('%s has no trigger mode set.' % camera)
             self.cameraToImageCount[camera] += 1
         for camera in self.cameras:
             if (camera not in usedCams and
