@@ -142,10 +142,9 @@ class MainWindow(wx.Frame):
                 rowSizer.AddSpacer(COL_SPACER)
         # Make the UI elements for eveything else.
         for thing in otherThings:
-            if hasattr(thing, 'deviceType'):
-                if thing.deviceType is depot.CAMERA:
-                    # cameras are dealt with via their handlers.
-                    continue
+            if depot.getHandler(thing, depot.CAMERA):
+                # Camera UIs already drawn.
+                continue
             item = thing.makeUI(topPanel)
             if item is not None:
                 # Add it to the main controls display.
