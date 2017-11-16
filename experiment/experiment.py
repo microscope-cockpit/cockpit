@@ -269,7 +269,6 @@ class Experiment:
                             best.executeTable, self.table, curIndex,
                             curIndex + bestLen, numReps, repDuration)
                     curIndex += bestLen
-                    count += 1
             if shouldStop:
                 # All reps handled by an executor.
                 util.logger.log.debug("Stopping now at %.2f" % time.time())
