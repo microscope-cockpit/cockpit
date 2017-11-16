@@ -74,6 +74,7 @@ class ToggleButton(wx.StaticText):
         if isActive == self.isActive:
             # Do nothing if state is correct.
             return
+        self.isActive = isActive
         if isActive:
             color = self.activeColor
             label = self.activeLabel or self.baseLabel
