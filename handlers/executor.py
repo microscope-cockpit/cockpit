@@ -133,12 +133,27 @@ class AnalogLineHandler(GenericPositionerHandler):
     ## A type of GenericPositioner for analog outputs.
     def __init__(self, name, groupName, callbacks):
         self.callbacks = callbacks
-        self.callbacks['moveRelative'] = self.moveRelative
+        # Indexed positions. Can be a dict if wavelength-independent, or
+        # a mapping of wavelengths (as floats or ints) to lists of same length.
+        self.positions = []
         deviceHandler.DeviceHandler.__init__(self, name, groupName, True,
                                              self.callbacks, depot.GENERIC_POSITIONER)
-
     def moveRelative(self, delta):
         self.callbacks['moveAbsolute'](self.callbacks['getPosition']() + delta)
+
+    def indexedPosition(self, index, wavelength=None):
+        pos = None
+        if wavelength is not None and isinstance(self.positions, dict):
+            wl = min(self.calib.keys(), key=lambda w: abs(w - wavelength))
+            ps = self.positions[wl]
+        elif isinstance(self.positions, dict):
+            if self.positions.has_key(None):
+                ps = self.positons[None]
+            elif self.positions.has_key('default'):
+                ps = self.positions['default']
+        else:
+            ps = self.positions
+        return ps[index]
 
 
 class DigitalExecutorHandler(DigitalMixin, ExecutorHandler):
