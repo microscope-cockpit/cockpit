@@ -140,7 +140,7 @@ class DataSaver:
         ## TODO: handle missing drawer better.
         drawer = [depot.getHandlersOfType(depot.DRAWER) or None][0]
         if drawer:
-            wavelengths = [drawer.getWavelengthForCamera(c.name) for c in self.cameras]
+            wavelengths = [c.wavelength for c in self.cameras]
         else:
             wavelengths = [0 for c in self.cameras]
 
@@ -213,15 +213,8 @@ class DataSaver:
         # that need to be saved
         self.imageQueue = Queue.Queue()
 
-        # Use the names from the drawer, if available.
-        names = []
-        if depot.getHandlersOfType(depot.DRAWER):
-            drawer = depot.getHandlersOfType(depot.DRAWER)[0]
-            for camera in self.cameras:
-                names.append(drawer.getDyeForCamera(camera.name))
-        else:
-            # Just use the camera names directly.
-            names = [camera.name for camera in self.cameras]
+        # Use dye name if available, otherwise use camera name.
+        names = [camera.dye or camera.name for camera in self.cameras]
         totals = []
         for camera in self.cameras:
             totals.append(self.cameraToImagesKeptPerRep[camera] * self.numReps)
