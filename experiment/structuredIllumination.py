@@ -307,8 +307,15 @@ class SIExperiment(experiment.Experiment):
         delay = decimal.Decimal(0.)
         # Set polarizer position
         if self.polarizerHandler is not None:
-            table.addAction(curTime, self.polarizerHandler, (longestWavelength, angle))
-            delay = max(delay, self.polarizerHandler.callbacks['getMovementTime']())
+            pos = self.polarizerHandler.indexedPosition(angle, longestWavelength)
+
+            myrows = filter(lambda row: row[1] == self.polarizerHandler, table.actions)
+            lastt, lastpos = table.getLastActionFor(self.polarizerHandler)
+            if lastpos is None:
+                lastpos = 0
+            table.addAction(curTime, self.polarizerHandler, pos)
+            dt = decimal.Decimal(sum(self.polarizerHandler.getMovementTime(lastpos, pos)))
+            delay = max(delay, dt)
         # SLM trigger
         if self.slmHandler is not None:
             ## Add SLM event ot set pattern for phase, angle and longestWavelength.
