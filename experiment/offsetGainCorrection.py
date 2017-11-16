@@ -151,7 +151,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
         # Construct a header for the image data.
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         drawer = depot.getHandlersOfType(depot.DRAWER)[0]
-        wavelengths = [drawer.getWavelengthForCamera(c.name) for c in self.cameras]
+        wavelengths = [c.wavelength for c in self.cameras]
         header = util.datadoc.makeHeaderFor(results, 
                 XYSize = objective.getPixelSize(), ZSize = 0, 
                 wavelengths = wavelengths)

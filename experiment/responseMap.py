@@ -142,7 +142,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
         
         drawer = depot.getHandlersOfType(depot.DRAWER)[0]
         header = util.datadoc.makeHeaderFor(allImages, 
-                wavelengths = [drawer.getWavelengthForCamera(cam.name) for cam in self.cameras])
+                wavelengths = [cam.wavelength for cam in self.cameras])
 
         # Number of bytes allocated to the extended header: 4 per image, since
         # we use a 32-bit floating point for the exposure time.

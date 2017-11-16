@@ -50,7 +50,7 @@ class ViewPanel(wx.Panel):
         self.disable()
         # We need to respond to this event after the cameras do, since we
         # need them to have gotten their new names.
-        events.subscribe("drawer change", self.onDrawerChange, priority = 1000)
+        events.subscribe("filter change", self.onFilterChange, priority = 1000)
 
 
     ## User interacted with our current image; on double-clicks we center
@@ -145,11 +145,10 @@ class ViewPanel(wx.Panel):
         events.subscribe("new image %s" % self.curCamera.name, self.onImage)
 
     ## React to the drawer changing, by updating our labels and colors.
-    def onDrawerChange(self, drawerHandler):
+    def onFilterChange(self):
         if self.getIsEnabled():
             self.selector.SetLabel(self.curCamera.descriptiveName)
-            color = drawerHandler.getColorForCamera(self.curCamera.name)
-            self.selector.SetBackgroundColour(color)
+            self.selector.SetBackgroundColour(self.curCamera.color)
             self.Refresh()
 
 
