@@ -43,12 +43,12 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
         count = 0
         for time, handler, parameter in table[index:]:
             # Check for analog and digital devices we control.
-            count += 1
             if (handler is not self and
                    handler not in self.digitalClients and
                    handler not in self.analogClients):
                 # Found a device we don't control.
                 break
+            count += 1
         return count
 
     def _noDigital(self, *args, **kwargs):
