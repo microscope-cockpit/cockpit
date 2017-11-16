@@ -6,6 +6,7 @@ import ast
 import importlib
 import os
 from six import string_types
+from handlers.deviceHandler import DeviceHandler
 
 ## Different eligible device handler types. These correspond 1-to-1 to
 # subclasses of the DeviceHandler class.
@@ -308,6 +309,9 @@ def getDeviceWithName(name):
 
 ## Get the handlers of a specific type for a device.
 def getHandler(nameOrDevice, handlerType):
+    if isinstance(nameOrDevice, DeviceHandler):
+        if nameOrDevice.deviceType == handlerType:
+            return nameOrDevice
     if isinstance(nameOrDevice, string_types):
         dev = getDeviceWithName(nameOrDevice)
     else:
