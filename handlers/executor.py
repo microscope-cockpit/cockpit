@@ -1,6 +1,6 @@
 import depot
 import deviceHandler
-import util.threads
+from handlers.genericPositioner import GenericPositionerHandler
 import time
 
 ## This handler is responsible for executing portions of experiments.
@@ -92,30 +92,53 @@ class DigitalMixin(object):
 
 class AnalogMixin(object):
     ## Analog handler mixin.
-    # Consider OUTput in volts, amps or ADUS, and input
-    # in experimental units (e.g. um or deg).
-    # OUT = GAIN * (OFFSET + IN)
-    # GAIN is in units of OUT per experimental unit.
-    # OFFSET is in experimental units.
+    # Consider output 'level' in volts, amps or ADUS, and input
+    # 'position' in experimental units (e.g. um or deg).
+    # level = gain * (offset + position)
+    # gain is in units of volts, amps or ADUS per experimental unit.
+    # offset is in experimental units.
 
-    ## Register a client device that is connected to one of our lines.
-    def registerAnalog(self, client, line, offset=0, gain=1):
-        self.analogClients[client] = (line, offset, gain)
+    def registerAnalog(self, client, line, offset=0, gain=1, movementTimeFunc=None):
+        ## Register a client device that is connected to one of our lines.
+        # Returns an AnalogLineHandler for that line.
+        h = AnalogLineHandler(
+            client.name, self.name + ' analogs',
+            {'moveAbsolute': lambda pos: self.setClientPosition(h, pos),
+             'getPosition': lambda: self.getClientPosition(h),
+             'getMovementTime': movementTimeFunc,})
+        self.analogClients[h] = (int(line), float(offset), float(gain))
+        return h
 
-    def setAnalog(self, line, level):
+    def setAnalogLine(self, line, level):
+        ## Set analog output of line to level.
         self.callbacks['setAnalog'](line, level)
 
-    def getAnalog(self, line):
+    def getAnalogLine(self, line):
+        ## Get level of analog line.
         return self.callbacks['getAnalog'](line)
 
-    def setAnalogClient(self, client, value):
+    def setClientPosition(self, client, value):
+        ## Scale a client position to an analog level and set that level.
         line, offset, gain = self.analogClients[client]
         self.callbacks['setAnalog'](line, gain * (offset + value))
 
-    def getAnalogClient(self, client):
+    def getClientPosition(self, client):
+        ## Fetch level for a client, and scale to a client position.
         line, offset, gain = self.analogClients[client]
         raw = self.callbacks['getAnalog'](line)
         return (raw / gain) - offset
+
+
+class AnalogLineHandler(GenericPositionerHandler):
+    ## A type of GenericPositioner for analog outputs.
+    def __init__(self, name, groupName, callbacks):
+        self.callbacks = callbacks
+        self.callbacks['moveRelative'] = self.moveRelative
+        deviceHandler.DeviceHandler.__init__(self, name, groupName, True,
+                                             self.callbacks, depot.GENERIC_POSITIONER)
+
+    def moveRelative(self, delta):
+        self.callbacks['moveAbsolute'](self.callbacks['getPosition']() + delta)
 
 
 class DigitalExecutorHandler(DigitalMixin, ExecutorHandler):

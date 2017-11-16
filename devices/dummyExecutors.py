@@ -49,7 +49,7 @@ class DummyExecutor(device.Device):
 class DummyDigitalExecutor(DummyExecutor):
     def __init__(self, name, config):
         device.Device.__init__(self, name, config)
-        self.deviceType = 'experiment executor'
+        self.deviceType = depot.EXECUTOR
 
     ## Generate an ExperimentExecutor handler.
     def getHandlers(self):
@@ -71,22 +71,29 @@ class DummyDigitalExecutor(DummyExecutor):
 class DummyAnalogDigitalExecutor(DummyExecutor):
     def __init__(self, name, config):
         device.Device.__init__(self, name, config)
-        self.deviceType = 'experiment executor'
+        # Emulate for analogue lines.
+        self.alines = [0]*4
+        self.deviceType = depot.EXECUTOR
 
     ## Generate an ExperimentExecutor handler.
     def getHandlers(self):
         return [handlers.executor.AnalogDigitalExecutorHandler(
             "Dummy experiment executor", "executor",
             {'examineActions': self.examineActions,
-                'executeTable': self.executeTable,
+             'executeTable': self.executeTable,
              'setDigital': self.setDigital,
-            'setAnalog': self.setAnalog}),]
+             'setAnalog': self.setAnalog,
+             'getAnalog': self.getAnalog,}),]
 
     def setDigital(self, line, state):
         print("Set d-line %s %s." % (line, ['low', 'high'][state]))
 
     def setAnalog(self, line, level):
+        self.alines[line] = level
         print("Set a-line %s %s." % (line, level))
+
+    def getAnalog(self, line):
+        return self.alines[line]
 
     ## Given an experiment.ActionTable instance, examine the actions and
     # make any necessary modifications.
