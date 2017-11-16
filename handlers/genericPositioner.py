@@ -1,5 +1,6 @@
 import depot
 import deviceHandler
+import decimal
 
 ## This handler is for generic positioning devices that can move along a 
 # single axis, and are not used for stage/sample positioning. Use the
@@ -46,9 +47,9 @@ class GenericPositionerHandler(deviceHandler.DeviceHandler):
     # motion, in milliseconds.
     def getMovementTime(self, start, stop):
         #return self.callbacks['getMovementTime'](self.name, start, stop)
-        return self.getDeltaMovementTime(stop - start)
+        return [decimal.Decimal(t) for t in self.callbacks['getMovementTime'](start, stop)]
 
 
     @cached
     def getDeltaMovementTime(self, delta):
-        return self.callbacks['getMovementTime'](0., delta)
+        return [decimal.Decimal(t) for t in self.callbacks['getMovementTime'](0., delta)]
