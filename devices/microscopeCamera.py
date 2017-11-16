@@ -43,11 +43,11 @@ from interfaces.imager import pauseVideo
 # Pseudo-enum to track whether device defaults in place.
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
 
-class UniversalCameraDevice(camera.CameraDevice):
+class MicroscopeCamera(camera.CameraDevice):
     """A class to control Andor cameras via the pyAndor remote interface."""
     def __init__(self, name, cam_config):
         # camConfig is a dict with containing configuration parameters.
-        super(UniversalCameraDevice, self).__init__(name, cam_config)
+        super(self.__class__, self).__init__(name, cam_config)
         self.handler = None        
         self.enabled = False
         self.panel = None
