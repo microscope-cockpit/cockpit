@@ -300,10 +300,10 @@ class Experiment:
         # a part of self.allHandlers.
         typeToHandlers[depot.LIGHT_FILTER] = []
         filters = depot.getHandlersOfType(depot.LIGHT_FILTER)
-        for handler in self.lights:
-            wavelength = handler.getWavelength()
+        for light in self.lights:
+            wavelength = light.getWavelength()
             for filterHandler in filters:
-                if filterHandler.getWavelength() == wavelength:
+                if light in filterHandler.lights:
                     typeToHandlers[depot.LIGHT_FILTER].append(filterHandler)
 
         for handler in self.allHandlers:
