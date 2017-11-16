@@ -1,5 +1,3 @@
-import wx
-
 import depot
 import deviceHandler
 
@@ -31,17 +29,17 @@ class GenericPositionerHandler(deviceHandler.DeviceHandler):
 
     ## Handle being told to move to a specific position.
     def moveAbsolute(self, pos):
-        self.callbacks['moveAbsolute'](self.name, pos)
+        self.callbacks['moveAbsolute'](pos)
 
 
     ## Handle being told to move by a specific delta.
     def moveRelative(self, delta):
-        self.callbacks['moveRelative'](self.name, delta)
+        self.callbacks['moveRelative'](delta)
 
 
     ## Retrieve the current position.
     def getPosition(self):
-        return self.callbacks['getPosition'](self.name)
+        return self.callbacks['getPosition']()
 
 
     ## Get the movement and stabilization time needed to perform the specified
@@ -53,4 +51,4 @@ class GenericPositionerHandler(deviceHandler.DeviceHandler):
 
     @cached
     def getDeltaMovementTime(self, delta):
-        return self.callbacks['getMovementTime'](self.name, 0., delta)
+        return self.callbacks['getMovementTime'](0., delta)
