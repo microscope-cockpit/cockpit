@@ -269,7 +269,12 @@ def makeInitialPublications():
 
 ## Return the handler with the specified name.
 def getHandlerWithName(name):
-    return deviceDepot.nameToHandler.get(name, None)
+    d = deviceDepot.nameToHandler.get(name, None)
+    if d is None:
+        # try case mangling
+        keys = {k.lower(): k for k in deviceDepot.nameToHandler.keys()}
+        d = deviceDepot.nameToHandler.get( keys.get(name.lower()), None)
+    return d
 
 
 ## Return all registered device handlers of the appropriate type.
