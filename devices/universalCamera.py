@@ -38,9 +38,6 @@ import re
 from gui.device import SettingsEditor
 from interfaces.imager import pauseVideo
 
-CLASS_NAME = 'UniversalCameraManager'
-SUPPORTED_CAMERAS = ['TestCamera', 'AndorSDK3', 'PVCamera']
-
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFT) = range(4)
 # Pseudo-enum to track whether device defaults in place.
@@ -51,7 +48,6 @@ class UniversalCameraDevice(camera.CameraDevice):
     def __init__(self, name, cam_config):
         # camConfig is a dict with containing configuration parameters.
         super(UniversalCameraDevice, self).__init__(name, cam_config)
-        print(name, self.name)
         self.handler = None        
         self.enabled = False
         self.panel = None
@@ -385,8 +381,3 @@ class UniversalCameraDevice(camera.CameraDevice):
             self.settings_editor.Show()
         self.settings_editor.SetPosition(click_pos)
         self.settings_editor.Raise()
-
-
-class UniversalCameraManager(camera.CameraManager):
-    _CAMERA_CLASS = UniversalCameraDevice
-    _SUPPORTED_CAMERAS = SUPPORTED_CAMERAS
