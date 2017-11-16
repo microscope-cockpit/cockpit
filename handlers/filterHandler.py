@@ -39,8 +39,8 @@ class FilterHandler(deviceHandler.DeviceHandler):
                                              isEligibleForExperiments,
                                              callbacks,
                                              depot.LIGHT_FILTER)
-        self.cameras = cameras
-        self.lights = lights
+        self.cameras = cameras or []
+        self.lights = lights or []
 
 
     ### UI functions ####
@@ -66,14 +66,12 @@ class FilterHandler(deviceHandler.DeviceHandler):
         # or an event handler.
         f = self.currentFilter()
         self.display.SetLabel('%s\n%s' % (self.name, f))
-        if self.cameras:
-            # Emission filter
-            for camera in self.cameras:
-                h = depot.getHandler(camera, depot.CAMERA)
-                h.updateFilter(f.label, f.value)
-
-        if self.lights:
-            # Excitation filter
+        # Emission filters
+        for camera in self.cameras:
+            h = depot.getHandler(camera, depot.CAMERA)
+            h.updateFilter(f.label, f.value)
+        # Excitation filters
+        for h in self.lights:
             pass
 
 
