@@ -24,16 +24,16 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
         self.digitalClients = {}
         self.analogClients = {}
         if not isinstance(self, DigitalMixin):
-            self.registerDigital = self._noDigital
-            self.getDigital = self._noDigital
-            self.setDigital = self._noDigital
-            self.triggerDigital = self._noDigital
+            self.registerDigital = self._raiseNoDigitalException
+            self.getDigital = self._raiseNoDigitalException
+            self.setDigital = self._raiseNoDigitalException
+            self.triggerDigital = self._raiseNoDigitalException
         if not isinstance(self, AnalogMixin):
-            self.registerAnalog = self._noAnalog
-            self.setAnalog = self._noAnalog
-            self.getAnalog = self._noAnalog
-            self.setAnalogClient = self._noAnalog
-            self.getAnalogClient = self._noAnalog
+            self.registerAnalog = self._raiseNoAnalogException
+            self.setAnalog = self._raiseNoAnalogException
+            self.getAnalog = self._raiseNoAnalogException
+            self.setAnalogClient = self._raiseNoAnalogException
+            self.getAnalogClient = self._raiseNoAnalogException
 
     def examineActions(self, table):
         return self.callbacks['examineActions'](self.name, table)
@@ -51,10 +51,10 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
             count += 1
         return count
 
-    def _noDigital(self, *args, **kwargs):
+    def _raiseNoDigitalException(self, *args, **kwargs):
         raise Exception("Digital lines not supported.")
 
-    def _noAnalog(self, *args, **kwargs):
+    def _raiseNoAnalogException(self, *args, **kwargs):
         raise Exception("Analog lines not supported")
 
     ## Run a portion of a table describing the actions to perform in a given
