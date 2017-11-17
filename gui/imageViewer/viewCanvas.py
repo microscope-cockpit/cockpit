@@ -12,6 +12,7 @@ import threading
 import traceback
 import wx
 import wx.glcanvas
+import operator
 
 from cockpit import COCKPIT_PATH
 
@@ -111,8 +112,20 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         # Do nothing, to prevent flickering
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: 0)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.onMouseWheel)
 
-        
+
+    def onMouseWheel(self, event):
+        # Only respond if event originated within window.
+        p = event.GetPosition()
+        s = self.GetSize()
+        if any(map(operator.or_, map(operator.gt, p, s), map(operator.lt, p, (0,0)))):
+            return
+        rotation = event.GetWheelRotation()
+        if rotation:
+            self.modZoom(rotation / 1000.0)
+
+
     def InitGL(self):
         self.w, self.h = self.GetClientSize()
         self.SetCurrent(self.context)
@@ -436,10 +449,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.mouseHandler(event)
         self.curMouseX, self.curMouseY = event.GetPosition()
         self.updateMouseInfo(self.curMouseX, self.curMouseY)
-        rotation = event.GetWheelRotation()
-        if rotation:
-            # Zoom the canvas
-            self.modZoom(rotation / 1000.0)
 
         if event.LeftDown():
             # Started dragging
@@ -480,6 +489,10 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 menu.Append(id, label)
                 wx.EVT_MENU(self, id, lambda event, action = action: action())
             gui.guiUtils.placeMenuAtMouse(self, menu)
+        elif event.Entering() and self.TopLevelParent.IsActive():
+            self.SetFocus()
+        else:
+            event.Skip()
 
         # In case current mouse position has changed enough to require
         # redrawing the histogram. A bit wasteful of resources, this.
