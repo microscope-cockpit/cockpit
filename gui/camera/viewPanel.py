@@ -74,6 +74,8 @@ class ViewPanel(wx.Panel):
                 interfaces.stageMover.mover.curHandlerIndex = originalMover
             else:
                interfaces.stageMover.moveRelative((dx, dy, 0))
+        else:
+            event.Skip()
 
 
     ## User clicked on the selector. Pop up a menu to let them either activate
