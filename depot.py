@@ -124,8 +124,13 @@ class DeviceDepot:
         while devices:
             # TODO - catch circular dependencies.
             d = devices.pop(0)
-            depends = d.config.get('triggersource')
-            if depends and depends not in done:
+            depends = []
+            for dependency in ['triggersource', 'analogsource']:
+                other = d.config.get(dependency)
+                if other:
+                    depends.append(other)
+
+            if any([other not in done for other in depends]):
                 devices.append(d)
                 continue
             self.initDevice(d)
