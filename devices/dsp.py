@@ -48,15 +48,8 @@ COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2}#, 'SI angle': -1}
 CONFIG_NAME = 'dsp'
 
 class DSPDevice(device.Device):
-    def __init__(self):
-        device.Device.__init__(self)
-        self.isActive = config.has_section(CONFIG_NAME)
-        if not self.isActive:
-            return
-        ## IP address of the DSP computer.
-        self.ipAddress = config.get('dsp', 'ipAddress')
-        ## Port to use to connect to the DSP computer.
-        self.port = int(config.get('dsp', 'port'))
+    def __init__(self, name, config={}):
+        device.Device.__init__(self, name, config)
         ## Connection to the remote DSP computer
         self.connection = None
         ## Set of all handlers we control.
@@ -68,42 +61,44 @@ class DSPDevice(device.Device):
         ## Names of light sources we trigger when taking an image.
         self.activeLights = set()
         ## Maps light source names to exposure times for those lights.
-        self.lightToExposureTime = {}
-        ## Maps various handlers to the digital lines we use to trigger that
-        # handler.
-        self.handlerToDigitalLine = {}
-        ## Maps various handlers to the analog axes we use to manipulate them.
-        self.handlerToAnalogLine = {}
-        ## Maps handler names to the digital lines we use to activate those
-        # devices. 
-        self.nameToDigitalLine = {}
-        self.nameToDigitalLine.update({key: val['triggerLine'] for \
-                                       key, val in LIGHTS.iteritems()})
-        self.nameToDigitalLine.update({key: val['triggerLine'] for \
-                                       key, val in CAMERAS.iteritems()})
-        self.otherTriggers = []
-        for s in config.sections():
-            if not config.has_option(s, 'triggerLine'):
-                continue
-            t = int(config.get(s, 'triggerLine'))
-            name = '%s trigger' % s
-            self.nameToDigitalLine.update({name: 1 << t})
-            self.otherTriggers.append(name)
+        # self.lightToExposureTime = {}
+        # ## Maps various handlers to the digital lines we use to trigger that
+        # # handler.
+        # self.handlerToDigitalLine = {}
+        # ## Maps various handlers to the analog axes we use to manipulate them.
+        # self.handlerToAnalogLine = {}
+        # ## Maps handler names to the digital lines we use to activate those
+        # # devices.
+        # self.nameToDigitalLine = {}
+        # ## TODO - refactor digital lines using registration functions.
+        # self.nameToDigitalLine.update({key: val['triggerLine'] for \
+        #                                key, val in LIGHTS.iteritems()})
+        # self.nameToDigitalLine.update({key: val['triggerLine'] for \
+        #                                key, val in CAMERAS.iteritems()})
+        # self.otherTriggers = []
+
+        # for s in config.sections():
+        #     if not config.has_option(s, 'triggerLine'):
+        #         continue
+        #     t = int(config.get(s, 'triggerLine'))
+        #     name = '%s trigger' % s
+        #     self.nameToDigitalLine.update({name: 1 << t})
+        #     self.otherTriggers.append(name)
         ## Resolution of actions we can take when running experiments.
         self.actionsPerMillisecond = 10
         ## Conversion factor between microns and the units the DSP card
         # uses. The DSP has a 16-bit DAC (so 65536 ADUs (analog-digital units)
         # representing 0-10 volts).
-        self.alineToUnitsPerADU = {}
+        # self.alineToUnitsPerADU = {}
         self.axisMapper = {}
-        VperADU = 10.0 / 2**16
-        for key, aout in AOUTS.iteritems():
-            self.alineToUnitsPerADU.update({\
-                aout['aline']: aout['sensitivity'] * VperADU, })
-            ## Maps Cockpit axes (0: X, 1: Y, 2: Z) to DSP analog lines
-            if aout['cockpit_axis'] in 'xyzXYZ':
-                self.axisMapper.update({\
-                    COCKPIT_AXES[aout['cockpit_axis']]: int(aout['aline']), })
+        # VperADU = 10.0 / 2**16
+        # for key, aout in AOUTS.iteritems():
+        #     self.alineToUnitsPerADU.update({\
+        #         aout['aline']: aout['sensitivity'] * VperADU, })
+        #     ## Maps Cockpit axes (0: X, 1: Y, 2: Z) to DSP analog lines
+        #     if aout['cockpit_axis'] in 'xyzXYZ':
+        #         self.axisMapper.update({\
+        #             COCKPIT_AXES[aout['cockpit_axis']]: int(aout['aline']), })
         
         ## Position tuple of the piezos prior to experiment starting.
         self.preExperimentPosition = None
@@ -119,7 +114,7 @@ class DSPDevice(device.Device):
         self.lastAnalogPositions = [0] * 4
         ## Values for anologue positions at startup.
         self.startupAnalogPositions = [None] * 4
-		#IMD 20150617 adeded to make adcanved control work.
+        #MD 20150617 adeded to make adcanved control work.
         self.makeOutputWindow = makeOutputWindow
         self.buttonName='DSP TTL'
 
@@ -127,8 +122,7 @@ class DSPDevice(device.Device):
     ## Connect to the DSP computer.
     @util.threads.locked
     def initialize(self):
-        uri = 'PYRO:pyroDSP@%s:%d' % (self.ipAddress, self.port)
-        self.connection = Pyro4.Proxy(uri)
+        self.connection = Pyro4.Proxy(self.uri)
         self.connection._pyroTimeout = 6
         self.connection.Abort()
 
@@ -137,8 +131,8 @@ class DSPDevice(device.Device):
     # via external trigger. There are also some light sources that we don't
     # control directly that we need to know about.
     def performSubscriptions(self):
-        events.subscribe('camera enable', self.toggleCamera)
-        events.subscribe('light source enable', self.toggleLightHandler)
+        #events.subscribe('camera enable', self.toggleCamera)
+        #events.subscribe('light source enable', self.toggleLightHandler)
         events.subscribe('user abort', self.onAbort)
         events.subscribe('prepare for experiment', self.onPrepareForExperiment)
         events.subscribe('cleanup after experiment',
@@ -148,7 +142,7 @@ class DSPDevice(device.Device):
     # publish them. We want the Z piezo to be in the middle of its range
     # of motion.
     def makeInitialPublications(self):
-	    pass
+        pass
 
     ## User clicked the abort button.
     def onAbort(self):
@@ -166,16 +160,16 @@ class DSPDevice(device.Device):
         self.connection.receiveClient(uri)
         # Get all the other devices we can control, and add them to our
         # digital lines.
-        for name, line in self.nameToDigitalLine.iteritems():
-            handler = depot.getHandlerWithName(name)
-            if handler is not None:
-                self.handlerToDigitalLine[handler] = line
+        # for name, line in self.nameToDigitalLine.iteritems():
+        #     handler = depot.getHandlerWithName(name)
+        #     if handler is not None:
+        #         self.handlerToDigitalLine[handler] = line
 
         # Move analogue lines to initial positions, if given in config.
-        for handler, line in self.handlerToAnalogLine.iteritems():
-            pos = self.startupAnalogPositions[line]
-            if pos is not None:
-                handler.moveAbsolute(pos)
+        # for handler, line in self.handlerToAnalogLine.iteritems():
+        #     pos = self.startupAnalogPositions[line]
+        #     if pos is not None:
+        #         handler.moveAbsolute(pos)
 
 
     ## We control which light sources are active, as well as a set of 
@@ -184,57 +178,57 @@ class DSPDevice(device.Device):
         result = []
         # The "Ambient" light source lets us specify exposure times for images
         # with no active illumination.
-        for key, light in LIGHTS.iteritems():
-            # Set up lightsource handlers with default 100ms expsure time.
-            handler = handlers.lightSource.LightHandler(
-                light['label'], "%s light source" % light['label'],
-                {'setEnabled': self.toggleLight,
-                 'setExposureTime': self.setExposureTime,
-                 'getExposureTime': self.getExposureTime},
-                light['wavelength'],
-                100)    
-            self.lightToExposureTime[handler.name] = 100
-            self.handlerToDigitalLine[handler] = light['triggerLine']
-            result.append(handler)
+        # for key, light in LIGHTS.iteritems():
+        #     # Set up lightsource handlers with default 100ms exposure time.
+        #     handler = handlers.lightSource.LightHandler(
+        #         light['label'], "%s light source" % light['label'],
+        #         {'setEnabled': self.toggleLight,
+        #          'setExposureTime': self.setExposureTime,
+        #          'getExposureTime': self.getExposureTime},
+        #         light['wavelength'],
+        #         100)
+        #     self.lightToExposureTime[handler.name] = 100
+        #     self.handlerToDigitalLine[handler] = light['triggerLine']
+        #    result.append(handler)
 
-        for key, aout in AOUTS.iteritems():
-            if aout['cockpit_axis'] in 'xyzXYZ':
-                axisName = COCKPIT_AXES[aout['cockpit_axis'].lower()]
-                handler = handlers.stagePositioner.PositionerHandler(
-                    "%s piezo" % axisName, "%s stage motion" % axisName, True, 
-                    {'moveAbsolute': self.movePiezoAbsolute,
-                        'moveRelative': self.movePiezoRelative, 
-                        'getPosition': self.getPiezoPos, 
-                        'getMovementTime': self.getPiezoMovementTime,
-                        'cleanupAfterExperiment': self.cleanupPiezo,
-                        # The DSP doesn't have modifiable soft motion safeties.
-                        'setSafety': lambda *args: None},
-                    COCKPIT_AXES[aout['cockpit_axis']], 
-                    aout['deltas'],
-                    aout['default_delta'],
-                    aout['hard_limits'])
-                self.handlerToAnalogLine[handler] = int(aout['aline'])#COCKPIT_AXES[aout['cockpit_axis']]
-                result.append(handler)
-                self.curPosition.update({COCKPIT_AXES[aout['cockpit_axis']]: 0})
-                self.startupAnalogPositions[aout['aline']] = aout.get('startup_value')
-                
-        for name in self.otherTriggers:
-            handler = handlers.genericHandler.GenericHandler(
-                name, 'other triggers', True,
-                callbacks = {'triggerNow': lambda: self.triggerNow(self.nameToDigitalLine[name]),})
-            self.handlerToDigitalLine[handler] = self.nameToDigitalLine[name]
-            result.append(handler)
+        # for key, aout in AOUTS.iteritems():
+        #     if aout['cockpit_axis'] in 'xyzXYZ':
+        #         axisName = COCKPIT_AXES[aout['cockpit_axis'].lower()]
+        #         handler = handlers.stagePositioner.PositionerHandler(
+        #             "%s piezo" % axisName, "%s stage motion" % axisName, True,
+        #             {'moveAbsolute': self.movePiezoAbsolute,
+        #                 'moveRelative': self.movePiezoRelative,
+        #                 'getPosition': self.getPiezoPos,
+        #                 'getMovementTime': self.getPiezoMovementTime,
+        #                 'cleanupAfterExperiment': self.cleanupPiezo,
+        #                 # The DSP doesn't have modifiable soft motion safeties.
+        #                 'setSafety': lambda *args: None},
+        #             COCKPIT_AXES[aout['cockpit_axis']],
+        #             aout['deltas'],
+        #             aout['default_delta'],
+        #             aout['hard_limits'])
+        #         self.handlerToAnalogLine[handler] = int(aout['aline'])#COCKPIT_AXES[aout['cockpit_axis']]
+        #         result.append(handler)
+        #         self.curPosition.update({COCKPIT_AXES[aout['cockpit_axis']]: 0})
+        #         self.startupAnalogPositions[aout['aline']] = aout.get('startup_value')
+        #
+        # for name in self.otherTriggers:
+        #     handler = handlers.genericHandler.GenericHandler(
+        #         name, 'other triggers', True,
+        #         callbacks = {'triggerNow': lambda: self.triggerNow(self.nameToDigitalLine[name]),})
+        #     self.handlerToDigitalLine[handler] = self.nameToDigitalLine[name]
+        #     result.append(handler)
+
+        result.append(handlers.executor.AnalogDigitalExecutorHandler(
+            "DSP", "executor",
+            {'examineActions': lambda *args: None,
+             'getNumRunnableLines': self.getNumRunnableLines,
+             'executeTable': self.executeTable})
+        )
 
         result.append(handlers.imager.ImagerHandler(
             "DSP imager", "imager",
             {'takeImage': self.takeImage}))
-
-        result.append(handlers.executor.ExecutorHandler(
-            "DSP experiment executor", "executor",
-            {'examineActions': lambda *args: None, 
-                'getNumRunnableLines': self.getNumRunnableLines, 
-                'executeTable': self.executeTable,
-                'registerAnalogue': self.registerAnalogueDevice},))
 
         self.handlers = set(result)
         return result
@@ -365,7 +359,6 @@ class DSPDevice(device.Device):
                 cameraMask += line
                 handler = depot.getHandlerWithName(name)
                 handler.setExposureTime(maxTime)
- #       print "Cam mask, lighttimeparis", cameraMask, lightTimePairs
         self.connection.arcl(cameraMask, lightTimePairs)
 
 
