@@ -1,6 +1,7 @@
 import depot
 import deviceHandler
 from handlers.genericPositioner import GenericPositionerHandler
+import operator
 import time
 
 ## This handler is responsible for executing portions of experiments.
@@ -27,6 +28,8 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
             self.registerDigital = self._raiseNoDigitalException
             self.getDigital = self._raiseNoDigitalException
             self.setDigital = self._raiseNoDigitalException
+            self.readDigital = self._raiseNoDigitalException
+            self.writeDigital = self._raiseNoDigitalException
             self.triggerDigital = self._raiseNoDigitalException
         if not isinstance(self, AnalogMixin):
             self.registerAnalog = self._raiseNoAnalogException
@@ -76,10 +79,16 @@ class DigitalMixin(object):
 
     ## Register a client device that is connected to one of our lines.
     def registerDigital(self, client, line):
-        self.digitalClients[client] = line
+        self.digitalClients[client] = int(line)
 
     def setDigital(self, line, state):
         self.callbacks['setDigital'](line, state)
+
+    def writeDigital(self, state):
+        self.callbacks['writeDigital'](state)
+
+    def readDigital(self):
+        return self.callbacks['readDigital']()
 
     def triggerDigital(self, client, dt=0.01):
         ## Trigger a client line now.
@@ -88,6 +97,71 @@ class DigitalMixin(object):
             self.setDigital(line, True)
             time.sleep(dt)
             self.setDigital(line, False)
+
+    @property
+    def activeLights(self):
+        return filter(lambda h: h.deviceType==depot.LIGHT_TOGGLE
+                                and h.getIsEnabled(),
+                      self.digitalClients)
+
+    @property
+    def activeCameras(self):
+        return filter(lambda h: h.deviceType == depot.CAMERA
+                                and h.getIsEnabled(),
+                      self.digitalClients)
+
+    def takeImage(self):
+        if not self.digitalClients:
+            # No triggered devices registered.
+            return
+        camlines = sum([1<<self.digitalClients[cam] for cam in self.activeCameras])
+
+        if camlines == 0:
+            # No cameras to be triggered.
+            return
+
+        ltpairs = []
+        for light in self.activeLights:
+            lline = 1 << self.digitalClients[light]
+            ltime = light.getExposureTime()
+            ltpairs.append((lline, ltime))
+
+        # Sort by exposure time
+        ltpairs.sort(key = lambda item: item[1])
+
+        # Generate a sequence of (time, digital state)
+        # TODO: currently uses bulb exposure; should support other modes.
+        if ltpairs:
+            # Start by all active cameras and lights.
+            state = camlines | reduce(operator.ior, zip(*ltpairs)[0])
+            seq = [(0, state)]
+            # Switch off each light as its exposure time expires.
+            for  lline, ltime in ltpairs:
+                state -= lline
+                seq.append( (ltime, state))
+        else:
+            # No lights. Just trigger the cameras.
+            seq = [(0, camlines)]
+        # Switch all lights and cameras off.
+        seq.append( (seq[-1][0] + 1, 0) )
+        if self.callbacks.get('runSequence', None):
+            self.callbacks['runSequence'](seq)
+        else:
+            self.softSequence(seq)
+
+    def writeWithMask(self, mask, state):
+        initial = self.readDigital()
+        final = (initial & ~mask) | state
+        self.writeDigital( final )
+
+    def softSequence(self, seq):
+        # Mask of the bits that we toggle
+        mask = reduce(operator.ior, zip(*seq)[1])
+        entryState = self.readDigital()
+        for t, state in seq:
+            time.sleep(t/1000.)
+            self.writeWithMask(mask, state)
+        self.writeDigital(entryState)
 
 
 class AnalogMixin(object):
