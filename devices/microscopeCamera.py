@@ -25,6 +25,7 @@ import Pyro4
 import wx
 
 import camera
+import depot
 import numpy as np
 import events
 import gui.device
@@ -173,6 +174,13 @@ class MicroscopeCamera(camera.CameraDevice):
 
     def getHandlers(self):
         """Return camera handlers."""
+        trigsource = self.config.get('triggersource', None)
+        trigline = self.config.get('triggerline', None)
+        if trigsource:
+            trighandler = depot.getHandler(trigsource, depot.EXECUTOR)
+        else:
+            trighandler = None
+
         result = handlers.camera.CameraHandler(
                 "%s" % self.name, "universal camera",
                 {'setEnabled': self.enableCamera,
@@ -186,7 +194,10 @@ class MicroscopeCamera(camera.CameraDevice):
                  'getSavefileInfo': self.getSavefileInfo,
                  'makeUI': self.makeUI,
                  'softTrigger': self.softTrigger},
-                TRIGGER_SOFT) # will be set with value from hardware later
+            TRIGGER_SOFT,
+            trighandler,
+            trigline)
+        # will be set with value from hardware later
         self.handler = result
         self.handler.addListener(self)
         return [result]

@@ -55,7 +55,8 @@ class CameraHandler(deviceHandler.DeviceHandler):
     reset_cache = deviceHandler.DeviceHandler.reset_cache
     cached = deviceHandler.DeviceHandler.cached
 
-    def __init__(self, name, groupName, callbacks, exposureMode):
+    def __init__(self, name, groupName, callbacks, exposureMode,
+                 trigHandler=None, trigLine=None):
         # Note we assume that cameras are eligible for experiments.
         deviceHandler.DeviceHandler.__init__(self, name, groupName, True, 
                 callbacks, depot.CAMERA)
@@ -64,6 +65,12 @@ class CameraHandler(deviceHandler.DeviceHandler):
         self._exposureMode = exposureMode
         self.wavelength = None
         self.dye = None
+        # Set up trigger handling.
+        if trigHandler and trigLine:
+            trigHandler.registerDigital(self, trigLine)
+            self.triggerNow = lambda: trigHandler.triggerDigital(self)
+        else:
+            self.triggerNow = lambda: None
 
 
     @property
