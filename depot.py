@@ -74,7 +74,7 @@ class DeviceDepot:
         # Parse device files to map classes to their module.
         modfiles = [fn for fn in os.listdir(DEVICE_FOLDER) if fn.endswith('.py')]
         for m in modfiles:
-            modname = m.rstrip('.py')
+            modname = m[0:-3] # Strip .py extension
             with open(os.path.join(DEVICE_FOLDER, m), 'r') as f:
                 # Extract class definitions from the module
                 try:
