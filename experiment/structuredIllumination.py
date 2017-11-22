@@ -172,7 +172,8 @@ class SIExperiment(experiment.Experiment):
         # is already showing the correct pattern for the first image set.
         # Increment the time slightly after each "motion" so that actions are well-ordered.
         if self.angleHandler is not None:
-            table.addAction(curTime, self.angleHandler, 0)
+            theta = self.angleHandler.indexedPosition(0)
+            table.addAction(curTime, self.angleHandler, theta)
             curTime += decimal.Decimal('1e-6')
         if self.phaseHandler is not None:
             table.addAction(curTime, self.phaseHandler, 0)
@@ -197,11 +198,11 @@ class SIExperiment(experiment.Experiment):
                           table.getFirstAndLastActionTimes()[1] + decimal.Decimal('1e-6'))
             if angle != prevAngle and prevAngle is not None:
                 if self.angleHandler is not None:
-                    motionTime, stabilizationTime = self.angleHandler.getMovementTime(prevAngle, angle)
+                    theta = self.angleHandler.indexedPosition(angle)
+                    motionTime, stabilizationTime = self.angleHandler.getMovementTime(prevAngle, theta)
                     # Move to the next position.
-                    table.addAction(curTime + motionTime,
-                            self.angleHandler, angle)
-                    delayBeforeImaging = max(delayBeforeImaging,
+                    table.addAction(curTime + motionTime, self.angleHandler, theta)
+                    delayBeforeImaging = max(delayBeforeImaging, 
                             motionTime + stabilizationTime)
                 # Advance time slightly so all actions are sorted (e.g. we
                 # don't try to change angle and phase in the same timestep).
@@ -261,20 +262,22 @@ class SIExperiment(experiment.Experiment):
 
         if self.angleHandler is not None:
             # Ramp down angle
+            theta = self.angleHandler.indexedPosition(0)
             motionTime, stabilizationTime = self.angleHandler.getMovementTime(
-                    prevAngle, 0)
-            table.addAction(curTime + motionTime, self.angleHandler, 0)
+                    prevAngle, theta)
+            table.addAction(curTime + motionTime, self.angleHandler, theta)
             finalWaitTime = max(finalWaitTime, motionTime + stabilizationTime)
         if self.phaseHandler is not None:
             # Ramp down phase
             table.addAction(curTime, self.phaseHandler, prevPhase)
             motionTime, stabilizationTime = self.phaseHandler.getMovementTime(
-                    prevAngle, 0)
+                    prevPhase, 0)
             table.addAction(curTime + motionTime, self.phaseHandler, 0)
             finalWaitTime = max(finalWaitTime, motionTime + stabilizationTime)
         if self.polarizerHandler is not None:
             # Return to idle voltage.
-            table.addAction(curTime, self.polarizerHandler, (None, 0))
+            pos = self.polarizerHandler.indexedPosition(0)
+            table.addAction(curTime, self.polarizerHandler, pos)
             finalWaitTime = finalWaitTime + decimal.Decimal(1e-6)
 
         return table
@@ -308,8 +311,13 @@ class SIExperiment(experiment.Experiment):
         # Set polarizer position
         if self.polarizerHandler is not None:
             pos = self.polarizerHandler.indexedPosition(angle, longestWavelength)
-
-            myrows = filter(lambda row: row[1] == self.polarizerHandler, table.actions)
+            ## Need to check last position to calculate move time. This
+            # is currently only tracked outside this function, so we need to inspect
+            # the table.
+            # FIXME maybe: are there better ways to do this? e.g.
+            # i)   track state in some attribute on Experiment
+            # ii)  pass state between to this function and back again;
+            # iii) have handlers track state as table is built.
             lastt, lastpos = table.getLastActionFor(self.polarizerHandler)
             if lastpos is None:
                 lastpos = 0
