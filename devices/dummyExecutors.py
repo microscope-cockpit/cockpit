@@ -49,6 +49,7 @@ class DummyExecutor(device.Device):
 class DummyDigitalExecutor(DummyExecutor):
     def __init__(self, name, config):
         device.Device.__init__(self, name, config)
+        self.dlines = 0
         self.deviceType = depot.EXECUTOR
 
     ## Generate an ExperimentExecutor handler.
@@ -56,11 +57,24 @@ class DummyDigitalExecutor(DummyExecutor):
         return [handlers.executor.DigitalExecutorHandler(
             "Dummy experiment executor", "executor",
             {'examineActions': self.examineActions,
-                'executeTable': self.executeTable,
-             'setDigital': self.setDigital})]
+             'executeTable': self.executeTable,
+             'setDigital': self.setDigital,
+             'readDigital': self.readDigital,
+             'writeDigital': self.writeDigital})]
 
     def setDigital(self, line, state):
-        print("Set line %s %s." % (line, ['low', 'high'][state]))
+        print("Set d-line %s %s." % (line, ['low', 'high'][state]))
+        if state:
+            self.dlines |= 1<<line
+        else:
+            self.dlines -= self.state & 1<<line
+
+    def readDigital(self):
+        return self.dlines
+
+    def writeDigital(self, state):
+        self.dlines = state
+
 
     ## Given an experiment.ActionTable instance, examine the actions and
     # make any necessary modifications.
@@ -68,11 +82,12 @@ class DummyDigitalExecutor(DummyExecutor):
         pass
 
 
-class DummyAnalogDigitalExecutor(DummyExecutor):
+class DummyAnalogDigitalExecutor(DummyDigitalExecutor):
     def __init__(self, name, config):
         device.Device.__init__(self, name, config)
         # Emulate for analogue lines.
         self.alines = [0]*4
+        self.dlines = 0
         self.deviceType = depot.EXECUTOR
 
     ## Generate an ExperimentExecutor handler.
@@ -82,11 +97,10 @@ class DummyAnalogDigitalExecutor(DummyExecutor):
             {'examineActions': self.examineActions,
              'executeTable': self.executeTable,
              'setDigital': self.setDigital,
+             'readDigital': self.readDigital,
+             'writeDigital': self.writeDigital,
              'setAnalog': self.setAnalog,
              'getAnalog': self.getAnalog,}),]
-
-    def setDigital(self, line, state):
-        print("Set d-line %s %s." % (line, ['low', 'high'][state]))
 
     def setAnalog(self, line, level):
         self.alines[line] = level
