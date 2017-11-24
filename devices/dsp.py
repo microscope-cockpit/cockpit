@@ -219,16 +219,23 @@ class DSPDevice(device.Device):
         #     self.handlerToDigitalLine[handler] = self.nameToDigitalLine[name]
         #     result.append(handler)
 
-        result.append(handlers.executor.AnalogDigitalExecutorHandler(
+        h = handlers.executor.AnalogDigitalExecutorHandler(
             "DSP", "executor",
             {'examineActions': lambda *args: None,
              'getNumRunnableLines': self.getNumRunnableLines,
-             'executeTable': self.executeTable})
-        )
+             'executeTable': self.executeTable,
+             'readDigital': self.connection.ReadDigital,
+             'writeDigital': self.connection.WriteDigital,
+             })
 
+        result.append(h)
+
+        # The takeImage behaviour is now on the handler. It might be better to
+        # have hybrid handlers with multiple inheritance, but that would need
+        # an overhaul of how depot determines handler types.
         result.append(handlers.imager.ImagerHandler(
             "DSP imager", "imager",
-            {'takeImage': self.takeImage}))
+            {'takeImage': h.takeImage}))
 
         self.handlers = set(result)
         return result
@@ -340,27 +347,6 @@ class DSPDevice(device.Device):
     # of the SLM.
     def getSLMStabilizationTime(self, name, prevPos, curPos):
         return (1, 30)
-
-    ## Take an image with the current light sources and active cameras.
-    @util.threads.locked
-    def takeImage(self):
-        cameraMask = 0
-        lightTimePairs = []
-        maxTime = 0
-        for handler, line in self.handlerToDigitalLine.iteritems():
-            if handler.name in self.activeLights:
-                maxTime = max(maxTime, handler.getExposureTime())
-                # The DSP card can only handle integer exposure times.
-                exposureTime = int(numpy.ceil(handler.getExposureTime()))
-                lightTimePairs.append((line, exposureTime))
-                maxTime = max(maxTime, exposureTime)
-        for name, line in self.nameToDigitalLine.iteritems():
-            if name in self.activeCameras:
-                cameraMask += line
-                handler = depot.getHandlerWithName(name)
-                handler.setExposureTime(maxTime)
-        self.connection.arcl(cameraMask, lightTimePairs)
-
 
     ## Prepare to run an experiment: cache our current piezo positions so
     # we can restore them afterwards. Set our remembered output values so we
