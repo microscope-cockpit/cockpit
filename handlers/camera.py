@@ -5,6 +5,7 @@ import gui
 import depot
 import deviceHandler
 import events
+import handlers.imager
 import interfaces.imager
 import util.colors
 
@@ -70,7 +71,12 @@ class CameraHandler(deviceHandler.DeviceHandler):
             trigHandler.registerDigital(self, trigLine)
             self.triggerNow = lambda: trigHandler.triggerDigital(self)
         else:
-            self.triggerNow = lambda: None
+            softTrigger = self.callbacks.get('softTrigger', None)
+            self.triggerNow = lambda: softTrigger
+            if softTrigger:
+                depot.addHandler(handlers.imager.ImagerHandler(
+                    "%s imager" % name, "imager",
+                    {'takeImage': softTrigger}))
 
 
     @property
