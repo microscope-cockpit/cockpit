@@ -172,6 +172,27 @@ class DeviceDepot:
         yield 'dummy-devices'
 
 
+    def addHandler(self, handler, device=None):
+        if handler.deviceType not in self.deviceTypeToHandlers:
+            self.deviceTypeToHandlers[handler.deviceType] = []
+        self.deviceTypeToHandlers[handler.deviceType].append(handler)
+        if handler.name in self.nameToHandler:
+            # We enforce unique names, but multiple devices may reference
+            # the same handler, e.g. where a device A is triggered by signals
+            # from device B, device B provides the handler that generates the
+            # signals, and device A will reference that handler.
+            otherHandler = self.nameToHandler[handler.name]
+            if handler is not otherHandler:
+                otherDevice = self.handlerToDevice[otherHandler]
+                raise RuntimeError("Multiple handlers with the same name [%s] from devices [%s] and [%s]" %
+                                   (handler.name, str(device), str(otherDevice)))
+        self.nameToHandler[handler.name] = handler
+        self.handlerToDevice[handler] = device
+        if handler.groupName not in self.groupNameToHandlers:
+            self.groupNameToHandlers[handler.groupName] = []
+        self.groupNameToHandlers[handler.groupName].append(handler)
+
+
     ## Initialize a Device.
     def initDevice(self, device):
         device.initialize()
@@ -184,24 +205,7 @@ class DeviceDepot:
         self.deviceToHandlers[device] = handlers
         self.handlersList.extend(handlers)
         for handler in handlers:
-            if handler.deviceType not in self.deviceTypeToHandlers:
-                self.deviceTypeToHandlers[handler.deviceType] = []
-            self.deviceTypeToHandlers[handler.deviceType].append(handler)
-            if handler.name in self.nameToHandler:
-                # We enforce unique names, but multiple devices may reference
-                # the same handler, e.g. where a device A is triggered by signals
-                # from device B, device B provides the handler that generates the
-                # signals, and device A will reference that handler.
-                otherHandler = self.nameToHandler[handler.name]
-                if handler is not otherHandler:
-                    otherDevice = self.handlerToDevice[otherHandler]
-                    raise RuntimeError("Multiple handlers with the same name [%s] from devices [%s] and [%s]" %
-                                       (handler.name, str(device), str(otherDevice)))
-            self.nameToHandler[handler.name] = handler
-            self.handlerToDevice[handler] = device
-            if handler.groupName not in self.groupNameToHandlers:
-                self.groupNameToHandlers[handler.groupName] = []
-            self.groupNameToHandlers[handler.groupName].append(handler)
+            self.addHandler(handler, device)
 
     ## Let each device publish any initial events it needs. It's assumed this
     # is called after all the handlers have set up their UIs, so that they can
@@ -311,6 +315,10 @@ def getActiveCameras():
             result.append(camera)
     return result
 
+
+## Add a handler
+def addHandler(handler, device=None):
+    return deviceDepot.addHandler(handler, device)
 
 ## Get a device by its name.
 def getDeviceWithName(name):
