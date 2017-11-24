@@ -58,7 +58,7 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
         raise Exception("Digital lines not supported.")
 
     def _raiseNoAnalogException(self, *args, **kwargs):
-        raise Exception("Analog lines not supported")
+        raise Exception("Analog lines not supported.")
 
     ## Run a portion of a table describing the actions to perform in a given
     # experiment.
