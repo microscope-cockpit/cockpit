@@ -3,6 +3,7 @@ import deviceHandler
 from handlers.genericPositioner import GenericPositionerHandler
 import operator
 import time
+import util
 
 ## This handler is responsible for executing portions of experiments.
 class ExecutorHandler(deviceHandler.DeviceHandler):
@@ -154,6 +155,7 @@ class DigitalMixin(object):
         final = (initial & ~mask) | state
         self.writeDigital( final )
 
+    @util.threads.callInNewThread
     def softSequence(self, seq):
         # Mask of the bits that we toggle
         mask = reduce(operator.ior, zip(*seq)[1])
