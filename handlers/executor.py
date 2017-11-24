@@ -83,6 +83,8 @@ class DigitalMixin(object):
         self.digitalClients[client] = int(line)
 
     def setDigital(self, line, state):
+        if not line:
+            return
         self.callbacks['setDigital'](line, state)
 
     def writeDigital(self, state):
@@ -143,6 +145,12 @@ class DigitalMixin(object):
         else:
             # No lights. Just trigger the cameras.
             seq = [(0, camlines)]
+        ambient = depot.getHandlerWithName('ambient')
+        # If ambient light is enabled, extend exposure if necessary.
+        if ambient.getIsEnabled():
+            t = ambient.getExposureTime()
+            if t > seq[-1][0]:
+                seq.append((ambient.getExposureTime(), 0))
         # Switch all lights and cameras off.
         seq.append( (seq[-1][0] + 1, 0) )
         if self.callbacks.get('runSequence', None):
