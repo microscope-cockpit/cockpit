@@ -15,7 +15,12 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
     #   from the specified index.
     # - executeTable(name, table, startIndex, stopIndex): Actually perform
     #   actions through the specified lines in the ActionTable.
-    def __init__(self, name, groupName, callbacks):
+    def __init__(self, name, groupName, callbacks, dlines=None, alines=None):
+        # \param name: handler name
+        # \param groupname: handler and device group name
+        # \param callbacks: callbacks, as above
+        # \param dlines: optional, number of digital lines
+        # \param alines: optional, number of analogue lines
         # Note that even though this device is directly involved in running
         # experiments, it is never itself a part of an experiment, so 
         # we pass False for isEligibleForExperiments here.
@@ -25,6 +30,9 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
         # getNumRunnableLines can be implemented here for all mixin combos.
         self.digitalClients = {}
         self.analogClients = {}
+        # Number of digital and analogue lines.
+        self._dlines = dlines
+        self._alines = alines
         if not isinstance(self, DigitalMixin):
             self.registerDigital = self._raiseNoDigitalException
             self.getDigital = self._raiseNoDigitalException
