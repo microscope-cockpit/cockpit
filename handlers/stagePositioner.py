@@ -147,3 +147,14 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     def cleanupAfterExperiment(self, isCleanupFinal = True):
         if self.isEligibleForExperiments:
             return self.callbacks['cleanupAfterExperiment'](self.axis, isCleanupFinal)
+
+    ## Register this handler with an analogue source.
+    def connectToAnalogSource(self, source, line, offset, gain):
+        h = source.registerAnalog(self, line, offset, gain)
+        # Movements are handled by the analogue handler.
+        self.callbacks['moveAbsolute'] = lambda x, pos: h.moveAbsolute(pos)
+        self.callbacks['moveRelative'] = lambda x, pos: h.moveRelative(pos)
+        # Sensorless devices will infer position from analogue output.
+        # Those with sensors should have already specified this callback.
+        if self.callbacks.get('getPosition') is None:
+            self.callbacks['getPosition'] = lambda x: h.getPosition()
