@@ -90,10 +90,19 @@ class DigitalMixin(object):
     def registerDigital(self, client, line):
         self.digitalClients[client] = int(line)
 
+    ## Set or clear a single line.
     def setDigital(self, line, state):
-        if not line:
+        if line is None:
             return
-        self.callbacks['setDigital'](line, state)
+        if self.callbacks.get('setDigital', None):
+            self.callbacks['setDigital'](line, state)
+        else:
+            oldstate = self.readDigital()
+            if state:
+                newstate = oldstate | 1<<line
+            else:
+                newstate = oldstate & (2**self._dlines - 1) - (1<<line)
+            self.writeDigital(newstate)
 
     def writeDigital(self, state):
         self.callbacks['writeDigital'](state)
