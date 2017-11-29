@@ -226,7 +226,8 @@ class DSPDevice(device.Device):
              'executeTable': self.executeTable,
              'readDigital': self.connection.ReadDigital,
              'writeDigital': self.connection.WriteDigital,
-             })
+             },
+            dlines=16, alines=4)
 
         result.append(h)
 
