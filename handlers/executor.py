@@ -4,6 +4,8 @@ from handlers.genericPositioner import GenericPositionerHandler
 import operator
 import time
 import util
+import gui
+import wx
 
 ## This handler is responsible for executing portions of experiments.
 class ExecutorHandler(deviceHandler.DeviceHandler):
@@ -81,6 +83,21 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
     def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
         return self.callbacks['executeTable'](self.name, table, startIndex, 
                 stopIndex, numReps, repDuration)
+
+    ## Debugging function: display ExecutorOutputWindow.
+    def showDebugWindow(self):
+        # Ensure only a single instance of the window.
+        global _windowInstance
+        window = globals().get('_windowInstance')
+        if window:
+            try:
+                window.Raise()
+                return None
+            except:
+                pass
+        # If we get this far, we need to create a new window.
+        _windowInstance = ExecutorDebugWindow(self, parent=wx.GetApp().GetTopWindow())
+        _windowInstance.Show()
 
 
 class DigitalMixin(object):
@@ -267,3 +284,50 @@ class AnalogExecutorHandler(AnalogMixin, ExecutorHandler):
 
 class AnalogDigitalExecutorHandler(AnalogMixin, DigitalMixin, ExecutorHandler):
     pass
+
+
+## This debugging window allows manipulation of analogue and digital lines.
+class ExecutorDebugWindow(wx.Frame):
+    def __init__(self, handler, parent, *args, **kwargs):
+        wx.Frame.__init__(self, parent, *args, **kwargs)
+        ## Executor instance.
+        #self.handler = handler
+        # Contains all widgets.
+        panel = wx.Panel(self)
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
+        buttonSizer = wx.GridSizer(2, 8, 1, 1)
+
+        ## Maps buttons to their lines.
+        self.buttonToLine = {}
+
+        if handler._dlines is not None:
+            # Set up the digital lineout buttons.
+            for line in xrange(handler._dlines):
+                clients = [k.name for k,v in handler.digitalClients.items() if v==line]
+                if clients:
+                    label = '\n'.join(clients)
+                else:
+                    label = str(line)
+                button = gui.toggleButton.ToggleButton(
+                    parent=panel, label=label,
+                    activateAction=lambda l=line: handler.setDigital(l, True),
+                    deactivateAction=lambda l=line: handler.setDigital(l, False),
+                    size=(140, 80)
+                )
+                buttonSizer.Add(button, 1, wx.EXPAND)
+            mainSizer.Add(buttonSizer)
+
+        #
+        # # Set up the analog voltage inputs.
+        # voltageSizer = wx.BoxSizer(wx.HORIZONTAL)
+        # for axis in xrange(4):
+        #     voltageSizer.Add(wx.StaticText(panel, -1, "Voltage %d:" % axis))
+        #     control = wx.TextCtrl(panel, -1, size=(60, -1),
+        #                           style=wx.TE_PROCESS_ENTER)
+        #     control.Bind(wx.EVT_TEXT_ENTER,
+        #                  lambda event, axis=axis, control=control: self.setVoltage(axis, control))
+        #     voltageSizer.Add(control, 0, wx.RIGHT, 20)
+        # mainSizer.Add(voltageSizer)
+
+        panel.SetSizerAndFit(mainSizer)
+        self.SetClientSize(panel.GetSize())
