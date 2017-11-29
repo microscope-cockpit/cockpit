@@ -60,7 +60,8 @@ class DummyDigitalExecutor(DummyExecutor):
              'executeTable': self.executeTable,
              'setDigital': self.setDigital,
              'readDigital': self.readDigital,
-             'writeDigital': self.writeDigital})]
+             'writeDigital': self.writeDigital},
+            dlines=16)]
 
     def setDigital(self, line, state):
         print("Set d-line %s %s." % (line, ['low', 'high'][state]))
@@ -100,7 +101,8 @@ class DummyAnalogDigitalExecutor(DummyDigitalExecutor):
              'readDigital': self.readDigital,
              'writeDigital': self.writeDigital,
              'setAnalog': self.setAnalog,
-             'getAnalog': self.getAnalog,}),]
+             'getAnalog': self.getAnalog,},
+            dlines=16, alines=len(self.alines))]
 
     def setAnalog(self, line, level):
         self.alines[line] = level
