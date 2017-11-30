@@ -2,10 +2,8 @@ import wx
 
 import depot
 import deviceHandler
-
-import gui.guiUtils
-import gui.toggleButton
-
+import events
+import time
 
 ## This handler is for stage positioner devices.
 class PositionerHandler(deviceHandler.DeviceHandler):
@@ -151,9 +149,19 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     ## Register this handler with an analogue source.
     def connectToAnalogSource(self, source, line, offset, gain):
         h = source.registerAnalog(self, line, offset, gain)
-        # Movements are handled by the analogue handler.
-        self.callbacks['moveAbsolute'] = lambda x, pos: h.moveAbsolute(pos)
-        self.callbacks['moveRelative'] = lambda x, pos: h.moveRelative(pos)
+        # Movements are handled by the analogue handler, but need to wrap to
+        # publish postion update and stage stop events.
+        def wrapMoveFunc(f):
+            def call(x, arg):
+                f(arg)
+                time.sleep(self.getMovementTime(0, arg))
+                events.publish('stage mover', self.name, x, self.getPosition())
+                events.publish('stage stopped', self.name)
+            return call
+
+        self.callbacks['moveAbsolute'] = wrapMoveFunc(h.moveAbsolute)
+        self.callbacks['moveRelative'] = wrapMoveFunc(h.moveRelative)
+
         # Sensorless devices will infer position from analogue output.
         # Those with sensors should have already specified this callback.
         if self.callbacks.get('getPosition') is None:
