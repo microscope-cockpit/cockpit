@@ -386,6 +386,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 bucketIndex = int((altitude - self.minY) / ALTITUDE_BUCKET_SIZE)
                 if bucketIndex < len(self.altitudeBuckets):
                     count = self.altitudeBuckets[bucketIndex]
+                else:
+                    continue
                 width = int(float(count) / histogram.maxBucketSize * histogram.width)
                 drawAltitude = histogram.scale(altitude)
                 self.scaledVertex(histogram.xOffset, drawAltitude)
