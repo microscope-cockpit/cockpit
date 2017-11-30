@@ -219,12 +219,11 @@ class AnalogMixin(object):
     def registerAnalog(self, client, line, offset=0, gain=1, movementTimeFunc=None):
         ## Register a client device that is connected to one of our lines.
         # Returns an AnalogLineHandler for that line.
-        h = AnalogLineHandler(
-            client.name, self.name + ' analogs',
-            {'moveAbsolute': lambda pos: self.setClientPosition(h, pos),
-             'getPosition': lambda: self.getClientPosition(h),
-             'getMovementTime': movementTimeFunc,})
-        self.analogClients[h] = (int(line), float(offset), float(gain))
+        self.analogClients[client] = (int(line), float(offset), float(gain))
+        callbacks = {'moveAbsolute': lambda pos: self.setClientPosition(client, pos),
+                     'getPosition': lambda: self.getClientPosition(client),
+                     'getMovementTime': movementTimeFunc,}
+        h = AnalogLineHandler(client.name, self.name + ' analogs', callbacks)
         return h
 
     def setAnalogLine(self, line, level):
