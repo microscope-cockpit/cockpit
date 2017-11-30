@@ -1,9 +1,10 @@
-
 ## This serves as the base class for any Device subclass. Devices are as close
 # as MUI gets to speaking directly to hardware. Device implementation is 
 # largely left up to the client; this class simply provides a framework of 
 # stub functions that must be implemented. 
 class Device(object):
+    _config_types = {}
+
     def __init__(self, name='', config={}):
         ## Set to False to disable this device. Disabled devices will not be 
         # initialized on startup. 
@@ -19,6 +20,11 @@ class Device(object):
         uri = config.get('uri', False)
         if uri:
             self.uri = uri
+        # Convert config strings to types specified on device class.
+        for k, t in self._config_types.items():
+            if k in self.config:
+                self.config[k] = t(self.config[k])
+
 
     ## Perform any necessary initialization (e.g. connecting to hardware).
     def initialize(self):
