@@ -289,10 +289,8 @@ class AnalogDigitalExecutorHandler(AnalogMixin, DigitalMixin, ExecutorHandler):
 ## This debugging window allows manipulation of analogue and digital lines.
 class ExecutorDebugWindow(wx.Frame):
     def __init__(self, handler, parent, *args, **kwargs):
-        wx.Frame.__init__(self, parent, *args, **kwargs)
-        ## Executor instance.
-        #self.handler = handler
-        # Contains all widgets.
+        title = handler.name + " Executor control lines"
+        wx.Frame.__init__(self, parent, title=title, *args, **kwargs)
         panel = wx.Panel(self)
         mainSizer = wx.BoxSizer(wx.VERTICAL)
         buttonSizer = wx.GridSizer(2, 8, 1, 1)
@@ -301,7 +299,7 @@ class ExecutorDebugWindow(wx.Frame):
         self.buttonToLine = {}
 
         if handler._dlines is not None:
-            # Set up the digital lineout buttons.
+            # Digital controls
             for line in xrange(handler._dlines):
                 clients = [k.name for k,v in handler.digitalClients.items() if v==line]
                 if clients:
@@ -310,24 +308,27 @@ class ExecutorDebugWindow(wx.Frame):
                     label = str(line)
                 button = gui.toggleButton.ToggleButton(
                     parent=panel, label=label,
-                    activateAction=lambda l=line: handler.setDigital(l, True),
-                    deactivateAction=lambda l=line: handler.setDigital(l, False),
+                    activateAction=lambda line=line: handler.setDigital(line, True),
+                    deactivateAction=lambda line=line: handler.setDigital(line, False),
                     size=(140, 80)
                 )
                 buttonSizer.Add(button, 1, wx.EXPAND)
             mainSizer.Add(buttonSizer)
 
-        #
-        # # Set up the analog voltage inputs.
-        # voltageSizer = wx.BoxSizer(wx.HORIZONTAL)
-        # for axis in xrange(4):
-        #     voltageSizer.Add(wx.StaticText(panel, -1, "Voltage %d:" % axis))
-        #     control = wx.TextCtrl(panel, -1, size=(60, -1),
-        #                           style=wx.TE_PROCESS_ENTER)
-        #     control.Bind(wx.EVT_TEXT_ENTER,
-        #                  lambda event, axis=axis, control=control: self.setVoltage(axis, control))
-        #     voltageSizer.Add(control, 0, wx.RIGHT, 20)
-        # mainSizer.Add(voltageSizer)
+            # Analog controls
+            # These controls deal with hardware units, i.e. probably ADUs.
+            anaSizer = wx.BoxSizer(wx.HORIZONTAL)
+            for line in xrange(handler._alines):
+                anaSizer.Add(wx.StaticText(panel, -1, "output %d:" % line))
+                control = wx.TextCtrl(panel, -1, size=(60, -1),
+                                      style=wx.TE_PROCESS_ENTER)
+                control.Bind(wx.EVT_TEXT_ENTER,
+                             lambda evt, line=line, ctrl=control:
+                                handler.setAnalogLine(line, float(ctrl.GetValue()) ))
+                                # If dealing with ADUs, float should perhaps be int,
+                                # but rely on device to set correct type.
+                anaSizer.Add(control, 0, wx.RIGHT, 20)
+            mainSizer.Add(anaSizer)
 
         panel.SetSizerAndFit(mainSizer)
         self.SetClientSize(panel.GetSize())
