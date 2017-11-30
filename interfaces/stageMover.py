@@ -12,6 +12,12 @@ from collections import namedtuple
 #TODO:  This should be defined in only one place, either here,
 # in the stage code, or in a config file.
 STAGE_MIN_MOVEMENT = 0.3
+# Map possible axis identifiers to canonical integer identifiers.
+AXIS_MAP = {}
+AXIS_MAP.update({k:0 for k in '0xX'})
+AXIS_MAP.update({k:1 for k in '1yY'})
+AXIS_MAP.update({k:2 for k in '2zZ'})
+AXIS_MAP.update({k:k for k in [0,1,2]})
 
 ## This module handles general stage motion: "go to this position", "move by
 # this delta", "remember this position", "go to this remembered position",
