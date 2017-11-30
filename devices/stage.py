@@ -18,21 +18,14 @@ limitations under the License.
 """
 
 import device
-from config import config
 from interfaces.stageMover import Primitive
 import re
-import wx
 
 class StageDevice(device.Device):
     """StageDevice sublcasses Device with additions appropriate to any stage."""
-        
-    # CONFIG_NAME must be set as class variable when subclassed.
-    CONFIG_NAME = None
-    
-
-    def __init__(self):
+    def __init__(self, name, config):
         """Initialise StageDevice."""
-        super(StageDevice, self).__init__()
+        super(StageDevice, self).__init__(name, config)
         # A list of primitives to draw on the macrostage display.
         self.primitives = None
     
@@ -50,17 +43,11 @@ class StageDevice(device.Device):
         The primitive identifier may be in quotes, and values may be separated
         by any combination of spaces, commas and semicolons.
         """
-        
-        if self.CONFIG_NAME is None:
-            # CONFIG_NAME was never set by the subclass.
-            raise Exception('CONFIG_NAME not set when sublcassed.')
-
-
         if self.primitives is None:
             # Primitives not yet read from config.
             self.primitives = []
-            if config.has_option(self.CONFIG_NAME, 'primitives'):
-                primitives = config.get(self.CONFIG_NAME, 'primitives').split('\n')
+            if config.get('primitives'):
+                primitives = config.get('primitives').split('\n')
                 for pstr in primitives:
                     p = re.split('[ |,|;]*', re.sub("['|\"]", '', pstr))
                     pType = p[0]
