@@ -18,7 +18,9 @@ limitations under the License.
 """
 
 import device
-from interfaces.stageMover import Primitive
+from interfaces.stageMover import Primitive, AXIS_MAP
+from handlers import stagePositioner
+import depot
 import re
 
 class StageDevice(device.Device):
@@ -55,3 +57,70 @@ class StageDevice(device.Device):
                     self.primitives.append(Primitive(self, pType, pData))
 
         return self.primitives
+
+
+class SimplePiezo(StageDevice):
+    _config_types = {
+        'range': int,
+        'min':   int,
+        'max':   int,
+        'stepmin': int
+    }
+
+    def __init__(self, name, config):
+        super(SimplePiezo, self).__init__(name, config)
+
+    def setSafety(self, *args, **kwargs):
+        pass
+
+    def getHandlers(self):
+        asource = self.config.get('analogsource', None)
+        aline = self.config.get('analogline', None)
+        aHandler = depot.getHandler(asource, depot.EXECUTOR)
+        if aHandler is None:
+            raise Exception('No control source.')
+        axis = AXIS_MAP[self.config.get('axis', 2)]
+        offset = self.config.get('offset', 0)
+        gain = self.config.get('gain', 1)
+        posMin = self.config.get('min', None)
+        posMax = self.config.get('max', None)
+        posRange = self.config.get('range', None)
+        haveMin, haveMax, haveRange = [v is not None for v in [posMin, posMax, posRange]]
+        if haveMin and haveMax:
+            pass
+        elif (haveMin, haveMax, haveRange) == (True, False, True):
+            posMax = posMin + posRange
+        elif (haveMin, haveMax, haveRange) == (False, True, True):
+            posMin = posMax - posRange
+        elif (haveMin, haveMax, haveRange) == (False, False, True):
+            # Assume range starts from zero.
+            posMin = 0
+            posMax = posRange
+        else:
+            raise Exception('No min, max or range specified for stage %s.' % self.name)
+
+        # TODO - consider moving stepSizes creation to the handler.
+        stepSizes = [self.config.get('minstep', (posMax - posMin) * 1e-5)]
+        m = 5
+        while True:
+            next = m * stepSizes[-1]
+            if next > (posMax - posMin) / 10.:
+                break
+            stepSizes.append(next)
+            m = [2, 5][m == 2]
+
+        result = []
+        # Create handler without movement callbacks.
+        handler = stagePositioner.PositionerHandler(
+            "%d %s" % (axis, self.name), "%d stage motion" % axis, True,
+            {'getMovementTime': lambda x, start, delta: 0.1,
+             'cleanupAfterExperiment': lambda: None,
+             'setSafety': self.setSafety},
+            axis, stepSizes, min(4, len(stepSizes)),
+            (posMin, posMax), (posMin, posMax))
+
+        # Connect handler to analogue source to populate movement callbacks.
+        handler.connectToAnalogSource(aHandler, aline, offset, gain)
+
+        result.append(handler)
+        return result
