@@ -144,7 +144,9 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     ## Do any necessary cleanup now that the experiment is over.
     def cleanupAfterExperiment(self, isCleanupFinal = True):
         if self.isEligibleForExperiments:
-            return self.callbacks['cleanupAfterExperiment'](self.axis, isCleanupFinal)
+            cb = self.callbacks.get('cleanupAfterExperiment', None)
+            if cb is not None:
+                return cb(self.axis, isCleanupFinal)
 
     ## Register this handler with an analogue source.
     def connectToAnalogSource(self, source, line, offset, gain):
