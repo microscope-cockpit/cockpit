@@ -17,6 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from decimal import Decimal
 import device
 from interfaces.stageMover import Primitive, AXIS_MAP
 from handlers import stagePositioner
@@ -115,7 +116,7 @@ class SimplePiezo(StageDevice):
         # Create handler without movement callbacks.
         handler = stagePositioner.PositionerHandler(
             "%d %s" % (axis, self.name), "%d stage motion" % axis, True,
-            {'getMovementTime': lambda x, start, delta: 0.1,
+            {'getMovementTime': lambda x, start, delta: (Decimal(0.05), Decimal(0.05)) ,
              'cleanupAfterExperiment': lambda: None,
              'setSafety': self.setSafety},
             axis, stepSizes, min(4, len(stepSizes)),
