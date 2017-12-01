@@ -64,7 +64,9 @@ class SimplePiezo(StageDevice):
         'range': int,
         'min':   int,
         'max':   int,
-        'stepmin': int
+        'stepmin': int,
+        'offset': float,
+        'gain': float,
     }
 
     def __init__(self, name, config):
