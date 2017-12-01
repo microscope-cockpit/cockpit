@@ -99,6 +99,21 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
         _windowInstance = ExecutorDebugWindow(self, parent=wx.GetApp().GetTopWindow())
         _windowInstance.Show()
 
+    def onPrepareForExperiment(self):
+        # This smells sketchy, but does exactly what we need: run
+        # the method on all mixins contributing to a hybrid class.
+        # Could do achieve the same by having mixins append to a list
+        # of actions to call on certain events.
+        for c in self.__class__.__mro__[1:]:
+            if hasattr(c, '_onPrepareForExperiment'):
+                c._onPrepareForExperiment(self)
+
+    def cleanupAfterExperiment(self, isCleanupFinal=True):
+        # See comments in onPrepareForExperiment
+        for c in self.__class__.__mro__[1:]:
+            if hasattr(c, '_cleanupAfterExperiment'):
+                c._cleanupAfterExperiment(self, isCleanupFinal)
+
 
 class DigitalMixin(object):
     ## Digital handler mixin.
@@ -234,6 +249,14 @@ class AnalogMixin(object):
         ## Get level of analog line.
         return self.callbacks['getAnalog'](line)
 
+    def _onPrepareForExperiment(self):
+        for client in self.analogClients:
+            self.analogClients[client].savePosition()
+
+    def _cleanupAfterExperiment(self, isCleanupFinal=True):
+        if isCleanupFinal:
+            for client in self.analogClients:
+                self.analogClients[client].restorePosition()
 
     # def setClientPosition(self, client, value):
     #     ## Scale a client position to an analog level and set that level.
@@ -271,6 +294,7 @@ class AnalogLineHandler(GenericPositionerHandler):
 
     def restorePosition(self):
         self.moveAbsolute(self._savedPos)
+
     def moveRelative(self, delta):
         self.callbacks['moveAbsolute'](self.callbacks['getPosition']() + delta)
 
