@@ -219,11 +219,11 @@ class AnalogMixin(object):
     def registerAnalog(self, client, line, offset=0, gain=1, movementTimeFunc=None):
         ## Register a client device that is connected to one of our lines.
         # Returns an AnalogLineHandler for that line.
-        self.analogClients[client] = (int(line), float(offset), float(gain))
-        callbacks = {'moveAbsolute': lambda pos: self.setClientPosition(client, pos),
-                     'getPosition': lambda: self.getClientPosition(client),
-                     'getMovementTime': movementTimeFunc,}
-        h = AnalogLineHandler(client.name, self.name + ' analogs', callbacks)
+        getter = lambda line=line: self.getAnalogLine(int(line))
+        setter = lambda level, line=line: self.setAnalogLine(int(line), level)
+        h = AnalogLineHandler(client.name, self.name + ' analogs',
+                              getter, setter, offset, gain, movementTimeFunc)
+        self.analogClients[client] = h
         return h
 
     def setAnalogLine(self, line, level):
@@ -234,27 +234,43 @@ class AnalogMixin(object):
         ## Get level of analog line.
         return self.callbacks['getAnalog'](line)
 
-    def setClientPosition(self, client, value):
-        ## Scale a client position to an analog level and set that level.
-        line, offset, gain = self.analogClients[client]
-        self.callbacks['setAnalog'](line, gain * (offset + value))
 
-    def getClientPosition(self, client):
-        ## Fetch level for a client, and scale to a client position.
-        line, offset, gain = self.analogClients[client]
-        raw = self.callbacks['getAnalog'](line)
-        return (raw / gain) - offset
+    # def setClientPosition(self, client, value):
+    #     ## Scale a client position to an analog level and set that level.
+    #     line, offset, gain = self.analogClients[client]
+    #     self.callbacks['setAnalog'](line, gain * (offset + value))
+    #
+    # def getClientPosition(self, client):
+    #     ## Fetch level for a client, and scale to a client position.
+    #     line, offset, gain = self.analogClients[client]
+    #     raw = self.callbacks['getAnalog'](line)
+    #     return (raw / gain) - offset
 
 
 class AnalogLineHandler(GenericPositionerHandler):
     ## A type of GenericPositioner for analog outputs.
-    def __init__(self, name, groupName, callbacks):
-        self.callbacks = callbacks
+    def __init__(self, name, groupName, getter, setter, offset, gain, movementTimeFunc):
         # Indexed positions. Can be a dict if wavelength-independent, or
         # a mapping of wavelengths (as floats or ints) to lists of same length.
         self.positions = []
+        # Scaling parameters
+        self.gain = gain
+        self.offset = offset
+        # Saved position
+        self._savedPos = None
+        # Set up callbacks used by GenericPositionHandler methods.
+        self.callbacks = {}
+        self.callbacks['moveAbsolute'] = lambda pos: setter(self.gain * (self.offset + pos))
+        self.callbacks['getPosition'] = lambda: (getter() / self.gain) - self.offset
+        self.callbacks['getMovementTime'] = movementTimeFunc
         deviceHandler.DeviceHandler.__init__(self, name, groupName, True,
                                              self.callbacks, depot.GENERIC_POSITIONER)
+
+    def savePosition(self):
+        self._savedPos = self.getPosition()
+
+    def restorePosition(self):
+        self.moveAbsolute(self._savedPos)
     def moveRelative(self, delta):
         self.callbacks['moveAbsolute'](self.callbacks['getPosition']() + delta)
 
