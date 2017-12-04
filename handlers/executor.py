@@ -104,7 +104,7 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
         _windowInstance = ExecutorDebugWindow(self, parent=wx.GetApp().GetTopWindow())
         _windowInstance.Show()
 
-    def onPrepareForExperiment(self):
+    def onPrepareForExperiment(self, experiment):
         # This smells sketchy, but does exactly what we need: run
         # the method on all mixins contributing to a hybrid class.
         # Could do achieve the same by having mixins append to a list
