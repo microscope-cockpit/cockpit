@@ -86,7 +86,36 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
     # \param repDuration Amount of time to wait between reps, or None for no
     #        wait time. 
     def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
-        return self.callbacks['executeTable'](self.name, table, startIndex, 
+        # The actions between startIndex and stopIndex may include actions for
+        # this handler, or for this handler's clients. All actions are
+        # ultimately carried out by this handler, so we need to parse the
+        # table to replace client actions, resulting in a table of
+        # (time, (analogStage, digitalState)).
+        if isinstance(self, DigitalMixin):
+            dstate = self.readDigital()
+        else:
+            dstate = None
+        if isinstance(self, AnalogMixin):
+            astate = [self.getAnalogLine(line) for line in range(self._alines)]
+        else:
+            astate = None
+        for i in range(startIndex, stopIndex):
+            t, h, args = table[i]
+            if h in self.analogClients:
+                # update analog state
+                astate[self.analogClients[h].line] = args
+            elif h in self.digitalClients:
+                # set/clear appropriate bit
+                change = 1 << self.digitalClients[h]
+                if change:
+                    dstate |= change
+                else:
+                    dstate & (2**self._dlines - 1) - (change)
+            table[i] = (t, self, (dstate, astate))
+
+        events.publish('update status light', 'device waiting',
+                       'Waiting for\n%s to finish' % self.name, (255, 255, 0))
+        return self.callbacks['executeTable'](self.name, table, startIndex,
                 stopIndex, numReps, repDuration)
 
     ## Debugging function: display ExecutorOutputWindow.
