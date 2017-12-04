@@ -317,8 +317,8 @@ class AnalogLineHandler(GenericPositionerHandler):
         self._savedPos = None
         # Set up callbacks used by GenericPositionHandler methods.
         self.callbacks = {}
-        self.callbacks['moveAbsolute'] = lambda pos: asource.setAnalogLine(line, self.gain * (self.offset + pos))
-        self.callbacks['getPosition'] = lambda: (asource.getAnalogLine(line) / self.gain) - self.offset
+        self.callbacks['moveAbsolute'] = lambda pos: asource.setAnalogLine(line, self.posToNative(pos))
+        self.callbacks['getPosition'] = lambda: self.nativeToPos(asource.getAnalogLine(line))
         self.callbacks['getMovementTime'] = movementTimeFunc
         deviceHandler.DeviceHandler.__init__(self, name, groupName, True,
                                              self.callbacks, depot.GENERIC_POSITIONER)
@@ -331,6 +331,12 @@ class AnalogLineHandler(GenericPositionerHandler):
 
     def moveRelative(self, delta):
         self.callbacks['moveAbsolute'](self.callbacks['getPosition']() + delta)
+
+    def posToNative(self, pos):
+        return self.gain * (self.offset + pos)
+
+    def nativeToPos(self, native):
+        return (native / self.gain) - self.offset
 
     def indexedPosition(self, index, wavelength=None):
         pos = None
