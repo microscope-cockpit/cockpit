@@ -1,5 +1,6 @@
 import depot
 import deviceHandler
+import events
 from handlers.genericPositioner import GenericPositionerHandler
 import operator
 import time
@@ -29,7 +30,9 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
         deviceHandler.DeviceHandler.__init__(self, name, groupName, False,
                 callbacks, depot.EXECUTOR)
         # Base class contains empty dicts used by mixins so that methods like
-        # getNumRunnableLines can be implemented here for all mixin combos.
+        # getNumRunnableLines can be implemented here for all mixin combos. This
+        # works just great, but is probably a horrible abuse of OOP. It might be
+        # cleaner to have a single list of clients.
         self.digitalClients = {}
         self.analogClients = {}
         # Number of digital and analogue lines.
@@ -48,6 +51,8 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
             self.getAnalog = self._raiseNoAnalogException
             self.setAnalogClient = self._raiseNoAnalogException
             self.getAnalogClient = self._raiseNoAnalogException
+        events.subscribe('prepare for experiment', self.onPrepareForExperiment)
+        events.subscribe('cleanup after experiment', self.cleanupAfterExperiment)
 
     def examineActions(self, table):
         return self.callbacks['examineActions'](self.name, table)
