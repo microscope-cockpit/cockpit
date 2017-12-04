@@ -117,7 +117,7 @@ class SimplePiezo(StageDevice):
         handler = stagePositioner.PositionerHandler(
             "%d %s" % (axis, self.name), "%d stage motion" % axis, True,
             {'getMovementTime': lambda x, start, delta: (Decimal(0.05), Decimal(0.05)) ,
-             'cleanupAfterExperiment': lambda: None,
+             'cleanupAfterExperiment': None,
              'setSafety': self.setSafety},
             axis, stepSizes, min(4, len(stepSizes)),
             (posMin, posMax), (posMin, posMax))
