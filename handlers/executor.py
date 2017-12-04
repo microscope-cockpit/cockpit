@@ -239,10 +239,8 @@ class AnalogMixin(object):
     def registerAnalog(self, client, line, offset=0, gain=1, movementTimeFunc=None):
         ## Register a client device that is connected to one of our lines.
         # Returns an AnalogLineHandler for that line.
-        getter = lambda line=line: self.getAnalogLine(int(line))
-        setter = lambda level, line=line: self.setAnalogLine(int(line), level)
         h = AnalogLineHandler(client.name, self.name + ' analogs',
-                              getter, setter, offset, gain, movementTimeFunc)
+                              self, int(line), offset, gain, movementTimeFunc)
         self.analogClients[client] = h
         return h
 
@@ -277,19 +275,21 @@ class AnalogMixin(object):
 
 class AnalogLineHandler(GenericPositionerHandler):
     ## A type of GenericPositioner for analog outputs.
-    def __init__(self, name, groupName, getter, setter, offset, gain, movementTimeFunc):
+    def __init__(self, name, groupName, asource, line, offset, gain, movementTimeFunc):
         # Indexed positions. Can be a dict if wavelength-independent, or
         # a mapping of wavelengths (as floats or ints) to lists of same length.
         self.positions = []
         # Scaling parameters
         self.gain = gain
         self.offset = offset
+        # Line, required when executing table.
+        self.line = line
         # Saved position
         self._savedPos = None
         # Set up callbacks used by GenericPositionHandler methods.
         self.callbacks = {}
-        self.callbacks['moveAbsolute'] = lambda pos: setter(self.gain * (self.offset + pos))
-        self.callbacks['getPosition'] = lambda: (getter() / self.gain) - self.offset
+        self.callbacks['moveAbsolute'] = lambda pos: asource.setAnalogLine(line, self.gain * (self.offset + pos))
+        self.callbacks['getPosition'] = lambda: (asource.getAnalogLine(line) / self.gain) - self.offset
         self.callbacks['getMovementTime'] = movementTimeFunc
         deviceHandler.DeviceHandler.__init__(self, name, groupName, True,
                                              self.callbacks, depot.GENERIC_POSITIONER)
