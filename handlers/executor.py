@@ -104,10 +104,11 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
             elif h in self.digitalClients:
                 # set/clear appropriate bit
                 change = 1 << self.digitalClients[h]
-                if change:
+                # args contains new bit state
+                if args:
                     dstate |= change
                 else:
-                    dstate & (2**self._dlines - 1) - (change)
+                    dstate = dstate & (2**self._dlines - 1) - (change)
             table[i] = (t, self, (dstate, astate))
 
         events.publish('update status light', 'device waiting',
