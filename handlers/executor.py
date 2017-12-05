@@ -96,11 +96,14 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
             astate = [self.getAnalogLine(line) for line in range(self._alines)]
         else:
             astate = None
+
+        actions = []
         for i in range(startIndex, stopIndex):
             t, h, args = table[i]
             if h in self.analogClients:
                 # update analog state
-                astate[self.analogClients[h].line] = args
+                lineHandler = self.analogClients[h]
+                astate[lineHandler.line] = lineHandler.posToNative(args)
             elif h in self.digitalClients:
                 # set/clear appropriate bit
                 change = 1 << self.digitalClients[h]
@@ -109,13 +112,13 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
                     dstate |= change
                 else:
                     dstate = dstate & (2**self._dlines - 1) - (change)
-            table[i] = (t, self, (dstate, astate))
+            actions.append((t, self, (dstate, astate[:])))
 
         events.publish('update status light', 'device waiting',
                        'Waiting for\n%s to finish' % self.name, (255, 255, 0))
 
-        return self.callbacks['executeTable'](self.name, table, startIndex,
-                stopIndex, numReps, repDuration)
+        return self.callbacks['executeTable'](self.name, actions, 0,
+                len(actions), numReps, repDuration)
 
     ## Debugging function: display ExecutorOutputWindow.
     def showDebugWindow(self):
