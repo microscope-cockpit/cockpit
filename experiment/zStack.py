@@ -24,7 +24,7 @@ class ZStackExperiment(experiment.Experiment):
         for zIndex in xrange(numZSlices):
             # Move to the next position, then wait for the stage to 
             # stabilize.
-            targetAltitude = self.sliceHeight * zIndex
+            targetAltitude = self.initialZPos + self.sliceHeight * zIndex
             motionTime, stabilizationTime = 0, 0
             if prevAltitude is not None:
                 motionTime, stabilizationTime = self.zPositioner.getMovementTime(prevAltitude, targetAltitude)
@@ -46,7 +46,7 @@ class ZStackExperiment(experiment.Experiment):
         motionTime, stabilizationTime = self.zPositioner.getMovementTime(
                 self.zHeight, 0)
         curTime += motionTime
-        table.addAction(curTime, self.zPositioner, 0)
+        table.addAction(curTime, self.zPositioner, self.initialZPos)
         # Hold flat for the stabilization time, and any time needed for
         # the cameras to be ready. Only needed if we're doing multiple
         # reps, so we can proceed immediately to the next one.
@@ -57,7 +57,7 @@ class ZStackExperiment(experiment.Experiment):
                     cameraReadyTime = max(cameraReadyTime,
                             self.getTimeWhenCameraCanExpose(table, camera))
         table.addAction(max(curTime + stabilizationTime, cameraReadyTime),
-                self.zPositioner, 0)
+                self.zPositioner, self.initialZPos)
 
         return table
 

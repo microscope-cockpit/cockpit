@@ -157,7 +157,7 @@ class SIExperiment(experiment.Experiment):
                     angle = vals[ordering.index(0)]
                     phase = vals[ordering.index(1)]
                     z = vals[ordering.index(2)]
-                    yield (angle, phase, z * self.sliceHeight)
+                    yield (angle, phase, self.initialZPos + z * self.sliceHeight)
 
 
     ## Create the ActionTable needed to run the experiment. We do three
@@ -178,7 +178,7 @@ class SIExperiment(experiment.Experiment):
         if self.phaseHandler is not None:
             table.addAction(curTime, self.phaseHandler, 0)
             curTime += decimal.Decimal('1e-6')
-        table.addAction(curTime, self.zPositioner, 0)
+        table.addAction(curTime, self.zPositioner, self.initialZPos)
         curTime += decimal.Decimal('1e-6')
 
         if self.slmHandler is not None:
@@ -253,12 +253,12 @@ class SIExperiment(experiment.Experiment):
         # to 0 to prep for the next experiment.
         table.addAction(curTime, self.zPositioner, prevZ)
         motionTime, stabilizationTime = self.zPositioner.getMovementTime(
-                self.zHeight, 0)
-        table.addAction(curTime + motionTime, self.zPositioner, 0)
+                self.zHeight, self.initialZPos)
+        table.addAction(curTime + motionTime, self.zPositioner, self.initialZPos)
         finalWaitTime = motionTime + stabilizationTime
 
         # Ramp down Z
-        table.addAction(curTime + finalWaitTime, self.zPositioner, 0)
+        table.addAction(curTime + finalWaitTime, self.zPositioner, self.initialZPos)
 
         if self.angleHandler is not None:
             # Ramp down angle
