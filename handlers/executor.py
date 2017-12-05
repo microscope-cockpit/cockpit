@@ -12,10 +12,7 @@ import wx
 class ExecutorHandler(deviceHandler.DeviceHandler):
     ## callbacks must include the following:
     # - examineActions(name, table): Perform any necessary validation or
-    #   modification of the experiment's ActionTable. 
-    # - getNumRunnableLines(name, table, index): Given an input ActionTable, 
-    #   return the number of lines in the table that we can implement, starting
-    #   from the specified index.
+    #   modification of the experiment's ActionTable.
     # - executeTable(name, table, startIndex, stopIndex): Actually perform
     #   actions through the specified lines in the ActionTable.
     def __init__(self, name, groupName, callbacks, dlines=None, alines=None):
@@ -115,6 +112,7 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
 
         events.publish('update status light', 'device waiting',
                        'Waiting for\n%s to finish' % self.name, (255, 255, 0))
+
         return self.callbacks['executeTable'](self.name, table, startIndex,
                 stopIndex, numReps, repDuration)
 
