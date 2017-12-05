@@ -151,3 +151,104 @@ class ExecutorDevice(device.Device):
         ## Debugging function: set the digital output for the DSP.
     def setDigital(self, value):
         self.connection.WriteDigital(value)
+
+
+
+class LegacyDSPDevice(ExecutorDevice):
+    import numpy
+    def __init__(self, name, config):
+        super(self.__class__, self).__init__(name, config)
+        self.tickrate = 10 # Number of ticks per ms.
+        self._lastAnalogs = []
+
+
+    def onPrepareForExperiment(self, *args):
+        super(self.__class__, self).onPrepareForExperiment(*args)
+        self._lastAnalogs = [self.connection.ReadPosition(i) for i in range(4)]
+        self._lastDigital = self.connection.ReadDigital()
+
+
+    ## Actually execute the events in an experiment ActionTable, starting at
+    # startIndex and proceeding up to but not through stopIndex.
+    def executeTable(self, name, table, startIndex, stopIndex, numReps,
+            repDuration):
+        # Take time and arguments (i.e. omit handler) from table to generate actions.
+        # For the UCSF m6x DSP device, we also need to:
+        #  - make the analogue values offsets from the current position;
+        #  - convert float in ms to integer clock ticks and ensure digital
+        #    lines are not changed twice on the same tick;
+        #  - separate analogue and digital events into different lists;
+        #  - generate a structure that describes the profile.
+        # Start time
+        t0 = float(table[startIndex][0])
+        # Profiles
+        analogs = [ [], [], [], [] ] # A list of lists (one per channel) of tuples (ticks, (analog values))
+        digitals = [] # A list of tuples (ticks, digital state)
+        # Need to track time of last analog events to workaround a
+        # DSP bug later. Also used to detect when events exceed timing
+        # resolution
+        tLastA = None
+        for (t, handler, (darg, aargs)) in table[startIndex:stopIndex]:
+            # Convert t to ticks as int while rounding up. The rounding is
+            # necessary, otherwise e.g. 10.1 and 10.1999999... both result in 101.
+            ticks = int(float(t) * self.tickrate + 0.5)
+
+            # Digital actions - one at every time point.
+            if len(digitals) > 0:
+                print ticks, digitals[-1][0], '   ', darg, digitals[-1][1]
+                if ticks == digitals[-1][0] and darg != digitals[-1][1]:
+                    print "TIMING RESOLUTION EXCEEDED"
+            digitals.append((ticks, darg))
+
+
+            # Analogue actions - only enter into profile on change.
+            # DSP uses offsets from value when the profile was loaded.
+            offsets = map(lambda base, new: base - new, self._lastAnalogs, aargs)
+            for offset, a in zip(offsets, analogs):
+                if ((len(a) == 0 and offset != 0) or
+                        (len(a) > 0 and offset != a[-1][1])):
+                    #print tLastA, t
+                    a.append((ticks, offset))
+                    tLastA = t
+
+        # Work around some DSP bugs:
+        # * The action table needs at least two events to execute correctly.
+        # * Last action must be digital --- if the last analog action is at the same
+        #   time or after the last digital action, it will not be performed.
+        # Both can be avoided by adding a digital action that does nothing.
+        if len(digitals) == 1 or tLastA >= digitals[-1][0]:
+            # Just duplicate the last digital action, one tick later.
+            digitals.append( (digitals[-1][0]+1, digitals[-1][1]) )
+
+
+        actions = [(float(row[0])-t0,) + tuple(row[2:]) for row in table[startIndex:stopIndex]]
+        # If there are repeats, add an extra action to wait until repDuration expired.
+        if repDuration is not None:
+            repDuration = float(repDuration)
+            if actions[-1][0] < repDuration:
+                # Repeat the last event at t0 + repDuration
+                actions.append( (t0+repDuration,) + tuple(actions[-1][1:]) )
+
+        events.publish('update status light', 'device waiting',
+                'Waiting for\nDSP to finish', (255, 255, 0))
+        self.connection.PrepareActions(actions, numReps)
+        events.executeAndWaitFor("DSP done", self.connection.RunActions)
+        events.publish('experiment execution')
+
+        # Update records of last positions.
+        self._lastDigital = digitals[-1][1]
+        # _lastAnalogs[i] - (analogs[last][value] or 0 if no actions for that channel)
+        # The ':' mean None is returned instead of raising an IndexError
+        self._lastAnalogs = map(lambda x, y: x - (y[-1:][1:] or 0), self._lastAnalogs, analogs)
+
+        # print "==========================="
+        # print "======\ndigitals\n======"
+        # for d in digitals:
+        #     print d
+        # for i, a in enumerate(analogs):
+        #     print "======"
+        #     print "AN%d" % i
+        #     print "======"
+        #     for r in a:
+        #         print r
+        return
