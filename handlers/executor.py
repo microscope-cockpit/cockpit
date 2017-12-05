@@ -98,6 +98,11 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
             astate = None
 
         actions = []
+
+        tPrev = None
+        hPrev = None
+        argsPrev = None
+
         for i in range(startIndex, stopIndex):
             t, h, args = table[i]
             if h in self.analogClients:
@@ -112,7 +117,27 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
                     dstate |= change
                 else:
                     dstate = dstate & (2**self._dlines - 1) - (change)
-            actions.append((t, self, (dstate, astate[:])))
+
+            # Check for simultaneous actions.
+            if tPrev is not None and t == tPrev:
+                if h not in hPrev:
+                    # Update last action to merge actions at same timepoint.
+                    actions[-1] = (t, self, (dstate, astate[:]))
+                    # Add handler and args to list for next check.
+                    hPrev.append(h)
+                    argsPrev.append(args)
+                elif args == argsPrev[hPrev.index(h)]:
+                    # Just a duplicate entry
+                    continue
+                else:
+                    # Simultaneous, different actions with same handler.
+                    raise Exception("Simultaneous actions with same hander, %s." % h)
+            else:
+                # Append new action.
+                actions.append((t, self, (dstate, astate[:])))
+                # Reinitialise hPrev and argsPrev for next check.
+                hPrev, argsPrev = [h], [args]
+                tPrev = t
 
         events.publish('update status light', 'device waiting',
                        'Waiting for\n%s to finish' % self.name, (255, 255, 0))
