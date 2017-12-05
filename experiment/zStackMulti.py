@@ -44,7 +44,7 @@ class ZStackMultiExperiment(experiment.Experiment):
         for zIndex in xrange(numZSlices):
             # Move to the next position, then wait for the stage to 
             # stabilize.
-            targetAltitude = self.sliceHeight * zIndex
+            targetAltitude = self.initialZPos + self.sliceHeight * zIndex
             motionTime, stabilizationTime = 0, 0
             if prevAltitude is not None:
                 motionTime, stabilizationTime = self.zPositioner.getMovementTime(prevAltitude, targetAltitude)
