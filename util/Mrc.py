@@ -51,6 +51,10 @@ def bindFile(fn, writable=0):
 
     return a.data_withMrc(fn)
 
+class ndarray_inMrcFile(N.ndarray):
+    def __array_finalize__(self,obj):
+        self.Mrc = getattr(obj, 'Mrc', None)
+
 class Mrc:
     def __init__(self, path, mode='r', extHdrSize=0, extHdrNints=0, extHdrNfloats=0):
         '''mode can be 'r' or 'r+'
@@ -138,22 +142,30 @@ class Mrc:
         self.extInts   = self.extHdrArray.field('int')
         self.extFloats = self.extHdrArray.field('float')
 
-
     def doDataMap(self):
         dtype = MrcMode2dtype( self.hdr.PixelType )
-        shape = shapeFromHdr(self.hdr)
+        header_shape = shapeFromHdr(self.hdr)
 
         self.data = self.d.view()
         self.data.dtype = dtype
-        n0 = self.data.shape[0]
-        if n0 != N.prod(shape):  # file contains INCOMPLETE sections
-            print "** WARNING **: file truncated - shape from header:", shape,"expected to get",N.prod(shape),"but got",n0
-            n1 = N.prod(shape[1:])
-            s0 =  n0 // n1 # //-int-division (rounds down)
-            shape = (s0,) + shape[1:]
-            self.data = self.data[:N.prod(shape)]
 
-        self.data.shape = shape
+        ## Maybe adjust data shape? (file may be truncated)
+        adjusted_shape = adjusted_data_shape(self.data.size, header_shape)
+        if header_shape != adjusted_shape:
+            print(("** WARNING **: file truncated - shape from header: %s."
+                   " Expected to get %i pixels but got %i pixels")
+                  % (header_shape, N.prod(header_shape), self.data.size))
+
+            ## In some cases, this may require the introduction of
+            ## blank/padding data (see cockpit bug #289).  In such
+            ## cases, we need to expand the data first which will lead
+            ## to a N.array being returned instead of N.memmap.
+            if self.data.size != N.prod(adjusted_shape):
+                blanks = N.full(N.prod(adjusted_shape) - self.data.size,
+                                N.nan, dtype=self.data.dtype)
+                self.data = N.concatenate((self.data, blanks))
+
+        self.data.shape = adjusted_shape
 
         if self.isByteSwapped:
             self.data = self.data.newbyteorder()
@@ -220,12 +232,8 @@ class Mrc:
         """use this to get 'spiffed up' array"""
 
         import weakref
-        class ndarray_inMrcFile(N.ndarray):
-            def __array_finalize__(self,obj):
-                self.Mrc = getattr(obj, 'Mrc', None)
-
         data = self.data
-        data.__class__ = ndarray_inMrcFile
+        data = data.view(ndarray_inMrcFile)
         ddd = weakref.proxy( data )
         self.data = ddd
         data.Mrc = self
@@ -1019,6 +1027,47 @@ def setTitle(hdr, s, i=-1):
     else:
         hdr.title[i] = s+'\0'
 
+def adjusted_data_shape(numel, shape):
+    """Return shape to use for a certain number of elements.
+
+    There are truncated mrc/dv files.  May be that the file got
+    truncated during a copy, or may be that comes from an experiment
+    that was not completed.  See cockpit bug #289.  This function
+    returns the smallest shape that data with numel elements can be
+    resized to, while including all available data and keeping the
+    length of the dimensions.
+
+    Examples:
+
+    * numel = 20; expected_shape = (10,10).  Returns (2,10).
+    * numel = 15; expected_shape = (10,10).  Returns (2,10).
+
+    """
+    if numel == N.prod(shape):
+        return shape # data is complete, nothing to do
+    elif numel == 0:
+        return tuple([0] * len(shape)) # special case with empty data
+    elif numel > N.prod(shape):
+        raise ValueError(("data too large (%i elements) for proposed shape %s"
+                          % (numel, str(shape))))
+
+    shape = list(shape)
+    for i in range(len(shape)):
+        stride = N.prod(shape[i+1:])
+        if numel >= stride:
+            shape[i] = numel // stride
+            if numel % stride:
+                ## The truncated data may not fit in an array with
+                ## truncated shape.  For example, 15 elements to fill
+                ## a 10x2 array.  In such cases, expand the truncated
+                ## shape to include all data, even if that means an
+                ## array larger than the data.  See cockpit bug #289.
+                shape[i] += 1
+            break
+        else:
+            shape[i] = 1
+
+    return tuple(shape)
 
 
 mrcHdrFields = [
