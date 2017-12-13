@@ -20,6 +20,7 @@ MOSAIC_UPDATE = 'mosaic update'
 NEW_IMAGE = 'new image %s' # must be suffixed with image source
 SETTINGS_CHANGED = 'settings changed %s' # must be suffixed with device/handler name
 EXECUTOR_DONE = 'executor done %s' # must be sufficed with device/handler name
+## TODO - make changes throughout to use the string variables defined above.
 
 ## Maps event types to lists of (priority, function) tuples to call when
 # those events occur.
