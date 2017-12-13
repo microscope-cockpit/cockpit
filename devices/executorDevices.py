@@ -113,7 +113,7 @@ class ExecutorDevice(device.Device):
 
     ## Receive data from the executor remote.
     def receiveData(self, action, *args):
-        if action.lower() in ['done', 'DSP done']:
+        if action.lower() in ['done', 'dsp done']:
             events.publish(events.EXECUTOR_DONE % self.name)
 
 
