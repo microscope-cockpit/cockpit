@@ -56,8 +56,8 @@ class ExecutorDevice(device.Device):
     def performSubscriptions(self):
         #events.subscribe('camera enable', self.toggleCamera)
         #events.subscribe('light source enable', self.toggleLightHandler)
-        events.subscribe('user abort', self.onAbort)
-        events.subscribe('prepare for experiment', self.onPrepareForExperiment)
+        events.subscribe(events.USER_ABORT, self.onAbort)
+        events.subscribe(events.PREPARE_FOR_EXPERIMENT, self.onPrepareForExperiment)
 
     ## As a side-effect of setting our initial positions, we will also
     # publish them. We want the Z piezo to be in the middle of its range
@@ -70,7 +70,7 @@ class ExecutorDevice(device.Device):
         self.connection.Abort()
         # Various threads could be waiting for a 'DSP done' event, preventing
         # new DSP actions from starting after an abort.
-        events.publish("DSP done")
+        events.publish(events.EXECUTOR_DONE % self.name)
 
 
     @util.threads.locked
@@ -109,10 +109,10 @@ class ExecutorDevice(device.Device):
         return result
 
 
-    ## Receive data from the DSP computer.
+    ## Receive data from the executor remote.
     def receiveData(self, action, *args):
-        if action.lower() == 'dsp done':
-            events.publish("DSP done")
+        if action.lower() in ['done', 'DSP done']:
+            events.publish(events.EXECUTOR_DONE % self.name)
 
 
     def triggerNow(self, line, dt=0.01):
@@ -140,11 +140,11 @@ class ExecutorDevice(device.Device):
             if actions[-1][0] < repDuration:
                 # Repeat the last event at t0 + repDuration
                 actions.append( (t0+repDuration,) + tuple(actions[-1][1:]) )
-        events.publish('update status light', 'device waiting',
+        events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
                 'Waiting for\nDSP to finish', (255, 255, 0))
         self.connection.PrepareActions(actions, numReps)
-        events.executeAndWaitFor("DSP done", self.connection.RunActions)
-        events.publish('experiment execution')
+        events.executeAndWaitFor(events.EXECUTOR_DONE % self.name, self.connection.RunActions)
+        events.publish(events.EXPERIMENT_EXECUTION)
         return
 
 
@@ -161,11 +161,16 @@ class LegacyDSPDevice(ExecutorDevice):
         self.tickrate = 10 # Number of ticks per ms.
         self._lastAnalogs = []
 
-
     def onPrepareForExperiment(self, *args):
         super(self.__class__, self).onPrepareForExperiment(*args)
         self._lastAnalogs = [self.connection.ReadPosition(i) for i in range(4)]
         self._lastDigital = self.connection.ReadDigital()
+
+
+    ## Receive data from the DSP computer.
+    def receiveData(self, action, *args):
+        if action.lower() == 'dsp done':
+            events.publish(events.EXECUTOR_DONE % self.name)
 
 
     ## Actually execute the events in an experiment ActionTable, starting at
