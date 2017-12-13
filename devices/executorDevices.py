@@ -31,6 +31,8 @@ import handlers.genericHandler
 import handlers.genericPositioner
 import handlers.imager
 import util.threads
+import numpy as np
+from itertools import chain
 
 
 class ExecutorDevice(device.Device):
@@ -234,26 +236,29 @@ class LegacyDSPDevice(ExecutorDevice):
                 # Repeat the last event at t0 + repDuration
                 actions.append( (t0+repDuration,) + tuple(actions[-1][1:]) )
 
-        events.publish('update status light', 'device waiting',
-                'Waiting for\nDSP to finish', (255, 255, 0))
-        self.connection.PrepareActions(actions, numReps)
-        events.executeAndWaitFor("DSP done", self.connection.RunActions)
-        events.publish('experiment execution')
+        description = np.rec.array(
+            None,
+            formats="u4, f4, u4, u4, 4u4",
+            names=('count', 'clock', 'InitDio', 'nDigital', 'nAnalog'),
+            aligned=True, shape=1)
+
+        maxticks = reduce(max, chain(zip(*digitals)[0],
+                                     *[(zip(*a) or [[None]])[0] for a in analogs]))
+        description['count'] = maxticks
+        description['clock'] = 1000. / float(self.tickrate)
+        description['InitDio'] = self._lastDigital
+        description['nDigital'] = len(digitals)
+        description['nAnalog'] = [len(a) for a in analogs]
 
         # Update records of last positions.
         self._lastDigital = digitals[-1][1]
         # _lastAnalogs[i] - (analogs[last][value] or 0 if no actions for that channel)
-        # The ':' mean None is returned instead of raising an IndexError
         self._lastAnalogs = map(lambda x, y: x - (y[-1:][1:] or 0), self._lastAnalogs, analogs)
 
-        # print "==========================="
-        # print "======\ndigitals\n======"
-        # for d in digitals:
-        #     print d
-        # for i, a in enumerate(analogs):
-        #     print "======"
-        #     print "AN%d" % i
-        #     print "======"
-        #     for r in a:
-        #         print r
-        return
+        events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
+                       'Waiting for\nDSP to finish', (255, 255, 0))
+        self.connection.profileSet(description.tostring(), digitals, *analogs)
+        self.connection.DownloadProfile()
+        self.connection.InitProfile(numReps)
+        events.executeAndWaitFor(events.EXECUTOR_DONE % self.name, self.connection.RunActions)
+        events.publish(events.EXPERIMENT_EXECUTION)
