@@ -4,6 +4,23 @@ import threading
 # devices. Objects may publish events, subscribe to them, and unsubscribe from
 # them.
 
+## Define common event strings here. This way, they're here for reference,
+# and can be used elsewhere to avoid errors due to typos.
+EXPERIMENT_EXECUTION = 'experiment execution'
+EXPERIMENT_COMPLETE = 'experiment complete'
+UPDATE_STATUS_LIGHT = 'update status light'
+PREPARE_FOR_EXPERIMENT = 'prepare for experiment'
+CLEANUP_AFTER_EXPERIMENT = 'cleanup after experiment'
+LIGHT_SOURCE_ENABLE = 'light source enable'
+STAGE_POSITION = 'stage position'
+STAGE_MOVER = 'stage mover'
+STAGE_STOPPED = 'stage stopped'
+USER_ABORT = 'user abort'
+MOSAIC_UPDATE = 'mosaic update'
+NEW_IMAGE = 'new image %s' # must be suffixed with image source
+SETTINGS_CHANGED = 'settings changed %s' # must be suffixed with device/handler name
+EXECUTOR_DONE = 'executor done %s' # must be sufficed with device/handler name
+
 ## Maps event types to lists of (priority, function) tuples to call when
 # those events occur.
 eventToSubscriberMap = {}
