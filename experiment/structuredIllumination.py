@@ -2,6 +2,7 @@ import actionTable
 import depot
 import experiment
 import gui.guiUtils
+import util.Mrc
 import util.datadoc
 import util.userConfig
 
@@ -39,6 +40,19 @@ def collection_order_tuple(order_str):
     z_order = [to1char[x] for x in COLLECTION_ORDERS[order_str]]
     return tuple(z_order)
 
+def postpad_data(data, shape):
+    """Return padded data at end ofp each dimension and reshape.
+
+    This is to handle truncated files when it is required to add blank
+    values to obtain a specific shape.  The blank values are zero or
+    NaN when supported by the datatype.  See cockpit bug #289.
+    """
+    postpad_length =  shape - numpy.array(data.shape)
+    pad_width = zip([0] * len(shape), postpad_length)
+    ## Let numpy figure out what to convert NaN into for blank values
+    return numpy.pad(data, pad_width, mode='constant',
+                     constant_values=[numpy.nan])
+
 
 def reorder_z_dim(data, order_packed, z_lengths, z_order, z_wanted):
     """Reorder the Z dimension of a numpy array.
@@ -70,6 +84,14 @@ def reorder_z_dim(data, order_packed, z_lengths, z_order, z_wanted):
 
     packed_shape = data.shape
     unpacked_shape = packed_shape[0:z_idx] + z_lengths + packed_shape[z_idx+1:]
+
+    ## If we are dealing with truncated files we may need to add blank
+    ## planes into the data.  See cockpit bug #289.
+    if numpy.prod(z_lengths) != packed_shape[z_idx]:
+        packed_shape = list(packed_shape)
+        packed_shape[z_idx] = numpy.prod(z_lengths)
+        packed_shape = tuple(packed_shape)
+        data = postpad_data(data, packed_shape)
 
     ## The new order for the array axes
     dim_map = dict(zip(order_in, range(len(order_in))))
@@ -122,7 +144,6 @@ class SIExperiment(experiment.Experiment):
         self.polarizerHandler = polarizerHandler
         self.slmHandler = slmHandler
         self.handlerToBleachCompensation = bleachCompensations
-
 
     ## Generate a sequence of (angle, phase, Z) positions for SI experiments,
     # based on the order the user specified.
@@ -296,7 +317,6 @@ class SIExperiment(experiment.Experiment):
         curTime += delay
         return experiment.Experiment.expose(self, curTime, cameras, newPairs, table)
 
-
     def reorder_img_file(self):
         """Reorder the Z dimension in the file.
 
@@ -311,15 +331,26 @@ class SIExperiment(experiment.Experiment):
             # Already in order; don't do anything.
             return
 
+
+        doc = util.datadoc.DataDoc(self.savePath)
+        order_in = tuple(doc.image.Mrc.axisOrderStr())
+
         length_getters = {
             "a" : self.numAngles,
             "z" : self.numZSlices,
             "p" : self.numPhases,
         }
-        z_lengths = tuple([length_getters[d] for d in z_order])
-
-        doc = util.datadoc.DataDoc(self.savePath)
-        order_in = tuple(doc.image.Mrc.axisOrderStr())
+        ## If data is truncated, the number of Z planes in the header
+        ## may differ from the number of Z planes in the data.  So
+        ## these are checked separetely.  See cockpit bug #289.
+        header_z_lengths = tuple([length_getters[d] for d in z_order])
+        nz_in_header = numpy.prod(header_z_lengths)
+        nz_in_data = doc.image.shape[doc.image.Mrc.axisOrderStr().index("z")]
+        if nz_in_data == nz_in_header:
+            z_lengths = header_z_lengths
+        else:
+            z_lengths = util.Mrc.adjusted_data_shape(nz_in_data,
+                                                     header_z_lengths)
 
         ## Read the extended header again separately.  It our case,
         ## this is a struct made of int32 and float32, one per plane.
@@ -338,16 +369,19 @@ class SIExperiment(experiment.Experiment):
             "next value from datadoc differs from computed length"
         assert order_in[-2:] == ('y', 'x'), \
             "ORDER_IN two last dimensions are not Y and X"
-        ext_header = ext_header.reshape(doc.image.shape[:-2])
 
-        nfake_z = numpy.prod(z_lengths)
-        assert doc.size[2] == nfake_z, \
-            "num Z of doc differs from expected Z length"
+        ## The file may be truncated if the experiment was aborted.
+        ## In that case, the number of planes in file may be different
+        ## from what is in the header so we get the shape header and
+        ## not the shape from the data in the datadoc instance.  See
+        ## cockpit bug #289.
+        header_shape = util.Mrc.shapeFromHdr(doc.imageHeader)
+        ext_header = ext_header.reshape(header_shape[:-2])
 
         ## Finally, reorder the things.
         img_data = reorder_z_dim(doc.image, order_in, z_lengths,
                                  z_order, z_wanted)
-        ext_header = reorder_z_dim(ext_header, order_in[:-2], z_lengths,
+        ext_header = reorder_z_dim(ext_header, order_in[:-2], header_z_lengths,
                                    z_order, z_wanted)
 
         ## Build a new header from old doc data
