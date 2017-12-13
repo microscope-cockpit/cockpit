@@ -20,32 +20,25 @@ import gui.toggleButton
 import handlers
 import time
 import util
-from config import config
 from experiment import actionTable
 
 CLASS_NAME = 'BoulderSLMDevice'
 CONFIG_NAME = 'slm'
 
 class BoulderSLMDevice(device.Device):
-    def __init__(self):
-        device.Device.__init__(self)
-        self.isActive = config.has_section(CONFIG_NAME)
-        # Must have a lower priority than our trigger source.
-        self.priority = 1000
+    def __init__(self, name, config={}):
+        device.Device.__init__(self, name, config)
         if not self.isActive:
             return
-
-        self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
-        self.port = int(config.get(CONFIG_NAME, 'port'))
         self.connection = None
         self.async = None
         self.executor = None
         self.order = None
         self.position = None
         self.wasPowered = None
-        self.settlingTime = decimal.Decimal('10.0')
-        self.slmTimeout = int(config.get(CONFIG_NAME, 'timeout', default=10))
-        self.slmRetryLimit = int(config.get(CONFIG_NAME, 'retryLimit', default=3))
+        self.settlingTime = decimal.Decimal('10.')
+        self.slmTimeout = 10
+        self.slmRetryLimit = 3
         self.lastParms = None
         # A mapping of context-menu entries to functions.
         # Define in tuples - easier to read and reorder.
@@ -56,14 +49,17 @@ class BoulderSLMDevice(device.Device):
 
 
     def initialize(self):
-        uri = "PYRO:pyroSLM@%s:%d" % (self.ipAddress, self.port)
+        if self.uri:
+            uri = self.uri
+        else:
+            uri = "PYRO:pyroSLM@%s:%d" % (self.ipAddress, self.port)
         self.connection = Pyro4.Proxy(uri)
         self.async = Pyro4.Proxy(uri)
         self.async._pyroAsync()
         # If there's a diffraction angle in the config, set it on the remote.
-        if config.has_option(CONFIG_NAME, 'diffractionAngle'):
-            theta = config.get(CONFIG_NAME, 'diffractionAngle')
-            self.connection.set_sim_diffraction_angle(diffractionAngle)
+        angle = self.config.get('diffractionangle', None)
+        if angle:
+            self.connection.set_sim_diffraction_angle(angle)
 
 
     def disable(self):
@@ -84,7 +80,7 @@ class BoulderSLMDevice(device.Device):
         # A function to trigger now.
         triggerNow = self.getTriggerFunction()
         # Target position
-        if self.lastParms == self.connection.get_sequence_parameters():
+        if self.lastParms == self.connection.get_sim_sequence():
             # Hardware and software sequences match
             targetPosition = self.position
         else:
@@ -344,7 +340,7 @@ class BoulderSLMDevice(device.Device):
             parms = None
         if parms:
             display.SetLabel(baseStr % parms)
-        isPowered = self.connection.get_power()
+        isPowered = self.connection.get_is_enabled()
         self.elements['powerButton'].updateState(isPowered)
         if isPowered:
             self.elements['triggerButton'].Enable()
@@ -357,7 +353,7 @@ class BoulderSLMDevice(device.Device):
     @util.threads.callInNewThread
     def updatePosition(self):
         if not self.lastParms:
-            self.lastParms = self.connection.get_sequence_parameters()
+            self.lastParms = self.connection.get_sim_sequence()
         self.position = self.getCurrentPosition()
 
 
