@@ -297,7 +297,9 @@ class AnalogMixin(object):
         # Returns an AnalogLineHandler for that line.
         h = AnalogLineHandler(client.name, self.name + ' analogs',
                               self, int(line), offset, gain, movementTimeFunc)
+        # May reference the client by whatever we were passed or its new handler
         self.analogClients[client] = h
+        self.analogClients[h] = h
         return h
 
     def setAnalogLine(self, line, level):
