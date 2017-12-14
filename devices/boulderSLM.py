@@ -22,6 +22,11 @@ import util
 
 
 class BoulderSLMDevice(device.Device):
+    _config_types = {
+        'settlingtime': float,
+        'triggerLine': int,
+    }
+
     def __init__(self, name, config={}):
         device.Device.__init__(self, name, config)
         if not self.isActive:
