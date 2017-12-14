@@ -319,16 +319,6 @@ class AnalogMixin(object):
             for client in self.analogClients:
                 self.analogClients[client].restorePosition()
 
-    # def setClientPosition(self, client, value):
-    #     ## Scale a client position to an analog level and set that level.
-    #     line, offset, gain = self.analogClients[client]
-    #     self.callbacks['setAnalog'](line, gain * (offset + value))
-    #
-    # def getClientPosition(self, client):
-    #     ## Fetch level for a client, and scale to a client position.
-    #     line, offset, gain = self.analogClients[client]
-    #     raw = self.callbacks['getAnalog'](line)
-    #     return (raw / gain) - offset
 
 
 class AnalogLineHandler(GenericPositionerHandler):
