@@ -469,9 +469,16 @@ class DelegateTrigger(deviceHandler.DeviceHandler):
         return 0
 
 
-    def setMovementTime(self, value):
+    def setMovementTimeUI(self):
         if self._movementTime is None:
-            # Ignored
+            # Ignored - using a method to determine movement time.
             return
-        else:
-            self._movementTime = value
+        print self._movementTime, type(self._movementTime)
+        newdt = gui.dialogs.getNumberDialog.getNumberFromUser(
+                None,
+                'Set SLM movement time',
+                ('Sets the settling time after a trigger event.\n'
+                 u'Current dt is %.2fms.' % self._movementTime ),
+                self._movementTime,
+                atMouse=True)
+        self._movementTime = float(newdt)

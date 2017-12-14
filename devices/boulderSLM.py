@@ -41,13 +41,6 @@ class BoulderSLMDevice(device.Device):
         self.slmTimeout = 10
         self.slmRetryLimit = 3
         self.lastParms = None
-        # A mapping of context-menu entries to functions.
-        # Define in tuples - easier to read and reorder.
-        menuTuples = (('Generate SIM sequence', self.testSIMSequence),
-                      ('SIM diff. angle', self.setDiffractionAngle),
-                      ('Set delay after trigger', self.setMovementTime),)
-        # Store as ordered dict for easy item->func lookup.
-        self.menuItems = OrderedDict(menuTuples)
 
 
     def initialize(self):
@@ -62,6 +55,17 @@ class BoulderSLMDevice(device.Device):
         angle = self.config.get('diffractionangle', None)
         if angle:
             self.connection.set_sim_diffraction_angle(angle)
+
+
+    def finalizeInitialization(self):
+        # A mapping of context-menu entries to functions.
+        # Define in tuples - easier to read and reorder.
+        menuTuples = (('Generate SIM sequence', self.testSIMSequence),
+                      ('SIM diff. angle', self.setDiffractionAngle),
+                      ('Set delay after trigger', self.handler.setMovementTimeUI),)
+        # Store as ordered dict for easy item->func lookup.
+        self.menuItems = OrderedDict(menuTuples)
+
 
     def disable(self):
         self.connection.stop()
@@ -377,19 +381,4 @@ class BoulderSLMDevice(device.Device):
                 theta,
                 atMouse=True)
         self.connection.set_sim_diffraction_angle(newTheta)
-
-
-    def setMovementTime(self):
-        dt = float(self.handler.getMovementTime())
-        if dt is None:
-            # Ignored - using a method to determine movement time.
-            return
-        newdt = gui.dialogs.getNumberDialog.getNumberFromUser(
-                self.panel,
-                'Set SLM movement time',
-                ('Sets the settling time after a trigger event.\n'
-                 u'Current dt is %.2fms.' % dt ),
-                dt,
-                atMouse=True)
-        self.handler.setMovementTime(float(newdt))
 
