@@ -21,7 +21,7 @@ class DummyExecutor(device.Device):
 
     ## Given an experiment.ActionTable instance, examine the actions and
     # make any necessary modifications.
-    def examineActions(self, name, table):
+    def examineActions(self, table):
         pass
 
     ## Execute the table of experiment actions.
@@ -79,7 +79,7 @@ class DummyDigitalExecutor(DummyExecutor):
 
     ## Given an experiment.ActionTable instance, examine the actions and
     # make any necessary modifications.
-    def examineActions(self, name, table):
+    def examineActions(self, table):
         pass
 
 
@@ -113,6 +113,6 @@ class DummyAnalogDigitalExecutor(DummyDigitalExecutor):
 
     ## Given an experiment.ActionTable instance, examine the actions and
     # make any necessary modifications.
-    def examineActions(self, name, table):
+    def examineActions(self, table):
         pass
 

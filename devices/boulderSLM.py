@@ -102,7 +102,7 @@ class BoulderSLMDevice(device.Device):
             self.elements['triggerButton'].Enable()
 
 
-    def examineActions(self, name, table):
+    def examineActions(self, table):
         # Extract pattern parameters from the table.
         # patternParms is a list of tuples (angle, phase, wavelength)
         patternParams = [row[2] for row in table if row[1] is self.executor]
