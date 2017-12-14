@@ -7,7 +7,6 @@ Mick Phillips, University of Oxford, 2014-2015.
 
 from collections import OrderedDict
 import decimal
-import depot
 import device
 from itertools import groupby
 import Pyro4
@@ -17,13 +16,10 @@ import events
 import gui.device
 import gui.guiUtils
 import gui.toggleButton
-import handlers
+import handlers.executor
 import time
 import util
-from experiment import actionTable
 
-CLASS_NAME = 'BoulderSLMDevice'
-CONFIG_NAME = 'slm'
 
 class BoulderSLMDevice(device.Device):
     def __init__(self, name, config={}):
@@ -43,7 +39,8 @@ class BoulderSLMDevice(device.Device):
         # A mapping of context-menu entries to functions.
         # Define in tuples - easier to read and reorder.
         menuTuples = (('Generate SIM sequence', self.testSIMSequence),
-                      ('SIM diff. angle', self.setDiffractionAngle), )
+                      ('SIM diff. angle', self.setDiffractionAngle),
+                      ('Set delay after trigger', self.setMovementTime),)
         # Store as ordered dict for easy item->func lookup.
         self.menuItems = OrderedDict(menuTuples)
 
@@ -61,7 +58,6 @@ class BoulderSLMDevice(device.Device):
         if angle:
             self.connection.set_sim_diffraction_angle(angle)
 
-
     def disable(self):
         self.connection.stop()
         if self.elements.get('triggerButton'):
@@ -77,8 +73,6 @@ class BoulderSLMDevice(device.Device):
         but any other trigger-device activity during this call can mean that
         we miss the target frame by +/- 1.
         """
-        # A function to trigger now.
-        triggerNow = self.getTriggerFunction()
         # Target position
         if self.lastParms == self.connection.get_sim_sequence():
             # Hardware and software sequences match
@@ -89,13 +83,13 @@ class BoulderSLMDevice(device.Device):
         self.connection.run()
         # Send a few triggers to clear synch. errors.
         for i in xrange(3):
-            triggerNow()
+            self.handler.triggerNow()
             time.sleep(0.01)
         # Cycle to the target position.
         pos = self.getCurrentPosition()
         delta = (targetPosition - pos) + (targetPosition < pos) * len(self.lastParms)
         for i in xrange(delta):
-            triggerNow()
+            self.handler.triggerNow()
             time.sleep(0.01)
         # Update the display.
         if self.elements.get('triggerButton'):
@@ -105,7 +99,7 @@ class BoulderSLMDevice(device.Device):
     def examineActions(self, table):
         # Extract pattern parameters from the table.
         # patternParms is a list of tuples (angle, phase, wavelength)
-        patternParams = [row[2] for row in table if row[1] is self.executor]
+        patternParams = [row[2] for row in table if row[1] is self.handler]
         if not patternParams:
             # SLM is not used in this experiment.
             return
@@ -123,15 +117,15 @@ class BoulderSLMDevice(device.Device):
         ## Tell the SLM to prepare the pattern sequence.
         asyncResult = self.async.set_sim_sequence(sequence)
 
-        # Step through the table and replace this handler with triggers.
-        # Identify the SLM trigger(provided elsewhere, e.g. by DSP)
-        triggerHandler = self.getTriggerHandler()
 
         # Track sequence index set by last set of triggers.
         lastIndex = 0
         for i, (t, handler, action) in enumerate(table.actions):
-            if handler is not self.executor:
+            if handler is not self.handler:
                 # Nothing to do
+                continue
+            elif action in [True, False]:
+                # Trigger action generated on earlier pass through.
                 continue
             # Action specifies a target frame in the sequence.
             # Remove original event.
@@ -164,7 +158,7 @@ class BoulderSLMDevice(device.Device):
                 t += table.toggleTime
             """
             for trig in xrange(numTriggers):
-                t = table.addToggle(t, triggerHandler)
+                t = table.addToggle(t, self.handler)
                 t += table.toggleTime
 
             lastIndex += numTriggers
@@ -177,101 +171,35 @@ class BoulderSLMDevice(device.Device):
         self.lastParms = sequence
         self.connection.run()
         # Fire several triggers to ensure that the sequence is loaded.
-        triggerNow = self.getTriggerHandler().callbacks.get('triggerNow')
         for i in range(12):
-            triggerNow()
+            self.handler.triggerNow()
             time.sleep(0.01)
         # Ensure that we're at position 0.
         self.position = self.getCurrentPosition()
         while self.position != 0:
-            triggerNow()
+            self.handler.triggerNow()
             time.sleep(0.01)
             self.position = self.getCurrentPosition()
 
 
-    ## Run some lines from the table.
-    # Note we ignore the repDuration parameter, on the assumption that we
-    # will never be responsible for gating the duration of a rep.
-    def executeTable(self, name, table, startIndex, stopIndex, numReps,
-            repDuration):
-        for time, handler, action in table[startIndex:stopIndex]:
-            if handler is self.executor:
-                # Shouldn't have to do anything here.
-                pass
-        events.publish('experiment execution')
-
-
     def getCurrentPosition(self):
-        return self.connection.get_current_image_index()
+        return self.connection.get_sequence_index()
 
 
     def getHandlers(self):
+        trigsource = self.config.get('triggersource', None)
+        trigline = self.config.get('triggerline', None)
+        dt = self.config.get('settlingtime', 10)
         result = []
-        # We need to be able to go over experiments to check on the
-        # exposure times needed.
-        self.executor = handlers.executor.ExecutorHandler(
-                "slm executor",
-                "slm",
-                {'examineActions': self.examineActions,
-                    'getNumRunnableLines': self.getNumRunnableLines,
-                    'executeTable': self.executeTable,})
-                    # If we add makeUI to the handler, it will be called twice:
-                    # once from the device, and once from the handler. We could catch
-                    # it, but shouldn't have to: abstraction is broken. We should
-                    # decide whether handlers or devices are responsible for drawing
-                    # UI.
-                    #'makeUI': self.makeUI})
-        self.executor.callbacks['getMovementTime'] = self.getMovementTime
-        result.append(self.executor)
+        self.handler = handlers.executor.DelegateTrigger("slm", "slm group",
+                                              trigsource, trigline,
+                                              self.examineActions, dt)
+        result.append(self.handler)
         return result
 
 
-    ## Return the number of lines of the table we can execute.
-    def getNumRunnableLines(self, name, table, curIndex):
-        total = 0
-        for time, handler, parameter in table[curIndex:]:
-            if handler is not self.executor:
-                return total
-            total += 1
-
-
-    def getTriggerHandler(self):
-        return depot.getHandlerWithName(CONFIG_NAME + ' trigger')
-
-
-    def getTriggerFunction(self, button=None):
-        """Returns a function to step the SLM, or None."""
-        triggerHandler = self.getTriggerHandler()
-        if not triggerHandler:
-            return None
-        triggerFunc = triggerHandler.callbacks.get('triggerNow' or None)
-        if not triggerFunc:
-            return None
-
-        def func(event=None):
-            """Trigger the SLM once, flashing a toggle button if provided."""
-            # Minimun time to flash the button.
-            dtMin = 0.1
-            # Button is found in outer scope.
-            if button:
-                button.activate()
-                button.Update()
-                # Store the current time.
-                t0 = time.time()
-            # Fire the trigger.
-            triggerFunc()
-            if button:
-                # Ensure the button was lit long enough to be seen.
-                dt = time.time() - t0
-                if dt < dtMin:
-                    time.sleep(dtMin - dt)
-                button.deactivate()
-
-        return func
-
-
-    def getMovementTime(self):
-        return self.settlingTime + 2 * actionTable.ActionTable.toggleTime
+    # def getMovementTime(self):
+    #     return self.settlingTime + 2 * actionTable.ActionTable.toggleTime
 
 
     ### UI functions ###
@@ -298,11 +226,9 @@ class BoulderSLMDevice(device.Device):
                 label='step',
                 parent=self.panel,
                 size=gui.device.DEFAULT_SIZE)
-        triggerFunc = self.getTriggerFunction(triggerButton)
-        if triggerFunc:
-            triggerButton.Bind(wx.EVT_LEFT_DOWN, triggerFunc)
-            self.elements['triggerButton'] = triggerButton
-            triggerButton.Disable()
+        triggerButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.handler.triggerNow())
+        self.elements['triggerButton'] = triggerButton
+        triggerButton.Disable()
         # Add a position display.
         posDisplay = gui.device.MultilineDisplay(parent=self.panel, numLines=3)
         posDisplay.Bind(wx.EVT_TIMER,
@@ -324,7 +250,7 @@ class BoulderSLMDevice(device.Device):
 
 
     def updatePositionDisplay(self, event):
-        baseStr = 'angle:\t%d\nphase:\t%d\nwavel.:\t%d'
+        baseStr = 'angle:\t%s\nphase:\t%s\nwavel.:\t%s'
         # Get the display object. It seems there is variation between
         # wx versions. With some versions, the display is obtained by
         #    event.GetEventObject().
@@ -446,3 +372,19 @@ class BoulderSLMDevice(device.Device):
                 theta,
                 atMouse=True)
         self.connection.set_sim_diffraction_angle(newTheta)
+
+
+    def setMovementTime(self):
+        dt = float(self.handler.getMovementTime())
+        if dt is None:
+            # Ignored - using a method to determine movement time.
+            return
+        newdt = gui.dialogs.getNumberDialog.getNumberFromUser(
+                self.panel,
+                'Set SLM movement time',
+                ('Sets the settling time after a trigger event.\n'
+                 u'Current dt is %.2fms.' % dt ),
+                dt,
+                atMouse=True)
+        self.handler.setMovementTime(float(newdt))
+
