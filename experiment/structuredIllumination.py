@@ -485,7 +485,7 @@ class ExperimentUI(wx.Panel):
         params['angleHandler'] = depot.getHandlerWithName('SI angle')
         params['phaseHandler'] = depot.getHandlerWithName('SI phase')
         params['polarizerHandler'] = depot.getHandlerWithName('SI polarizer')
-        params['slmHandler'] = depot.getHandlerWithName('slm executor')
+        params['slmHandler'] = depot.getHandler('slm', depot.EXECUTOR)
         compensations = {}
         for i, light in enumerate(self.allLights):
             val = gui.guiUtils.tryParseNum(self.bleachCompensations[i], float)
