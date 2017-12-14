@@ -7,6 +7,7 @@ import time
 import util
 import gui
 import wx
+from six import string_types
 
 ## This handler is responsible for executing portions of experiments.
 class ExecutorHandler(deviceHandler.DeviceHandler):
@@ -176,12 +177,16 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
                 c._cleanupAfterExperiment(self, isCleanupFinal)
 
 
+
 class DigitalMixin(object):
     ## Digital handler mixin.
 
     ## Register a client device that is connected to one of our lines.
     def registerDigital(self, client, line):
         self.digitalClients[client] = int(line)
+        # Return a function to trigger the device.
+        return lambda client=client: self.triggerDigital(client)
+
 
     ## Set or clear a single line.
     def setDigital(self, line, state):
@@ -430,3 +435,36 @@ class ExecutorDebugWindow(wx.Frame):
 
         panel.SetSizerAndFit(mainSizer)
         self.SetClientSize(panel.GetSize())
+
+
+## This handler can examine and modify an action table, but delegates
+# running it to some other ExecutorHandler
+class DelegateTrigger(deviceHandler.DeviceHandler):
+    def __init__(self, name, groupName, trigSource, trigLine, examineActions):
+        if trigSource is None:
+            def _triggerNow():
+                print("Dummy trigger on %s." % name)
+            triggerNow = _triggerNow
+            isEligibleForExperiments = False
+        else:
+            if isinstance(trigSource, string_types):
+                trigSource = depot.getHandler(trigSource, depot.EXECUTOR)
+            triggerNow = trigSource.registerDigital(self, trigLine)
+            isEligibleForExperiments = trigSource.isEligibleForExperiments
+        callbacks = {'triggerNow': triggerNow,
+                     'examineActions': examineActions,}
+        deviceHandler.DeviceHandler.__init__(self, name, groupName,
+                                             isEligibleForExperiments,
+                                             callbacks, depot.EXECUTOR)
+
+
+    def triggerNow(self):
+        self.callbacks['triggerNow']()
+
+
+    def examineActions(self, table):
+        self.callbacks['examineActions'](table)
+
+
+    def getNumRunnableLines(self, table, index):
+        return 0
