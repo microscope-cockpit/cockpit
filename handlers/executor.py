@@ -7,6 +7,7 @@ import time
 import util
 import gui
 import wx
+import decimal
 from six import string_types
 
 ## This handler is responsible for executing portions of experiments.
@@ -440,7 +441,7 @@ class ExecutorDebugWindow(wx.Frame):
 ## This handler can examine and modify an action table, but delegates
 # running it to some other ExecutorHandler
 class DelegateTrigger(deviceHandler.DeviceHandler):
-    def __init__(self, name, groupName, trigSource, trigLine, examineActions):
+    def __init__(self, name, groupName, trigSource, trigLine, examineActions, movementTime=0):
         if trigSource is None:
             def _triggerNow():
                 print("Dummy trigger on %s." % name)
@@ -451,20 +452,26 @@ class DelegateTrigger(deviceHandler.DeviceHandler):
                 trigSource = depot.getHandler(trigSource, depot.EXECUTOR)
             triggerNow = trigSource.registerDigital(self, trigLine)
             isEligibleForExperiments = trigSource.isEligibleForExperiments
-        callbacks = {'triggerNow': triggerNow,
-                     'examineActions': examineActions,}
         deviceHandler.DeviceHandler.__init__(self, name, groupName,
                                              isEligibleForExperiments,
-                                             callbacks, depot.EXECUTOR)
-
-
-    def triggerNow(self):
-        self.callbacks['triggerNow']()
-
-
-    def examineActions(self, table):
-        self.callbacks['examineActions'](table)
+                                             {}, depot.EXECUTOR)
+        self.triggerNow = triggerNow
+        self.examineActions = examineActions
+        if callable(movementTime):
+            self.getMovementTime = movementTime
+            self._movementTime = None
+        else:
+            self._movementTime = movementTime
+            self.getMovementTime = lambda self=self: decimal.Decimal(self._movementTime)
 
 
     def getNumRunnableLines(self, table, index):
         return 0
+
+
+    def setMovementTime(self, value):
+        if self._movementTime is None:
+            # Ignored
+            return
+        else:
+            self._movementTime = value
