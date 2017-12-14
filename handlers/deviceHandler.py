@@ -75,8 +75,8 @@ class DeviceHandler(object):
         return wrapper
 
 
-    def __init__(self, name, groupName, isEligibleForExperiments, callbacks, 
-            deviceType):
+    def __init__(self, name, groupName,
+                 isEligibleForExperiments, callbacks, deviceType):
         self.__cache = {}
         self.name = name
         self.groupName = groupName
