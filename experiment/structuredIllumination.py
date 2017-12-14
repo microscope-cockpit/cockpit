@@ -328,7 +328,7 @@ class SIExperiment(experiment.Experiment):
         if self.slmHandler is not None:
             ## Add SLM event ot set pattern for phase, angle and longestWavelength.
             table.addAction(curTime, self.slmHandler, (angle, phase, longestWavelength))
-            delay = max(delay, self.slmHandler.callbacks['getMovementTime']())
+            delay = max(delay, self.slmHandler.getMovementTime())
         curTime += delay
         return experiment.Experiment.expose(self, curTime, cameras, newPairs, table)
 
