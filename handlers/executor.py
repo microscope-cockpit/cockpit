@@ -470,13 +470,13 @@ class DelegateTrigger(deviceHandler.DeviceHandler):
 
 
     def setMovementTimeUI(self):
+        ## Display a dialog box to fetch a new value for _movementTime.
         if self._movementTime is None:
             # Ignored - using a method to determine movement time.
             return
-        print self._movementTime, type(self._movementTime)
         newdt = gui.dialogs.getNumberDialog.getNumberFromUser(
                 None,
-                'Set SLM movement time',
+                'Set settling time after trigger',
                 ('Sets the settling time after a trigger event.\n'
                  u'Current dt is %.2fms.' % self._movementTime ),
                 self._movementTime,
