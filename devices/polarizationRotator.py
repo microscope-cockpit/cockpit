@@ -103,7 +103,7 @@ class PolarizationDevice(device.Device):
                     )
 
 
-    def examineActions(self, name, table):
+    def examineActions(self, table):
         ## Examine the action table.
         for i, (t, handler, action) in enumerate(table.actions):
             if handler is not self.executor:

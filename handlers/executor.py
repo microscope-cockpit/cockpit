@@ -52,7 +52,7 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
         events.subscribe('cleanup after experiment', self.cleanupAfterExperiment)
 
     def examineActions(self, table):
-        return self.callbacks['examineActions'](self.name, table)
+        return self.callbacks['examineActions'](table)
 
     def getNumRunnableLines(self, table, index):
         ## Return number of lines this handler can run.
