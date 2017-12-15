@@ -366,7 +366,7 @@ class AnalogLineHandler(GenericPositionerHandler):
     def indexedPosition(self, index, wavelength=None):
         pos = None
         if wavelength is not None and isinstance(self.positions, dict):
-            wl = min(self.calib.keys(), key=lambda w: abs(w - wavelength))
+            wl = min(self.positions.keys(), key=lambda w: abs(w - wavelength))
             ps = self.positions[wl]
         elif isinstance(self.positions, dict):
             if self.positions.has_key(None):
