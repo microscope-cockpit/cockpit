@@ -15,31 +15,19 @@ import depot
 import device
 
 import decimal
-import events
-import handlers.analogueHandler, handlers.executor, handlers.genericPositioner
+import handlers.genericPositioner
 import re
-import util
 from config import config
 
-CLASS_NAME = 'PolarizationDevice'
-CONFIG_NAME = 'polarizer'
 DECIMAL_PAT = '(?:\d+(?:\.\d*)?|\.\d+)'
 CALIB_PAT = '\s*(\S+)(?:[\s:,;]+)(%s(?:.*))+' % DECIMAL_PAT
 
 
 class PolarizationDevice(device.Device):
-    def __init__(self):
-        device.Device.__init__(self)
-        self.isActive = config.has_section(CONFIG_NAME)
-        # Must have a lower priority than our analogue voltage source.
-        self.priority = 1000
-        if not self.isActive:
-            return
-        self.lineHandler = None
-        # Settling time.
-        self.settlingTime = decimal.Decimal(0.01)
-        self.voltages = {}
-        self.curVoltage = 0.0
+    # For use in SI experiments, should be named "SI polarizer" in config.
+    # TODO - identify the polarizer some other way.
+    def __init__(self, name, config={}):
+        device.Device.__init__(self, name, config)
 
 
     def readVoltagesFromConfig(self):
@@ -103,34 +91,25 @@ class PolarizationDevice(device.Device):
                     )
 
 
-    def examineActions(self, table):
-        ## Examine the action table.
-        for i, (t, handler, action) in enumerate(table.actions):
-            if handler is not self.executor:
-                # Nothing to do
-                continue
-            # Action specifies a wavelength and an angle index.
-            wl, index = action
-            # Make sure wavelength is in the calibration table.
-            if wl not in self.voltages.keys():
-                if 'default' in self.voltages.keys():
-                    # If not, try to drop to default values.
-                    wl = 'default'
-                else:
-                    # If no defaults, use idle values.
-                    wl = None
-            # Replace original event with analogue out event.
-            table[i] = None
-            table.addAction(t, self.lineHandler, self.voltages[wl][index])
-        table.clearBadEntries()
+    def getHandlers(self):
+        asource = self.config.get('analogsource', None)
+        aline = self.config.get('analogline', None)
+        offset = self.config.get('offset', 0)
+        gain = self.config.get('gain', 1)
+        dt = Decimal(self.config.get('settlingtime', 0.05))
+        aHandler = depot.getHandler(asource, depot.EXECUTOR)
 
+        if aHandler is None:
+            raise Exception('No control source.')
+        movementTimeFunc = lambda x, start, delta: (0, dt)
+        handler = aHandler.registerAnalog(self, aline, offset, gain, movementTimeFunc)
 
-    def executeTable(self, name, table, startIndex, stopIndex, numReps,
-            repDuration):
-        for time, handler, action in table[startIndex:stopIndex]:
-            if handler is self.executor:
-                # Shouldn't have to do anything here.
-                raise Exception('%s: executeTable called - should never reach here.' % CLASS_NAME)
+        # Connect handler to analogue source to populate movement callbacks.
+        handler.connectToAnalogSource(aHandler, aline, offset, gain)
+
+        result.append(handler)
+        return result
+
 
 
     def getHandlers(self):      
@@ -151,14 +130,6 @@ class PolarizationDevice(device.Device):
         self.executor.deviceType = depot.EXECUTOR
         return (self.executor,)
 
-
-    def getNumRunnableLines(self, name, table, curIndex):
-        total = 0
-        for time, handler, parameter in table[curIndex:]:
-            if handler is not self.executor:
-                return total
-            total += 1
-        
 
     def getPosition(self):
         return self.curVoltage
