@@ -276,8 +276,7 @@ class SIExperiment(experiment.Experiment):
             finalWaitTime = max(finalWaitTime, motionTime + stabilizationTime)
         if self.polarizerHandler is not None:
             # Return to idle voltage.
-            pos = self.polarizerHandler.indexedPosition(0)
-            table.addAction(curTime, self.polarizerHandler, pos)
+            table.addAction(curTime, self.polarizerHandler, (0, 'default'))
             finalWaitTime = finalWaitTime + decimal.Decimal(1e-6)
 
         return table
@@ -321,7 +320,7 @@ class SIExperiment(experiment.Experiment):
             lastt, lastpos = table.getLastActionFor(self.polarizerHandler)
             if lastpos is None:
                 lastpos = 0
-            table.addAction(curTime, self.polarizerHandler, pos)
+            table.addAction(curTime, self.polarizerHandler, (angle, longestWavelength))
             dt = decimal.Decimal(sum(self.polarizerHandler.getMovementTime(lastpos, pos)))
             delay = max(delay, dt)
         # SLM trigger
