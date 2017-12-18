@@ -354,7 +354,13 @@ class AnalogLineHandler(GenericPositionerHandler):
         self.callbacks = {}
         self.callbacks['moveAbsolute'] = lambda pos: asource.setAnalogLine(line, self.posToNative(pos))
         self.callbacks['getPosition'] = lambda: self.nativeToPos(asource.getAnalogLine(line))
-        self.callbacks['getMovementTime'] = movementTimeFunc
+        ## TODO - consider if we want to fallback to number or zero, or raise an exception here.
+        if callable(movementTimeFunc):
+            self.callbacks['getMovementTime'] = movementTimeFunc
+        elif isinstance(movementTimeFunc, Number):
+            self.callbacks['getMovementTime'] = lambda *args: (movementTimeFunc, 0)
+        else:
+            self.callbacks['getMovementTime'] = lambda *args: (0, 0)
         deviceHandler.DeviceHandler.__init__(self, name, groupName, True,
                                              self.callbacks, depot.GENERIC_POSITIONER)
 
