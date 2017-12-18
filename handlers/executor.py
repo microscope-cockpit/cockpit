@@ -365,14 +365,17 @@ class AnalogLineHandler(GenericPositionerHandler):
 
     def indexedPosition(self, index, wavelength=None):
         pos = None
-        if wavelength is not None and isinstance(self.positions, dict):
-            wl = min(self.positions.keys(), key=lambda w: abs(w - wavelength))
+        if isinstance(wavelength, Number)  and isinstance(self.positions, dict):
+            wls = [wl for wl in self.positions if isinstance(wl, Number)]
+            wl = min(wls, key=lambda w: abs(w - wavelength))
             ps = self.positions[wl]
         elif isinstance(self.positions, dict):
             if self.positions.has_key(None):
                 ps = self.positions[None]
             elif self.positions.has_key('default'):
                 ps = self.positions['default']
+            else:
+                raise Exception('No wavelength specified, and no default in indexed positions.')
         else:
             ps = self.positions
         return ps[index]
