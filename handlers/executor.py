@@ -110,7 +110,12 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
             if h in self.analogClients:
                 # update analog state
                 lineHandler = self.analogClients[h]
-                astate[lineHandler.line] = lineHandler.posToNative(args)
+                if isinstance(args, collections.Iterable):
+                    # Using an indexed position
+                    pos = lineHandler.indexedPosition(*args)
+                else:
+                    pos = args
+                astate[lineHandler.line] = lineHandler.posToNative(pos)
             elif h in self.digitalClients:
                 # set/clear appropriate bit
                 change = 1 << self.digitalClients[h]
@@ -329,6 +334,9 @@ class AnalogMixin(object):
 
 class AnalogLineHandler(GenericPositionerHandler):
     ## A type of GenericPositioner for analog outputs.
+    # Handles absolute and indexed positions in action table.
+    #   absolute:   time, handler, float or int
+    #   indexed:    time, handler, (index, wavelength or None or 'default')
     def __init__(self, name, groupName, asource, line, offset, gain, movementTimeFunc):
         # Indexed positions. Can be a dict if wavelength-independent, or
         # a mapping of wavelengths (as floats or ints) to lists of same length.
