@@ -370,7 +370,7 @@ class AnalogLineHandler(GenericPositionerHandler):
             ps = self.positions[wl]
         elif isinstance(self.positions, dict):
             if self.positions.has_key(None):
-                ps = self.positons[None]
+                ps = self.positions[None]
             elif self.positions.has_key('default'):
                 ps = self.positions['default']
         else:
