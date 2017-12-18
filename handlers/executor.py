@@ -1,7 +1,9 @@
+import collections
 import depot
 import deviceHandler
 import events
 from handlers.genericPositioner import GenericPositionerHandler
+from numbers import Number
 import operator
 import time
 import util
