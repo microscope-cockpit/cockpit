@@ -60,9 +60,9 @@ class ShutterDevice(device.Device):
 
     def enableTrigger(self, enable=True):
         if enable:
-            print("Dummy shutter enabled.")
+            print("Shutter %s enabled." % self.name)
         else:
-            print("Dummy shutter disabled.")
+            print("Shutter %s disabled." % self.name)
 
 
     def onLightSourceEnable(self, handler, enab):
@@ -75,7 +75,7 @@ class ShutterDevice(device.Device):
 
 
     def setExposureTime(self, t):
-        print("Dummy shutter exposure time set to %s." % t)
+        print("Shutter %s exposure time set to %s." % (self.name, t))
 
 
     def onPrepareForExperiment(self, experiment):
