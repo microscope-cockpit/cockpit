@@ -1,4 +1,5 @@
 import threading
+from itertools import chain
 
 ## This module handles the event-passing system between the UI and the 
 # devices. Objects may publish events, subscribe to them, and unsubscribe from
@@ -73,8 +74,15 @@ def unsubscribe(eventType, func):
                 return
 
 
-## Clear one-shot subscribers on abort.
+## Clear one-shot subscribers on abort. Usually, these were subscribed
+# by executeAndWaitFor, which leaves the calling thread waiting for a
+# lock to be released. On an abort, that event may never happen.
 def clearOneShotSubscribers():
+    print ("clearing 1-shots")
+    global eventToOneShotSubscribers
+    for subscriber in chain(*eventToOneShotSubscribers.values()):
+        if hasattr(subscriber, '__abort__'):
+            subscriber.__abort__()
     eventToOneShotSubscribers = {}
 
 subscribe('user abort', clearOneShotSubscribers)
@@ -89,6 +97,8 @@ def executeAndWaitFor(eventType, func, *args, **kwargs):
     def releaser(*args):
         result.extend(args)
         newLock.release()
+    # Add a method to release the lock in the event of an abort event.
+    releaser.__abort__ = lambda: newLock.release()
     oneShotSubscribe(eventType, releaser)
     func(*args, **kwargs)
     # Note that since newLock is already locked, this will block until it is
