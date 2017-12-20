@@ -95,30 +95,3 @@ except:
 
 config = MyConfigParser()
 config.read()
-
-try:
-    from lights import light_keys as _light_keys
-    from lights import lights as _lights
-    from lights import ipAddress as _lightsIpAddress
-except:
-    LIGHTS = {}
-else:
-    LIGHTS = {light[0]: dict(zip(_light_keys, light)) for light in _lights}
-    #config.add_section('lights')
-    #config.set('lights', 'ipAddress', _lightsIpAddress)
-
-try:
-    from cameras import camera_keys as _camera_keys
-    from cameras import cameras as _cameras
-except:
-    CAMERAS = {}
-else:
-    CAMERAS = {camera[0]: dict(zip(_camera_keys, camera)) for camera in _cameras}
-
-try:
-    from analog import aout_keys as _aout_keys
-    from analog import aouts as _aouts
-except:
-    AOUTS = {}
-else:
-    AOUTS = {aout[0]: dict(zip(_aout_keys, aout)) for aout in _aouts}
