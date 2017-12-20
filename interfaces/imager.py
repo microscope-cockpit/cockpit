@@ -122,28 +122,17 @@ class Imager:
         while not self.shouldStopVideoMode:
             if not self.activeLights:
                 break
-            haveNonRoomLight = False
-            for light in self.activeLights:
-                if light.name != 'Ambient light':
-                    haveNonRoomLight = True
-                    break
             start = time.time()
             try:
                 # HACK: only wait for one camera.
                 events.executeAndWaitFor("new image %s" % (list(self.activeCameras)[0].name),
                         self.takeImage, 
-                        shouldBlock = haveNonRoomLight, shouldStopVideo = False)
+                        shouldBlock = True, shouldStopVideo = False)
             except Exception as e:
                 print "Video mode failed:", e
                 events.publish('video mode toggle', False)
                 traceback.print_exc()
                 break
-#            if haveNonRoomLight:
-#                waitTime = 1 - (time.time() - start)
-#                # Wait until 1s has passed before taking the next image.
-#                time.sleep(max(0, 1 - time.time() + start))
-#            else:
-#                time.sleep(.01)
         self.amInVideoMode = False
         events.publish('video mode toggle', False)
 
