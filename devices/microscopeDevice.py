@@ -21,7 +21,6 @@ Supports cameras which implement the interface defined in
   microscope.camera.Camera ."""
 import Pyro4
 import wx
-from config import config
 import events
 import device
 import depot
@@ -38,9 +37,6 @@ import util.userConfig
 from gui.device import SettingsEditor
 from future.utils import iteritems
 import re
-
-CLASS_NAME = 'UniversalDeviceManager'
-CONFIG_NAME = 'universal'
 
 # Pseudo-enum to track whether device defaults in place.
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
@@ -324,35 +320,3 @@ ENUM_TO_CLASS = {
     UCAMERA: None,
     ULASER: None,
     UFILTER: MicroscopeFilter,}
-
-
-class UniversalDeviceManager(device.Device):
-    def __init__(self):
-        self.isActive = config.has_section(CONFIG_NAME)
-        self.priority = 100
-        if not self.isActive:
-            return
-        self.uris = dict(config.items(CONFIG_NAME))
-        self.devices = {}
-        for name, uri in iteritems(self.uris):
-            proxy = Pyro4.Proxy(uri)
-            device_class = ENUM_TO_CLASS[proxy.get_device_type()]
-            self.devices[name] = device_class(name, proxy)
-
-
-    def getHandlers(self):
-        """Aggregate and return handlers from managed cameras."""
-        result = []
-        for name, device in iteritems(self.devices):
-            result.append(device.getHandlers())
-        return result
-
-
-    def finalizeInitialization(self):
-        for name, device in iteritems(self.devices):
-            device.finalizeInitialization()
-
-
-    def performSubscriptions(self):
-        for name, device in iteritems(self.devices):
-            device.performSubscriptions()
