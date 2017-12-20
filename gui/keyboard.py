@@ -1,5 +1,6 @@
 import wx
 
+import depot
 import gui.camera.window
 import gui.guiUtils
 import gui.mosaic.window
@@ -151,6 +152,12 @@ def martialWindows(parent):
         # so just take the first 50 characters.
         menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
         menuId += 1
+
+    for h in depot.getAllHandlers():
+        if hasattr(h, "showDebugWindow"):
+            menu.Append(menuId, 'debug ' + h.name)
+            parent.Bind(wx.EVT_MENU, lambda e, h=h: h.showDebugWindow())
+            menuId += 1
 
 
 
