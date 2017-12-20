@@ -1,5 +1,6 @@
 import threading
 from itertools import chain
+import re
 
 ## This module handles the event-passing system between the UI and the 
 # devices. Objects may publish events, subscribe to them, and unsubscribe from
@@ -77,13 +78,22 @@ def unsubscribe(eventType, func):
 ## Clear one-shot subscribers on abort. Usually, these were subscribed
 # by executeAndWaitFor, which leaves the calling thread waiting for a
 # lock to be released. On an abort, that event may never happen.
-def clearOneShotSubscribers():
-    print ("clearing 1-shots")
+def clearOneShotSubscribers(pattern=None):
     global eventToOneShotSubscribers
-    for subscriber in chain(*eventToOneShotSubscribers.values()):
-        if hasattr(subscriber, '__abort__'):
-            subscriber.__abort__()
-    eventToOneShotSubscribers = {}
+    if pattern is None:
+        for subscriber in chain(*eventToOneShotSubscribers.values()):
+            if hasattr(subscriber, '__abort__'):
+                subscriber.__abort__()
+        eventToOneShotSubscribers = {}
+    else:
+        for evt in filter(lambda x: re.match(pattern, x), eventToOneShotSubscribers):
+            for subscriber in eventToOneShotSubscribers[evt]:
+                if hasattr(subscriber, '__abort__'):
+                    subscriber.__abort__()
+                eventToOneShotSubscribers[evt].remove(subscriber)
+        if not eventToOneShotSubscribers[evt]:
+            # list is empty
+            del(eventToOneShotSubscribers[evt])
 
 subscribe('user abort', clearOneShotSubscribers)
 
