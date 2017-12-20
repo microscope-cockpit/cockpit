@@ -32,10 +32,10 @@ SUPPORTED_CAMERAS = ['flycap2','picam']
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFTWARE) = range(4)
 
 
-class SoftCameraDevice(camera.CameraDevice):
+class SoftCamera(camera.CameraDevice):
     """A class for software-driven cameras."""
     def __init__(self, camConfig):
-        super(SoftCameraDevice, self).__init__(camConfig)
+        super(SoftCamera, self).__init__(camConfig)
         self.config = camConfig
         self.enabled = False
         ## Pyro proxy (formerly a copy of self.connection.connection).
@@ -138,5 +138,5 @@ class SoftCameraDevice(camera.CameraDevice):
 
 
 class SoftCameraManager(camera.CameraManager):
-    _CAMERA_CLASS = SoftCameraDevice
+    _CAMERA_CLASS = SoftCamera
     _SUPPORTED_CAMERAS = SUPPORTED_CAMERAS

@@ -156,7 +156,7 @@ class ExecutorDevice(device.Device):
 
 
 
-class LegacyDSPDevice(ExecutorDevice):
+class LegacyDSP(ExecutorDevice):
     import numpy
     ## TODO: test with hardware.
     #        May need to wrap profile digitals and analogs in numpy object.

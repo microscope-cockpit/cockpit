@@ -134,7 +134,7 @@ class JOYINFOEX(ctypes.Structure):
     ]
 
 
-class WindowsJoystickDevice(device.Device):
+class WindowsJoystick(device.Device):
     def __init__(self):
         super(self.__class__, self).__init__()
         self.isActive = True

@@ -19,10 +19,10 @@ SUPPORTED_CAMERAS = ['neo', 'zyla']
 ## Valid trigger modes for the cameras.
 (TRIGGER_INTERNAL, TRIGGER_SOFTWARE, TRIGGER_EXTERNAL, TRIGGER_EXTERNAL_START, TRIGGER_EXTERNAL_EXPOSURE) = (1, 4, 6, 2, 3) # TODO: move this to a config file
 
-class AndorCMOSCameraDevice(camera.CameraDevice):
+class AndorCMOSCamera(camera.CameraDevice):
     def __init__(self, camConfig):
         # camConfig is a dict containing configuration parameters.
-        super(AndorCMOSCameraDevice, self).__init__(camConfig)
+        super(AndorCMOSCamera, self).__init__(camConfig)
         self.config = camConfig
         # Should this IP address be gotten through handlers/server.py instead?
         # Doing so would require adding a function to handlers/server.py to
@@ -251,5 +251,5 @@ class AndorCMOSCameraDevice(camera.CameraDevice):
         self.connobj.connection.startAcquisition()
 
 class CMOSCameraManager(camera.CameraManager):
-    _CAMERA_CLASS = AndorCMOSCameraDevice
+    _CAMERA_CLASS = AndorCMOSCamera
     _SUPPORTED_CAMERAS = SUPPORTED_CAMERAS

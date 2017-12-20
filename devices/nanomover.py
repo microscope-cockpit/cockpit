@@ -12,7 +12,7 @@ import time
 
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*\))"
 
-class NanomoverDevice(stage.StageDevice):
+class Nanomover(stage.StageDevice):
     def __init__(self, name, config={}):
         device.Device.__init__(self, name, config)
         ## Current stage position information.

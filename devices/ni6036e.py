@@ -13,7 +13,7 @@ import wx
 ##TODO: document config entries
 ##TODO: clean up code
 
-class NI6036eDevice(device.Device):
+class NI6036e(device.Device):
     def __init__(self, name, config={}):
         device.Device.__init__(self, name, config)
         #get DIO control lines from config file

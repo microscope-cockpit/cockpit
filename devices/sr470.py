@@ -27,7 +27,7 @@ import telnetlib
 CLASS_NAME = 'StanfordShutterDevice'
 CONFIG_NAME = 'sr470'
 
-class StanfordShutterDevice(shutter.ShutterDevice):
+class StanfordShutter(shutter.ShutterDevice):
     def __init__(self, name, config={}):
         shutter.ShutterDevice.__init__(self, name, config)
         # Telnet connection to device
