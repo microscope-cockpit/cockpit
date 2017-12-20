@@ -120,10 +120,10 @@ class CockpitApp(wx.App):
             #                             isGlobal = True, default= 0) is 1):
             #     import gui.touchscreen.touchscreen
             #     gui.touchscreen.touchscreen.makeWindow(frame)
-            #import gui.valueLogger
-            #gui.valueLogger.makeWindow(frame)
-            #from util import intensity
-            #intensity.makeWindow(frame)
+            import gui.valueLogger
+            gui.valueLogger.makeWindow(frame)
+            from util import intensity
+            intensity.makeWindow(frame)
             # All secondary windows created.
             self.secondaryWindows = [w for w in wx.GetTopLevelWindows() if w not in self.primaryWindows]
 
