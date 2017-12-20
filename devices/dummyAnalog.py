@@ -29,6 +29,7 @@ than the index.
 """
 import depot
 import device
+import re
 
 
 class DummyAnalogDevice(device.Device):
@@ -42,10 +43,16 @@ class DummyAnalogDevice(device.Device):
         return (abs(finish - start)*1e-6, 1e-6)
 
     def getHandlers(self):
+        # Fetch analog configuration
         asource = self.config.get('analogsource', None)
         aline = self.config.get('analogline', None)
         gain = self.config.get('gain', 1)
         offset = self.config.get('offset', 0)
+        # Fetch source handler and generate line handler.
         exe = depot.getHandler(asource, depot.EXECUTOR)
         h = exe.registerAnalog(self, aline, offset, gain, self.getMovementTime)
+        # Add indexed positions if specified in config.
+        positions = self.config.get('positions', None)
+        if positions:
+            h.positions = map(float, re.split('[;,]\s*', positions))
         return [h]
