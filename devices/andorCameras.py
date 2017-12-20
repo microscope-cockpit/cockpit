@@ -33,7 +33,6 @@ Functions names as lower_case are remote camera object methods.
 
 import collections
 import decimal
-import numpy
 import threading
 import time
 import wx
@@ -47,11 +46,6 @@ import gui.toggleButton
 import Pyro4
 import util.listener
 import util.threads
-
-from config import CAMERAS
-
-CLASS_NAME = 'AndorCameraManager'
-SUPPORTED_CAMERAS = ['ixon', 'ixon_plus', 'ixon_ultra']
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
@@ -74,9 +68,9 @@ TRIGGER_MODES = [
 
 class AndorCameraDevice(camera.CameraDevice):
     """A class to control Andor cameras via the pyAndor remote interface."""
-    def __init__(self, camConfig):
+    def __init__(self, name, camConfig):
         # camConfig is a dict with containing configuration parameters.
-        super(AndorCameraDevice, self).__init__(camConfig)
+        super(AndorCameraDevice, self).__init__(name, camConfig)
         self.config = camConfig
         ## Pyro proxy (formerly a copy of self.connection.connection).
         self.object =  Pyro4.Proxy('PYRO:%s@%s:%d' % ('pyroCam',
@@ -477,8 +471,3 @@ class AndorCameraDevice(camera.CameraDevice):
         # label persists.
         self.modeButton.SetLabel('Mode:\n%s' % modeString)
         self.gainButton.SetLabel('EM Gain:\n%d' % self.settings['EMGain'])
-
-
-class AndorCameraManager(camera.CameraManager):
-    _CAMERA_CLASS = AndorCameraDevice
-    _SUPPORTED_CAMERAS = SUPPORTED_CAMERAS

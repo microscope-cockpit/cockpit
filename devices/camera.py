@@ -1,8 +1,7 @@
 ## This module provides a dummy camera that generates test pattern images. 
 
 import device
-from config import CAMERAS
-import wx
+
 
 ## CameraDevice subclasses Device with some additions appropriate
 # to any camera.
@@ -36,36 +35,3 @@ class CameraDevice(device.Device):
             numpy.fliplr(image)
         if transform.flip_v:
             numpy.flipud(image)
-
-
-
-class CameraManager(device.Device):
-    """A class to manage camera devices in cockpit."""
-    def __init__(self):
-        super(CameraManager, self).__init__()
-        self.priority = 100
-        self.cameras = []
-
-        for name, camConfig in CAMERAS.iteritems():
-            camType = camConfig.get('model', '')
-            if camType and camType in self._SUPPORTED_CAMERAS:
-                self.cameras.append(self._CAMERA_CLASS(camConfig))
-        self.isActive = len(self.cameras) > 0
-
-
-    def getHandlers(self):
-        """Aggregate and return handlers from managed cameras."""
-        result = []
-        for camera in self.cameras:
-            result.append(camera.getHandlers())
-        return result
-
-
-    def finalizeInitialization(self):
-        for camera in self.cameras:
-            camera.finalizeInitialization()
-
-
-    def performSubscriptions(self):
-        for camera in self.cameras:
-            camera.performSubscriptions()

@@ -23,9 +23,7 @@ import handlers.camera
 import numpy as np
 import util.listener
 import Pyro4
-from config import CAMERAS
 
-CLASS_NAME = 'SoftCameraManager'
 SUPPORTED_CAMERAS = ['flycap2','picam']
 
 # The following must be defined as in handlers/camera.py
@@ -34,8 +32,8 @@ SUPPORTED_CAMERAS = ['flycap2','picam']
 
 class SoftCamera(camera.CameraDevice):
     """A class for software-driven cameras."""
-    def __init__(self, camConfig):
-        super(SoftCamera, self).__init__(camConfig)
+    def __init__(self, name, camConfig):
+        super(SoftCamera, self).__init__(name, camConfig)
         self.config = camConfig
         self.enabled = False
         ## Pyro proxy (formerly a copy of self.connection.connection).
@@ -136,7 +134,3 @@ class SoftCamera(camera.CameraDevice):
     def setImageSize(self, name, imageSize):
         return self.remote.setImageSize(imageSize)
 
-
-class SoftCameraManager(camera.CameraManager):
-    _CAMERA_CLASS = SoftCamera
-    _SUPPORTED_CAMERAS = SUPPORTED_CAMERAS
