@@ -25,7 +25,7 @@ import wx.propgrid
 import gui.guiUtils
 from handlers.deviceHandler import STATES
 from toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
-from util import userConfig
+import util.userConfig
 import gui.loggingWindow as log
 import events
 from distutils import version
@@ -322,7 +322,7 @@ class SettingsEditor(wx.Frame):
         for name, value in settings.iteritems():
             if self.settings[name]['type'] == 'enum':
                 settings[name] = self.settings[name]['values'][value]
-        userConfig.setValue(self.handler.getIdentifier() + '_SETTINGS',
+        util.userConfig.setValue(self.handler.getIdentifier() + '_SETTINGS',
                             settings)
 
 
