@@ -7,6 +7,7 @@ import gui.mosaic.window
 import interfaces.stageMover
 import util.user
 from distutils import version
+from itertools import chain
 
 ## Given a wx.Window instance, set up keyboard controls for that instance.
 def setKeyboardHandlers(window):
@@ -153,13 +154,10 @@ def martialWindows(parent):
         menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
         menuId += 1
 
-    for h in depot.getAllHandlers():
-        if hasattr(h, "showDebugWindow"):
-            menu.Append(menuId, 'debug ' + h.name)
-            parent.Bind(wx.EVT_MENU, lambda e, h=h: h.showDebugWindow())
-            menuId += 1
-
-
+    for d in filter(lambda x: hasattr(x, "showDebugWindow"),
+                    chain(depot.getAllHandlers(), depot.getAllDevices())):
+        menu.Append(menuId, 'debug  %s  %s' % (d.__class__.__name__, d.name ))
+        parent.Bind(wx.EVT_MENU, lambda e, d=d: d.showDebugWindow())
+        menuId += 1
 
     gui.guiUtils.placeMenuAtMouse(parent, menu)
-
