@@ -45,7 +45,7 @@ from interfaces.imager import pauseVideo
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
 
 class MicroscopeCamera(camera.CameraDevice):
-    """A class to control Andor cameras via the pyAndor remote interface."""
+    """A class to control remote python microscope cameras."""
     def __init__(self, name, cam_config):
         # camConfig is a dict with containing configuration parameters.
         super(self.__class__, self).__init__(name, cam_config)
