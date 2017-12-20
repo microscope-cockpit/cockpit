@@ -19,17 +19,19 @@ limitations under the License.
 """
 import os
 import platform
+import re
 import socket
 # Import device definitions from the config module.
-from config import config, LIGHTS, CAMERAS
+from config import config
 
 # Strings used for IP address and port in config. files.
-IPSTR = 'ipAddress'
+IPSTR = 'ipaddress' # ConfigParser makes keys lower case
 PORTSTR = 'port'
+URISTR = 'uri'
 # String used to format output.
 FORMATSTR = '{:<20}  {:>16}  {:<8}  {:<6}'
 # A list of special device types.
-IGNORELIST = ['lights', 'cameras', 'server']
+IGNORELIST = ['server']
 
 
 def ping(host):
@@ -62,34 +64,35 @@ deviceToPort = {}
 hostsUp = {}
 devicesUp = {}
 
+skipped = []
+
 # Iterate over config sections.
 for s in config.sections():
     # Skip special devices.
-    if s.lower() in IGNORELIST: continue
+    if s.lower() in IGNORELIST:
+        skipped.append('skipped %s:  in ingore list' % s)
     # Skip devices that don't have remotes.
-    if not config.has_option(s, IPSTR): continue
+    if not any(map(lambda x: x in config.options(s), [IPSTR, 'uri'])):
+        skipped.append('skipped %s:  no host or uri' % s)
+        continue
+    if 'uri' in config.options(s):
+        uri = config.get(s, 'uri')
+        match = re.match(r'(.*@)?(.*):([0-9]+)?', uri)
+        if match is None:
+            skipped.append('skipped %s:  invalid uri; missing port?' % s)
+            continue
+        prefix, host, port = match.groups()
+    else:
+        host = config.get(s, IPSTR)
+        try:
+            port = config.get(s, PORTSTR)
+        except:
+            skipped.append('skipped %s:  IP with no port' % s)
+            continue
     # Extract remote details from config and store in dicts.
-    host = config.get(s, IPSTR)
     deviceToHost[s] = host
-    port = config.get(s, PORTSTR)
     deviceToPort[s] = port
 
-# Lights are special: there is a common ipAddress, but each light
-# may have a different port.
-host = config.get('lights', IPSTR)
-for name, light in LIGHTS.iteritems():
-    port = light.get(PORTSTR, None)
-    if port:
-        deviceToHost['light ' + name] = host
-        deviceToPort['light ' + name] = port
-
-# Cameras are special: each one may be on a separate host and port.
-for name, camera in CAMERAS.iteritems():
-    host = camera.get(IPSTR, None)
-    port = camera.get(PORTSTR, None)
-    if host and port:
-        deviceToHost['cam ' + name] = host
-        deviceToPort['cam ' + name] = port
 
 # Iterate over the mappings to query host and port status.
 for device, host in deviceToHost.iteritems():
@@ -99,10 +102,13 @@ for device, host in deviceToHost.iteritems():
     devicesUp[device] = 'open' if testPort(host, port) else 'closed'
 
 # Report.
-print '\n\n'
-print FORMATSTR.format('DEVICE', 'HOSTNAME', 'STATUS', 'PORT')
-print FORMATSTR.format('======', '========', '======', '====')
+print ('\n\n')
+print (FORMATSTR.format('DEVICE', 'HOSTNAME', 'STATUS', 'PORT'))
+print (FORMATSTR.format('======', '========', '======', '======'))
 for device in sorted(deviceToHost.keys()):
     host = deviceToHost[device]
     port = deviceToPort[device]
-    print FORMATSTR.format(device, host, hostsUp[host], devicesUp[device])
+    print (FORMATSTR.format(device, host, hostsUp[host], devicesUp[device]))
+print ('\n')
+for s in skipped:
+    print (s)
