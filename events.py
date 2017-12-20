@@ -91,9 +91,9 @@ def clearOneShotSubscribers(pattern=None):
                 if hasattr(subscriber, '__abort__'):
                     subscriber.__abort__()
                 eventToOneShotSubscribers[evt].remove(subscriber)
-        if not eventToOneShotSubscribers[evt]:
-            # list is empty
-            del(eventToOneShotSubscribers[evt])
+            if not eventToOneShotSubscribers[evt]:
+                # list is empty
+                del(eventToOneShotSubscribers[evt])
 
 subscribe('user abort', clearOneShotSubscribers)
 
