@@ -39,7 +39,7 @@ class DummyAnalogDevice(device.Device):
         pass
 
     def getMovementTime(self, start, finish):
-        return abs(finish - start)*1e-6
+        return (abs(finish - start)*1e-6, 1e-6)
 
     def getHandlers(self):
         asource = self.config.get('analogsource', None)
@@ -49,4 +49,3 @@ class DummyAnalogDevice(device.Device):
         exe = depot.getHandler(asource, depot.EXECUTOR)
         h = exe.registerAnalog(self, aline, offset, gain, self.getMovementTime)
         return [h]
-
