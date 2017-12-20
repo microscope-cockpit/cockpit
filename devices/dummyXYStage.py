@@ -1,6 +1,5 @@
 ## This module creates a simple XY stage-positioning device.
 
-import depot
 import device
 import events
 import handlers.stagePositioner
@@ -8,8 +7,8 @@ import handlers.stagePositioner
 CLASS_NAME = 'DummyMoverDevice'
 
 class DummyMover(device.Device):
-    def __init__(self):
-        device.Device.__init__(self, 'dummy XY stage')
+    def __init__(self, name="dummy XY stage", config={}):
+        device.Device.__init__(self, name, config)
         # List of 2 doubles indicating our X/Y position.
         self.curPosition = [1000, 1000]
         events.subscribe('user abort', self.onAbort)
@@ -44,7 +43,7 @@ class DummyMover(device.Device):
                     'cleanupAfterExperiment': self.cleanup,
                     'setSafety': self.setSafety,
                     'getPrimitives': self.getPrimitives},
-                axis, [.01, .05, .1, .5, 1, 5, 10, 50, 100, 500, 1000, 5000],
+                axis, [5, 10, 50, 100, 500, 1000],
                 2, (minVal, maxVal), (minVal, maxVal))
             result.append(handler)
         return result
