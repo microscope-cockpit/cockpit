@@ -1,6 +1,6 @@
 import logger
 import files
-import util.user
+import user
 
 import os
 # We could use pickle here instead, but I prefer config
@@ -40,9 +40,9 @@ def loadConfig():
     if not os.path.exists(CONFIG_ROOT_PATH):
         os.mkdir(CONFIG_ROOT_PATH)
     # Ensure config exists for all users.
-    userList = util.user.getUsers() + [GLOBAL_USERNAME]
-    for user in userList:
-        pathToModule = getConfigPath(user)
+    userList = user.getUsers() + [GLOBAL_USERNAME]
+    for u in userList:
+        pathToModule = getConfigPath(u)
         if not os.path.exists(pathToModule):
             # Create a default (blank) config file.
             outHandle = open(pathToModule, 'w')
@@ -50,11 +50,11 @@ def loadConfig():
             outHandle.close()
 
         try:
-            modulename = user + CONFIG_SUFFIX
+            modulename = u + CONFIG_SUFFIX
             module = __import__(modulename, globals(), locals(), ['config'])
-            config[user] = module.config
-        except Exception, e:
-            logger.log.error("Failed to load configuration file %s: %s", modulename, e)            
+            config[u] = module.config
+        except Exception as e:
+            logger.log.error("Failed to load configuration file %s: %s", modulename, e)
 
 
 ## Serialize the current config state for the specified user
@@ -135,7 +135,7 @@ def getUser(isGlobal):
     if isGlobal:
         return GLOBAL_USERNAME
 
-    curName = util.user.getUsername()
+    curName = user.getUsername()
     if curName is not None:
         return curName
     # Nobody logged in yet; have to use global controls
