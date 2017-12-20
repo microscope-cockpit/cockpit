@@ -3,75 +3,58 @@ import depot
 import events
 import gui.toggleButton
 import util.connection
-import threading
-
 import collections
 import matplotlib
 matplotlib.use('WXAgg')
-import numpy
-import pylab
 import Pyro4
 import wx
 
-from config import config
-CLASS_NAME = 'NI6036eDevice'
-CONFIG_NAME = 'NIcard'
-
-
+##TODO: test with hardware
+##TODO: document config entries
+##TODO: clean up code
 
 class NI6036eDevice(device.Device):
-    def __init__(self):
-        self.isActive = config.has_section(CONFIG_NAME)
-        if not self.isActive:
-            return
-        else:
-            self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
-            self.port = int(config.get(CONFIG_NAME, 'port'))
+    def __init__(self, name, config={}):
+        device.Device.__init__(self, name, config)
+        #get DIO control lines from config file
+        linestring = config.get('lines', '')
+        self.lines = linestring.split(',')
+        #Get microscope paths from config file.
+        paths_linesString = config.get('paths')
+        self.excitation=[]
+        self.excitationMaps=[]
+        self.objective=[]
+        self.objectiveMaps=[]
+        self.emission =[]
+        self.emissionMaps=[]
 
-            #get DIO control lines from config file
-            linestring = config.get(CONFIG_NAME, 'lines')
-            self.lines = linestring.split(',')
-            #Get microscope paths from config file.
-            paths_linesString = config.get(CONFIG_NAME, 'paths')
-            self.excitation=[]
-            self.excitationMaps=[]
-            self.objective=[]
-            self.objectiveMaps=[]
-            self.emission =[]
-            self.emissionMaps=[]
-            
-            for path in (paths_linesString.split(';')):
-                parts = path.split(':')
-                if(parts[0]=='objective'):
-                    self.objective.append(parts[1])
-                    self.objectiveMaps.append(parts[2])
-                elif (parts[0]=='excitation'):
-                    self.excitation.append(parts[1])
-                    self.excitationMaps.append(parts[2])
-                elif (parts[0]=='emission'):
-                    self.emission.append(parts[1])
-                    self.emmisionMaps.append(parts[2])
-            
-            #IMD 20150208 comment out to make this work, need to fix
-            # self.PLOT_COLORS = config.get(CONFIG_NAME, 'PLOT_COLORS')
-            # self.LEGENDS = config.get(CONFIG_NAME, 'LEGENDS')
-            # self.DATA_REORDER = config.get(CONFIG_NAME, 'DATA_REORDER')
-            
-            #IMD 20150208 this should go into config file but dont understand how t define an array there
-            #this stuff just gets set as a raw string. 
-            self.PLOT_COLORS = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
-            ## Labels to use for lines in the plot.
-            self.LEGENDS = ['X-nano', 'Y-nano', 'Z-nano', 'Stage', 'Block', 'Room']
-            ## How we rearrange the incoming data so that it displays e.g. the nanomover
-            # sensors in order.
-            #DATA_REORDER = [1, 2, 4, 0, 5, 3]
-            self.DATA_REORDER = [0,1]
+        for path in (paths_linesString.split(';')):
+            parts = path.split(':')
+            if(parts[0]=='objective'):
+                self.objective.append(parts[1])
+                self.objectiveMaps.append(parts[2])
+            elif (parts[0]=='excitation'):
+                self.excitation.append(parts[1])
+                self.excitationMaps.append(parts[2])
+            elif (parts[0]=='emission'):
+                self.emission.append(parts[1])
+                self.emmisionMaps.append(parts[2])
+
+
+        #IMD 20150208 this should go into config file but dont understand how t define an array there
+        #this stuff just gets set as a raw string.
+        self.PLOT_COLORS = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+        ## Labels to use for lines in the plot.
+        self.LEGENDS = ['X-nano', 'Y-nano', 'Z-nano', 'Stage', 'Block', 'Room']
+        ## How we rearrange the incoming data so that it displays e.g. the nanomover
+        # sensors in order.
+        #DATA_REORDER = [1, 2, 4, 0, 5, 3]
+        self.DATA_REORDER = [0,1]
 
 
         self.makeOutputWindow = makeOutputWindow
         self.buttonName='ni6036e'
 
-        device.Device.__init__(self)
         # We want to delay initialization until after the power buttons system
         # is active.
         self.priority = 50
