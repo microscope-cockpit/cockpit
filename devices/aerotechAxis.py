@@ -17,22 +17,16 @@ limitations under the License.
 
 This module creates a simple stage-positioning device.
 """
+## TODO: test with hardware
 
-import depot
 import device
 import events
 import handlers.stagePositioner
-
-import functools
 import socket
 import re
 from time import sleep
 
-from config import config
-
-CLASS_NAME = 'AerotechZStage'
-CONFIG_NAME = 'aerotech'
-NAME_STRING = 'aerotech mover' 
+NAME_STRING = 'aerotech mover'
 LIMITS_PAT = r"(?P<limits>\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\))"
 
 ## Characters used by the SoloistCP controller.
@@ -56,44 +50,34 @@ RESPONSE_CHARS = {
 
 
 class AerotechZStage(device.Device):
-    def __init__(self):
-        device.Device.__init__(self)
-        self.isActive = config.has_section(CONFIG_NAME)
-        if self.isActive:
-            # Enable in depot.
-            self.enabled = True
-            # IP address of the controller.
-            self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')   
-            # Controller port.
-            self.port = config.getint(CONFIG_NAME, 'port')
-            #
-            try :
-                limitString = config.get(CONFIG_NAME, 'softlimits')
-                parsed = re.search(LIMITS_PAT, limitString)
-                if not parsed:
-                    # Could not parse config entry.
-                    raise Exception('Bad config: PhysikInstrumentsM687 Limits.')
-                    # No transform tuple
-                else:    
-                    lstr = parsed.groupdict()['limits']
-                    self.softlimits=eval(lstr)
-            except:
-                print "No softlimits section setting default limits"
-                self.softlimits = (-30000,7000)
+    def __init__(self, name, config={}):
+        device.Device.__init__(self, name, config)
+        try :
+            limitString = config.get('softlimits', '')
+            parsed = re.search(LIMITS_PAT, limitString)
+            if not parsed:
+                # Could not parse config entry.
+                raise Exception('Bad config: PhysikInstrumentsM687 Limits.')
+                # No transform tuple
+            else:
+                lstr = parsed.groupdict()['limits']
+                self.softlimits=eval(lstr)
+        except:
+            print "No softlimits section setting default limits"
+            self.softlimits = (-30000,7000)
 
-
-            # Subscribe to abort events.
-            events.subscribe('user abort', self.onAbort)
-            # The cockpit axis does this stage moves along.
-            self.axis = config.getint(CONFIG_NAME, 'axis')
-            # Socket used to communicate with controller.
-            self.socket = None
-            # Last known position (microns)
-            self.position = None
-            # Axis acceleration (mm / s^2)
-            self.acceleration = 200
-            # Axis maximum speed (mm / s^2)
-            self.speed = 20
+        # Subscribe to abort events.
+        events.subscribe('user abort', self.onAbort)
+        # The cockpit axis does this stage moves along.
+        self.axis = int(config.get('axis', 2))
+        # Socket used to communicate with controller.
+        self.socket = None
+        # Last known position (microns)
+        self.position = None
+        # Axis acceleration (mm / s^2)
+        self.acceleration = 200
+        # Axis maximum speed (mm / s^2)
+        self.speed = 20
 
     
     ## Send a command to the Aerotech SoloistCP and fetch the response.
