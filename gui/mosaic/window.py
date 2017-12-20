@@ -59,6 +59,8 @@ class MosaicWindow(wx.Frame):
         self.selectTilesFunc = None
         ## True if we're generating a mosaic.
         self.amGeneratingMosaic = False
+        ## Offset (set by objective change)
+        self.offset=(0,0)
 
         ## Lock on generating mosaics.
         self.mosaicGenerationLock = threading.Lock()
