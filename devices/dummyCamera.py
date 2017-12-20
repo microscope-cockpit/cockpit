@@ -9,10 +9,8 @@ import numpy
 import scipy
 import time
 import wx
-import gui
 
 # An instance of this class is created if no real cameras are found by depot.
-CLASS_NAME = 'DummyCameraDevice'
 IMAGE_SIZES = ['512x512','256x512']
 
 ## An important clarification about this system: normally the assumption is that
@@ -22,8 +20,8 @@ IMAGE_SIZES = ['512x512','256x512']
 # to the rest of the cockpit. Because this is a dummy camera, we don't have
 # exactly that system in place.
 class DummyCamera(device.Device):
-    def __init__(self):
-        device.Device.__init__(self, 'dummy cameras')
+    def __init__(self, name="dummy camera manager", config={}):
+        device.Device.__init__(self, name, config)
         ## Mapping of camera name to that camera's image size in pixels 
         # (as an index into IMAGE_SIZES).
         self.nameToImageSize = {}
@@ -159,14 +157,6 @@ class DummyCamera(device.Device):
     def makeUI(self, parent):
         devPanel = wx.Panel(parent)
         devSizer = wx.BoxSizer(wx.VERTICAL)
-        label = gui.device.Label(
-                parent=devPanel, label='from device')
-        devSizer.Add(label)
-
-        devButton = gui.toggleButton.ToggleButton(
-                label="A button",
-                parent=devPanel)
-        devSizer.Add(devButton)
 
         devPanel.SetSizerAndFit(devSizer)
         return devPanel
