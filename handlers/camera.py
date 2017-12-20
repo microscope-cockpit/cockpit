@@ -1,6 +1,7 @@
 import decimal
 import wx
 import gui
+import gui.device
 
 import depot
 import deviceHandler
