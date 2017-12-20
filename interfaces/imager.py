@@ -16,8 +16,13 @@ def pauseVideo(func):
         wasInVideoMode = imager.amInVideoMode
         if wasInVideoMode:
             imager.shouldStopVideoMode = True
+            tstart = time.time()
             while imager.amInVideoMode:
                 time.sleep(0.05)
+                if time.time() > tstart + 1.:
+                    print("Timeout pausing video mode - abort and restart.")
+                    events.publish('user abort')
+                    break
         result = func(*args, **kwargs)
         if wasInVideoMode:
             imager.videoMode()
