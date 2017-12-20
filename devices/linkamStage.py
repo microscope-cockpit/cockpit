@@ -17,7 +17,8 @@ limitations under the License.
 =============================================================================
 Cockpit-side module for Linkam stages. Tested with CMS196.
 
-Uses config section 'linkam' with following parameters:
+Config uses following parameters:
+  type:         LinkamStage
   ipAddress:    address of pyLinkam remote
   port:         port that remote is listening on
   primitives:   list of _c_ircles and _r_ectangles to draw on MacroStageXY 
@@ -25,7 +26,6 @@ Uses config section 'linkam' with following parameters:
                     c x0 y0 radius
                     r x0 y0 width height
 """
-import depot
 import events
 import gui.guiUtils
 import gui.device
@@ -42,18 +42,14 @@ import time
 import wx
 import re # to get regular expression parsing for config file
 
-from config import config
-CLASS_NAME = 'CockpitLinkamStage'
-
-CONFIG_NAME = 'linkam'
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
 DEFAULT_LIMITS = ((0, 0), (11000, 3000))
 TEMPERATURE_LOGGING = False
 
-class CockpitLinkamStage(stage.StageDevice):
+class LinkamStage(stage.StageDevice):
     CONFIG_NAME = CONFIG_NAME
-    def __init__(self):
-        super(CockpitLinkamStage, self).__init__()
+    def __init__(self, name, config={}):
+        super(CockpitLinkamStage, self).__init__(name, config)
         ## Connection to the XY stage controller (serial.Serial instance).
         self.remote = None
         ## Lock around sending commands to the XY stage controller.
@@ -72,27 +68,22 @@ class CockpitLinkamStage(stage.StageDevice):
         self.status = {}
         ## Flag to show UI has been built.
         self.hasUI = False
-
-        self.isActive = config.has_section(CONFIG_NAME)
-        if self.isActive:
-            self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
-            self.port = int(config.get(CONFIG_NAME, 'port'))
-            try :
-                limitString = config.get(CONFIG_NAME, 'softlimits')
-                parsed = re.search(LIMITS_PAT, limitString)
-                if not parsed:
-                    # Could not parse config entry.
-                    raise Exception('Bad config: PhysikInstrumentsM687 Limits.')
-                    # No transform tuple
-                else:    
-                    lstr = parsed.groupdict()['limits']
-                    self.softlimits=eval(lstr)
-            except:
-                logger.log.warn('Could not parse limits from config: using defaults.')
-                print "No softlimits section setting default limits"
-                self.softlimits = DEFAULT_LIMITS
-            events.subscribe('user logout', self.onLogout)
-            events.subscribe('user abort', self.onAbort)
+        try :
+            limitString = config.get('softlimits', '')
+            parsed = re.search(LIMITS_PAT, limitString)
+            if not parsed:
+                # Could not parse config entry.
+                raise Exception('Bad config: Linkam Limits.')
+                # No transform tuple
+            else:
+                lstr = parsed.groupdict()['limits']
+                self.softlimits=eval(lstr)
+        except:
+            logger.log.warn('Could not parse limits from config: using defaults.')
+            print "No softlimits section setting default limits"
+            self.softlimits = DEFAULT_LIMITS
+        events.subscribe('user logout', self.onLogout)
+        events.subscribe('user abort', self.onAbort)
 
 
     def finalizeInitialization(self):
