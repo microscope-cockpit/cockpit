@@ -2,52 +2,44 @@ import device
 import depot
 import events
 import gui.toggleButton
-import util.connection
 import collections
 import Pyro4
 import wx
-import re
 import threading
 import time
 
-from config import config
-CLASS_NAME = 'RaspberryPi'
-CONFIG_NAME = 'rpi'
 #DIO_LINES = ['Objective']
 #LINES_PAT = r"(?P<lines>\'\s*\w*\s*\')"
 
+## TODO: Test with hardware.
+## TODO: Clean up code.
 
 
 class RaspberryPi(device.Device):
-    def __init__(self):
-        self.isActive = config.has_section(CONFIG_NAME)
-        self.priority = 10000
-        if not self.isActive:
-            return
-        else:
-            self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
-            self.port = int(config.get(CONFIG_NAME, 'port'))
-            linestring = config.get(CONFIG_NAME, 'lines')
-            self.lines = linestring.split(',')
-            paths_linesString = config.get(CONFIG_NAME, 'paths')
-            self.excitation=[]
-            self.excitationMaps=[]
-            self.objective=[]
-            self.objectiveMaps=[]
-            self.emission =[]
-            self.emissionMaps=[]
-            
-            for path in (paths_linesString.split(';')):
-                parts = path.split(':')
-                if(parts[0]=='objective'):
-                    self.objective.append(parts[1])
-                    self.objectiveMaps.append(parts[2])
-                elif (parts[0]=='excitation'):
-                    self.excitation.append(parts[1])
-                    self.excitationMaps.append(parts[2])
-                elif (parts[0]=='emission'):
-                    self.emission.append(parts[1])
-                    self.emmisionMaps.append(parts[2])
+    def __init__(self, name, config):
+        # self.ipAddress and self.port set by device.Device.__init__
+        device.Device.__init__(self, name, config)
+        linestring = config.get('lines')
+        self.lines = linestring.split(',')
+        paths_linesString = config.get('paths')
+        self.excitation=[]
+        self.excitationMaps=[]
+        self.objective=[]
+        self.objectiveMaps=[]
+        self.emission =[]
+        self.emissionMaps=[]
+
+        for path in (paths_linesString.split(';')):
+            parts = path.split(':')
+            if(parts[0]=='objective'):
+                self.objective.append(parts[1])
+                self.objectiveMaps.append(parts[2])
+            elif (parts[0]=='excitation'):
+                self.excitation.append(parts[1])
+                self.excitationMaps.append(parts[2])
+            elif (parts[0]=='emission'):
+                self.emission.append(parts[1])
+                self.emmisionMaps.append(parts[2])
             
         self.RPiConnection = None
         ## util.connection.Connection for the temperature sensors.
