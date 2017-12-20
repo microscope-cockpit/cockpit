@@ -21,7 +21,7 @@ import time
 import util
 
 
-class BoulderSLMDevice(device.Device):
+class BoulderSLM(device.Device):
     _config_types = {
         'settlingtime': float,
         'triggerLine': int,

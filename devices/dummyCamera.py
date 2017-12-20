@@ -21,7 +21,7 @@ IMAGE_SIZES = ['512x512','256x512']
 # has taken an image and send it to us here, at which point it is propagated
 # to the rest of the cockpit. Because this is a dummy camera, we don't have
 # exactly that system in place.
-class DummyCameraDevice(device.Device):
+class DummyCamera(device.Device):
     def __init__(self):
         device.Device.__init__(self, 'dummy cameras')
         ## Mapping of camera name to that camera's image size in pixels 

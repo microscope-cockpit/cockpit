@@ -6,7 +6,7 @@ CLASS_NAME = 'DummyLightsDevice'
 
 
 
-class DummyLightsDevice(device.Device):
+class DummyLights(device.Device):
     def __init__(self):
         device.Device.__init__(self, 'dummy lights')
         ## Maps lightsource names to their exposure times.

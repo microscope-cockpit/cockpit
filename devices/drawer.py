@@ -4,7 +4,7 @@
 # configurations, each with one dye and one wavelength per camera.
 #
 #       [name]
-#       type: DrawerDevice
+#       type: Drawer
 #       cameras: cam1, cam2
 #       default: GFP: 525, Cy5: 695
 #       TRITC: FITC: 518, TRITC: 600
@@ -14,7 +14,7 @@ import device
 from handlers.drawer import DrawerHandler, DrawerSettings
 import re
 
-class DrawerDevice(device.Device):
+class Drawer(device.Device):
     def __init__(self, name, config):
         device.Device.__init__(self, name, config)
 

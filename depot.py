@@ -63,7 +63,7 @@ class DeviceDepot:
                                        DEVICE_FOLDER,
                                        'configurator.py')):
             import devices.configurator
-            self._configurator = devices.configurator.ConfiguratorDevice()
+            self._configurator = devices.configurator.Configurator()
             self.initDevice(self._configurator)
 
 
@@ -154,11 +154,11 @@ class DeviceDepot:
             dummies.append(devices.dummyZStage.DummyZStage())
         if (0 not in axes) or (1 not in axes):
             import devices.dummyXYStage
-            dummies.append(devices.dummyXYStage.DummyMoverDevice())
+            dummies.append(devices.dummyXYStage.DummyMover())
         # Cameras
         if not getHandlersOfType(CAMERA):
             import devices.dummyCamera
-            dummies.append(devices.dummyCamera.DummyCameraDevice())
+            dummies.append(devices.dummyCamera.DummyCamera())
         # Dummy imager
         if not getHandlersOfType(IMAGER):
             import devices.imager

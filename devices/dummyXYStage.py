@@ -7,7 +7,7 @@ import handlers.stagePositioner
 
 CLASS_NAME = 'DummyMoverDevice'
 
-class DummyMoverDevice(device.Device):
+class DummyMover(device.Device):
     def __init__(self):
         device.Device.__init__(self, 'dummy XY stage')
         # List of 2 doubles indicating our X/Y position.

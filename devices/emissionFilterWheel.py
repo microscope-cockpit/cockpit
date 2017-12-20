@@ -62,7 +62,7 @@ class FilterWheelManager(device.Device):
         self.isActive = True
         self.wheels = []
         for name in names:
-            self.wheels.append(FilterWheelDevice(name))
+            self.wheels.append(FilterWheel(name))
         # One timer keeps all displays current.
         self.timer = wx.Timer()
         self.timer.Bind(wx.EVT_TIMER, self.updateUI)
@@ -112,7 +112,7 @@ class FilterWheelManager(device.Device):
             w.updateUI()
 
 
-class FilterWheelDevice(device.Device):
+class FilterWheel(device.Device):
     def __init__(self, name):
         self.name = name
         self.displayName = name.replace(CONFIG_NAME, '').lstrip()

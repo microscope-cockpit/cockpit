@@ -11,7 +11,7 @@ CONFIG_NAME = 'base'
 from config import config
 
 
-class ConfiguratorDevice(device.Device):
+class Configurator(device.Device):
     def getHandlers(self):
         root = config.get(CONFIG_NAME, 'root', 'C:' + os.path.sep)
  
