@@ -6,21 +6,15 @@ import handlers.genericPositioner
 import handlers.stagePositioner
 import util.connection
 import interfaces
-
-import numpy
-import threading
 import time
-import wx
-import copy
 
-from config import config
-CLASS_NAME = 'NanomoverDevice'
-CONFIG_NAME = 'nanomover'
+## TODO: test with hardware.
+
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*\))"
 
 class NanomoverDevice(stage.StageDevice):
-    def __init__(self):
-        device.Device.__init__(self)
+    def __init__(self, name, config={}):
+        device.Device.__init__(self, name, config)
         ## Current stage position information.
         self.curPosition = [14500, 14500, 14500]
         ## Connection to the Nanomover controller program.
@@ -36,40 +30,33 @@ class NanomoverDevice(stage.StageDevice):
         self.axisSignMapper = {0: 1, 1: 1, 2: 1}
         ## Time of last action using the piezo; used for tracking if we should
         # disable closed loop.
-         
-        self.isActive = config.has_section(CONFIG_NAME)
-        if self.isActive:
-            self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
-            self.port = int(config.get(CONFIG_NAME, 'port'))
-            self.timeout = config.getfloat(CONFIG_NAME, 'timeout')
-            try :
-                limitString = config.get(CONFIG_NAME, 'softlimits')
-                parsed = re.search(LIMITS_PAT, limitString)
-                if not parsed:
-                    # Could not parse config entry.
-                    raise Exception('Bad config: Nanomover Limits.')
-                    # No transform tuple
-                else:    
-                    lstr = parsed.groupdict()['limits']
-                    self.softlimits=eval(lstr)
-                    self.safeties=eval(lstr)
-            except:
-                print "No softlimits section setting default limits"
-                self.softlimits = [[0, 25000],
-                                   [0, 25000],
-                                   [7300, 25000]]
-                self.safeties = [[0, 25000],
-                                   [0, 25000],
-                                   [7300, 25000]]
+        self.timeout = float(config.get('timeout', 0.1))
+        try :
+            limitString = config.get('softlimits', '')
+            parsed = re.search(LIMITS_PAT, limitString)
+            if not parsed:
+                # Could not parse config entry.
+                raise Exception('Bad config: Nanomover Limits.')
+                # No transform tuple
+            else:
+                lstr = parsed.groupdict()['limits']
+                self.softlimits=eval(lstr)
+                self.safeties=eval(lstr)
+        except:
+            print "No softlimits section setting default limits"
+            self.softlimits = [[0, 25000],
+                               [0, 25000],
+                               [7300, 25000]]
+            self.safeties = [[0, 25000],
+                               [0, 25000],
+                               [7300, 25000]]
 
-            #a usful middle position for after a home
-            self.middleXY=( (self.safeties[0][1]-self.safeties[0][0])/2.0,
-                            (self.safeties[0][1]-self.safeties[0][0])/2.0)
-                #            events.subscribe('user logout', self.onLogout)
-            events.subscribe('user abort', self.onAbort)
-#            events.subscribe('macro stage xy draw', self.onMacroStagePaint)
-            events.subscribe('cockpit initialization complete',
-                    self.promptExerciseStage)
+        # a useful middle position for after a home
+        self.middleXY=( (self.safeties[0][1]-self.safeties[0][0])/2.0,
+                        (self.safeties[0][1]-self.safeties[0][0])/2.0)
+        events.subscribe('user abort', self.onAbort)
+        events.subscribe('cockpit initialization complete',
+                         self.promptExerciseStage)
 
         
 
