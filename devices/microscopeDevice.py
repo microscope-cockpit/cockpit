@@ -48,10 +48,10 @@ CONFIG_NAME = 'universal'
 # Device types.
 (UGENERIC, USWITCHABLE, UDATA, UCAMERA, ULASER, UFILTER) = range(6)
 
-class UniversalBase(device.Device):
+class MicroscopeBase(device.Device):
     """A class to communicate with the UniversalDevice interface."""
     def __init__(self, name, config):
-        super(UniversalBase, self).__init__(name, config)
+        super(MicroscopeBase, self).__init__(name, config)
         self.handlers = []
         self.panel = None
         # Pyro proxy
@@ -153,7 +153,7 @@ class UniversalBase(device.Device):
         raise err
 
 
-class UniversalGenericDevice(UniversalBase):
+class MicroscopeGenericDevice(MicroscopeBase):
     def getHandlers(self):
         """Return device handlers."""
         result = handlers.deviceHandler.DeviceHandler(
@@ -177,7 +177,7 @@ class UniversalGenericDevice(UniversalBase):
         return self.panel
 
 
-class UniversalSwitchableDevice(UniversalBase):
+class MicroscopeSwitchableDevice(MicroscopeBase):
     def getHandlers(self):
         """Return device handlers."""
         result = handlers.deviceHandler.DeviceHandler(
@@ -202,11 +202,11 @@ class UniversalSwitchableDevice(UniversalBase):
 
 
     def finalizeInitialization(self):
-        super(UniversalSwitchableDevice, self).finalizeInitialization()
+        super(MicroscopeSwitchableDevice, self).finalizeInitialization()
         self.enabled = self._proxy.get_is_enabled()
 
 
-class UniversalLaser(UniversalBase):
+class MicroscopeLaser(MicroscopeBase):
     def _setEnabled(self, on):
         if on:
             self._proxy.enable()
@@ -253,9 +253,9 @@ class UniversalLaser(UniversalBase):
         return self.handlers
 
 
-class UniversalFilter(UniversalBase):
+class MicroscopeFilter(MicroscopeBase):
     def __init__(self, *args, **kwargs):
-        super(UniversalFilter, self).__init__(*args, **kwargs)
+        super(MicroscopeFilter, self).__init__(*args, **kwargs)
         # Cameras
         cdefs = self.config.get('cameras', None)
         if cdefs:
@@ -318,12 +318,12 @@ class UniversalFilter(UniversalBase):
 
 # Type maps.
 ENUM_TO_CLASS = {
-    UGENERIC: UniversalGenericDevice,
-    USWITCHABLE: UniversalSwitchableDevice,
+    UGENERIC: MicroscopeGenericDevice,
+    USWITCHABLE: MicroscopeSwitchableDevice,
     UDATA: None,
     UCAMERA: None,
     ULASER: None,
-    UFILTER: UniversalFilter,}
+    UFILTER: MicroscopeFilter,}
 
 
 class UniversalDeviceManager(device.Device):
