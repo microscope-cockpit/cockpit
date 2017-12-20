@@ -3,16 +3,14 @@ import events
 import handlers.stagePositioner
 import util.threads
 
-import Pyro4
 import socket
 import threading
 import time
 
 import util.logger
+## TODO: test with hardware.
 
-from config import config
-CLASS_NAME = 'PicoMotorDevice'
-CONFIG_NAME = 'picomotor'
+
 ## Will look for a config section called 'picomotor', containing parameters:
 #   cal        -  calibration;
 #   ipAddress  - the IP address of the controller;
@@ -54,14 +52,15 @@ CONFIG_NAME = 'picomotor'
 # 1 pa 10000
 
 class PicoMotorDevice(device.Device):
-    def __init__(self):
-        self.isActive = config.has_section(CONFIG_NAME)
-        if not self.isActive:
-            return
-        else:
-            self.STAGE_CAL = float(config.get(CONFIG_NAME, 'cal')) # e.g. 13.750
-            self.PICO_CONTROLLER = config.get(CONFIG_NAME, 'ipAddress') # e.g. 172.16.0.30'
-            self.PICO_PORT = int(config.get(CONFIG_NAME, 'port')) # e.g. 23
+    __class__ = {
+        'cal': float,
+        'port': int,
+    }
+    def __init__(self, name, config):
+        device.Device.__init__(self, name, config)
+        self.STAGE_CAL = config.get('cal')) # e.g. 13.750
+        self.PICO_CONTROLLER = config.get('ipAddress') # e.g. 172.16.0.30'
+        self.PICO_PORT = config.get('port')) # e.g. 23
 
         ## Maps the cockpit's axis ordering (0: X, 1: Y, 2: Z) to the
         # XY stage's ordering which is 
