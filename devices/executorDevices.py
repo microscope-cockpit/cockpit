@@ -158,6 +158,8 @@ class ExecutorDevice(device.Device):
 
 class LegacyDSPDevice(ExecutorDevice):
     import numpy
+    ## TODO: test with hardware.
+    #        May need to wrap profile digitals and analogs in numpy object.
     def __init__(self, name, config):
         super(self.__class__, self).__init__(name, config)
         self.tickrate = 10 # Number of ticks per ms.
@@ -236,6 +238,9 @@ class LegacyDSPDevice(ExecutorDevice):
                 # Repeat the last event at t0 + repDuration
                 actions.append( (t0+repDuration,) + tuple(actions[-1][1:]) )
 
+        # I think the point of this is just to create a struct with C-aligned fields.
+        # If so, we don't need numpy for this, as we only touch the first element
+        # in this recarray: could use struct, instead.
         description = np.rec.array(
             None,
             formats="u4, f4, u4, u4, 4u4",
