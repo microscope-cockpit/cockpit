@@ -25,7 +25,12 @@ name appears in another file.
 import os
 import time
 import shutil
-from ConfigParser import ConfigParser
+try:
+    #py2
+    from ConfigParser import ConfigParser
+except:
+    #py3
+    from configparser import ConfigParser
 
 class MyConfigParser(ConfigParser, object):
     def __init__(self):
