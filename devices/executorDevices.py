@@ -88,7 +88,7 @@ class ExecutorDevice(device.Device):
     def getHandlers(self):
         result = []
         h = handlers.executor.AnalogDigitalExecutorHandler(
-            "DSP", "executor",
+            self.name, "executor",
             {'examineActions': lambda *args: None,
              'executeTable': self.executeTable,
              'readDigital': self.connection.ReadDigital,
@@ -104,7 +104,7 @@ class ExecutorDevice(device.Device):
         # have hybrid handlers with multiple inheritance, but that would need
         # an overhaul of how depot determines handler types.
         result.append(handlers.imager.ImagerHandler(
-            "DSP imager", "imager",
+            "%s imager" % (self.name), "imager",
             {'takeImage': h.takeImage}))
 
         self.handlers = set(result)
