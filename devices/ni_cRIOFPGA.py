@@ -22,7 +22,8 @@
 # >>> FPGA._deviceInstance.advanceSLM(numSteps)
 # (where numSteps is an integer, the number of times to advance it).
 
-## TODO: Change config files.
+## TODO: 2017-12 Fix up for new config file format.
+## TODO: 2017-12 Use new executor handlers that now do most of the work.
 
 import decimal
 import matplotlib
@@ -61,16 +62,12 @@ FPGA_UPDATE_RATE = .1 # At which rate is the FPGA sending update status signals
 MASTER_IP = '10.6.19.11'
 
 class NIcRIO(device.Device):
-    def __init__(self):
-        device.Device.__init__(self)
-        self.isActive = config.has_section(CONFIG_NAME)
+    def __init__(self, name, config={}):
+        device.Device.__init__(self, name, config)
         if not self.isActive:
             return
-        ## IP address of the NIcRIO RT-computer.
-        self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
-        ## Port to use to send data to the NIcRIO RT-computer. Used in TCP
-        self.sendPort = int(config.get(CONFIG_NAME, 'sendPort'))
-        self.receivePort = int(config.get(CONFIG_NAME, 'receivePort'))
+        self.sendPort = int(config.get('sendport'))
+        self.receivePort = int(config.get('receiveport'))
         self.port = [self.sendPort, self.receivePort]
         ## Create connection to the NIcRIO RT-computer
         self.connection = Connection(self.ipAddress, self.port)
