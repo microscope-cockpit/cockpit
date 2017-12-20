@@ -69,7 +69,8 @@ class FilterHandler(deviceHandler.DeviceHandler):
         # Emission filters
         for camera in self.cameras:
             h = depot.getHandler(camera, depot.CAMERA)
-            h.updateFilter(f.label, f.value)
+            if h is not None:
+                h.updateFilter(f.label, f.value)
         # Excitation filters
         for h in self.lights:
             pass
