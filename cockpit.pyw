@@ -51,7 +51,7 @@ class CockpitApp(wx.App):
             import depot
 
             numDevices = len(config.sections()) + 1 # + 1 is for dummy devs.
-            numNonDevices = 10
+            numNonDevices = 15
             status = wx.ProgressDialog(parent = None,
                     title = "Initializing OMX Cockpit",
                     message = "Importing modules...",
