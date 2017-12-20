@@ -5,15 +5,9 @@ import handlers.configuratorHandler
 
 import os
 
-CLASS_NAME = 'ConfiguratorDevice'
-CONFIG_NAME = 'base'
-
-from config import config
-
-
 class Configurator(device.Device):
     def getHandlers(self):
-        root = config.get(CONFIG_NAME, 'root', 'C:' + os.path.sep)
+        root = self.config.get('root', 'C:' + os.path.sep)
  
         # Default values.
         configdict = {
@@ -25,16 +19,14 @@ class Configurator(device.Device):
                 'configDirectory': os.path.join(root, 'AA_MUI_CONFIG'),
         }
 
-
         # Update the configdict with values from config module.
-        if config.has_section(CONFIG_NAME):
-            for opt in config.options(CONFIG_NAME):
-                if opt in configdict:
-                    # Already exists. Make sure we keep the same type.
-                    dtype = type(configdict[opt])
-                    configdict.update({opt: dtype(config.get(CONFIG_NAME, opt))})
-                else:
-                    configdict.update({opt: config.get(CONFIG_NAME, opt)})
+        for opt in self.config:
+            if opt in configdict:
+                # Already exists. Make sure we keep the same type.
+                dtype = type(configdict[opt])
+                configdict.update({opt: dtype(self.config.get(opt))})
+            else:
+                configdict.update({opt: self.config.get(opt)})
 
 
         return [handlers.configuratorHandler.ConfiguratorHandler(

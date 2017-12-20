@@ -5,8 +5,6 @@
 import device
 import handlers.objective
 import re
-from config import config
-CONFIG_NAME = 'objectives'
 PIXEL_PAT =  r"(?P<pixel_size>\d*[.]?\d*)"
 LENSID_PAT = r"(?P<lensID>\d*)"
 TRANSFORM_PAT = r"(?P<transform>\(\s*\d*\s*,\s*\d*\s*,\s*\d*\s*\))"
