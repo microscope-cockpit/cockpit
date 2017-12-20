@@ -52,15 +52,15 @@ import util.logger
 # 1 pa 10000
 
 class PicoMotorDevice(device.Device):
-    __class__ = {
+    _config_types = {
         'cal': float,
         'port': int,
     }
     def __init__(self, name, config):
         device.Device.__init__(self, name, config)
-        self.STAGE_CAL = config.get('cal')) # e.g. 13.750
+        self.STAGE_CAL = config.get('cal') # e.g. 13.750
         self.PICO_CONTROLLER = config.get('ipAddress') # e.g. 172.16.0.30'
-        self.PICO_PORT = config.get('port')) # e.g. 23
+        self.PICO_PORT = config.get('port') # e.g. 23
 
         ## Maps the cockpit's axis ordering (0: X, 1: Y, 2: Z) to the
         # XY stage's ordering which is 
