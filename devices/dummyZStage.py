@@ -8,8 +8,8 @@ import handlers.stagePositioner
 CLASS_NAME = 'DummyZStage'
 
 class DummyZStage(device.Device):
-    def __init__(self):
-        device.Device.__init__(self, 'dummy Z stage')
+    def __init__(self, name='dummy Z stage', config={}):
+        device.Device.__init__(self, name, config)
         self.curPosition = 100
         # Set priority to Inf to indicate that this is a dummy device.
         self.priority = float('inf')
