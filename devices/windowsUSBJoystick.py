@@ -43,8 +43,6 @@ else:
     from ctypes import c_ulong as DWORD
     from ctypes import c_wchar as TCHAR
 
-CLASS_NAME = 'WindowsJoystickDevice'
-
 # Fetch function pointers
 if os.name is 'nt':
     joyGetNumDevs = ctypes.windll.winmm.joyGetNumDevs
@@ -135,8 +133,8 @@ class JOYINFOEX(ctypes.Structure):
 
 
 class WindowsJoystick(device.Device):
-    def __init__(self):
-        super(self.__class__, self).__init__()
+    def __init__(self, name, config):
+        super(self.__class__, self).__init__(name, config)
         self.isActive = True
         self.priority = 100
         # Get the number of supported devices (usually 16).
