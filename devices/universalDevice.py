@@ -206,7 +206,7 @@ class UniversalSwitchableDevice(UniversalBase):
         self.enabled = self._proxy.get_is_enabled()
 
 
-class UniversalLaserDevice(UniversalBase):
+class UniversalLaser(UniversalBase):
     def _setEnabled(self, on):
         if on:
             self._proxy.enable()
@@ -253,9 +253,9 @@ class UniversalLaserDevice(UniversalBase):
         return self.handlers
 
 
-class UniversalFilterDevice(UniversalBase):
+class UniversalFilter(UniversalBase):
     def __init__(self, *args, **kwargs):
-        super(UniversalFilterDevice, self).__init__(*args, **kwargs)
+        super(UniversalFilter, self).__init__(*args, **kwargs)
         # Cameras
         cdefs = self.config.get('cameras', None)
         if cdefs:
@@ -323,7 +323,7 @@ ENUM_TO_CLASS = {
     UDATA: None,
     UCAMERA: None,
     ULASER: None,
-    UFILTER: UniversalFilterDevice,}
+    UFILTER: UniversalFilter,}
 
 
 class UniversalDeviceManager(device.Device):
