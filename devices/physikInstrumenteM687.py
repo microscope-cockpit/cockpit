@@ -9,19 +9,15 @@ import util.userConfig
 import stage
 from OpenGL.GL import *
 import serial
-import socket
 import threading
 import time
 import wx
 import re # to get regular expression parsing for config file
 
-from config import config
-
-## This module is for Physik Instrumente (PI) M687 XY stage. 
-CLASS_NAME = 'PhysikInstrumenteM687'
-CONFIG_NAME = 'm687'
+## This module is for Physik Instrumente (PI) M687 XY stage.
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
 
+## TODO:  Test with hardware.
 ## TODO:  These parameters should be factored out to a config file.
 
 ## Maps error codes to short descriptions. These appear to be the
@@ -59,9 +55,11 @@ BANNED_RECTANGLES = ()
 
 
 class PhysikInstrumenteM687(stage.StageDevice):
-    CONFIG_NAME = CONFIG_NAME
-    def __init__(self):
-        super(PhysikInstrumenteM687, self).__init__()
+    _config_types = {'port': int,
+                     'baud': int,
+                     'timeout': float,}
+    def __init__(self, name, config):
+        super(PhysikInstrumenteM687, self).__init__(name, config)
         ## Connection to the XY stage controller (serial.Serial instance)
         self.xyConnection = None
         ## Lock around sending commands to the XY stage controller.
@@ -84,29 +82,27 @@ class PhysikInstrumenteM687(stage.StageDevice):
 
         ## If there is a config section for the m687, grab the config and
         # subscribe to events.
-        self.isActive = config.has_section(CONFIG_NAME)
-        if self.isActive:
-            self.port = config.get(CONFIG_NAME, 'port')
-            self.baud = config.getint(CONFIG_NAME, 'baud')
-            self.timeout = config.getfloat(CONFIG_NAME, 'timeout')
-            try :
-                limitString = config.get(CONFIG_NAME, 'softlimits')
-                parsed = re.search(LIMITS_PAT, limitString)
-                if not parsed:
-                    # Could not parse config entry.
-                    raise Exception('Bad config: PhysikInstrumentsM687 Limits.')
-                    # No transform tuple
-                else:    
-                    lstr = parsed.groupdict()['limits']
-                    self.softlimits=eval(lstr)
-            except:
-                print "No softlimits section setting default limits"
-                self.softlimits = ((-67500, 67500), (-42500, 42500))
-            events.subscribe('user logout', self.onLogout)
-            events.subscribe('user abort', self.onAbort)
-            events.subscribe('macro stage xy draw', self.onMacroStagePaint)
-            events.subscribe('cockpit initialization complete',
-                    self.promptExerciseStage)
+        self.port = config.get('port')
+        self.baud = config.getint('baud')
+        self.timeout = config.getfloat('timeout')
+        try :
+            limitString = config.get('softlimits')
+            parsed = re.search(LIMITS_PAT, limitString)
+            if not parsed:
+                # Could not parse config entry.
+                raise Exception('Bad config: PhysikInstrumentsM687 Limits.')
+                # No transform tuple
+            else:
+                lstr = parsed.groupdict()['limits']
+                self.softlimits=eval(lstr)
+        except:
+            print "No softlimits section setting default limits"
+            self.softlimits = ((-67500, 67500), (-42500, 42500))
+        events.subscribe('user logout', self.onLogout)
+        events.subscribe('user abort', self.onAbort)
+        events.subscribe('macro stage xy draw', self.onMacroStagePaint)
+        events.subscribe('cockpit initialization complete',
+                self.promptExerciseStage)
 
 
     def initialize(self):
