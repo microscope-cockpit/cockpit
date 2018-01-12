@@ -148,7 +148,10 @@ class LinkamStage(stage.StageDevice):
                 self.lastFillCycle = self.lastFillTimer
                 self.lastFillTimer = timeSinceFill
                 self.timerbackground = (170, 170, 170)
-            events.publish('update status light','Fill Timer','Fill Timer\n%2.1f/%2.1f' %(timeSinceFill,self.lastFillCycle, self.timerbackground)
+            events.publish('update status light','Fill Timer',
+                           'Fill Timer\n%2.1f/%2.1f' %(timeSinceFill,
+                                                       self.lastFillCycle)
+                           ,self.timerbackground)
 
     def initialize(self):
         """Initialize the device."""
