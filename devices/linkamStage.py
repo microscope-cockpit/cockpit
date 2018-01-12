@@ -130,19 +130,6 @@ class CockpitLinkamStage(stage.StageDevice):
             events.publish("status update", __name__, self.status)
             self.sendPositionUpdates()
             self.updateUI()
-
-            if not TEMPERATURE_LOGGING:
-                continue
-
-            newTemps = '%.1f\t%.1f\t%.1f' % (self.status.get('dewarT'),
-                                             self.status.get('chamberT'),
-                                             self.status.get('bridgeT'))
-            if not hasattr(self, 'lastTemps'):
-                self.lastTemps = ''
-            if self.lastTemps != newTemps:
-                with open('linkLog.txt', 'a') as f:
-                    f.write('%f\t%s\n' % (self.status.get('time'), newTemps))
-                self.lastTemps = newTemps
             #update fill timer status light
             timeSinceFill = self.status.get('timeSinceMainFill') 
             if( timeSinceFill > (0.9*self.lastFillCycle)):
@@ -156,6 +143,19 @@ class CockpitLinkamStage(stage.StageDevice):
                                                        self.lastFillCycle/60.0)
                            ,self.timerbackground)
             self.lastFillTimer = timeSinceFill
+
+            if not TEMPERATURE_LOGGING:
+                continue
+
+            newTemps = '%.1f\t%.1f\t%.1f' % (self.status.get('dewarT'),
+                                             self.status.get('chamberT'),
+                                             self.status.get('bridgeT'))
+            if not hasattr(self, 'lastTemps'):
+                self.lastTemps = ''
+            if self.lastTemps != newTemps:
+                with open('linkLog.txt', 'a') as f:
+                    f.write('%f\t%s\n' % (self.status.get('time'), newTemps))
+                self.lastTemps = newTemps
 
     def initialize(self):
         """Initialize the device."""
