@@ -150,12 +150,12 @@ class CockpitLinkamStage(stage.StageDevice):
             if( timeSinceFill < self.lastFillTimer ):
                 #refilled so need to reset cycle time and background
                 self.lastFillCycle = self.lastFillTimer
-                self.lastFillTimer = timeSinceFill
                 self.timerbackground = (170, 170, 170)
             events.publish('update status light','Fill Timer',
-                           'Fill Timer\n%2.1f/%2.1f' %(timeSinceFill,
-                                                       self.lastFillCycle)
+                           'Fill Timer\n%2.1f/%2.1f' %(timeSinceFill/60.0,
+                                                       self.lastFillCycle/60.0)
                            ,self.timerbackground)
+            self.lastFillTimer = timeSinceFill
 
     def initialize(self):
         """Initialize the device."""
