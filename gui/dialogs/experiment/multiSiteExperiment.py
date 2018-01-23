@@ -331,14 +331,14 @@ class MultiSiteExperimentDialog(wx.Dialog):
                 # Wait for when the next cycle should start.
                 waitTime = cycleStartTime + cycleDuration - time.time()
                 if not self.waitFor(waitTime):
-                    print "Couldn't finish cycle in time; off by %.2f seconds" % (-waitTime)
-            print "Starting cycle",cycleNum,"of",numCycles,"at %.2f" % time.time()
+                    print ("Couldn't finish cycle in time; off by %.2f seconds" % (-waitTime))
+            print ("Starting cycle",cycleNum,"of",numCycles,"at %.2f" % time.time())
             cycleStartTime = time.time()
             self.activateLights(cycleNum)
             for siteId in siteIds:
                 if self.shouldAbort:
                     break
-                print "Imaging site",siteId,"at %.2f" % time.time()
+                print ("Imaging site",siteId,"at %.2f" % time.time())
                 self.imageSite(siteId, cycleNum, experimentStart)
 
             if self.shouldAbort:
@@ -403,7 +403,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
         start = time.time()
         events.executeAndWaitFor('experiment complete',
                 self.experimentPanel.runExperiment)
-        print "Imaging took %.2fs" % (time.time() - start)
+        print ("Imaging took %.2fs" % (time.time() - start))
 
 
     ## User clicked the abort button.
@@ -416,7 +416,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
     def waitFor(self, seconds):
         if seconds <= 0:
             return False
-        print "Waiting for %.2f seconds" % seconds
+        print ("Waiting for %.2f seconds" % seconds)
         endTime = time.time() + seconds
         curTime = time.time()
         while curTime < endTime and not self.shouldAbort:

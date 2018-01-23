@@ -33,7 +33,7 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         # file will get saved as "out.mrc" in the current user's data 
         # directory.
         savePath = os.path.join(util.user.getUserSaveDir(), "out.mrc")
-        print "Saving file to",savePath
+        print ("Saving file to",savePath)
         immediateMode.ImmediateModeExperiment.__init__(self,
                 numReps = 5, repDuration = 4, imagesPerRep = 1,
                 savePath = savePath)
@@ -97,7 +97,7 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         imageMedian = numpy.median(image)
         imageStd = numpy.std(image)
 
-        print "Image stats:", imageMin, imageMax, imageMedian, imageStd
+        print ("Image stats:", imageMin, imageMax, imageMedian, imageStd)
 
         # Some miscellaneous functions below.
 

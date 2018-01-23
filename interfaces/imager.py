@@ -128,7 +128,7 @@ class Imager:
                         self.takeImage, 
                         shouldBlock = True, shouldStopVideo = False)
             except Exception as e:
-                print "Video mode failed:", e
+                print ("Video mode failed:", e)
                 events.publish('video mode toggle', False)
                 traceback.print_exc()
                 break

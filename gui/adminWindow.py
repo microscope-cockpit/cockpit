@@ -57,7 +57,7 @@ class AdminWindow(wx.Frame):
     def onMakeWindowsDefault(self, event = None):
         windows = wx.GetTopLevelWindows()
         positions = dict([(w.GetTitle(), tuple(w.GetPosition())) for w in windows])
-        print "Saving positions as",positions
+        print ("Saving positions as",positions)
         util.userConfig.setValue('defaultWindowPositions',
                 positions, isGlobal = True)
         # The main window gets saved separately. See MainWindow.onMove for why.

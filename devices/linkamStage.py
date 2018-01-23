@@ -80,7 +80,7 @@ class LinkamStage(stage.StageDevice):
                 self.softlimits=eval(lstr)
         except:
             logger.log.warn('Could not parse limits from config: using defaults.')
-            print "No softlimits section setting default limits"
+            print ("No softlimits section setting default limits")
             self.softlimits = DEFAULT_LIMITS
         events.subscribe('user logout', self.onLogout)
         events.subscribe('user abort', self.onAbort)

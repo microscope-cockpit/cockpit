@@ -96,7 +96,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
                 lstr = parsed.groupdict()['limits']
                 self.softlimits=eval(lstr)
         except:
-            print "No softlimits section setting default limits"
+            print ("No softlimits section setting default limits")
             self.softlimits = ((-67500, 67500), (-42500, 42500))
         events.subscribe('user logout', self.onLogout)
         events.subscribe('user abort', self.onAbort)
@@ -140,12 +140,12 @@ class PhysikInstrumenteM687(stage.StageDevice):
             initialPos = tuple(self.xyPositionCache)
             interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
             for i in xrange(5):
-                print "Rep %d of 5..." % i
+                print ("Rep %d of 5..." % i)
                 for position in self.softlimits:
                     interfaces.stageMover.goToXY(position, shouldBlock = True)
             interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
             interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
-            print "Exercising complete. Thank you!"
+            print ("Exercising complete. Thank you!")
             
             util.userConfig.setValue('PIM687LastExerciseTimestamp',
                     time.time(), isGlobal = True)

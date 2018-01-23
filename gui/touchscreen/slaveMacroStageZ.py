@@ -131,7 +131,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             self.font = FTGL.TextureFont(path)
             self.font.FaceSize(18)
         except Exception, e:
-            print "Failed to make font:",e
+            print ("Failed to make font:",e)
 
         ## Vertical size of the canvas in microns -- slightly larger than the
         # stage's range of motion.

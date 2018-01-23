@@ -206,7 +206,7 @@ class LegacyDSP(ExecutorDevice):
             if len(digitals) > 0:
                 print ticks, digitals[-1][0], '   ', darg, digitals[-1][1]
                 if ticks == digitals[-1][0] and darg != digitals[-1][1]:
-                    print "TIMING RESOLUTION EXCEEDED"
+                    print ("TIMING RESOLUTION EXCEEDED")
             digitals.append((ticks, darg))
 
 

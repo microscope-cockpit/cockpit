@@ -10,7 +10,7 @@ try:
     font = FTGL.TextureFont(path)
     font.FaceSize(18)
 except Exception, e:
-    print "Failed to make font:",e
+    print ("Failed to make font:",e)
 
 CIRCLE_SEGMENTS = 32
 PI = 3.141592645

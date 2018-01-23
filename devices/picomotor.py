@@ -106,7 +106,7 @@ class PicoMotorDevice(device.Device):
         #give it time to wake up
         result=self.getXYResponse(1)   
         result=self.sendXYCommand('VE?',1)
-#        print "init controller firmware=", result
+#        print ("init controller firmware=", result)
         self.xyConnection.settimeout(2)
 
         # Get the proper initial position.
@@ -128,7 +128,7 @@ class PicoMotorDevice(device.Device):
     def homeMotors(self):
         origPosition=self.getXYPosition(shouldUseCache = False)
         for axis in range(0,2):
-            print "homeing axis 1 %s, origPosiiton=%d", self.axisMapper[axis], origPosition[axis]
+            print ("homeing axis 1 %s, origPosiiton=%d" % (self.axisMapper[axis], origPosition[axis]))
             (controller,motor)=self.axisMapper[axis].split('>')
             while self.checkForMotion(controller)==1:
                 time.sleep(1)
@@ -150,7 +150,7 @@ class PicoMotorDevice(device.Device):
             endpositon[axis]=-newposition[axis]+oldposition[axis]
                         
   
-        print "home done now returning to last position",endposition
+        print ("home done now returning to last position",endposition)
         for axis in range(0,2):
             while(self.checkForMotion(controller)==1):
                 time.sleep(1)
@@ -186,7 +186,7 @@ class PicoMotorDevice(device.Device):
     def homeMotors(self):
         origPosition=self.getXYPosition(shouldUseCache = False)
         for axis in range(0,2):
-            print "homeing axis 1 %s, origPosiiton=%d", self.axisMapper[axis], origPosition[axis]
+            print ("homeing axis 1 %s, origPosiiton=%d" % (self.axisMapper[axis], origPosition[axis]))
             (controller,motor)=self.axisMapper[axis].split('>')
             while self.checkForMotion(controller)==1:
                 time.sleep(1)
@@ -208,7 +208,7 @@ class PicoMotorDevice(device.Device):
             endpositon[axis]=-newposition[axis]+oldposition[axis]
                         
   
-        print "home done now returning to last position",endposition
+        print ("home done now returning to last position",endposition)
         for axis in range(0,2):
             while(self.checkForMotion(controller)==1):
                 time.sleep(1)

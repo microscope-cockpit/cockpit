@@ -277,7 +277,7 @@ class NIcRIO(device.Device):
         Not used by the FPGA
         '''
         if action == 'NI-FPGA done':
-            print "NI-FPGA done"
+            print ("NI-FPGA done")
             events.publish("NI-FPGA done")
 
     def toggleLight(self, lightName, isEnabled):

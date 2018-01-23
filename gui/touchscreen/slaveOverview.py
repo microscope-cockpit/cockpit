@@ -329,7 +329,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
 #                    numpy.any(self.curStepSizes != self.prevStepSizes) or
 #                    self.shouldForceRedraw):
 #                self.drawEvent.clear()
-#                print "updating overview"
+#                print ("updating overview")
 #                wx.CallAfter(self.Refresh)
 #                self.drawEvent.wait()
 #                self.prevStagePosition[:] = self.curStagePosition

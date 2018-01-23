@@ -48,7 +48,7 @@ class Corrector:
         # exposure time to a single value in counts.
         self.slope, self.intercept = numpy.polyfit(self.exposureTimes, 
                 map(numpy.mean, self.imageData), 1)
-        print "Linear fit constructed"
+        print ("Linear fit constructed")
 
         # Break our data up into clusters based on how far apart exposure times
         # are, and ensure that we have data for the very bottom and top of 
@@ -57,7 +57,7 @@ class Corrector:
         self.subCorrectors = []
         exposureSpacing = numpy.median(
                 self.exposureTimes[1:] - self.exposureTimes[:-1])
-        print "Calculate a median spacing of",exposureSpacing
+        print ("Calculate a median spacing of",exposureSpacing)
         curIndices = [] # List of indices in the current cluster of data
         for i, expTime in enumerate(self.exposureTimes):
             if i == 0:
@@ -89,7 +89,7 @@ class Corrector:
             corrector = self.subCorrectors[startIndex]
             xVals = corrector.exposureTimes
             yVals = corrector.imageData
-            print "Extrapolating with",xVals,[numpy.median(v) for v in yVals]
+            print ("Extrapolating with",xVals,[numpy.median(v) for v in yVals])
             yVals.shape = len(xVals), numpy.product(self.imageShape)
             slopes, intercepts = numpy.polyfit(xVals, yVals, 1)
             # Restore our previous shape.
@@ -103,7 +103,7 @@ class Corrector:
             if startIndex == 0:
                 images.insert(0, extrapolated)
                 times.insert(0, -self.intercept / self.slope)
-                print "Extrapolated to negative time at",times[0],numpy.median(images[0])
+                print ("Extrapolated to negative time at",times[0],numpy.median(images[0]))
             else:
                 images.append(extrapolated)
                 times.append(target - self.intercept / self.slope)
@@ -136,9 +136,9 @@ class Corrector:
             # extrapolation past the end of the map data will not go below 108,
             # and if the pixel actually reads 107 then we can't correct it.
             badPixels = numpy.where(result == -1)
-            print "Failed to correct %d pixels" % len(badPixels[0])
+            print ("Failed to correct %d pixels" % len(badPixels[0]))
             for x, y in zip(*badPixels):
-                print "(%d, %d): %d, %s" % (x, y, inputData[x, y], ', '.join([c.describe(x, y) for c in self.subCorrectors]))
+                print ("(%d, %d): %d, %s" % (x, y, inputData[x, y], ', '.join([c.describe(x, y) for c in self.subCorrectors])))
             # Is this really the best thing to do here? It seems better than
             # just leaving -1 in the result, which will get wrapped to 65535
             # when we save it...
@@ -162,7 +162,7 @@ class SubCorrector:
     # \param sampleRate Amount of supersampling we should perform when we 
     #        create a uniform sampling of the image data.
     def __init__(self, exposureTimes, images, sampleRate = 1):
-        print "Making subcontractor with times/median values","\n".join([str((t, numpy.median(d))) for t, d in zip(exposureTimes, images)])
+        print ("Making subcontractor with times/median values","\n".join([str((t, numpy.median(d))) for t, d in zip(exposureTimes, images)]))
         self.exposureTimes = exposureTimes
         self.imageData = images
         self.imageShape = images.shape[1:]
@@ -245,8 +245,8 @@ if __name__ == '__main__':
     exposureTimes = [e[0] for e in expDataPairs]
     mapData = [e[1] for e in expDataPairs]
 
-    print "Loaded exposure time / mean value pairs:"
-    print "\n".join(map(str, [(t, numpy.mean(d)) for t, d in expDataPairs]))
+    print ("Loaded exposure time / mean value pairs:")
+    print ("\n".join(map(str, [(t, numpy.mean(d)) for t, d in expDataPairs])))
 
     start = time.time()
     corrector = Corrector(exposureTimes, mapData)
@@ -254,17 +254,17 @@ if __name__ == '__main__':
     correctionTimes = []
     for filename in dataFiles:
         inputData = datadoc.DataDoc(filename).imageArray
-    #    print "Loading",filename,"initial stats",inputData.min(),inputData.max(),numpy.median(inputData),numpy.std(inputData)
+    #    print ("Loading",filename,"initial stats",inputData.min(),inputData.max(),numpy.median(inputData),numpy.std(inputData))
         result = numpy.zeros(inputData.shape, dtype = numpy.float32)
         subStart = time.time()
         for wavelength in xrange(inputData.shape[0]):
             for timepoint in xrange(inputData.shape[1]):
                 for z in xrange(inputData.shape[2]):
-                    print filename, timepoint, z
+                    print (filename, timepoint, z)
                     result[wavelength, timepoint, z] = corrector.correct(inputData[wavelength, timepoint, z])
         correctionTimes.append(time.time() - subStart)
         datadoc.writeDataAsMrc(result, filename + suffix)
-    #    print "%s: %.2f, %.2f, %.2f, %.2f" % (filename, result.min(), result.max(), numpy.mean(result), numpy.std(result))
+    #    print ("%s: %.2f, %.2f, %.2f, %.2f" % (filename, result.min(), result.max(), numpy.mean(result), numpy.std(result)))
 
     overallTime = time.time() - start
-    print "Initialization took %.2f; correction took on average %.2f; overall %.2f for %d files" % (timeToMake, numpy.mean(correctionTimes), overallTime, len(dataFiles))
+    print ("Initialization took %.2f; correction took on average %.2f; overall %.2f for %d files" % (timeToMake, numpy.mean(correctionTimes), overallTime, len(dataFiles)))

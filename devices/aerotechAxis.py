@@ -63,7 +63,7 @@ class AerotechZStage(device.Device):
                 lstr = parsed.groupdict()['limits']
                 self.softlimits=eval(lstr)
         except:
-            print "No softlimits section setting default limits"
+            print ("No softlimits section setting default limits")
             self.softlimits = (-30000,7000)
 
         # Subscribe to abort events.

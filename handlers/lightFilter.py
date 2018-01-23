@@ -124,7 +124,7 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
             try:
                 self.selectPosition(settings[self.name])
             except Exception, e:
-                print "Invalid filter position for %s: %s" % (self.name, settings.get(self.name, ''))
+                print ("Invalid filter position for %s: %s" % (self.name, settings.get(self.name, '')))
 
 
     ## Get the available filtrations, given the current global positions.

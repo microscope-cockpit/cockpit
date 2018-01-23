@@ -100,7 +100,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
         for i in xrange(self.numCollections):
             if not activeCameras or self.shouldAbort:
                 break
-            print "Running with cams",activeCameras
+            print ("Running with cams",activeCameras)
             self.camToImages = {}
             self.camToNumImagesReceived = {}
             self.camToLock = {}
@@ -132,7 +132,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
             else:
                 multiplier *= self.exposureMultiplier
             activeCameras = self.processImages(multiplier)
-            print "Came out with active cams",activeCameras
+            print ("Came out with active cams",activeCameras)
 
         for camera, func in self.camToFunc.iteritems():
             events.unsubscribe('new image %s' % camera.name, func)
@@ -216,7 +216,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
                 
             stdDev = numpy.std(images)
             median = numpy.median(images)
-            print "For camera",camera,"have median",median,"and std",stdDev
+            print ("For camera",camera,"have median",median,"and std",stdDev)
             threshold = self.cosmicRayThreshold * stdDev + median
             cleanImages = []
             for image in images:

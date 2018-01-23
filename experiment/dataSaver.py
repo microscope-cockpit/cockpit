@@ -392,7 +392,7 @@ class DataSaver:
                 self.minMaxVals[cameraIndex] = (min(curMin, imageData.min()), 
                         max(curMax, imageData.max()))
             except Exception, e:
-                print "Error writing image:",e
+                print ("Error writing image:",e)
                 raise e
                 
         # Update the status text. But first, check for abort/experiment

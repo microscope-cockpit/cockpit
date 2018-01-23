@@ -160,7 +160,7 @@ class WindowsJoystick(device.Device):
 
             print("Failed to get device capabilities.")
 
-        print "Driver name:", self.caps.szPname
+        print ("Driver name:", self.caps.szPname)
 
 
         # Fetch the name from registry.

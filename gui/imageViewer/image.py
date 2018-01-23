@@ -104,7 +104,7 @@ class Image:
             # Something happend to our texture. Delete and regenerate it.
             self.wipe()
             self.bindTexture()
-            print "Recreated texture %s." % self.textureID
+            print ("Recreated texture %s." % self.textureID)
 
         GL.glPixelTransferf(GL.GL_RED_SCALE,   f)
         GL.glPixelTransferf(GL.GL_GREEN_SCALE, f)

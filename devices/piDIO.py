@@ -146,11 +146,11 @@ class RaspberryPi(device.Device):
 #        if mode == 'with AO & 85 nm pixel size' :
 #            if (objectiveHandler.curObjective != '63x85nm') :
 #                objectiveHandler.changeObjective('63x85nm')
-#                print "Change objective 85 nm pixel"
+#                print ("Change objective 85 nm pixel")
 #        elif mode == 'w/o AO & 209 nm pixel size' :
 #            if (objectiveHandler.curObjective != '63x209nm') :
 #                objectiveHandler.changeObjective('63x209nm')
-#                print "Change objective 209 nm pixel"
+#                print ("Change objective 209 nm pixel")
         
 
 
@@ -165,7 +165,7 @@ class RaspberryPi(device.Device):
     def onObjectiveChange(self, name, pixelSize, transform, offset):
         for flips in self.objectiveToFlips[name]:
             self.flipDownUp(flips[0], flips[1])
-        print "piDIO objective change to ",name
+        print ("piDIO objective change to ",name)
 		
     #function to read temperature at set update frequency. 
     def updateStatus(self):

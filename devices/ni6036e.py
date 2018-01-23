@@ -262,11 +262,11 @@ class NI6036e(device.Device):
         if mode == 'with AO & 85 nm pixel size' :
             if (objectiveHandler.curObjective != '63x85nm') :
                 objectiveHandler.changeObjective('63x85nm')
-                print "Change objective 85 nm pixel"
+                print ("Change objective 85 nm pixel")
         elif mode == 'w/o AO & 209 nm pixel size' :
             if (objectiveHandler.curObjective != '63x209nm') :
                 objectiveHandler.changeObjective('63x209nm')
-                print "Change objective 209 nm pixel"
+                print ("Change objective 209 nm pixel")
         
 
 
@@ -292,7 +292,7 @@ class NI6036e(device.Device):
     def onObjectiveChange(self, name, pixelSize, transform, offset):
         for flips in self.objectiveToFlips[name]:
             self.flipDownUp(flips[0], flips[1])
-        print "NIcard objective change to ",name
+        print ("NIcard objective change to ",name)
 #    def onObjectiveChange(self, newName, pixelSize, transform, offset):
 #        if (newName=='63x85nm'):
 #            self.setDetMode('with AO & 85 nm pixel size')
