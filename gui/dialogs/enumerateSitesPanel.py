@@ -71,6 +71,6 @@ class EnumerateSitesPanel(wx.Panel):
                     baseFrequencies.append(frequency)
                 
             return (baseIndices, baseFrequencies)
-        except Exception, e:
+        except Exception as e:
             util.logger.log.warn("Invalid site list \"%s\"; returning no sites", self.sites.GetValue())
             return []

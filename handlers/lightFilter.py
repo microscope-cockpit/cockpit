@@ -123,7 +123,7 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
         if self.name in settings:
             try:
                 self.selectPosition(settings[self.name])
-            except Exception, e:
+            except Exception as e:
                 print ("Invalid filter position for %s: %s" % (self.name, settings.get(self.name, '')))
 
 

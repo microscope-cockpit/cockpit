@@ -89,6 +89,6 @@ class ServerDaemon:
     def receiveData(self, *args):
         try:
             self.func(*args)
-        except Exception, e:
+        except Exception as e:
             util.logger.log.error("ServerDaemon [%s] failed its callback: %s" % (self.name, e))
             util.logger.log.error(traceback.format_exc())

@@ -53,7 +53,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
                                 'fonts', 'GeosansLight.ttf')
             self.font = FTGL.TextureFont(path)
             self.font.FaceSize(18)
-        except Exception, e:
+        except Exception as e:
             print ("Failed to make font:",e)
 
         ## X values below this are off the canvas. We leave it up to children

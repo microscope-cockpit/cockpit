@@ -130,7 +130,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                                 'fonts', 'GeosansLight.ttf')
             self.font = FTGL.TextureFont(path)
             self.font.FaceSize(18)
-        except Exception, e:
+        except Exception as e:
             print ("Failed to make font:",e)
 
         ## Vertical size of the canvas in microns -- slightly larger than the
@@ -295,7 +295,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                         # Don't show the mini histogram since it's not in-range
                         self.histograms = self.histograms[:-1]
                 self.Refresh
-            except Exception, e:
+            except Exception as e:
                 util.logger.log.error("Error updating macro stage Z status: %s", e)
                 util.logger.log.error(traceback.format_exc())
                 self.shouldDraw = False
@@ -431,7 +431,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             # Set the event, so our refreshWaiter() can update
             # our stage position info.
 #            self.drawEvent.set()
-        except Exception, e:
+        except Exception as e:
             util.logger.log.error("Error drawing Z macro stage: %s", e)
             traceback.print_exc()
             self.shouldDraw = False
@@ -703,7 +703,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
 #             # Set the event, so our refreshWaiter() can update
 #             # our stage position info.
 #             self.drawEvent.set()
-#         except Exception, e:
+#         except Exception as e:
 #             util.logger.log.error("Error drawing Z macro stage key: %s", e)
 #             traceback.print_exc()
 #             self.shouldDraw = False

@@ -279,7 +279,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
 
             glFlush()
             self.SwapBuffers()
-        except Exception, e:
+        except Exception as e:
             print ("Error rendering the canvas:",e)
             traceback.print_exc()
             self.renderError = e
@@ -408,7 +408,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         numInitialTiles = len(self.tiles)
         try:
             doc = util.datadoc.DataDoc(mrcPath)
-        except Exception, e:
+        except Exception as e:
             wx.MessageDialog(self.GetParent(), 
                     message = "I was unable to load the MRC file at %s holding the tile data. The error message was:\n\n%s\n\nPlease verify that the file path is correct and the file is valid." % (mrcPath, e),
                     style = wx.ICON_EXCLAMATION | wx.STAY_ON_TOP | wx.OK).ShowModal()
@@ -434,7 +434,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                 data = image[:int(stats[5]), :int(stats[6])]
                 self.addImage(data, stats[:3], stats[3:5], stats[7:9], 
                             int(stats[9]))
-            except Exception, e:
+            except Exception as e:
                 wx.MessageDialog(self.GetParent(),
                         "Failed to load line %d of file %s: %s.\n\nPlease see the logs for more details." % (i, filePath, e),
                         style = wx.ICON_INFORMATION | wx.OK).ShowModal()

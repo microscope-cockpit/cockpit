@@ -141,7 +141,7 @@ class StageMover:
                     for event in waiters:
                         try:
                             event.wait(30)
-                        except Exception, e:
+                        except Exception as e:
                             print ("Failed waiting for stage to stop after 30s")
                             
 
@@ -455,7 +455,7 @@ def setSoftLimit(axis, value, isMax):
         mover.axisToHandlers[axis][0].setSoftLimit(value, isMax)
         events.publish("soft safety limit", axis, value, isMax)
         return True
-    except Exception, e:
+    except Exception as e:
         # \todo Assuming that any exception here means the safety was not
         # set.
         return False

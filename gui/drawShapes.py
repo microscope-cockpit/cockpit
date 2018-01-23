@@ -9,7 +9,7 @@ try:
                         'fonts', 'GeosansLight.ttf')
     font = FTGL.TextureFont(path)
     font.FaceSize(18)
-except Exception, e:
+except Exception as e:
     print ("Failed to make font:",e)
 
 CIRCLE_SEGMENTS = 32

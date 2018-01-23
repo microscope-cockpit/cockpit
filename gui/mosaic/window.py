@@ -1116,7 +1116,7 @@ class MosaicWindow(wx.Frame):
                 break
             try:
                 data = self.canvas.getCompositeTileData(tile, tiles)
-            except Exception, e:
+            except Exception as e:
                 print ("Failed to get tile data at %s: %s" % (tile.pos, e))
                 break
             pixelSize = tile.getPixelSize()

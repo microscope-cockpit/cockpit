@@ -119,7 +119,7 @@ def logout(shouldLoginAgain = True):
         events.publish("user logout")
 
         saveWindowPositions()
-    except Exception, e:
+    except Exception as e:
         logger.log.error("Error during logout: %s" % e)
         logger.log.error(traceback.format_exc())
 
