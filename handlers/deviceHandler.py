@@ -1,7 +1,10 @@
 import events
 import threading
 import util.threads
-from itertools import ifilter
+try:
+    from itertools import ifilter
+except:
+    ifilter = filter
 
 ## A DeviceHandler acts as the interface between the GUI and the device module.
 # In other words, it tells the GUI what the device does, and translates GUI
