@@ -1,5 +1,5 @@
 import depot
-import deviceHandler
+import handlers.deviceHandler as deviceHandler
 
 
 ## This handler stores various configuration information about the microscope
