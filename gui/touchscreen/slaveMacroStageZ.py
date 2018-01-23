@@ -1,6 +1,6 @@
 import numpy
 from OpenGL.GL import *
-import FTGL
+from util import ftgl
 import traceback
 import wx
 
@@ -128,8 +128,8 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         try:
             path = os.path.join(COCKPIT_PATH, 'resources',
                                 'fonts', 'GeosansLight.ttf')
-            self.font = FTGL.TextureFont(path)
-            self.font.FaceSize(18)
+            self.font = ftgl.TextureFont(path)
+            self.font.setFaceSize(18)
         except Exception as e:
             print ("Failed to make font:",e)
 
@@ -525,7 +525,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         glTranslatef(loc[0], loc[1], 0)
         glScalef(size * aspect, size, size)
         glColor3fv(color)
-        self.font.Render(text)
+        self.font.render(text)
         glPopMatrix()
 
     ## Draw an arrow from the first point along the specified vector.

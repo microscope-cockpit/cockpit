@@ -1,5 +1,5 @@
 import collections
-import FTGL
+from util import ftgl
 import numpy
 from OpenGL.GL import *
 import os
@@ -89,11 +89,11 @@ class MosaicWindow(wx.Frame):
         self.focalPlaneParams = None
 
         ## Font to use for site labels.
-        self.font = FTGL.TextureFont(
+        self.font = ftgl.TextureFont(
                 os.path.join(COCKPIT_PATH, 'resources',
                              'fonts', 'GeosansLight.ttf'))
         self.defaultFaceSize = 64
-        self.font.FaceSize(self.defaultFaceSize)
+        self.font.setFaceSize(self.defaultFaceSize)
 
         #default scale bar size is Zero
         self.scalebar = 0
@@ -375,7 +375,7 @@ class MosaicWindow(wx.Frame):
             # Scale the text with respect to the current zoom factor.
             fontScale = 3 / max(5.0, self.canvas.scale)
             glScalef(fontScale, fontScale, 1)
-            self.font.Render(str(site.uniqueID))
+            self.font.render(str(site.uniqueID))
             glPopMatrix()
 
         self.drawCrosshairs(interfaces.stageMover.getPosition()[:2], (1, 0, 0),
@@ -451,7 +451,7 @@ class MosaicWindow(wx.Frame):
             glEnd()
             glLineWidth(1)
 	        # The scale label.
-            self.font.FaceSize(16)
+            self.font.setFaceSize(16)
             glPushMatrix()
             labelPosX= x1
             labelPosY= y1 - (20/self.canvas.scale)
@@ -459,13 +459,13 @@ class MosaicWindow(wx.Frame):
             fontScale = 1 / self.canvas.scale
             glScalef(fontScale, fontScale, 1)
             if (self.scalebar>1.0):
-                self.font.Render('%d um' % self.scalebar)
+                self.font.render('%d um' % self.scalebar)
             else:
-                self.font.Render('%.3f um' % self.scalebar)
+                self.font.render('%.3f um' % self.scalebar)
             glPopMatrix()
 
             # Restore the default font size.
-            self.font.FaceSize(self.defaultFaceSize)
+            self.font.setFaceSize(self.defaultFaceSize)
         #Draw stage primitives.
         if(self.drawPrimitives):
             # Draw device-specific primitives.

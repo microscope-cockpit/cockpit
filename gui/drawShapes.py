@@ -1,14 +1,14 @@
 #Gather the drawing primitives in one place to draw scaled vertex,
-#circle, square and arrorws.
+#circle, square and arrows.
 
-import font
+from util import ftgl
 
 ## Font for drawing text
 try:
     path = os.path.join(COCKPIT_PATH, 'resources',
                         'fonts', 'GeosansLight.ttf')
-    font = FTGL.TextureFont(path)
-    font.FaceSize(18)
+    font = ftgl.TextureFont(path)
+    font.setFaceSize(18)
 except Exception as e:
     print ("Failed to make font:",e)
 
@@ -55,7 +55,7 @@ def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
     glTranslatef(loc[0], loc[1], 0)
     glScalef(size * aspect, size, size)
     glColor3fv(color)
-    gui.drawShaps.font.Render(text)
+    gui.drawShapes.font.render(text)
     glPopMatrix()
 
 
