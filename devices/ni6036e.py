@@ -79,7 +79,7 @@ class NI6036e(device.Device):
         #map objectives to flips. 
         self.objectiveToFlips = collections.OrderedDict()
         for i in xrange(len(self.objective)):
-            print self.objectiveMaps
+            print (self.objectiveMaps)
             self.objectiveToFlips[self.objective[i]] = []
             if(self.objectiveMaps[i]):
                 for flips in self.objectiveMaps[i].split('|'):

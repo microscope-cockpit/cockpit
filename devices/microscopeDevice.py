@@ -104,7 +104,7 @@ class MicroscopeBase(device.Device):
         try:
             self._proxy.update_settings(self.settings)
         except Exception as e:
-            print e
+            print (e)
         else:
             self.defaults = DEFAULTS_SENT
 

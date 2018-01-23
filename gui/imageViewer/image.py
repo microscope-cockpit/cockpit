@@ -76,7 +76,7 @@ class Image:
 
         imgType = self.imageData.dtype.type
         if imgType not in dtypeToGlTypeMap:
-            raise ValueError, "Unsupported data mode %s" % str(imgType)
+            raise ValueError("Unsupported data mode %s" % str(imgType))
         GL.glTexImage2D(GL.GL_TEXTURE_2D,0,  GL.GL_LUMINANCE16, tex_nx,tex_ny, 0,
                      GL.GL_LUMINANCE, dtypeToGlTypeMap[imgType], None)
 
@@ -125,7 +125,7 @@ class Image:
         pic_ny, pic_nx = self.imageData.shape
 
         if imgType not in dtypeToGlTypeMap:
-            raise ValueError, "Unsupported data mode %s" % str(imgType)
+            raise ValueError("Unsupported data mode %s" % str(imgType))
 
         GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, 0, 0, pic_nx, pic_ny,
                 GL.GL_LUMINANCE, dtypeToGlTypeMap[imgType], imgString)

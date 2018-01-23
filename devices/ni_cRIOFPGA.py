@@ -946,15 +946,15 @@ class Connection():
         try:
             # Create an AF_INET, STREAM socket (TCP)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        except socket.error, msg:
-            print 'Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
+        except socket.error as msg:
+            print ('Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1])
             return (1, '1')
 
         try:
             # Connect to remote server
             s.connect((host , port))
-        except socket.error, msg:
-            print 'Failed to establish connection. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
+        except socket.error as msg:
+            print ('Failed to establish connection. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1])
             return (1, '2')
 
         return s
@@ -1009,14 +1009,14 @@ class Connection():
             ## Send the actual command
             self.sendSocket.send(json.dumps(messageCluster))
             self.sendSocket.send('\r\n')
-        except socket.error, msg:
+        except socket.error as msg:
             print('Send messageCluster failed. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1])
 
         try:
             ## Send the actual messages buffer
             buf = str('').join(sendArgs)
             self.sendSocket.sendall(buf)
-        except socket.error, msg:
+        except socket.error as msg:
             print('Send buffer failed. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1])
 
         try:
@@ -1024,7 +1024,7 @@ class Connection():
             errorLength = self.sendSocket.recv(4)
             error = self.sendSocket.recv(int(errorLength))
             return error
-        except socket.error, msg:
+        except socket.error as msg:
             #Send failed
             print('Receiving error. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1])
             return (1, '3')
@@ -1362,14 +1362,14 @@ class FPGAStatus(threading.Thread):
         try:
             # Create an AF_INET, Datagram socket (UDP)
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        except socket.error, msg:
-            print 'Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
+        except socket.error as msg:
+            print ('Failed to create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1])
 
         try:
             # Bind Socket to local host and port
             s.bind((host , port))
-        except socket.error, msg:
-            print 'Failed to bind address. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1]
+        except socket.error as msg:
+            print ('Failed to bind address. Error code:' + str(msg[0]) + ' , Error message : ' + msg[1])
 
         return s
 

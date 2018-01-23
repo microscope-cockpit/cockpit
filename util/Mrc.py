@@ -36,6 +36,7 @@ __author__  = "Sebastian Haase <haase@msg.ucsf.edu>"
 __license__ = "3-clause BSD license"
 
 import numpy as N
+from six import exec_
 
 def bindFile(fn, writable=0):
     """open existing Mrc file
@@ -342,7 +343,7 @@ def save(a, fn, ifExists='ask', zAxisOrder=None,
         loc = { 'hdr' : m.hdr }
         loc.update(fr.f_locals)
         glo = fr.f_globals
-        exec hdrEval in loc, glo
+        exec_ (hdrEval, loc, glo)
     m.writeHeader()
     m.writeStack(a)
     m.close()

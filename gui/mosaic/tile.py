@@ -73,7 +73,7 @@ class Tile:
 
         imgType = img.dtype.type
         if imgType not in dtypeToGlTypeMap:
-            raise ValueError, "Unsupported data mode %s" % str(imgType)
+            raise ValueError("Unsupported data mode %s" % str(imgType))
         glTexImage2D(GL_TEXTURE_2D,0,  GL_RGB, tex_nx,tex_ny, 0, 
                      GL_LUMINANCE, dtypeToGlTypeMap[imgType], None)    
 
@@ -126,7 +126,7 @@ class Tile:
         glPixelStorei(GL_UNPACK_ALIGNMENT, itSize)
 
         if imgType not in dtypeToGlTypeMap:
-            raise ValueError, "Unsupported data mode %s" % str(imgType)
+            raise ValueError("Unsupported data mode %s" % str(imgType))
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, pic_nx, pic_ny,  
                      GL_LUMINANCE, dtypeToGlTypeMap[imgType], imgString)  
 
