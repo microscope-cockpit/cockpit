@@ -293,7 +293,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
             averages.append(accumulator)
             for i in xrange(2):
                 self.maxImageDims[i] = max(self.maxImageDims[i], accumulator.shape[i])
-            print numCleanImages,"images are valid"
+            print (numCleanImages,"images are valid")
         self.timesAndImages.append((exposureTime, averages, raws))
 
 

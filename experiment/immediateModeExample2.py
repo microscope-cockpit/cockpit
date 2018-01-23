@@ -49,7 +49,7 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         allLights = list(allLights)
         # Print the names of all light sources.
         for light in allLights:
-            print light.name
+            print (light.name)
         # Get all power controls for light sources.
         allLightPowers = depot.getHandlersOfType(depot.LIGHT_POWER)
         # Get all light source filters.

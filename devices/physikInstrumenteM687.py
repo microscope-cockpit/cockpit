@@ -453,7 +453,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
                 [(5, 5), (15, 5), ((0, 0), (10, 10)), True],
                 [(5, 5), (5, 15), ((0, 0), (10, 10)), True],
                 [(0, 0), (2, 2), ((6, 6), (8, 8)), False]]:
-            print items
+            print (items)
             start, end, (boxStart, boxEnd), desire = items
             assert(self.doBoxesIntersect(start, end, (boxStart, boxEnd)) == desire)
             s1, s2 = start

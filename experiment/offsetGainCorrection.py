@@ -224,7 +224,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
                 if maxVal < threshold and maxVal < self.maxIntensity:
                     # Verified no cosmic ray strike.
                     cleanImages.append(image)
-            print len(cleanImages),"images are valid"
+            print (len(cleanImages),"images are valid")
             if cleanImages:
                 self.camToAverages[camera].append(numpy.mean(cleanImages, axis = 0))
                 activeCameras.add(camera)

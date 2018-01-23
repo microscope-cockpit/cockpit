@@ -176,7 +176,7 @@ class AndorCameraDevice(camera.CameraDevice):
             self.object.enable(self.settings)
             self.object._pyroTimeout = originalTimeout
         except Exception as e:
-            print e
+            print (e)
         else:
             # Wait for camera to show it is enabled.
             while not self.object.is_enabled():
