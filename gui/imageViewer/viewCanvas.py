@@ -3,7 +3,7 @@ import gui.guiUtils
 import image
 import util.threads
 
-import FTGL
+from util import ftgl
 import numpy
 from OpenGL.GL import *
 import os
@@ -103,10 +103,10 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.context = wx.glcanvas.GLContext(self)
 
         ## Font for text rendering
-        self.font = FTGL.TextureFont(
+        self.font = ftgl.TextureFont(
                 os.path.join(COCKPIT_PATH, 'resources',
                              'fonts', 'GeosansLight.ttf'))
-        self.font.FaceSize(18)
+        self.font.setFaceSize(18)
 
         self.Bind(wx.EVT_PAINT, self.onPaint)
         # Do nothing, to prevent flickering
@@ -431,7 +431,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         # Left-align the data min by padding with spaces.
         minVal = str(self.imageMin)
         minVal += ' ' * (10 - len(minVal))
-        self.font.Render('%d [%s %10d] %d' %
+        self.font.render('%d [%s %10d] %d' %
                 (self.tiles[0][0].imageMin, self.imageMin,
                  self.imageMax, self.tiles[0][0].imageMax))
         glPopMatrix()
