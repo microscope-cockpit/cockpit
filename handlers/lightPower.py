@@ -91,7 +91,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         targetPower = util.userConfig.getValue(self.name + '-lightPower', default = 0.01)
         try:
             self.setPower(targetPower)
-        except Exception, e:
+        except Exception as e:
             util.logger.log.warn("Failed to set prior power level %s for %s: %s" % (targetPower, self.name, e))
 
 
@@ -152,7 +152,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         if self.name in settings:
             try:
                 self.setPower(settings[self.name])
-            except Exception, e:
+            except Exception as e:
                 # Invalid power; just ignore it.
                 print ("Invalid power for %s: %s" % (self.name, settings.get(self.name, '')))
 

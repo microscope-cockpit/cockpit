@@ -312,7 +312,7 @@ class ExperimentConfigPanel(wx.Panel):
         handle = open(filepath, 'w')
         try:
             handle.write(json.dumps(settings))
-        except Exception, e:
+        except Exception as e:
             util.logger.log.error("Couldn't save experiment settings: %s" % e)
             util.logger.log.error(traceback.format_exc())
             util.logger.log.error("Settings are:\n%s" % str(settings))

@@ -41,7 +41,7 @@ class Connection:
             server.unregister(self.callback)
             try:
                 self.connection.receiveClient(None)
-            except Exception, e:
+            except Exception as e:
                 print ("Couldn't disconnect from %s: %s" % (self.serviceName, e))
             self.connection = None
 

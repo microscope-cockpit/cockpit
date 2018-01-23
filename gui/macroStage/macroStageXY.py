@@ -293,7 +293,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             # Set the event, so our refreshWaiter() can update
             # our stage position info.
             self.drawEvent.set()
-        except Exception, e:
+        except Exception as e:
             util.logger.log.error("Exception drawing XY macro stage: %s", e)
             util.logger.log.error(traceback.format_exc())
             self.shouldDraw = False

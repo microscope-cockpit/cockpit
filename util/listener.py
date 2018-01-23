@@ -54,6 +54,6 @@ class Listener:
         server.unregister(self._callback)
         try:
             self._proxy.receiveClient(None)
-        except Exception, e:
+        except Exception as e:
             print ("Couldn't disconnect listener from %s: %s" % (self._proxy, e))
         self._listening = False
