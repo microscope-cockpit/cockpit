@@ -1,6 +1,6 @@
 ## This Device handles various miscellaneous information about the microscope.
 
-import device
+import devices.device as device
 import handlers.configuratorHandler
 
 import os
