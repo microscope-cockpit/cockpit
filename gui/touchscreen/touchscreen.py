@@ -477,7 +477,7 @@ class TouchScreenWindow(wx.Frame):
             if light.getIsEnabled():
                 lights=lights+1
         if (cams is 0) or (lights is 0):
-            print "Snap needs a light and a camera to opperate"
+            print ("Snap needs a light and a camera to opperate")
             return
 
         #take the image
@@ -1040,8 +1040,8 @@ class TouchScreenWindow(wx.Frame):
     #         pos = numpy.array(site.position)
     #         z = self.getFocusZ(pos)
     #         deltas.append(pos[2] - z)
-    #         print "Delta for",pos,"is",(pos[2] - z)
-    #     print "Average delta is",numpy.mean(deltas),"with std",numpy.std(deltas)
+    #         print ("Delta for",pos,"is",(pos[2] - z))
+    #     print ("Average delta is",numpy.mean(deltas),"with std",numpy.std(deltas))
 
 
     # ## Clear the focal plane settings.
@@ -1244,7 +1244,7 @@ class TouchScreenWindow(wx.Frame):
                 interfaces.stageMover.mover.curHandlerIndex -= 1
 
         if not doneMove:
-            print "cannot load/unload move too large for any Z axis!"
+            print ("cannot load/unload move too large for any Z axis!")
         #retrun to original active mover.
         interfaces.stageMover.mover.curHandlerIndex = originalMover
 

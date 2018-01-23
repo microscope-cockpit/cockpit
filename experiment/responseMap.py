@@ -271,7 +271,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
             # Calculate a threshold for cosmic ray strikes.
             stdDev = numpy.std(images)
             median = numpy.median(images)
-            print "For camera",camera,"have median",median,"and std",stdDev
+            print ("For camera",camera,"have median",median,"and std",stdDev)
             threshold = self.cosmicRayThreshold * stdDev + median
             # To cope with the fact that some images may be improperly
             # exposed, we want to find statistics that are true for most

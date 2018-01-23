@@ -154,7 +154,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
                 self.setPower(settings[self.name])
             except Exception, e:
                 # Invalid power; just ignore it.
-                print "Invalid power for %s: %s" % (self.name, settings.get(self.name, ''))
+                print ("Invalid power for %s: %s" % (self.name, settings.get(self.name, '')))
 
 
     ## Toggle accessibility of the handler.

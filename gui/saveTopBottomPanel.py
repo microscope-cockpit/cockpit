@@ -136,7 +136,7 @@ def moveZCheckMoverLimits(target):
             # need to drop down a handler to see if next handler can do the move
             interfaces.stageMover.mover.curHandlerIndex -= 1
             if (interfaces.stageMover.mover.curHandlerIndex < 0):
-                print "Move too large for coarse Z motion"
+                print ("Move too large for coarse Z motion")
             
         else: 
             interfaces.stageMover.goToZ(target)

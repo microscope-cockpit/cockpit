@@ -276,7 +276,7 @@ class MainWindow(wx.Frame):
         if filenames:
             window = fileViewerWindow.FileViewer(filenames[0], self)
             if len(filenames) > 1:
-                print "Opening first of %d files. Others can be viewed by dragging them from the filesystem onto the main window of the Cockpit." % len(filenames)
+                print ("Opening first of %d files. Others can be viewed by dragging them from the filesystem onto the main window of the Cockpit." % len(filenames))
 
 
     ## User wants to save the current exposure settings; get a file path

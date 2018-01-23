@@ -66,7 +66,7 @@ def getConfigDir():
 def ensureDirectoriesExist():
     for directory in [getDataDir(), getLogDir(), getConfigDir()]:
         if not os.path.exists(directory):
-            print "Making",directory
+            print ("Making",directory)
             os.makedirs(directory)
             # HACK: ensure there's a dummy user if we just made the data dir.
             if directory == getDataDir():

@@ -142,7 +142,7 @@ class StageMover:
                         try:
                             event.wait(30)
                         except Exception, e:
-                            print "Failed waiting for stage to stop after 30s"
+                            print ("Failed waiting for stage to stop after 30s")
                             
 
 

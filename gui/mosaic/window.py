@@ -827,8 +827,8 @@ class MosaicWindow(wx.Frame):
             pos = numpy.array(site.position)
             z = self.getFocusZ(pos)
             deltas.append(pos[2] - z)
-            print "Delta for",pos,"is",(pos[2] - z)
-        print "Average delta is",numpy.mean(deltas),"with std",numpy.std(deltas)
+            print ("Delta for",pos,"is",(pos[2] - z))
+        print ("Average delta is",numpy.mean(deltas),"with std",numpy.std(deltas))
 
 
     ## Clear the focal plane settings.
@@ -1117,7 +1117,7 @@ class MosaicWindow(wx.Frame):
             try:
                 data = self.canvas.getCompositeTileData(tile, tiles)
             except Exception, e:
-                print "Failed to get tile data at %s: %s" % (tile.pos, e)
+                print ("Failed to get tile data at %s: %s" % (tile.pos, e))
                 break
             pixelSize = tile.getPixelSize()
             median = numpy.median(data)

@@ -42,7 +42,7 @@ class Connection:
             try:
                 self.connection.receiveClient(None)
             except Exception, e:
-                print "Couldn't disconnect from %s: %s" % (self.serviceName, e)
+                print ("Couldn't disconnect from %s: %s" % (self.serviceName, e))
             self.connection = None
 
 

@@ -239,7 +239,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             if not haveSetTiles:
                 self.changeHistScale(False)
         except Exception, e:
-            print "Failed to set new image:",e
+            print ("Failed to set new image:",e)
             import traceback
             traceback.print_exc()
 
@@ -363,7 +363,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.SwapBuffers()
             self.drawEvent.set()
         except Exception, e:
-            print "Error drawing view canvas:",e
+            print ("Error drawing view canvas:",e)
             traceback.print_stack()
             self.shouldDraw = False
 

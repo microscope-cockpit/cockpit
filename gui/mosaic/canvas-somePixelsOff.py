@@ -126,22 +126,22 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         result = numpy.ones((tileShape[0] * 3, tileShape[1] * 3), 
 ##                dtype = tile.textureData.dtype) * tile.textureData.mean()
                 dtype = tile.textureData.dtype) * 1000
-        print "Result shape is",result.shape,"compare",tileShape,tile.size,tile.pos
+        print ("Result shape is",result.shape,"compare",tileShape,tile.size,tile.pos)
         # pixelSize is similarly flipped to (Y, X) order.
         pixelSize = tile.getPixelSize()
-        print "Pixel size is",pixelSize,"giving result array size",result.shape[0]*pixelSize[0],result.shape[1]*pixelSize[1]
+        print ("Pixel size is",pixelSize,"giving result array size",result.shape[0]*pixelSize[0],result.shape[1]*pixelSize[1])
         # Get the bounding box 3x bigger than the tile with the tile at the 
         # center.
         height, width = tile.size
         tileX, tileY, tileZ = tile.pos
         start = (tileX - width, tileY - height)
         end = (tileX + width * 2, tileY + height * 2)
-        print "Start is at",start,"size is",(end[0] - start[0], end[1] - start[1])
+        print ("Start is at",start,"size is",(end[0] - start[0], end[1] - start[1]))
         for altTile in self.getTilesIntersecting(start, end, allowedTiles):
             if altTile.getPixelSize() != pixelSize:
                 # Don't try to deal with tiles with differing pixel sizes.
                 continue
-            print "Alt's size is",altTile.size,"and position",altTile.pos
+            print ("Alt's size is",altTile.size,"and position",altTile.pos)
             # Figure out the portion of altTile that intersects our region.
             xMin = max(start[0], altTile.pos[0])
             xMax = min(end[0], altTile.pos[0] + altTile.size[1])
@@ -149,17 +149,17 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             yMax = min(end[1], altTile.pos[1] + altTile.size[0])
             xPixels = int((xMax - xMin) / pixelSize[1])
             yPixels = int((yMax - yMin) / pixelSize[0])
-            print "Intersection is from",xMin,yMin,"to",xMax,yMax,"giving pixels",xPixels,yPixels
+            print ("Intersection is from",xMin,yMin,"to",xMax,yMax,"giving pixels",xPixels,yPixels)
             # Get the offset into altTile, and thus the relevant pixel data.
             altX = (xMin - altTile.pos[0]) / pixelSize[1]
             altY = (yMin - altTile.pos[1]) / pixelSize[0]
             subRegion = altTile.textureData[altY:altY + yPixels, altX:altX + xPixels]
-            print "Position in alt is",altX,altY,"giving subRegion shape",subRegion.shape
+            print ("Position in alt is",altX,altY,"giving subRegion shape",subRegion.shape)
             # Get the offset into result.
             rX = max(0, (altTile.pos[0] - start[0]) / pixelSize[1])
             rY = max(0, (altTile.pos[1] - start[1]) / pixelSize[0])
             target = result[rY:rY + yPixels, rX:rX + xPixels]
-            print "--Position in result is",rX,rY,xPixels,yPixels,"giving target shape",target.shape
+            print ("--Position in result is",rX,rY,xPixels,yPixels,"giving target shape",target.shape)
             target[:] = subRegion
         test = numpy.copy(result).astype(numpy.uint16)
 ##        test[:,tileShape[0] - 1:tileShape[0] + 2] = 1000
@@ -280,7 +280,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             glFlush()
             self.SwapBuffers()
         except Exception, e:
-            print "Error rendering the canvas:",e
+            print ("Error rendering the canvas:",e)
             traceback.print_exc()
             self.renderError = e
 

@@ -43,7 +43,7 @@ class Nanomover(stage.StageDevice):
                 self.softlimits=eval(lstr)
                 self.safeties=eval(lstr)
         except:
-            print "No softlimits section setting default limits"
+            print ("No softlimits section setting default limits")
             self.softlimits = [[0, 25000],
                                [0, 25000],
                                [7300, 25000]]
@@ -66,7 +66,7 @@ class Nanomover(stage.StageDevice):
         self.connection.connect(self.receiveData)
         self.curPosition[:] = self.connection.connection.posXYZ_OMX()
         if self.curPosition == [0,0,0]:
-            print "Homing Nanomover"
+            print ("Homing Nanomover")
             self.connection.connection.startOMX()
             self.home()
             interfaces.stageMover.goToXY(self.middleXY, shouldBlock = True)
@@ -96,12 +96,12 @@ class Nanomover(stage.StageDevice):
             initialPos = tuple(self.positionCache)
 #            interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
             for i in xrange(5):
-                print "Rep %d of 5..." % i
+                print ("Rep %d of 5..." % i)
                 for position in self.softlimits[0:2]:
                     interfaces.stageMover.goToXY(position, shouldBlock = True)
             interfaces.stageMover.goToXY(self.middleXY, shouldBlock = True)
             interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
-            print "Exercising complete. Thank you!"
+            print ("Exercising complete. Thank you!")
             
             util.userConfig.setValue('NanomoverLastExerciseTimestamp',
                     time.time(), isGlobal = True)
