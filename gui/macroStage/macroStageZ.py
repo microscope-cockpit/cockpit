@@ -59,7 +59,7 @@ class Histogram():
         # data point) in our range.
         self.maxBucketSize = 1
         if data:
-            for y in xrange(int(self.minAltitude), int(self.maxAltitude) + 1, ALTITUDE_BUCKET_SIZE):
+            for y in range(int(self.minAltitude), int(self.maxAltitude) + 1, ALTITUDE_BUCKET_SIZE):
                 slot = int((y - self.minAltitude) / ALTITUDE_BUCKET_SIZE)
                 # MAP - this can crash here when Z-range is small, so bounds-check slot.
                 if slot < len(data):
@@ -286,7 +286,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             self.scaledVertex(scaleX, minY)
             self.scaledVertex(scaleX, maxY)
             # Draw notches in the scale bar, one every 1mm.
-            for scaleY in xrange(minY, maxY + 1000, 1000):
+            for scaleY in range(minY, maxY + 1000, 1000):
                 width = self.stageExtent * .025
                 if scaleY % 5000 == 0:
                     width = self.stageExtent * .05
@@ -377,7 +377,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             glColor3f(0, 0, 0)
             glLineWidth(HISTOGRAM_LINE_WIDTH)
             glBegin(GL_LINES)
-            for pixelOffset in xrange(0, self.height):
+            for pixelOffset in range(0, self.height):
                 # Convert pixel offset to altitude inside our histogram
                 # min/max values
                 altitude = float(pixelOffset) / self.height

@@ -30,6 +30,8 @@ import gui.loggingWindow as log
 import events
 from distutils import version
 
+from six import iteritems
+
 ## @package gui.device
 # Defines classes for common controls used by cockpit devices.
 
@@ -91,9 +93,9 @@ class Button(wx.StaticText):
         height = self.GetSize()[1]
         font = self.GetFont()
         fontHeight = font.GetPointSize()
-        maxLines = min(height / fontHeight, max)
+        maxLines = int(height / fontHeight)
         numLinesUsed = len(text.split("\n"))
-        lineBuffer = (maxLines - numLinesUsed) / 2 - 1
+        lineBuffer = int((maxLines - numLinesUsed) / 2 - 1)
         newText = ("\n" * lineBuffer) + text + ("\n" * lineBuffer)
         wx.StaticText.SetLabel(self, newText, *args, **kwargs)
 
@@ -319,7 +321,7 @@ class SettingsEditor(wx.Frame):
 
     def onSave(self, event):
         settings = self.grid.GetPropertyValues()
-        for name, value in settings.iteritems():
+        for name, value in iteritems(settings):
             if self.settings[name]['type'] == 'enum':
                 settings[name] = self.settings[name]['values'][value]
         util.userConfig.setValue(self.handler.getIdentifier() + '_SETTINGS',
@@ -372,7 +374,7 @@ class SettingsEditor(wx.Frame):
         grid = self.grid
         self.settings = OrderedDict(self.device.describe_settings())
         self.current = self.device.get_all_settings()
-        for key, desc in self.settings.iteritems():
+        for key, desc in iteritems(self.settings):
             value = self.current[key]
             # For some reason, a TypeError is thrown on creation of prop if value
             # is a zero-length string.

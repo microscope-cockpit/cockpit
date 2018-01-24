@@ -78,9 +78,9 @@ class GridSitesDialog(wx.Dialog):
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         pixelSize = objective.getPixelSize()
 
-        for xOffset in xrange(int(self.numColumns.GetValue())):
+        for xOffset in range(int(self.numColumns.GetValue())):
             xLoc = curLoc[0] - xOffset * pixelSize * imageWidth
-            for yOffset in xrange(int(self.numRows.GetValue())):
+            for yOffset in range(int(self.numRows.GetValue())):
                 yLoc = curLoc[1] - yOffset * pixelSize * imageHeight
                 target = numpy.array([xLoc, yLoc, curLoc[2]])
                 newSite = interfaces.stageMover.Site(target, size = markerSize)

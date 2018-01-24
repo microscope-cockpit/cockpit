@@ -740,7 +740,7 @@ class TouchScreenWindow(wx.Frame):
             glLineWidth(lineWidth)
             glColor3f(*site.color)
             glBegin(GL_LINE_LOOP)
-            for i in xrange(8):
+            for i in range(8):
                 glVertex3f(x + site.size * numpy.cos(numpy.pi * i / 4.0),
                         y + site.size * numpy.sin(numpy.pi * i / 4.0), 0)
             glEnd()
@@ -868,7 +868,7 @@ class TouchScreenWindow(wx.Frame):
         y = 0.
 
         glBegin(GL_LINE_LOOP)
-        for i in xrange(n):
+        for i in range(n):
             glVertex2f(-(x0 + x), y0 + y)
             xOld = x
             x = cosTheta * x - sinTheta * y
@@ -888,7 +888,7 @@ class TouchScreenWindow(wx.Frame):
               (x0-dw, y0+dh)]
 
         glBegin(GL_LINE_LOOP)
-        for i in xrange(-1, 4):
+        for i in range(-1, 4):
             glVertex2f(-ps[i][0], ps[i][1])
         glEnd()
     # Draw a crosshairs at the specified position with the specified color.
@@ -1013,11 +1013,11 @@ class TouchScreenWindow(wx.Frame):
     #     # Try every combinations of points, and average their resulting normal
     #     # vectors together.
     #     normals = []
-    #     for i in xrange(len(positions)):
+    #     for i in range(len(positions)):
     #         p1 = positions[i] - center
-    #         for j in xrange(i + 1, len(positions)):
+    #         for j in range(i + 1, len(positions)):
     #             p2 = positions[j] - center
-    #             for k in xrange(j + 1, len(positions)):
+    #             for k in range(j + 1, len(positions)):
     #                 p3 = positions[k] - center
     #                 points = numpy.rot90([p1, p2, p3])
     #                 # Calculate normal vector, and normalize

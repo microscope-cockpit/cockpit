@@ -139,7 +139,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
             # in them when we start.
             initialPos = tuple(self.xyPositionCache)
             interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
-            for i in xrange(5):
+            for i in range(5):
                 print ("Rep %d of 5..." % i)
                 for position in self.softlimits:
                     interfaces.stageMover.goToXY(position, shouldBlock = True)
@@ -352,7 +352,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
     # looking to see if either of their axial projections *don't* overlap
     # (a simple application of the Separating Axis theorem). 
     def doBoxesIntersect(self, start, end, rectangle):
-        for axis in xrange(2):
+        for axis in range(2):
             # a = minimum value for axis; b = maximum value; 1 = first 
             # rectangle, 2 = second rectangle.
             a1 = start[axis]

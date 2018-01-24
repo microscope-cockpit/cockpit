@@ -61,14 +61,14 @@ class DummyMover(device.Device):
     def makeInitialPublications(self):
         if not self.active:
             return
-        for axis in xrange(2):
+        for axis in range(2):
             events.publish('stage mover', '%d dummy mover' % axis, axis,
                     self.curPosition[axis])
 
 
     ## User clicked the abort button; stop moving.
     def onAbort(self):
-        for axis in xrange(2):
+        for axis in range(2):
             events.publish('stage stopped', '%d dummy mover' % axis)
 
 

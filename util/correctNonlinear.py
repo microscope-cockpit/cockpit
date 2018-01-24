@@ -179,8 +179,8 @@ class SubCorrector:
         sampledShape = (self.numSamples, self.imageShape[0], self.imageShape[1])
         self.uniformData = numpy.zeros(sampledShape, dtype = numpy.float32)
         self.uniformExposures = numpy.zeros(sampledShape, dtype = numpy.float32)
-        for i in xrange(self.imageShape[0]):
-            for j in xrange(self.imageShape[1]):
+        for i in range(self.imageShape[0]):
+            for j in range(self.imageShape[1]):
                 self.uniformData[:, i, j] = numpy.linspace(self.minVals[i, j], 
                         self.maxVals[i, j], self.numSamples)
                 self.uniformExposures[:, i, j] = numpy.interp(
@@ -236,7 +236,7 @@ if __name__ == '__main__':
     # averaged images.
     expTimeToData = {}
     mapFile = datadoc.DataDoc(mapFile)
-    for z in xrange(mapFile.size[2]):
+    for z in range(mapFile.size[2]):
         exposureTime = mapFile.extendedHeaderFloats[0, 0, z, 0, 0]
         data = mapFile.imageArray[0, 0, z]
         expTimeToData[exposureTime] = data
@@ -257,9 +257,9 @@ if __name__ == '__main__':
     #    print ("Loading",filename,"initial stats",inputData.min(),inputData.max(),numpy.median(inputData),numpy.std(inputData))
         result = numpy.zeros(inputData.shape, dtype = numpy.float32)
         subStart = time.time()
-        for wavelength in xrange(inputData.shape[0]):
-            for timepoint in xrange(inputData.shape[1]):
-                for z in xrange(inputData.shape[2]):
+        for wavelength in range(inputData.shape[0]):
+            for timepoint in range(inputData.shape[1]):
+                for z in range(inputData.shape[2]):
                     print (filename, timepoint, z)
                     result[wavelength, timepoint, z] = corrector.correct(inputData[wavelength, timepoint, z])
         correctionTimes.append(time.time() - subStart)

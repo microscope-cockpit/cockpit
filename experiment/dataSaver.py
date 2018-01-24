@@ -9,6 +9,8 @@ import queue
 import threading
 import time
 
+from six import iteritems
+
 ## Unique ID for identifying saver instances
 uniqueID = 0
 
@@ -96,7 +98,7 @@ class DataSaver:
 
         ## Maps ints to cameras; the ints represent the order in which the 
         # images are stored. 
-        self.indexToCamera = dict([(value, key) for key, value in self.cameraToIndex.iteritems()])
+        self.indexToCamera = dict([(value, key) for key, value in iteritems(self.cameraToIndex)])
         ## Timestamp of the first image we receive. 
         # We need this so we can rebase the timestamps of images to
         # to be relative to the beginning of the experiment -- Python 
@@ -123,7 +125,7 @@ class DataSaver:
             # Generates e.g. "%05d" if we need 5 digits, or "%01d" if we only 
             # need 1.
             formatString = "%0" + str(numDigits) + "d"
-            for i in xrange(numFilehandles):
+            for i in range(numFilehandles):
                 filename = "%s.%s" % (savePath, formatString % i)
                 self.filehandles.append(open(filename, 'wb'))
                 self.filenames.append(filename)
@@ -150,7 +152,7 @@ class DataSaver:
         
         ## MRC header objects for each file.
         self.headers = []
-        for i in xrange(len(self.filehandles)):
+        for i in range(len(self.filehandles)):
             # Calculate how many timepoints fit into this particular file 
             # (potentially different for the final file).
             numTimepoints = self.maxRepsPerFile
@@ -277,7 +279,7 @@ class DataSaver:
 
         # Determine min/max vals for each wavelength.
         for header in self.headers:
-            for i in xrange(len(self.cameras)):
+            for i in range(len(self.cameras)):
                 # HACK: camera 1 is supposed to get min/max/median. However,
                 # computing the median of a large dataset takes a very long 
                 # time (30s for a 2GB file on a fairly powerful computer), 

@@ -32,6 +32,7 @@ import random
 import threading
 import time
 import types
+from six import iteritems
 
 
 class ValueLoggerTestSource(object):
@@ -102,7 +103,7 @@ class ValueLogger(object):
                                              maxlen=self.historyLength)
         elif isinstance(data, types.DictionaryType):
             # Data is a dict of key, value pairs. Map device name and key to values.
-            for (key, value) in data.iteritems():
+            for (key, value) in iteritems(data):
                 key = '%s:%s' % (device, key)
                 self.currentValues[key] = value
                 if key not in self.series:
@@ -152,7 +153,7 @@ class ValueLogger(object):
             # Log current values and time.
             self.times.append(datetime.datetime.fromtimestamp(now))
             self.lastTime = now
-            for key, series in self.series.iteritems():
+            for key, series in iteritems(self.series):
                 series.append(self.currentValues.get(key, None))
             events.publish("valuelogger update", None)
 

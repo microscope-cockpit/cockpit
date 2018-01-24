@@ -258,7 +258,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             self.scaledVertex(hardLimits[0][0], yOffset)
             self.scaledVertex(hardLimits[0][1], yOffset)
             # Draw notches in the scale bar every 1mm.
-            for scaleX in xrange(int(hardLimits[0][0]), int(hardLimits[0][1]) + 1000, 1000):
+            for scaleX in range(int(hardLimits[0][0]), int(hardLimits[0][1]) + 1000, 1000):
                 width = self.viewExtent * .015
                 if scaleX % 5000 == 0:
                     width = self.viewExtent * .025

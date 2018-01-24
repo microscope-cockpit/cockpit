@@ -13,6 +13,8 @@ import threading
 import time
 import wx
 
+from six import iteritems
+
 TIME_FORMAT_STR = '%Y-%m-%d %H:%M:%S'
 
 ## Purely for debugging purposes, a copy of the last Experiment that was
@@ -134,7 +136,7 @@ class Experiment:
         self.prepareHandlers()
 
         self.cameraToReadoutTime = dict([(c, c.getTimeBetweenExposures(isExact = True)) for c in self.cameras])
-        for camera, readTime in self.cameraToReadoutTime.iteritems():
+        for camera, readTime in iteritems(self.cameraToReadoutTime):
             if type(readTime) is not decimal.Decimal:
                 raise RuntimeError("Camera %s did not provide an exact (decimal.Decimal) readout time" % camera.name)
 
@@ -221,7 +223,7 @@ class Experiment:
         # portion of self.table, have them run it, and wait for them to finish.
         executors = depot.getHandlersOfType(depot.EXECUTOR)
         self.shouldAbort = False
-        for rep in xrange(self.numReps):
+        for rep in range(self.numReps):
             startTime = time.time()
             repDuration = None
             curIndex = 0
@@ -342,12 +344,12 @@ class Experiment:
                 )
         ]
         # Append the metadata we were given to start.
-        for i in xrange(0, len(self.metadata) + 80, 80):
+        for i in range(0, len(self.metadata) + 80, 80):
             substring = self.metadata[i * 80 : (i + 1) * 80]
             if substring:
                 titles.append(substring)
 
-        for deviceType, handlers in typeToHandlers.iteritems():
+        for deviceType, handlers in iteritems(typeToHandlers):
             handlers = sorted(handlers, key = lambda a: a.name)
             entries = []
             for handler in handlers:

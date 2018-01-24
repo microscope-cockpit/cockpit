@@ -25,7 +25,7 @@ class CamerasWindow(wx.Frame):
         self.sizer = wx.FlexGridSizer(int(self.numCameras / 2.0 + .5), 2, 5, 5)
         ## List of ViewPanels we contain.
         self.views = []
-        for i in xrange(self.numCameras):
+        for i in range(self.numCameras):
             view = viewPanel.ViewPanel(self.panel)
             self.views.append(view)
 

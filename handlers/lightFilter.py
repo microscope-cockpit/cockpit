@@ -35,7 +35,7 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
         self.globalIndex = globalIndex
 
         ## List of indices of the global filter.
-        self.globalPositions = [0 for i in xrange(numGlobals)]
+        self.globalPositions = [0 for i in range(numGlobals)]
         ## Current position of the filter
         self.curPosition = curPosition
         ## wx.StaticText describing the current filtration amount.

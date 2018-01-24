@@ -77,7 +77,7 @@ class ActionTable:
         if delta < 0:
             # First event is at a positive time, so we're good to go.
             return
-        for i in xrange(len(self.actions)):
+        for i in range(len(self.actions)):
             self.actions[i] = (self.actions[i][0] + delta,
                     self.actions[i][1], self.actions[i][2])
         self.firstActionTime += delta

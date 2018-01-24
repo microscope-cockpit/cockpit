@@ -129,13 +129,13 @@ class DummyCamera(device.Device):
     # propagate it to the rest of the cockpit.
     # \param camera For experiments, we only trigger one camera at a time. 
     def onDummyImage(self, camera = None):
-        for name, isReady in self.nameToIsReady.iteritems():
+        for name, isReady in iteritems(self.nameToIsReady):
             if not isReady or (camera and name != camera.name):
                 # Camera is not enabled, or is the wrong camera.
                 continue
             width, height = self.getImageSize(name)
             row = numpy.zeros(width)
-            row[:] = [numpy.sin(i * numpy.pi / self.numBars) for i in xrange(width)]
+            row[:] = [numpy.sin(i * numpy.pi / self.numBars) for i in range(width)]
             image = numpy.empty((width, height))
             image[:] = row
             # Rotate the test pattern.

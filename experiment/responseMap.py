@@ -22,6 +22,7 @@ import threading
 import time
 import wx
 
+from six import iteritems
 
 ## Provided so the UI knows what to call this experiment.
 EXPERIMENT_NAME = 'Response map correction file'
@@ -73,11 +74,11 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
         self.prepareHandlers()
 
         self.cameraToReadoutTime = dict([(c, c.getTimeBetweenExposures(isExact = True)) for c in self.cameras])
-        for camera, readTime in self.cameraToReadoutTime.iteritems():
+        for camera, readTime in iteritems(self.cameraToReadoutTime):
             if type(readTime) is not decimal.Decimal:
                 raise RuntimeError("Camera %s did not provide an exact (decimal.Decimal) readout time" % camera.name)
 
-        for camera, func in self.camToFunc.iteritems():
+        for camera, func in iteritems(self.camToFunc):
             events.subscribe('new image %s' % camera.name, func)
         for exposureTime in self.exposureTimes:
             if self.shouldAbort:
@@ -117,7 +118,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
             self.processImages(exposureTime)
             progress.Destroy()
 
-        for camera, func in self.camToFunc.iteritems():
+        for camera, func in iteritems(self.camToFunc):
             events.unsubscribe('new image %s' % camera.name, func)
 
         self.save()
@@ -165,7 +166,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
         rawImages = numpy.array([d[2] for d in self.timesAndImages])
         self.plotPixels(xVals, rawImages, "Pre-corrected pixel linearity survey")
         correctedImages = numpy.empty(rawImages.shape)
-        for cam in xrange(rawImages.shape[1]):
+        for cam in range(rawImages.shape[1]):
             corrector = util.correctNonlinear.Corrector(xVals, averagedImages[:, cam])
             correctedImages[:, cam] = map(corrector.correct, rawImages[:, cam])
         self.plotPixels(xVals, correctedImages, "Corrected pixel linearity survey")
@@ -202,7 +203,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
         # the center of the image and the average of the image as a whole.
         lines = []
         labels = []
-        for cam in xrange(images.shape[1]):
+        for cam in range(images.shape[1]):
             camImages = images[:, cam]
             height, width = camImages[0].shape
             cy = height / 2
@@ -242,7 +243,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
                     # 1ns as a minimum.
                     exposureTime = max(exposureTime, decimal.Decimal('.000001'))
                     settings.append((light, exposureTime))
-                for i in xrange(self.numExposures):
+                for i in range(self.numExposures):
                     curTime = self.expose(curTime, usedCams, settings, table)
         return table
 
@@ -291,7 +292,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
             accumulator /= numCleanImages
 
             averages.append(accumulator)
-            for i in xrange(2):
+            for i in range(2):
                 self.maxImageDims[i] = max(self.maxImageDims[i], accumulator.shape[i])
             print (numCleanImages,"images are valid")
         self.timesAndImages.append((exposureTime, averages, raws))
@@ -365,7 +366,7 @@ class ExperimentUI(wx.Panel):
 
     ## Generate a dict of our settings.
     def getSettingsDict(self):
-        return dict([(key, c.GetValue()) for key, c in self.responseArgs.iteritems()])
+        return dict([(key, c.GetValue()) for key, c in iteritems(self.responseArgs)])
 
 
     ## Save the current experiment settings to config.

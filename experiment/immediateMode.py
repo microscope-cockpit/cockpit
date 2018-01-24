@@ -83,7 +83,7 @@ class ImmediateModeExperiment(experiment.Experiment):
     # self.executeRep() iteratively, taking care of the time to pass between
     # reps for you.
     def execute(self):
-        for i in xrange(self.numReps):
+        for i in range(self.numReps):
             if self.shouldAbort:
                 break
             startTime = time.time()

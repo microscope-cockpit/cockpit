@@ -71,7 +71,7 @@ def drawScaledCircle(self, x0, y0, r, n, offset=True):
     y = 0.
 
     glBegin(GL_LINE_LOOP)
-    for i in xrange(n):
+    for i in range(n):
         glVertex2f(-(x0 + x), y0 + y)
         xOld = x
         x = cosTheta * x - sinTheta * y
@@ -92,7 +92,7 @@ def drawScaledRectangle(self, x0, y0, w, h, offset=True):
           (x0-dw, y0+dh)]
 
     glBegin(GL_LINE_LOOP)
-    for i in xrange(-1, 4):
+    for i in range(-1, 4):
         glVertex2f(-ps[i][0], ps[i][1])
     glEnd()
 # Draw a crosshairs at the specified position with the specified color.

@@ -41,7 +41,7 @@ class ZStackMultiExperiment(experiment.Experiment):
         table.addAction(curTime, shutter, True)
         prevAltitude = None
         numZSlices = int(math.ceil(self.zHeight / self.sliceHeight))
-        for zIndex in xrange(numZSlices):
+        for zIndex in range(numZSlices):
             # Move to the next position, then wait for the stage to 
             # stabilize.
             targetAltitude = self.initialZPos + self.sliceHeight * zIndex

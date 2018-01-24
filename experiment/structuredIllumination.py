@@ -150,9 +150,9 @@ class SIExperiment(experiment.Experiment):
     def genSIPositions(self):
         ordering = COLLECTION_ORDERS[self.collectionOrder]
         maxVals = (self.numAngles, self.numPhases, self.numZSlices)
-        for i in xrange(maxVals[ordering[0]]):
-            for j in xrange(maxVals[ordering[1]]):
-                for k in xrange(maxVals[ordering[2]]):
+        for i in range(maxVals[ordering[0]]):
+            for j in range(maxVals[ordering[1]]):
+                for k in range(maxVals[ordering[2]]):
                     vals = (i, j, k)
                     angle = vals[ordering.index(0)]
                     phase = vals[ordering.index(1)]

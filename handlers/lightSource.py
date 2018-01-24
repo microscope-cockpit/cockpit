@@ -9,7 +9,7 @@ import gui.guiUtils
 import gui.toggleButton
 
 ## List of exposure times to allow the user to set.
-EXPOSURE_TIMES = [1, 5] + range(10, 100, 10) + range(100, 1100, 100)
+EXPOSURE_TIMES = [1, 5] + list(range(10, 100, 10)) + list(range(100, 1100, 100))
 
 ## Color to use for light sources that are in continuous exposure mode.
 CONTINUOUS_COLOR = (255, 170, 0)

@@ -264,7 +264,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
                 cycleRate *= freq
                 seenFreqs.add(freq)
         cycleNumToSitesList = []
-        for i in xrange(cycleRate):
+        for i in range(cycleRate):
             sitesList = []
             for siteId, frequency in zip(baseOrder, baseFrequencies):
                 if i % frequency == 0:
@@ -322,7 +322,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
         cyclePeriod, cycleNumToSitesList = self.chooseSiteVisitOrder()
         numCycles = int(self.numCycles.GetValue())
         cycleStartTime = time.time()
-        for cycleNum in xrange(numCycles):
+        for cycleNum in range(numCycles):
             siteIds = cycleNumToSitesList[cycleNum % cyclePeriod]
             if cycleNum != 0:
                 # Move to the first site.

@@ -10,6 +10,8 @@ import numpy
 import scipy.ndimage
 import wx
 
+from six import iteritems
+
 ## Maps dimensional axes to their labels.
 DIMENSION_LABELS = ['Wavelength', 'Time', 'Z', 'Y', 'X']
 
@@ -61,7 +63,7 @@ class DataDoc:
         ## Averages for each wavelength, used to provide fill values when
         # taking slices.
         self.averages = []
-        for wavelength in xrange(self.numWavelengths):
+        for wavelength in range(self.numWavelengths):
             self.averages.append(self.imageArray[wavelength].mean())
 
         ## Lower boundary of the cropped data.
@@ -132,7 +134,7 @@ class DataDoc:
                     style = wx.PD_AUTO_HIDE | wx.PD_REMAINING_TIME)
             curTimepoint = self.curViewIndex[1]
             data = []
-            for wavelength in xrange(self.size[0]):
+            for wavelength in range(self.size[0]):
                 data.append(self.transformArray(
                         self.imageArray[wavelength, curTimepoint],
                         *self.alignParams[wavelength],
@@ -149,9 +151,9 @@ class DataDoc:
                     maximum = self.size[0] * self.size[1],
                     style = wx.PD_AUTO_HIDE | wx.PD_REMAINING_TIME)
             data = []
-            for timepoint in xrange(self.size[1]):
+            for timepoint in range(self.size[1]):
                 timeData = []
-                for wavelength in xrange(self.size[0]):
+                for wavelength in range(self.size[0]):
                     volume = self.transformArray(
                             self.imageArray[wavelength, timepoint],
                             *self.alignParams[wavelength],
@@ -166,7 +168,7 @@ class DataDoc:
             dialog.Destroy()
             # Slice through data per our axes parameter.
             slice = [Ellipsis] * 4
-            for axis, position in axes.iteritems():
+            for axis, position in iteritems(axes):
                 if axis != 1:
                     slice[axis - 1] = position
                     return data[slice]
@@ -244,7 +246,7 @@ class DataDoc:
             # Simply take an ordinary slice.
             # Ellipsis is a builtin keyword for the full-array slice. Who knew?
             slices = [Ellipsis]
-            for axis in xrange(1, 5):
+            for axis in range(1, 5):
                 if axis in axes:
                     slices.append(axes[axis])
                 else:
@@ -280,7 +282,7 @@ class DataDoc:
         center = numpy.array(data.shape[2:][::-1]).reshape(3, 1) / 2.0
         transposedCoords[:3,:] -= center
         result = numpy.zeros(targetShape, dtype = self.dtype)
-        for wavelength in xrange(data.shape[0]):
+        for wavelength in range(data.shape[0]):
             # Transform the coordinates according to the alignment
             # parameters for the specific wavelength.
             transformedCoords = numpy.dot(inverseTransforms[wavelength],
@@ -290,7 +292,7 @@ class DataDoc:
             # Chop off the trailing 1, reorder to ZYX, and insert the time
             # coordinate.
             tmp = numpy.zeros((4, transformedCoords.shape[1]), dtype = numpy.float)
-            for i in xrange(3):
+            for i in range(3):
                 tmp[i + 1] = transformedCoords[2 - i]
 
             transformedCoords = tmp
@@ -326,7 +328,7 @@ class DataDoc:
         transposedCoord[:3] -= center
         resultVals = numpy.zeros(self.numWavelengths, dtype = self.dtype)
         resultCoords = numpy.zeros((self.numWavelengths, 4))
-        for wavelength in xrange(self.numWavelengths):
+        for wavelength in range(self.numWavelengths):
             # Transform the coordinates according to the alignment
             # parameters for the specific wavelength.
             transformedCoord = numpy.dot(inverseTransforms[wavelength],
@@ -358,7 +360,7 @@ class DataDoc:
     # each wavelength.
     def getTransformationMatrices(self):
         result = []
-        for wavelength in xrange(self.numWavelengths):
+        for wavelength in range(self.numWavelengths):
             dx, dy, dz, angle, zoom = self.alignParams[wavelength]
             angle = angle * numpy.pi / 180.0
             cosTheta = numpy.cos(angle)
@@ -585,7 +587,7 @@ def makeHeaderFor(data, shouldSetMinMax = True, **kwargs):
         # Set the min/max values. This is a bit ugly because they're in
         # differently-named fields on a per-wavelength basis...and the first
         # wavelength gets extra data stored, to boot.
-        for i in xrange(data.shape[0]):
+        for i in range(data.shape[0]):
             minVal = data[i].min()
             maxVal = data[i].max()
             if i == 0:
@@ -665,7 +667,7 @@ def getExtendedHeader(data, header):
     floatSize = numFloats * 4
     chunkSize = intSize + floatSize
     # Load the extended header as a bytesequence.
-    for i in xrange(imagesPerWavelength * numWavelengths):
+    for i in range(imagesPerWavelength * numWavelengths):
         offset = i * chunkSize
         intArray[i * intSize : (i + 1) * intSize] = data[offset : offset + intSize]
         floatArray[i * floatSize : (i + 1) * floatSize] = data[offset + intSize : offset + chunkSize]
