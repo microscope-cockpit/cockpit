@@ -5,8 +5,8 @@ import gui.saveTopBottomPanel
 import interfaces.stageMover
 import util.userConfig
 
-import macroStageXY
-import macroStageZ
+from . import macroStageXY
+from . import macroStageZ
 
 import wx
 

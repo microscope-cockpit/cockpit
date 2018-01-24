@@ -6,7 +6,7 @@ import events
 import gui.keyboard
 import util.userConfig
 import gui.viewFileDropTarget
-import viewPanel
+from . import viewPanel
 
 
 

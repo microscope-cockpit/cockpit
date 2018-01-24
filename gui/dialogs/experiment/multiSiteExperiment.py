@@ -4,7 +4,7 @@ import wx
 import depot
 import events
 import gui.dialogs.enumerateSitesPanel
-import experimentConfigPanel
+from . import experimentConfigPanel
 import interfaces.stageMover
 import util.userConfig
 

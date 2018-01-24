@@ -8,7 +8,7 @@ import gui.mosaic.window
 import interfaces.stageMover
 import util.logger
 
-import macroStageBase
+from . import macroStageBase
 
 CIRCLE_SEGMENTS = 32
 

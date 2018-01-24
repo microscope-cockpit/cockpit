@@ -9,7 +9,7 @@ import interfaces.stageMover
 import util.logger
 import util.userConfig
 
-import macroStageBase
+from . import macroStageBase
 import gui.saveTopBottomPanel
 
 

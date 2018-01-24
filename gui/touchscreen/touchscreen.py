@@ -12,9 +12,9 @@ from wx.lib.agw.shapedbutton import SButton, SBitmapButton,SBitmapToggleButton,S
 from gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 
 
-import slavecanvas
-import slaveOverview
-import slaveMacroStageZ
+from . import slavecanvas
+from . import slaveOverview
+from . import slaveMacroStageZ
 import gui.macroStage.macroStageBase
 import depot
 import events
