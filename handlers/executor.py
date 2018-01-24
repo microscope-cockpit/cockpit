@@ -11,6 +11,7 @@ import gui
 import wx
 import decimal
 from six import string_types
+from six.moves import reduce
 
 ## This handler is responsible for executing portions of experiments.
 class ExecutorHandler(deviceHandler.DeviceHandler):
