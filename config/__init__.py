@@ -39,13 +39,6 @@ class MyConfigParser(ConfigParser, object):
         self.sectionToFile = {}
 
 
-    def get(self, section, option, default=None):
-        if self.has_option(section, option) or default is None:
-            return  ConfigParser.get(self, section, option)
-        else:
-            return default
-
-
     def read(self):
         """Read in the config, tracking which file specifies each section.
 
