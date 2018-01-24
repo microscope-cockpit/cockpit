@@ -37,7 +37,7 @@ import threading
 import time
 import wx
 
-import camera
+from . import camera
 import events
 import handlers.camera
 import gui.device

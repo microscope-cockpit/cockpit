@@ -41,7 +41,7 @@ import wx
 
 import depot
 
-import device
+from . import device
 import events
 import gui.toggleButton
 import handlers.executor

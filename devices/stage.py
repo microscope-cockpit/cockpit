@@ -18,7 +18,7 @@ limitations under the License.
 """
 
 from decimal import Decimal
-import device
+from . import device
 from interfaces.stageMover import Primitive, AXIS_MAP
 from handlers import stagePositioner
 import depot

@@ -11,7 +11,7 @@ put, having converted the angle index to the required voltage.
 Copyright Mick Phillips, University of Oxford, 2015.
 """
 import depot
-import device
+from . import device
 import re
 
 DECIMAL_PAT = '(?:\d+(?:\.\d*)?|\.\d+)'

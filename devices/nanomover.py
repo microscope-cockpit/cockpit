@@ -1,5 +1,5 @@
-import device
-import stage
+from . import device
+from . import stage
 import events
 import gui.toggleButton
 import handlers.genericPositioner

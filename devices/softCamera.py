@@ -17,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 =============================================================================
 """
-import camera
+from . import camera
 import events
 import handlers.camera
 import numpy as np

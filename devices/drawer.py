@@ -10,7 +10,7 @@
 #       TRITC: FITC: 518, TRITC: 600
 #
 
-import device
+from . import device
 from handlers.drawer import DrawerHandler, DrawerSettings
 import re
 

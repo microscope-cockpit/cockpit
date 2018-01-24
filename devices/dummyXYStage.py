@@ -1,6 +1,6 @@
 ## This module creates a simple XY stage-positioning device.
 
-import device
+from . import device
 import events
 import handlers.stagePositioner
 

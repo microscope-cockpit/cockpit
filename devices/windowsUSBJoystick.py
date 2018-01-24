@@ -24,7 +24,7 @@ from math import floor, ceil
 import time
 import ctypes
 import threading
-import device
+from . import device
 import events
 import interfaces.stageMover
 import gui.mosaic.window
@@ -34,7 +34,7 @@ import depot
 #patch from David to stop it breaking when not on windows.
 import os
 if os.name is 'nt':
-    import _winreg as winreg
+    import winreg as winreg
     from ctypes.wintypes import WORD, UINT, DWORD
     from ctypes.wintypes import WCHAR as TCHAR
 else:

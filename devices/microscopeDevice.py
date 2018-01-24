@@ -22,7 +22,7 @@ Supports cameras which implement the interface defined in
 import Pyro4
 import wx
 import events
-import device
+from . import device
 import depot
 import gui.device
 import gui.guiUtils

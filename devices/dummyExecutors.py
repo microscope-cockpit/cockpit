@@ -1,5 +1,5 @@
 import depot
-import device
+from . import device
 import events
 import handlers.executor
 

@@ -7,7 +7,7 @@ Mick Phillips, University of Oxford, 2014-2015.
 
 from collections import OrderedDict
 import decimal
-import device
+from . import device
 from itertools import groupby
 import Pyro4
 import wx

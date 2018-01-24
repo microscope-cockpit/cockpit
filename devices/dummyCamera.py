@@ -1,6 +1,6 @@
 ## This module provides a dummy camera that generates test pattern images. 
 
-import device
+from . import device
 import events
 import handlers.camera
 

@@ -3,7 +3,7 @@
 # signal source (e.g. an FPGA or DSP card). 
 
 import depot
-import device
+from . import device
 import events
 import handlers.imager
 

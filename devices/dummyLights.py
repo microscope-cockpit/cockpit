@@ -1,4 +1,4 @@
-import device
+from . import device
 import handlers.lightSource
 
 CLASS_NAME = 'DummyLightsDevice'

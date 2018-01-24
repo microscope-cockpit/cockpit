@@ -21,7 +21,7 @@ feasible that the shutter controller could be programmed to control exposure
 timing.
 """
 
-import shutter
+from . import shutter
 import telnetlib
 
 CLASS_NAME = 'StanfordShutterDevice'
