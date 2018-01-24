@@ -264,8 +264,8 @@ class ValueLoggerWindow(wx.Frame):
             self.filehandle=interfaces.valueLogger.instance.filehandle
         else:
             #file already open
-			pass
-        
+            pass
+
 
     def closeLogFile(self):
         """Close the open logfile"""
