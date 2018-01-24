@@ -4,7 +4,7 @@ import time
 import wx
 
 import depot
-import deviceHandler
+from . import deviceHandler
 import events
 import gui.guiUtils
 import gui.toggleButton

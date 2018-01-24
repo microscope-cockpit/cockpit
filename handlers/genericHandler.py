@@ -1,4 +1,4 @@
-import deviceHandler
+from . import deviceHandler
 import depot
 
 

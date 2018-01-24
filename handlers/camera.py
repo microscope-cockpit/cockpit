@@ -4,7 +4,7 @@ import gui
 import gui.device
 
 import depot
-import deviceHandler
+from . import deviceHandler
 import events
 import handlers.imager
 import interfaces.imager
