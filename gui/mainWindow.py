@@ -19,6 +19,8 @@ import util.user
 import util.userConfig
 from . import viewFileDropTarget
 
+from six import iteritems
+
 ## Window singleton
 window = None
 
@@ -38,7 +40,7 @@ class MainWindow(wx.Frame):
 
         # Find out what devices we have to work with.
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
-        lightToggles = sorted(lightToggles, key = lambda l: l.wavelength)
+        lightToggles = sorted(lightToggles, key = lambda l: float(l.wavelength))
         # Set of objects that are in the same group as any light toggle.
         # lightAssociates = set()
         # for toggle in lightToggles:
@@ -122,7 +124,7 @@ class MainWindow(wx.Frame):
         ignoreThings = lightToggles + lightPowerThings
         ignoreThings += cameraThings
         # Remove ignoreThings from the full list of devices.
-        otherThings = depot.getAllDevices()
+        otherThings = list(depot.getAllDevices())
         otherThings.sort(key = lambda d: d.__class__.__name__)
         otherThings.extend(depot.getAllHandlers())
         for thing in ignoreThings: 
@@ -325,7 +327,7 @@ class MainWindow(wx.Frame):
     def onLightSelect(self, event = None):
         selectionIndices = self.lightList.GetSelections()
         items = self.lightList.GetItems()
-        for light, panel in self.lightToPanel.iteritems():
+        for light, panel in iteritems(self.lightToPanel):
             panel.Show(items.index(light.name) in selectionIndices)
         # Fix display. We need to redisplay ourselves as well in case the
         # newly-displayed lights are extending off the edge of the window.

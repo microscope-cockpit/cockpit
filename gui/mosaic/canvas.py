@@ -93,8 +93,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         xMax += max(0, xOffLim[1]) + tile.megaTileMicronSize
         yMin += min(0, yOffLim[0])
         yMax += max(0, yOffLim[1]) + 4 * tile.megaTileMicronSize
-        for x in xrange(xMin, xMax, tile.megaTileMicronSize):
-            for y in xrange(yMin, yMax, tile.megaTileMicronSize):
+        for x in range(xMin, xMax, tile.megaTileMicronSize):
+            for y in range(yMin, yMax, tile.megaTileMicronSize):
                 self.megaTiles.append(tile.MegaTile((-x, y)))
         self.haveInitedGL = True
 
@@ -454,7 +454,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             # More images in the file than we have stats for.
             util.logger.log.warn("Loading mosaic with %d images; only have positioning information for %d." % (doc.imageArray.shape[2], len(tileStats)))
         maxImages = min(doc.imageArray.shape[2], len(tileStats))
-        for i in xrange(maxImages):
+        for i in range(maxImages):
             image = doc.imageArray[0, 0, i]
             stats = tileStats[i]
             try:

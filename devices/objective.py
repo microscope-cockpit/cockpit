@@ -69,7 +69,7 @@ class ObjectiveDevice(device.Device):
                 offsets.update({obj: offset})
                 colours.update({obj: colour})
 
-        default = pixel_sizes.keys()[0]
+        default = list(pixel_sizes.keys())[0]
 
         return [handlers.objective.ObjectiveHandler("objective",
                                                     "miscellaneous",

@@ -24,6 +24,8 @@ import socket
 # Import device definitions from the config module.
 from config import config
 
+from six import iteritems
+
 # Strings used for IP address and port in config. files.
 IPSTR = 'ipaddress' # ConfigParser makes keys lower case
 PORTSTR = 'port'
@@ -95,7 +97,7 @@ for s in config.sections():
 
 
 # Iterate over the mappings to query host and port status.
-for device, host in deviceToHost.iteritems():
+for device, host in iteritems(deviceToHost):
     port = deviceToPort[device]
     if host not in hostsUp.keys():
         hostsUp[host] = 'up' if ping(host) else 'down'

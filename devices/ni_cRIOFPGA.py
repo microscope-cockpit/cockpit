@@ -52,6 +52,9 @@ import handlers.lightSource
 import handlers.stagePositioner
 import threading
 import util.threads
+
+from six import iteritems
+
 from config import config, LIGHTS, CAMERAS, AOUTS
 CLASS_NAME = 'NIcRIO'
 COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2, 'SI angle': -1}
@@ -95,9 +98,9 @@ class NIcRIO(device.Device):
 
         self.nameToDigitalLine = {}
         self.nameToDigitalLine.update({key: val['triggerLine'] for \
-                                       key, val in LIGHTS.iteritems()})
+                                       key, val in iteritems(LIGHTS)})
         self.nameToDigitalLine.update({key: val['triggerLine'] for \
-                                       key, val in CAMERAS.iteritems()})
+                                       key, val in iteritems(CAMERAS)})
         self.otherTriggers = []
         for s in config.sections():
             if not config.has_option(s, 'triggerLine'):
@@ -117,7 +120,7 @@ class NIcRIO(device.Device):
         self.alineToUnitsPerADU = {}
         self.axisMapper = {}
         VperADU = 20.0 / 2**16
-        for key, aout in AOUTS.iteritems():
+        for key, aout in iteritems(AOUTS):
             self.alineToUnitsPerADU.update({\
                 aout['aline']: aout['sensitivity'] * VperADU, })
             ## Maps Cockpit axes (0: X, 1: Y, 2: Z) to FPGA analog lines
@@ -178,12 +181,12 @@ class NIcRIO(device.Device):
     def finalizeInitialization(self):
         # Get all the other devices we can control, and add them to our
         # digital lines.
-        for name, line in self.nameToDigitalLine.iteritems():
+        for name, line in iteritems(self.nameToDigitalLine):
             handler = depot.getHandlerWithName(name)
             self.handlerToDigitalLine[handler] = line
 
         # Move analogue lines to initial positions, if given in config.
-        for handler, line in self.handlerToAnalogLine.iteritems():
+        for handler, line in iteritems(self.handlerToAnalogLine):
             pos = self.startupAnalogPositions[line]
             if pos is not None:
                 handler.moveAbsolute(pos)
@@ -197,7 +200,7 @@ class NIcRIO(device.Device):
         result = []
         # The "Ambient" light source lets us specify exposure times for images
         # with no active illumination.
-        for key, light in LIGHTS.iteritems():
+        for key, light in iteritems(LIGHTS):
             # Set up lightsource handlers with default 100ms expsure time.
             handler = handlers.lightSource.LightHandler(
                 light['label'], "%s light source" % light['label'],
@@ -211,7 +214,7 @@ class NIcRIO(device.Device):
             self.handlerToDigitalLine[handler] = light['triggerLine']
             result.append(handler)
 
-        for key, aout in AOUTS.iteritems():
+        for key, aout in iteritems(AOUTS):
             if aout['cockpit_axis'] in 'xyzXYZ':
                 axisName = COCKPIT_AXES[aout['cockpit_axis'].lower()]
                 handler = handlers.stagePositioner.PositionerHandler(
@@ -441,13 +444,13 @@ class NIcRIO(device.Device):
         lightTimePairs = []
         maxTime = 0
         cameraReadTime = 0
-        for handler, line in self.handlerToDigitalLine.iteritems():
+        for handler, line in iteritems(self.handlerToDigitalLine):
             if handler.name in self.activeLights:
                 maxTime = max(maxTime, handler.getExposureTime())
                 exposureTime = handler.getExposureTime()
                 lightTimePairs.append((line, exposureTime))
                 maxTime = max(maxTime, exposureTime)
-        for name, line in self.nameToDigitalLine.iteritems():
+        for name, line in iteritems(self.nameToDigitalLine):
             if name in self.activeCameras:
                 cameraMask += line
                 handler = depot.getHandlerWithName(name)
@@ -465,13 +468,13 @@ class NIcRIO(device.Device):
         cameraMask = 0
         lightTimePairs = []
         maxTime = 0
-        for handler, line in self.handlerToDigitalLine.iteritems():
+        for handler, line in iteritems(self.handlerToDigitalLine):
             if handler.name in self.activeLights:
                 maxTime = max(maxTime, handler.getExposureTime())
                 exposureTime = handler.getExposureTime()
                 lightTimePairs.append((line, exposureTime))
                 maxTime = max(maxTime, exposureTime)
-        for name, line in self.nameToDigitalLine.iteritems():
+        for name, line in iteritems(self.nameToDigitalLine):
             if name in self.activeCameras:
                 cameraMask += line
                 handler = depot.getHandlerWithName(name)
@@ -495,7 +498,7 @@ class NIcRIO(device.Device):
         '''
         Cleanup after an experiment completes: restore our cached position.
         '''
-        for axis, position in self.preExperimentPosition.iteritems():
+        for axis, position in iteritems(self.preExperimentPosition):
             self.movePiezoAbsolute(axis, position)
 
     def getNumRunnableLines(self, name, table, index):
@@ -529,7 +532,7 @@ class NIcRIO(device.Device):
         # in this same experiment. The analog values are a bit tricky, since
         # they're deltas from the values we used to create the profile.
         self.lastDigitalVal = digitals[-1, 1]
-        for aline in xrange(4):
+        for aline in range(4):
             self.lastAnalogPositions[aline] = analogs[aline][-1][1] + self.lastAnalogPositions[aline]
 
         # Apologies for the messiness here; basically we're checking if any
@@ -539,7 +542,7 @@ class NIcRIO(device.Device):
         if (self.prevProfileSettings is None or
                 profileStr != self.prevProfileSettings[0] or
                 numpy.any(digitals != self.prevProfileSettings[1]) or
-                sum([numpy.any(analogs[i] != self.prevProfileSettings[2][i]) for i in xrange(4)])):
+                sum([numpy.any(analogs[i] != self.prevProfileSettings[2][i]) for i in range(4)])):
             # We can't just re-use the already-loaded profile.
             self.connection.sendTables(digitalsTable = digitals, analogueTables = analogs)
             self.prevProfileSettings = (profileStr, digitals, analogs)
@@ -707,8 +710,8 @@ class NIcRIO(device.Device):
         # Convert the analog actions into Numpy arrays now that we know their
         # lengths. Default to [0, 0], fill in a proper array for any axis where
         # we actually do something.
-        analogs = [numpy.zeros((1, 2), dtype = numpy.uint32) for i in xrange(4)]
-        for aline, actions in alineToAnalogs.iteritems():
+        analogs = [numpy.zeros((1, 2), dtype = numpy.uint32) for i in range(4)]
+        for aline, actions in iteritems(alineToAnalogs):
             analogs[aline] = numpy.zeros((len(actions), 2), dtype = numpy.uint32)
             for i, (time, value) in enumerate(actions):
                 analogs[aline][i] = (time, value)
@@ -720,7 +723,7 @@ class NIcRIO(device.Device):
                 aligned = True, shape = 1)
 
         runtime = max(digitals[:, 0])
-        for aline in xrange(4):
+        for aline in range(4):
             runtime = max(runtime, max(analogs[aline][:, 0]))
         clock = 1000 / float(self.actionsPerMillisecond)
         description[0]['count'] = runtime
@@ -816,7 +819,7 @@ class NIcRIO(device.Device):
         # Maps handler names to lists of (time, isActive) pairs
         nameToVals = {}
         for time, pattern in digitals:
-            for handler, line in self.handlerToDigitalLine.iteritems():
+            for handler, line in iteritems(self.handlerToDigitalLine):
                 matches = line & pattern
                 if matches and handler.name not in activeNames:
                     # We trigger this handler here
@@ -858,7 +861,7 @@ class NIcRIO(device.Device):
         '''
         handler = depot.getHandlerWithName('SI SLM')
         line = self.handlerToDigitalLine[handler]
-        for i in xrange(count):
+        for i in range(count):
             self.setDigital(line)
             self.setDigital(0)
             time.sleep(.1)
@@ -1481,11 +1484,11 @@ class FPGAOutputWindow(wx.Frame):
         self.buttonToLine = {}
 
         # Set up the digital lineout buttons.
-        for line in xrange(16):
+        for line in range(16):
             lineVal = 1 << line
             # Check if this line is officially hooked up.
             label = str(line)
-            for handler, altLine in self.fpga.handlerToDigitalLine.iteritems():
+            for handler, altLine in iteritems(self)(fpga.handlerToDigitalLine):
                 if altLine & lineVal:
                     label = handler.name
                     break
@@ -1500,7 +1503,7 @@ class FPGAOutputWindow(wx.Frame):
 
         # Set up the analog voltage inputs.
         voltageSizer = wx.BoxSizer(wx.HORIZONTAL)
-        for axis in xrange(4):
+        for axis in range(4):
             voltageSizer.Add(wx.StaticText(panel, -1, "Voltage %d:" % axis))
             control = wx.TextCtrl(panel, -1, size = (60, -1),
                     style = wx.TE_PROCESS_ENTER)
@@ -1515,7 +1518,7 @@ class FPGAOutputWindow(wx.Frame):
     ## One of our buttons was clicked; update the NI-FPGA's output.
     def toggle(self):
         output = 0
-        for button, line in self.buttonToLine.iteritems():
+        for button, line in iteritems(self.buttonToLine):
             if button.getIsActive():
                 output += line
         self.connection.writeDigitals(output)

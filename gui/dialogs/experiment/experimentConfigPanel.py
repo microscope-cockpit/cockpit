@@ -8,14 +8,14 @@ import util.userConfig
 import util.user
 
 import collections
-import datetime
 import decimal
-import numpy
 import json
 import os
 import time
 import traceback
 import wx
+
+from six import iteritems
 
 ## @package dialogs.experimentConfigPanel
 # This module holds the ExperimentConfigPanel class and associated constants.
@@ -255,7 +255,7 @@ class ExperimentConfigPanel(wx.Panel):
     # some controls may be enabled/disabled.
     def onExperimentTypeChoice(self, event = None):
         newType = self.experimentType.GetStringSelection()
-        for expString, module in self.experimentStringToModule.iteritems():
+        for expString, module in iteritems(self.experimentStringToModule):
             if module in self.experimentModuleToPanel:
                 # This experiment module has a special UI panel which needs
                 # to be shown/hidden.

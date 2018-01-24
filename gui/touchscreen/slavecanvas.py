@@ -96,9 +96,9 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
         self.width, self.height = self.GetClientSize()
         glClearColor(1, 1, 1, 0)
         #tiles defined by main mosaic canvas.
-        #        for x in xrange(self.stageHardLimits[0][0], self.stageHardLimits[0][1],
+        #        for x in range(self.stageHardLimits[0][0], self.stageHardLimits[0][1],
 #                tile.megaTileMicronSize):
-#            for y in xrange(self.stageHardLimits[1][0], self.stageHardLimits[1][1],
+#            for y in range(self.stageHardLimits[1][0], self.stageHardLimits[1][1],
 #                    tile.megaTileMicronSize):
 #                self.megaTiles.append(tile.MegaTile((-x, y)))
         self.haveInitedGL = True

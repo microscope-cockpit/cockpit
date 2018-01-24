@@ -1,5 +1,4 @@
 import depot
-import events
 import gui.guiUtils
 import util.userConfig
 from . import zStack
@@ -7,6 +6,8 @@ from . import zStack
 import threading
 import time
 import wx
+
+from six import iteritems
 
 ## Provided so the UI knows what to call this experiment.
 EXPERIMENT_NAME = 'Example opto script'
@@ -33,11 +34,11 @@ class OptoExperiment(zStack.ZStackExperiment):
     def __init__(self, lightToSequence, lightToIsOnDuringAcquisition, **kwargs):
         # Convert from light source names to light handlers.
         self.lightToSequence = {}
-        for name, sequence in lightToSequence.iteritems():
+        for name, sequence in iteritems(lightToSequence):
             handler = depot.getHandlerWithName(name)
             self.lightToSequence[handler] = sequence
         self.lightToIsOnDuringAcquisition = {}
-        for name, isOn in lightToIsOnDuringAcquisition.iteritems():
+        for name, isOn in iteritems(lightToIsOnDuringAcquisition):
             handler = depot.getHandlerWithName(name)
             self.lightToIsOnDuringAcquisition[handler] = isOn
         # Call the ZStackExperiment constructor with all of our remaining
@@ -53,7 +54,7 @@ class OptoExperiment(zStack.ZStackExperiment):
         # level.
         numReps = self.numReps
         self.numReps = 1
-        for i in xrange(numReps):
+        for i in range(numReps):
             if self.shouldAbort:
                 # User aborted experiment.
                 break
@@ -62,7 +63,7 @@ class OptoExperiment(zStack.ZStackExperiment):
             # in-depth examination of self.lightToSequence to determine when
             # to turn on each light.
             threads = []
-            for light, sequence in self.lightToSequence.iteritems():
+            for light, sequence in iteritems(self.lightToSequence):
                 newThread = threading.Thread(target = self.shineLight,
                         args = [light, sequence])
                 newThread.start()
@@ -75,7 +76,7 @@ class OptoExperiment(zStack.ZStackExperiment):
             # images.
             # Turn on all lights that want to be left on during acquisition.
             activatedLights = []
-            for light, shouldBeOn in self.lightToIsOnDuringAcquisition.iteritems():
+            for light, shouldBeOn in iteritems(self.lightToIsOnDuringAcquisition):
                 if shouldBeOn:
                     light.setExposing(True)
                     activatedLights.append(light)

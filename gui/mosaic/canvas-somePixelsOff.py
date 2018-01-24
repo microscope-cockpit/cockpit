@@ -65,9 +65,9 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     def initGL(self):
         self.width, self.height = self.GetClientSize()
         glClearColor(1, 1, 1, 0)
-        for x in xrange(self.stageHardLimits[0][0], self.stageHardLimits[0][1], 
+        for x in range(self.stageHardLimits[0][0], self.stageHardLimits[0][1],
                 tile.megaTileMicronSize):
-            for y in xrange(self.stageHardLimits[1][0], self.stageHardLimits[1][1], 
+            for y in range(self.stageHardLimits[1][0], self.stageHardLimits[1][1],
                     tile.megaTileMicronSize):
                 self.megaTiles.append(tile.MegaTile((-x, y)))
         self.haveInitedGL = True
@@ -427,7 +427,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             # More images in the file than we have stats for.
             util.logger.log.warn("Loading mosaic with %d images; only have positioning information for %d." % (doc.imageArray.shape[2], len(tileStats)))
         maxImages = min(doc.imageArray.shape[2], len(tileStats))
-        for i in xrange(maxImages):
+        for i in range(maxImages):
             image = doc.imageArray[0, 0, i]
             stats = tileStats[i]
             try:

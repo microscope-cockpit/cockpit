@@ -35,7 +35,7 @@ class RotatorSweepExperiment(experiment.Experiment):
         dv = float(vLessThan - vStart) / float(vSteps)
         dt = decimal.Decimal(self.settlingTime)
 
-        for step in xrange(vSteps):
+        for step in range(vSteps):
             # Move to next polarization rotator voltage.
             vTarget = vStart + step * dv
             table.addAction(curTime, self.lineHandler, vTarget)

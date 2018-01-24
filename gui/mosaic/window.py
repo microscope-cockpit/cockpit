@@ -364,7 +364,7 @@ class MosaicWindow(wx.Frame):
             glLineWidth(lineWidth)
             glColor3f(*site.color)
             glBegin(GL_LINE_LOOP)
-            for i in xrange(8):
+            for i in range(8):
                 glVertex3f(x + site.size * numpy.cos(numpy.pi * i / 4.0),
                         y + site.size * numpy.sin(numpy.pi * i / 4.0), 0)
             glEnd()
@@ -496,7 +496,7 @@ class MosaicWindow(wx.Frame):
         y = 0.
 
         glBegin(GL_LINE_LOOP)
-        for i in xrange(n):
+        for i in range(n):
             glVertex2f(-(x0 + x), y0 + y)
             xOld = x
             x = cosTheta * x - sinTheta * y
@@ -516,7 +516,7 @@ class MosaicWindow(wx.Frame):
               (x0-dw, y0+dh)]
 
         glBegin(GL_LINE_LOOP)
-        for i in xrange(-1, 4):
+        for i in range(-1, 4):
             glVertex2f(-ps[i][0], ps[i][1])
         glEnd()
     # Draw a crosshairs at the specified position with the specified color.
@@ -576,7 +576,7 @@ class MosaicWindow(wx.Frame):
             dx, dy = directions[i % 4]
             dx *= 1 - (self.overlap / 100.)
             dy *= 1 - (self.overlap / 100.)
-            for j in xrange(1, curSpiralSize + 1):
+            for j in range(1, curSpiralSize + 1):
                 yield (lastX + dx * j, lastY + dy * j)
             lastX += dx * curSpiralSize
             lastY += dy * curSpiralSize
@@ -800,11 +800,11 @@ class MosaicWindow(wx.Frame):
         # Try every combinations of points, and average their resulting normal
         # vectors together.
         normals = []
-        for i in xrange(len(positions)):
+        for i in range(len(positions)):
             p1 = positions[i] - center
-            for j in xrange(i + 1, len(positions)):
+            for j in range(i + 1, len(positions)):
                 p2 = positions[j] - center
-                for k in xrange(j + 1, len(positions)):
+                for k in range(j + 1, len(positions)):
                     p3 = positions[k] - center
                     points = numpy.rot90([p1, p2, p3])
                     # Calculate normal vector, and normalize
@@ -1130,8 +1130,8 @@ class MosaicWindow(wx.Frame):
 
             # Slice up into overlapping regions. Only examine the center
             # portion of the composite image.
-            for j in xrange(data.shape[0] / 3, 2 * data.shape[0] / 3, regionSize / 4):
-                for k in xrange(data.shape[1] / 3, 2 * data.shape[1] / 3, regionSize / 4):
+            for j in range(data.shape[0] / 3, 2 * data.shape[0] / 3, regionSize / 4):
+                for k in range(data.shape[1] / 3, 2 * data.shape[1] / 3, regionSize / 4):
                     region = thresholded[j : j + regionSize, k : k + regionSize]
                     # Skip overly small regions (on the off-chance that
                     # regionSize is a significant portion of the tile size).

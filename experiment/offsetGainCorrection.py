@@ -14,6 +14,8 @@ import threading
 import time
 import wx
 
+from six import iteritems
+
 ## Provided so the UI knows what to call this experiment.
 EXPERIMENT_NAME = 'Offset/gain correction file'
 
@@ -88,16 +90,16 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
         self.prepareHandlers()
 
         self.cameraToReadoutTime = dict([(c, c.getTimeBetweenExposures(isExact = True)) for c in self.cameras])
-        for camera, readTime in self.cameraToReadoutTime.iteritems():
+        for camera, readTime in iteritems(self.cameraToReadoutTime):
             if type(readTime) is not decimal.Decimal:
                 raise RuntimeError("Camera %s did not provide an exact (decimal.Decimal) readout time" % camera.name)
 
         # Start out with no-exposure-time images to get a measured offset.
         multiplier = 0
-        for camera, func in self.camToFunc.iteritems():
+        for camera, func in iteritems(self.camToFunc):
             events.subscribe('new image %s' % camera.name, func)
         activeCameras = set(self.cameras)
-        for i in xrange(self.numCollections):
+        for i in range(self.numCollections):
             if not activeCameras or self.shouldAbort:
                 break
             print ("Running with cams",activeCameras)
@@ -134,7 +136,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
             activeCameras = self.processImages(multiplier)
             print ("Came out with active cams",activeCameras)
 
-        for camera, func in self.camToFunc.iteritems():
+        for camera, func in iteritems(self.camToFunc):
             events.unsubscribe('new image %s' % camera.name, func)
 
         if self.shouldAbort:
@@ -178,7 +180,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
                     # We can't actually have a zero exposure time.
                     exposureTime = max(time * multiplier, decimal.Decimal('.1'))
                     settings.append((light, exposureTime))
-                for i in xrange(self.numExposures):
+                for i in range(self.numExposures):
                     curTime = self.expose(curTime, usedCams, settings, table)
         return table
 
@@ -207,7 +209,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
     # image.
     def processImages(self, multiplier):
         activeCameras = set()
-        for camera, imageData in self.camToImages.iteritems():
+        for camera, imageData in iteritems(self.camToImages):
             images = imageData[:self.camToNumImagesReceived[camera]]
             if self.shouldPreserveIntermediaryFiles:
                 # Save the raw data.
@@ -317,7 +319,7 @@ class ExperimentUI(wx.Panel):
 
     ## Generate a dict of our settings.
     def getSettingsDict(self):
-        return dict([(key, c.GetValue()) for key, c in self.correctionArgs.iteritems()])
+        return dict([(key, c.GetValue()) for key, c in iteritems(self.correctionArgs)])
 
 
     ## Save the current experiment settings to config.

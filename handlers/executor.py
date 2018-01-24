@@ -423,7 +423,7 @@ class ExecutorDebugWindow(wx.Frame):
 
         if handler._dlines is not None:
             # Digital controls
-            for line in xrange(handler._dlines):
+            for line in range(handler._dlines):
                 clients = [k.name for k,v in handler.digitalClients.items() if v==line]
                 if clients:
                     label = '\n'.join(clients)
@@ -441,7 +441,7 @@ class ExecutorDebugWindow(wx.Frame):
             # Analog controls
             # These controls deal with hardware units, i.e. probably ADUs.
             anaSizer = wx.BoxSizer(wx.HORIZONTAL)
-            for line in xrange(handler._alines):
+            for line in range(handler._alines):
                 anaSizer.Add(wx.StaticText(panel, -1, "output %d:" % line))
                 control = wx.TextCtrl(panel, -1, size=(60, -1),
                                       style=wx.TE_PROCESS_ENTER)

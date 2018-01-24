@@ -31,7 +31,7 @@ class DummyExecutor(device.Device):
         tStart = time.time()
         if startIndex > 0:
             tStart -= float(table[startIndex-1][0] / 1000)
-        for i in xrange(numReps):
+        for i in range(numReps):
             for tTable, handler, action in table[startIndex:stopIndex]:
                 tNext = float(tTable/1000) + tStart
                 time.sleep(max(0, tNext - time.time()))

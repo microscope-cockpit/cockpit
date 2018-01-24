@@ -5,7 +5,7 @@
 import ast
 import importlib
 import os
-from six import string_types
+from six import string_types, iteritems
 from handlers.deviceHandler import DeviceHandler
 
 ## Different eligible device handler types. These correspond 1-to-1 to
@@ -247,7 +247,7 @@ class DeviceDepot:
                 axisToMovers[mover.axis] = []
             axisToMovers[mover.axis].append(mover)
 
-        for axis, handlers in axisToMovers.iteritems():
+        for axis, handlers in iteritems(axisToMovers):
             handlers.sort(reverse = True,
                     key = lambda a: a.getHardLimits()[1] - a.getHardLimits()[0]
             )

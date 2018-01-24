@@ -250,7 +250,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         y = 0.
 
         glBegin(GL_LINE_LOOP)
-        for i in xrange(n):
+        for i in range(n):
             self.scaledVertex(x0 + x, y0 + y)
             xOld = x
             x = cosTheta * x - sinTheta * y
@@ -268,6 +268,6 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
               (x0-dw, y0+dh)]
 
         glBegin(GL_LINE_LOOP)
-        for i in xrange(-1, 4):
+        for i in range(-1, 4):
             self.scaledVertex(*ps[i])
         glEnd()

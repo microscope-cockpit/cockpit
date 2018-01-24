@@ -7,6 +7,8 @@ import pprint
 import sys
 import traceback
 
+from six import iteritems
+
 ## @package userConfig 
 # This module handles loading and saving changes to user configuration, which
 # is used to remember individual users' settings (and a few global settings)
@@ -63,7 +65,7 @@ def writeConfig(user):
     # Do this one key-value pair at a time, to reduce the likelihood
     # that the printer will fail to print something really big.
     outFile.write("config = {\n")
-    for key, value in config[user].iteritems():
+    for key, value in iteritems(config[user]):
         outFile.write(" %s: %s,\n" % (printer.pformat(key), printer.pformat(value)))
     outFile.write("}\n")
     outFile.close()
@@ -100,7 +102,7 @@ def getValueFromConfig(config, key, default):
         config[key] = default
     if type(default) == type(dict()):
         # Ensure all values in default are in result.
-        for name, value in default.iteritems():
+        for name, value in iteritems(default):
             if name not in config[key]:
                 didChange = True
                 config[key][name] = value

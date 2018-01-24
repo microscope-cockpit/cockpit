@@ -95,7 +95,7 @@ class Nanomover(stage.StageDevice):
             # in them when we start.
             initialPos = tuple(self.positionCache)
 #            interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
-            for i in xrange(5):
+            for i in range(5):
                 print ("Rep %d of 5..." % i)
                 for position in self.softlimits[0:2]:
                     interfaces.stageMover.goToXY(position, shouldBlock = True)
@@ -132,7 +132,7 @@ class Nanomover(stage.StageDevice):
 
     def getHandlers(self):
         result = []
-        for axis in xrange(3):
+        for axis in range(3):
             stepSizes = [.1, .2, .5, 1, 2, 5, 10, 50, 100, 500, 1000]
             if axis == 2:
                 # Add smaller step sizes for the Z axis.
@@ -153,7 +153,7 @@ class Nanomover(stage.StageDevice):
     ## Publish the current stage position, and update the status light that
     # shows roughly where the stage is vertically.
     def publishPosition(self):
-        for i in xrange(3):
+        for i in range(3):
             events.publish('stage mover', '%d nanomover' % i, i, 
                     (self.curPosition[i]))
         label = 'Stage up'
@@ -203,7 +203,7 @@ class Nanomover(stage.StageDevice):
             self.curPosition[:] = args[1]
             self.publishPosition()
             if args[-1] == 'allStopped':
-                for i in xrange(3):
+                for i in range(3):
                     events.publish('stage stopped', '%d nanomover' % i)
 
 

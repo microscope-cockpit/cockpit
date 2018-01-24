@@ -91,13 +91,13 @@ class BoulderSLM(device.Device):
         # Enable the hardware.
         self.connection.run()
         # Send a few triggers to clear synch. errors.
-        for i in xrange(3):
+        for i in range(3):
             self.handler.triggerNow()
             time.sleep(0.01)
         # Cycle to the target position.
         pos = self.getCurrentPosition()
         delta = (targetPosition - pos) + (targetPosition < pos) * len(self.lastParms)
-        for i in xrange(delta):
+        for i in range(delta):
             self.handler.triggerNow()
             time.sleep(0.01)
         # Update the display.
@@ -162,11 +162,11 @@ class BoulderSLM(device.Device):
             dt = self.settlingTime + 2 * numTriggers * table.toggleTime
             ## Shift later table entries to allow for triggers and settling.
             table.shiftActionsBack(time, dt)
-            for trig in xrange(numTriggers):
+            for trig in range(numTriggers):
                 t = table.addToggle(t, triggerHandler)
                 t += table.toggleTime
             """
-            for trig in xrange(numTriggers):
+            for trig in range(numTriggers):
                 t = table.addToggle(t, self.handler)
                 t += table.toggleTime
 
@@ -249,7 +249,7 @@ class BoulderSLM(device.Device):
 
         # Changed my mind. SIM diffraction angle is an advanced parameter,
         # so it now lives in a right-click menu rather than on a button.
-        for e in self.elements.itervalues():
+        for e in self.elements.values():
             e.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.onRightMouse(event))
             rowSizer.Add(e)
         sizer.Add(rowSizer)
@@ -354,12 +354,12 @@ class BoulderSLM(device.Device):
         wavelength, angles, phases, order = [int(i) for i in inputs]
         if order == 0:
             params = [(theta, phi, wavelength)
-                            for phi in xrange(phases)
-                            for theta in xrange(angles)]
+                            for phi in range(phases)
+                            for theta in range(angles)]
         elif order == 1:
             params = [(theta, phi, wavelength)
-                            for theta in xrange(angles)
-                            for phi in xrange(phases)]
+                            for theta in range(angles)
+                            for phi in range(phases)]
         else:
             raise ValueError('Order must be 0 or 1.')
         ## Tell the SLM to prepare the pattern sequence.

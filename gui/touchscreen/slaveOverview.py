@@ -511,7 +511,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
         y = 0.
 
         glBegin(GL_LINE_LOOP)
-        for i in xrange(n):
+        for i in range(n):
             glVertex2f(-(x0 + x), y0 + y)
             xOld = x
             x = cosTheta * x - sinTheta * y
@@ -528,7 +528,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
               (x0-dw, y0+dh)]
 
         glBegin(GL_LINE_LOOP)
-        for i in xrange(-1, 4):
+        for i in range(-1, 4):
 #            glVertex2f(-ps[i][0]+self.offset[0], ps[i][1]-self.offset[1])
             glVertex2f(-ps[i][0], ps[i][1])
         glEnd()

@@ -10,6 +10,8 @@ import time
 import traceback
 import wx
 
+from six import iteritems
+
 ## @package user
 # This module contains functions related to who is currently using OMX.
 
@@ -81,7 +83,7 @@ def setWindowPositions():
             # HACK: the camera window's title changes all the time, since
             # it includes pixel value information.
             elif 'Camera views' in title:
-                for key, value in positions.iteritems():
+                for key, value in iteritems(positions):
                     if 'Camera views' in key:
                         window.SetPosition(value)
                         break

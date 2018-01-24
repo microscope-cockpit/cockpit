@@ -148,8 +148,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.imageMin = None
         self.imageMax = None
         if self.tileShape is not None:
-            for i in xrange(self.tileShape[0]):
-                for j in xrange(self.tileShape[1]):
+            for i in range(self.tileShape[0]):
+                for j in range(self.tileShape[1]):
                     self.tiles[i][j].wipe()
         self.tiles = []
         self.tileShape = None
@@ -215,19 +215,19 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             if self.tileShape != (width, height):
                 if self.tileShape is not None:
                     # Destroy old tiles to free up texture memory
-                    for i in xrange(self.tileShape[0]):
-                        for j in xrange(self.tileShape[1]):
+                    for i in range(self.tileShape[0]):
+                        for j in range(self.tileShape[1]):
                             self.tiles[i][j].wipe()
                 self.tiles = []
                 self.tileShape = (width, height)
                 haveSetTiles = False
                 
-            for i in xrange(self.tileShape[0]):
+            for i in range(self.tileShape[0]):
                 if not haveSetTiles:
                     self.tiles.append([])
                 xMin = i * self.tileSize
                 xMax = min((i + 1) * self.tileSize, self.imageShape[0])
-                for j in xrange(self.tileShape[1]):
+                for j in range(self.tileShape[1]):
                     yMin = j * self.tileSize
                     yMax = min((j + 1) * self.tileSize, self.imageShape[1])
                     subData = imageData[xMin : xMax, yMin : yMax]
@@ -277,8 +277,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         if newMin is None or newMax is None:
             # No image; can't do anything.
             return
-        for i in xrange(self.tileShape[0]):
-            for j in xrange(self.tileShape[1]):
+        for i in range(self.tileShape[0]):
+            for j in range(self.tileShape[1]):
                 self.tiles[i][j].setMinMax(newMin, newMax)
         self.shouldRefresh = True
 
@@ -328,8 +328,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 glTranslatef(0, HISTOGRAM_HEIGHT, 0)
 
                 if self.shouldRefresh:
-                    for i in xrange(self.tileShape[0]):
-                        for j in xrange(self.tileShape[1]):
+                    for i in range(self.tileShape[0]):
+                        for j in range(self.tileShape[1]):
                             self.tiles[i][j].refresh()
                 self.shouldRefresh = False
 
@@ -344,8 +344,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 glEnable(GL_TEXTURE_2D)
 
                 # Draw the actual tiles.
-                for i in xrange(self.tileShape[0]):
-                    for j in xrange(self.tileShape[1]):
+                for i in range(self.tileShape[0]):
+                    for j in range(self.tileShape[1]):
                         glPushMatrix()
                         glTranslatef(j * self.tileSize, i * self.tileSize, 0)
                         self.tiles[i][j].render()

@@ -5,6 +5,8 @@ import numpy
 import threading
 from collections import namedtuple
 
+from six import iteritems
+
 
 ## Stage movement threshold (previously a hard-coded value).
 # There can be problems when this doesn't match a corresponding threshold
@@ -158,7 +160,7 @@ def initialize():
 
 ## Publicize any information that various widgets care about.
 def makeInitialPublications():
-    #for axis in xrange(3):
+    #for axis in range(3):
     for axis in mover.axisToHandlers.keys():
         events.publish("stage position", axis, getPositionForAxis(axis))
         limits = getSoftLimitsForAxis(axis)
@@ -209,7 +211,7 @@ def changeMover():
 
 ## Change the step size for the current handlers.
 def changeStepSize(direction):
-    for axis, handlers in mover.axisToHandlers.iteritems():
+    for axis, handlers in iteritems(mover.axisToHandlers):
         if mover.curHandlerIndex < len(handlers):
             handlers[mover.curHandlerIndex].changeStepSize(direction)
             events.publish("stage step size", axis, handlers[mover.curHandlerIndex].getStepSize())
@@ -218,7 +220,7 @@ def changeStepSize(direction):
 ## Recenter the fine-motion devices by adjusting the large-scale motion
 # device.
 def recenterFineMotion():
-    for axis, handlers in mover.axisToHandlers.iteritems():
+    for axis, handlers in iteritems(mover.axisToHandlers):
         totalDelta = 0
         for handler in handlers[1:]:
             # Assume that the fine-motion devices want to be in the center
@@ -256,13 +258,13 @@ def moveRelative(offset, shouldBlock = False):
     if len(offset) != numAxes:
         raise RuntimeError("Asked to move relatively with wrong number of axes (%d != %d)" % (len(offset), numAxes))
     curPosition = getPosition()
-    vals = [offset[i] + curPosition[i] for i in xrange(numAxes)]
+    vals = [offset[i] + curPosition[i] for i in range(numAxes)]
     goTo(vals, shouldBlock)
 
 
 ## Wait for any stage motion to cease.
 def waitForStop(timeout = 5):
-    for name, event in mover.nameToStoppedEvent.iteritems():
+    for name, event in iteritems(mover.nameToStoppedEvent):
         if not event.wait(timeout):
             raise RuntimeError("Timed out waiting for %s to stop" % name)
 
@@ -331,7 +333,7 @@ def canReachSite(siteId):
 ## Record sites to a file.
 def writeSitesToFile(filename):
     with open(filename, 'w') as handle:
-        for id, site in mover.idToSite.iteritems():
+        for id, site in iteritems(mover.idToSite):
             handle.write(site.serialize() + '\n')
 
 
@@ -347,7 +349,7 @@ def loadSites(filename):
 # positions.
 def getPosition():
     result = []
-    for axis, handlers in mover.axisToHandlers.iteritems():
+    for axis, handlers in iteritems(mover.axisToHandlers):
         result.append(0)
         for handler in handlers:
             result[-1] += handler.getPosition()
@@ -369,9 +371,9 @@ def getPositionForAxis(axis):
 def getAllPositions():
     mostMovers = max(map(len, mover.axisToHandlers.values()))
     result = []
-    for i in xrange(mostMovers):
-        current = [None for axis in xrange(len(mover.axisToHandlers.keys()))]
-        for axis, handlers in mover.axisToHandlers.iteritems():
+    for i in range(mostMovers):
+        current = [None for axis in range(len(mover.axisToHandlers.keys()))]
+        for axis, handlers in iteritems(mover.axisToHandlers):
             if i < len(handlers):
                 current[axis] = handlers[i].getPosition()
         result.append(tuple(current))
@@ -383,7 +385,7 @@ def getAllPositions():
 # then return None for that axis.
 def getCurStepSizes():
     result = []
-    for axis, handlers in mover.axisToHandlers.iteritems():
+    for axis, handlers in iteritems(mover.axisToHandlers):
         if mover.curHandlerIndex < len(handlers):
             result.append(handlers[mover.curHandlerIndex].getStepSize())
         else:
@@ -507,7 +509,7 @@ def optimizeSiteOrder(baseOrder):
 
     # Calculate the cost of just doing everything in order.
     simpleTourCost = 0
-    for i in xrange(len(baseOrder)):
+    for i in range(len(baseOrder)):
         simpleTourCost += distance(baseOrder[i], baseOrder[(i + 1) % len(baseOrder)])
     simpleTourCost += distance(baseOrder[0], baseOrder[-1])
 

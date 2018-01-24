@@ -51,7 +51,7 @@ class RaspberryPi(device.Device):
         #IMD 20140806
         #map paths to flips. 
         self.modeToFlips = collections.OrderedDict()
-        for i in xrange(len(self.excitation)):
+        for i in range(len(self.excitation)):
             self.modeToFlips[self.excitation[i]] = []
             for flips in self.excitationMaps[i].split('|'):
                 flipsList=flips.split(',')
@@ -59,7 +59,7 @@ class RaspberryPi(device.Device):
                 self.modeToFlips[self.excitation[i]].append(flipsInt)        
         #map objectives to flips. 
         self.objectiveToFlips = collections.OrderedDict()
-        for i in xrange(len(self.objective)):
+        for i in range(len(self.objective)):
             self.objectiveToFlips[self.objective[i]] = []
             for flips in self.objectiveMaps[i].split('|'):
                 flipsList=flips.split(',')
@@ -181,7 +181,7 @@ class RaspberryPi(device.Device):
                     # job to fix it. Set temperature to None to avoid bogus
                     # data.
                     temperature = []
-            for i in xrange(len(temperature)):
+            for i in range(len(temperature)):
                 events.publish("status update",
                            'RPi',
                            {'temperature'+str(i): temperature[i],})
@@ -222,7 +222,7 @@ class piOutputWindow(wx.Frame):
     ## One of our buttons was clicked; update the DSP's output.
     def toggle(self):
         output = 0
-        for button, line in self.buttonToLine.iteritems():
+        for button, line in iteritems(self.buttonToLine):
             if button.getIsActive():
                 self.pi.RPiConnection.flipDownUp(line, 1)
             else:
