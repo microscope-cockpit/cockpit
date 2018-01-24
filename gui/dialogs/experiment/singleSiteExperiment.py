@@ -1,5 +1,5 @@
 import wx
-import experimentConfigPanel
+from . import experimentConfigPanel
 
 ## A simple wrapper around the ExperimentConfigPanel class.
 class SingleSiteExperimentDialog(wx.Dialog):

@@ -4,7 +4,7 @@ import time
 import traceback
 import wx.glcanvas
 
-import tile
+from . import tile
 import util.datadoc
 import util.logger
 import util.threads

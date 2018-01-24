@@ -1,13 +1,13 @@
 import events
 import gui.guiUtils
-import image
+from . import image
 import util.threads
 
 from util import ftgl
 import numpy
 from OpenGL.GL import *
 import os
-import Queue
+import queue
 import threading
 import traceback
 import wx
@@ -60,7 +60,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.mouseHandler = mouseHandler
 
         ## Queue of incoming images that we need to either display or discard.
-        self.imageQueue = Queue.Queue()
+        self.imageQueue = queue.Queue()
         ## Current image we're working with.
         self.imageData = None
         ## Event that signals that we've finished drawing the current image.
@@ -141,7 +141,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         while True:
             try:
                 self.imageQueue.get_nowait()
-            except Queue.Empty:
+            except queue.Empty:
                 break
         self.imageData = None
         self.imageShape = None

@@ -24,7 +24,7 @@ import wx
 import wx.propgrid
 import gui.guiUtils
 from handlers.deviceHandler import STATES
-from toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
+from .toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 import util.userConfig
 import gui.loggingWindow as log
 import events

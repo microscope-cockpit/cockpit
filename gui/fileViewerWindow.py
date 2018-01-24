@@ -1,4 +1,4 @@
-import imageSequenceViewer
+from . import imageSequenceViewer
 import util.datadoc
 
 

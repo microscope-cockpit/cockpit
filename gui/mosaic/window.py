@@ -8,7 +8,7 @@ import threading
 import time
 import wx
 
-import canvas
+from . import canvas
 import depot
 import events
 import gui.camera.window

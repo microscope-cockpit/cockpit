@@ -1,21 +1,23 @@
 ## This module creates the primary window. This window houses widgets to 
 # control the most important hardware elements.
 
+from __future__ import absolute_import
+
 import json
 import wx
 
 import depot
-import dialogs.experiment.multiSiteExperiment
-import dialogs.experiment.singleSiteExperiment
+from .dialogs.experiment import multiSiteExperiment
+from .dialogs.experiment import singleSiteExperiment
 import events
 import experiment.experiment
-import fileViewerWindow
+from . import fileViewerWindow
 import interfaces.imager
-import keyboard
-import toggleButton
+from . import keyboard
+from . import toggleButton
 import util.user
 import util.userConfig
-import viewFileDropTarget
+from . import viewFileDropTarget
 
 ## Window singleton
 window = None
@@ -67,13 +69,13 @@ class MainWindow(wx.Frame):
                 label = "Single-site\nExperiment", size = (120, 80), 
                 parent = topPanel)
         experimentButton.Bind(wx.EVT_LEFT_DOWN,
-                lambda event: dialogs.experiment.singleSiteExperiment.showDialog(self))
+                lambda event: singleSiteExperiment.showDialog(self))
         buttonSizer.Add(experimentButton)
         experimentButton = toggleButton.ToggleButton(textSize = 12, 
                 label = "Multi-site\nExperiment", size = (120, 80),
                 parent = topPanel)
         experimentButton.Bind(wx.EVT_LEFT_DOWN,
-                lambda event: dialogs.experiment.multiSiteExperiment.showDialog(self))
+                lambda event: multiSiteExperiment.showDialog(self))
         buttonSizer.Add(experimentButton)
         viewFileButton = toggleButton.ToggleButton(textSize = 12,
                 label = "View last\nfile", size = (120, 80),

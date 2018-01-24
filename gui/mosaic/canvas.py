@@ -6,7 +6,7 @@ import wx.glcanvas
 
 import depot
 import events
-import tile
+from . import tile
 import util.datadoc
 import util.logger
 import util.threads

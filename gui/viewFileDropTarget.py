@@ -1,4 +1,4 @@
-import fileViewerWindow
+from . import fileViewerWindow
 
 import wx
 
