@@ -1,6 +1,5 @@
 from . import logger
 from . import files
-from . import user
 import os
 # We could use pickle here instead, but I prefer config
 # files that I can read myself.
@@ -30,6 +29,7 @@ printer = pprint.PrettyPrinter()
 
 ## Open the config file and unserialize its contents.
 def loadConfig():
+    from . import user
     global CONFIG_ROOT_PATH
     CONFIG_ROOT_PATH = files.getConfigDir()
     global config
@@ -131,6 +131,7 @@ def removeValue(key, isGlobal = False):
 
 ## Simple chooser to reduce code duplication.
 def getUser(isGlobal):
+    from . import user
     if isGlobal:
         return GLOBAL_USERNAME
 
