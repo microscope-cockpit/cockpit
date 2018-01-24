@@ -119,7 +119,8 @@ class DeviceDepot:
                     raise Exception("In device %s" % name, e)
 
         # Initialize devices in order of dependence
-        devices = self.nameToDevice.values()
+        # Convert to list - python3 dict_values has no pop method.
+        devices = list(self.nameToDevice.values())
         done = []
         while devices:
             # TODO - catch circular dependencies.
