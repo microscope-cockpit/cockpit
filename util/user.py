@@ -1,8 +1,6 @@
 import events
 import files
 import gui.loggingWindow
-import gui.mainWindow
-import gui.mosaic.window
 import logger
 import userConfig
 
@@ -69,6 +67,9 @@ def login(parent):
 
 ## Move the windows to where the user wants them to be.
 def setWindowPositions():
+    # Imports here to fix cyclic dependancy.
+    import gui.mainWindow
+    import gui.mosaic.window
     # Maps window titles to their positions.
     positions = userConfig.getValue('windowPositions', default =
             userConfig.getValue('defaultWindowPositions', isGlobal = True,
