@@ -2,7 +2,7 @@ import decimal
 import wx
 
 import depot
-import deviceHandler
+from . import deviceHandler
 
 import events
 import gui.guiUtils

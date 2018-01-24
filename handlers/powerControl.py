@@ -1,5 +1,5 @@
 import depot
-import deviceHandler
+from . import deviceHandler
 
 
 ## This handler provides the ability to check if a device is running, and

@@ -1,5 +1,5 @@
 import depot
-import deviceHandler
+from . import deviceHandler
 
 ## This handler is a mix-in for handlers that abstract an analogue line.
 class AnalogueHandlerMixin(deviceHandler.DeviceHandler):

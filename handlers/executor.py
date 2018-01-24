@@ -1,6 +1,6 @@
 import collections
 import depot
-import deviceHandler
+from . import deviceHandler
 import events
 from handlers.genericPositioner import GenericPositionerHandler
 from numbers import Number

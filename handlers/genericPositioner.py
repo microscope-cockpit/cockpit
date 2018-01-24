@@ -1,5 +1,5 @@
 import depot
-import deviceHandler
+from . import deviceHandler
 import decimal
 
 ## This handler is for generic positioning devices that can move along a 

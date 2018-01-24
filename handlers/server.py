@@ -1,5 +1,5 @@
 import depot
-import deviceHandler
+from . import deviceHandler
 
 import events
 
