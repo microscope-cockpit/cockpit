@@ -1,7 +1,7 @@
-import dataSaver
+from . import dataSaver
 import depot
 import events
-import experiment
+from . import experiment
 import gui.guiUtils
 import interfaces.stageMover
 import util.logger

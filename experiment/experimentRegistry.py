@@ -2,13 +2,13 @@
 # some experiment types may not be appropriate (due to requiring
 # hardware that is not available).
 
-import offsetGainCorrection
-import optoScriptExample
-import responseMap
-import structuredIllumination
-import stutteredZStack
-import sweptShutter
-import zStack
+from . import offsetGainCorrection
+from . import optoScriptExample
+from . import responseMap
+from . import structuredIllumination
+from . import stutteredZStack
+from . import sweptShutter
+from . import zStack
 
 ## List of registered modules.
 registeredModules = [zStack, sweptShutter,

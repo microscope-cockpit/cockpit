@@ -5,7 +5,7 @@ import util.logger
 import util.threads
 
 import numpy
-import Queue
+import queue
 import threading
 import time
 
@@ -211,7 +211,7 @@ class DataSaver:
         self.amDone = False
         ## Queue of (camera index, image data, timestamp) tuples for images
         # that need to be saved
-        self.imageQueue = Queue.Queue()
+        self.imageQueue = queue.Queue()
 
         # Use dye name if available, otherwise use camera name.
         names = [camera.dye or camera.name for camera in self.cameras]

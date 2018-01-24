@@ -1,13 +1,13 @@
-import actionTable
+from . import actionTable
 import decimal
 import depot
 import events
-import experiment
+from . import experiment
 import gui.guiUtils
 import gui.imageSequenceViewer
 import gui.progressDialog
 import handlers.camera
-import offsetGainCorrection
+from . import offsetGainCorrection
 import util.correctNonlinear
 import util.datadoc
 import util.threads

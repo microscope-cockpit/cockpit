@@ -1,7 +1,7 @@
-import actionTable
+from . import actionTable
 import events
 import util.userConfig
-import zStack
+from . import zStack
 
 import wx
 

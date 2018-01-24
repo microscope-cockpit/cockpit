@@ -2,7 +2,7 @@ import depot
 import events
 import gui.guiUtils
 import util.userConfig
-import zStack
+from . import zStack
 
 import threading
 import time

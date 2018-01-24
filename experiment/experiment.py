@@ -1,4 +1,4 @@
-import dataSaver
+from . import dataSaver
 import depot
 import events
 import gui.guiUtils
