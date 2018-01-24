@@ -259,7 +259,7 @@ class DigitalMixin(object):
         # TODO: currently uses bulb exposure; should support other modes.
         if ltpairs:
             # Start by all active cameras and lights.
-            state = camlines | reduce(operator.ior, zip(*ltpairs)[0])
+            state = camlines | reduce(operator.ior, list(zip(*ltpairs))[0])
             seq = [(0, state)]
             # Switch off each light as its exposure time expires.
             for  lline, ltime in ltpairs:
@@ -289,7 +289,7 @@ class DigitalMixin(object):
     @util.threads.callInNewThread
     def softSequence(self, seq):
         # Mask of the bits that we toggle
-        mask = reduce(operator.ior, zip(*seq)[1])
+        mask = reduce(operator.ior, list(zip(*seq))[1])
         entryState = self.readDigital()
         for t, state in seq:
             time.sleep(t/1000.)
