@@ -74,7 +74,7 @@ class MicroscopeCamera(camera.CameraDevice):
             self.updateSettings()
         except:
             pass
-        if self.settings.has_key('readout mode'):
+        if 'readout mode' in self.settings:
             self.modes = self.describe_setting('readout mode')['values']
         else:
             self.modes = None

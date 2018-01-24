@@ -386,9 +386,9 @@ class AnalogLineHandler(GenericPositionerHandler):
             wl = min(wls, key=lambda w: abs(w - wavelength))
             ps = self.positions[wl]
         elif isinstance(self.positions, dict):
-            if self.positions.has_key(None):
+            if None in self.positions:
                 ps = self.positions[None]
-            elif self.positions.has_key('default'):
+            elif 'default' in self.positions:
                 ps = self.positions['default']
             else:
                 raise Exception('No wavelength specified, and no default in indexed positions.')
