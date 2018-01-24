@@ -1,6 +1,6 @@
-import actionTable
+from . import actionTable
 import depot
-import experiment
+from . import experiment
 import gui.guiUtils
 import util.Mrc
 import util.datadoc

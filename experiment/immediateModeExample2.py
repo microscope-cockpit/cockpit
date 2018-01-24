@@ -1,6 +1,6 @@
 import depot
 import events
-import immediateMode
+from . import immediateMode
 import interfaces.imager
 import interfaces.stageMover
 import util.user

@@ -1,8 +1,8 @@
-import actionTable
+from . import actionTable
 import decimal
 import depot
 import events
-import experiment
+from . import experiment
 import gui.guiUtils
 import handlers.camera
 import util.datadoc

@@ -1,5 +1,5 @@
-import actionTable
-import experiment
+from . import actionTable
+from . import experiment
 
 import decimal
 import math
