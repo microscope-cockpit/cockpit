@@ -32,7 +32,7 @@ import random
 import threading
 import time
 import types
-from six import iteritems
+from six import iteritems, string_types
 
 
 class ValueLoggerTestSource(object):
@@ -85,7 +85,7 @@ class ValueLogger(object):
 
         ## The data published with the event.
         data = args[1]
-        if isinstance(data, (Number, types.StringTypes)):
+        if isinstance(data, (Number, string_types)):
             # Data is a single value. Map device name to data.
             self.currentValues[device] = data
             if device not in self.series:

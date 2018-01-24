@@ -27,13 +27,9 @@ import matplotlib
 import matplotlib.dates
 matplotlib.use('WXAgg')
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 from matplotlib.figure import Figure
-from matplotlib.lines import Line2D
 import util.threads
 import util.userConfig
-import threading
-import time
 import wx
 import datetime
 import os
