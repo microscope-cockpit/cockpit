@@ -54,7 +54,7 @@ def subscribe(eventType, func, priority = 100):
         if eventType not in eventToSubscriberMap:
             eventToSubscriberMap[eventType] = []
         eventToSubscriberMap[eventType].append((priority, func))
-        eventToSubscriberMap[eventType].sort()
+        eventToSubscriberMap[eventType].sort(key=lambda x: x[0])
 
 
 ## Add a new function to do a one-shot subscription.
