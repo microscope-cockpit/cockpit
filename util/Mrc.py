@@ -382,8 +382,8 @@ class Mrc2:
             'r+'  read-write
             'w'   write - erases old file !!
         '''
-        import os, __builtin__
-        self._f = __builtin__.open(path, mode+'b')
+        import os, builtins
+        self._f = builtins.open(path, mode+'b')
         self._path = path
         self._name = os.path.basename(path)
         self._mode = mode

@@ -21,7 +21,7 @@
 # count; I wouldn't count on them bearing much resemblance.
 
 
-import datadoc
+from . import datadoc
 
 import collections
 import numpy

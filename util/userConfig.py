@@ -1,7 +1,6 @@
-import logger
-import files
-import user
-
+from . import logger
+from . import files
+from . import user
 import os
 # We could use pickle here instead, but I prefer config
 # files that I can read myself.
