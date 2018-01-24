@@ -19,7 +19,7 @@ This module creates a simple stage-positioning device.
 """
 ## TODO: test with hardware
 
-import device
+from . import device
 import events
 import handlers.stagePositioner
 import socket

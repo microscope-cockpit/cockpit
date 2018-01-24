@@ -2,7 +2,7 @@
 # practice, the only difference you might have to make to this device to use
 # it would be to change the available objectives and their pixel sizes.
 
-import device
+from . import device
 import handlers.objective
 import re
 PIXEL_PAT =  r"(?P<pixel_size>\d*[.]?\d*)"

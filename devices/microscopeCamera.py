@@ -24,7 +24,7 @@ import decimal
 import Pyro4
 import wx
 
-import camera
+from . import camera
 import depot
 import numpy as np
 import events

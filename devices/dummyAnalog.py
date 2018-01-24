@@ -28,7 +28,7 @@ from those stored on the device, and insert those into the action table rather
 than the index.
 """
 import depot
-import device
+from . import device
 import re
 
 

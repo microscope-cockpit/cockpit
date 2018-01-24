@@ -24,7 +24,7 @@ import Pyro4
 import time
 
 import depot
-import device
+from . import device
 import events
 import handlers.executor
 import handlers.genericHandler

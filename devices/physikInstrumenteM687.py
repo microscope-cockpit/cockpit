@@ -6,7 +6,7 @@ import util.logger
 import util.threads
 import util.userConfig
 
-import stage
+from . import stage
 from OpenGL.GL import *
 import serial
 import threading

@@ -20,7 +20,7 @@ This is a base shutter device with dummy methods for testing.
 """
 import re
 import depot
-import device
+from . import device
 import events
 from handlers.lightSource import LightHandler
 

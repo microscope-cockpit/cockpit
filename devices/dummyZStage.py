@@ -1,7 +1,7 @@
 ## This module creates a simple stage-positioning device.
 
 import depot
-import device
+from . import device
 import events
 import handlers.stagePositioner
 

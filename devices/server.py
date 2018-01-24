@@ -2,7 +2,7 @@ import Pyro4
 import threading
 import traceback
 
-import device
+from . import device
 import handlers.server
 import util.logger
 import util.threads

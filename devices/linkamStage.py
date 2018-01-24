@@ -32,7 +32,7 @@ import gui.device
 import gui.toggleButton
 import handlers.stagePositioner
 import Pyro4
-import stage
+from . import stage
 import threading
 import util.logger as logger
 import util.threads
