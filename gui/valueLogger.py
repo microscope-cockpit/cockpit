@@ -34,6 +34,7 @@ import wx
 import datetime
 import os
 
+from six.moves import reduce
 
 USER_CONFIG_ENTRY = 'ValueLogger.showKeys'
 
