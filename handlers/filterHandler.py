@@ -14,7 +14,7 @@ class Filter(object):
         #   label, value
         #   (label, value)
         #   label
-        if hasattr(args[0], '__iter__'):
+        if isinstance(args[0], tuple):
             self.label = args[0][0]
             if len(args[0]) > 1:
                 self.value = args[0][1]
