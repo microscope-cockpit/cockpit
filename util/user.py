@@ -1,12 +1,11 @@
 import events
-import files
+from . import files
 import gui.loggingWindow
-import logger
-import userConfig
+from . import logger
+from . import userConfig
 
 import datetime
 import os
-import sys
 import time
 import traceback
 import wx
