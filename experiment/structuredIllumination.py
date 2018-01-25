@@ -389,7 +389,7 @@ class SIExperiment(experiment.Experiment):
         ## from what is in the header so we get the shape header and
         ## not the shape from the data in the datadoc instance.  See
         ## cockpit bug #289.
-        header_shape = util.Mrc.shapeFromHdr(doc.imageHeader)
+        header_shape = [int(n) for n in util.Mrc.shapeFromHdr(doc.imageHeader)]
         ext_header = ext_header.reshape(header_shape[:-2])
 
         ## Finally, reorder the things.
