@@ -92,7 +92,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         try:
             self.setPower(targetPower)
         except Exception as e:
-            util.logger.log.warn("Failed to set prior power level %s for %s: %s" % (targetPower, self.name, e))
+            util.logger.log.warning("Failed to set prior power level %s for %s: %s" % (targetPower, self.name, e))
 
 
     ## Construct a UI consisting of a clickable box that pops up a menu allowing

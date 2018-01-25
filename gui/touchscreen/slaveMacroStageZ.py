@@ -201,7 +201,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             slot = int((altitude - self.minY) / ALTITUDE_BUCKET_SIZE)
             if slot < 0 or slot > len(self.altitudeBuckets):
                 # This should, of course, be impossible.
-                util.logger.log.warn("Impossible experiment altitude %f (min %f, max %f)",
+                util.logger.log.warning("Impossible experiment altitude %f (min %f, max %f)",
                         altitude, self.minY, self.maxY)
             else:
             # bounds check slot
