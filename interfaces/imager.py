@@ -85,6 +85,10 @@ class Imager:
     # \param shouldStopVideo True if we should stop video mode. Only really
     #        used by self.videoMode().
     def takeImage(self, shouldBlock = False, shouldStopVideo = True):
+        from experiment import experiment
+        if experiment.isRunning():
+            print("Skipping takeImage because an experiment is running.")
+            return
         if shouldStopVideo:
             self.stopVideo()
         waitTime = self.getNextImageTime() - time.time()
