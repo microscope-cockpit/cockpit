@@ -54,9 +54,8 @@ class ActionTable:
     # \todo We should remove redundant entries in here (e.g. due to 
     # 0 stabilization time for stage movement). 
     def sort(self):
-        # Since the first element in each action is the timestamp, this
-        # naturally sorts by time.
-        self.actions.sort()
+        # First element in each action is the timestamp.
+        self.actions.sort(key=lambda a: a[0])
 
 
     ## Clear invalid entries from the list. Sometimes when the table is
