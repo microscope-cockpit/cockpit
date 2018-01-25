@@ -452,7 +452,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         statusDialog.Show()
         if doc.imageArray.shape[2] > len(tileStats):
             # More images in the file than we have stats for.
-            util.logger.log.warn("Loading mosaic with %d images; only have positioning information for %d." % (doc.imageArray.shape[2], len(tileStats)))
+            util.logger.log.warning("Loading mosaic with %d images; only have positioning information for %d." % (doc.imageArray.shape[2], len(tileStats)))
         maxImages = min(doc.imageArray.shape[2], len(tileStats))
         for i in range(maxImages):
             image = doc.imageArray[0, 0, i]

@@ -141,8 +141,8 @@ def getUser(isGlobal):
     if curName is not None:
         return curName
     # Nobody logged in yet; have to use global controls
-    logger.log.warn("Trying to use non-global config when no user is logged in")
-    logger.log.warn("%s", traceback.format_list(traceback.extract_stack()))
+    logger.log.warning("Trying to use non-global config when no user is logged in")
+    logger.log.warning("%s", traceback.format_list(traceback.extract_stack()))
     return GLOBAL_USERNAME
 
 
