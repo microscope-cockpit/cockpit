@@ -653,22 +653,22 @@ def writeDataAsMrc(data, filename, XYSize = None, ZSize = None, wavelengths = []
 def getExtendedHeader(data, header):
     numWavelengths = header.NumWaves
     # \todo Assuming the 'Num' array is in XYZ order.
-    imagesPerWavelength = header.Num[2] / numWavelengths
-    numInts = header.NumIntegers
-    numFloats = header.NumFloats
+    imagesPerWavelength = int(header.Num[2] / numWavelengths)
+    numInts = int(header.NumIntegers)
+    numFloats = int(header.NumFloats)
     # Start with blank bytes; we'll type-convert later.
-    intArray = numpy.zeros(imagesPerWavelength * numWavelengths * numInts * 4,
+    intArray = numpy.zeros(int(imagesPerWavelength * numWavelengths * numInts * 4),
             dtype = numpy.uint8)
-    floatArray = numpy.zeros(imagesPerWavelength * numWavelengths * numFloats * 4,
+    floatArray = numpy.zeros(int(imagesPerWavelength * numWavelengths * numFloats * 4),
             dtype = numpy.uint8)
     # Amount of memory per image allocated to ints.
-    intSize = numInts * 4
+    intSize = int(numInts * 4)
     # Ditto, for floats.
-    floatSize = numFloats * 4
+    floatSize = int(numFloats * 4)
     chunkSize = intSize + floatSize
     # Load the extended header as a bytesequence.
     for i in range(imagesPerWavelength * numWavelengths):
-        offset = i * chunkSize
+        offset = int(i * chunkSize)
         intArray[i * intSize : (i + 1) * intSize] = data[offset : offset + intSize]
         floatArray[i * floatSize : (i + 1) * floatSize] = data[offset + intSize : offset + chunkSize]
     # Cast to appropriate datatypes.

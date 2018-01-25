@@ -1044,6 +1044,8 @@ def adjusted_data_shape(numel, shape):
     * numel = 15; expected_shape = (10,10).  Returns (2,10).
 
     """
+    numel = int(numel)
+    shape = tuple([int(s) for s in shape])
     if numel == N.prod(shape):
         return shape # data is complete, nothing to do
     elif numel == 0:
@@ -1054,9 +1056,9 @@ def adjusted_data_shape(numel, shape):
 
     shape = list(shape)
     for i in range(len(shape)):
-        stride = N.prod(shape[i+1:])
+        stride = int(N.prod(shape[i+1:]))
         if numel >= stride:
-            shape[i] = numel // stride
+            shape[i] = int(numel // stride)
             if numel % stride:
                 ## The truncated data may not fit in an array with
                 ## truncated shape.  For example, 15 elements to fill
