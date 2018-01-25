@@ -26,6 +26,15 @@ lastExperiment = None
 # multiple files.
 generatedFilenames = []
 
+_runThread = None
+
+def isRunning():
+    if _runThread is None:
+        return False
+    else:
+        return _runThread.is_alive()
+
+
 ## This class is the root class for generating and running experiments.
 
 # You should make a subclass of this class to implement a specific experiment
@@ -150,6 +159,8 @@ class Experiment:
         self.lastMinuteActions()
 
         runThread = threading.Thread(target = self.execute)
+        global _runThread
+        _runThread = runThread
         saver = None
         saveThread = None
         if self.savePath and max(self.cameraToImageCount.values()):
