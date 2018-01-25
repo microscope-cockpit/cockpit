@@ -227,15 +227,15 @@ class DigitalMixin(object):
 
     @property
     def activeLights(self):
-        return filter(lambda h: h.deviceType==depot.LIGHT_TOGGLE
+        return list(filter(lambda h: h.deviceType==depot.LIGHT_TOGGLE
                                 and h.getIsEnabled(),
-                      self.digitalClients)
+                      self.digitalClients))
 
     @property
     def activeCameras(self):
-        return filter(lambda h: h.deviceType == depot.CAMERA
+        return list(filter(lambda h: h.deviceType == depot.CAMERA
                                 and h.getIsEnabled(),
-                      self.digitalClients)
+                      self.digitalClients))
 
     def takeImage(self):
         if not self.digitalClients:
