@@ -65,10 +65,10 @@ class Experiment:
         self.zBottom = zBottom
         self.zHeight = zHeight
         self.sliceHeight = sliceHeight
-        self.cameras = cameras
-        self.lights = lights
+        self.cameras = list(cameras)
+        self.lights = list(lights)
         self.exposureSettings = exposureSettings
-        self.otherHandlers = otherHandlers
+        self.otherHandlers = list(otherHandlers)
         self.metadata = metadata
         self.savePath = savePath
         # Check for save paths that don't actually have a final filename
