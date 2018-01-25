@@ -157,7 +157,9 @@ def martialWindows(parent):
     for d in filter(lambda x: hasattr(x, "showDebugWindow"),
                     chain(depot.getAllHandlers(), depot.getAllDevices())):
         menu.Append(menuId, 'debug  %s  %s' % (d.__class__.__name__, d.name ))
-        parent.Bind(wx.EVT_MENU, lambda e, d=d: d.showDebugWindow())
+        parent.Bind(wx.EVT_MENU,
+                    lambda e, d=d: d.showDebugWindow(),
+                    id=menuId)
         menuId += 1
 
     gui.guiUtils.placeMenuAtMouse(parent, menu)
