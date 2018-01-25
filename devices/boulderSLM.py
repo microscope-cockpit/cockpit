@@ -118,7 +118,7 @@ class BoulderSLM(device.Device):
                           if type(p[0]) is tuple]
         # Find the repeating unit in the sequence.
         sequenceLength = len(reducedParams)
-        for length in range(2, len(reducedParams) / 2):
+        for length in range(2, len(reducedParams) // 2):
             if reducedParams[0:length] == reducedParams[length:2*length]:
                 sequenceLength = length
                 break
