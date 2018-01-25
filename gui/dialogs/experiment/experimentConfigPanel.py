@@ -377,15 +377,17 @@ class ExperimentConfigPanel(wx.Panel):
         # to be our experiment mover.
         mover = depot.getSortedStageMovers()[2][-1]
         # Only use active cameras and enabled lights.
-        cameras = filter(lambda c: c.getIsEnabled(), 
-                depot.getHandlersOfType(depot.CAMERA))
+        # Must do list(filter) because we will iterate over the list
+        # many times.
+        cameras = list(filter(lambda c: c.getIsEnabled(),
+                depot.getHandlersOfType(depot.CAMERA)))
         if not cameras:
             wx.MessageDialog(self,
                     message = "No cameras are enabled, so the experiment cannot be run.",
                     style = wx.ICON_EXCLAMATION | wx.STAY_ON_TOP | wx.OK).ShowModal()
             return
-        lights = filter(lambda l: l.getIsEnabled(), 
-                depot.getHandlersOfType(depot.LIGHT_TOGGLE))
+        lights = list(filter(lambda l: l.getIsEnabled(),
+                depot.getHandlersOfType(depot.LIGHT_TOGGLE)))
         
         exposureSettings = []
         if self.shouldExposeSimultaneously.GetValue():

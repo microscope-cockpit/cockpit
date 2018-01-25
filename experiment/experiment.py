@@ -397,9 +397,7 @@ class Experiment:
 
         # bleedthrough from other cameras' exposures). These need
         # to be triggered (and we need to record that we want to throw away
-
         # those images) before we can proceed with the real exposure.
-
         camsToReset = set()
         for camera in cameras:
             if not self.cameraToIsReady[camera]:
