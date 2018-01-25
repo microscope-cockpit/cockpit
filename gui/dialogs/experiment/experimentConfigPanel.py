@@ -76,7 +76,7 @@ class ExperimentConfigPanel(wx.Panel):
             self.experimentStringToModule[module.EXPERIMENT_NAME] = module            
         
         self.experimentType = wx.Choice(self,
-                choices = self.experimentStringToModule.keys())
+                choices = list(self.experimentStringToModule.keys()) )
         self.experimentType.SetSelection(0)
         gui.guiUtils.addLabeledInput(self, universalSizer,
                 label = "Experiment type:", control = self.experimentType)
