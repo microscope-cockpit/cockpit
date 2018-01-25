@@ -81,19 +81,24 @@ def unsubscribe(eventType, func):
 def clearOneShotSubscribers(pattern=None):
     global eventToOneShotSubscribers
     if pattern is None:
-        for subscriber in chain(*eventToOneShotSubscribers.values()):
-            if hasattr(subscriber, '__abort__'):
-                subscriber.__abort__()
-        eventToOneShotSubscribers = {}
-    else:
-        for evt in filter(lambda x: re.match(pattern, x), eventToOneShotSubscribers):
-            for subscriber in eventToOneShotSubscribers[evt]:
+        with subscriberLock:
+            for subscriber in chain(*eventToOneShotSubscribers.values()):
                 if hasattr(subscriber, '__abort__'):
                     subscriber.__abort__()
-                eventToOneShotSubscribers[evt].remove(subscriber)
-            if not eventToOneShotSubscribers[evt]:
-                # list is empty
-                del(eventToOneShotSubscribers[evt])
+            eventToOneShotSubscribers = {}
+    else:
+        with subscriberLock:
+            # Need to make list from filter to avoid dict length change errors
+            # in python 3.
+            clearEvents = list(filter(lambda x: re.match(pattern, x), eventToOneShotSubscribers))
+            for evt in clearEvents:
+                for subscriber in eventToOneShotSubscribers[evt]:
+                    if hasattr(subscriber, '__abort__'):
+                        subscriber.__abort__()
+                    eventToOneShotSubscribers[evt].remove(subscriber)
+                if not eventToOneShotSubscribers[evt]:
+                    # list is empty
+                    del(eventToOneShotSubscribers[evt])
 
 subscribe('user abort', clearOneShotSubscribers)
 
