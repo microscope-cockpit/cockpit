@@ -727,7 +727,7 @@ def loadHeader(path):
 # rearrange its axes until its ordering is WTZYX.
 def reorderArray(data, size, sequence):
     dimOrder = ['w', 't', 'z', 'y', 'x']
-    vals = zip(size, dimOrder)
+    vals = list(zip(size, dimOrder))
     dataCopy = numpy.array(data)
     # Find missing axes and pad the array until it has 5 axes.
     for val, key in vals[:-2]:

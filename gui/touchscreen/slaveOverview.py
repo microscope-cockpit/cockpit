@@ -169,7 +169,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
             # # Draw hard stage motion limits
             hardLimits = interfaces.stageMover.getHardLimits()[:2]
             # Rearrange limits to (x, y) tuples.
-            hardLimits = zip(hardLimits[0], hardLimits[1])
+            hardLimits = list(zip(hardLimits[0], hardLimits[1]))
             #Loop over objective offsets to draw limist in multiple colours.
             for obj in self.listObj:
                 offset=self.objective.nameToOffset.get(obj)

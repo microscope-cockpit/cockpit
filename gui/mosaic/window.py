@@ -1157,7 +1157,7 @@ class MosaicWindow(wx.Frame):
                     # the bead's pixels.
                     xDists = [(x - xi) ** 2 for xi in xVals]
                     yDists = [(y - yi) ** 2 for yi in yVals]
-                    maxDistSquared = max(map(sum, zip(xDists, yDists)))
+                    maxDistSquared = max(map(sum, list(zip(xDists, yDists))))
                     # Area of a circle containing all pixels
                     area = numpy.pi * maxDistSquared
                     # Reject beads whose area is less than 60% of the area of

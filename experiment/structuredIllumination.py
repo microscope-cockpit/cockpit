@@ -48,7 +48,7 @@ def postpad_data(data, shape):
     NaN when supported by the datatype.  See cockpit bug #289.
     """
     postpad_length =  shape - numpy.array(data.shape)
-    pad_width = zip([0] * len(shape), postpad_length)
+    pad_width = list(zip([0] * len(shape), postpad_length))
     ## Let numpy figure out what to convert NaN into for blank values
     return numpy.pad(data, pad_width, mode='constant',
                      constant_values=[numpy.nan])

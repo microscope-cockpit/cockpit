@@ -1118,4 +1118,4 @@ for ff in mrcHdrFields:
     mrcHdrNames.append(ff[1])
 del ff
 del mrcHdrFields
-mrcHdr_dtype = zip(mrcHdrNames, mrcHdrFormats)
+mrcHdr_dtype = list(zip(mrcHdrNames, mrcHdrFormats))
