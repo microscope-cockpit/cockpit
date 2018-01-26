@@ -653,9 +653,9 @@ def writeDataAsMrc(data, filename, XYSize = None, ZSize = None, wavelengths = []
 def getExtendedHeader(data, header):
     numWavelengths = header.NumWaves
     # \todo Assuming the 'Num' array is in XYZ order.
-    imagesPerWavelength = int(header.Num[2] / numWavelengths)
-    numInts = int(header.NumIntegers)
-    numFloats = int(header.NumFloats)
+    imagesPerWavelength = header.Num[2] // numWavelengths
+    numInts = header.NumIntegers
+    numFloats = header.NumFloats
     # Start with blank bytes; we'll type-convert later.
     intArray = numpy.zeros(int(imagesPerWavelength * numWavelengths * numInts * 4),
             dtype = numpy.uint8)

@@ -128,7 +128,7 @@ class Mrc:
         if nz == 0:
             nz = self.hdr.Num[-1]
 
-        maxnz = int( len(self.e) / ((self.numInts + self.numFloats) * 4) )
+        maxnz = len(self.e) // (self.numInts + self.numFloats) * 4
         if nz < 0 or nz>maxnz:
             nz=maxnz
 
@@ -525,7 +525,7 @@ class Mrc2:
         self._dataOffset   = self._hdrSize + self._extHdrSize
 
         if self._extHdrSize>0 and (self._extHdrNumInts>0 or self._extHdrNumFloats>0):
-            nSecs = int( self._extHdrSize / self._extHdrBytesPerSec )
+            nSecs = self._extHdrSize // self._extHdrBytesPerSec
             byteorder = '='
             type_descr = [
                 ("int",   "%s%di4"%(byteorder,self._extHdrNumInts)),
@@ -566,7 +566,7 @@ class Mrc2:
         self._dataOffset   = self._hdrSize + self._extHdrSize
 
         if self._extHdrSize>0 and (self._extHdrNumInts>0 or self._extHdrNumFloats>0):
-            nSecs = int( self._extHdrSize / self._extHdrBytesPerSec )
+            nSecs = self._extHdrSize // self._extHdrBytesPerSec
             byteorder = '='
             type_descr = [
                 ("int",   "%s%di4"%(byteorder,self._extHdrNumInts)),
@@ -1058,7 +1058,7 @@ def adjusted_data_shape(numel, shape):
     for i in range(len(shape)):
         stride = int(N.prod(shape[i+1:]))
         if numel >= stride:
-            shape[i] = int(numel // stride)
+            shape[i] = numel // stride
             if numel % stride:
                 ## The truncated data may not fit in an array with
                 ## truncated shape.  For example, 15 elements to fill

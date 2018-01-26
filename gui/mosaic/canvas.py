@@ -163,8 +163,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             xMax = min(end[0], altTile.pos[0] + altTile.size[0])
             yMin = max(start[1], altTile.pos[1])
             yMax = min(end[1], altTile.pos[1] + altTile.size[1])
-            xPixels = int((xMax - xMin) / pixelSize[0])
-            yPixels = int((yMax - yMin) / pixelSize[1])
+            xPixels = (xMax - xMin) // pixelSize[0]
+            yPixels = (yMax - yMin) // pixelSize[1]
             # Get the offset into altTile, and thus the relevant pixel data.
             altX = (xMin - altTile.pos[0]) / pixelSize[0]
             altY = (yMin - altTile.pos[1]) / pixelSize[1]

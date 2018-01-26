@@ -147,8 +147,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             xMax = min(end[0], altTile.pos[0] + altTile.size[1])
             yMin = max(start[1], altTile.pos[1])
             yMax = min(end[1], altTile.pos[1] + altTile.size[0])
-            xPixels = int((xMax - xMin) / pixelSize[1])
-            yPixels = int((yMax - yMin) / pixelSize[0])
+            xPixels = (xMax - xMin) // pixelSize[1]
+            yPixels = (yMax - yMin) // pixelSize[0]
             print ("Intersection is from",xMin,yMin,"to",xMax,yMax,"giving pixels",xPixels,yPixels)
             # Get the offset into altTile, and thus the relevant pixel data.
             altX = (xMin - altTile.pos[0]) / pixelSize[1]

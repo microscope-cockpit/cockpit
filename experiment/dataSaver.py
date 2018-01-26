@@ -94,7 +94,7 @@ class DataSaver:
         
         ## Number of timepoints per file, based on the above and 
         # self.maxFilesize.
-        self.maxRepsPerFile = int(self.maxFilesize / (self.maxImagesPerRep * self.imageBytes * len(self.cameras) / 1024.0 / 1024.0))
+        self.maxRepsPerFile = self.maxFilesize // (self.maxImagesPerRep * self.imageBytes * len(self.cameras) / 1024.0 / 1024.0)
         # Sanity check.
         self.maxRepsPerFile = max(self.maxRepsPerFile, 1)
         ## Whether or not we need to split the data into multiple files.
@@ -351,8 +351,8 @@ class DataSaver:
         # help us to calculate which file to write to and the offset of the
         # image in the file.
         numImages = self.imagesKept[cameraIndex]
-        timepoint = int(numImages / self.maxImagesPerRep)
-        fileIndex = int(timepoint / self.maxRepsPerFile)
+        timepoint = numImages // self.maxImagesPerRep
+        fileIndex = timepoint // self.maxRepsPerFile
         # Rebase the timepoint to be relative to the beginning of this specific
         # file.
         timepoint -= fileIndex * self.maxRepsPerFile

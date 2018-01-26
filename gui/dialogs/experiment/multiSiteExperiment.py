@@ -423,8 +423,8 @@ class MultiSiteExperimentDialog(wx.Dialog):
             if int(curTime + .25) != int(curTime):
                 remaining = endTime - curTime
                 # Advanced to a new second; update the status light.
-                displayMinutes = int(remaining / 60)
-                displaySeconds = int(remaining - displayMinutes * 60)
+                displayMinutes = remaining // 60
+                displaySeconds = (remaining - displayMinutes * 60) // 1
                 events.publish('update status light', 'device waiting',
                         'Waiting for %02d:%02d' % (displayMinutes, displaySeconds),
                         (255, 255, 0))
