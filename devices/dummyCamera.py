@@ -10,6 +10,8 @@ import scipy
 import time
 import wx
 
+from six import iteritems
+
 # An instance of this class is created if no real cameras are found by depot.
 IMAGE_SIZES = ['512x512','256x512']
 
