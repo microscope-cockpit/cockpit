@@ -64,7 +64,7 @@ class ToggleButton(wx.StaticText):
         fontHeight = font.GetPointSize()
         maxLines = height / fontHeight
         numLinesUsed = len(text.split("\n"))
-        lineBuffer = int((maxLines - numLinesUsed) / 2 - 1)
+        lineBuffer = int((maxLines - numLinesUsed) // 2 - 1)
         newText = ("\n" * lineBuffer) + text + ("\n" * lineBuffer)
         wx.StaticText.SetLabel(self, newText, *args, **kwargs)
 

@@ -73,7 +73,7 @@ class Histogram():
         self.maxBucketSize = 1
         if data:
             for y in range(int(self.minAltitude), int(self.maxAltitude) + 1, ALTITUDE_BUCKET_SIZE):
-                slot = int((y - self.minAltitude) / ALTITUDE_BUCKET_SIZE)
+                slot = int(y - self.minAltitude) // ALTITUDE_BUCKET_SIZE
                 # MAP - this can crash here when Z-range is small, so bounds-check slot.
                 if slot < len(data):
                     self.maxBucketSize = max(self.maxBucketSize, data[slot])
@@ -198,7 +198,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         self.altitudeBuckets = [0 for i in range(int(self.minY),
                 int(self.maxY + 1), ALTITUDE_BUCKET_SIZE)]
         for altitude in self.experimentAltitudes:
-            slot = int((altitude - self.minY) / ALTITUDE_BUCKET_SIZE)
+            slot = int((altitude - self.minY) // ALTITUDE_BUCKET_SIZE)
             if slot < 0 or slot > len(self.altitudeBuckets):
                 # This should, of course, be impossible.
                 util.logger.log.warning("Impossible experiment altitude %f (min %f, max %f)",
@@ -451,10 +451,10 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                 altitude = float(pixelOffset) / self.height
                 altitude = altitude * (histogram.maxAltitude - histogram.minAltitude) + histogram.minAltitude
                 # Map that altitude to a bucket
-                bucketIndex = int((altitude - self.minY) / ALTITUDE_BUCKET_SIZE)
+                bucketIndex = int(altitude - self.minY) // ALTITUDE_BUCKET_SIZE
                 if bucketIndex < len(self.altitudeBuckets):
                     count = self.altitudeBuckets[bucketIndex]
-                width = int(float(count) / histogram.maxBucketSize * histogram.width)
+                width = count // histogram.maxBucketSize * histogram.width
                 drawAltitude = histogram.scale(altitude)
                 self.scaledVertex(histogram.xOffset, drawAltitude)
                 self.scaledVertex(histogram.xOffset - width, drawAltitude)

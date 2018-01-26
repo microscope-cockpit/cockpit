@@ -93,9 +93,9 @@ class Button(wx.StaticText):
         height = self.GetSize()[1]
         font = self.GetFont()
         fontHeight = font.GetPointSize()
-        maxLines = int(height / fontHeight)
+        maxLines = height // fontHeight
         numLinesUsed = len(text.split("\n"))
-        lineBuffer = int((maxLines - numLinesUsed) / 2 - 1)
+        lineBuffer = (maxLines - numLinesUsed) // 2 - 1
         newText = ("\n" * lineBuffer) + text + ("\n" * lineBuffer)
         wx.StaticText.SetLabel(self, newText, *args, **kwargs)
 
