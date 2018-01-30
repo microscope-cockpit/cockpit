@@ -1,10 +1,7 @@
 import events
 import threading
 import util.threads
-try:
-    from itertools import ifilter
-except:
-    ifilter = filter
+from six.moves import filter
 
 ## A DeviceHandler acts as the interface between the GUI and the device module.
 # In other words, it tells the GUI what the device does, and translates GUI
@@ -169,7 +166,7 @@ class DeviceHandler(object):
         # Update our set of listeners to remove those that are no longer valid.
         # (e.g. UI elements that have been destroyed)
         self.listeners.difference_update(
-            [thing for thing in ifilter(lambda x: not(x), self.listeners)])
+            [thing for thing in filter(lambda x: not(x), self.listeners)])
         # Notify valid listeners.
         for thing in self.listeners:
             try:
