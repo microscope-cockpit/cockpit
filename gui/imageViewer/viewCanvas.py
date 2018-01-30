@@ -7,7 +7,7 @@ from util import ftgl
 import numpy
 from OpenGL.GL import *
 import os
-import queue
+from six.moves import queue
 import threading
 import traceback
 import wx

@@ -5,7 +5,7 @@ import util.logger
 import util.threads
 
 import numpy
-import queue
+from six.moves import queue
 import threading
 import time
 
