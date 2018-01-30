@@ -25,12 +25,7 @@ name appears in another file.
 import os
 import time
 import shutil
-try:
-    #py2
-    from ConfigParser import ConfigParser
-except:
-    #py3
-    from configparser import ConfigParser
+from six.moves.configparser import ConfigParser
 
 class MyConfigParser(ConfigParser, object):
     def __init__(self):
