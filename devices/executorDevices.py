@@ -94,7 +94,7 @@ class ExecutorDevice(device.Device):
              'readDigital': self.connection.ReadDigital,
              'writeDigital': self.connection.WriteDigital,
              'getAnalog': self.connection.ReadPosition,
-             'setAnalog': self.connection.MoveAbsoluteADU,
+             'setAnalog': self.connection.MoveAbsolute,
              },
             dlines=16, alines=4)
 
