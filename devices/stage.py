@@ -62,6 +62,8 @@ class StageDevice(device.Device):
 
 class SimplePiezo(StageDevice):
     _config_types = {
+        # Min, max and range are ints to prevent crashes where ints are expected
+        # in UI code. We should fix this to be able to use floats.
         'range': int,
         'min':   int,
         'max':   int,
