@@ -38,6 +38,7 @@ import time
 import wx
 
 from . import camera
+import depot
 import events
 import handlers.camera
 import gui.device
@@ -71,13 +72,13 @@ class AndorCameraDevice(camera.CameraDevice):
     def __init__(self, name, config):
         super(AndorCameraDevice, self).__init__(name, config)
         ## Pyro proxy (formerly a copy of self.connection.connection).
-        self.object =  Pyro4.Proxy(self.uri)
+        self.proxy =  Pyro4.Proxy(self.uri)
         ## A listner (formerly self.connection).
-        self.listener = util.listener.Listener(self.object, 
+        self.listener = util.listener.Listener(self.proxy,
                                                lambda *args: self.receiveData(*args))
         self.imageSizes = ['Full', '512x256', '512x128']
         try:
-            self.amplifierModes = self.object.get_amplifier_modes()
+            self.amplifierModes = self.proxy.get_amplifier_modes()
         except:
             self.amplifierModes = None
         ## Initial values should be read in from the config file.
@@ -107,7 +108,7 @@ class AndorCameraDevice(camera.CameraDevice):
         """Restore settings as they were prior to experiment."""
         if self.enabled:
             self.settings.update(self.cached_settings)
-            self.object.enable(self.settings)
+            self.proxy.enable(self.settings)
         self.handler.exposureMode = self.interactiveTrigger
 
 
@@ -123,10 +124,18 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings.update({'pathTransform': transform})
         # Apply the change now if the camera is enabled.
         if self.enabled:
-            self.object.update_settings(self.settings)
+            self.proxy.update_settings(self.settings)
     
 
     def getHandlers(self):
+        """Return camera handlers."""
+        trigsource = self.config.get('triggersource', None)
+        trigline = self.config.get('triggerline', None)
+        if trigsource:
+            trighandler = depot.getHandler(trigsource, depot.EXECUTOR)
+        else:
+            trighandler = None
+
         """Return camera handlers."""
         result = handlers.camera.CameraHandler(
                 "%s" % self.name, "iXon camera",
@@ -140,9 +149,19 @@ class AndorCameraDevice(camera.CameraDevice):
                     'setImageSize': self.setImageSize,
                     'getSavefileInfo': self.getSavefileInfo,
                     'makeUI': self.makeUI},
-                self.interactiveTrigger)
+                self.interactiveTrigger,
+                trighandler,
+                trigline
+        )
         self.handler = result
+        self.handler.addListener(self)
         return [result]
+
+
+    def onEnabledEvent(self, evt=None):
+        if self.enabled:
+            self.handler.exposureMode = self.interactiveTrigger
+            self.listener.connect()
 
 
     def enableCamera(self, name, shouldEnable):
@@ -151,8 +170,8 @@ class AndorCameraDevice(camera.CameraDevice):
             # Disable the camera, if it is enabled.
             if self.enabled:
                 self.enabled = False
-                self.object.disable()
-                self.object.make_safe()
+                self.proxy.disable()
+                self.proxy.make_safe()
                 self.listener.disconnect()
                 self.updateUI()
                 return self.enabled
@@ -166,24 +185,24 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings['frameTransfer'] = False
         self.settings['fastTrigger'] = False
 
-        originalTimeout = self.object._pyroTimeout
+        originalTimeout = self.proxy._pyroTimeout
         try:
-            self.object._pyroTimeout = 60
-            self.object.enable(self.settings)
-            self.object._pyroTimeout = originalTimeout
+            self.proxy._pyroTimeout = 60
+            self.proxy.enable(self.settings)
+            self.proxy._pyroTimeout = originalTimeout
         except Exception as e:
             print (e)
         else:
             # Wait for camera to show it is enabled.
-            while not self.object.is_enabled():
+            while not self.proxy.is_enabled():
                 time.sleep(1)
             self.enabled = True
             # Connect the listener to receive data.
             self.listener.connect()
             # Update our settings with the real settings.
-            self.settings.update(self.object.get_settings())
+            self.settings.update(self.proxy.get_settings())
             # Get the list of available amplifier modes.
-            self.amplifierModes = self.object.get_amplifier_modes()
+            self.amplifierModes = self.proxy.get_amplifier_modes()
         # Update the UI.
         self.updateUI()
         return self.enabled
@@ -192,7 +211,7 @@ class AndorCameraDevice(camera.CameraDevice):
     def getExposureTime(self, name, isExact):
         """Read the real exposure time from the camera."""
         # Camera uses times in s; cockpit uses ms.
-        t = self.object.get_exposure_time()
+        t = self.proxy.get_exposure_time()
         if isExact:
             return decimal.Decimal(t) * (decimal.Decimal(1000.0))
         else:
@@ -201,7 +220,7 @@ class AndorCameraDevice(camera.CameraDevice):
 
     def getImageSize(self, name):
         """Read the image size from the camera."""
-        return self.object.get_image_size()
+        return self.proxy.get_image_size()
 
 
     def getImageSizes(self, name):
@@ -224,7 +243,7 @@ class AndorCameraDevice(camera.CameraDevice):
         This is the time that must pass after stopping one exposure
         before another can be started, in milliseconds."""
         # Camera uses time in s; cockpit uses ms.
-        t = self.object.get_min_time_between_exposures() * 1000.0
+        t = self.proxy.get_min_time_between_exposures() * 1000.0
         if isExact:
             result = decimal.Decimal(t)
         else:
@@ -235,12 +254,12 @@ class AndorCameraDevice(camera.CameraDevice):
     def prepareForExperiment(self, name, experiment):
         """Make the hardware ready for an experiment."""
         self.cached_settings.update(self.settings)
-        self.object.abort()
+        self.proxy.abort()
         self.settings['frameTransfer'] = self.experimentTriggerMode.frameTransfer
         self.settings['fastTrigger'] = self.experimentTriggerMode.fastTrigger
         self.settings['triggerMode'] = self.experimentTriggerMode.cameraTrigger
         try:
-            self.object.enable(self.settings)
+            self.proxy.enable(self.settings)
         except:
             raise
         else:
@@ -261,7 +280,7 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings.update({'exposureTime': exposureTime / 1000.0})
         # Apply the change right now if the camera is enabled.
         if self.enabled:
-            self.object.update_settings(self.settings)
+            self.proxy.update_settings(self.settings)
 
 
     def setImageSize(self, name, imageSize):
@@ -283,7 +302,7 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings.update({'EMGain': value})
         # Apply the change now if the camera is enabled.
         if self.enabled:
-            self.object.update_settings(self.settings)
+            self.proxy.update_settings(self.settings)
         self.updateUI()
 
 
@@ -353,19 +372,19 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings.update({'amplifierMode': mode})
         # Apply the change right now if camera is enabled.
         if self.enabled:
-            self.object.update_settings(self.settings)
+            self.proxy.update_settings(self.settings)
         self.updateUI()
 
 
     def setTargetTemperature(self, temperature):
         self.settings.update({'targetTemperature': temperature})
-        self.object.update_settings({'targetTemperature': temperature})
+        self.proxy.update_settings({'targetTemperature': temperature})
 
 
     def toggleWaterCooling(self):
         newSetting = not self.settings.get('isWaterCooled')
         self.settings.update({'isWaterCooled': newSetting})
-        self.object.update_settings({'isWaterCooled': newSetting})
+        self.proxy.update_settings({'isWaterCooled': newSetting})
 
 
     def updateStatus(self):
@@ -373,9 +392,9 @@ class AndorCameraDevice(camera.CameraDevice):
         updatePeriod = 2
         temperature = None
         while True:
-            if self.object:
+            if self.proxy:
                 try:
-                    temperature = self.object.get_temperature()
+                    temperature = self.proxy.get_temperature()
                 except:
                     ## There is a communication issue. It's not this thread's
                     # job to fix it. Set temperature to None to avoid bogus
@@ -435,7 +454,7 @@ class AndorCameraDevice(camera.CameraDevice):
         if not mode:
             try:
                 # try to read it from the hardware
-                mode = self.object.get_settings()['amplifierMode']
+                mode = self.proxy.get_settings()['amplifierMode']
             except:
                 mode = None
 
