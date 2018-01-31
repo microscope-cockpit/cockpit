@@ -68,14 +68,10 @@ TRIGGER_MODES = [
 
 class AndorCameraDevice(camera.CameraDevice):
     """A class to control Andor cameras via the pyAndor remote interface."""
-    def __init__(self, name, camConfig):
-        # camConfig is a dict with containing configuration parameters.
-        super(AndorCameraDevice, self).__init__(name, camConfig)
-        self.config = camConfig
+    def __init__(self, name, config):
+        super(AndorCameraDevice, self).__init__(name, config)
         ## Pyro proxy (formerly a copy of self.connection.connection).
-        self.object =  Pyro4.Proxy('PYRO:%s@%s:%d' % ('pyroCam',
-                                                      camConfig.get('ipAddress'),
-                                                      camConfig.get('port')))
+        self.object =  Pyro4.Proxy(self.uri)
         ## A listner (formerly self.connection).
         self.listener = util.listener.Listener(self.object, 
                                                lambda *args: self.receiveData(*args))
@@ -93,7 +89,7 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings['targetTemperature'] = -40
         self.settings['EMGain'] = 0
         self.settings['amplifierMode'] = None
-        self.settings['baseTransform'] = camConfig.get('baseTransform') or (0, 0, 0)
+        self.settings['baseTransform'] = config.get('baseTransform') or (0, 0, 0)
         self.settings['pathTransform'] = (0, 0, 0)
         self.settings['triggerMode'] = 1
         self.lastTemperature = None
@@ -133,7 +129,7 @@ class AndorCameraDevice(camera.CameraDevice):
     def getHandlers(self):
         """Return camera handlers."""
         result = handlers.camera.CameraHandler(
-                "%s" % self.config.get('label'), "iXon camera",
+                "%s" % self.name, "iXon camera",
                 {'setEnabled': self.enableCamera,
                     'getImageSize': self.getImageSize,
                     'getTimeBetweenExposures': self.getTimeBetweenExposures,
@@ -146,7 +142,7 @@ class AndorCameraDevice(camera.CameraDevice):
                     'makeUI': self.makeUI},
                 self.interactiveTrigger)
         self.handler = result
-        return result
+        return [result]
 
 
     def enableCamera(self, name, shouldEnable):
@@ -387,7 +383,7 @@ class AndorCameraDevice(camera.CameraDevice):
                     temperature = None
             self.lastTemperature = temperature
             events.publish("status update",
-                           self.config.get('label', 'unidentifiedCamera'),
+                           self.name,
                            {'temperature': temperature,})
             time.sleep(updatePeriod)
 
@@ -397,7 +393,7 @@ class AndorCameraDevice(camera.CameraDevice):
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = gui.device.Label(
-                parent=self.panel, label=self.config['label'])
+                parent=self.panel, label=self.name)
         sizer.Add(label)
         rowSizer = wx.BoxSizer(wx.VERTICAL)
 
