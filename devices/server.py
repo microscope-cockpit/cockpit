@@ -17,7 +17,7 @@ CLASS_NAME = 'CockpitServer'
 # so that each incoming connection is on its own port.
 class CockpitServer(device.Device):
     def __init__(self, name, config={}):
-        device.Device.__init__(self)
+        device.Device.__init__(self, name, config)
         ## IP address of the cockpit computer.
         if not(hasattr(self, 'ipAddress')):
             self.ipAddress = "127.0.0.1"
