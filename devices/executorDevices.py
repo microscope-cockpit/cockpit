@@ -30,6 +30,7 @@ import handlers.executor
 import handlers.genericHandler
 import handlers.genericPositioner
 import handlers.imager
+import numpy as np
 import util.threads
 import numpy as np
 from itertools import chain
@@ -176,6 +177,41 @@ class LegacyDSP(ExecutorDevice):
         if action.lower() == 'dsp done':
             events.publish(events.EXECUTOR_DONE % self.name)
 
+    ## Return analog position in native units (ADU)
+    def getAnalog(self, line):
+        return int(self.connection.ReadPosition(line) * 1694.0825663475528)
+
+    ## Set analog position in native units (ADU)
+    def setAnalog(self, line, target):
+        return self.connection.MoveAbsoluteADU(line, int(target))
+
+    ## We control which light sources are active, as well as a set of
+    # stage motion piezos.
+    def getHandlers(self):
+        result = []
+        h = handlers.executor.AnalogDigitalExecutorHandler(
+            self.name, "executor",
+            {'examineActions': lambda *args: None,
+             'executeTable': self.executeTable,
+             'readDigital': self.connection.ReadDigital,
+             'writeDigital': self.connection.WriteDigital,
+             'getAnalog': self.getAnalog,
+             'setAnalog': self.setAnalog,
+             },
+            dlines=16, alines=4)
+
+        result.append(h)
+
+        # The takeImage behaviour is now on the handler. It might be better to
+        # have hybrid handlers with multiple inheritance, but that would need
+        # an overhaul of how depot determines handler types.
+        result.append(handlers.imager.ImagerHandler(
+            "%s imager" % (self.name), "imager",
+            {'takeImage': h.takeImage}))
+
+        self.handlers = set(result)
+        return result
+
 
     ## Actually execute the events in an experiment ActionTable, starting at
     # startIndex and proceeding up to but not through stopIndex.
@@ -204,19 +240,16 @@ class LegacyDSP(ExecutorDevice):
 
             # Digital actions - one at every time point.
             if len(digitals) > 0:
-                print (ticks, digitals[-1][0], '   ', darg, digitals[-1][1])
                 if ticks == digitals[-1][0] and darg != digitals[-1][1]:
                     print ("TIMING RESOLUTION EXCEEDED")
             digitals.append((ticks, darg))
 
-
             # Analogue actions - only enter into profile on change.
             # DSP uses offsets from value when the profile was loaded.
-            offsets = map(lambda base, new: base - new, self._lastAnalogs, aargs)
+            offsets = map(lambda base, new: new - base, self._lastAnalogs, aargs)
             for offset, a in zip(offsets, analogs):
                 if ((len(a) == 0 and offset != 0) or
                         (len(a) > 0 and offset != a[-1][1])):
-                    #print tLastA, t
                     a.append((ticks, offset))
                     tLastA = t
 
@@ -257,13 +290,17 @@ class LegacyDSP(ExecutorDevice):
 
         # Update records of last positions.
         self._lastDigital = digitals[-1][1]
-        # _lastAnalogs[i] - (analogs[last][value] or 0 if no actions for that channel)
         self._lastAnalogs = map(lambda x, y: x - (y[-1:][1:] or 0), self._lastAnalogs, analogs)
 
         events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
                        'Waiting for\nDSP to finish', (255, 255, 0))
-        self.connection.profileSet(description.tostring(), digitals, *analogs)
+        # Convert digitals to array of uints.
+        digitalsArr = np.array(digitals, dtype=np.uint32)
+        # Convert analogs to array of uints.
+        analogsArr = [np.array(a, dtype=np.uint32).reshape(-1, 2) for a in analogs]
+
+        self.connection.profileSet(description.tostring(), digitalsArr, *analogsArr)
         self.connection.DownloadProfile()
         self.connection.InitProfile(numReps)
-        events.executeAndWaitFor(events.EXECUTOR_DONE % self.name, self.connection.RunActions)
+        events.executeAndWaitFor(events.EXECUTOR_DONE % self.name, self.connection.trigCollect)
         events.publish(events.EXPERIMENT_EXECUTION)
