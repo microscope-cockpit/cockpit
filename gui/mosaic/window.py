@@ -89,9 +89,8 @@ class MosaicWindow(wx.Frame):
         self.focalPlaneParams = None
 
         ## Font to use for site labels.
-        self.font = ftgl.TextureFont(
-                os.path.join(COCKPIT_PATH, 'resources',
-                             'fonts', 'GeosansLight.ttf'))
+        from gui import FONTPATH
+        self.font = ftgl.TextureFont(FONTPATH)
         self.defaultFaceSize = 64
         self.font.setFaceSize(self.defaultFaceSize)
 

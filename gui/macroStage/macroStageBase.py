@@ -48,10 +48,9 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         ## Whether or not we should try to draw
         self.shouldDraw = True
         ## Font for drawing text
+        from gui import FONTPATH
         try:
-            path = os.path.join(COCKPIT_PATH, 'resources',
-                                'fonts', 'GeosansLight.ttf')
-            self.font = ftgl.TextureFont(path)
+            self.font = ftgl.TextureFont(FONTPATH)
             self.font.setFaceSize(18)
         except Exception as e:
             print ("Failed to make font:",e)

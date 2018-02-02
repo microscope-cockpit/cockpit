@@ -2,12 +2,11 @@
 #circle, square and arrows.
 
 from util import ftgl
+from gui import FONTPATH
 
 ## Font for drawing text
 try:
-    path = os.path.join(COCKPIT_PATH, 'resources',
-                        'fonts', 'GeosansLight.ttf')
-    font = ftgl.TextureFont(path)
+    font = ftgl.TextureFont(FONTPATH)
     font.setFaceSize(18)
 except Exception as e:
     print ("Failed to make font:",e)

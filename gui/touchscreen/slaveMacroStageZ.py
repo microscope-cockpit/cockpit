@@ -13,8 +13,6 @@ import util.userConfig
 import gui.macroStage.macroStageBase as macroStageBase
 import gui.macroStage.macroStageWindow as macroStageWindow
 import gui.saveTopBottomPanel
-import os
-from cockpit import COCKPIT_PATH
 
 ## Width of an altitude line.
 HEIGHT_LINE_WIDTH = 3
@@ -126,9 +124,8 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         self.shouldDraw = True
         ## Font for drawing text
         try:
-            path = os.path.join(COCKPIT_PATH, 'resources',
-                                'fonts', 'GeosansLight.ttf')
-            self.font = ftgl.TextureFont(path)
+            from gui import FONTPATH
+            self.font = ftgl.TextureFont(FONTPATH)
             self.font.setFaceSize(18)
         except Exception as e:
             print ("Failed to make font:",e)
