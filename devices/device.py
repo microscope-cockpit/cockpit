@@ -3,7 +3,9 @@
 # largely left up to the client; this class simply provides a framework of 
 # stub functions that must be implemented. 
 class Device(object):
-    _config_types = {}
+    _config_types = {
+        'port': int,
+    }
 
     def __init__(self, name='', config={}):
         ## Set to False to disable this device. Disabled devices will not be 
@@ -11,6 +13,10 @@ class Device(object):
         self.isActive = True
         self.name = name
         self.config = config
+        # Convert config strings to types specified on device class.
+        for k, t in self._config_types.items():
+            if k in self.config:
+                self.config[k] = t(self.config[k])
         ip = config.get('ipaddress', False)
         if ip:
             self.ipAddress = ip
@@ -20,10 +26,6 @@ class Device(object):
         uri = config.get('uri', False)
         if uri:
             self.uri = uri
-        # Convert config strings to types specified on device class.
-        for k, t in self._config_types.items():
-            if k in self.config:
-                self.config[k] = t(self.config[k])
 
 
     ## Perform any necessary initialization (e.g. connecting to hardware).
