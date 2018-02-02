@@ -227,7 +227,7 @@ class LegacyDSP(ExecutorDevice):
         # Start time
         t0 = float(table[startIndex][0])
         # Profiles
-        analogs = [ [], [], [], [] ] # A list of lists (one per channel) of tuples (ticks, (analog values))
+        analogs = [ [(0,0)], [(0,0)], [(0,0)], [(0,0)] ] # A list of lists (one per channel) of tuples (ticks, (analog values))
         digitals = [] # A list of tuples (ticks, digital state)
         # Need to track time of last analog events to workaround a
         # DSP bug later. Also used to detect when events exceed timing
