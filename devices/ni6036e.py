@@ -116,7 +116,6 @@ class NI6036e(device.Device):
         self.niConnection = Pyro4.Proxy('PYRO:%s@%s:%d' % ('ni', self.ipAddress, self.port))
         self.temperatureConnection = util.connection.Connection(
                 'temperature', self.ipAddress, self.port)
-        self.temperatureConnection.connect(self.receiveTemperatureData)
 #IMD 20130207 comment out as we are not using it in Oxford
 #self.lightConnection = util.connection.Connection(
 #                'light', self.ipAddress, self.port)
@@ -132,7 +131,9 @@ class NI6036e(device.Device):
 
     ## Try to switch to widefield mode.
     def finalizeInitialization(self):
-        self.setExMode(self.excitation[0])
+        if self.excitation:
+            self.setExMode(self.excitation[0])
+        self.temperatureConnection.connect(self.receiveTemperatureData)
 #        self.setStageMode('Inverted')
         #set default emission path
 #IMD 20170316 comment out as this is a hack for OMXT
