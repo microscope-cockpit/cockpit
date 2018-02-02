@@ -241,10 +241,14 @@ class LegacyDSP(ExecutorDevice):
             if len(digitals) == 0:
                 digitals.append((ticks, darg))
             elif ticks == digitals[-1][0]:
-                    if darg != digitals[-1][1]:
-                        raise Exception("LegacyDSP: Timing resolution exceeded.")
-                    else:
-                        pass
+                # Used to check for conflicts here, but that's not so trivial.
+                # We need to allow several bits to change at the same time point, but
+                # they may show up as multiple events in the actionTable. For now, just
+                # take the most recent state.
+                if darg != digitals[-1][1]:
+                    digitals[-1] = (ticks, darg)
+                else:
+                    pass
             else:
                 digitals.append((ticks, darg))
 
