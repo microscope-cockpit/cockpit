@@ -95,7 +95,7 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings['triggerMode'] = 1
         self.lastTemperature = None
         self.experimentTriggerMode = TRIGGER_MODES[0]
-        self.interactiveTrigger = TRIGGER_BEFORE
+        self.interactiveTrigger = TRIGGER_DURATION
         self.enabled = False
         self.handler = None
         self.hasUI = False
