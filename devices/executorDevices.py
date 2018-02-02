@@ -30,7 +30,6 @@ import handlers.executor
 import handlers.genericHandler
 import handlers.genericPositioner
 import handlers.imager
-import numpy as np
 import util.threads
 import numpy as np
 from itertools import chain
