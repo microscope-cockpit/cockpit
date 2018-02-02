@@ -20,7 +20,7 @@ class NI6036e(device.Device):
         linestring = config.get('lines', '')
         self.lines = linestring.split(',')
         #Get microscope paths from config file.
-        paths_linesString = config.get('paths')
+        paths_linesString = config.get('paths', '')
         self.excitation=[]
         self.excitationMaps=[]
         self.objective=[]
