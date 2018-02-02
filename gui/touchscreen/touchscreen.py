@@ -3,11 +3,8 @@ from util import ftgl
 import numpy
 from OpenGL.GL import *
 import os
-import scipy.ndimage.measurements
 import threading
-import time
 import wx
-import wx.lib.buttons as buttons
 from wx.lib.agw.shapedbutton import SButton, SBitmapButton,SBitmapToggleButton,SToggleButton
 from gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 
@@ -98,9 +95,8 @@ class TouchScreenWindow(wx.Frame):
         self.focalPlaneParams = None
 
         ## Font to use for site labels.
-        self.font = ftgl.TextureFont(
-                os.path.join(COCKPIT_PATH, 'resources',
-                             'fonts', 'GeosansLight.ttf'))
+        from gui import FONTPATH
+        self.font = ftgl.TextureFont(FONTPATH)
         self.defaultFaceSize = 64
         self.font.setFaceSize(self.defaultFaceSize)
 

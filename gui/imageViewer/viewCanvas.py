@@ -6,15 +6,12 @@ import util.threads
 from util import ftgl
 import numpy
 from OpenGL.GL import *
-import os
 from six.moves import queue
 import threading
 import traceback
 import wx
 import wx.glcanvas
 import operator
-
-from cockpit import COCKPIT_PATH
 
 ## @package gui.imageViewer.viewCanvas
 # This module provides a canvas for displaying camera images.
@@ -103,9 +100,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.context = wx.glcanvas.GLContext(self)
 
         ## Font for text rendering
-        self.font = ftgl.TextureFont(
-                os.path.join(COCKPIT_PATH, 'resources',
-                             'fonts', 'GeosansLight.ttf'))
+        from gui import FONTPATH
+        self.font = ftgl.TextureFont(FONTPATH)
         self.font.setFaceSize(18)
 
         self.Bind(wx.EVT_PAINT, self.onPaint)
