@@ -278,19 +278,6 @@ class LegacyDSP(ExecutorDevice):
         # I think the point of this is just to create a struct with C-aligned fields.
         # If so, we don't need numpy for this, as we only touch the first element
         # in this recarray: could use struct, instead.
-        description = np.rec.array(
-            None,
-            formats="u4, f4, u4, u4, 4u4",
-            names=('count', 'clock', 'InitDio', 'nDigital', 'nAnalog'),
-            aligned=True, shape=1)
-
-        maxticks = reduce(max, chain(zip(*digitals)[0],
-                                     *[(zip(*a) or [[None]])[0] for a in analogs]))
-        description['count'] = maxticks
-        description['clock'] = 1000. / float(self.tickrate)
-        description['InitDio'] = self._lastDigital
-        description['nDigital'] = len(digitals)
-        description['nAnalog'] = [len(a) for a in analogs]
 
         # Update records of last positions.
         self._lastDigital = digitals[-1][1]
@@ -299,11 +286,21 @@ class LegacyDSP(ExecutorDevice):
         events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
                        'Waiting for\nDSP to finish', (255, 255, 0))
         # Convert digitals to array of uints.
-        digitalsArr = np.array(digitals, dtype=np.uint32)
+        digitalsArr = np.array(digitals, dtype=np.uint32).reshape(-1,2)
         # Convert analogs to array of uints.
         analogsArr = [np.array(a, dtype=np.uint32).reshape(-1, 2) for a in analogs]
 
-        self.connection.profileSet(description.tostring(), digitalsArr, *analogsArr)
+        # Create a description dict. Will be byte-packed by server-side code.
+        maxticks = reduce(max, chain(zip(*digitals)[0],
+                                     *[(zip(*a) or [[None]])[0] for a in analogs]))
+        description = {}
+        description['count'] = maxticks
+        description['clock'] = 1000. / float(self.tickrate)
+        description['InitDio'] = self._lastDigital
+        description['nDigital'] = len(digitals)
+        description['nAnalog'] = [len(a) for a in analogs]
+
+        self.connection.profileSet(description, digitalsArr, *analogsArr)
         self.connection.DownloadProfile()
         self.connection.InitProfile(numReps)
         events.executeAndWaitFor(events.EXECUTOR_DONE % self.name, self.connection.trigCollect)
