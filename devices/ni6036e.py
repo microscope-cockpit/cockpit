@@ -291,6 +291,8 @@ class NI6036e(device.Device):
                            {'temperature'+str(i): values[i],})
 
     def onObjectiveChange(self, name, pixelSize, transform, offset):
+        if name not in self.objectiveToFlips:
+            return
         for flips in self.objectiveToFlips[name]:
             self.flipDownUp(flips[0], flips[1])
         print ("NIcard objective change to ",name)
