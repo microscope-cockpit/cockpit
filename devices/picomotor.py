@@ -59,7 +59,7 @@ class PicoMotorDevice(device.Device):
     def __init__(self, name, config):
         device.Device.__init__(self, name, config)
         self.STAGE_CAL = config.get('cal') # e.g. 13.750
-        self.PICO_CONTROLLER = config.get('ipAddress') # e.g. 172.16.0.30'
+        self.PICO_CONTROLLER = config.get('ipaddress') # e.g. 172.16.0.30'
         self.PICO_PORT = config.get('port') # e.g. 23
 
         ## Maps the cockpit's axis ordering (0: X, 1: Y, 2: Z) to the
@@ -70,7 +70,6 @@ class PicoMotorDevice(device.Device):
         #Needs moving to config file!
         self.axisMapper = {0: '1>1', 1: '1>2', 2: '2>1'}
 
-        device.Device.__init__(self)
         ## Connection to the Z piezo controller (Pyro4.Proxy of a
         # telnetlib.Telnet instance)
         self.zConnection = None
