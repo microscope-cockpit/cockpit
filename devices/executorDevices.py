@@ -239,10 +239,15 @@ class LegacyDSP(ExecutorDevice):
             ticks = int(float(t) * self.tickrate + 0.5)
 
             # Digital actions - one at every time point.
-            if len(digitals) > 0:
-                if ticks == digitals[-1][0] and darg != digitals[-1][1]:
-                    print ("TIMING RESOLUTION EXCEEDED")
-            digitals.append((ticks, darg))
+            if len(digitals) == 0:
+                digitals.append((ticks, darg))
+            elif ticks == digitals[-1][0]:
+                    if darg != digitals[-1][1]:
+                        raise Exception("LegacyDSP: Timing resolution exceeded.")
+                    else:
+                        pass
+            else:
+                digitals.append((ticks, darg))
 
             # Analogue actions - only enter into profile on change.
             # DSP uses offsets from value when the profile was loaded.
