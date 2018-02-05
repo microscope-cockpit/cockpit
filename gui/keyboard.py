@@ -151,7 +151,14 @@ def martialWindows(parent):
         menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
-        menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
+        try:
+            menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
+        except TypeError as e:
+            # Sometimes, windows created late (e.g. wx InspectionTool) cause
+            # a weird error here: menu.Append throws a type error, insisting
+            # it needs a String or Unicode type, despite being passed a String
+            # or Unicode type.
+            print ("Omitting %s from window - weird wx string/unicode type error." % window.GetTitle())
         menuId += 1
 
     for d in filter(lambda x: hasattr(x, "showDebugWindow"),
