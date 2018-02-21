@@ -49,8 +49,9 @@ class StageDevice(device.Device):
         if self.primitives is None:
             # Primitives not yet read from config.
             self.primitives = []
-            if config.get('primitives'):
-                primitives = config.get('primitives').split('\n')
+            primitives = self.config.get('primitives', None)
+            if primitives is not None:
+                primitives = primitives.split('\n')
                 for pstr in primitives:
                     p = re.split('[ |,|;]*', re.sub("['|\"]", '', pstr))
                     pType = p[0]
