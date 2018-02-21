@@ -18,7 +18,7 @@ class SingleSiteExperimentDialog(wx.Dialog):
         self.buttonBox = wx.BoxSizer(wx.HORIZONTAL)
 
         button = wx.Button(self, -1, "Reset")
-        button.SetToolTipString("Reload this window with all default values")
+        button.SetToolTip(wx.ToolTip("Reload this window with all default values"))
         button.Bind(wx.EVT_BUTTON, self.onReset)
         self.buttonBox.Add(button, 0, wx.ALIGN_LEFT | wx.ALL, 5)
 
@@ -28,7 +28,7 @@ class SingleSiteExperimentDialog(wx.Dialog):
         self.buttonBox.Add(button, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
         
         button = wx.Button(self, wx.ID_OK, "Start")
-        button.SetToolTipString("Start the experiment")
+        button.SetToolTip(wx.ToolTip("Start the experiment"))
         button.Bind(wx.EVT_BUTTON, self.onStart)
         self.buttonBox.Add(button, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
 

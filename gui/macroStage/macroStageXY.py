@@ -64,16 +64,16 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         # corresponds to anything, but it seems to work out.
         self.textSize = .004
 
-        wx.EVT_MOTION(self, self.OnMouseMotion)
-        wx.EVT_LEFT_UP(self, self.OnLeftClick)
-        wx.EVT_LEFT_DCLICK(self, self.OnLeftDoubleClick)
-        wx.EVT_RIGHT_UP(self, self.OnRightClick)
-        wx.EVT_RIGHT_DCLICK(self, self.OnRightDoubleClick)
+        self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
+        self.Bind(wx.EVT_LEFT_UP, self.OnLeftClick)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnLeftDoubleClick)
+        self.Bind(wx.EVT_RIGHT_UP, self.OnRightClick)
+        self.Bind(wx.EVT_RIGHT_DCLICK, self.OnRightDoubleClick)
         events.subscribe("soft safety limit", self.onSafetyChange)
         events.subscribe('objective change', self.onObjectiveChange)
-        self.SetToolTipString("Left double-click to move the stage. " +
+        self.SetToolTip(wx.ToolTip("Left double-click to move the stage. " +
                 "Right click for gotoXYZ and double-click to toggle displaying of mosaic " +
-                "tiles.")
+                "tiles."))
 
 
     ## Safety limits have changed, which means we need to force a refresh.

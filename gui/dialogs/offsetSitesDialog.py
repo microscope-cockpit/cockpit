@@ -31,7 +31,7 @@ class OffsetSites_Dialog(wx.Dialog):
         buttonBox = wx.BoxSizer(wx.HORIZONTAL)
 
         cancelButton = wx.Button(self, wx.ID_CANCEL, "Cancel")
-        cancelButton.SetToolTipString("Close this window")
+        cancelButton.SetToolTip(wx.ToolTip("Close this window"))
         buttonBox.Add(cancelButton, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
         
         startButton = wx.Button(self, wx.ID_OK, "Move sites")

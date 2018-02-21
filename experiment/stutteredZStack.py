@@ -84,34 +84,34 @@ class ExperimentUI(wx.Panel):
         # Commence second row.
         button = wx.Button(self, -1, 'Clear')
         button.Bind(wx.EVT_BUTTON, self.onClear)
-        button.SetToolTipString("Remove all entries")
+        button.SetToolTip(wx.ToolTip("Remove all entries"))
         sizer.Add(button)
 
         button = wx.Button(self, -1, 'Delete last')
         button.Bind(wx.EVT_BUTTON, self.onDeleteLast)
-        button.SetToolTipString("Remove the most recently-added entry")
+        button.SetToolTip(wx.ToolTip("Remove the most recently-added entry"))
         sizer.Add(button)
 
         self.sequenceText = wx.TextCtrl(self, -1,
                 size = (200, -1), style = wx.TE_READONLY)
-        self.sequenceText.SetToolTipString("Displays the sequence of " +
+        self.sequenceText.SetToolTip(wx.ToolTip("Displays the sequence of " +
                 "sampling intervals and reps we will perform for this " +
-                "experiment.")
+                "experiment."))
         sizer.Add(self.sequenceText)
 
         self.interval = wx.TextCtrl(self, -1, size = (60, -1))
-        self.interval.SetToolTipString("Amount of time, in seconds, that " +
-                "passes between each rep for this portion of the experiment.")
+        self.interval.SetToolTip(wx.ToolTip("Amount of time, in seconds, that " +
+                "passes between each rep for this portion of the experiment."))
         sizer.Add(self.interval)
 
         self.numReps = wx.TextCtrl(self, -1, size = (60, -1))
-        self.numReps.SetToolTipString("Number of reps to perform at this " +
-                "sampling interval.")
+        self.numReps.SetToolTip(wx.ToolTip("Number of reps to perform at this " +
+                "sampling interval."))
         sizer.Add(self.numReps)
 
         button = wx.Button(self, -1, 'Add')
         button.Bind(wx.EVT_BUTTON, self.onAdd)
-        button.SetToolTipString("Add this (interval, reps) pair to the sequence.")
+        button.SetToolTip(wx.ToolTip("Add this (interval, reps) pair to the sequence."))
         sizer.Add(button)
 
         self.SetSizerAndFit(sizer)

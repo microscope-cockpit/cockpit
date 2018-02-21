@@ -64,7 +64,7 @@ class ExperimentUI(wx.Panel):
     def __init__(self, parent, configKey):
         wx.Panel.__init__(self, parent = parent)
         self.configKey = configKey
-        sizer = wx.GridSizer(rows=2, cols=4)
+        sizer = wx.GridSizer(2, 4, 1)
         ## Maps strings to TextCtrls describing how to configure
         # response curve experiments.
         self.settings = self.loadSettings()

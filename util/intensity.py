@@ -28,14 +28,13 @@ as part of another wx app.
 from contextlib import contextmanager
 import gc
 from itertools import chain
-import matplotlib.pyplot as plt
 import Mrc
 import numpy as np
 from operator import add
-import sys
 import wx
 from wx.lib.floatcanvas import FloatCanvas
 import wx.lib.plot as plot
+from distutils import version
 
 ICON_SIZE = (16,16)
 BITMAP_SIZE = (512,512)
@@ -245,17 +244,22 @@ class IntensityProfilerFrame(wx.Frame):
     def __init__(self, parent=None):
         super(IntensityProfilerFrame, self).__init__(parent, title="SIM intensity profile")
         self.profiler = IntensityProfiler()
-
         # Outermost sizer.
         vbox = wx.BoxSizer(wx.VERTICAL)
 
         ## Toolbar
         toolbar = wx.ToolBar(self, -1)
+        # Choose a function to create tools for the toolbar.
+        if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
+            make_tool = toolbar.AddLabelTool
+        else:
+            make_tool = toolbar.AddTool
         # Open file
-        openTool = toolbar.AddSimpleTool(
-                        wx.ID_ANY,
-                        wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR, ICON_SIZE),
-                        "Open", "Open a dataset")
+        openTool = make_tool(
+                            wx.ID_ANY,
+                            "Open",
+                            wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR, ICON_SIZE),
+                            shortHelp="Open a dataset.")
         toolbar.AddSeparator()
         # Number of phases
         phaseLabel = wx.StaticText(toolbar,
@@ -301,10 +305,11 @@ class IntensityProfilerFrame(wx.Frame):
         self.boxTool = boxTool
         toolbar.AddSeparator()
         # Calculate profile.
-        goTool = toolbar.AddSimpleTool(
+        goTool = make_tool(
                         wx.ID_ANY,
+                        "Go",
                         wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_TOOLBAR, ICON_SIZE),
-                        "Go", "Evaluate intensity profile")
+                        shortHelp="Evaluate intensity profile")
         toolbar.Realize()
         self.Bind(wx.EVT_TOOL, self.loadFile, openTool)
         self.Bind(wx.EVT_TOOL, self.calculate, goTool)
@@ -315,7 +320,11 @@ class IntensityProfilerFrame(wx.Frame):
         # Image canvas
         self.canvas = FloatCanvas.FloatCanvas(self, size=(512,512),
                                               style = wx.WANTS_CHARS)
-        img = wx.EmptyImage(BITMAP_SIZE[0], BITMAP_SIZE[1], True)
+
+        if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
+            img = wx.EmptyImage(BITMAP_SIZE[0], BITMAP_SIZE[1], clear=True)
+        else:
+            img = wx.Image(BITMAP_SIZE[0], BITMAP_SIZE[1], clear=True)
         self.bitmap = self.canvas.AddBitmap(img, (0,0), 'cc', False)
         self.circle = self.canvas.AddCircle((0,0), 10, '#ff0000')
         self.rectangle = self.canvas.AddRectangle((0,0), (20,20), '#ff0000')

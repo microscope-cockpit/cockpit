@@ -128,7 +128,7 @@ class TouchScreenWindow(wx.Frame):
         font=wx.Font(12,wx.FONTFAMILY_DEFAULT,wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
 #        font=wx.Font(12,wx.FONTFAMILY_DEFAULT, wx.FONTWEIGHT_NORMAL,
 #                     wx.FONTSTYLE_NORMAL)
-        objectiveSizer=wx.GridSizer(rows=2, cols=2)
+        objectiveSizer=wx.GridSizer(2, 2, 1)
 
         button = self.makeToggleButton(self.buttonPanel, 'Load/Unload',
                                        self.loadUnload, None,
@@ -176,7 +176,7 @@ class TouchScreenWindow(wx.Frame):
         objectiveSizer.Add(textSizer2, 0, wx.EXPAND|wx.ALL, border=5)
 
         ##mosaic control button panel
-        mosaicButtonSizer=wx.GridSizer(rows=2, cols=2)
+        mosaicButtonSizer=wx.GridSizer(2, 2, 1)
 
         for args in [('Run mosaic',self.displayMosaicMenu,
                       self.continueMosaic,
@@ -214,8 +214,7 @@ class TouchScreenWindow(wx.Frame):
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         lightToggles = sorted(lightToggles, key = lambda l: l.wavelength)
         laserSizer=wx.BoxSizer(wx.VERTICAL)
-        font=wx.Font(12,wx.FONTFAMILY_DEFAULT, wx.FONTWEIGHT_NORMAL,
-                     wx.FONTSTYLE_NORMAL)
+        font=wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         for light in lightToggles:
             lineSizer=wx.BoxSizer(wx.HORIZONTAL)
             button = self.makeLaserToggleButton(self.buttonPanel, light.name,
@@ -295,7 +294,7 @@ class TouchScreenWindow(wx.Frame):
             lineSizer.Add(laserPowerSizer, 0, wx.EXPAND|wx.ALL,border=2)
             laserSizer.Add(lineSizer,0,wx.EXPAND|wx.ALL,border=2)
 
-        cameraSizer=wx.GridSizer(cols=2)
+        cameraSizer=wx.GridSizer(cols=2, vgap=1, hgap=1)
         cameraVSizer=[None]*len(depot.getHandlersOfType(depot.CAMERA))
         self.camButton=[None]*len(depot.getHandlersOfType(depot.CAMERA))
         i=0
@@ -345,7 +344,7 @@ class TouchScreenWindow(wx.Frame):
         leftSizer.Add(self.macroStageZ, 3,wx.EXPAND)
 
         ## Z control buttons
-        zButtonSizer=wx.GridSizer(rows=3, cols=2)
+        zButtonSizer=wx.GridSizer(3, 2, 1)
 
         for args in [('Up', self.zMoveUp, None,
                       'up.png',
@@ -430,7 +429,7 @@ class TouchScreenWindow(wx.Frame):
                    helpText,size = (75,75)):
         bmp=self.checkBitmap(bitmap)
         button = SBitmapButton(parent, -1, bitmap=bmp, size = size)
-        button.SetToolTipString(helpText)
+        button.SetToolTip(wx.ToolTip(helpText))
         button.Bind(wx.EVT_BUTTON, lambda event: leftAction())
         if rightAction is not None:
             button.Bind(wx.EVT_RIGHT_DOWN, lambda event: rightAction())
@@ -445,7 +444,7 @@ class TouchScreenWindow(wx.Frame):
         bmpSelected=self.checkBitmap(bitmapSelected)
         button.SetBitmapSelected(bmpSelected)
 
-        button.SetToolTipString(helpText)
+        button.SetToolTip(wx.ToolTip(helpText))
         #Note left action is called with true if down, false if up
         button.Bind(wx.EVT_BUTTON, lambda event: leftAction())
         if rightAction is not None:
@@ -460,7 +459,7 @@ class TouchScreenWindow(wx.Frame):
         bmpInactive=self.checkBitmap(bitmapInactive)
         button = SBitmapToggleButton(parent, -1, bitmap=bmpInactive, size = size)
         button.SetBitmapSelected(bmpActive)
-        button.SetToolTipString(helpText)
+        button.SetToolTip(wx.ToolTip(helpText))
         #Note left action is called with true if down, false if up
         button.Bind(wx.EVT_BUTTON, lambda event: self.laserToggle(event,
                                                                   light, button))
@@ -591,7 +590,7 @@ class TouchScreenWindow(wx.Frame):
 
     ## Resize our canvas.
     def onSize(self, event):
-        size = self.GetClientSizeTuple()
+        size = self.GetClientSize()
         self.panel.SetSize(size)
         # Subtract off the pixels dedicated to the sidebar.
         self.canvas.setSize((size[0] - SIDEBAR_WIDTH, size[1]))

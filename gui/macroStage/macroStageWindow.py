@@ -67,7 +67,7 @@ class MacroStageWindow(wx.Frame):
         # causes us to save the comments. This saves us from
         # writing the config file too often
         self.commentsTimer = wx.Timer(self, -1)
-        wx.EVT_TIMER(self, self.commentsTimer.GetId(), self.onCommentsTimer)
+        self.Bind(wx.EVT_TIMER, self.onCommentsTimer, self.commentsTimer)
 
         self.saveTopBottomPanel = gui.saveTopBottomPanel.createSaveTopBottomPanel(self)
         self.sizer.Add(self.saveTopBottomPanel, (6, 8), (2, 3))
@@ -85,14 +85,14 @@ class MacroStageWindow(wx.Frame):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         button = wx.Button(self, -1, "Set safeties")
-        button.SetToolTipString("Click twice on the XY Macro Stage view " +
-                "to set the XY motion limits.")
+        button.SetToolTip(wx.ToolTip("Click twice on the XY Macro Stage view " +
+                "to set the XY motion limits."))
         button.Bind(wx.EVT_BUTTON, self.macroStageXY.setSafeties)
         sizer.Add(button)
         
         self.motionControllerButton = wx.Button(self, -1, "Switch control")
-        self.motionControllerButton.SetToolTipString(
-                "Change which stage motion device the keypad controls.")
+        self.motionControllerButton.SetToolTip(wx.ToolTip(
+                "Change which stage motion device the keypad controls."))
         self.motionControllerButton.Bind(wx.EVT_BUTTON, 
                 lambda event: interfaces.stageMover.changeMover())
         sizer.Add(self.motionControllerButton)
@@ -113,7 +113,7 @@ class MacroStageWindow(wx.Frame):
         
         button = wx.Button(self, -1, "Touch down")
         touchdownAltitude = depot.getHandlersOfType(depot.CONFIGURATOR)[0].getValue('slideTouchdownAltitude')
-        button.SetToolTipString(u"Bring the stage down to %d\u03bcm" % touchdownAltitude)
+        button.SetToolTip(wx.ToolTip(u"Bring the stage down to %d\u03bcm" % touchdownAltitude))
         button.Bind(wx.EVT_BUTTON, 
                 lambda event: interfaces.stageMover.goToZ(touchdownAltitude))
         sizer.Add(button)

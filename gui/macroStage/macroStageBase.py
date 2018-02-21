@@ -94,9 +94,9 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.redrawTimerThread = threading.Thread(target = self.refreshWaiter)
         self.redrawTimerThread.start()
 
-        wx.EVT_PAINT(self, self.onPaint)
-        wx.EVT_SIZE(self, lambda event: event)
-        wx.EVT_ERASE_BACKGROUND(self, lambda event: event) # Do nothing, to avoid flashing
+        self.Bind(wx.EVT_PAINT, self.onPaint)
+        self.Bind(wx.EVT_SIZE, lambda event: event)
+        self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event) # Do nothing, to avoid flashing
         events.subscribe("stage position", self.onMotion)
         events.subscribe("stage step size", self.onStepSizeChange)
         events.subscribe("stage step index", self.onStepIndexChange)
@@ -104,7 +104,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
 
     ## Set up some set-once things for OpenGL.
     def initGL(self):
-        (self.width, self.height) = self.GetClientSizeTuple()
+        (self.width, self.height) = self.GetClientSize()
         self.SetCurrent(self.context)
         glClearColor(1.0, 1.0, 1.0, 0.0)
 

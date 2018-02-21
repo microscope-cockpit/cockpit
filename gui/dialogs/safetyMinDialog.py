@@ -44,11 +44,11 @@ class SafetyMinDialog(wx.Dialog):
                 controlType = wx.TextCtrl)
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
         slideSafetyButton = wx.Button(self, -1, "Slide")
-        slideSafetyButton.SetToolTipString("Set the safety to a good value for slide experiments")
+        slideSafetyButton.SetToolTip(wx.ToolTip("Set the safety to a good value for slide experiments"))
         slideSafetyButton.Bind(wx.EVT_BUTTON, lambda event: self.setSafetyText(SLIDE_SAFETY))
         rowSizer.Add(slideSafetyButton, 0, wx.ALL, 5 )
         dishSafetyButton = wx.Button(self, -1, "Dish")
-        dishSafetyButton.SetToolTipString("Set the safety to a good value for dish experiments")
+        dishSafetyButton.SetToolTip(wx.ToolTip("Set the safety to a good value for dish experiments"))
         dishSafetyButton.Bind(wx.EVT_BUTTON, lambda event: self.setSafetyText(DISH_SAFETY))
         rowSizer.Add(dishSafetyButton, 0, wx.ALL, 5)
 
@@ -57,11 +57,11 @@ class SafetyMinDialog(wx.Dialog):
         buttonsBox = wx.BoxSizer(wx.HORIZONTAL)
 
         cancelButton = wx.Button(self, wx.ID_CANCEL, "Cancel")
-        cancelButton.SetToolTipString("Close this window")
+        cancelButton.SetToolTip(wx.ToolTip("Close this window"))
         buttonsBox.Add(cancelButton, 0, wx.ALL, 5)
         
         startButton = wx.Button(self, wx.ID_OK, "Apply")
-        startButton.SetToolTipString("Apply the chosen safety min")
+        startButton.SetToolTip(wx.ToolTip("Apply the chosen safety min"))
         buttonsBox.Add(startButton, 0, wx.ALL, 5)
         
         self.mainSizer.Add(buttonsBox, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 3)

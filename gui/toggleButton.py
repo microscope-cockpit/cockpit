@@ -40,7 +40,7 @@ class ToggleButton(wx.StaticText):
         if not isBold:
             flag = wx.FONTWEIGHT_NORMAL
         self.SetFont(wx.Font(textSize,wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, flag))
-        self.SetToolTipString(tooltip)
+        self.SetToolTip(wx.ToolTip(tooltip))
         self.activeColor = activeColor
         self.inactiveColor = inactiveColor
         self.baseLabel = self.GetLabel()

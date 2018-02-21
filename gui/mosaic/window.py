@@ -202,7 +202,7 @@ class MosaicWindow(wx.Frame):
     def makeButton(self, parent, label, leftAction, rightAction, helpText,
             size = (-1, -1)):
         button = wx.Button(parent, -1, label, size = size)
-        button.SetToolTipString(helpText)
+        button.SetToolTip(wx.ToolTip(helpText))
         button.Bind(wx.EVT_BUTTON, lambda event: leftAction())
         if rightAction is not None:
             button.Bind(wx.EVT_RIGHT_DOWN, lambda event: rightAction())
@@ -228,7 +228,7 @@ class MosaicWindow(wx.Frame):
 
     ## Resize our canvas.
     def onSize(self, event):
-        size = self.GetClientSizeTuple()
+        size = self.GetClientSize()
         self.panel.SetSize(size)
         # Subtract off the pixels dedicated to the sidebar.
         self.canvas.setSize((size[0] - SIDEBAR_WIDTH, size[1]))

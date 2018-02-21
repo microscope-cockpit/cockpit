@@ -163,20 +163,20 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         self.calculateHistogram()
 
         #wx events to update display.
-        wx.EVT_PAINT(self, self.onPaint)
-        wx.EVT_SIZE(self, lambda event: event)
-        wx.EVT_ERASE_BACKGROUND(self, lambda event: event) # Do nothing, to avoid flashing
-        wx.EVT_MOUSE_EVENTS(self, self.OnMouse)
+        self.Bind(wx.EVT_PAINT, self.onPaint)
+        self.Bind(wx.EVT_SIZE, lambda event: event)
+        self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event) # Do nothing, to avoid flashing
+        self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
         events.subscribe("soft safety limit", self.onSafetyChange)
         events.subscribe("stage position", self.onMotion)
         events.subscribe("stage step size", self.onStepSizeChange)
         events.subscribe("experiment complete", self.onExperimentComplete)
         events.subscribe("soft safety limit", self.onSafetyChange)
-        self.SetToolTipString("Double-click to move in Z")
+        self.SetToolTip(wx.ToolTip("Double-click to move in Z"))
 
     ## Set up some set-once things for OpenGL.
     def initGL(self):
-        (self.width, self.height) = self.GetClientSizeTuple()
+        (self.width, self.height) = self.GetClientSize()
         self.SetCurrent(self.context)
         glClearColor(1.0, 1.0, 1.0, 0.0)
 
@@ -632,11 +632,16 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
 
             weight = float(self.height - clickLoc[1]) / self.height
             altitude = (scale[1] - scale[0]) * weight + scale[0]
-            zHardMax = interfaces.stageMover.getIndividualHardLimits(2)[0][1]
-            interfaces.stageMover.goToZ(min(zHardMax, altitude))
+            # Spurious clicks are problematic on a touchscreen. Rather than
+            # moving directly to the clicked position, step in that direction
+            # to avoid large moves that may cause damage.
+            if altitude < interfaces.stageMover.getPosition()[-1]:
+                direction = (0, 0, -1)
+            else:
+                direction = (0, 0, 1)
+            interfaces.stageMover.step(direction)
             #make sure we are back to the expected mover
             interfaces.stageMover.mover.curHandlerIndex = originalMover
-
 
 
     ## Remap an XY tuple to stage coordinates.

@@ -47,7 +47,7 @@ class AdminWindow(wx.Frame):
     ## Simple helper function.
     def makeButton(self, label, action, helpString):
         button = wx.Button(self.panel, -1, label)
-        button.SetToolTipString(helpString)
+        button.SetToolTip(wx.ToolTip(helpString))
         button.Bind(wx.EVT_BUTTON, action)
         return button
 

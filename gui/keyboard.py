@@ -5,6 +5,7 @@ import gui.guiUtils
 import gui.mosaic.window
 import interfaces.stageMover
 import util.user
+from distutils import version
 
 ## Given a wx.Window instance, set up keyboard controls for that instance.
 def setKeyboardHandlers(window):
@@ -28,7 +29,6 @@ def setKeyboardHandlers(window):
         # Take an image
         (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_ADD, 6320),
 		(wx.ACCEL_NORMAL, wx.WXK_NUMPAD0, 6320),
-		
 
         # Pop up a menu to help the user find hidden windows.
         (wx.ACCEL_CTRL, ord('M'), 6321),
@@ -37,28 +37,17 @@ def setKeyboardHandlers(window):
     for eventId, direction in [(6314, (1, 0, 0)), (6316, (-1, 0, 0)),
             (6312, (0, -1, 0)), (6318, (0, 1, 0)), (6311, (0, 0, -1)),
             (6317, (0, 0, 1))]:
-        wx.EVT_MENU(window, eventId,
-                lambda event, direction = direction: interfaces.stageMover.step(direction))
-    wx.EVT_MENU(window, 6903, 
-            lambda event: gui.camera.window.rescaleViews())
-    wx.EVT_MENU(window, 6904, 
-            lambda event: interfaces.stageMover.changeMover())
-    wx.EVT_MENU(window, 6905,
-            lambda event: gui.mosaic.window.transferCameraImage())
-    wx.EVT_MENU(window, 6906,
-            lambda event: interfaces.stageMover.recenterFineMotion())
-			
-
-    wx.EVT_MENU(window, 6313, 
-            lambda event: interfaces.stageMover.changeStepSize(-1))
-    wx.EVT_MENU(window, 6319, 
-            lambda event: interfaces.stageMover.changeStepSize(1))
-    
-    wx.EVT_MENU(window, 6320, 
-            lambda event: interfaces.imager.takeImage())
-
-    wx.EVT_MENU(window, 6321,
-            lambda event: martialWindows(window))
+        window.Bind(wx.EVT_MENU,
+                    lambda e, d=direction: interfaces.stageMover.step(d),
+                    id=eventId)
+    window.Bind(wx.EVT_MENU, lambda e: gui.camera.window.rescaleViews(), id=6903)
+    window.Bind(wx.EVT_MENU, lambda e: interfaces.stageMover.changeMover(), id=6904)
+    window.Bind(wx.EVT_MENU, lambda e: gui.mosaic.window.transferCameraImage(), id=6905)
+    window.Bind(wx.EVT_MENU, lambda e: interfaces.stageMover.recenterFineMotion(), id=6906)
+    window.Bind(wx.EVT_MENU, lambda e: interfaces.stageMover.changeStepSize(-1), id= 6313)
+    window.Bind(wx.EVT_MENU, lambda e: interfaces.stageMover.changeStepSize(1), id=6319)
+    window.Bind(wx.EVT_MENU, lambda e: interfaces.imager.takeImage(), id=6320)
+    window.Bind(wx.EVT_MENU, lambda e: martialWindows(window), id=6321)
 
 
 ## Pop up a menu under the mouse that helps the user find a window they may
@@ -72,8 +61,8 @@ def martialWindows(parent):
     menu = wx.Menu()
     menuId = 1
     menu.Append(menuId, "Reset window positions")
-    wx.EVT_MENU(parent, menuId,
-            lambda event: util.user.setWindowPositions())
+    parent.Bind(wx.EVT_MENU,
+                lambda e: util.user.setWindowPositions(), id= menuId)
     menuId += 1
     #for i, window in enumerate(windows):
     for i, window in enumerate(primaryWindows):
@@ -85,20 +74,24 @@ def martialWindows(parent):
             continue
         subMenu = wx.Menu()
         subMenu.Append(menuId, "Raise to top")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.Raise())
+        parent.Bind(wx.EVT_MENU,
+                    lambda e, window = window: window.Raise(),id=menuId)
         menuId += 1
         subMenu.Append(menuId, "Move to mouse")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.SetPosition(wx.GetMousePosition()))
+        parent.Bind(wx.EVT_MENU,
+                lambda e, window = window: window.SetPosition(wx.GetMousePosition()), id=menuId)
         menuId += 1
         subMenu.Append(menuId, "Move to top-left corner")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.SetPosition((0, 0)))
+        parent.Bind(wx.EVT_MENU,
+                lambda e, window = window: window.SetPosition((0, 0)),
+                    id=menuId)
         menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
-        menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
+            menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        else:
+            menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
         menuId += 1
 
     menu.AppendSeparator()
@@ -111,20 +104,23 @@ def martialWindows(parent):
             continue
         subMenu = wx.Menu()
         subMenu.Append(menuId, "Show/Hide")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: ((window.Restore() and
+        parent.Bind(wx.EVT_MENU,
+                lambda e, window = window: ((window.Restore() and
                     (util.userConfig.setValue('windowState'+window.GetTitle(),
                                                1,isGlobal=False)))
                                                 if window.IsIconized() 
-                                                else ((window.Show(not window.IsShown()) ) and (util.userConfig.setValue('windowState'+window.GetTitle(),0,isGlobal=False)))))
+                                                else ((window.Show(not window.IsShown()) ) and (util.userConfig.setValue('windowState'+window.GetTitle(),0,isGlobal=False)))), id=menuId)
         menuId += 1
         subMenu.Append(menuId, "Move to mouse")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.SetPosition(wx.GetMousePosition()))
+        parent.Bind(wx.EVT_MENU,
+                lambda e, window = window: window.SetPosition(wx.GetMousePosition()), id=menuId)
         menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
-        menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
+            menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        else:
+            menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
         menuId += 1
 
     menu.AppendSeparator()
@@ -139,20 +135,21 @@ def martialWindows(parent):
             continue
         subMenu = wx.Menu()
         subMenu.Append(menuId, "Raise to top")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.Raise())
+        parent.Bind(wx.EVT_MENU,
+                    lambda e, window = window: window.Raise(), id=menuId)
         menuId += 1
         subMenu.Append(menuId, "Move to mouse")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.SetPosition(wx.GetMousePosition()))
+        parent.Bind(wx.EVT_MENU,
+                    lambda e, window = window: window.SetPosition(wx.GetMousePosition()), id=menuId)
         menuId += 1
         subMenu.Append(menuId, "Move to top-left corner")
-        wx.EVT_MENU(parent, menuId,
-                lambda event, window = window: window.SetPosition((0, 0)))
+        parent.Bind(wx.EVT_MENU,
+                lambda e, window = window: window.SetPosition((0, 0))
+                    , id=menuId)
         menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
-        menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
+        menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
         menuId += 1
 
 

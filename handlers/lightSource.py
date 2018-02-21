@@ -121,7 +121,7 @@ class LightHandler(deviceHandler.DeviceHandler):
         if 'setExposing' in self.callbacks:
             # Light source can also be just turned on and left on.
             helpText += "\nRight-click to leave on indefinitely."
-        self.activeButton.SetToolTipString(helpText)
+        self.activeButton.SetToolTip(wx.ToolTip(helpText))
         sizer.Add(self.activeButton)
         self.exposureTime = gui.toggleButton.ToggleButton(
                 label = '', parent = panel, size = BUTTON_SIZE)

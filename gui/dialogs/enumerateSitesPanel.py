@@ -24,12 +24,12 @@ class EnumerateSitesPanel(wx.Panel):
                 sizer = sizer,
                 label = label, defaultValue = '',
                 size = size, minSize = minSize)
-        self.sites.SetToolTipString("Comma-delimited, or with range " +
+        self.sites.SetToolTip(wx.ToolTip("Comma-delimited, or with range " +
                 "indicators, for example:\n1, 3, 5-10, 14, 17-23\n" +
                 "You may also include frequencies in parentheses, e.g.\n" +
                 "1-4,5(2),6-10(4)\n" +
                 "to use sites 1-4 every time, site 5 every other time, " +
-                "and sites 6-10 every fourth time.")
+                "and sites 6-10 every fourth time."))
 
         siteListStr = 'Most recent site'
         if defaultIsAllSites:

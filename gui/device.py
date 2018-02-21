@@ -28,6 +28,7 @@ from toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 from util import userConfig
 import gui.loggingWindow as log
 import events
+from distutils import version
 
 ## @package gui.device
 # Defines classes for common controls used by cockpit devices.
@@ -62,7 +63,7 @@ class Button(wx.StaticText):
         if not isBold:
             flag = wx.FONTWEIGHT_NORMAL
         self.SetFont(wx.Font(textSize,wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, flag))
-        self.SetToolTipString(tooltip)
+        self.SetToolTip(wx.ToolTip(tooltip))
         self.SetBackgroundColour(BACKGROUND)
         # Realign the label using our custom version of the function
         self.SetLabel(self.GetLabel())
@@ -246,22 +247,22 @@ class SettingsEditor(wx.Frame):
         sizer.AddSpacer(2)
         buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
         #saveButton = wx.Button(self, id=wx.ID_SAVE)
-        #saveButton.SetToolTipString("Save current settings as defaults.")
+        #saveButton.SetToolTip(wx.ToolTip("Save current settings as defaults."))
         #saveButton.Bind(wx.EVT_BUTTON, self.onSave)
         #buttonSizer.Add(saveButton, 0, wx.ALIGN_RIGHT, 0, 0)
 
         okButton = wx.Button(self, id=wx.ID_OK)
         okButton.Bind(wx.EVT_BUTTON, self.onClose)
-        okButton.SetToolTipString("Apply settings and close this window.")
+        okButton.SetToolTip(wx.ToolTip("Apply settings and close this window."))
         buttonSizer.Add(okButton, 0, wx.ALIGN_RIGHT)
 
         cancelButton = wx.Button(self, id=wx.ID_CANCEL)
         cancelButton.Bind(wx.EVT_BUTTON, self.onClose)
-        cancelButton.SetToolTipString("Close this window without applying settings.")
+        cancelButton.SetToolTip(wx.ToolTip("Close this window without applying settings."))
         buttonSizer.Add(cancelButton, 0, wx.ALIGN_RIGHT)
 
         applyButton = wx.Button(self, id=wx.ID_APPLY)
-        applyButton.SetToolTipString("Apply these settings.")
+        applyButton.SetToolTip(wx.ToolTip("Apply these settings."))
         applyButton.Bind(wx.EVT_BUTTON, lambda evt: self.device.updateSettings(self.current))
         buttonSizer.Add(applyButton, 0, wx.ALIGN_RIGHT)
 
@@ -340,9 +341,20 @@ class SettingsEditor(wx.Frame):
             name = prop.GetName()
             desc = self.settings[name]
             if desc['type'] in ('enum'):
-                prop.SetChoices([str(v) for v in desc['values']],
-                                range(len(desc['values'])))
-                prop.SetValue(desc['values'].index(self.current[name]))
+                if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
+                    choices = wx.propgrid.PGChoices()
+                    for i, d in enumerate(desc['values']):
+                        choices.Add(str(d), i)
+                else:
+                    choices = wx.propgrid.PGChoices([str(v) for v in desc['values']],
+                                                    range(len(desc['values'])))
+                prop.SetChoices(choices)
+                if self.current[name] in desc['values']:
+                    index = desc['values'].index(self.current[name])
+                    prop.SetValue(index)
+                else:
+                    # Indicate a problem with this item.
+                    prop.SetTextColour('red')
             else:
                 value = self.current[name]
                 if type(value) is long:
@@ -368,10 +380,16 @@ class SettingsEditor(wx.Frame):
                 value  = ' '
             propType = SettingsEditor._SETTINGS_TO_PROPTYPES.get(desc['type'])
             if propType is wx.propgrid.EnumProperty:
-                prop = wx.propgrid.EnumProperty(label=key, name=key,
-                                                labels=[str(v) for v in desc['values']],
-                                                values=range(len(desc['values'])),
-                                                value=desc['values'].index(value))
+                if value in desc['values']:
+                    index = desc['values'].index(value)
+                    prop = wx.propgrid.EnumProperty(label=key, name=key,
+                                                    labels=[str(v) for v in desc['values']],
+                                                    values=range(len(desc['values'])),
+                                                    value=index)
+                else:
+                    prop = wx.propgrid.EnumProperty(label=key, name=key,
+                                                    labels=[str(v) for v in desc['values']],
+                                                    values=range(len(desc['values'])))
             else:
                 try:
                     prop = propType(label=key, name=key, value=(value or 0))

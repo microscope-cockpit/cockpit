@@ -221,36 +221,36 @@ class OptoPanel(wx.Panel):
         
         button = wx.Button(self, -1, 'Clear', size = (80, -1))
         button.Bind(wx.EVT_BUTTON, self.onClear)
-        button.SetToolTipString("Remove all entries for this light source")
+        button.SetToolTip(wx.ToolTip("Remove all entries for this light source"))
         sizer.Add(button)
 
         button = wx.Button(self, -1, 'Delete last', size = (80, -1))
         button.Bind(wx.EVT_BUTTON, self.onDeleteLast)
-        button.SetToolTipString("Remove the last entry for this light source")
+        button.SetToolTip(wx.ToolTip("Remove the last entry for this light source"))
         sizer.Add(button)
         
         self.sequenceText = wx.TextCtrl(self, -1,
                 size = (200, -1), style = wx.TE_READONLY)
-        self.sequenceText.SetToolTipString("Displays the sequence of on/off actions this light source will perform prior to starting the acquisition.")
+        self.sequenceText.SetToolTip(wx.ToolTip("Displays the sequence of on/off actions this light source will perform prior to starting the acquisition."))
         sizer.Add(self.sequenceText)
 
         self.startText = wx.TextCtrl(self, -1, size = (40, -1))
-        self.startText.SetToolTipString(
-                'Time, in seconds, at which to start illumination')
+        self.startText.SetToolTip(wx.ToolTip(
+                'Time, in seconds, at which to start illumination'))
         sizer.Add(self.startText)
 
         self.stopText = wx.TextCtrl(self, -1, size = (40, -1))
-        self.startText.SetToolTipString(
-                'Time, in seconds, at which to stop illumination')
+        self.startText.SetToolTip(wx.ToolTip(
+                'Time, in seconds, at which to stop illumination'))
         sizer.Add(self.stopText)
 
         button = wx.Button(self, -1, 'Add', size = (80, -1))
         button.Bind(wx.EVT_BUTTON, self.onAdd)
-        button.SetToolTipString("Add this start/stop pair to the sequence of actions.")
+        button.SetToolTip(wx.ToolTip("Add this start/stop pair to the sequence of actions."))
         sizer.Add(button)
 
         self.isOnDuringAcquisition = wx.CheckBox(self)
-        self.isOnDuringAcquisition.SetToolTipString("If checked, this light source will continuously shine on the sample during acquisition.")
+        self.isOnDuringAcquisition.SetToolTip(wx.ToolTip("If checked, this light source will continuously shine on the sample during acquisition."))
         self.isOnDuringAcquisition.SetValue(doesStartOn)
         sizer.Add(self.isOnDuringAcquisition)
 

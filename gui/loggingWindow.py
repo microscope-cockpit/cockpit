@@ -38,7 +38,7 @@ class LoggingWindow(wx.Frame):
 
         self.auiManager.Update()
 
-        self.SetDimensions(0, 0, 600, 460)
+        self.SetSize((600, 460))
 
 
     ## Send text to one of our output boxes, and also log that text.

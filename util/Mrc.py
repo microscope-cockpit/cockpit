@@ -1,3 +1,31 @@
+## Copyright (c) 2005 The Regents of the University of California
+##
+## All rights reserved.
+##
+## Redistribution and use in source and binary forms, with or without
+## modification, are permitted provided that the following conditions are met:
+##
+##   a. Redistributions of source code must retain the above copyright notice,
+##      this list of conditions and the following disclaimer.
+##   b. Redistributions in binary form must reproduce the above copyright
+##      notice, this list of conditions and the following disclaimer in the
+##      documentation and/or other materials provided with the distribution.
+##   c. Neither the name of the University of California, San Francisco nor
+##      the names of its contributors may be used to endorse or promote products
+##      derived from this software without specific prior written permission.
+##
+## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+## AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+## IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+## ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+## BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+## OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+## SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+## INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+## CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+## THE POSSIBILITY OF SUCH DAMAGE.
+
 """MRC file format: refer to
 http://www.msg.ucsf.edu/IVE/IVE4_HTML/IM_ref2.html
 
@@ -5,7 +33,7 @@ Mrc class uses memory mapping (file size limit about 1GB (more or less)
 Mrc2 class section wise file/array I/O
 """
 __author__  = "Sebastian Haase <haase@msg.ucsf.edu>"
-__license__ = "BSD license - see LICENSE file"
+__license__ = "3-clause BSD license"
 
 import numpy as N
 
@@ -13,7 +41,7 @@ def bindFile(fn, writable=0):
     """open existing Mrc file
 
     returns memmaped array
-    array has special 'Mrc' attribute 
+    array has special 'Mrc' attribute
     """
 
     mode = 'r'
@@ -22,6 +50,10 @@ def bindFile(fn, writable=0):
     a = Mrc(fn, mode)
 
     return a.data_withMrc(fn)
+
+class ndarray_inMrcFile(N.ndarray):
+    def __array_finalize__(self,obj):
+        self.Mrc = getattr(obj, 'Mrc', None)
 
 class Mrc:
     def __init__(self, path, mode='r', extHdrSize=0, extHdrNints=0, extHdrNfloats=0):
@@ -36,16 +68,16 @@ class Mrc:
 
         self.m = N.memmap(path, mode=mode)
         self.h = self.m[:1024]
-        
+
         self.hdr = makeHdrArray(self.h)
-        
+
         nzBeforeByteOrder = self.hdr.Num[0]
         if nzBeforeByteOrder<0 or nzBeforeByteOrder>10000:
-            self.hdr._array.dtype = self.hdr._array.dtype.newbyteorder() 
+            self.hdr._array.dtype = self.hdr._array.dtype.newbyteorder()
             self.isByteSwapped = True
-        else:    
+        else:
             self.isByteSwapped = False
-            
+
         self.data_offset = 1024 + self.hdr.next
         self.d = self.m[self.data_offset:]
 
@@ -55,7 +87,7 @@ class Mrc:
 
         self.numInts = self.hdr.NumIntegers
         self.numFloats = self.hdr.NumFloats
-        
+
         if self.numInts > 0 or self.numFloats > 0:
             self.doExtHdrMap()
 
@@ -83,7 +115,7 @@ class Mrc:
 
         self.data_offset = 1024 + next
         self.e = self.m.insert(1024, next)
-        
+
         self.doExtHdrMap()
 
     def doExtHdrMap(self, nz=0):
@@ -106,27 +138,35 @@ class Mrc:
         self.extHdrArray = N.recarray(shape=nz, dtype=type_descr, buf=self.e)
         if self.isByteSwapped:
             self.extHdrArray = self.extHdrArray.newbyteorder()
-        
+
         self.extInts   = self.extHdrArray.field('int')
         self.extFloats = self.extHdrArray.field('float')
 
-
     def doDataMap(self):
         dtype = MrcMode2dtype( self.hdr.PixelType )
-        shape = shapeFromHdr(self.hdr)
-                
+        header_shape = shapeFromHdr(self.hdr)
+
         self.data = self.d.view()
         self.data.dtype = dtype
-        n0 = self.data.shape[0]
-        if n0 != N.prod(shape):  # file contains INCOMPLETE sections
-            print "** WARNING **: file truncated - shape from header:", shape,"expected to get",N.prod(shape),"but got",n0
-            n1 = N.prod(shape[1:])
-            s0 =  n0 // n1 # //-int-division (rounds down)
-            shape = (s0,) + shape[1:]
-            self.data = self.data[:N.prod(shape)]
 
-        self.data.shape = shape
-            
+        ## Maybe adjust data shape? (file may be truncated)
+        adjusted_shape = adjusted_data_shape(self.data.size, header_shape)
+        if header_shape != adjusted_shape:
+            print(("** WARNING **: file truncated - shape from header: %s."
+                   " Expected to get %i pixels but got %i pixels")
+                  % (header_shape, N.prod(header_shape), self.data.size))
+
+            ## In some cases, this may require the introduction of
+            ## blank/padding data (see cockpit bug #289).  In such
+            ## cases, we need to expand the data first which will lead
+            ## to a N.array being returned instead of N.memmap.
+            if self.data.size != N.prod(adjusted_shape):
+                blanks = N.full(N.prod(adjusted_shape) - self.data.size,
+                                N.nan, dtype=self.data.dtype)
+                self.data = N.concatenate((self.data, blanks))
+
+        self.data.shape = adjusted_shape
+
         if self.isByteSwapped:
             self.data = self.data.newbyteorder()
 
@@ -134,11 +174,11 @@ class Mrc:
     def setTitle(self, s, i=-1):
         """set title i (i==-1 means "append") to s"""
         setTitle(self.hdr, s, i)
-        
-        
+
+
     def axisOrderStr(self, onlyLetters=True):
         """return string indicating meaning of shape dimensions
-        ## 
+        ##
         ## ZTW   <- non-interleaved
         ## WZT   <- OM1 ( easy on stage)
         ## ZWT   <- added by API (used at all ??)
@@ -166,7 +206,7 @@ class Mrc:
             print "data bytes in file       :", ab
             print "expected total secs:", enSecs
             print "file has total secs:", anSecs
-        
+
         if eb==ab:
             if verbose >= 2:
                 print "OK"
@@ -180,7 +220,7 @@ class Mrc:
                 print "* file MISSES %.2f sections " % ( enSecs-anSecs )
                 print "PLEASE SET shape to ", anSecs, "sections !!! "
             return 0
-            
+
 
     def info(self):
         """print useful information from header"""
@@ -192,18 +232,14 @@ class Mrc:
         """use this to get 'spiffed up' array"""
 
         import weakref
-        class ndarray_inMrcFile(N.ndarray):
-            def __array_finalize__(self,obj):
-                self.Mrc = getattr(obj, 'Mrc', None)
-
         data = self.data
-        data.__class__ = ndarray_inMrcFile
+        data = data.view(ndarray_inMrcFile)
         ddd = weakref.proxy( data )
         self.data = ddd
         data.Mrc = self
 
         return data
-        
+
 
     def close(self):
         # As of numpy 1.9, memmap no longer has a close method.  Instead
@@ -269,7 +305,7 @@ def save(a, fn, ifExists='ask', zAxisOrder=None,
                 raise RuntimeError("not overwriting existing file '%s'"%fn)
         else:
             raise RuntimeError("not overwriting existing file '%s'"%fn)
-            
+
     m = Mrc2(fn, mode='w')
 
     m.initHdrForArr(a, zAxisOrder)
@@ -329,11 +365,11 @@ class Mrc2:
        BUT NOT ANY image data
 
 
-    mode indicates how the file is to be opened: 
-        'r' for reading, 
-        'w' for writing (truncating an existing file), 
+    mode indicates how the file is to be opened:
+        'r' for reading,
+        'w' for writing (truncating an existing file),
         ['a' does not really make sense here]
-        Modes 'r+', 'w+' [and 'a+'] open the file for updating (note that 'w+' truncates the file). 
+        Modes 'r+', 'w+' [and 'a+'] open the file for updating (note that 'w+' truncates the file).
      ('b' for binary mode, is implicitely appended)
     '''
     def __init__(self, path, mode='r'):
@@ -355,7 +391,7 @@ class Mrc2:
         self._dataOffset = self._hdrSize
 
         self._fileIsByteSwapped = False
-        
+
         if mode in ('r', 'r+') :
             self._initFromExistingFile()
 
@@ -463,9 +499,9 @@ class Mrc2:
                 raise ValueError("unsupported axis order")
         elif arr.ndim == 5:
                 raise ValueError("FIXME TODO: 5D")
-        else:  
+        else:
              raise ValueError("unsupported array ndim")
-         
+
 
         self._initWhenHdrArraySet()
 
@@ -474,7 +510,7 @@ class Mrc2:
         hdrArray =  N.rec.fromfile(self._f, dtype=mrcHdr_dtype, shape=1)
 
         self.hdr = implement_hdr( hdrArray )
-  
+
         self._nzBeforeByteOrder = self.hdr.Num[0]
         if self._nzBeforeByteOrder<0 or \
                self._nzBeforeByteOrder>10000:
@@ -497,7 +533,7 @@ class Mrc2:
                 self._f, dtype=type_descr, shape=nSecs)
             if self._fileIsByteSwapped:
                 self._extHdrArray.newbyteorder()
-            
+
             self.extInts   = self._extHdrArray.field('int')
             self.extFloats = self._extHdrArray.field('float')
 
@@ -509,7 +545,7 @@ class Mrc2:
         self._shape2d = self._shape[-2:]
         self._dtype  = MrcMode2dtype( self.hdr.PixelType )
         self._secByteSize = N.nbytes[self._dtype] * N.prod( self._shape2d )
-        
+
     def setHdrForShapeType(self, shape, type ):
         mrcmode = dtype2MrcMode(type)
         self.hdr.PixelType =  mrcmode
@@ -539,7 +575,7 @@ class Mrc2:
             self.extInts   = self._extHdrArray.field('int')
             self.extFloats = self._extHdrArray.field('float')
 
-    
+
     def info(self):
         """print useful information from header"""
 
@@ -549,7 +585,7 @@ class Mrc2:
         self._f.close()
     def flush(self):
         self._f.flush()
-        
+
     def seekSec(self, i):
         if self._secByteSize == 0:
             raise ValueError("not inited yet - unknown shape, type")
@@ -604,13 +640,13 @@ class Mrc2:
         self.hdr._array.tofile( self._f )
         if seekTo0:
             self.seekSec(0)
-        
+
     def writeExtHeader(self, seekTo0=False):
         self.seekExtHeader()
         self._extHdrArray.tofile( self._f )
         if seekTo0:
             self.seekSec(0)
-        
+
 
 ###########################################################################
 ###########################################################################
@@ -636,7 +672,7 @@ def MrcMode2dtype(mode):
 
     if mode<0 or mode>7:
         raise RuntimeError("Priism file supports pixeltype 0 to 7 - %d given" % mode)
-    
+
     return PixelTypes[ int(mode) ]
 
 def dtype2MrcMode(dtype):
@@ -657,7 +693,7 @@ def dtype2MrcMode(dtype):
 
 def shapeFromHdr(hdr, verbose=0):
     """
-    return "smart" shape  
+    return "smart" shape
     considering numTimes, numWavelenth and hdr.ImgSequence
 
     if verbose:
@@ -694,7 +730,7 @@ def shapeFromHdr(hdr, verbose=0):
             else:
                 shape = (nt, nz, ny, nx)
                 orderLetters = "tzyx"
-        
+
     else: # both nt and nw > 1
         if zOrder == 0:
             shape = (nw, nt, nz, ny, nx)
@@ -718,7 +754,7 @@ def implement_hdr(hdrArray):
     class hdr(object):
         __slots__ = mrcHdrNames[:] + ['_array']
         def __init__(s):
-            pass    
+            pass
         def __setattr__(s, n, v):
             hdrArray[n][0] = v
         def __getattr__(s, n):
@@ -742,12 +778,12 @@ def makeHdrArray(buffer=None):
 
 # class function
 def hdrInfo(hdr):
-    shape = hdr.Num[::-1]    
+    shape = hdr.Num[::-1]
     nz = shape[0]
     numInts = hdr.NumIntegers
     numFloats = hdr.NumFloats
 
-    
+
     print "width:                      ", shape[2]
     print "height:                     ", shape[1]
     print "# total slices:             ", shape[0]
@@ -769,7 +805,7 @@ def hdrInfo(hdr):
             print "  (%d times for %d waves in %d zsecs)"% (nt,
                                                            nw,
                                                            nz/nw/nt)
-            
+
     if nt != 1  or  nw != 1:
         print "# slice order:        %d (0,1,2 = (ZTW or WZT or ZWT)"% hdr.ImgSequence
 
@@ -792,7 +828,7 @@ def hdrInfo(hdr):
     if nw >4:
         print "   wavelength 5  (nm):      ", hdr.wave[4]
         print "    intensity min/max:      ", hdr.mm5[0], hdr.mm5[1]
-    
+
     print "lens type:                  ", hdr.LensNum,
     if hdr.LensNum == 12:
         print " (60x)"
@@ -843,10 +879,10 @@ def hdrInfo(hdr):
         for i in range( n ):
             print "title %d: %s"%(i, hdr.title[i])
 
-    
+
 def axisOrderStr(hdr, onlyLetters=True):
     """return string indicating meaning of shape dimensions
-    ## 
+    ##
     ## ZTW   <- non-interleaved
     ## WZT   <- OM1 ( easy on stage)
     ## ZWT   <- added by API (used at all ??)
@@ -888,7 +924,7 @@ def init_simple(hdr, mode, nxOrShape, ny=None, nz=None):
         else:
             ny,nx  = nxOrShape[-2:]
             nz     = N.prod(nxOrShape[:-2])
-            
+
     else:
         nx = nxOrShape
 
@@ -990,7 +1026,48 @@ def setTitle(hdr, s, i=-1):
         hdr.title[i] = s
     else:
         hdr.title[i] = s+'\0'
-    
+
+def adjusted_data_shape(numel, shape):
+    """Return shape to use for a certain number of elements.
+
+    There are truncated mrc/dv files.  May be that the file got
+    truncated during a copy, or may be that comes from an experiment
+    that was not completed.  See cockpit bug #289.  This function
+    returns the smallest shape that data with numel elements can be
+    resized to, while including all available data and keeping the
+    length of the dimensions.
+
+    Examples:
+
+    * numel = 20; expected_shape = (10,10).  Returns (2,10).
+    * numel = 15; expected_shape = (10,10).  Returns (2,10).
+
+    """
+    if numel == N.prod(shape):
+        return shape # data is complete, nothing to do
+    elif numel == 0:
+        return tuple([0] * len(shape)) # special case with empty data
+    elif numel > N.prod(shape):
+        raise ValueError(("data too large (%i elements) for proposed shape %s"
+                          % (numel, str(shape))))
+
+    shape = list(shape)
+    for i in range(len(shape)):
+        stride = N.prod(shape[i+1:])
+        if numel >= stride:
+            shape[i] = numel // stride
+            if numel % stride:
+                ## The truncated data may not fit in an array with
+                ## truncated shape.  For example, 15 elements to fill
+                ## a 10x2 array.  In such cases, expand the truncated
+                ## shape to include all data, even if that means an
+                ## array larger than the data.  See cockpit bug #289.
+                shape[i] += 1
+            break
+        else:
+            shape[i] = 1
+
+    return tuple(shape)
 
 
 mrcHdrFields = [
