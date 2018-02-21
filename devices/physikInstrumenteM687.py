@@ -54,9 +54,9 @@ BANNED_RECTANGLES = ()
 #)
 
 
+
 class PhysikInstrumenteM687(stage.StageDevice):
-    _config_types = {'port': int,
-                     'baud': int,
+    _config_types = {'baud': int,
                      'timeout': float,}
     def __init__(self, name, config):
         super(PhysikInstrumenteM687, self).__init__(name, config)
@@ -83,8 +83,8 @@ class PhysikInstrumenteM687(stage.StageDevice):
         ## If there is a config section for the m687, grab the config and
         # subscribe to events.
         self.port = config.get('port')
-        self.baud = config.getint('baud')
-        self.timeout = config.getfloat('timeout')
+        self.baud = config.get('baud')
+        self.timeout = config.get('timeout')
         try :
             limitString = config.get('softlimits')
             parsed = re.search(LIMITS_PAT, limitString)
