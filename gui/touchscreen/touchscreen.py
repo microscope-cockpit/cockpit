@@ -96,9 +96,16 @@ class TouchScreenWindow(wx.Frame):
 
         ## Font to use for site labels.
         from gui import FONTPATH
-        self.font = ftgl.TextureFont(FONTPATH)
+        self.sitefont = ftgl.TextureFont(FONTPATH)
         self.defaultFaceSize = 64
-        self.font.setFaceSize(self.defaultFaceSize)
+        self.sitefont.setFaceSize(self.defaultFaceSize)
+
+        ## A font to use for the scale bar.
+        # We used to resize the site font dynamically to do this,
+        # but it seems to break on some GL implementations so that
+        # the default face size was not restored correctly.
+        self.scalefont = ftgl.TextureFont(FONTPATH)
+        self.scalefont.setFaceSize(18)
 
         #default scale bar size is Zero
         self.scalebar = 0
@@ -747,7 +754,7 @@ class TouchScreenWindow(wx.Frame):
             # Scale the text with respect to the current zoom factor.
             fontScale = 3 / max(5.0, self.canvas.scale)
             glScalef(fontScale, fontScale, 1)
-            self.font.render(str(site.uniqueID))
+            self.sitefont.render(str(site.uniqueID))
             glPopMatrix()
 
         self.drawCrosshairs(interfaces.stageMover.getPosition()[:2], (1, 0, 0))
@@ -819,8 +826,6 @@ class TouchScreenWindow(wx.Frame):
             glVertex2f(x2,y1)
             glEnd()
             glLineWidth(1)
-	        # The scale label.
-            self.font.setFaceSize(16)
             glPushMatrix()
             labelPosX= x1
             labelPosY= y1 - (20/self.canvas.scale)
@@ -828,13 +833,11 @@ class TouchScreenWindow(wx.Frame):
             fontScale = 1 / self.canvas.scale
             glScalef(fontScale, fontScale, 1)
             if (self.scalebar>1.0):
-                self.font.render('%d um' % self.scalebar)
+                self.scalefont.render('%d um' % self.scalebar)
             else:
-                self.font.render('%.3f um' % self.scalebar)
+                self.scalefont.render('%.3f um' % self.scalebar)
             glPopMatrix()
 
-            # Restore the default font size.
-            self.font.setFaceSize(self.defaultFaceSize)
         #Draw stage primitives.
         if(self.drawPrimitives):
             # Draw device-specific primitives.
