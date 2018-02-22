@@ -34,6 +34,7 @@ import handlers.lightSource
 import util.colors
 import util.listener
 import util.userConfig
+import util.threads
 from gui.device import SettingsEditor
 from future.utils import iteritems
 import re
@@ -220,7 +221,7 @@ class MicroscopeLaser(MicroscopeBase):
             self.name + ' power',  # name
             self.name + ' light source',  # groupName
             {
-                'setPower': self._proxy.set_power_mw,
+                'setPower': util.threads.callInNewThread(self._proxy.set_power_mw),
                 'getPower': self._proxy.get_power_mw, # Synchronous - can hang threads.
             },
             wl,# wavelength,
