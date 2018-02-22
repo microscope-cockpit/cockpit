@@ -27,7 +27,7 @@ import re
 from time import sleep
 
 NAME_STRING = 'aerotech mover'
-LIMITS_PAT = r"(?P<limits>\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\))"
+LIMITS_PAT = r"(?P<limits>\(?\s*[-]?\d*\s*,\s*[-]?\d*\s*\)?)"
 
 ## Characters used by the SoloistCP controller.
 # CommandTerminatingCharacter
@@ -57,7 +57,7 @@ class AerotechZStage(device.Device):
             parsed = re.search(LIMITS_PAT, limitString)
             if not parsed:
                 # Could not parse config entry.
-                raise Exception('Bad config: PhysikInstrumentsM687 Limits.')
+                raise Exception('Bad config: Aerotech Limits.')
                 # No transform tuple
             else:
                 lstr = parsed.groupdict()['limits']
@@ -107,13 +107,19 @@ class AerotechZStage(device.Device):
         response = self.socket.recv(256)
         # Response status character:
         response_char = response[0]
-        # Response data:
-        response_data = response[1:]
+        if response_char == chr(255):
+            # stray character
+            response_char = response[1]
+            response_data = response[2:]
+        else:
+            response_data = response[1:]
         
         # Did the controlle report a problem?
-        if response_char != CSC:
+        if response_char != CSC and response in RESPONSE_CHARS:
             raise Exception('Aerotech controller error - %s.' 
                             % RESPONSE_CHARS[response_char])
+        elif response_char != CSC:
+            raise Exception('Aerotech controller error - unknown response %s' % response_char)
         else:
             return response_data
 
