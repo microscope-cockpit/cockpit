@@ -275,7 +275,16 @@ class BoulderSLM(device.Device):
             parms = None
         if parms:
             display.SetLabel(baseStr % parms)
-        isPowered = self.connection.get_is_enabled()
+        # This is a UI function so runs in the main thread. Comms errors
+        # will hang the main thread, unless they are caught and handled.
+        # Should refactor this to use the same buttons that the cameras use,
+        # but that will involve changes elsewhere, such as being able to
+        # pass callbacks to DelegateTriggerHandler.
+        try:
+            isPowered = self.connection.get_is_enabled()
+        except:
+            # comms error
+            isPowered = False
         self.elements['powerButton'].updateState(isPowered)
         if isPowered:
             self.elements['triggerButton'].Enable()
