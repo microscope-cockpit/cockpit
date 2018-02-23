@@ -19,6 +19,20 @@ This is a really simple driver for the SR470 shutter controller.  For now, all
 it does is make the SR470 respond to an external trigger, although it is
 feasible that the shutter controller could be programmed to control exposure
 timing.
+
+Sample config entry:
+  [561nm shutter]
+  type: StanfordShutter
+  ipAddress: 192.168.0.10
+  port: 5024
+  lights: 561nm
+  triggerSource: dsp
+  triggerLine: 3
+
+  [dsp]
+  type: LegacyDSP
+  ...
+
 """
 
 from . import shutter

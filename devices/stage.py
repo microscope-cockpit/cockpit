@@ -62,6 +62,22 @@ class StageDevice(device.Device):
 
 
 class SimplePiezo(StageDevice):
+    """A simple piezo axis.
+
+    Sample config entry:
+      [zPiezo]                 # name
+      type: SimplePiezo        # this class
+      analogSource: asource    # an analogue source device name
+      analogLine: 0            # the line on the analogue source
+      offset: 0                # analogue units offset in experiment units, e.g. um
+      gain: 262.144            # unit conversion gain, e.g. ADU per um
+      min: 0                   # min axis range in experimental units
+      range: 250               # axis range in experimental units
+
+      [asource]
+      type: LegacyDSP
+      ...
+    """
     _config_types = {
         # Min, max and range are ints to prevent crashes where ints are expected
         # in UI code. We should fix this to be able to use floats.

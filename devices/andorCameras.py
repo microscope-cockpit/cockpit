@@ -29,6 +29,20 @@ modules that rely on dictionaries.
 
 Cockpit uses lowerCamelCase function names.
 Functions names as lower_case are remote camera object methods.
+
+Sample config entry:
+  [some name]
+  type: AndorCameraDevice
+  uri: PYRO:pyroCam@192.168.1.2:7777
+  triggerSource: trigsource
+  triggerLine: 1
+  transform: (0,0,1)
+
+  [trigsource]
+  type: ExecutorDevice
+  ...
+
+
 """
 
 import collections

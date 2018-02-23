@@ -204,6 +204,20 @@ class MicroscopeSwitchableDevice(MicroscopeBase):
 
 
 class MicroscopeLaser(MicroscopeBase):
+    """A light source with power control.
+
+    Sample config entry:
+      [488nm]
+      type: MicroscopeLaser
+      uri: PYRO:DeepstarLaser@192.168.0.2:7001
+      wavelength: 488
+      triggerSource: trigsource
+      triggerLine: 1
+
+      [trigsource]
+      type: ExecutorDevice
+      ...
+    """
     def _setEnabled(self, on):
         if on:
             self._proxy.enable()

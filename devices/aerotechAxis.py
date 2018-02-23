@@ -16,8 +16,16 @@ limitations under the License.
 =============================================================================
 
 This module creates a simple stage-positioning device.
+
+Sample config entry:
+  [aerotech]
+  type: AerotechZStage
+  ipAddress: 192.168.0.5
+  port: 8000
+  softlimits: -45000, 5000
+
+
 """
-## TODO: test with hardware
 
 from . import device
 import events
