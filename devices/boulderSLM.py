@@ -261,7 +261,7 @@ class BoulderSLM(device.Device):
 
         # Changed my mind. SIM diffraction angle is an advanced parameter,
         # so it now lives in a right-click menu rather than on a button.
-        self.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
+        self.panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
         for e in self.elements.values():
             rowSizer.Add(e)
         sizer.Add(rowSizer)
