@@ -453,7 +453,7 @@ class AndorCameraDevice(camera.CameraDevice):
 
         sizer.Add(rowSizer)
         self.panel.SetSizerAndFit(sizer)
-        self.panel.Bind(ex.EVT_CONTEXT_MENU, self.onRightMouse)
+        self.panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
         self.hasUI = True
         return self.panel
 
