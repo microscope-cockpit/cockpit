@@ -73,6 +73,9 @@ class Button(wx.StaticText):
             self.Bind(wx.EVT_LEFT_UP, lambda event: leftAction(event))
         if rightAction:
             self.Bind(wx.EVT_RIGHT_DOWN, lambda event: rightAction(event))
+            # This control has a special right-click behaviour, so don't pass
+            # up EVT_CONTEXT_MENU CommandEvents.
+            self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
 
 
     def update(self, value=None):

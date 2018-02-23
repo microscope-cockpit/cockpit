@@ -214,7 +214,7 @@ class LinkamStage(stage.StageDevice):
                     parent=panel, label=d, value=0.0, 
                     unitStr=u'°C')
             sizer.Add(self.elements[d])
-            self.elements[d].Bind(wx.EVT_RIGHT_DOWN, self.onRightMouse)
+        self.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
 
         ## Set the panel sizer and return.
         panel.SetSizerAndFit(sizer)
