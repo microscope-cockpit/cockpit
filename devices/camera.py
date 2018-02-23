@@ -27,7 +27,12 @@ class CameraDevice(device.Device):
 
 
     def orient(self, image):
-        """Apply transforms to an image to put it in the correction orientation."""
+        """Apply transforms to an image to put it in the correction orientation.
+
+        Some cameras may do this on the hardware or remote server. Those that
+        don't should call this method on the received data before publishing
+        a 'new image' event.
+        """
         transform = self.transform
         if transform.rot90:
             numpy.rot90(image, transform.rot90)

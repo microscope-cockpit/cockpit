@@ -271,7 +271,7 @@ class AndorCameraDevice(camera.CameraDevice):
         # print 'receiveData received %s' % action
         if action == 'new image':
             (image, timestamp) = args
-            events.publish('new image %s' % self.name, image, timestamp)
+            events.publish('new image %s' % self.name, self.orient(image), timestamp)
 
 
     def setExposureTime(self, name, exposureTime):
