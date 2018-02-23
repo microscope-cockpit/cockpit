@@ -23,7 +23,7 @@ class CameraDevice(device.Device):
         if not transform:
             self.transform = self.Transform(None, None, None)
         else:
-            self.transform = self.Transform(*camConfig.get('transform'))
+            self.transform = self.Transform(*camConfig.get('transform').split(','))
 
 
     def orient(self, image):
