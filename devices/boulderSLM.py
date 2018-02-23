@@ -3,6 +3,18 @@
 """ This module makes a BNS SLM  device available to Cockpit.
 
 Mick Phillips, University of Oxford, 2014-2015.
+
+Sample config entry:
+  [slm]
+  type: BoulderSLM
+  triggerSource: dsp
+  triggerLine: 2
+  uri: PYRO:pyroSLM@slmhost:8000
+
+  [dsp]
+  type: LegacyDSP
+  ...
+
 """
 
 from collections import OrderedDict

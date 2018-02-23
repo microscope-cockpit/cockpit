@@ -19,6 +19,13 @@
 # >>> import devices.dsp as DSP
 # >>> DSP._deviceInstance.advanceSLM(numSteps)
 # (where numSteps is an integer, the number of times to advance it).
+#
+# Sample config entry:
+#  [dsp]
+#  type: LegacyDSP
+#  uri: PYRO:pyroDSP@somehost:8001
+
+
 
 import Pyro4
 import time

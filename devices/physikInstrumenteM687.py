@@ -15,6 +15,17 @@ import wx
 import re # to get regular expression parsing for config file
 
 ## This module is for Physik Instrumente (PI) M687 XY stage.
+# Sample config entry:
+#  [m687]
+#  type: PhysikInstrumenteM687
+#  port: com6
+#  baud: 115200
+#  timeout: 0.1
+#  softlimits: ((-37500,-67500),(11500,59500))
+#  primitives:  r, 500, -7000 ,22000,76000
+#               c, 6500, -6200, 4500
+#
+
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
 
 ## TODO:  Test with hardware.
