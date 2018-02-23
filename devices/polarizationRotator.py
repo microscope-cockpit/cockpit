@@ -8,19 +8,33 @@ angle index. Upon exmining the table, it replaces instances of this
 handler with instances of whatever handler drives the analogue out-
 put, having converted the angle index to the required voltage.
 
-Copyright Mick Phillips, University of Oxford, 2015.
+Copyright Mick Phillips, University of Oxford, 2015-2018.
+
+Sample config entry:
+  [polarizer]
+  type: PolarizationDevice
+  analogSource: dsp
+  analogLine: 1
+  siVoltages: 488: 0.915, 1.05, 1.23
+              561: 1.32, 0.90, 1.12
+              647: 1.18, 1.61, 0.97
+  idleVoltage: 1.0
+  offset: 0                             # in volts
+  gain: 6553.6                          # in ADU per volt
+
+
+  [dsp]
+  type: LegacyDSP
+  ...
 """
 import depot
 from . import device
-import re
-
-DECIMAL_PAT = '(?:\d+(?:\.\d*)?|\.\d+)'
-CALIB_PAT = '\s*(\S+)(?:[\s:,;]+)(%s(?:.*))+' % DECIMAL_PAT
-
 
 class PolarizationDevice(device.Device):
     _config_types = {
         'idlevoltage': float,
+        'offset': float,
+        'gain': float,
     }
 
     # For use in SI experiments, should be named "SI polarizer" in config.
@@ -61,13 +75,13 @@ class PolarizationDevice(device.Device):
 
         # If there are indexed positions in the config, add them to the handler.
         idlevoltage = self.config.get('idlevoltage', 0)
-        if 'sivoltages' in self.config:
-            # Parse config entry; use empty environment to avoid code injection problems.
-            vstr = re.sub('\n|\t|  +', '', self.config['sivoltages'])
-            voltages = eval(vstr, {'__builtins__': {}, })
-            if None not in voltages and 'default' not in voltages:
-                voltages[None] = 3 * [idlevoltage]
-        else:
-            voltages = 3* [idlevoltage]
+        voltages = {}
+        for vdef in self.config.get('sivoltages', '').split('\n'):
+            if vdef is '':
+                continue
+            key, values = vdef.strip('\n').split(':')
+            voltages[key] = tuple([float(v) for v in values.split(',')])
+        if not set(['default', None]).intersection(voltages):
+            voltages[None] = 3 * [idlevoltage]
         h.positions = voltages
         return [h]
