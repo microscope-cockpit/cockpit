@@ -97,15 +97,12 @@ class AndorCameraDevice(camera.CameraDevice):
             self.amplifierModes = None
         ## Initial values should be read in from the config file.
         self.cached_settings={}
-        self.settings = {}
         self.settings['exposureTime'] = 0.001
         # Has water cooling? Default to False to ensure fan is active.
         self.settings['isWaterCooled'] = False
         self.settings['targetTemperature'] = -40
         self.settings['EMGain'] = 0
         self.settings['amplifierMode'] = None
-        self.settings['baseTransform'] = config.get('baseTransform') or (0, 0, 0)
-        self.settings['pathTransform'] = (0, 0, 0)
         self.settings['triggerMode'] = 1
         self.lastTemperature = None
         self.experimentTriggerMode = TRIGGER_MODES[0]
@@ -117,6 +114,7 @@ class AndorCameraDevice(camera.CameraDevice):
         self.statusThread = threading.Thread(target=self.updateStatus)
         self.statusThread.Daemon = True
         self.statusThread.start()
+
 
     def cleanupAfterExperiment(self):
         """Restore settings as they were prior to experiment."""
@@ -285,7 +283,7 @@ class AndorCameraDevice(camera.CameraDevice):
         # print 'receiveData received %s' % action
         if action == 'new image':
             (image, timestamp) = args
-            events.publish('new image %s' % self.name, self.orient(image), timestamp)
+            events.publish('new image %s' % self.name, image, timestamp)
 
 
     def setExposureTime(self, name, exposureTime):
