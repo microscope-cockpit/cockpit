@@ -106,6 +106,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         # Respond to clicks on the button.
         wx.EVT_LEFT_DOWN(button, lambda event: self.makeMenu(parent))
         wx.EVT_RIGHT_DOWN(button, lambda event: self.makeMenu(parent))
+        wx.EVT_CONTEXT_MENU(button, lambda event: None) # don't pass up context_menu events
         self.powerToggle = button
         sizer.Add(button)
         self.powerText = wx.StaticText(parent, -1,

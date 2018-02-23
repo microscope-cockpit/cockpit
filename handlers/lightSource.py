@@ -135,6 +135,9 @@ class LightHandler(deviceHandler.DeviceHandler):
                 label = label, parent = panel,
                 size = (BUTTON_SIZE[0], -1))
         self.activeButton.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.setExposing())
+        # This button has a special right-click behaviour, so don't pass
+        # up EVT_CONTEXT_MENU CommandEvents.
+        self.activeButton.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         helpText = "Left-click to enable for taking images."
         if 'setExposing' in self.callbacks:
             # Light source can also be just turned on and left on.

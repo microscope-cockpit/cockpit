@@ -241,7 +241,7 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MOVE, self.onMove)
         self.Bind(wx.EVT_CLOSE, self.onClose)
         # Show the list of windows on right-click.
-        self.Bind(wx.EVT_RIGHT_UP, lambda event: keyboard.martialWindows(self))
+        self.Bind(wx.EVT_CONTEXT_MENU, lambda event: keyboard.martialWindows(self))
         events.subscribe('user login', self.onUserLogin)
         events.subscribe('video mode toggle', self.onVideoMode)
 
