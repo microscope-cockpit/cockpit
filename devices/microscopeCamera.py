@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 #
-# Copyright 2016 Mick Phillips (mick.phillips@gmail.com)
+# Copyright 2016-2018 Mick Phillips (mick.phillips@gmail.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,9 +15,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""UniversalCamera device.
+"""MicroscopeCamera device.
 
-Supports cameras which implement the interface defined in 
+  Supports cameras which implement the interface defined in
   microscope.camera.Camera ."""
 
 import decimal

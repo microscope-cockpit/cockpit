@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 #
-# Copyright 2016 Mick Phillips (mick.phillips@gmail.com)
+# Copyright 2016-2018 Mick Phillips (mick.phillips@gmail.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +15,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""UniversalCamera device.
+"""Microscope devices.
 
-Supports cameras which implement the interface defined in
-  microscope.camera.Camera ."""
+   Supports devices that implement the interface defined in
+   microscope.devices
+"""
 import Pyro4
 import wx
 import events
@@ -36,7 +37,6 @@ import util.listener
 import util.userConfig
 import util.threads
 from gui.device import SettingsEditor
-from future.utils import iteritems
 import re
 
 # Pseudo-enum to track whether device defaults in place.
