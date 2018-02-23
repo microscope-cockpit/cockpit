@@ -58,9 +58,6 @@ class MicroscopeCamera(camera.CameraDevice):
         self.proxy = Pyro4.Proxy(self.uri)
         self.listener = util.listener.Listener(self.proxy,
                                                lambda *args: self.receiveData(*args))
-        self.base_transform = cam_config.get('baseTransform') or (0, 0, 0)
-        self.path_transform = (0, 0, 0)
-        self.settings = {}
         self.cached_settings={}
         self.settings['transform'] = tuple(self.path_transform[i] ^ self.base_transform[i] for i in range(3))
         self.settings_editor = None
