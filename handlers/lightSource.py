@@ -54,7 +54,7 @@ class LightHandler(deviceHandler.DeviceHandler):
         # However there's no associated callbacks for a light source.
         deviceHandler.DeviceHandler.__init__(self, name, groupName, True, 
                 callbacks, depot.LIGHT_TOGGLE)
-        self.wavelength = float(wavelength)
+        self.wavelength = float(wavelength or 0)
         self.defaultExposureTime = exposureTime
         ## Our GUI button, which we also use as a proxy for if we're currently
         # active.
