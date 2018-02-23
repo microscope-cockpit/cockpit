@@ -197,9 +197,16 @@ class Experiment:
     ## Prepare all of the handlers needed in the experiment so that they're
     # in the correct mode.
     def prepareHandlers(self):
-        self.initialZPos = interfaces.stageMover.getPositionForAxis(2)
+        #self.initialZPos = interfaces.stageMover.getPositionForAxis(2)
+        # Get the smallest Z mover position.
+        self.initialZPos = interfaces.stageMover.getAllPositions()[-1][-1]
         # Ensure that we're the only ones moving things around.
         interfaces.stageMover.waitForStop()
+        # TODO: Handling multiple movers on an axis is broken. Do not proceed if
+        # anything but the innermost Z mover is selected. Needs a proper fix.
+        if interfaces.stageMover.mover.curHandlerIndex < len(depot.getSortedStageMovers()[2])-1:
+            wx.MessageBox("Wrong axis mover selected.")
+            raise Exception("Wrong axis mover selected.")
         # Prepare our position.
         interfaces.stageMover.goToZ(self.zBottom, shouldBlock = True)
         events.publish('prepare for experiment', self)
@@ -322,9 +329,11 @@ class Experiment:
         for handler in self.allHandlers:
             handler.cleanupAfterExperiment()
         events.publish('cleanup after experiment')
-        if self.initialZPos is not None:
+        # Ignore this for now. DSP goes back automatically, and we need to handle
+        # multiple movers on one axis better for this to work correctly.
+        #if self.initialZPos is not None:
             # Restore our initial Z position.
-            interfaces.stageMover.goToZ(self.initialZPos, shouldBlock = True)
+            # interfaces.stageMover.goToZ(self.initialZPos, shouldBlock = True)
         events.publish('experiment complete')
         events.publish('update status light', 'device waiting',
                 '', (170, 170, 170))
