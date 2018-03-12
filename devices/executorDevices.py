@@ -183,13 +183,15 @@ class LegacyDSP(ExecutorDevice):
         if action.lower() == 'dsp done':
             events.publish(events.EXECUTOR_DONE % self.name)
 
-    ## Return analog position in native units (ADU)
+    ## Return analog position in native units
+    # No longer using ADU as native units, as the scaling for each channel
+    # varies widely from device to device.
     def getAnalog(self, line):
-        return int(self.connection.ReadPosition(line) * 1694.0825663475528)
+        return int(self.connection.ReadPosition(line))
 
-    ## Set analog position in native units (ADU)
+    ## Set analog position in native units
     def setAnalog(self, line, target):
-        return self.connection.MoveAbsoluteADU(line, int(target))
+        return self.connection.MoveAbsolute(line, target)
 
     ## We control which light sources are active, as well as a set of
     # stage motion piezos.
