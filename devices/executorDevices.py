@@ -187,7 +187,7 @@ class LegacyDSP(ExecutorDevice):
     # No longer using ADU as native units, as the scaling for each channel
     # varies widely from device to device.
     def getAnalog(self, line):
-        return int(self.connection.ReadPosition(line))
+        return self.connection.ReadPosition(line)
 
     ## Set analog position in native units
     def setAnalog(self, line, target):
