@@ -12,7 +12,6 @@ class DummyZStage(device.Device):
         device.Device.__init__(self, name, config)
         self.curPosition = 100
         # Set priority to Inf to indicate that this is a dummy device.
-        self.priority = float('inf')
         self.deviceType = "stage positioner"
         # Is this device in use?
         self.active = False
