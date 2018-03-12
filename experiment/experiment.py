@@ -271,24 +271,35 @@ class Experiment:
                     if fn is None:
                         raise RuntimeError("Found a line that no executor could handle: %s" % str(self.table.actions[curIndex]))
 
+                    th = time.time()
                     util.logger.log.debug(
-                        "Running 1 line in software for %s with %d reps at %.2f" % (h, numReps, time.time()))
-
-                    # Wait until this action is due.
+                        "Running 1 line in software for %s with %d reps at %.2f..." % (h, numReps, th ))
+                    # Wait until next action is due.
                     if curIndex > 0:
-                        lastTime = self.table[curIndex-1][0]
-                        while(time.time() < (startTime + float(lastTime)/1000)):
+                        nextTime = self.table[curIndex][0]
+                        while(time.time() < (startTime + float(nextTime)/1000)):
                             time.sleep(0.001)
-
                     fn()
                     curIndex += 1
                 else:
+                    # Don't resume execution too early.
+                    # TODO: would be better to pass a 'do not start before' argument
+                    # to the handler, so any work it has to do does not add further
+                    # delays.
+                    if curIndex > 0:
+                        nextTime = self.table[curIndex][0]
+                        while (time.time() < (startTime + float(nextTime)/1000)):
+                            time.sleep(0.001)
+
+                    th = time.time()
                     util.logger.log.debug(
-                        "Handing %d lines to %s with %d reps at %.2f" % (bestLen, best, numReps, time.time()))
+                        "Handing %d lines to %s with %d reps at %.2f..." % (bestLen, best, numReps, th ))
                     events.executeAndWaitFor('experiment execution',
                             best.executeTable, self.table, curIndex,
                             curIndex + bestLen, numReps, repDuration)
                     curIndex += bestLen
+
+                util.logger.log.debug("... handled in %.4f s" % (time.time()-th) )
             if shouldStop:
                 # All reps handled by an executor.
                 util.logger.log.debug("Stopping now at %.2f" % time.time())
