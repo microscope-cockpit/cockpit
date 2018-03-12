@@ -274,9 +274,11 @@ class Experiment:
                     util.logger.log.debug(
                         "Running 1 line in software for %s with %d reps at %.2f" % (h, numReps, time.time()))
 
-                    lastTime = self.table[curIndex-1][0]
-                    while(time.time() < (startTime + float(lastTime)/1000)):
-                        time.sleep(0.001)
+                    # Wait until this action is due.
+                    if curIndex > 0:
+                        lastTime = self.table[curIndex-1][0]
+                        while(time.time() < (startTime + float(lastTime)/1000)):
+                            time.sleep(0.001)
 
                     fn()
                     curIndex += 1
