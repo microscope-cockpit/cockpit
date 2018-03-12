@@ -266,7 +266,7 @@ class Experiment:
                     if h.deviceType == depot.CAMERA and 'softTrigger' in h.callbacks:
                         fn = lambda: h.callbacks['softTrigger']()
                     elif h.deviceType == depot.STAGE_POSITIONER:
-                        fn = lambda: h.moveRelative(action)
+                        fn = lambda: h.moveAbsolute(action)
 
                     if fn is None:
                         raise RuntimeError("Found a line that no executor could handle: %s" % str(self.table.actions[curIndex]))
