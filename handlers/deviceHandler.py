@@ -155,6 +155,8 @@ class DeviceHandler(object):
 
     ## Notify listeners that our device's state has changed.
     def notifyListeners(self, source, *args, **kwargs):
+        if not self.listeners:
+            return
         if source is not self:
             return
         if args[0] is True:
