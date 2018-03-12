@@ -239,7 +239,14 @@ class Experiment:
             repDuration = None
             curIndex = 0
             shouldStop = False
+            # Need to track delay introduced by dropping back to software timing.
+            delay = 0.
             while curIndex < len(self.table):
+                if curIndex > 0:
+                    # Update the delay
+                    nextTime = delay + startTime + float(self.table[curIndex][0])/1000.
+                    delay += max(0, time.time() - nextTime)
+
                 if self.shouldAbort:
                     util.logger.log.error("Cancelling on rep %d after %d actions due to user abort" % (rep, curIndex))
                     break
@@ -270,15 +277,10 @@ class Experiment:
 
                     if fn is None:
                         raise RuntimeError("Found a line that no executor could handle: %s" % str(self.table.actions[curIndex]))
-
-                    th = time.time()
-                    util.logger.log.debug(
-                        "Running 1 line in software for %s with %d reps at %.2f..." % (h, numReps, th ))
-                    # Wait until next action is due.
+                    # Wait until this action is due.
                     if curIndex > 0:
-                        nextTime = self.table[curIndex][0]
-                        while(time.time() < (startTime + float(nextTime)/1000)):
-                            time.sleep(0.001)
+                        timeToNext = delay + startTime + float(self.table[curIndex][0]) / 1000. - time.time()
+                        time.sleep(max(0,timeToNext))
                     fn()
                     curIndex += 1
                 else:
@@ -287,19 +289,14 @@ class Experiment:
                     # to the handler, so any work it has to do does not add further
                     # delays.
                     if curIndex > 0:
-                        nextTime = self.table[curIndex][0]
-                        while (time.time() < (startTime + float(nextTime)/1000)):
-                            time.sleep(0.001)
+                        timeToNext = delay + startTime + float(self.table[curIndex][0]) / 1000. - time.time()
+                        time.sleep(max(0,timeToNext))
 
-                    th = time.time()
-                    util.logger.log.debug(
-                        "Handing %d lines to %s with %d reps at %.2f..." % (bestLen, best, numReps, th ))
                     events.executeAndWaitFor('experiment execution',
                             best.executeTable, self.table, curIndex,
                             curIndex + bestLen, numReps, repDuration)
                     curIndex += bestLen
 
-                util.logger.log.debug("... handled in %.4f s" % (time.time()-th) )
             if shouldStop:
                 # All reps handled by an executor.
                 util.logger.log.debug("Stopping now at %.2f" % time.time())
