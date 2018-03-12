@@ -204,8 +204,9 @@ class CameraHandler(deviceHandler.DeviceHandler):
         # Remove the word 'camera' to shorten labels.
         name = self.name.replace('camera', '').replace('  ', ' ')
         label = gui.device.Label(
-                parent=self.panel, label=name)
+            parent=self.panel, label=name)
         button = gui.device.EnableButton(label='Off', parent=self.panel, leftAction=self.toggleState)
+        self.addListener(button)
         sizer.Add(label)
         sizer.Add(button)
         if self.callbacks.get('makeUI', None):
@@ -214,5 +215,4 @@ class CameraHandler(deviceHandler.DeviceHandler):
         self.panel.SetSizerAndFit(sizer)
 
         self.hasUI = True
-        self.addListener(button)
         return self.panel
