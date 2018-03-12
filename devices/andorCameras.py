@@ -423,9 +423,6 @@ class AndorCameraDevice(camera.CameraDevice):
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        label = gui.device.Label(
-                parent=self.panel, label=self.name)
-        sizer.Add(label)
         rowSizer = wx.BoxSizer(wx.VERTICAL)
 
         self.modeButton = gui.toggleButton.ToggleButton(
