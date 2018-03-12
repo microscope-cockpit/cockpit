@@ -241,7 +241,16 @@ class LegacyDSP(ExecutorDevice):
         # DSP bug later. Also used to detect when events exceed timing
         # resolution
         tLastA = None
-        for (t, handler, (darg, aargs)) in table[startIndex:stopIndex]:
+
+        actions = [(float(row[0])-t0,) + tuple(row[2:]) for row in table[startIndex:stopIndex]]
+        # If there are repeats, add an extra action to wait until repDuration expired.
+        if repDuration is not None:
+            repDuration = float(repDuration)
+            if actions[-1][0] < repDuration:
+                # Repeat the last event at t0 + repDuration
+                actions.append( (t0+repDuration,) + tuple(actions[-1][1:]) )
+
+        for (t, (darg, aargs)) in actions:
             # Convert t to ticks as int while rounding up. The rounding is
             # necessary, otherwise e.g. 10.1 and 10.1999999... both result in 101.
             ticks = int(float(t) * self.tickrate + 0.5)
@@ -278,15 +287,6 @@ class LegacyDSP(ExecutorDevice):
         if len(digitals) == 1 or tLastA >= digitals[-1][0]:
             # Just duplicate the last digital action, one tick later.
             digitals.append( (digitals[-1][0]+1, digitals[-1][1]) )
-
-
-        actions = [(float(row[0])-t0,) + tuple(row[2:]) for row in table[startIndex:stopIndex]]
-        # If there are repeats, add an extra action to wait until repDuration expired.
-        if repDuration is not None:
-            repDuration = float(repDuration)
-            if actions[-1][0] < repDuration:
-                # Repeat the last event at t0 + repDuration
-                actions.append( (t0+repDuration,) + tuple(actions[-1][1:]) )
 
         # I think the point of this is just to create a struct with C-aligned fields.
         # If so, we don't need numpy for this, as we only touch the first element
