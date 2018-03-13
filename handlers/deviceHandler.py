@@ -184,12 +184,14 @@ class DeviceHandler(object):
         if not all([hasattr(self, 'setEnabled'), hasattr(self, 'getIsEnabled')]):
             raise Exception('toggleState dependencies not implemented for %s.' % self.name)
         # Do nothing if lock locked as en/disable already in progress.
-        if self.enableLock.acquire(False):
-            try:
-                self.notifyListeners(self, STATES.enabling)
-                self.setEnabled(not(self.getIsEnabled()))
-            except Exception as e:
-                self.notifyListeners(self, STATES.error)
-                raise Exception('Problem encountered en/disabling %s:\n%s' % (self.name, e))
-            finally:
-                self.enableLock.release()
+        if not self.enableLock.acquire(False):
+            return
+
+        self.notifyListeners(self, STATES.enabling)
+        try:
+            self.setEnabled(not(self.getIsEnabled()))
+        except Exception as e:
+            self.notifyListeners(self, STATES.error)
+            raise Exception('Problem encountered en/disabling %s:\n%s' % (self.name, e))
+        finally:
+            self.enableLock.release()
