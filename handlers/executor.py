@@ -201,6 +201,7 @@ class DigitalMixin(object):
     def setDigital(self, line, state):
         if line is None:
             return
+        line = int(line)
         if self.callbacks.get('setDigital', None):
             self.callbacks['setDigital'](line, state)
         else:

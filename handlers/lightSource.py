@@ -67,8 +67,12 @@ class LightHandler(deviceHandler.DeviceHandler):
         if trigHandler and trigLine:
             trigHandler.registerDigital(self, trigLine)
             self.triggerNow = lambda: trigHandler.triggerDigital(self)
+            if 'setExposing' not in callbacks:
+                cb = lambda name, state: trigHandler.setDigital(trigLine, state)
+                callbacks['setExposing'] = cb
         else:
             self.triggerNow = lambda: None
+
 
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
