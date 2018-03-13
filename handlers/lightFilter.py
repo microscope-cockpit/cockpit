@@ -70,8 +70,8 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
                 textSize = 12, label = self.name, size = (120, 80), 
                 parent = parent)
         # Respond to clicks on the button.
-        wx.EVT_LEFT_DOWN(button, self.makeMenu)
-        wx.EVT_RIGHT_DOWN(button, self.makeMenu)
+        button.Bind(wx.EVT_LEFT_DOWN, self.makeMenu)
+        button.Bind(wx.EVT_RIGHT_DOWN, self.makeMenu)
         # This control has a special right-click behaviour, so don't pass
         # up EVT_CONTEXT_MENU CommandEvents.
         button.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
