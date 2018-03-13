@@ -141,11 +141,11 @@ class LightHandler(deviceHandler.DeviceHandler):
         # Split the name across multiple lines.
         label = ['']
         if self.name.endswith('toggle'):
-            name = self.name[0:-7]
+            name = self.name[0:-7].strip()
         else:
-            name = self.name
-        for word in name.split(' '):
-            if len(label[-1] + word) > 10:
+            name = self.name.strip()
+        for i, word in enumerate(name.split(' ')):
+            if len(label[-1] + word) > 10 and i > 0:
                 label.append('')
             label[-1] += word + ' '
         label = "\n".join(label)
@@ -153,6 +153,7 @@ class LightHandler(deviceHandler.DeviceHandler):
                                                   leftAction=self.toggleState,
                                                   rightAction=self.setExposing,
                                                   prefix=label)
+        button.SetLabel(deviceHandler.STATES.toStr(self.state))
         sizer.Add(button)
         self.addListener(button)
         helpText = "Left-click to enable for taking images."
@@ -164,7 +165,6 @@ class LightHandler(deviceHandler.DeviceHandler):
                 label = '', parent = panel, size = BUTTON_SIZE)
         self.exposureTime.Bind(wx.EVT_LEFT_DOWN,
                 lambda event: self.makeMenu(panel))
-        self.setLabel()
         sizer.Add(self.exposureTime)
         panel.SetSizerAndFit(sizer)
         return panel
