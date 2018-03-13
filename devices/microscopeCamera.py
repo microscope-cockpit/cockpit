@@ -365,13 +365,14 @@ class MicroscopeCamera(camera.CameraDevice):
         if not self.modes:
             # Camera not enabled yet.
             menu.Append(0, str('No modes known - camera never enabled.'))
-            wx.EVT_MENU(self.panel, 0, None)
+            self.panel.Bind(wx.EVT_MENU,  None, id= 0)
         else:
             menuID = 0
             for index, mode in enumerate(self.modes):
                 menu.Append(menuID, mode)
-                wx.EVT_MENU(self.panel, menuID, lambda event, m=index:
-                            self.setReadoutModeByIndex(m))
+                self.panel.Bind(wx.EVT_MENU,
+                                lambda event, m=index: self.setReadoutModeByIndex(m),
+                                id=menuID)
                 menuID += 1
         gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 

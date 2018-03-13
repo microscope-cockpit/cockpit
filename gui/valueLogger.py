@@ -116,16 +116,16 @@ class ValueLoggerWindow(wx.Frame):
         menu = wx.Menu()
         i = 0
         menu.Append(i, 'Save to user config.')
-        wx.EVT_MENU(menu, i, lambda event:self.saveShowKeysToConfig())
+        menu.Bind(wx.EVT_MENU,  lambda event:self.saveShowKeysToConfig(), id= i)
         i += 1
         #if no logfile open then show openlogfile option
         if self.filehandle==None:
             menu.Append(i, 'Open logfile.')
-            wx.EVT_MENU(menu, i, lambda event:self.openLogFile())
+            menu.Bind(wx.EVT_MENU,  lambda event:self.openLogFile(), id= i)
         else:
             #close logfile option
             menu.Append(i, 'Close logfile.')
-            wx.EVT_MENU(menu, i, lambda event:self.closeLogFile())
+            menu.Bind(wx.EVT_MENU,  lambda event:self.closeLogFile(), id= i)
 
         i += 1
         menu.AppendSeparator()
@@ -134,7 +134,7 @@ class ValueLoggerWindow(wx.Frame):
                 continue
             menu.Append(i, key, '', wx.ITEM_CHECK)
             menu.Check(i, enabled)
-            wx.EVT_MENU(menu, i, lambda event, k=key:self.toggleShowKey(k))
+            menu.Bind(wx.EVT_MENU,  lambda event, k=key:self.toggleShowKey(k), id= i)
             i += 1
         gui.guiUtils.placeMenuAtMouse(self, menu)
 
