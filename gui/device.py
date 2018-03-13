@@ -208,22 +208,19 @@ class EnableButton(Button):
     def onEnabledEvent(self, state):
         if state is STATES.enabled:
             self.enable(True)
-            self.SetLabel("ON")
             self.SetBackgroundColour(ACTIVE_COLOR)
         elif state is STATES.constant:
             self.enable(True)
-            self.SetLabel("ON ALWAYS")
             self.SetBackgroundColour((255, 255, 0))
         elif state is STATES.disabled:
             self.enable(True)
-            self.SetLabel("OFF")
             self.SetBackgroundColour(INACTIVE_COLOR)
         elif state is STATES.enabling:
             self.enable(False)
         elif state is STATES.error:
             self.SetBackgroundColour((255, 0, 0))
             self.enable(True)
-            self.SetLabel("ERROR")
+        self.SetLabel(STATES.toStr(state))
         self.Refresh()
 
     def SetLabel(self, label):
