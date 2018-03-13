@@ -167,6 +167,7 @@ class LightHandler(deviceHandler.DeviceHandler):
                 lambda event: self.makeMenu(panel))
         sizer.Add(self.exposureTime)
         panel.SetSizerAndFit(sizer)
+        self.setLabel()
         return panel
 
 
