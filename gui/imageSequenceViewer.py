@@ -60,9 +60,9 @@ class ImageSequenceViewer(wx.Frame):
             (wx.ACCEL_NORMAL, wx.WXK_UP, 4),
             (wx.ACCEL_NORMAL, wx.WXK_DOWN, 5)])
         self.SetAcceleratorTable(accelTable)
-        wx.EVT_MENU(self, 1, self.onRescale)
+        self.Bind(wx.EVT_MENU,  self.onRescale, id= 1)
         for id, delta in [(2, (0, -1)), (3, (0, 1)), (4, (-1, 0)), (5, (1, 0))]:
-            wx.EVT_MENU(self, id, lambda event, delta = delta: self.shiftView(delta))
+            self.Bind(wx.EVT_MENU,  lambda event, delta = delta: self.shiftView(delta), id= id)
 
 
     ## Unsubscribe from the pixel info event so we don't leave stale functions

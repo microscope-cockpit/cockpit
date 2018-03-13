@@ -94,7 +94,7 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
         for i, filterAmount in enumerate(self.getFiltrations()):
             menu.AppendCheckItem(i + 1, "%s%%" % (filterAmount * 100))
             menu.Check(i + 1, self.curPosition == i)
-            wx.EVT_MENU(eventObject, i + 1, action)
+            eventObject.Bind(wx.EVT_MENU,  action, id= i + 1)
 
         gui.guiUtils.placeMenuAtMouse(eventObject, menu)
 

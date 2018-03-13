@@ -482,7 +482,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             for label, action in self.getMenuActions():
                 id = wx.NewId()
                 menu.Append(id, label)
-                wx.EVT_MENU(self, id, lambda event, action = action: action())
+                self.Bind(wx.EVT_MENU,  lambda event, action = action: action(), id= id)
             gui.guiUtils.placeMenuAtMouse(self, menu)
         elif event.Entering() and self.TopLevelParent.IsActive():
             self.SetFocus()

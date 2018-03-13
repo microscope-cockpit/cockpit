@@ -305,7 +305,7 @@ class AndorCameraDevice(camera.CameraDevice):
         menuID = 1
         for value in range (0, 255, 10):
             menu.Append(menuID, str(value))
-            wx.EVT_MENU(self.panel, menuID, lambda event, value=value: self.setGain(value))
+            self.panel.Bind(wx.EVT_MENU,  lambda event, value=value: self.setGain(value), id= menuID)
             menuID += 1
         gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
@@ -323,15 +323,14 @@ class AndorCameraDevice(camera.CameraDevice):
         if not self.amplifierModes:
             # Camera not enabled yet.
             menu.Append(0, str('No modes known - camera never enabled.'))
-            wx.EVT_MENU(self.panel, 0, None)
+            self.panel.Bind(wx.EVT_MENU,  None, id= 0)
         else:
             menuID = 0
             for mode in self.amplifierModes:
                 menu.Append(menuID, mode['label'])
-                #wx.EVT_MENU(self.panel, menuID, lambda event, n=menuID:
-                #            self.setAmplifierMode(n))
-                wx.EVT_MENU(self.panel, menuID, lambda event, m=mode:
-                            self.setAmplifierMode(m))
+                self.panel.Bind(wx.EVT_MENU,
+                                lambda event, m=mode: self.setAmplifierMode(m),
+                                id=menuID)
                 menuID += 1
         gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
@@ -344,7 +343,7 @@ class AndorCameraDevice(camera.CameraDevice):
         # Check control to indicate/set water cooling availability.
         menu.AppendCheckItem(0, 'water cooling')
         menu.Check(0, self.settings.get('isWaterCooled', False))
-        wx.EVT_MENU(self.panel, 0, lambda event: self.toggleWaterCooling())
+        self.panel.Bind(wx.EVT_MENU,  lambda event: self.toggleWaterCooling(), id= 0)
 
         # Submenu of temperature set points.
         tMenu = wx.Menu()
@@ -356,7 +355,7 @@ class AndorCameraDevice(camera.CameraDevice):
                 tMenu.Check(itemID, True)
             if t < airCooledLimit and not self.settings.get('isWaterCooled'):
                 tMenu.Enable(itemID, False)
-            wx.EVT_MENU(self.panel, itemID, lambda event, target=t: self.setTargetTemperature(target))
+            self.panel.Bind(wx.EVT_MENU,  lambda event, target=t: self.setTargetTemperature(target), id= itemID)
             itemID += 1
 
         menu.AppendSubMenu(tMenu, 'sensor set point')
@@ -369,8 +368,9 @@ class AndorCameraDevice(camera.CameraDevice):
         menuID = 0
         for mode in TRIGGER_MODES:
             menu.Append(menuID, mode.label)
-            wx.EVT_MENU(self.panel, menuID, lambda event, m=mode:
-                        self.setExperimentTriggerMode(m))
+            self.panel.Bind(wx.EVT_MENU,
+                            lambda event, m=mode: self.setExperimentTriggerMode(m),
+                            id=menuID)
             menuID += 1
         gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 

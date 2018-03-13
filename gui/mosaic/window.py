@@ -328,21 +328,25 @@ class MosaicWindow(wx.Frame):
             menuId = 1
             for label, color in SITE_COLORS:
                 menu.Append(menuId, "Mark site with %s marker" % label)
-                wx.EVT_MENU(self.panel, menuId,
-                        lambda event, color = color: self.saveSite(color))
+                self.panel.Bind(wx.EVT_MENU,
+                                lambda event, color = color: self.saveSite(color),
+                                id=menuId)
                 menuId += 1
             menu.AppendSeparator()
             menu.Append(menuId, "Set mosaic tile overlap")
-            wx.EVT_MENU(self.panel, menuId,
-                        lambda event: self.setTileOverlap())
+            self.panel.Bind(wx.EVT_MENU,
+                            lambda event: self.setTileOverlap(),
+                            id=menuId)
             menuId += 1
             menu.Append(menuId, "Toggle mosaic scale bar")
-            wx.EVT_MENU(self.panel, menuId,
-                        lambda event: self.togglescalebar())
+            self.panel.Bind(wx.EVT_MENU,
+                            lambda event: self.togglescalebar(),
+                            id=menuId)
             menuId += 1
             menu.Append(menuId, "Toggle draw primitives")
-            wx.EVT_MENU(self.panel, menuId,
-                        lambda event: self.toggleDrawPrimitives())
+            self.panel.Bind(wx.EVT_MENU,
+                            lambda event: self.toggleDrawPrimitives(),
+                            id=menuId)
 
             gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
@@ -783,8 +787,9 @@ class MosaicWindow(wx.Frame):
         menu = wx.Menu()
         for i, (label, color) in enumerate(SITE_COLORS):
             menu.Append(i + 1, "Mark sites in %s" % label)
-            wx.EVT_MENU(self.panel, i + 1,
-                    lambda event, color = color: self.setSiteColor(color))
+            self.panel.Bind(wx.EVT_MENU,
+                            lambda event, color = color: self.setSiteColor(color),
+                            id=i+1)
         gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
@@ -1017,8 +1022,9 @@ class MosaicWindow(wx.Frame):
             menu = wx.Menu()
             for i, camera in enumerate(cameras):
                 menu.Append(i + 1, text % camera.descriptiveName)
-                wx.EVT_MENU(self.panel, i + 1,
-                        lambda event, camera = camera: action(camera))
+                self.panel.Bind(wx.EVT_MENU,
+                                lambda event, camera = camera: action(camera),
+                                id=i+1)
             gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
