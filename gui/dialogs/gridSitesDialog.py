@@ -64,7 +64,7 @@ class GridSitesDialog(wx.Dialog):
         self.SetAutoLayout(True)
         sizer.Fit(self)
 
-        wx.EVT_BUTTON(self, wx.ID_OK, self.OnStart)
+        self.Bind(wx.EVT_BUTTON, wx.ID_OK, self.OnStart)
 
 
     ## Create the grid of sites. 
