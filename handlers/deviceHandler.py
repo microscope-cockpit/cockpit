@@ -29,6 +29,14 @@ class STATES():
     enabling = 2
     constant = 3
 
+    @staticmethod
+    def toStr(value):
+        return {-1:'ERROR',
+                 0:'OFF',
+                 1:'ON',
+                 2:'BUSY...',
+                 3:'ALWAYS ON',}.get(value, '')
+
 
 class DeviceHandler(object):
     ## \param name The name of the device being controlled. This should be
