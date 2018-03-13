@@ -58,13 +58,8 @@ class ExecutorDevice(device.Device):
         self.connection._pyroTimeout = 6
         self.connection.Abort()
 
-
-    ## We care when cameras are enabled, since we control some of them 
-    # via external trigger. There are also some light sources that we don't
-    # control directly that we need to know about.
+    # Subscribe to events.
     def performSubscriptions(self):
-        #events.subscribe('camera enable', self.toggleCamera)
-        #events.subscribe('light source enable', self.toggleLightHandler)
         events.subscribe(events.USER_ABORT, self.onAbort)
         events.subscribe(events.PREPARE_FOR_EXPERIMENT, self.onPrepareForExperiment)
 
