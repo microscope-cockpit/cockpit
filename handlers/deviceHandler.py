@@ -27,6 +27,7 @@ class STATES():
     disabled = 0
     enabled = 1
     enabling = 2
+    constant = 3
 
 
 class DeviceHandler(object):

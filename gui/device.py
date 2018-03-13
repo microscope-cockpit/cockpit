@@ -191,6 +191,12 @@ class Menu(wx.Menu):
 
 class EnableButton(Button):
     """A button to enable/disable devices."""
+    def __init__(self, *args, **kwargs):
+        self.prefix = kwargs.pop('prefix', None)
+        if 'size' not in kwargs:
+            kwargs['size'] = [TALL_SIZE, DEFAULT_SIZE][self.prefix is None]
+        super(EnableButton, self).__init__(*args, **kwargs)
+
     def enable(self, which):
         if which is False:
             self.Disable()
@@ -199,12 +205,15 @@ class EnableButton(Button):
             self.Enable()
             self.SetEvtHandlerEnabled(True)
 
-
     def onEnabledEvent(self, state):
         if state is STATES.enabled:
             self.enable(True)
             self.SetLabel("ON")
             self.SetBackgroundColour(ACTIVE_COLOR)
+        elif state is STATES.constant:
+            self.enable(True)
+            self.SetLabel("ON ALWAYS")
+            self.SetBackgroundColour((255, 255, 0))
         elif state is STATES.disabled:
             self.enable(True)
             self.SetLabel("OFF")
@@ -217,6 +226,10 @@ class EnableButton(Button):
             self.SetLabel("ERROR")
         self.Refresh()
 
+    def SetLabel(self, label):
+        if self.prefix is not None:
+            label = '\n'.join((self.prefix, label))
+        super(EnableButton, self).SetLabel(label)
 
 
 class SettingsEditor(wx.Frame):
