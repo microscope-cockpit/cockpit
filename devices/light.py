@@ -19,6 +19,7 @@ import Pyro4
 from . import device
 import depot
 import handlers.lightSource
+import time
 import util.colors
 
 
@@ -49,7 +50,7 @@ class SimpleLight(device.Device):
         self.handlers.append(handlers.lightSource.LightHandler(
             self.name + ' toggle',
             self.name + ' light source',
-            {'setEnabled': lambda name, on: None,
+            {'setEnabled': lambda name, on: time.sleep(0.5),
              'setExposureTime': lambda name, value: setattr(self, '_exposureTime', value),
              'getExposureTime': lambda name: self._exposureTime,
              'setExposing': lambda name, isOn: None,},
