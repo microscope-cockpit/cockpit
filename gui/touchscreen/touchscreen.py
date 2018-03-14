@@ -222,8 +222,8 @@ class TouchScreenWindow(wx.Frame):
             lineSizer=wx.BoxSizer(wx.HORIZONTAL)
             button = self.makeLaserToggleButton(self.buttonPanel, light.name,
                                      light,
-                                     'laser_'+light.name+'-active.png',
-                                     'laser_'+light.name+'-inactive.png',
+                                     '', #TODO - fix filenames or overlay
+                                     '',
                                      "enable/disable this light")
             lineSizer.Add(button, 0, wx.EXPAND|wx.ALL, border=2)
             laserPowerSizer=wx.BoxSizer(wx.VERTICAL)
@@ -248,7 +248,7 @@ class TouchScreenWindow(wx.Frame):
                 laserPowerText.SetFont(font)
                 #need to read actual power and then export the object in
                 #self. so that we can change it at a later date
-                label = '%5.1f %s'%(powerHandler.curPower,powerHandler.units)
+                label = '%5.1f %s'%(powerHandler.lastPower,powerHandler.units)
                 laserPowerText.SetLabel(label.rjust(10))
                 self.nameToText[light.groupName+'power']=laserPowerText
                 laserPlusButton=self.makeButton(self.buttonPanel,
@@ -347,7 +347,7 @@ class TouchScreenWindow(wx.Frame):
         leftSizer.Add(self.macroStageZ, 3,wx.EXPAND)
 
         ## Z control buttons
-        zButtonSizer=wx.GridSizer(3, 2, 1)
+        zButtonSizer=wx.GridSizer(3, 2, 1, 1)
 
         for args in [('Up', self.zMoveUp, None,
                       'up.png',
@@ -376,7 +376,7 @@ class TouchScreenWindow(wx.Frame):
         label = 'Z Step %5d'%(interfaces.stageMover.getCurStepSizes()[2])
         zStepText.SetLabel(label.rjust(10))
         self.nameToText['ZStep']=zStepText
-        zButtonSizer.Add(zStepText, 0, wx.EXPAND|wx.ALL,border=15)
+        zButtonSizer.Add(zStepText, 0, wx.EXPAND|wx.ALL, border=15)
 
         for args in [('Down', self.zMoveDown, None,
                       'down.png',
@@ -515,10 +515,13 @@ class TouchScreenWindow(wx.Frame):
 
     def laserPowerUpdate(self, light):
         textString=self.nameToText[light.groupName+'power']
-        label = '%5.1f %s'%(light.curPower, light.units)
+        if light.powerSetPoint is None:
+            # Light has no power control
+            return
+        label = '%5.1f %s'%(light.powerSetPoint, light.units)
         textString.SetLabel(label.rjust(10))
-        if light.powerSetPoint and light.curPower:
-            matched = 0.95*light.powerSetPoint < light.curPower < 1.05*light.powerSetPoint
+        if light.powerSetPoint and light.lastPower:
+            matched = 0.95*light.powerSetPoint < light.lastPower < 1.05*light.powerSetPoint
         else:
             matched = False
         if matched:
@@ -556,16 +559,14 @@ class TouchScreenWindow(wx.Frame):
 
     #function called by minus laser power button
     def decreaseLaserPower(self,powerHandler):
-        currentPower=powerHandler.curPower
-        newPower=int(currentPower*0.9)
-        powerHandler.setPower(newPower)
+        currentSP = powerHandler.powerSetPoint or powerHandler.minPower
+        powerHandler.setPower(int(currentSP*0.9))
+
 
     #function called by plus expsoure time button
     def increaseLaserPower(self,powerHandler):
-        currentPower=powerHandler.curPower
-        newPower=int(currentPower*1.1)
-        powerHandler.setPower(newPower)
-
+        currentSP = powerHandler.powerSetPoint or powerHandler.minPower
+        powerHandler.setPower(int(currentSP*1.1))
 
 
     ## Now that we've been created, recenter the canvas.

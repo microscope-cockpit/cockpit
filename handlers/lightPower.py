@@ -187,7 +187,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         self.callbacks['setPower'](power)
         self.powerSetPoint = power
         util.userConfig.setValue(self.name + '-lightPower', power)
-        events.publish(self.name + ' update', self)
 
 
     ## Select an arbitrary power output.
@@ -230,6 +229,8 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         # Enable or disable the powerToggle button, if it exists.
         if self.powerToggle:
             self.powerToggle.Enable(self.maxPower and self.isEnabled)
+
+        events.publish('laser power update', self)
 
 
     ## Simple getter.
