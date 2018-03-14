@@ -118,8 +118,10 @@ class Experiment:
         self.shouldAbort = False
         events.subscribe('user abort', self.onAbort)
 
-        ## Z position when we started, so we can restore it at the end
+        ## Position of Z position when we started, used as offset in Z stacks
         self.initialZPos = None
+        ## Resultant Z altitude when we stared, used to restore position.
+        self.initialAltitude = None
 
         ## Maps light sources to sets of exposure times used. This is helpful
         # when setting the "titles" in the MRC header.
@@ -199,7 +201,8 @@ class Experiment:
     def prepareHandlers(self):
         #self.initialZPos = interfaces.stageMover.getPositionForAxis(2)
         # Get the smallest Z mover position.
-        self.initialZPos = interfaces.stageMover.getPosition()[-1]
+        self.initialZPos = interfaces.stageMover.getAllPositions()[-1][-1]
+        self.initialAltitude = interfaces.stageMover.getPosition()[-1]
         # Ensure that we're the only ones moving things around.
         interfaces.stageMover.waitForStop()
         # TODO: Handling multiple movers on an axis is broken. Do not proceed if
@@ -329,9 +332,9 @@ class Experiment:
         for handler in self.allHandlers:
             handler.cleanupAfterExperiment()
         events.publish('cleanup after experiment')
-        if self.initialZPos is not None:
-            # Restore our initial Z position.
-            interfaces.stageMover.goToZ(self.initialZPos, shouldBlock = True)
+        if self.initialAltitude is not None:
+            # Restore our initial altitude.
+            interfaces.stageMover.goToZ(self.initialAltitude, shouldBlock = True)
         events.publish('experiment complete')
         events.publish('update status light', 'device waiting',
                 '', (170, 170, 170))
