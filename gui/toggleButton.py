@@ -9,7 +9,7 @@ ACTIVE_COLOR = (128, 255, 125)
 ## Color for inactive controls, barring control-specific colors
 INACTIVE_COLOR = (128, 128, 128)
 ## Default size
-DEFAULT_SIZE=(128, 48)
+DEFAULT_SIZE=(120, 48)
 
 
 ## This class provides a simple button that can be toggled on and off, and
