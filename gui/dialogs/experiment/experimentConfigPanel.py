@@ -104,7 +104,7 @@ class ExperimentConfigPanel(wx.Panel):
                 universalSizer, label = u"Slice height (\u03bcm):",
                 defaultValue = self.settings['sliceHeight'])
 
-        self.sizer.Add(universalSizer, 0, wx.ALL, 5)
+        self.sizer.Add(universalSizer, 0, wx.ALL, border=5)
 
         ## Maps experiment modules to ExperimentUI instances holding the
         # UI for that experiment, if any.
@@ -129,10 +129,10 @@ class ExperimentConfigPanel(wx.Panel):
         ## Controls which set of exposure settings we enable.
         self.shouldExposeSimultaneously = wx.CheckBox(
                 self, label = "Expose all cameras simultaneously")
-        exposureSizer.Add(self.shouldExposeSimultaneously, 0, wx.ALL, 5)
+        exposureSizer.Add(self.shouldExposeSimultaneously, 0, wx.ALL, border=5)
         ## Panel for holding controls for when we expose every camera
         # simultaneously.
-        self.simultaneousExposurePanel = wx.Panel(self)
+        self.simultaneousExposurePanel = wx.Panel(self, name="simultaneous exposures")
         simultaneousSizer = wx.BoxSizer(wx.VERTICAL)
         simultaneousSizer.Add(
                 wx.StaticText(self.simultaneousExposurePanel, -1, "Exposure times for light sources:"),
@@ -145,22 +145,22 @@ class ExperimentConfigPanel(wx.Panel):
                 self.settings['simultaneousExposureTimes'])
         simultaneousSizer.Add(timeSizer)
         useCurrentButton = wx.Button(self.simultaneousExposurePanel, -1, 
-                "Use current settings")
+                                     "Use current settings")
         useCurrentButton.SetToolTip(wx.ToolTip("Use the same settings as are currently used to take images with the '+' button"))
         useCurrentButton.Bind(wx.EVT_BUTTON, self.onUseCurrentExposureSettings)
         simultaneousSizer.Add(useCurrentButton)
 
         self.simultaneousExposurePanel.SetSizerAndFit(simultaneousSizer)
-        exposureSizer.Add(self.simultaneousExposurePanel, 0, wx.ALL, 5)
+        exposureSizer.Add(self.simultaneousExposurePanel, 0, wx.ALL, border=5)
 
         ## Panel for when we expose each camera in sequence.        
-        self.sequencedExposurePanel = wx.Panel(self)
+        self.sequencedExposurePanel = wx.Panel(self, name="sequenced exposures")
         ## Maps a camera handler to an ordered list of exposure times. 
         self.cameraToExposureTimes = {}
         sequenceSizer = wx.FlexGridSizer(
                 len(self.settings['sequencedExposureSettings']) + 1,
                 len(self.settings['sequencedExposureSettings'][0]) + 1,
-                1)
+                1, 1)
         for label in [''] + [str(l.name) for l in self.allLights]:
             sequenceSizer.Add(
                     wx.StaticText(self.sequencedExposurePanel, -1, label),
@@ -174,11 +174,11 @@ class ExperimentConfigPanel(wx.Panel):
                 exposureTime = wx.TextCtrl(
                         self.sequencedExposurePanel, size = (40, -1))
                 exposureTime.SetValue(defaultVal)
-                sequenceSizer.Add(exposureTime, 0, wx.ALL, 5)
+                sequenceSizer.Add(exposureTime, 0, wx.ALL, border=5)
                 times.append(exposureTime)
             self.cameraToExposureTimes[camera] = times
         self.sequencedExposurePanel.SetSizerAndFit(sequenceSizer)        
-        exposureSizer.Add(self.sequencedExposurePanel, 0, wx.ALL, 5)
+        exposureSizer.Add(self.sequencedExposurePanel, 0, wx.ALL, border=5)
         self.sizer.Add(exposureSizer)
 
         # Toggle which panel is displayed based on the checkbox.
@@ -205,7 +205,7 @@ class ExperimentConfigPanel(wx.Panel):
         rowSizer.Add(updateButton)
         self.filePanel.SetSizerAndFit(rowSizer)
         self.filePanel.Show(shouldShowFileControls)
-        self.sizer.Add(self.filePanel, 0, wx.LEFT, 5)
+        self.sizer.Add(self.filePanel, 0, wx.LEFT, border=5)
 
         # Save/load experiment settings buttons.
         saveLoadPanel = wx.Panel(self)
