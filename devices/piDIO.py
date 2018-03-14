@@ -7,13 +7,9 @@ import Pyro4
 import wx
 import threading
 import time
+import gui.device
 
-#DIO_LINES = ['Objective']
-#LINES_PAT = r"(?P<lines>\'\s*\w*\s*\')"
-
-## TODO: Test with hardware.
 ## TODO: Clean up code.
-
 
 class RaspberryPi(device.Device):
     def __init__(self, name, config):
@@ -43,8 +39,7 @@ class RaspberryPi(device.Device):
             
         self.RPiConnection = None
         ## util.connection.Connection for the temperature sensors.
-		
-        self.makeOutputWindow = makeOutputWindow
+
         self.buttonName='piDIO'
 
         ## Maps light modes to the mirror settings for those modes, as a list
@@ -88,31 +83,20 @@ class RaspberryPi(device.Device):
         #Subscribe to objective change to map new detector path to new pixel sizes via fake objective
         events.subscribe('objective change', self.onObjectiveChange)
 
-
-    ## Ensure the room light status is shown.
-    def makeInitialPublications(self):
-#        events.publish('new status light', 'room light', '')
-#        self.receiveLightData('test', not self.lightConnection.connection.getIsLightOn())
-        
-        pass
-
     
     ## Generate a column of buttons for setting the light path. Make a window
     # that plots our temperature data.
     def makeUI(self, parent):
-
         rowSizer=wx.BoxSizer(wx.HORIZONTAL)
-        
         sizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(parent, -1, "Excitation path:")
-        label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        label = gui.device.Label(parent, -1, "Excitation path:")
         sizer.Add(label)
         for mode in self.excitation:
             button = gui.toggleButton.ToggleButton( 
-                    textSize = 12, label = mode, size = (180, 50), 
+                    textSize = 12, label = mode,
                     parent = parent)
             # Respond to clicks on the button.
-            wx.EVT_LEFT_DOWN(button, lambda event, mode = mode: self.setExMode(mode))
+            button.Bind(wx.EVT_LEFT_DOWN, lambda event, mode = mode: self.setExMode(mode))
             sizer.Add(button)
             self.lightPathButtons.append(button)
             if mode == self.curExMode:
@@ -130,31 +114,13 @@ class RaspberryPi(device.Device):
         self.curExMode = mode
 
 
-
     def setDetMode(self, mode):
         for mirrorIndex, isUp in self.modeToFlips[mode]:
             self.flipDownUp(mirrorIndex, isUp)
         for button in self.detPathButtons:
             button.setActive(button.GetLabel() == mode)
         self.curDetMode = mode
-    #IMD 20150129 - flipping buttons for detection path also changes objective
-    # set correct pixel size and image orientation
-        objectiveHandler = depot.getHandlerWithName('objective')
 
-# This code is obsolete on DeepSIM, need a better way to map it from
-# config files on OMXT
-#        if mode == 'with AO & 85 nm pixel size' :
-#            if (objectiveHandler.curObjective != '63x85nm') :
-#                objectiveHandler.changeObjective('63x85nm')
-#                print ("Change objective 85 nm pixel")
-#        elif mode == 'w/o AO & 209 nm pixel size' :
-#            if (objectiveHandler.curObjective != '63x209nm') :
-#                objectiveHandler.changeObjective('63x209nm')
-#                print ("Change objective 209 nm pixel")
-        
-
-
-         
 
     ## Flip a mirror down and then up, to ensure that it's in the position
     # we want.
@@ -166,8 +132,9 @@ class RaspberryPi(device.Device):
         for flips in self.objectiveToFlips[name]:
             self.flipDownUp(flips[0], flips[1])
         print ("piDIO objective change to ",name)
-		
-    #function to read temperature at set update frequency. 
+
+
+    #function to read temperature at set update frequency.
     def updateStatus(self):
         """Runs in a separate thread publish status updates."""
         updatePeriod = 10.0
@@ -187,6 +154,10 @@ class RaspberryPi(device.Device):
                            {'temperature'+str(i): temperature[i],})
             time.sleep(updatePeriod)
 
+
+    ## Debugging function: display a debug window.
+    def showDebugWindow(self):
+        piOutputWindow(self, parent=wx.GetApp().GetTopWindow()).Show()
 
 
 ## This debugging window lets each digital lineout of the DSP be manipulated
@@ -222,17 +193,8 @@ class piOutputWindow(wx.Frame):
     ## One of our buttons was clicked; update the DSP's output.
     def toggle(self):
         output = 0
-        for button, line in iteritems(self.buttonToLine):
+        for button, line in self.buttonToLine.items():
             if button.getIsActive():
                 self.pi.RPiConnection.flipDownUp(line, 1)
             else:
                 self.pi.RPiConnection.flipDownUp(line, 0)
-
-
-## Debugging function: display a DSPOutputWindow.
-def makeOutputWindow(self):
-    # HACK: the _deviceInstance object is created by the depot when this
-    # device is initialized.
-    global _deviceInstance
-    piOutputWindow(_deviceInstance, parent = wx.GetApp().GetTopWindow()).Show()
-    
