@@ -131,7 +131,6 @@ class RaspberryPi(device.Device):
     def onObjectiveChange(self, name, pixelSize, transform, offset):
         for flips in self.objectiveToFlips[name]:
             self.flipDownUp(flips[0], flips[1])
-        print ("piDIO objective change to ",name)
 
 
     #function to read temperature at set update frequency.
