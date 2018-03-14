@@ -124,18 +124,8 @@ class MicroscopeBase(device.Device):
         self.setAnyDefaults()
 
 
-    def cleanupAfterExperiment(self):
-        """Restore settings as they were prior to experiment."""
-        if self.enabled:
-            self.settings.update(self.cached_settings)
-            self._proxy.update_settings(self.settings)
-            self._proxy.enable()
-
-
     def performSubscriptions(self):
         """Perform subscriptions for this camera."""
-        events.subscribe('cleanup after experiment',
-                self.cleanupAfterExperiment)
         events.subscribe('user login',
                 self.onUserLogin)
 
