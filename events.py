@@ -40,11 +40,14 @@ def publish(eventType, *args, **kwargs):
     for priority, subscribeFunc in eventToSubscriberMap.get(eventType, []):
         subscribeFunc(*args, **kwargs)
 
-    if eventType in eventToOneShotSubscribers:
-        for subscribeFunc in eventToOneShotSubscribers[eventType]:
-            subscribeFunc(*args, **kwargs)
-        with subscriberLock:
-            del eventToOneShotSubscribers[eventType]
+    while True:
+        try:
+            with subscriberLock:
+                subscribeFunc = eventToOneShotSubscribers[eventType].pop()
+        except:
+            # eventType not in eventToOneShotSubscibers or list is empty.
+            break
+        subscribeFunc(*args, **kwargs)
 
 
 ## Add a new function to the list of those to call when the event occurs.
