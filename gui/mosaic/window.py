@@ -650,7 +650,7 @@ class MosaicWindow(wx.Frame):
             try:
                 #data, timestamp = events.executeAndWaitForOrTimeout(
                 data, timestamp = events.executeAndWaitForOrTimeout(
-                        "new image %s" % camera.name,
+                        events.NEW_IMAGE % camera.name,
                         interfaces.imager.takeImage,
                         CAMERA_TIMEOUT,
                         shouldBlock = True)
