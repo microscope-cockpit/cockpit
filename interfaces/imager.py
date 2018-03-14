@@ -138,15 +138,16 @@ class Imager:
                 break
         self.amInVideoMode = False
         events.publish('video mode toggle', False)
+        # Our thread could be blocked waiting for an image.
+        # Clear one shot new image subscribers to make sure it
+        # is unblocked.
+        events.clearOneShotSubscribers(pattern="new image")
+
 
 
     ## Stop our video thread, if relevant.
     def stopVideo(self):
         self.shouldStopVideoMode = True
-        # Our thread could be blocked waiting for an image.
-        # Clear one shot new image subscribers to make sure it
-        # is unblocked.
-        events.clearOneShotSubscribers(pattern="new image")
 
 
     ## Get the next time it's safe to call takeImage(), based on the
