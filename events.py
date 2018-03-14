@@ -39,10 +39,11 @@ subscriberLock = threading.Lock()
 def publish(eventType, *args, **kwargs):
     for priority, subscribeFunc in eventToSubscriberMap.get(eventType, []):
         subscribeFunc(*args, **kwargs)
-    with subscriberLock:
-        if eventType in eventToOneShotSubscribers:
-            for subscribeFunc in eventToOneShotSubscribers[eventType]:
-                subscribeFunc(*args, **kwargs)
+
+    if eventType in eventToOneShotSubscribers:
+        for subscribeFunc in eventToOneShotSubscribers[eventType]:
+            subscribeFunc(*args, **kwargs)
+        with subscriberLock:
             del eventToOneShotSubscribers[eventType]
 
 
