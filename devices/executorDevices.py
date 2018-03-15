@@ -165,11 +165,24 @@ class LegacyDSP(ExecutorDevice):
     def __init__(self, name, config):
         super(self.__class__, self).__init__(name, config)
         self.tickrate = 10 # Number of ticks per ms.
-        self._lastAnalogs = []
+        # We store the current position for each analogue channel, because
+        # reasons:
+        # - analogue readback functions on the remote are not reliable, as
+        #   they use arbitrary scaling that varies from device to device,
+        #   often from channel to channel, bears no resemblance to the voltage
+        #   produced, and has no clear way to be queried or set;
+        # - movement 'profiles' on the DSP use ADU offsets from a start position,
+        #   so it is convenient to use ADU as the native unit for this device;
+        #   the remote offers a function to set an absolute position in ADUs, but
+        #   there is not a direct, transparent or documented way to read back in
+        #   ADUs.
+        self._currentAnalogs = [[],[],[],[]]
+        # Absolute positions prior to the start of the experiment.
+        self._lastAnalogs = self._currentAnalogs.copy()
 
     def onPrepareForExperiment(self, *args):
         super(self.__class__, self).onPrepareForExperiment(*args)
-        self._lastAnalogs = [self.connection.ReadPosition(i) for i in range(4)]
+        self._lastAnalogs = self._currentAnalogs.copy()
         self._lastDigital = self.connection.ReadDigital()
 
 
@@ -179,13 +192,12 @@ class LegacyDSP(ExecutorDevice):
             events.publish(events.EXECUTOR_DONE % self.name)
 
     ## Return analog position in native units
-    # No longer using ADU as native units, as the scaling for each channel
-    # varies widely from device to device.
     def getAnalog(self, line):
-        return self.connection.ReadPosition(line)
+        return self._currentAnalogs[line]
 
     ## Set analog position in native units
     def setAnalog(self, line, target):
+        self._currentAnalogs[line] = target
         return self.connection.MoveAbsolute(line, target)
 
     ## We control which light sources are active, as well as a set of
@@ -282,10 +294,6 @@ class LegacyDSP(ExecutorDevice):
         if len(digitals) == 1 or tLastA >= digitals[-1][0]:
             # Just duplicate the last digital action, one tick later.
             digitals.append( (digitals[-1][0]+1, digitals[-1][1]) )
-
-        # I think the point of this is just to create a struct with C-aligned fields.
-        # If so, we don't need numpy for this, as we only touch the first element
-        # in this recarray: could use struct, instead.
 
         # Update records of last positions.
         self._lastDigital = digitals[-1][1]
