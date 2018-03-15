@@ -246,6 +246,7 @@ class LegacyDSP(ExecutorDevice):
         #    lines are not changed twice on the same tick;
         #  - separate analogue and digital events into different lists;
         #  - generate a structure that describes the profile.
+
         # Start time
         t0 = float(table[startIndex][0])
         # Profiles
@@ -263,6 +264,17 @@ class LegacyDSP(ExecutorDevice):
             if actions[-1][0] < repDuration:
                 # Repeat the last event at t0 + repDuration
                 actions.append( (t0+repDuration,) + tuple(actions[-1][1:]) )
+
+        # The DSP executes an analogue movement profile, which is defined using
+        # offsets relative to a baseline at the time the profile was initialized.
+        # These offsets are encoded as unsigned integers, so at profile
+        # intialization, each analogue channel must be at or below the lowest
+        # value it needs to reach in the profile.
+        lowestAnalogs = [min(channel) for channel in zip(*zip(*zip(*actions)[1])[1])]
+        for line, lowest in enumerate(lowestAnalogs):
+            if lowest < self._lastAnalogs[line]:
+                self._lastAnalogs[line] = lowest
+                self.setAnalog(line, lowest)
 
         for (t, (darg, aargs)) in actions:
             # Convert t to ticks as int while rounding up. The rounding is
