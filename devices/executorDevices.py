@@ -159,8 +159,6 @@ class ExecutorDevice(device.Device):
 
 
 class LegacyDSP(ExecutorDevice):
-    import numpy
-    ## TODO: test with hardware.
     #        May need to wrap profile digitals and analogs in numpy object.
     def __init__(self, name, config):
         super(self.__class__, self).__init__(name, config)
