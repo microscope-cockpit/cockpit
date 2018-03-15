@@ -38,7 +38,11 @@ subscriberLock = threading.Lock()
 ## Pass the given event to all subscribers.
 def publish(eventType, *args, **kwargs):
     for priority, subscribeFunc in eventToSubscriberMap.get(eventType, []):
-        subscribeFunc(*args, **kwargs)
+        try:
+            subscribeFunc(*args, **kwargs)
+        except:
+            print('Error in subscribed func %s in %s.' % (subscribeFunc.__name__,
+                                                         subscribeFunc.__module__))
 
     while True:
         try:
@@ -47,7 +51,12 @@ def publish(eventType, *args, **kwargs):
         except:
             # eventType not in eventToOneShotSubscibers or list is empty.
             break
-        subscribeFunc(*args, **kwargs)
+        try:
+            subscribeFunc(*args, **kwargs)
+        except:
+            print('Error in subscribed func %s in %s' % (subscribeFunc.__name__,
+                                                         subscribeFunc.__module__))
+
 
 
 ## Add a new function to the list of those to call when the event occurs.
