@@ -197,36 +197,30 @@ class EnableButton(Button):
             kwargs['size'] = [TALL_SIZE, DEFAULT_SIZE][self.prefix is None]
         super(EnableButton, self).__init__(*args, **kwargs)
 
-    def enable(self, which):
-        if which is False:
+
+    def onEnabledEvent(self, state):
+        # Update button responsiveness
+        if state is STATES.enabling:
             self.Disable()
             self.SetEvtHandlerEnabled(False)
         else:
-            self.Enable()
+            self.Enable(True)
             self.SetEvtHandlerEnabled(True)
 
-    def onEnabledEvent(self, state):
-        if state is STATES.enabled:
-            self.enable(True)
-            self.SetBackgroundColour(ACTIVE_COLOR)
-        elif state is STATES.constant:
-            self.enable(True)
-            self.SetBackgroundColour((255, 255, 0))
-        elif state is STATES.disabled:
-            self.enable(True)
-            self.SetBackgroundColour(INACTIVE_COLOR)
-        elif state is STATES.enabling:
-            self.enable(False)
-        elif state is STATES.error:
-            self.SetBackgroundColour((255, 0, 0))
-            self.enable(True)
-        self.SetLabel(STATES.toStr(state))
-        self.Refresh()
+        # Update colour
+        colour = {STATES.enabled: ACTIVE_COLOR,
+                  STATES.disabled: INACTIVE_COLOR,
+                  STATES.enabling: (127, 127, 127),
+                  STATES.constant: (255, 255, 0),
+                  STATES.error: (255, 0, 0)}[state]
+        self.SetBackgroundColour(colour)
 
-    def SetLabel(self, label):
+        # Update label
+        label = STATES.toStr(state)
         if self.prefix is not None:
             label = '\n'.join((self.prefix, label))
-        super(EnableButton, self).SetLabel(label)
+        self.SetLabel(label)
+        self.Refresh()
 
 
 class SettingsEditor(wx.Frame):
