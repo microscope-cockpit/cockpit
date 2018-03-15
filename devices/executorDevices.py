@@ -176,13 +176,20 @@ class LegacyDSP(ExecutorDevice):
         #   the remote offers a function to set an absolute position in ADUs, but
         #   there is not a direct, transparent or documented way to read back in
         #   ADUs.
-        self._currentAnalogs = [[],[],[],[]]
+        self._currentAnalogs = 4*[0]
         # Absolute positions prior to the start of the experiment.
-        self._lastAnalogs = self._currentAnalogs.copy()
+        self._lastAnalogs = 4*[0]
+        # Store last movement profile for debugging
+        self._lastProfile = None
+
+    def finalizeInitialization(self):
+        super(LegacyDSP, self).finalizeInitialization()
+        for line in range(4):
+            self.setAnalog(line, 65536//2)
 
     def onPrepareForExperiment(self, *args):
         super(self.__class__, self).onPrepareForExperiment(*args)
-        self._lastAnalogs = self._currentAnalogs.copy()
+        self._lastAnalogs = [line for line in self._currentAnalogs]
         self._lastDigital = self.connection.ReadDigital()
 
 
@@ -198,7 +205,7 @@ class LegacyDSP(ExecutorDevice):
     ## Set analog position in native units
     def setAnalog(self, line, target):
         self._currentAnalogs[line] = target
-        return self.connection.MoveAbsolute(line, target)
+        return self.connection.MoveAbsoluteADU(line, int(target))
 
     ## We control which light sources are active, as well as a set of
     # stage motion piezos.
@@ -242,7 +249,7 @@ class LegacyDSP(ExecutorDevice):
         # Start time
         t0 = float(table[startIndex][0])
         # Profiles
-        analogs = [ [(0,0)], [(0,0)], [(0,0)], [(0,0)] ] # A list of lists (one per channel) of tuples (ticks, (analog values))
+        analogs = [ [], [], [], [] ] # A list of lists (one per channel) of tuples (ticks, (analog values))
         digitals = [] # A list of tuples (ticks, digital state)
         # Need to track time of last analog events to workaround a
         # DSP bug later. Also used to detect when events exceed timing
@@ -306,6 +313,7 @@ class LegacyDSP(ExecutorDevice):
         # Convert analogs to array of uints.
         analogsArr = [np.array(a, dtype=np.uint32).reshape(-1, 2) for a in analogs]
 
+
         # Create a description dict. Will be byte-packed by server-side code.
         maxticks = reduce(max, chain(zip(*digitals)[0],
                                      *[(zip(*a) or [[None]])[0] for a in analogs]))
@@ -315,6 +323,8 @@ class LegacyDSP(ExecutorDevice):
         description['InitDio'] = self._lastDigital
         description['nDigital'] = len(digitals)
         description['nAnalog'] = [len(a) for a in analogs]
+
+        self._lastProfile = (description, digitalsArr, analogsArr)
 
         self.connection.profileSet(description, digitalsArr, *analogsArr)
         self.connection.DownloadProfile()
