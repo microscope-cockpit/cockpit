@@ -7,6 +7,7 @@ import threading
 import wx
 from wx.lib.agw.shapedbutton import SButton, SBitmapButton,SBitmapToggleButton,SToggleButton
 from gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
+from handlers.deviceHandler import STATES
 
 
 from . import slavecanvas
@@ -22,6 +23,7 @@ import gui.guiUtils
 import gui.keyboard
 import gui.mosaic.window
 import interfaces.stageMover
+import util.colors
 import util.user
 import util.threads
 import util.userConfig
@@ -220,11 +222,7 @@ class TouchScreenWindow(wx.Frame):
         font=wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         for light in lightToggles:
             lineSizer=wx.BoxSizer(wx.HORIZONTAL)
-            button = self.makeLaserToggleButton(self.buttonPanel, light.name,
-                                     light,
-                                     '', #TODO - fix filenames or overlay
-                                     '',
-                                     "enable/disable this light")
+            button = LightToggleButton(self.buttonPanel, light)
             lineSizer.Add(button, 0, wx.EXPAND|wx.ALL, border=2)
             laserPowerSizer=wx.BoxSizer(wx.VERTICAL)
             #To get powers we need to:
@@ -455,19 +453,6 @@ class TouchScreenWindow(wx.Frame):
         self.nameToButton[label] = button
         return button
 
-    def makeLaserToggleButton(self, parent, label, light,
-                              bitmapActive, bitmapInactive, helpText,
-                              size = (75, 75)):
-        bmpActive=self.checkBitmap(bitmapActive)
-        bmpInactive=self.checkBitmap(bitmapInactive)
-        button = SBitmapToggleButton(parent, -1, bitmap=bmpInactive, size = size)
-        button.SetBitmapSelected(bmpActive)
-        button.SetToolTip(wx.ToolTip(helpText))
-        #Note left action is called with true if down, false if up
-        button.Bind(wx.EVT_BUTTON, lambda event: self.laserToggle(event,
-                                                                  light, button))
-        self.nameToButton[label] = button
-        return button
 
     def snapImage(self):
         #check that we have a camera and light source
@@ -501,9 +486,6 @@ class TouchScreenWindow(wx.Frame):
             events.publish('light source enable', light, False)
 
     def lightSourceEnable(self, light, state):
-        button=self.nameToButton[light.name]
-        #need to set button active and chnage colour
-        button.SetValue(state)
         #check to see if there is a power handler
         powerHandler=None
         for handler in depot.getHandlersInGroup(light.groupName):
@@ -1296,6 +1278,76 @@ class TouchScreenWindow(wx.Frame):
         elif isEnabled is False:
             self.camButton[i].SetLabel("OFF")
             self.SetBackgroundColour(INACTIVE_COLOR)
+
+
+class LightToggleButton(SBitmapToggleButton):
+    size = 75
+    _bmp = wx.EmptyBitmap(size, size)
+    _dc = wx.MemoryDC()
+    _dc.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT,
+                        wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+    _dc.SelectObject(_bmp)
+    _dc.DrawCircle(size/2, size/2, size/3)
+    _dc.SelectObject(wx.NullBitmap)
+    mask = wx.Mask(_bmp)
+    del _bmp
+
+    def __init__(self, parent, light, **kwargs):
+        size = (LightToggleButton.size, LightToggleButton.size)
+        self.light = light
+        light.addListener(self)
+        if light.wavelength:
+            label = str(int(light.wavelength))
+            colour = util.colors.wavelengthToColor(light.wavelength)
+        else:
+            label = light.name[0:4]
+            colour = ((240,240,240))
+
+        bmpOff = wx.EmptyBitmap(*size)
+        bmpOff.SetMask(LightToggleButton.mask)
+        bmpOn = wx.EmptyBitmap(*size)
+        bmpOn.SetMask(LightToggleButton.mask)
+
+        dc = LightToggleButton._dc
+        tw, th = dc.GetTextExtent(label)
+
+        dc.SelectObject(bmpOff)
+        dc.SetBackground(wx.Brush((192,192,192)))
+        dc.Clear()
+        dc.DrawText(label, (size[0]-tw)/2, (size[1]-th)/2)
+
+        dc.SelectObject(bmpOn)
+        dc.SetBackground(wx.Brush(colour))
+        dc.Clear()
+        dc.DrawText(label, (size[0] - tw) / 2, (size[1] - th) / 2)
+
+        dc.SelectObject(wx.NullBitmap)
+
+        kwargs['size'] = size
+        super(LightToggleButton, self).__init__(parent, wx.ID_ANY, bmpOff, **kwargs)
+        self.SetBitmapDisabled(bmpOff)
+        self.SetBitmapSelected(bmpOn)
+        self.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.light.toggleState())
+
+
+    def onEnabledEvent(self, state):
+        # Disable response to clicks while waiting for light state change.
+        if state is STATES.enabling:
+            self.Enable(False)
+        else:
+            self.Enable(True)
+
+        if state is STATES.enabled:
+            self.SetToggle(True)
+        elif state is STATES.constant:
+            self.SetToggle(True)
+        elif state is STATES.disabled:
+            self.SetToggle(False)
+        elif state is STATES.enabling:
+            self.SetToggle(False)
+        elif state is STATES.error:
+            self.SetToggle(True)
+        self.Refresh()
 
 
 
