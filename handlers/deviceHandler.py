@@ -86,6 +86,7 @@ class DeviceHandler(object):
 
     def __init__(self, name, groupName,
                  isEligibleForExperiments, callbacks, deviceType):
+        self._state = None
         self.__cache = {}
         self.name = name
         self.groupName = groupName
@@ -169,11 +170,11 @@ class DeviceHandler(object):
         if source is not self:
             return
         if args[0] is True:
-            state = STATES.enabled
+            self._state = STATES.enabled
         elif args[0] is False:
-            state = STATES.disabled
+            self._state = STATES.disabled
         else:
-            state = args[0]
+            self._state = args[0]
         # Update our set of listeners to remove those that are no longer valid.
         # (e.g. UI elements that have been destroyed)
         self.listeners.difference_update(
@@ -181,7 +182,7 @@ class DeviceHandler(object):
         # Notify valid listeners.
         for thing in self.listeners:
             try:
-                thing.onEnabledEvent(state)
+                thing.onEnabledEvent(self._state)
             except:
                 raise
 
@@ -189,6 +190,9 @@ class DeviceHandler(object):
     ## A function that any control can call to toggle enabled/disabled state.
     @util.threads.callInNewThread
     def toggleState(self, *args, **kwargs):
+        if self._state == STATES.enabling:
+            # Already processing a previous toggle request.
+            return
         if not all([hasattr(self, 'setEnabled'), hasattr(self, 'getIsEnabled')]):
             raise Exception('toggleState dependencies not implemented for %s.' % self.name)
         # Do nothing if lock locked as en/disable already in progress.
