@@ -9,7 +9,6 @@ from wx.lib.agw.shapedbutton import SButton, SBitmapButton,SBitmapToggleButton,S
 from gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 from handlers.deviceHandler import STATES
 
-
 from . import slavecanvas
 from . import slaveOverview
 from . import slaveMacroStageZ
@@ -1282,7 +1281,12 @@ class TouchScreenWindow(wx.Frame):
 
 class LightToggleButton(SBitmapToggleButton):
     size = 75
-    _bmp = wx.EmptyBitmap(size, size)
+    try:
+        # wx >= 4
+        _bmp = wx.Bitmap(size, size, depth=1)
+    except:
+        # wx < 4
+        _bmp = wx.EmptyBitmap(size, size)
     _dc = wx.MemoryDC()
     _dc.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT,
                         wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
@@ -1303,9 +1307,16 @@ class LightToggleButton(SBitmapToggleButton):
             label = light.name[0:4]
             colour = ((240,240,240))
 
-        bmpOff = wx.EmptyBitmap(*size)
+        try:
+            # wx >= 4
+            bmpOff = wx.Bitmap(*size)
+            bmpOn = wx.Bitmap(*size)
+        except:
+            # wx < 4
+            bmpOff = wx.EmptyBitmap(*size)
+            bmpOn = wx.EmptyBitmap(*size)
+
         bmpOff.SetMask(LightToggleButton.mask)
-        bmpOn = wx.EmptyBitmap(*size)
         bmpOn.SetMask(LightToggleButton.mask)
 
         dc = LightToggleButton._dc
