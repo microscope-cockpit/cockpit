@@ -196,6 +196,8 @@ class EnableButton(Button):
         if 'size' not in kwargs:
             kwargs['size'] = [TALL_SIZE, DEFAULT_SIZE][self.prefix is None]
         super(EnableButton, self).__init__(*args, **kwargs)
+        # Button has no label, so call onEnabledEvent to update.
+        wx.CallAfter(lambda: self.onEnabledEvent(STATES.disabled))
 
 
     def onEnabledEvent(self, state):
