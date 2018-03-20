@@ -35,7 +35,6 @@ import Pyro4
 from . import stage
 import threading
 import util.logger as logger
-import util.threads
 import util.userConfig
 
 import time
@@ -47,9 +46,8 @@ DEFAULT_LIMITS = ((0, 0), (11000, 3000))
 TEMPERATURE_LOGGING = False
 
 class LinkamStage(stage.StageDevice):
-    CONFIG_NAME = CONFIG_NAME
     def __init__(self, name, config={}):
-        super(CockpitLinkamStage, self).__init__(name, config)
+        super(LinkamStage, self).__init__(name, config)
         ## Connection to the XY stage controller (serial.Serial instance).
         self.remote = None
         ## Lock around sending commands to the XY stage controller.
@@ -107,9 +105,10 @@ class LinkamStage(stage.StageDevice):
                 # Some dumb Pyro bug.
                 continue
 
-            if not status.get('connected', None):
+            if not status.get('connected', False):
                 keys = set(status.keys()).difference(set(['connected']))
                 self.status.update(map(lambda k: (k, None), keys))
+                self.status['connected'] = False
             else:
                 self.status.update(status)
             events.publish("status update", __name__, self.status)
@@ -132,7 +131,7 @@ class LinkamStage(stage.StageDevice):
 
     def initialize(self):
         """Initialize the device."""
-        uri = "PYRO:%s@%s:%d" % (CONFIG_NAME, self.ipAddress, self.port)
+        uri = "PYRO:%s@%s:%d" % ('linkam', self.ipAddress, self.port)
         self.remote = Pyro4.Proxy(uri)
         # self.remote.connect()
         self.getPosition(shouldUseCache = False)
@@ -214,7 +213,7 @@ class LinkamStage(stage.StageDevice):
                     parent=panel, label=d, value=0.0, 
                     unitStr=u'°C')
             sizer.Add(self.elements[d])
-        self.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
+        panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
 
         ## Set the panel sizer and return.
         panel.SetSizerAndFit(sizer)
@@ -351,9 +350,9 @@ class LinkamStage(stage.StageDevice):
             # UI not built yet
             return
         status = self.status
-        self.elements['bridge'].updateValue(self.status.get('bridgeT'))
-        self.elements['chamber'].updateValue(self.status.get('chamberT'))
-        self.elements['dewar'].updateValue(self.status.get('dewarT'))
+        self.elements['bridge'].update(self.status.get('bridgeT'))
+        self.elements['chamber'].update(self.status.get('chamberT'))
+        self.elements['dewar'].update(self.status.get('dewarT'))
         ## The stage SDK allows us to toggle the light, but not know
         # its state.
         # self.elements['light'].setActive(not self.status.get('light'))
