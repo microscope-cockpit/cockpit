@@ -308,7 +308,7 @@ class MicroscopeFilter(MicroscopeBase):
         # Filters
         fdefs = self.config.get('filters', None)
         if fdefs:
-            fdefs = [re.split(':\s*', f) for f in re.split('[,;]\s*', fdefs)]
+            fdefs = [re.split(':\s*|,\s*', f) for f in re.split('\n', fdefs) if f]
         else:
             fdefs = self._proxy.get_filters()
         if not fdefs:
