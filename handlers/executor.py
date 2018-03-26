@@ -293,8 +293,11 @@ class DigitalMixin(object):
         # Mask of the bits that we toggle
         mask = reduce(operator.ior, list(zip(*seq))[1])
         entryState = self.readDigital()
+        t_last = 0
         for t, state in seq:
-            time.sleep(t/1000.)
+            if t != t_last:
+                time.sleep( (t - t_last) / 1000.)
+                t_last = t
             self.writeWithMask(mask, state)
         self.writeDigital(entryState)
 
