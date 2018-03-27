@@ -221,6 +221,8 @@ class MicroscopeLaser(MicroscopeBase):
         else:
             col = '0xaaaaaa'
         """Return device handlers. Derived classes may override this."""
+        # Querying remote for maxPower can cause delays, so set to None
+        # and update later.
         self.handlers.append(handlers.lightPower.LightPowerHandler(
             self.name + ' power',  # name
             self.name + ' light source',  # groupName
@@ -229,7 +231,7 @@ class MicroscopeLaser(MicroscopeBase):
                 'getPower': self._proxy.get_power_mw, # Synchronous - can hang threads.
             },
             wl,# wavelength,
-            0, 100, 20,#minPower, maxPower, curPower,
+            0, None, 20, #minPower, maxPower, curPower,
             col, #colour
             isEnabled=True))
         trigsource = self.config.get('triggersource', None)
@@ -251,6 +253,12 @@ class MicroscopeLaser(MicroscopeBase):
             trigline))
 
         return self.handlers
+
+
+    def finalizeInitialization(self):
+        # Query the remote to update max power on handler.
+        ph = self.handlers[0] # powerhandler
+        ph.setMaxPower(self._proxy.get_max_power_mw())
 
 
 class MicroscopeFilter(MicroscopeBase):
