@@ -229,11 +229,13 @@ class DeviceDepot:
     ## Do any extra initialization needed now that everything is properly
     # set up.
     def finalizeInitialization(self):
-        # for device in sorted(self.nameToDevice.values(), key = lambda d: d.priority):
+        from concurrent.futures import ThreadPoolExecutor
+        pool = ThreadPoolExecutor(max_workers=4)
         for device in self.nameToDevice.values():
-            device.finalizeInitialization()
+            pool.submit(device.finalizeInitialization)
         for handler in self.handlersList:
-            handler.finalizeInitialization()
+            pool.submit(handler.finalizeInitialization)
+        pool.shutdown(wait=True)
         
 
     ## Return a mapping of axis to a sorted list of positioners for that axis.
