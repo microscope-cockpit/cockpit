@@ -44,14 +44,14 @@ class ZStackMultiExperiment(experiment.Experiment):
         for zIndex in range(numZSlices):
             # Move to the next position, then wait for the stage to 
             # stabilize.
-            targetAltitude = self.initialZPos + self.sliceHeight * zIndex
+            zTarget = self.zStart + self.sliceHeight * zIndex
             motionTime, stabilizationTime = 0, 0
             if prevAltitude is not None:
-                motionTime, stabilizationTime = self.zPositioner.getMovementTime(prevAltitude, targetAltitude)
+                motionTime, stabilizationTime = self.zPositioner.getMovementTime(prevAltitude, zTarget)
             table.addAction(curTime + motionTime, self.zPositioner, 
-                    targetAltitude)
+                    zTarget)
             curTime += motionTime + stabilizationTime            
-            prevAltitude = targetAltitude
+            prevAltitude = zTarget
 
             # Trigger the delay generator. Do it slightly *after* the trigger
             # of the cameras below, so that we ensure the first exposure, which
@@ -74,7 +74,7 @@ class ZStackMultiExperiment(experiment.Experiment):
             # long for the Zyla to be ready?
             curTime += decimal.Decimal('10')
             # Hold the Z motion flat during the exposure.
-            table.addAction(curTime, self.zPositioner, targetAltitude)
+            table.addAction(curTime, self.zPositioner, zTarget)
 
         # Close all light sources we opened at the start.
         # Normally the delay generator logic would do this for us.

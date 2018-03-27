@@ -412,15 +412,15 @@ class ExperimentConfigPanel(wx.Panel):
                         settings.append((light, gui.guiUtils.tryParseNum(timeControl, decimal.Decimal)))
                 exposureSettings.append(([camera], settings))
                 
-        curZ = interfaces.stageMover.getPositionForAxis(2)
+        altitude = interfaces.stageMover.getPositionForAxis(2)
         # Default to "current is bottom"
-        zBottom = curZ
+        altBottom = altitude
         zHeight = gui.guiUtils.tryParseNum(self.stackHeight, float)
         if self.zPositionMode.GetStringSelection() == 'Current is center':
-            zBottom = curZ - zHeight / 2
+            altBottom = altitude - zHeight / 2
         elif self.zPositionMode.GetStringSelection() == 'Use saved top/bottom':
-            zBottom, zTop = gui.saveTopBottomPanel.getBottomAndTop()
-            zHeight = zTop - zBottom
+            altBottom, altTop = gui.saveTopBottomPanel.getBottomAndTop()
+            zHeight = altTop - altBottom
 
         sliceHeight = gui.guiUtils.tryParseNum(self.sliceHeight, float)
         if zHeight == 0:
@@ -434,7 +434,7 @@ class ExperimentConfigPanel(wx.Panel):
                 'numReps': gui.guiUtils.tryParseNum(self.numReps),
                 'repDuration': gui.guiUtils.tryParseNum(self.repDuration, float),
                 'zPositioner': mover,
-                'zBottom': zBottom,
+                'altBottom': altBottom,
                 'zHeight': zHeight,
                 'sliceHeight': sliceHeight,
                 'cameras': cameras,

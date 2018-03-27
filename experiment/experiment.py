@@ -47,7 +47,7 @@ class Experiment:
 
     #        0 to spend as little as possible. In seconds.
     # \param zPositioner StagePositioner handler to use to move in Z.
-    # \param zBottom Altitude of the stage at the bottom of the stack.
+    # \param altBottom Altitude of the stage at the bottom of the stack.
     # \param zHeight Total height of the stack.
     # \param sliceHeight Distance between slices in the stack.
     # \param cameras List of CameraHandler instances.
@@ -61,9 +61,12 @@ class Experiment:
     #        section of the saved file.
     # \param savePath Path to save image data to. If this isn't provided then
     #        no data will be saved.
+    # *Altitudes* refer to the net position of the Z stage, and are used
+    # by the stagemover.
+    # *z* values refer to the position of the zPositioner specified in the args.
     def __init__(self, numReps, repDuration,
 
-            zPositioner, zBottom, zHeight, sliceHeight,
+            zPositioner, altBottom, zHeight, sliceHeight,
 
             cameras, lights, exposureSettings, otherHandlers = [],
 
@@ -71,7 +74,7 @@ class Experiment:
         self.numReps = numReps
         self.repDuration = repDuration
         self.zPositioner = zPositioner
-        self.zBottom = zBottom
+        self.altBottom = altBottom
         self.zHeight = zHeight
         self.sliceHeight = sliceHeight
         self.cameras = list(cameras)
@@ -118,10 +121,11 @@ class Experiment:
         self.shouldAbort = False
         events.subscribe('user abort', self.onAbort)
 
-        ## Position of Z position when we started, used as offset in Z stacks
-        self.initialZPos = None
-        ## Resultant Z altitude when we stared, used to restore position.
+        ## Resultant Z altitude prior to execution, used to restore position.
         self.initialAltitude = None
+
+        ## Baseline position of the zPositioner, used as offset in Z stacks
+        self.zStart = None
 
         ## Maps light sources to sets of exposure times used. This is helpful
         # when setting the "titles" in the MRC header.
@@ -199,9 +203,7 @@ class Experiment:
     ## Prepare all of the handlers needed in the experiment so that they're
     # in the correct mode.
     def prepareHandlers(self):
-        #self.initialZPos = interfaces.stageMover.getPositionForAxis(2)
-        # Get the smallest Z mover position.
-        self.initialZPos = interfaces.stageMover.getAllPositions()[-1][-1]
+        # Store the pre-experiment altitude.
         self.initialAltitude = interfaces.stageMover.getPosition()[-1]
         # Ensure that we're the only ones moving things around.
         interfaces.stageMover.waitForStop()
@@ -211,7 +213,8 @@ class Experiment:
             wx.MessageBox("Wrong axis mover selected.")
             raise Exception("Wrong axis mover selected.")
         # Prepare our position.
-        interfaces.stageMover.goToZ(self.zBottom, shouldBlock = True)
+        interfaces.stageMover.goToZ(self.altBottom, shouldBlock = True)
+        self.zStart = interfaces.stageMover.getAllPositions()[-1][-1]
         events.publish('prepare for experiment', self)
         # Prepare cameras.
         for camera in self.cameras:

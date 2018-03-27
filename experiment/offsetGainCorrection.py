@@ -48,7 +48,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
         # setting up arbitrary experiments that assumes e.g. a Z stack), but
         # we ignore them.
         experiment.Experiment.__init__(self, numReps = 1, repDuration = 0,
-                zPositioner = None, zBottom = 0, zHeight = 0, sliceHeight = 0,
+                zPositioner = None, altBottom = 0, zHeight = 0, sliceHeight = 0,
                 cameras = cameras, lights = lights,
                 exposureSettings = exposureSettings)
         self.numExposures = numExposures
