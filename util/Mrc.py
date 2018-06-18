@@ -1,3 +1,21 @@
+## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2018 David Pinto <david.pinto@bioch.ox.ac.uk>
+##
+## This file is part of Cockpit.
+##
+## Cockpit is free software: you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
+##
+## Cockpit is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
+
 ## Copyright (c) 2005 The Regents of the University of California
 ##
 ## All rights reserved.
@@ -32,8 +50,9 @@ http://www.msg.ucsf.edu/IVE/IVE4_HTML/IM_ref2.html
 Mrc class uses memory mapping (file size limit about 1GB (more or less)
 Mrc2 class section wise file/array I/O
 """
+
 __author__  = "Sebastian Haase <haase@msg.ucsf.edu>"
-__license__ = "3-clause BSD license"
+
 
 import numpy as N
 from six import exec_
