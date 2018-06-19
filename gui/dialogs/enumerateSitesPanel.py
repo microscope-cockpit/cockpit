@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
 ##

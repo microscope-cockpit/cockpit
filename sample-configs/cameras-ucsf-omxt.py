@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 ## _cameras [(label, dsp line, ip address, model)]
 # As of 2015/04/23, UCSF's OMXT code only makes use of the 'label', 'serial',
 # 'ipAddress', 'port', and 'model' fields.  The digital line is still

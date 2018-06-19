@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 ## Copyright 2013, The Regents of University of California
 ##
 ## Redistribution and use in source and binary forms, with or without

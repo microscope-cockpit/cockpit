@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """ Configuration package for cockpit.
 
 Copyright 2014-2015 Mick Phillips (mick.phillips at gmail dot com)
