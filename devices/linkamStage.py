@@ -103,6 +103,12 @@ class LinkamStage(stage.StageDevice):
         server. This caused frequent Pyro timeout errors when cockpit
         was busy doing other things.
         """
+        #create a fill timer
+        events.publish('new status light','Fill Timer','')
+        self.lastFillCycle = 0
+        self.lastFillTimer = 0
+        self.timerbackground = (170, 170, 170)
+        
         while True:
             time.sleep(1)
             try:
@@ -120,6 +126,19 @@ class LinkamStage(stage.StageDevice):
             events.publish("status update", __name__, self.status)
             self.sendPositionUpdates()
             self.updateUI()
+            #update fill timer status light
+            timeSinceFill = self.status.get('timeSinceMainFill') 
+            if( timeSinceFill > (0.9*self.lastFillCycle)):
+               self.timerbackground = (190, 0, 0)
+            if( timeSinceFill < self.lastFillTimer ):
+                #refilled so need to reset cycle time and background
+                self.lastFillCycle = self.lastFillTimer
+                self.timerbackground = (170, 170, 170)
+            events.publish('update status light','Fill Timer',
+                           'Fill Timer\n%2.1f/%2.1f' %(timeSinceFill/60.0,
+                                                       self.lastFillCycle/60.0)
+                           ,self.timerbackground)
+            self.lastFillTimer = timeSinceFill
 
             if not TEMPERATURE_LOGGING:
                 continue
@@ -133,7 +152,6 @@ class LinkamStage(stage.StageDevice):
                 with open('linkLog.txt', 'a') as f:
                     f.write('%f\t%s\n' % (self.status.get('time'), newTemps))
                 self.lastTemps = newTemps
-
 
     def initialize(self):
         """Initialize the device."""
