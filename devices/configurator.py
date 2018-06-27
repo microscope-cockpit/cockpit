@@ -55,13 +55,14 @@
 
 import devices.device as device
 import handlers.configuratorHandler
+import util.files
 
-import os
+import os.path
 
 class Configurator(device.Device):
     def getHandlers(self):
-        root = self.config.get('root', 'C:' + os.path.sep)
- 
+        root = self.config.get('root', util.files.ROOT_DIR)
+
         # Default values.
         configdict = {
                 'slidealtitude': 7370,
@@ -85,4 +86,3 @@ class Configurator(device.Device):
         return [handlers.configuratorHandler.ConfiguratorHandler(
             'configuration', 'miscellaneous', {}, configdict)
         ]
-
