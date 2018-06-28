@@ -42,7 +42,3 @@ class TextureFontTestCase(unittest.TestCase):
         ## should at least not error.
         self.font.setFaceSize(18)
         self.font.render('foobar')
-
-    def test_render_failure(self):
-        with self.assertRaisesRegexp(RuntimeError, 'failed to render'):
-            self.font.render('foobar')
