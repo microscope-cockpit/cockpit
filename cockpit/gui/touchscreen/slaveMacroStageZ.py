@@ -146,8 +146,8 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         self.shouldDraw = True
         ## Font for drawing text
         try:
-            from cockpit.gui import FONTPATH
-            self.font = ftgl.TextureFont(FONTPATH)
+            from cockpit.gui import FONT_PATH
+            self.font = ftgl.TextureFont(FONT_PATH)
             self.font.setFaceSize(18)
         except Exception as e:
             print ("Failed to make font:",e)

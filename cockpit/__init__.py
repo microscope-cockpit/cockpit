@@ -84,7 +84,6 @@ cockpit.util.logger.makeLogger()
 
 from cockpit.config import config
 
-COCKPIT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 class CockpitApp(wx.App):
     def OnInit(self):

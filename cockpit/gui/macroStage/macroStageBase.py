@@ -60,11 +60,11 @@ import time
 import wx
 
 from cockpit import events
+import cockpit.gui
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
 from cockpit import depot
 
-from cockpit import COCKPIT_PATH
 
 PI = 3.1415926
 
@@ -101,9 +101,8 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         ## Whether or not we should try to draw
         self.shouldDraw = True
         ## Font for drawing text
-        from cockpit.gui import FONTPATH
         try:
-            self.font = ftgl.TextureFont(FONTPATH)
+            self.font = ftgl.TextureFont(cockpit.gui.FONT_PATH)
             self.font.setFaceSize(18)
         except Exception as e:
             print ("Failed to make font:",e)

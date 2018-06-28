@@ -53,6 +53,7 @@
 
 
 from cockpit import events
+import cockpit.gui
 import cockpit.gui.guiUtils
 from . import image
 import cockpit.util.threads
@@ -154,8 +155,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.context = wx.glcanvas.GLContext(self)
 
         ## Font for text rendering
-        from gui import FONTPATH
-        self.font = ftgl.TextureFont(FONTPATH)
+        self.font = ftgl.TextureFont(cockpit.gui.FONT_PATH)
         self.font.setFaceSize(18)
 
         self.Bind(wx.EVT_PAINT, self.onPaint)

@@ -21,12 +21,12 @@
 import os
 import unittest
 
+import cockpit.gui
 import cockpit.util.ftgl
 
 class TextureFontTestCase(unittest.TestCase):
     def setUp(self):
-        font_fpath = os.path.join('resources', 'fonts', 'GeosansLight.ttf')
-        self.font = cockpit.util.ftgl.TextureFont(font_fpath)
+        self.font = cockpit.util.ftgl.TextureFont(cockpit.gui.FONT_PATH)
 
     def test_missing_font(self):
         with self.assertRaisesRegexp(RuntimeError, 'failed to create texture'):

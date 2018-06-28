@@ -26,11 +26,11 @@
 import numpy
 
 from cockpit.util import ftgl
-from cockpit.gui import FONTPATH
+import cockpit.gui
 
 ## Font for drawing text
 try:
-    font = ftgl.TextureFont(FONTPATH)
+    font = ftgl.TextureFont(cockpit.gui.FONT_PATH)
     font.setFaceSize(18)
 except Exception as e:
     print ("Failed to make font:",e)

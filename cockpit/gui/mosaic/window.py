@@ -65,6 +65,7 @@ import wx
 from . import canvas
 from cockpit import depot
 from cockpit import events
+import cockpit.gui
 import cockpit.gui.camera.window
 import cockpit.gui.dialogs.gridSitesDialog
 import cockpit.gui.dialogs.offsetSitesDialog
@@ -76,7 +77,6 @@ import cockpit.util.threads
 import cockpit.util.userConfig
 import math
 
-from cockpit import COCKPIT_PATH
 ## Size of the crosshairs indicating the stage position.
 CROSSHAIR_SIZE = 10000
 ## Valid colors to use for site markers.
@@ -143,8 +143,7 @@ class MosaicWindow(wx.Frame):
         self.focalPlaneParams = None
 
         ## Font to use for site labels.
-        from cockpit.gui import FONTPATH
-        self.sitefont = ftgl.TextureFont(FONTPATH)
+        self.sitefont = ftgl.TextureFont(cockpit.gui.FONT_PATH)
         self.defaultFaceSize = 96
         self.sitefont.setFaceSize(self.defaultFaceSize)
 
@@ -152,7 +151,7 @@ class MosaicWindow(wx.Frame):
         # We used to resize the site font dynamically to do this,
         # but it seems to break on some GL implementations so that
         # the default face size was not restored correctly.
-        self.scalefont = ftgl.TextureFont(FONTPATH)
+        self.scalefont = ftgl.TextureFont(cockpit.gui.FONT_PATH)
         self.scalefont.setFaceSize(18)
 
         #default scale bar size is Zero

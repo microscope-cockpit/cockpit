@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2018 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -18,38 +18,18 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-## Copyright 2013, The Regents of University of California
-##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions
-## are met:
-##
-## 1. Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-##
-## 2. Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in
-##   the documentation and/or other materials provided with the
-##   distribution.
-##
-## 3. Neither the name of the copyright holder nor the names of its
-##   contributors may be used to endorse or promote products derived
-##   from this software without specific prior written permission.
-##
-## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-## "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-## LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-## FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-## COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-## INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-## BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-## LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-## CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-## LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-## POSSIBILITY OF SUCH DAMAGE.
+import pkg_resources
 
+## The resource_name argument for resource_filename is not a
+## filesystem filepath.  It is a /-separated filepath, even on
+## windows, so do not use os.path.join.
 
-import os
-from cockpit import COCKPIT_PATH
-FONTPATH = os.path.join(COCKPIT_PATH, 'resources', 'fonts', 'UniversalisADFStd-Regular.otf')
+FONT_PATH = pkg_resources.resource_filename(
+    'cockpit',
+    'resources/fonts/UniversalisADFStd-Regular.otf'
+)
+
+BITMAPS_PATH = pkg_resources.resource_filename(
+    'cockpit',
+    'resources/bitmaps/'
+)
