@@ -54,9 +54,6 @@
 import decimal
 import wx
 
-import cockpit.gui
-import cockpit.gui.device
-
 from cockpit import depot
 from . import deviceHandler
 from cockpit import events
@@ -253,6 +250,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
 
 
     def makeUI(self, parent):
+        import cockpit.gui.device
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         # Remove the word 'camera' to shorten labels.
