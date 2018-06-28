@@ -270,8 +270,7 @@ class CockpitApp(wx.App):
                 pass
 
 
-
-if __name__ == '__main__':
+def main():
     CockpitApp(redirect = False).MainLoop()
     # HACK: manually exit the program. If we don't do this, then there's a small
     # possibility that non-daemonic threads (i.e. ones that don't exit when the
@@ -291,3 +290,6 @@ if __name__ == '__main__':
             util.logger.log.error(str(thread.__dict__))
     os._exit(0)
 
+
+if __name__ == '__main__':
+    main()
