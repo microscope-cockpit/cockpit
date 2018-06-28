@@ -56,7 +56,7 @@
 # it would be to change the available objectives and their pixel sizes.
 
 from . import device
-import handlers.objective
+import cockpit.handlers.objective
 import re
 PIXEL_PAT =  r"(?P<pixel_size>\d*[.]?\d*)"
 LENSID_PAT = r"(?P<lensID>\d*)"
@@ -124,7 +124,7 @@ class ObjectiveDevice(device.Device):
 
         default = list(pixel_sizes.keys())[0]
 
-        return [handlers.objective.ObjectiveHandler("objective",
+        return [cockpit.handlers.objective.ObjectiveHandler("objective",
                                                     "miscellaneous",
                                                     pixel_sizes,
                                                     transforms,

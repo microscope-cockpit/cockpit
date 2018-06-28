@@ -56,7 +56,7 @@ import time
 import wx
 
 
-## @package gui.guiUtils
+## @package cockpit.gui.guiUtils
 # This module contains many functions related to the GUI, mostly for setting
 # up UI elements and updating various status displays.
 

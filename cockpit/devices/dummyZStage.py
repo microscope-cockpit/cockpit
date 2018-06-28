@@ -52,10 +52,10 @@
 
 ## This module creates a simple stage-positioning device.
 
-import depot
+from cockpit import depot
 from . import device
-import events
-import handlers.stagePositioner
+from cockpit import events
+import cockpit.handlers.stagePositioner
 
 CLASS_NAME = 'DummyZStage'
 
@@ -85,7 +85,7 @@ class DummyZStage(device.Device):
         axis = 2
         minVal = 0
         maxVal = 25000
-        handler = handlers.stagePositioner.PositionerHandler(
+        handler = cockpit.handlers.stagePositioner.PositionerHandler(
             "%d dummy mover" % axis, "%d stage motion" % axis, True, 
             {'moveAbsolute': self.moveAbsolute,
                 'moveRelative': self.moveRelative, 

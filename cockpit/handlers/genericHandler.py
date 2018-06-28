@@ -51,7 +51,7 @@
 
 
 from . import deviceHandler
-import depot
+from cockpit import depot
 
 
 

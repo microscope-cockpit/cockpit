@@ -50,12 +50,12 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import depot
-import events
+from cockpit import depot
+from cockpit import events
 from . import immediateMode
-import interfaces.imager
-import interfaces.stageMover
-import util.user
+import cockpit.interfaces.imager
+import cockpit.interfaces.stageMover
+import cockpit.util.user
 
 import numpy
 import os
@@ -84,7 +84,7 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         # Here we do 5 reps, with a 4s duration, and 1 image per rep. The 
         # file will get saved as "out.mrc" in the current user's data 
         # directory.
-        savePath = os.path.join(util.user.getUserSaveDir(), "out.mrc")
+        savePath = os.path.join(cockpit.util.user.getUserSaveDir(), "out.mrc")
         print ("Saving file to",savePath)
         immediateMode.ImmediateModeExperiment.__init__(self,
                 numReps = 5, repDuration = 4, imagesPerRep = 1,
@@ -141,7 +141,7 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         # script will get stuck at this point.
         eventName = 'new image %s' % activeCams[0].name
         image, timestamp = events.executeAndWaitFor(eventName,
-                interfaces.imager.takeImage, shouldBlock = True)
+                cockpit.interfaces.imager.takeImage, shouldBlock = True)
 
         # Get the min, max, median, and standard deviation of the image
         imageMin = image.min()
@@ -154,12 +154,12 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         # Some miscellaneous functions below.
 
         # Get the current stage position; positions are in microns.
-        curX, curY, curZ = interfaces.stageMover.getPosition()
+        curX, curY, curZ = cockpit.interfaces.stageMover.getPosition()
         # Move to a new Z position, and wait until we arrive.
-        interfaces.stageMover.goToZ(curZ + 5, shouldBlock = True)
+        cockpit.interfaces.stageMover.goToZ(curZ + 5, shouldBlock = True)
         # Move to a new XY position.
         # Note: the goToXY function expects a "tuple" for the position,
         # hence the extra parentheses (i.e. "goToXY(x, y)" is invalid;
         # "goToXY((x, y))" is correct). 
-        interfaces.stageMover.goToXY((curX + 50, curY - 50), shouldBlock = True)
+        cockpit.interfaces.stageMover.goToXY((curX + 50, curY - 50), shouldBlock = True)
 

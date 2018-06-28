@@ -54,10 +54,10 @@
 # camera. Ordinarily this functionality would be covered by some kind of 
 # signal source (e.g. an FPGA or DSP card). 
 
-import depot
+from cockpit import depot
 from . import device
-import events
-import handlers.imager
+from cockpit import events
+import cockpit.handlers.imager
 
 CLASS_NAME = 'DummyImagerDevice'
 
@@ -74,7 +74,7 @@ class DummyImagerDevice(device.Device):
     # stage motion piezos. 
     def getHandlers(self):
         result = []
-        result.append(handlers.imager.ImagerHandler(
+        result.append(cockpit.handlers.imager.ImagerHandler(
             "Dummy imager", "imager",
             {'takeImage': self.takeImage}))
         return result

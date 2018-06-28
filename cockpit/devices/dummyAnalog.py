@@ -46,7 +46,7 @@ within their continuous range - i.e., the experiment will look up positions
 from those stored on the device, and insert those into the action table rather
 than the index.
 """
-import depot
+from cockpit import depot
 from . import device
 import re
 

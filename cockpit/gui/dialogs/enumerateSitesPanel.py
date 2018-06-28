@@ -51,9 +51,9 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import gui.guiUtils
-import util.logger
-import interfaces.stageMover
+import cockpit.gui.guiUtils
+import cockpit.util.logger
+import cockpit.interfaces.stageMover
 
 import wx
 
@@ -73,7 +73,7 @@ class EnumerateSitesPanel(wx.Panel):
                  minSize = (280, -1), defaultIsAllSites = True):
         wx.Panel.__init__(self, parent, id)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sites = gui.guiUtils.addLabeledInput(parent = self, 
+        self.sites = cockpit.gui.guiUtils.addLabeledInput(parent = self, 
                 sizer = sizer,
                 label = label, defaultValue = '',
                 size = size, minSize = minSize)
@@ -86,7 +86,7 @@ class EnumerateSitesPanel(wx.Panel):
 
         siteListStr = 'Most recent site'
         if defaultIsAllSites:
-            sites = interfaces.stageMover.getAllSites()
+            sites = cockpit.interfaces.stageMover.getAllSites()
             if not sites:
                 siteListStr = "You must select points first"
             else:
@@ -116,14 +116,14 @@ class EnumerateSitesPanel(wx.Panel):
                     first, last = token.split('-')
                     # These ranges are inclusive, so add 1 to last
                     newIndices = range(int(first), int(last) + 1)
-                    newIndices = filter(interfaces.stageMover.doesSiteExist, newIndices)
+                    newIndices = filter(cockpit.interfaces.stageMover.doesSiteExist, newIndices)
                     baseIndices.extend(newIndices)
                     baseFrequencies.extend([frequency] * len(newIndices))
-                elif interfaces.stageMover.doesSiteExist(int(token)):
+                elif cockpit.interfaces.stageMover.doesSiteExist(int(token)):
                     baseIndices.append(int(token))
                     baseFrequencies.append(frequency)
                 
             return (baseIndices, baseFrequencies)
         except Exception as e:
-            util.logger.log.warning("Invalid site list \"%s\"; returning no sites", self.sites.GetValue())
+            cockpit.util.logger.log.warning("Invalid site list \"%s\"; returning no sites", self.sites.GetValue())
             return []

@@ -50,11 +50,12 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-import events
 import threading
-import util.threads
+
 from six.moves import filter
+
+import cockpit.events
+import cockpit.util.threads
 
 ## A DeviceHandler acts as the interface between the GUI and the device module.
 # In other words, it tells the GUI what the device does, and translates GUI
@@ -212,7 +213,8 @@ class DeviceHandler(object):
         # If this is our first listener, subscribe this handler to enable event.
         if self.listeners is None:
             self.listeners = set()
-            events.subscribe(self.deviceType + ' enable', self.notifyListeners)
+            cockpit.events.subscribe(self.deviceType + ' enable',
+                                     self.notifyListeners)
         self.listeners.add(listener)
 
 
@@ -241,7 +243,7 @@ class DeviceHandler(object):
 
 
     ## A function that any control can call to toggle enabled/disabled state.
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def toggleState(self, *args, **kwargs):
         if self._state == STATES.enabling:
             # Already processing a previous toggle request.

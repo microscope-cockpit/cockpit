@@ -29,17 +29,17 @@ Class definitions for labels and value displays with default formatting.
 from collections import OrderedDict
 import wx
 import wx.propgrid
-import gui.guiUtils
-from handlers.deviceHandler import STATES
+import cockpit.gui.guiUtils
+from cockpit.handlers.deviceHandler import STATES
 from .toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
-import util.userConfig
-import gui.loggingWindow as log
-import events
+import cockpit.util.userConfig
+import cockpit.gui.loggingWindow as log
+from cockpit import events
 from distutils import version
 
 from six import iteritems
 
-## @package gui.device
+## @package cockpit.gui.device
 # Defines classes for common controls used by cockpit devices.
 
 ## Default size
@@ -193,7 +193,7 @@ class Menu(wx.Menu):
                 self.AppendSeparator()
 
     def show(self, event):
-        gui.guiUtils.placeMenuAtMouse(event.GetEventObject(), self)
+        cockpit.gui.guiUtils.placeMenuAtMouse(event.GetEventObject(), self)
 
 
 class EnableButton(Button):
@@ -340,7 +340,7 @@ class SettingsEditor(wx.Frame):
         for name, value in iteritems(settings):
             if self.settings[name]['type'] == 'enum':
                 settings[name] = self.settings[name]['values'][value]
-        util.userConfig.setValue(self.handler.getIdentifier() + '_SETTINGS',
+        cockpit.util.userConfig.setValue(self.handler.getIdentifier() + '_SETTINGS',
                             settings)
 
 

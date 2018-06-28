@@ -56,14 +56,14 @@ import numpy
 import time
 import wx
 
-import depot
+from cockpit import depot
 from . import deviceHandler
-import events
-import gui.guiUtils
-import gui.toggleButton
-import util.logger
-import util.userConfig
-import util.threads
+from cockpit import events
+import cockpit.gui.guiUtils
+import cockpit.gui.toggleButton
+import cockpit.util.logger
+import cockpit.util.userConfig
+import cockpit.util.threads
 
 
 ## This handler is for light sources where the power of the light can be
@@ -83,7 +83,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     # A list of instances. Light persist until exit, so don't need weakrefs.
     _instances = []
     @classmethod
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def _updater(cls):
         ## Monitor output power and tell controls to update their display.
         # Querying power status can block while I/O is pending, so we use a
@@ -141,11 +141,11 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
 
     ## User logged in; load their settings.
     def onLogin(self, username):
-        targetPower = util.userConfig.getValue(self.name + '-lightPower', default = 0.01)
+        targetPower = cockpit.util.userConfig.getValue(self.name + '-lightPower', default = 0.01)
         try:
             self.setPower(targetPower)
         except Exception as e:
-            util.logger.log.warning("Failed to set prior power level %s for %s: %s" % (targetPower, self.name, e))
+            cockpit.util.logger.log.warning("Failed to set prior power level %s for %s: %s" % (targetPower, self.name, e))
 
 
     ## Construct a UI consisting of a clickable box that pops up a menu allowing
@@ -153,7 +153,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     # power.
     def makeUI(self, parent):
         sizer = wx.BoxSizer(wx.VERTICAL)
-        button = gui.toggleButton.ToggleButton(inactiveColor = self.color,
+        button = cockpit.gui.toggleButton.ToggleButton(inactiveColor = self.color,
                 textSize = 12, label = self.name, size = (120, 80),
                 parent = parent)
         # Respond to clicks on the button.
@@ -193,7 +193,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         menu.Append(i + 2, '...')
         parent.Bind(wx.EVT_MENU, lambda event: self.setPowerArbitrary(parent), id=i+2)
 
-        gui.guiUtils.placeMenuAtMouse(parent, menu)
+        cockpit.gui.guiUtils.placeMenuAtMouse(parent, menu)
 
 
     ## Save our settings in the provided dict.
@@ -239,19 +239,19 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
             raise RuntimeError("Tried to set invalid power %f for light %s (range %f to %f)" % (power, self.name, self.minPower, self.maxPower))
         self.callbacks['setPower'](power)
         self.powerSetPoint = power
-        util.userConfig.setValue(self.name + '-lightPower', power)
+        cockpit.util.userConfig.setValue(self.name + '-lightPower', power)
 
 
     ## Select an arbitrary power output.
     def setPowerArbitrary(self, parent):
-        value = gui.dialogs.getNumberDialog.getNumberFromUser(
+        value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
                 parent, "Select a power in milliwatts between 0 and %s:" % self.maxPower,
                 "Power (%s):" % self.units, self.powerSetPoint)
         self.setPower(float(value))
 
 
     ## Update our laser power display.
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def updateDisplay(self, *args, **kwargs):
         # Show current power on the text display, if it exists.
         if self.powerSetPoint and self.lastPower:

@@ -32,16 +32,16 @@ Config uses following parameters:
                     c x0 y0 radius
                     r x0 y0 width height
 """
-import events
-import gui.guiUtils
-import gui.device
-import gui.toggleButton
-import handlers.stagePositioner
+from cockpit import events
+import cockpit.gui.guiUtils
+import cockpit.gui.device
+import cockpit.gui.toggleButton
+import cockpit.handlers.stagePositioner
 import Pyro4
 from . import stage
 import threading
-import util.logger as logger
-import util.userConfig
+import cockpit.util.logger as logger
+import cockpit.util.threads
 
 import time
 import wx
@@ -165,7 +165,7 @@ class LinkamStage(stage.StageDevice):
         # zip(*limits) transforms ((x0,y0),(x1,y1)) to ((x0,x1),(y0,y1))
         for axis, (minPos, maxPos) in enumerate(zip(*self.softlimits)):
             result.append(
-                handlers.stagePositioner.PositionerHandler(
+                cockpit.handlers.stagePositioner.PositionerHandler(
                     "%d linkam mover" % axis, "%d stage motion" % axis, False,
                     {'moveAbsolute': self.moveAbsolute,
                          'moveRelative': self.moveRelative,
@@ -191,23 +191,23 @@ class LinkamStage(stage.StageDevice):
         self.panel.SetDoubleBuffered(True)
         panel = self.panel
         sizer = wx.BoxSizer(wx.VERTICAL)
-        label = gui.device.Label(parent=panel,
+        label = cockpit.gui.device.Label(parent=panel,
                                 label='Cryostage')
         sizer.Add(label)
         self.elements = {}
-        lightButton = gui.toggleButton.ToggleButton(
+        lightButton = cockpit.gui.toggleButton.ToggleButton(
                 parent=panel,
                 label='chamber light',
-                size=gui.device.DEFAULT_SIZE,
+                size=cockpit.gui.device.DEFAULT_SIZE,
                 activateAction=self.toggleChamberLight,
                 deactivateAction=self.toggleChamberLight,
                 isBold=False)
         self.elements['light'] = lightButton
         sizer.Add(lightButton)
-        condensorButton = gui.toggleButton.ToggleButton(
+        condensorButton = cockpit.gui.toggleButton.ToggleButton(
                 parent=panel,
                 label='condensor LED',
-                size=gui.device.DEFAULT_SIZE,
+                size=cockpit.gui.device.DEFAULT_SIZE,
                 activateAction=self.condensorOn,
                 deactivateAction=self.condensorOff,
                 isBold=False)
@@ -215,7 +215,7 @@ class LinkamStage(stage.StageDevice):
         sizer.Add(condensorButton)
         ## Generate the value displays.
         for d in tempDisplays:
-            self.elements[d] = gui.device.ValueDisplay(
+            self.elements[d] = cockpit.gui.device.ValueDisplay(
                     parent=panel, label=d, value=0.0, 
                     unitStr=u'°C')
             sizer.Add(self.elements[d])
@@ -268,12 +268,12 @@ class LinkamStage(stage.StageDevice):
         items = ['Home stage', '',
                  'Motor speed', u'100µ/s', u'200µ/s', u'300µ/s',
                  u'400µ/s', u'500µ/s', '', 'Cancel']
-        menu = gui.device.Menu(items, self.menuCallback)
+        menu = cockpit.gui.device.Menu(items, self.menuCallback)
         menu.Enable(2, False)
         menu.show(event)
 
 
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def sendPositionUpdates(self):
         """Send XY stage positions until it stops moving."""
         if self.sendingPositionUpdates is True:

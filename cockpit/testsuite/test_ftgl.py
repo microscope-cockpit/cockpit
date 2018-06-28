@@ -21,16 +21,16 @@
 import os
 import unittest
 
-import util.ftgl
+import cockpit.util.ftgl
 
 class TextureFontTestCase(unittest.TestCase):
     def setUp(self):
         font_fpath = os.path.join('resources', 'fonts', 'GeosansLight.ttf')
-        self.font = util.ftgl.TextureFont(font_fpath)
+        self.font = cockpit.util.ftgl.TextureFont(font_fpath)
 
     def test_missing_font(self):
         with self.assertRaisesRegexp(RuntimeError, 'failed to create texture'):
-            util.ftgl.TextureFont('not-a-real-file.ttf')
+            cockpit.util.ftgl.TextureFont('not-a-real-file.ttf')
 
     def test_set_get_size(self):
         self.assertEqual(self.font.getFaceSize(), 0)

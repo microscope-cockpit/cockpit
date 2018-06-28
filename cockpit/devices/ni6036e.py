@@ -21,10 +21,10 @@
 
 
 from . import device
-import depot
-import events
-import gui.toggleButton
-import util.connection
+from cockpit import depot
+from cockpit import events
+import cockpit.gui.toggleButton
+import cockpit.util.connection
 import collections
 import matplotlib
 matplotlib.use('WXAgg')
@@ -83,9 +83,9 @@ class NI6036e(device.Device):
         ## Pyro4.Proxy for the "NI" portion of the program (mirror flips and
         # a few utility functions).
         self.niConnection = None
-        ## util.connection.Connection for the temperature sensors.
+        ## cockpit.util.connection.Connection for the temperature sensors.
         self.temperatureConnection = None
-        ## util.connection.Connection for the light sensor.
+        ## cockpit.util.connection.Connection for the light sensor.
         self.lightConnection = None
         
         ## Maps light modes to the mirror settings for those modes, as a list
@@ -136,10 +136,10 @@ class NI6036e(device.Device):
     ## Connect to the remote program, and set widefield mode.
     def initialize(self):
         self.niConnection = Pyro4.Proxy('PYRO:%s@%s:%d' % ('ni', self.ipAddress, self.port))
-        self.temperatureConnection = util.connection.Connection(
+        self.temperatureConnection = cockpit.util.connection.Connection(
                 'temperature', self.ipAddress, self.port)
 #IMD 20130207 comment out as we are not using it in Oxford
-#self.lightConnection = util.connection.Connection(
+#self.lightConnection = cockpit.util.connection.Connection(
 #                'light', self.ipAddress, self.port)
 #        self.lightConnection.connect(self.receiveLightData)
         history = self.niConnection.readTempFile(10)
@@ -182,7 +182,7 @@ class NI6036e(device.Device):
         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         sizer.Add(label)
         for mode in self.excitation:
-            button = gui.toggleButton.ToggleButton( 
+            button = cockpit.gui.toggleButton.ToggleButton( 
                 textSize = 12, label = mode, size = (180, 50), 
                 parent = parent)
             # Respond to clicks on the button.
@@ -203,7 +203,7 @@ class NI6036e(device.Device):
 #         # label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
 #         # stageSizer.Add(label)
 #         # for mode in ['Inverted', 'Upright']:
-#             # button = gui.toggleButton.ToggleButton( 
+#             # button = cockpit.gui.toggleButton.ToggleButton( 
 #                     # textSize = 12, label = mode, size = (180, 50), 
 #                     # parent = parent)
 
@@ -220,7 +220,7 @@ class NI6036e(device.Device):
 #         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
 #         detSizer.Add(label)
 #         for mode in ['with AO & 85 nm pixel size', 'w/o AO & 209 nm pixel size']:
-#             button = gui.toggleButton.ToggleButton( 
+#             button = cockpit.gui.toggleButton.ToggleButton( 
 #                     textSize = 12, label = mode, size = (180, 50), 
 #                     parent = parent)
 
@@ -339,7 +339,7 @@ class niOutputWindow(wx.Frame):
 
         # Set up the digital lineout buttons.
         for i in range(len(self.nicard.lines)) :
-            button = gui.toggleButton.ToggleButton(
+            button = cockpit.gui.toggleButton.ToggleButton(
                     parent = panel, label = str(self.nicard.lines[i]),
                     activateAction = self.toggle,
                     deactivateAction = self.toggle,

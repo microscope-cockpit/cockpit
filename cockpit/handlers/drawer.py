@@ -52,15 +52,15 @@
 
 import wx
 
-import depot
+from cockpit import depot
 from . import deviceHandler
 
-import events
-import gui.guiUtils
-import gui.keyboard
-import gui.toggleButton
+from cockpit import events
+import cockpit.gui.guiUtils
+import cockpit.gui.keyboard
+import cockpit.gui.toggleButton
 
-from util.colors import dyeToColor
+from cockpit.util.colors import dyeToColor
 
 ## This handler is responsible for tracking what kinds of light each camera
 # receives, via the drawer system.
@@ -92,7 +92,7 @@ class DrawerHandler(deviceHandler.DeviceHandler):
         panel = wx.Panel(frame)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         for setting in self.settings:
-            button = gui.toggleButton.ToggleButton(
+            button = cockpit.gui.toggleButton.ToggleButton(
                     label = setting.name, parent = panel, 
                     size = (80, 40))
             button.Bind(wx.EVT_LEFT_DOWN, 
@@ -103,7 +103,7 @@ class DrawerHandler(deviceHandler.DeviceHandler):
         frame.SetClientSize(panel.GetSize())
         frame.SetPosition((2400, 65))
         frame.Show()
-        gui.keyboard.setKeyboardHandlers(frame)
+        cockpit.gui.keyboard.setKeyboardHandlers(frame)
         return None
 
 

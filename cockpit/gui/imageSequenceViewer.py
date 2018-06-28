@@ -50,9 +50,8 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import events
-import gui.imageViewer.viewCanvas
-import util.threads
+from cockpit import events
+import cockpit.gui.imageViewer.viewCanvas
 
 import numpy
 import threading
@@ -89,7 +88,7 @@ class ImageSequenceViewer(wx.Frame):
                 sliderSizer.Add(self.makeSlider(i, label))
         sizer.Add(sliderSizer)
 
-        self.canvas = gui.imageViewer.viewCanvas.ViewCanvas(
+        self.canvas = cockpit.gui.imageViewer.viewCanvas.ViewCanvas(
                 self.panel, 512,
                 size = (self.images.shape[-1], self.images.shape[-2] + 40)
         )

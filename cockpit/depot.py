@@ -58,7 +58,7 @@ import ast
 import importlib
 import os
 from six import string_types, iteritems
-from handlers.deviceHandler import DeviceHandler
+from cockpit.handlers.deviceHandler import DeviceHandler
 
 ## Different eligible device handler types. These correspond 1-to-1 to
 # subclasses of the DeviceHandler class.
@@ -114,8 +114,8 @@ class DeviceDepot:
         if os.path.exists(os.path.join(THIS_FOLDER,
                                        DEVICE_FOLDER,
                                        'configurator.py')):
-            import devices.configurator
-            self._configurator = devices.configurator.Configurator()
+            from cockpit.devices.configurator import Configurator
+            self._configurator = Configurator()
             self.initDevice(self._configurator)
 
 
@@ -143,12 +143,12 @@ class DeviceDepot:
                     self.classToModule[c.name] = modname
 
         # Create our server
-        import devices.server
+        from cockpit.devices.server import CockpitServer
         if config.has_section('server'):
             sconf = dict(config.items('server'))
         else:
             sconf = {}
-        self.nameToDevice['server'] = devices.server.CockpitServer('server', sconf)
+        self.nameToDevice['server'] = CockpitServer('server', sconf)
 
 
         # Parse config to create device instances.
@@ -160,7 +160,7 @@ class DeviceDepot:
             if not modname:
                 raise Exception("No module found for device with name %s." % name)
             try:
-                mod = importlib.import_module('devices.' + modname)
+                mod = importlib.import_module('cockpit.devices.' + modname)
             except Exception as e:
                 print("Importing %s failed with %s" % (modname, e))
             else:
@@ -194,34 +194,35 @@ class DeviceDepot:
         dummies = []
         # Dummy objectives
         if not getHandlersOfType(OBJECTIVE):
-            import devices.objective
+            from cockpit.devices.objective import ObjectiveDevice
+
             if config.has_section('objectives'):
                 objs = dict(config.items('objectives'))
             else:
                 objs = {}
-            dummies.append(devices.objective.ObjectiveDevice('objectives', objs))
+            dummies.append(ObjectiveDevice('objectives', objs))
         # Dummy stages
         axes = self.getSortedStageMovers().keys()
         if 2 not in axes:
-            import devices.dummyZStage
-            dummies.append(devices.dummyZStage.DummyZStage())
+            from cockpit.devices.dummyZStage import DummyZStage
+            dummies.append(DummyZStage())
         if (0 not in axes) or (1 not in axes):
-            import devices.dummyXYStage
-            dummies.append(devices.dummyXYStage.DummyMover())
+            from cockpit.devices.dummyXYStage import DummyMover
+            dummies.append(DummyMover())
         # Cameras
         if not getHandlersOfType(CAMERA):
-            import devices.dummyCamera
-            dummies.append(devices.dummyCamera.DummyCamera())
+            from cockpit.devices.dummyCamera import DummyCamera
+            dummies.append(DummyCamera())
         # Dummy imager
         if not getHandlersOfType(IMAGER):
-            import devices.imager
-            dummies.append(devices.imager.DummyImagerDevice())
+            from cockpit.devices.imager import DummyImagerDevice
+            dummies.append(DummyImagerDevice())
         # Initialise dummies.
         for d in dummies:
             self.nameToDevice[d.name] = d
             self.initDevice(d)
         # Ambient light source
-        from handlers.lightSource import LightHandler
+        from cockpit.handlers.lightSource import LightHandler
         ambient = {'t': 100}
         h = LightHandler('ambient', 'ambient',
                          {'setExposureTime': lambda null, t: ambient.__setitem__('t', t),

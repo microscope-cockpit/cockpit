@@ -51,9 +51,9 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import depot
-import gui.guiUtils
-import util.userConfig
+from cockpit import depot
+from cockpit.gui import guiUtils
+import cockpit.util.userConfig
 from . import zStack
 
 import threading
@@ -234,7 +234,7 @@ class ExperimentUI(wx.Panel):
 
     ## Load the saved experiment settings, if any.
     def loadSettings(self):
-        return util.userConfig.getValue(
+        return cockpit.util.userConfig.getValue(
                 self.configKey + 'optoExampleSettings',
                 default = {
                     'lightToSequence': {},
@@ -252,7 +252,7 @@ class ExperimentUI(wx.Panel):
     def saveSettings(self, settings = None):
         if settings is None:
             settings = self.getSettingsDict()
-        util.userConfig.setValue(
+        cockpit.util.userConfig.setValue(
                 self.configKey + 'optoExampleSettings', settings
         )
 
@@ -327,8 +327,8 @@ class OptoPanel(wx.Panel):
     ## Add a new entry to the illumination settings, merging entries as
     # necessary.
     def onAdd(self, event = None):
-        start = gui.guiUtils.tryParseNum(self.startText, float)
-        stop = gui.guiUtils.tryParseNum(self.stopText, float)
+        start = guiUtils.tryParseNum(self.startText, float)
+        stop = guiUtils.tryParseNum(self.stopText, float)
         if start >= stop:
             # No-op; easiest way for this to happen is for the stop text to
             # have no value.

@@ -45,7 +45,7 @@ Sample config entry:
   type: LegacyDSP
   ...
 """
-import depot
+from cockpit import depot
 from . import device
 
 class PolarizationDevice(device.Device):

@@ -82,14 +82,14 @@
 import Pyro4
 import time
 
-import depot
+from cockpit import depot
 from . import device
-import events
-import handlers.executor
-import handlers.genericHandler
-import handlers.genericPositioner
-import handlers.imager
-import util.threads
+from cockpit import events
+import cockpit.handlers.executor
+import cockpit.handlers.genericHandler
+import cockpit.handlers.genericPositioner
+import cockpit.handlers.imager
+import cockpit.util.threads
 import numpy as np
 from itertools import chain
 
@@ -104,7 +104,7 @@ class ExecutorDevice(device.Device):
 
 
     ## Connect to the DSP computer.
-    @util.threads.locked
+    @cockpit.util.threads.locked
     def initialize(self):
         self.connection = Pyro4.Proxy(self.uri)
         self.connection._pyroTimeout = 6
@@ -129,7 +129,7 @@ class ExecutorDevice(device.Device):
         events.publish(events.EXECUTOR_DONE % self.name)
 
 
-    @util.threads.locked
+    @cockpit.util.threads.locked
     def finalizeInitialization(self):
         # Tell the remote DSP computer how to talk to us.
         server = depot.getHandlersOfType(depot.SERVER)[0]
@@ -141,7 +141,7 @@ class ExecutorDevice(device.Device):
     # stage motion piezos. 
     def getHandlers(self):
         result = []
-        h = handlers.executor.AnalogDigitalExecutorHandler(
+        h = cockpit.handlers.executor.AnalogDigitalExecutorHandler(
             self.name, "executor",
             {'examineActions': lambda *args: None,
              'executeTable': self.executeTable,
@@ -157,7 +157,7 @@ class ExecutorDevice(device.Device):
         # The takeImage behaviour is now on the handler. It might be better to
         # have hybrid handlers with multiple inheritance, but that would need
         # an overhaul of how depot determines handler types.
-        result.append(handlers.imager.ImagerHandler(
+        result.append(cockpit.handlers.imager.ImagerHandler(
             "%s imager" % (self.name), "imager",
             {'takeImage': h.takeImage}))
 
@@ -261,7 +261,7 @@ class LegacyDSP(ExecutorDevice):
     # stage motion piezos.
     def getHandlers(self):
         result = []
-        h = handlers.executor.AnalogDigitalExecutorHandler(
+        h = cockpit.handlers.executor.AnalogDigitalExecutorHandler(
             self.name, "executor",
             {'examineActions': lambda *args: None,
              'executeTable': self.executeTable,
@@ -277,7 +277,7 @@ class LegacyDSP(ExecutorDevice):
         # The takeImage behaviour is now on the handler. It might be better to
         # have hybrid handlers with multiple inheritance, but that would need
         # an overhaul of how depot determines handler types.
-        result.append(handlers.imager.ImagerHandler(
+        result.append(cockpit.handlers.imager.ImagerHandler(
             "%s imager" % (self.name), "imager",
             {'takeImage': h.takeImage}))
 

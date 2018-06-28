@@ -57,9 +57,9 @@ import traceback
 import wx.glcanvas
 
 from . import tile
-import util.datadoc
-import util.logger
-import util.threads
+import cockpit.util.datadoc
+import cockpit.util.logger
+import cockpit.util.threads
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1
@@ -218,8 +218,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
 ##        test[tileShape[1] - 1:tileShape[1] + 2] = 1000
 ##        test[:,tileShape[0] * 2 - 1:tileShape[0] * 2 + 2] = 1000
 ##        test[tileShape[1] * 2 - 1:tileShape[1] * 2 + 2] = 1000
-        import util.datadoc
-        util.datadoc.writeDataAsMrc(test, "%s.mrc" % tile.pos)
+        import cockpit.util.datadoc
+        cockpit.util.datadoc.writeDataAsMrc(test, "%s.mrc" % tile.pos)
 
         return result
 
@@ -231,7 +231,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
 
 
     ## Delete a list of tiles.
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def deleteTilesList(self, tilesToDelete):
         for tile in tilesToDelete:
             tile.wipe()
@@ -250,7 +250,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
 
 
     ## Add a new image to the mosaic.
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def addImage(self, data, pos, size, scalings = (None, None), 
             layer = 0, shouldRefresh = False):
 
@@ -273,7 +273,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     ## Rescale the tiles.
     # \param minMax A (blackpoint, whitepoint) tuple, or None to rescale
     # each tile individually.
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def rescale(self, minMax = None):
         if minMax is None:
             # Tiles will treat this as "use our own data".
@@ -430,10 +430,10 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                 dtype = numpy.uint16)
         for i, tile in enumerate(self.tiles):
             imageData[0, 0, i, :tile.textureData.shape[0], :tile.textureData.shape[1]] = tile.textureData
-        header = util.datadoc.makeHeaderFor(imageData, 0, 0)
+        header = cockpit.util.datadoc.makeHeaderFor(imageData, 0, 0)
 
         handle = open(mrcPath, 'wb')
-        util.datadoc.writeMrcHeader(header, handle)
+        cockpit.util.datadoc.writeMrcHeader(header, handle)
         for i, image in enumerate(imageData[:,:]):
             handle.write(image)
             statusDialog.Update(i)
@@ -445,7 +445,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     # data. This is made a bit trickier by the fact that we want to display
     # a progress dialog that updates as new images are added, but addImage()
     # must run in the main thread while we run in a different one. 
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def loadTiles(self, filePath):
         with open(filePath, 'r') as handle:
             mrcPath = handle.readline().strip()
@@ -459,7 +459,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                 tileStats.append(map(float, line.strip().split(',')))
         numInitialTiles = len(self.tiles)
         try:
-            doc = util.datadoc.DataDoc(mrcPath)
+            doc = cockpit.util.datadoc.DataDoc(mrcPath)
         except Exception as e:
             wx.MessageDialog(self.GetParent(), 
                     message = "I was unable to load the MRC file at %s holding the tile data. The error message was:\n\n%s\n\nPlease verify that the file path is correct and the file is valid." % (mrcPath, e),
@@ -477,7 +477,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         statusDialog.Show()
         if doc.imageArray.shape[2] > len(tileStats):
             # More images in the file than we have stats for.
-            util.logger.log.warning("Loading mosaic with %d images; only have positioning information for %d." % (doc.imageArray.shape[2], len(tileStats)))
+            cockpit.util.logger.log.warning("Loading mosaic with %d images; only have positioning information for %d." % (doc.imageArray.shape[2], len(tileStats)))
         maxImages = min(doc.imageArray.shape[2], len(tileStats))
         for i in range(maxImages):
             image = doc.imageArray[0, 0, i]
@@ -490,7 +490,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                 wx.MessageDialog(self.GetParent(),
                         "Failed to load line %d of file %s: %s.\n\nPlease see the logs for more details." % (i, filePath, e),
                         style = wx.ICON_INFORMATION | wx.OK).ShowModal()
-                util.logger.log.error(traceback.format_exc())
+                cockpit.util.logger.log.error(traceback.format_exc())
                 statusDialog.Destroy()
                 return
         # Wait until we've loaded all tiles or we go a full second without

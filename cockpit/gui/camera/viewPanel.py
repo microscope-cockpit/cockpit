@@ -56,13 +56,13 @@ import time
 import traceback
 import wx
 
-import depot
-import events
-import gui.guiUtils
-import gui.imageViewer.viewCanvas
-import interfaces.stageMover
-import interfaces.imager
-import util.logger
+from cockpit import depot
+from cockpit import events
+import cockpit.gui.guiUtils
+import cockpit.gui.imageViewer.viewCanvas
+import cockpit.interfaces.stageMover
+import cockpit.interfaces.imager
+
 
 ## Default viewer dimensions.
 (VIEW_WIDTH, VIEW_HEIGHT) = (512, 552)
@@ -112,21 +112,21 @@ class ViewPanel(wx.Panel):
         if event.LeftDClick():
             x, y = event.GetPosition()
             sizeX, sizeY = self.canvas.GetSize()
-            sizeY -= gui.imageViewer.viewCanvas.HISTOGRAM_HEIGHT
+            sizeY -= cockpit.gui.imageViewer.viewCanvas.HISTOGRAM_HEIGHT
             pixelSize = depot.getHandlersOfType(depot.OBJECTIVE)[0].getPixelSize()
             dx = ((sizeX / 2) - x) * pixelSize
             dy = ((sizeY / 2) - y) * pixelSize
             #Need to see if the current movers have xy capbility
-            positions = interfaces.stageMover.getAllPositions()
-            handler = interfaces.stageMover.mover.curHandlerIndex
+            positions = cockpit.interfaces.stageMover.getAllPositions()
+            handler = cockpit.interfaces.stageMover.mover.curHandlerIndex
             if ((positions[handler][0] == None) or ( positions[handler][1] == None)):
                 #We dont have an x or y axis so use the main handler
-                originalMover= interfaces.stageMover.mover.curHandlerIndex
-                interfaces.stageMover.mover.curHandlerIndex = 0
-                interfaces.stageMover.moveRelative((dx, dy, 0))
-                interfaces.stageMover.mover.curHandlerIndex = originalMover
+                originalMover= cockpit.interfaces.stageMover.mover.curHandlerIndex
+                cockpit.interfaces.stageMover.mover.curHandlerIndex = 0
+                cockpit.interfaces.stageMover.moveRelative((dx, dy, 0))
+                cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
             else:
-               interfaces.stageMover.moveRelative((dx, dy, 0))
+               cockpit.interfaces.stageMover.moveRelative((dx, dy, 0))
         else:
             event.Skip()
 
@@ -161,7 +161,7 @@ class ViewPanel(wx.Panel):
                     item = menu.Append(-1, "Enable %s" % camera.descriptiveName)
                     self.Bind(wx.EVT_MENU, 
                             lambda event, cam=camera: cam.setEnabled(True), item)
-        gui.guiUtils.placeMenuAtMouse(self, menu)
+        cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
 
 
     ## Deactivate the view.
@@ -190,7 +190,7 @@ class ViewPanel(wx.Panel):
 
         # NB the 512 here is the largest texture size our graphics card can
         # gracefully handle.
-        self.canvas = gui.imageViewer.viewCanvas.ViewCanvas(self.canvasPanel,
+        self.canvas = cockpit.gui.imageViewer.viewCanvas.ViewCanvas(self.canvasPanel,
                 512, size = (VIEW_WIDTH, VIEW_HEIGHT),
                 mouseHandler = self.onMouse)
         self.canvas.SetSize((VIEW_WIDTH, VIEW_HEIGHT))

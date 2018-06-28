@@ -51,7 +51,7 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import gui.guiUtils
+import cockpit.gui.guiUtils
 
 import wx
 
@@ -73,7 +73,7 @@ class OffsetSites_Dialog(wx.Dialog):
 
         self.controls = []
         for label in ('X', 'Y', 'Z'):
-            self.controls.append(gui.guiUtils.addLabeledInput(
+            self.controls.append(cockpit.gui.guiUtils.addLabeledInput(
                     parent = self, sizer = sizer,
                     label = "%s:" % label, defaultValue = '',
                     size = (60, -1), minSize = (100, -1),

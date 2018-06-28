@@ -19,7 +19,7 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import depot
+from cockpit import depot
 from . import deviceHandler
 
 ## This handler is a mix-in for handlers that abstract an analogue line.

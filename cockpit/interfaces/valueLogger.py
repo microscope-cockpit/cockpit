@@ -33,7 +33,7 @@ is displayed in an isntance of gui.valueLogger.ValueLoggerWindow.
 """
 from collections import deque
 import datetime
-import events
+from cockpit import events
 from numbers import Number
 import random
 import threading

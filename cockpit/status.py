@@ -29,7 +29,7 @@ import platform
 import re
 import socket
 # Import device definitions from the config module.
-from config import config
+from cockpit.config import config
 
 from six import iteritems
 

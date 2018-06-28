@@ -53,12 +53,14 @@
 
 from . import device
 from . import stage
-import events
-import gui.toggleButton
-import handlers.genericPositioner
-import handlers.stagePositioner
-import util.connection
-import interfaces
+from cockpit import events
+import cockpit.gui.toggleButton
+import cockpit.handlers.genericPositioner
+import cockpit.handlers.stagePositioner
+import cockpit.util.connection
+import cockpit.util.threads
+import cockpit.util.userConfig
+from cockpit import interfaces
 import time
 
 ## TODO: test with hardware.
@@ -114,7 +116,7 @@ class Nanomover(stage.StageDevice):
         
 
     def initialize(self):
-        self.connection = util.connection.Connection(
+        self.connection = cockpit.util.connection.Connection(
                 'nano', self.ipAddress, self.port)
         self.connection.connect(self.receiveData)
         self.curPosition[:] = self.connection.connection.posXYZ_OMX()
@@ -122,20 +124,20 @@ class Nanomover(stage.StageDevice):
             print ("Homing Nanomover")
             self.connection.connection.startOMX()
             self.home()
-            interfaces.stageMover.goToXY(self.middleXY, shouldBlock = True)
+            cockpit.interfaces.stageMover.goToXY(self.middleXY, shouldBlock = True)
 
     ## We want to periodically exercise the XY stage to spread the grease
     # around on its bearings; check how long it's been since the stage was
     # last exercised, and prompt the user if it's been more than a week.
     def promptExerciseStage(self):
-        lastExerciseTimestamp = util.userConfig.getValue(
+        lastExerciseTimestamp = cockpit.util.userConfig.getValue(
                 'NanomoverLastExerciseTimestamp',
                 isGlobal = True, default = 0)
         curTime = time.time()
         delay = curTime - lastExerciseTimestamp
         daysPassed = delay / float(24 * 60 * 60)
         if (daysPassed > 7 and
-                gui.guiUtils.getUserPermission(
+                cockpit.gui.guiUtils.getUserPermission(
                     ("It has been %.1f days since " % daysPassed) +
                     "the stage was last exercised. Please exercise " +
                     "the stage regularly.\n\nExercise stage?",
@@ -147,16 +149,16 @@ class Nanomover(stage.StageDevice):
             # necessary to avoid the banned rectangles, in case the stage is
             # in them when we start.
             initialPos = tuple(self.positionCache)
-#            interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
+#            cockpit.interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
             for i in range(5):
                 print ("Rep %d of 5..." % i)
                 for position in self.softlimits[0:2]:
-                    interfaces.stageMover.goToXY(position, shouldBlock = True)
-            interfaces.stageMover.goToXY(self.middleXY, shouldBlock = True)
-            interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
+                    cockpit.interfaces.stageMover.goToXY(position, shouldBlock = True)
+            cockpit.interfaces.stageMover.goToXY(self.middleXY, shouldBlock = True)
+            cockpit.interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
             print ("Exercising complete. Thank you!")
             
-            util.userConfig.setValue('NanomoverLastExerciseTimestamp',
+            cockpit.util.userConfig.setValue('NanomoverLastExerciseTimestamp',
                     time.time(), isGlobal = True)
 
 
@@ -192,7 +194,7 @@ class Nanomover(stage.StageDevice):
                 stepSizes = [.01, .02, .05] + stepSizes
             lowLimit, highLimit = self.safeties[axis]
             softLowLimit , softHighLimit = self.softlimits[axis]
-            result.append(handlers.stagePositioner.PositionerHandler(
+            result.append(cockpit.handlers.stagePositioner.PositionerHandler(
                 "%d nanomover" % axis, "%d stage motion" % axis, False, 
                 {'moveAbsolute': self.moveAbsolute, 
                     'moveRelative': self.moveRelative,
@@ -222,7 +224,7 @@ class Nanomover(stage.StageDevice):
 
 
     ## Send updates on the XY stage's position, until it stops moving.
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def sendXYPositionUpdates(self):
         while True:
             prevX, prevY = self.positionCache[:2]

@@ -26,21 +26,21 @@
 """
 import Pyro4
 import wx
-import events
+from cockpit import events
 from . import device
-import depot
-import gui.device
-import gui.guiUtils
-import gui.toggleButton
-import handlers.deviceHandler
-import handlers.filterHandler
-import handlers.lightPower
-import handlers.lightSource
-import util.colors
-import util.listener
-import util.userConfig
-import util.threads
-from gui.device import SettingsEditor
+from cockpit import depot
+import cockpit.gui.device
+import cockpit.gui.guiUtils
+import cockpit.gui.toggleButton
+import cockpit.handlers.deviceHandler
+import cockpit.handlers.filterHandler
+import cockpit.handlers.lightPower
+import cockpit.handlers.lightSource
+import cockpit.util.colors
+import cockpit.util.listener
+import cockpit.util.userConfig
+import cockpit.util.threads
+from cockpit.gui.device import SettingsEditor
 import re
 
 # Pseudo-enum to track whether device defaults in place.
@@ -70,7 +70,7 @@ class MicroscopeBase(device.Device):
 
     def getHandlers(self):
         """Return device handlers. Derived classes may override this."""
-        result = handlers.deviceHandler.DeviceHandler(
+        result = cockpit.handlers.deviceHandler.DeviceHandler(
             "%s" % self.name, "universal devices",
             False,
             {'makeUI': self.makeUI},
@@ -117,9 +117,9 @@ class MicroscopeBase(device.Device):
     def onUserLogin(self, username):
         # Apply user defaults on login.
         idstr = self.name + '_SETTINGS'
-        defaults = util.userConfig.getValue(idstr, isGlobal=False)
+        defaults = cockpit.util.userConfig.getValue(idstr, isGlobal=False)
         if defaults is None:
-            defaults = util.userConfig.getValue(idstr, isGlobal=True)
+            defaults = cockpit.util.userConfig.getValue(idstr, isGlobal=True)
         if defaults is None:
             self.defaults = DEFAULTS_NONE
             return
@@ -147,7 +147,7 @@ class MicroscopeBase(device.Device):
 class MicroscopeGenericDevice(MicroscopeBase):
     def getHandlers(self):
         """Return device handlers."""
-        result = handlers.deviceHandler.DeviceHandler(
+        result = cockpit.handlers.deviceHandler.DeviceHandler(
             "%s" % self.name, "universal devices",
             False,
             {'makeUI': self.makeUI},
@@ -160,7 +160,7 @@ class MicroscopeGenericDevice(MicroscopeBase):
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        adv_button = gui.device.Button(parent=self.panel,
+        adv_button = cockpit.gui.device.Button(parent=self.panel,
                                        label=self.name,
                                        leftAction=self.showSettings)
         sizer.Add(adv_button)
@@ -171,7 +171,7 @@ class MicroscopeGenericDevice(MicroscopeBase):
 class MicroscopeSwitchableDevice(MicroscopeBase):
     def getHandlers(self):
         """Return device handlers."""
-        result = handlers.deviceHandler.DeviceHandler(
+        result = cockpit.handlers.deviceHandler.DeviceHandler(
             "%s" % self.name, "universal devices",
             False,
             {'makeUI': self.makeUI},
@@ -184,7 +184,7 @@ class MicroscopeSwitchableDevice(MicroscopeBase):
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        adv_button = gui.device.Button(parent=self.panel,
+        adv_button = cockpit.gui.device.Button(parent=self.panel,
                                        label=self.name,
                                        leftAction=self.showSettings)
         sizer.Add(adv_button)
@@ -221,17 +221,17 @@ class MicroscopeLaser(MicroscopeBase):
     def getHandlers(self):
         wl = self.config.get('wavelength', None)
         if wl:
-            col = util.colors.wavelengthToColor(wl, 0.8)
+            col = cockpit.util.colors.wavelengthToColor(wl, 0.8)
         else:
             col = '0xaaaaaa'
         """Return device handlers. Derived classes may override this."""
         # Querying remote for maxPower can cause delays, so set to None
         # and update later.
-        self.handlers.append(handlers.lightPower.LightPowerHandler(
+        self.handlers.append(cockpit.handlers.lightPower.LightPowerHandler(
             self.name + ' power',  # name
             self.name + ' light source',  # groupName
             {
-                'setPower': util.threads.callInNewThread(self._proxy.set_power_mw),
+                'setPower': cockpit.util.threads.callInNewThread(self._proxy.set_power_mw),
                 'getPower': self._proxy.get_power_mw, # Synchronous - can hang threads.
             },
             wl,# wavelength,
@@ -245,7 +245,7 @@ class MicroscopeLaser(MicroscopeBase):
         else:
             trighandler = None
         self._exposureTime = 100
-        self.handlers.append(handlers.lightSource.LightHandler(
+        self.handlers.append(cockpit.handlers.lightSource.LightHandler(
             self.name + ' toggle',
             self.name + ' light source',
             {'setEnabled': lambda name, on: self._setEnabled(on),
@@ -288,7 +288,7 @@ class MicroscopeFilter(MicroscopeBase):
 
     def getHandlers(self):
         """Return device handlers."""
-        h = handlers.filterHandler.FilterHandler(self.name, 'filters', False,
+        h = cockpit.handlers.filterHandler.FilterHandler(self.name, 'filters', False,
                                                  {'setPosition': self.setPosition,
                                                   'getPosition': self.getPosition,
                                                   'getFilters': self.getFilters},
@@ -325,7 +325,7 @@ class MicroscopeFilter(MicroscopeBase):
             fdefs = self._proxy.get_filters()
         if not fdefs:
             raise Exception ("No local or remote filter definitions for %s." % self.name)
-        self.filters = [handlers.filterHandler.Filter(*f) for f in fdefs]
+        self.filters = [cockpit.handlers.filterHandler.Filter(*f) for f in fdefs]
 
 
 # Type maps.

@@ -26,14 +26,15 @@ import traceback
 import wx
 import threading
 import time
-import events
-import gui.mosaic.window
-import gui.macroStage.macroStageWindow as macroStageWindow
-import interfaces.stageMover
-import util.logger
-import depot
 
-import gui.macroStage.macroStageBase as macroStageBase
+from cockpit import events
+import cockpit.gui.mosaic.window
+import cockpit.gui.macroStage.macroStageWindow as macroStageWindow
+import cockpit.interfaces.stageMover
+import cockpit.util.logger
+from cockpit import depot
+
+import cockpit.gui.macroStage.macroStageBase as macroStageBase
 
 CIRCLE_SEGMENTS = 32
 PI = 3.141592645
@@ -94,7 +95,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
 #        self.redrawTimerThread.start()
 
 
-        hardLimits = interfaces.stageMover.getHardLimits()
+        hardLimits = cockpit.interfaces.stageMover.getHardLimits()
         self.minX, self.maxX = hardLimits[0]
         self.minY, self.maxY = hardLimits[1]
         ## X extent of the stage, in microns.
@@ -186,10 +187,10 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             squareOffsets = [(0, 0), (0, 1), (1, 1), (1, 0)]
-            stepSizes = interfaces.stageMover.getCurStepSizes()[:2]
+            stepSizes = cockpit.interfaces.stageMover.getCurStepSizes()[:2]
 
             # # Draw hard stage motion limits
-            hardLimits = interfaces.stageMover.getHardLimits()[:2]
+            hardLimits = cockpit.interfaces.stageMover.getHardLimits()[:2]
             # Rearrange limits to (x, y) tuples.
             hardLimits = list(zip(hardLimits[0], hardLimits[1]))
             #Loop over objective offsets to draw limist in multiple colours.
@@ -214,7 +215,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
                 # Draw soft stage motion limits -- a dotted box, solid black
                 # corners, and coordinates. If we're currently setting safeties,
                 # then the second corner is the current mouse position.
-                safeties = interfaces.stageMover.getSoftLimits()[:2]
+                safeties = cockpit.interfaces.stageMover.getSoftLimits()[:2]
                 x1, x2 = safeties[0]
                 y1, y2 = safeties[1]
                 if self.firstSafetyMousePos is not None:
@@ -253,7 +254,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
                 glLineWidth(1)
             # Now the coordinates. Only draw them if the soft limits aren't
             # the hard limits, to avoid clutter.
-            hardLimits = interfaces.stageMover.getHardLimits()[:2]
+            hardLimits = cockpit.interfaces.stageMover.getHardLimits()[:2]
             if safeties != hardLimits:
                 for i, (dx, dy) in enumerate([(4000, -700), (2000, 400)]):
                     x = softLimits[i][0]
@@ -267,7 +268,7 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
             glEnable(GL_LINE_STIPPLE)
             glLineStipple(1, 0xAAAA)
             glColor3f(0.4, 0.4, 0.4)
-            primitives = interfaces.stageMover.getPrimitives()
+            primitives = cockpit.interfaces.stageMover.getPrimitives()
             for p in primitives:
                 if p.type in ['c', 'C']:
                     # circle: x0, y0, radius
@@ -333,8 +334,8 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
             # our stage position info.
 #            self.drawEvent.set()
         except Exception as e:
-            util.logger.log.error("Exception drawing XY macro stage: %s", e)
-            util.logger.log.error(traceback.format_exc())
+            cockpit.util.logger.log.error("Exception drawing XY macro stage: %s", e)
+            cockpit.util.logger.log.error(traceback.format_exc())
             self.shouldDraw = False
 
 
@@ -387,11 +388,11 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
                 x1, x2 = x2, x1
             if y1 > y2:
                 y1, y2 = y2, y1
-            interfaces.stageMover.setSoftMin(0, x1)
-            interfaces.stageMover.setSoftMax(0, x2)
+            cockpit.interfaces.stageMover.setSoftMin(0, x1)
+            cockpit.interfaces.stageMover.setSoftMax(0, x2)
             # Add 1 to prevent rounding issues relative to current position.
-            interfaces.stageMover.setSoftMin(1, y1 + 1)
-            interfaces.stageMover.setSoftMax(1, y2 + 1)
+            cockpit.interfaces.stageMover.setSoftMin(1, y1 + 1)
+            cockpit.interfaces.stageMover.setSoftMax(1, y2 + 1)
             self.amSettingSafeties = False
             self.firstSafetyMousePos = None
             self.Refresh()
@@ -453,20 +454,20 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
 
     ## Double-clicked the left mouse button. Move to the clicked location.
     def OnLeftDoubleClick(self, event):
-        originalMover= interfaces.stageMover.mover.curHandlerIndex
+        originalMover= cockpit.interfaces.stageMover.mover.curHandlerIndex
         #Quick hack to get deepsim working need to check if we can do it
         #properly.  Should really check to see if we can move, and by that
         #distance with exisiting mover
-        interfaces.stageMover.mover.curHandlerIndex = 0
+        cockpit.interfaces.stageMover.mover.curHandlerIndex = 0
 
-        interfaces.stageMover.goToXY(self.remapClick(event.GetPosition()))
+        cockpit.interfaces.stageMover.goToXY(self.remapClick(event.GetPosition()))
 
         #make sure we are back to the expected mover
-        interfaces.stageMover.mover.curHandlerIndex = originalMover
+        cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
 
     def OnRightClick(self, event):
-        position = interfaces.stageMover.getPosition()
-        values=gui.dialogs.getNumberDialog.getManyNumbersFromUser(
+        position = cockpit.interfaces.stageMover.getPosition()
+        values=cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
                 self.GetParent(),
                 "Go To XYZ",('X','Y','Z'),
                 position,
@@ -474,12 +475,12 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
         newPos=[float(values[0]),float(values[1]),float(values[2])]
 #Work out if we will be ouside the limits of the current stage
         posDelta = [newPos[0]-position[0],newPos[1]-position[1],newPos[2]-position[2]]
-        originalHandlerIndex = interfaces.stageMover.mover.curHandlerIndex
+        originalHandlerIndex = cockpit.interfaces.stageMover.mover.curHandlerIndex
         currentHandlerIndex = originalHandlerIndex
-        allPositions=interfaces.stageMover.getAllPositions()
+        allPositions=cockpit.interfaces.stageMover.getAllPositions()
         for axis in range(3):
             if (posDelta[axis]**2 > .001 ):
-                    limits = interfaces.stageMover.getIndividualHardLimits(axis)
+                    limits = cockpit.interfaces.stageMover.getIndividualHardLimits(axis)
                     currentpos = allPositions[currentHandlerIndex][axis]
                     if  ((currentpos == None ) or  # no handler on this axis.
                           (currentpos + posDelta[axis]<(limits[currentHandlerIndex][0])) or # off bottom
@@ -487,9 +488,9 @@ class MacroStageXY(wx.glcanvas.GLCanvas):
                         currentHandlerIndex -= 1 # go to a bigger handler index
                     if currentHandlerIndex<0:
                         return False
-        interfaces.stageMover.mover.curHandlerIndex = currentHandlerIndex
-        interfaces.stageMover.goTo(newPos)
-        interfaces.stageMover.mover.curHandlerIndex = originalHandlerIndex
+        cockpit.interfaces.stageMover.mover.curHandlerIndex = currentHandlerIndex
+        cockpit.interfaces.stageMover.goTo(newPos)
+        cockpit.interfaces.stageMover.mover.curHandlerIndex = originalHandlerIndex
         return True
 
 

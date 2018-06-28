@@ -59,17 +59,17 @@ from __future__ import absolute_import
 import json
 import wx
 
-import depot
+from cockpit import depot
 from .dialogs.experiment import multiSiteExperiment
 from .dialogs.experiment import singleSiteExperiment
-import events
-import experiment.experiment
+from cockpit import events
+import cockpit.experiment.experiment
 from . import fileViewerWindow
-import interfaces.imager
+import cockpit.interfaces.imager
 from . import keyboard
 from . import toggleButton
-import util.user
-import util.userConfig
+import cockpit.util.user
+import cockpit.util.userConfig
 from . import viewFileDropTarget
 
 from six import iteritems
@@ -141,7 +141,7 @@ class MainWindow(wx.Frame):
         self.videoButton = toggleButton.ToggleButton(textSize = 12,
                 label = "Video mode", size = (120, 80), parent = topPanel)
         self.videoButton.Bind(wx.EVT_LEFT_DOWN,
-                lambda event: interfaces.imager.videoMode())
+                lambda event: cockpit.interfaces.imager.videoMode())
         buttonSizer.Add(self.videoButton)
         saveButton = toggleButton.ToggleButton(textSize = 12,
                 label = "Save Exposure\nSettings",
@@ -157,7 +157,7 @@ class MainWindow(wx.Frame):
                 label = "Snap",
                 size = (120, 80), parent = topPanel)
         snapButton.Bind(wx.EVT_LEFT_DOWN,
-                        lambda event: interfaces.imager.takeImage())
+                        lambda event: cockpit.interfaces.imager.takeImage())
         buttonSizer.Add(snapButton)
 
         topSizer.Add(buttonSizer)
@@ -300,10 +300,10 @@ class MainWindow(wx.Frame):
 
 
     ## Save the position of our window. For all other windows, this is handled
-    # by util.user.logout, but by the time that function gets called, we've
+    # by cockpit.util.user.logout, but by the time that function gets called, we've
     # already been destroyed.
     def onMove(self, event):
-        util.userConfig.setValue('mainWindowPosition', tuple(self.GetPosition()))
+        cockpit.util.userConfig.setValue('mainWindowPosition', tuple(self.GetPosition()))
 
 
     ## Do any necessary program-shutdown events here instead of in the App's
@@ -329,7 +329,7 @@ class MainWindow(wx.Frame):
     # generated due to the splitting logic. We just view the first one in
     # that case.
     def onViewLastFile(self, event = None):
-        filenames = experiment.experiment.getLastFilenames()
+        filenames = cockpit.experiment.experiment.getLastFilenames()
         if filenames:
             window = fileViewerWindow.FileViewer(filenames[0], self)
             if len(filenames) > 1:
@@ -341,7 +341,7 @@ class MainWindow(wx.Frame):
     def onSaveExposureSettings(self, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
                 message = "Please select where to save the settings.",
-                defaultDir = util.user.getUserSaveDir())
+                defaultDir = cockpit.util.user.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
             return
@@ -357,7 +357,7 @@ class MainWindow(wx.Frame):
     def onLoadExposureSettings(self, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_OPEN, wildcard = '*.txt',
                 message = "Please select the settings file to load.",
-                defaultDir = util.user.getUserSaveDir())
+                defaultDir = cockpit.util.user.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
             return

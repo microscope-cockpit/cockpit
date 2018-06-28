@@ -50,7 +50,7 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import depot
+from cockpit import depot
 from . import deviceHandler
 import decimal
 

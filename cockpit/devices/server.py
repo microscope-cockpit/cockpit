@@ -55,9 +55,9 @@ import threading
 import traceback
 
 from . import device
-import handlers.server
-import util.logger
-import util.threads
+import cockpit.handlers.server
+import cockpit.util.logger
+import cockpit.util.threads
 
 CLASS_NAME = 'CockpitServer'
 
@@ -83,7 +83,7 @@ class CockpitServer(device.Device):
 
 
     def getHandlers(self):
-        return [handlers.server.ServerHandler("Cockpit server", "server",
+        return [cockpit.handlers.server.ServerHandler("Cockpit server", "server",
                 {'register': self.register,
                  'unregister': self.unregister})]
                 
@@ -121,7 +121,7 @@ class ServerDaemon:
 
 
     ## Handle function calls by forwarding them to self.func.
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def serve(self):
         self.daemon.requestLoop()
 
@@ -142,5 +142,5 @@ class ServerDaemon:
         try:
             self.func(*args)
         except Exception as e:
-            util.logger.log.error("ServerDaemon [%s] failed its callback: %s" % (self.name, e))
-            util.logger.log.error(traceback.format_exc())
+            cockpit.util.logger.log.error("ServerDaemon [%s] failed its callback: %s" % (self.name, e))
+            cockpit.util.logger.log.error(traceback.format_exc())

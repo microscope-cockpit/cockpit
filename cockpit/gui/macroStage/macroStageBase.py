@@ -51,7 +51,7 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from util import ftgl
+from cockpit.util import ftgl
 import numpy
 import os
 from OpenGL.GL import *
@@ -59,16 +59,16 @@ import threading
 import time
 import wx
 
-import events
-import interfaces.stageMover
-import util.logger
-import depot
+from cockpit import events
+import cockpit.interfaces.stageMover
+import cockpit.util.logger
+from cockpit import depot
 
 from cockpit import COCKPIT_PATH
 
 PI = 3.1415926
 
-## @package gui.macroStage
+## @package cockpit.gui.macroStage
 # This module contains the MacroStageBase base class, used by the MacroStageXY
 # and MacroStageZ classes, as well as some shared constants.
 
@@ -101,7 +101,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         ## Whether or not we should try to draw
         self.shouldDraw = True
         ## Font for drawing text
-        from gui import FONTPATH
+        from cockpit.gui import FONTPATH
         try:
             self.font = ftgl.TextureFont(FONTPATH)
             self.font.setFaceSize(18)

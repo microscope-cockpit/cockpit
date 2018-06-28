@@ -52,8 +52,8 @@
 
 
 from . import actionTable
-import events
-import util.userConfig
+from cockpit import events
+import cockpit.util.userConfig
 from . import zStack
 
 import wx
@@ -206,7 +206,7 @@ class ExperimentUI(wx.Panel):
 
 
     def loadSettings(self):
-        return util.userConfig.getValue(
+        return cockpit.util.userConfig.getValue(
                 self.configKey + 'StutteredZStackSettings',
                 default = [])
 
@@ -222,7 +222,7 @@ class ExperimentUI(wx.Panel):
     def saveSettings(self, settings = None):
         if settings is None:
             settings = self.getSettingsDict()
-        util.userConfig.setValue(
+        cockpit.util.userConfig.setValue(
                 self.configKey + 'StutteredZStackSettings', settings)
 
 

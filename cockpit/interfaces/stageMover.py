@@ -52,8 +52,8 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import depot
-import events
+from cockpit import depot
+from cockpit import events
 
 import numpy
 import threading

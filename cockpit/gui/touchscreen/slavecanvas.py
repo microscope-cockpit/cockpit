@@ -32,15 +32,11 @@ import time
 import traceback
 import wx.glcanvas
 
-import events
-import gui.mosaic.tile as tile
-import util.datadoc
-import util.logger
-import util.threads
-import gui.mosaic.window
-import depot
+from cockpit import events
+import cockpit.gui.mosaic.tile as tile
+import cockpit.gui.mosaic.window
+from cockpit import depot
 
-import interfaces.stageMover
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1
@@ -86,7 +82,7 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
         ## Controls whether we rerender tiles during our onPaint.
         self.shouldRerender = True
         #get a refernce to the master canvas to access the openGL calls.
-        self.masterCanvas=gui.mosaic.window.window.canvas
+        self.masterCanvas=cockpit.gui.mosaic.window.window.canvas
         #this assumes that mastercanvas has already init'd
         ## WX rendering context
         self.context = self.masterCanvas.context
@@ -177,7 +173,7 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
             glMatrixMode(GL_MODELVIEW)
 
             #Dont need this code as it is done in the main mosaic
-#            for tile in gui.mosaic.window.window.canvas.tilesToRefresh:
+#            for tile in cockpit.gui.mosaic.window.window.canvas.tilesToRefresh:
 #                self.masterCanvas.tile.refresh()
 #            self.tilesToRefresh = set()
 

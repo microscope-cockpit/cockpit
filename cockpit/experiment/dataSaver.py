@@ -52,11 +52,11 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import depot
-import events
-import util.datadoc
-import util.logger
-import util.threads
+from cockpit import depot
+from cockpit import events
+import cockpit.util.datadoc
+import cockpit.util.logger
+import cockpit.util.threads
 
 import numpy
 from six.moves import queue
@@ -219,7 +219,7 @@ class DataSaver:
             numTimepoints = self.maxRepsPerFile
             if i == len(self.filehandles) - 1:
                 numTimepoints = self.numReps - (self.maxRepsPerFile * (len(self.filehandles) - 1))
-            header = util.datadoc.makeHeaderForShape(
+            header = cockpit.util.datadoc.makeHeaderForShape(
                 (len(self.cameras), numTimepoints, self.maxImagesPerRep, 
                     self.maxHeight, self.maxWidth),
                 numpy.uint16, pixelSizeXY, pixelSizeZ, wavelengths)
@@ -255,7 +255,7 @@ class DataSaver:
         # values for each wavelength).
         for i, handle in enumerate(self.filehandles):
             with self.fileLocks[i]:
-                util.datadoc.writeMrcHeader(self.headers[i], handle)
+                cockpit.util.datadoc.writeMrcHeader(self.headers[i], handle)
         
         ## List of how many images we've received, on a per-camera basis.
         self.imagesReceived = [0] * len(self.cameras)
@@ -356,7 +356,7 @@ class DataSaver:
         # Then, close the filehandle.
         for i, handle in enumerate(self.filehandles):
             with self.fileLocks[i]:
-                util.datadoc.writeMrcHeader(self.headers[i], handle)
+                cockpit.util.datadoc.writeMrcHeader(self.headers[i], handle)
                 handle.close()
         
 
@@ -374,7 +374,7 @@ class DataSaver:
 
 
     ## Continually poll our imageQueue and save data to the file.
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def saveData(self):
         while not self.amDone:
             if self.shouldAbort:

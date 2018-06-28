@@ -52,15 +52,15 @@
 
 
 from . import device
-import events
-import handlers.stagePositioner
-import util.threads
+from cockpit import events
+import cockpit.handlers.stagePositioner
+import cockpit.util.threads
 
 import socket
 import threading
 import time
 
-import util.logger
+import cockpit.util.logger
 ## TODO: test with hardware.
 
 
@@ -296,7 +296,7 @@ class PicoMotorDevice(device.Device):
                 try :
                     response = self.xyConnection.recv(1024)
                 except :
-                    util.logger.log.debug("in command %s, %d, No response",
+                    cockpit.util.logger.log.debug("in command %s, %d, No response",
                                               command,numExpectedLines)
                 return response
 
@@ -309,7 +309,7 @@ class PicoMotorDevice(device.Device):
         numLines = 0
         while True:
             output = self.xyConnection.recv(1024)
-            util.logger.log.debug("Picomotor responce %s", output)
+            cockpit.util.logger.log.debug("Picomotor responce %s", output)
             response += output
             numLines += 1
             if numLines == numExpectedLines:
@@ -335,7 +335,7 @@ class PicoMotorDevice(device.Device):
         result = []
         for axis, minPos, maxPos in [(0, -10000, 10000),
                     (1, -10000, 10000),(2,-1000,1000)]:
-            result.append(handlers.stagePositioner.PositionerHandler(
+            result.append(cockpit.handlers.stagePositioner.PositionerHandler(
                     "%d PI mover" % axis, "%d stage motion" % axis, False,
                     {'moveAbsolute': self.moveXYAbsolute,
                          'moveRelative': self.moveXYRelative,
@@ -377,7 +377,7 @@ class PicoMotorDevice(device.Device):
 
 
     ## Send updates on the XY stage's position, until it stops moving.
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def sendXYPositionUpdates(self):
         prevX, prevY, prevZ = self.xyPositionCache
         while True:

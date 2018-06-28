@@ -50,10 +50,10 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import depot
+from cockpit import depot
 from . import deviceHandler
 
-import events
+from cockpit import events
 
 
 ## This handler mostly just handles setting up incoming communications

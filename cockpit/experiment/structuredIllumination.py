@@ -53,12 +53,12 @@
 
 
 from . import actionTable
-import depot
+from cockpit import depot
 from . import experiment
-import gui.guiUtils
-import util.Mrc
-import util.datadoc
-import util.userConfig
+from cockpit.gui import guiUtils
+import cockpit.util.Mrc
+import cockpit.util.datadoc
+import cockpit.util.userConfig
 
 import decimal
 import math
@@ -400,7 +400,7 @@ class SIExperiment(experiment.Experiment):
             return
 
 
-        doc = util.datadoc.DataDoc(self.savePath)
+        doc = cockpit.util.datadoc.DataDoc(self.savePath)
         order_in = tuple(doc.image.Mrc.axisOrderStr())
 
         length_getters = {
@@ -417,8 +417,8 @@ class SIExperiment(experiment.Experiment):
         if nz_in_data == nz_in_header:
             z_lengths = header_z_lengths
         else:
-            z_lengths = util.Mrc.adjusted_data_shape(nz_in_data,
-                                                     header_z_lengths)
+            z_lengths = cockpit.util.Mrc.adjusted_data_shape(nz_in_data,
+                                                             header_z_lengths)
 
         ## Read the extended header again separately.  It our case,
         ## this is a struct made of int32 and float32, one per plane.
@@ -443,7 +443,7 @@ class SIExperiment(experiment.Experiment):
         ## from what is in the header so we get the shape header and
         ## not the shape from the data in the datadoc instance.  See
         ## cockpit bug #289.
-        header_shape = [int(n) for n in util.Mrc.shapeFromHdr(doc.imageHeader)]
+        header_shape = [int(n) for n in cockpit.util.Mrc.shapeFromHdr(doc.imageHeader)]
         ext_header = ext_header.reshape(header_shape[:-2])
 
         ## Finally, reorder the things.
@@ -457,7 +457,7 @@ class SIExperiment(experiment.Experiment):
         ## Save to a new file, reusing the original base header since
         ## we don't actually changed anything there.
         tmp_fh = tempfile.NamedTemporaryFile(delete=False)
-        util.datadoc.writeMrcHeader(doc.imageHeader, tmp_fh)
+        cockpit.util.datadoc.writeMrcHeader(doc.imageHeader, tmp_fh)
         ## Make sure the data is actually ordered for writing,
         ## otherwise at this point the arrays might be making use of
         ## views.
@@ -510,7 +510,7 @@ class ExperimentUI(wx.Panel):
         text = wx.StaticText(self, -1, "Exposure bleach compensation (%):")
         rowSizer.Add(text, 0, wx.ALL, 5)
         ## Ordered list of bleach compensation percentages.
-        self.bleachCompensations, subSizer = gui.guiUtils.makeLightsControls(
+        self.bleachCompensations, subSizer = guiUtils.makeLightsControls(
                 self,
                 [str(l.name) for l in self.allLights],
                 self.settings['bleachCompensations'])
@@ -518,7 +518,7 @@ class ExperimentUI(wx.Panel):
         sizer.Add(rowSizer)
         # Now a row for the collection order.
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.siCollectionOrder = gui.guiUtils.addLabeledInput(self,
+        self.siCollectionOrder = guiUtils.addLabeledInput(self,
                 rowSizer, label = "Collection order",
                 control = wx.Choice(self, choices = sorted(COLLECTION_ORDERS.keys())),
                 helperString = "What order to change the angle, phase, and Z step of the experiment. E.g. for \"Angle, Phase, Z\" Angle will change most slowly and Z will change fastest.")
@@ -541,7 +541,7 @@ class ExperimentUI(wx.Panel):
         params['slmHandler'] = depot.getHandler('slm', depot.EXECUTOR)
         compensations = {}
         for i, light in enumerate(self.allLights):
-            val = gui.guiUtils.tryParseNum(self.bleachCompensations[i], float)
+            val = guiUtils.tryParseNum(self.bleachCompensations[i], float)
             if val:
                 # Convert from percentage to multiplier
                 compensations[light] = .01 * float(val)
@@ -554,7 +554,7 @@ class ExperimentUI(wx.Panel):
     ## Load the saved experiment settings, if any.
     def loadSettings(self):
         allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
-        result = util.userConfig.getValue(
+        result = cockpit.util.userConfig.getValue(
                 self.configKey + 'SIExperimentSettings',
                 default = {
                     'bleachCompensations': ['' for l in self.allLights],
@@ -581,6 +581,6 @@ class ExperimentUI(wx.Panel):
     def saveSettings(self, settings = None):
         if settings is None:
             settings = self.getSettingsDict()
-        util.userConfig.setValue(
+        cockpit.util.userConfig.setValue(
                 self.configKey + 'SIExperimentSettings', settings
         )

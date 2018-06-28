@@ -53,15 +53,16 @@
 
 import decimal
 import wx
-import gui
-import gui.device
 
-import depot
+import cockpit.gui
+import cockpit.gui.device
+
+from cockpit import depot
 from . import deviceHandler
-import events
-import handlers.imager
-import interfaces.imager
-import util.colors
+from cockpit import events
+import cockpit.handlers.imager
+import cockpit.interfaces.imager
+import cockpit.util.colors
 
 
 ## Available trigger modes for triggering the camera.
@@ -128,7 +129,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
             softTrigger = self.callbacks.get('softTrigger', None)
             self.triggerNow = lambda: softTrigger
             if softTrigger:
-                depot.addHandler(handlers.imager.ImagerHandler(
+                depot.addHandler(cockpit.handlers.imager.ImagerHandler(
                     "%s imager" % name, "imager",
                     {'takeImage': softTrigger}))
 
@@ -136,7 +137,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
     @property
     def color(self):
         if self.wavelength is not None:
-            return util.colors.wavelengthToColor(self.wavelength, 0.8)
+            return cockpit.util.colors.wavelengthToColor(self.wavelength, 0.8)
         else:
             return (127,)*3
 
@@ -172,7 +173,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
 
 
     ## Invoke our callback, and let everyone know that a new camera is online.
-    @interfaces.imager.pauseVideo
+    @cockpit.interfaces.imager.pauseVideo
     @reset_cache
     def setEnabled(self, shouldEnable = True):
         self.isEnabled = self.callbacks['setEnabled'](self.name, shouldEnable)
@@ -256,9 +257,9 @@ class CameraHandler(deviceHandler.DeviceHandler):
         sizer = wx.BoxSizer(wx.VERTICAL)
         # Remove the word 'camera' to shorten labels.
         name = self.name.replace('camera', '').replace('  ', ' ')
-        label = gui.device.Label(
+        label = cockpit.gui.device.Label(
             parent=self.panel, label=name)
-        button = gui.device.EnableButton(label='Off', parent=self.panel, leftAction=self.toggleState)
+        button = cockpit.gui.device.EnableButton(label='Off', parent=self.panel, leftAction=self.toggleState)
         self.addListener(button)
         sizer.Add(label)
         sizer.Add(button)

@@ -18,20 +18,11 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-import imp
-import os
 import unittest
 
 import numpy
 
-## cockpit is a windows program with a pyw file extension but it is
-## also a python module that needs to be imported.  The pyw extension
-## prevents it from being imported in non-Windows systems, hence this
-## imp.load_source kludge so that import of experiments work.
-if os.name not in ("nt", "ce"):
-    imp.load_source("cockpit", "cockpit.pyw")
-
-import experiment.structuredIllumination as sim
+import cockpit.experiment.structuredIllumination as sim
 
 class PostpadTestCase(unittest.TestCase):
     def test_pad_data(self):

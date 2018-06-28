@@ -50,8 +50,8 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import depot
-import handlers.deviceHandler as deviceHandler
+import cockpit.depot
+import cockpit.handlers.deviceHandler as deviceHandler
 
 
 ## This handler stores various configuration information about the microscope
@@ -70,7 +70,7 @@ class ConfiguratorHandler(deviceHandler.DeviceHandler):
     #   stored.
     def __init__(self, name, groupName, callbacks, config):
         deviceHandler.DeviceHandler.__init__(self, name, groupName, False, 
-                callbacks, depot.CONFIGURATOR)
+                callbacks, cockpit.depot.CONFIGURATOR)
         self.config = config
 
 

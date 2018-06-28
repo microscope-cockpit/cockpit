@@ -52,9 +52,9 @@
 
 import wx
 
-import events
-import gui.toggleButton
-import util.threads
+from cockpit import events
+import cockpit.gui.toggleButton
+import cockpit.util.threads
 
 ## This module creates the "status lights" window which tells the user
 # various information about their environment.
@@ -81,13 +81,13 @@ class StatusLightsWindow(wx.Frame):
 
     ## New light generated; insert it into our panel.
     # Do nothing if the light already exists.
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def onNewLight(self, lightName, text, backgroundColor = None):
         if lightName in self.nameToLight:
             return
         if backgroundColor is None:
             backgroundColor = (170, 170, 170)
-        light = gui.toggleButton.ToggleButton(parent = self.panel,
+        light = cockpit.gui.toggleButton.ToggleButton(parent = self.panel,
                 activeColor = backgroundColor, activeLabel = text,
                 size = (170, 100))
         # For some reason, using a sizer here causes the lights to be placed
@@ -100,7 +100,7 @@ class StatusLightsWindow(wx.Frame):
 
     ## Update the status light with the specified name. Create the light
     # if it doesn't already exist.
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def onNewStatus(self, lightName, text, backgroundColor = None):
         if lightName not in self.nameToLight:
             self.onNewLight(lightName, text, backgroundColor)

@@ -53,8 +53,8 @@
 ## This module provides a dummy camera that generates test pattern images. 
 
 from . import device
-import events
-import handlers.camera
+from cockpit import events
+import cockpit.handlers.camera
 
 import decimal
 import numpy
@@ -103,7 +103,7 @@ class DummyCamera(device.Device):
         result = []
         for i in range(1, 5):
             name = 'Dummy camera %d' % i
-            result.append(handlers.camera.CameraHandler(
+            result.append(cockpit.handlers.camera.CameraHandler(
                 name, "Dummy cameras", 
                 {'setEnabled': self.enableCamera, 
                     'getImageSize': self.getImageSize, 

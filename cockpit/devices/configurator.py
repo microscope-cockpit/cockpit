@@ -53,15 +53,15 @@
 
 ## This Device handles various miscellaneous information about the microscope.
 
-import devices.device as device
-import handlers.configuratorHandler
-import util.files
+import cockpit.devices.device
+import cockpit.handlers.configuratorHandler
+import cockpit.util.files
 
 import os.path
 
-class Configurator(device.Device):
+class Configurator(cockpit.devices.device.Device):
     def getHandlers(self):
-        root = self.config.get('root', util.files.ROOT_DIR)
+        root = self.config.get('root', cockpit.util.files.ROOT_DIR)
 
         # Default values.
         configdict = {
@@ -83,6 +83,6 @@ class Configurator(device.Device):
                 configdict.update({opt: self.config.get(opt)})
 
 
-        return [handlers.configuratorHandler.ConfiguratorHandler(
+        return [cockpit.handlers.configuratorHandler.ConfiguratorHandler(
             'configuration', 'miscellaneous', {}, configdict)
         ]

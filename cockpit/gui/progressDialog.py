@@ -39,22 +39,22 @@
 # methods. Of course, true ProgressDialogs have many other available functions,
 # so this is not truly safe, but it's good enough for most of our uses.
 
-import util.threads
+import cockpit.util.threads
 
 import wx
 
 
 class ProgressDialog(wx.ProgressDialog):
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def __init__(*args, **kwargs):
         wx.ProgressDialog.__init__(*args, **kwargs)
 
 
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def Update(*args, **kwargs):
         wx.ProgressDialog.Update(*args, **kwargs)
 
 
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def Destroy(*args, **kwargs):
         wx.ProgressDialog.Destroy(*args, **kwargs)

@@ -54,7 +54,7 @@ import numpy
 import OpenGL.GL as GL
     
 
-## @package gui.image
+## @package cockpit.gui.image
 # This module provides a simple way to draw Numpy arrays with OpenGL.
 
 ## Maps numpy datatypes to OpenGL datatypes

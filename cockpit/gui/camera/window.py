@@ -53,11 +53,11 @@
 
 import wx
 
-import depot
-import events
-import gui.keyboard
-import util.userConfig
-import gui.viewFileDropTarget
+from cockpit import depot
+from cockpit import events
+import cockpit.gui.keyboard
+import cockpit.util.threads
+import cockpit.gui.viewFileDropTarget
 from . import viewPanel
 
 
@@ -87,12 +87,12 @@ class CamerasWindow(wx.Frame):
         events.subscribe("image pixel info", self.onImagePixelInfo)
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
-        gui.keyboard.setKeyboardHandlers(self)
+        cockpit.gui.keyboard.setKeyboardHandlers(self)
 
         self.Bind(wx.EVT_CLOSE, self.onClose)
 
         self.resetGrid()
-        self.SetDropTarget(gui.viewFileDropTarget.ViewFileDropTarget(self))
+        self.SetDropTarget(cockpit.gui.viewFileDropTarget.ViewFileDropTarget(self))
 
 
     ## The window is closed; use that as a proxy for closing the program,
@@ -119,7 +119,7 @@ class CamerasWindow(wx.Frame):
             self.views[i].enableCamera(camera)
 
 
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def onCameraEnableEvent(self, camera, enabled):
         activeViews = [view for view in self.views if view.getIsEnabled()]
         if enabled and camera not in [view.curCamera for view in activeViews]:

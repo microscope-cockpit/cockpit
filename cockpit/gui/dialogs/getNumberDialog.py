@@ -51,7 +51,7 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import gui.guiUtils
+import cockpit.gui.guiUtils
 
 import wx
 
@@ -71,7 +71,7 @@ class GetNumberDialog(wx.Dialog):
         
         mainSizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.value = gui.guiUtils.addLabeledInput(
+        self.value = cockpit.gui.guiUtils.addLabeledInput(
                 parent = self, sizer = mainSizer,
                 label = prompt,
                 defaultValue = str(default),
@@ -116,7 +116,7 @@ class GetManyNumbersDialog(wx.Dialog):
 
         self.controls = []
         for i, prompt in enumerate(prompts):
-            control = gui.guiUtils.addLabeledInput(
+            control = cockpit.gui.guiUtils.addLabeledInput(
                     parent = self, sizer = mainSizer,
                     label = prompt,
                     defaultValue = str(defaultValues[i]),

@@ -53,13 +53,13 @@
 import decimal
 import wx
 
-import depot
+from cockpit import depot
 from . import deviceHandler
 
-import events
-import gui.guiUtils
-import gui.toggleButton
-import util.userConfig
+from cockpit import events
+import cockpit.gui.guiUtils
+import cockpit.gui.toggleButton
+import cockpit.util.userConfig
 
 
 ## This handler is for light filters, which control the percentage of light
@@ -110,7 +110,7 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
 
     ## User logged in; load their settings.
     def onLogin(self, username):
-        self.selectPosition(util.userConfig.getValue(self.name + '-filterPosition', default = 0))
+        self.selectPosition(cockpit.util.userConfig.getValue(self.name + '-filterPosition', default = 0))
 
 
     ## Construct a UI consisting of a clickable box that pops up a menu allowing
@@ -118,7 +118,7 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
     # show the current position and actual filtration amount.
     def makeUI(self, parent):
         sizer = wx.BoxSizer(wx.VERTICAL)
-        button = gui.toggleButton.ToggleButton(inactiveColor = self.color, 
+        button = cockpit.gui.toggleButton.ToggleButton(inactiveColor = self.color, 
                 textSize = 12, label = self.name, size = (120, 80), 
                 parent = parent)
         # Respond to clicks on the button.
@@ -148,7 +148,7 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
             menu.Check(i + 1, self.curPosition == i)
             eventObject.Bind(wx.EVT_MENU,  action, id= i + 1)
 
-        gui.guiUtils.placeMenuAtMouse(eventObject, menu)
+        cockpit.gui.guiUtils.placeMenuAtMouse(eventObject, menu)
 
 
     ## Handle the user selecting a position for the filter.
@@ -158,7 +158,7 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
             events.publish('global filter change', 
                     self.globalIndex, self.curPosition)
         self.callbacks['setPosition'](self.name, index)
-        util.userConfig.setValue(self.name + '-filterPosition', index)
+        cockpit.util.userConfig.setValue(self.name + '-filterPosition', index)
         wx.CallAfter(self.updateText)
 
 

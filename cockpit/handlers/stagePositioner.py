@@ -53,9 +53,9 @@
 
 import wx
 
-import depot
+from cockpit import depot
 from . import deviceHandler
-import events
+from cockpit import events
 import time
 
 ## This handler is for stage positioner devices.

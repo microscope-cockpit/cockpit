@@ -35,8 +35,8 @@ Sample config entry:
 """
 
 from . import device
-import events
-import handlers.stagePositioner
+from cockpit import events
+import cockpit.handlers.stagePositioner
 import socket
 import re
 from time import sleep
@@ -145,7 +145,7 @@ class AerotechZStage(device.Device):
         #IMD 2015-03-02 changed hard limits to reflect DeepSIM should go into config file
         minVal = self.softlimits[0]
         maxVal = self.softlimits[1]
-        handler = handlers.stagePositioner.PositionerHandler(
+        handler = cockpit.handlers.stagePositioner.PositionerHandler(
             "%d %s" % (axis, NAME_STRING), "%d stage motion" % axis, False, 
             {'moveAbsolute': self.moveAbsolute,
                 'moveRelative': self.moveRelative, 

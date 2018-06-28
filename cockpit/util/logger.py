@@ -33,7 +33,7 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import util.files
+import cockpit.util.files
 
 import logging
 import os
@@ -50,7 +50,7 @@ log = None
 ## Generate a filename to store logs in; specific to the specified username.
 def generateLogFileName(user = ''):
     filename = 'MUI_'
-    filename = os.path.join(util.files.getLogDir(), filename)
+    filename = os.path.join(cockpit.util.files.getLogDir(), filename)
     filename += time.strftime("%Y%m%d_%a-%H%M")
     if user:
         filename += '_%s' % user

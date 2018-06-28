@@ -24,9 +24,9 @@
 
 from decimal import Decimal
 from . import device
-from interfaces.stageMover import Primitive, AXIS_MAP
-from handlers import stagePositioner
-import depot
+from cockpit.interfaces.stageMover import Primitive, AXIS_MAP
+from cockpit.handlers import stagePositioner
+from cockpit import depot
 import re
 
 class StageDevice(device.Device):

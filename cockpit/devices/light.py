@@ -21,10 +21,9 @@
 
 import Pyro4
 from . import device
-import depot
-import handlers.lightSource
+from cockpit import depot
+import cockpit.handlers.lightSource
 import time
-import util.colors
 
 
 class SimpleLight(device.Device):
@@ -51,7 +50,7 @@ class SimpleLight(device.Device):
         else:
             trighandler = None
         self._exposureTime = 100
-        self.handlers.append(handlers.lightSource.LightHandler(
+        self.handlers.append(cockpit.handlers.lightSource.LightHandler(
             self.name + ' toggle',
             self.name + ' light source',
             {'setEnabled': lambda name, on: time.sleep(0.5),

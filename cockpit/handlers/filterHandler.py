@@ -20,9 +20,9 @@
 
 
 from . import deviceHandler
-import depot
-import events
-import gui
+from cockpit import depot
+from cockpit import events
+import cockpit.gui
 import wx
 
 class Filter(object):
@@ -66,7 +66,7 @@ class FilterHandler(deviceHandler.DeviceHandler):
 
     ### UI functions ####
     def makeUI(self, parent):
-        self.display = gui.toggleButton.ToggleButton(
+        self.display = cockpit.gui.toggleButton.ToggleButton(
                         parent=parent, label='', isBold=False)
         self.display.Bind(wx.EVT_LEFT_DOWN, self.menuFunc)
         #self.display.Bind(wx.EVT_RIGHT_DOWN, self._device.showSettings)
@@ -99,7 +99,7 @@ class FilterHandler(deviceHandler.DeviceHandler):
 
     def menuFunc(self, evt=None):
         items = [str(f) for f in self.callbacks['getFilters']()]
-        menu = gui.device.Menu(items, self.menuCallback)
+        menu = cockpit.gui.device.Menu(items, self.menuCallback)
         menu.show(evt)
 
 

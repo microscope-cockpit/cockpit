@@ -51,14 +51,14 @@
 
 
 from . import imageSequenceViewer
-import util.datadoc
+import cockpit.util.datadoc
 
 
 
 ## This viewer loads a file and shows the images in it. 
 class FileViewer(imageSequenceViewer.ImageSequenceViewer):
     def __init__(self, filename, *args, **kwargs):
-        doc = util.datadoc.DataDoc(filename)
+        doc = cockpit.util.datadoc.DataDoc(filename)
         images = doc.imageArray
 
         imageSequenceViewer.ImageSequenceViewer.__init__(self,

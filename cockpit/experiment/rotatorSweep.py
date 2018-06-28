@@ -20,10 +20,10 @@
 
 
 from . import actionTable
-import depot
+from cockpit import depot
 from . import experiment
-import gui
-import util
+from cockpit.gui import guiUtils
+import cockpit.util
 
 import decimal
 import math
@@ -89,19 +89,19 @@ class ExperimentUI(wx.Panel):
         ## Maps strings to TextCtrls describing how to configure
         # response curve experiments.
         self.settings = self.loadSettings()
-        self.settlingTimeControl = gui.guiUtils.addLabeledInput(
+        self.settlingTimeControl = guiUtils.addLabeledInput(
                                         self, sizer, label='settling time',
                                         defaultValue=self.settings['settlingTime'],)
         sizer.Add(self.settlingTimeControl)
-        self.vStepsControl = gui.guiUtils.addLabeledInput(
+        self.vStepsControl = guiUtils.addLabeledInput(
                                         self, sizer, label='V steps',
                                         defaultValue=self.settings['vSteps'],)
         sizer.Add(self.vStepsControl)
-        self.startVControl = gui.guiUtils.addLabeledInput(
+        self.startVControl = guiUtils.addLabeledInput(
                                         self, sizer, label='V start',
                                         defaultValue=self.settings['startV'],)
         sizer.Add(self.startVControl)
-        self.maxVControl = gui.guiUtils.addLabeledInput(
+        self.maxVControl = guiUtils.addLabeledInput(
                                         self, sizer, label='V max',
                                         defaultValue=self.settings['maxV'],)
         sizer.Add(self.maxVControl)
@@ -112,17 +112,17 @@ class ExperimentUI(wx.Panel):
     # experiment instance, augment them with our special parameters.
     def augmentParams(self, params):
         self.saveSettings()
-        params['settlingTime'] = gui.guiUtils.tryParseNum(self.settlingTimeControl, float)
-        params['startV'] = gui.guiUtils.tryParseNum(self.startVControl, float)
-        params['maxV'] = gui.guiUtils.tryParseNum(self.maxVControl, float)
-        params['vSteps'] = gui.guiUtils.tryParseNum(self.vStepsControl)
+        params['settlingTime'] = guiUtils.tryParseNum(self.settlingTimeControl, float)
+        params['startV'] = guiUtils.tryParseNum(self.startVControl, float)
+        params['maxV'] = guiUtils.tryParseNum(self.maxVControl, float)
+        params['vSteps'] = guiUtils.tryParseNum(self.vStepsControl)
         params['polarizerHandler'] = depot.getHandlerWithName('SI polarizer')
         return params
 
 
     ## Load the saved experiment settings, if any.
     def loadSettings(self):
-        return util.userConfig.getValue(
+        return cockpit.util.userConfig.getValue(
                 self.configKey + 'RotatorSweepExperimentSettings',
                 default = {
                     'settlingTime': '0.1',
@@ -146,6 +146,6 @@ class ExperimentUI(wx.Panel):
     def saveSettings(self, settings = None):
         if settings is None:
             settings = self.getSettingsDict()
-        util.userConfig.setValue(
+        cockpit.util.userConfig.setValue(
                 self.configKey + 'RotatorSweepExperimentSettings',
                 settings)

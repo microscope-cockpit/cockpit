@@ -29,19 +29,19 @@ import Pyro4
 import wx
 
 from . import camera
-import depot
+from cockpit import depot
 import numpy as np
-import events
-import gui.device
-import gui.guiUtils
-import gui.toggleButton
-import handlers.camera
-import util.listener
-import util.threads
-import util.userConfig
+from cockpit import events
+import cockpit.gui.device
+import cockpit.gui.guiUtils
+import cockpit.gui.toggleButton
+import cockpit.handlers.camera
+import cockpit.util.listener
+import cockpit.util.threads
+import cockpit.util.userConfig
 import re
-from gui.device import SettingsEditor
-from interfaces.imager import pauseVideo
+from cockpit.gui.device import SettingsEditor
+from cockpit.interfaces.imager import pauseVideo
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFT) = range(4)
@@ -60,7 +60,7 @@ class MicroscopeCamera(camera.CameraDevice):
         # Pyro proxy
 
         self.proxy = Pyro4.Proxy(self.uri)
-        self.listener = util.listener.Listener(self.proxy,
+        self.listener = cockpit.util.listener.Listener(self.proxy,
                                                lambda *args: self.receiveData(*args))
         self.cached_settings={}
         self.settings_editor = None
@@ -161,9 +161,9 @@ class MicroscopeCamera(camera.CameraDevice):
     def onUserLogin(self, username):
         # Apply user defaults on login.
         idstr = self.handler.getIdentifier() + '_SETTINGS'
-        defaults = util.userConfig.getValue(idstr, isGlobal=False)
+        defaults = cockpit.util.userConfig.getValue(idstr, isGlobal=False)
         if defaults is None:
-            defaults = util.userConfig.getValue(idstr, isGlobal=True)
+            defaults = cockpit.util.userConfig.getValue(idstr, isGlobal=True)
         if defaults is None:
             self.defaults = DEFAULTS_NONE
             return
@@ -181,7 +181,7 @@ class MicroscopeCamera(camera.CameraDevice):
         else:
             trighandler = None
 
-        result = handlers.camera.CameraHandler(
+        result = cockpit.handlers.camera.CameraHandler(
                 "%s" % self.name, "universal camera",
                 {'setEnabled': self.enableCamera,
                  'getImageSize': self.getImageSize,
@@ -325,16 +325,16 @@ class MicroscopeCamera(camera.CameraDevice):
         # TODO - this should probably live in a base deviceHandler.
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        modeButton = gui.device.Button(parent=self.panel,
+        modeButton = cockpit.gui.device.Button(parent=self.panel,
                                             label=self.parseMode(),
                                             leftAction=self.onModeButton,
                                             rightAction=None,
-                                            size=gui.device.TALL_SIZE)
+                                            size=cockpit.gui.device.TALL_SIZE)
         modeButton.update(self.parseMode)
         events.subscribe("%s settings changed" % self, modeButton.update)
         sizer.Add(modeButton)
 
-        gainButton = gui.device.Button(parent=self.panel,
+        gainButton = cockpit.gui.device.Button(parent=self.panel,
                                               label='Gain',
                                               leftAction=self.onGainButton,
                                               rightAction=None
@@ -343,7 +343,7 @@ class MicroscopeCamera(camera.CameraDevice):
         events.subscribe("%s settings changed" % self, gainButton.update)
         sizer.Add(gainButton)
 
-        adv_button = gui.device.Button(parent=self.panel,
+        adv_button = cockpit.gui.device.Button(parent=self.panel,
                                        label='settings',
                                        leftAction=self.showSettings)
         sizer.Add(adv_button)
@@ -377,7 +377,7 @@ class MicroscopeCamera(camera.CameraDevice):
                                 lambda event, m=index: self.setReadoutModeByIndex(m),
                                 id=menuID)
                 menuID += 1
-        gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+        cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
     @pauseVideo

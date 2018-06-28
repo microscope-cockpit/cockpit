@@ -72,7 +72,7 @@ class DropTarget(wx.FileDropTarget):
             filename = filename.replace('\\', '/')
             # UGH this is a hack, but as far as I can tell there's no clean
             # way to insert variables into the shell's context.
-            self.parent.shell.push('import util.datadoc; %s = util.datadoc.DataDoc("%s")' % (variable, filename))
+            self.parent.shell.push('import cockpit.util.datadoc; %s = cockpit.util.datadoc.DataDoc("%s")' % (variable, filename))
                 
 
 

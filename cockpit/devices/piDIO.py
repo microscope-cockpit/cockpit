@@ -21,15 +21,15 @@
 
 
 from . import device
-import depot
-import events
-import gui.toggleButton
+from cockpit import depot
+from cockpit import events
+import cockpit.gui.toggleButton
 import collections
 import Pyro4
 import wx
 import threading
 import time
-import gui.device
+import cockpit.gui.device
 
 ## TODO: Clean up code.
 
@@ -111,10 +111,10 @@ class RaspberryPi(device.Device):
     def makeUI(self, parent):
         rowSizer=wx.BoxSizer(wx.HORIZONTAL)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        label = gui.device.Label(parent, -1, "Excitation path:")
+        label = cockpit.gui.device.Label(parent, -1, "Excitation path:")
         sizer.Add(label)
         for mode in self.excitation:
-            button = gui.toggleButton.ToggleButton( 
+            button = cockpit.gui.toggleButton.ToggleButton( 
                     textSize = 12, label = mode,
                     parent = parent)
             # Respond to clicks on the button.
@@ -198,7 +198,7 @@ class piOutputWindow(wx.Frame):
 
         # Set up the digital lineout buttons.
         for i in range(len(piDIO.lines)) :
-            button = gui.toggleButton.ToggleButton(
+            button = cockpit.gui.toggleButton.ToggleButton(
                     parent = panel, label = str(piDIO.lines[i]),
                     activateAction = self.toggle,
                     deactivateAction = self.toggle,

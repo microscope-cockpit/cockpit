@@ -57,7 +57,7 @@ import sys
 import wx
 import wx.aui
 
-import util.logger
+import cockpit.util.logger
 
 
 
@@ -105,9 +105,9 @@ class LoggingWindow(wx.Frame):
             # Ended a line; send the text to the logs, minus any trailing
             # whitespace (since the logs add their own trailing newline.
             if target is self.stdOut:
-                util.logger.log.debug(self.textCache.rstrip())
+                cockpit.util.logger.log.debug(self.textCache.rstrip())
             else:
-                util.logger.log.error(self.textCache.rstrip())
+                cockpit.util.logger.log.error(self.textCache.rstrip())
             self.textCache = ''
 
 

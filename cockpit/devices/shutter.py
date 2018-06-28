@@ -25,10 +25,10 @@ This is a base shutter device with dummy methods for testing.
 
 """
 import re
-import depot
+from cockpit import depot
 from . import device
-import events
-from handlers.lightSource import LightHandler
+from cockpit import events
+from cockpit.handlers.lightSource import LightHandler
 
 class ShutterDevice(device.Device):
     def __init__(self, name, config={}):

@@ -51,10 +51,10 @@
 
 
 from . import actionTable
-import depot
+from cockpit import depot
 from . import experiment
-import gui.guiUtils
-import util.userConfig
+import cockpit.gui.guiUtils
+import cockpit.util.userConfig
 
 import decimal
 import math
@@ -168,12 +168,12 @@ class ExperimentUI(wx.Panel):
         self.settings = self.loadSettings()
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.exposureMultiplier = gui.guiUtils.addLabeledInput(self, 
+        self.exposureMultiplier = cockpit.gui.guiUtils.addLabeledInput(self, 
                 sizer, label = "Exposure multiplier",
                 defaultValue = self.settings['exposureMultiplier'],
                 helperString = "Amount to multiply the normal exposure duration by to get the second exposure duration.")
 
-        self.exposureDelay = gui.guiUtils.addLabeledInput(self,
+        self.exposureDelay = cockpit.gui.guiUtils.addLabeledInput(self,
                 sizer, label = "Delay between exposures",
                 defaultValue = self.settings['exposureDelay'],
                 helperString = "Amount of time to wait, in milliseconds, between the beginning of the first exposure and the beginning of the second exposure. Should be long enough for the camera to recover from taking the first image!")
@@ -185,15 +185,15 @@ class ExperimentUI(wx.Panel):
     # it with our special parameters.
     def augmentParams(self, params):
         self.saveSettings()
-        params['exposureMultiplier'] = gui.guiUtils.tryParseNum(
+        params['exposureMultiplier'] = cockpit.gui.guiUtils.tryParseNum(
                 self.exposureMultiplier, float)
-        params['exposureDelay'] = gui.guiUtils.tryParseNum(self.exposureDelay, float)
+        params['exposureDelay'] = cockpit.gui.guiUtils.tryParseNum(self.exposureDelay, float)
         return params
 
 
     ## Load saved experiment settings, if any.
     def loadSettings(self):
-        return util.userConfig.getValue(
+        return cockpit.util.userConfig.getValue(
                 self.configKey + 'ZStackMultiSettings',
                 default = {
                     'exposureMultiplier': '10',
@@ -214,7 +214,7 @@ class ExperimentUI(wx.Panel):
     def saveSettings(self, settings = None):
         if settings is None:
             settings = self.getSettingsDict()
-        util.userConfig.setValue(
+        cockpit.util.userConfig.setValue(
                 self.configKey + 'ZStackMultiSettings', settings
         )
 

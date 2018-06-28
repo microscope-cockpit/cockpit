@@ -20,7 +20,7 @@
 
 
 import Pyro4
-import depot
+from cockpit import depot
 
 ## Similar to the util.connection.Connection class.
 # Several device classes need to register functions with the cockpit

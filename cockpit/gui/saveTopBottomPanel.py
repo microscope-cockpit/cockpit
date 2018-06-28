@@ -51,9 +51,9 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import interfaces.stageMover
-import util.userConfig
-import events
+import cockpit.interfaces.stageMover
+import cockpit.util.userConfig
+from cockpit import events
 import wx
 
 ## @package saveTopBottomPanel
@@ -145,19 +145,19 @@ def createSaveTopBottomPanel(parent):
 ## Event for handling users clicking on the "save top" button. Set savedTop.
 def OnTB_saveTop(ev):
     global savedTop
-    savedTop = interfaces.stageMover.getPosition()[2]
+    savedTop = cockpit.interfaces.stageMover.getPosition()[2]
     topPosControl.SetValue("%.1f" % savedTop)
     updateZStackHeight()
-    util.userConfig.setValue('savedTop',savedTop, isGlobal=False)
+    cockpit.util.userConfig.setValue('savedTop',savedTop, isGlobal=False)
 
 ## Event for handling users clicking on the "save bottom" button. Set 
 # savedBottom.
 def OnTB_saveBottom(ev):
     global savedBottom
-    savedBottom = interfaces.stageMover.getPosition()[2]
+    savedBottom = cockpit.interfaces.stageMover.getPosition()[2]
     bottomPosControl.SetValue("%.1f" % savedBottom)
     updateZStackHeight()
-    util.userConfig.setValue('savedBottom',savedBottom, isGlobal=False)
+    cockpit.util.userConfig.setValue('savedBottom',savedBottom, isGlobal=False)
 
 ## Event for handling users clicking on the "go to top" button. Use the 
 # nanomover (and, optionally, also the stage piezo) to move to the target
@@ -178,25 +178,25 @@ def OnTB_gotoCenter(ev):
 def moveZCheckMoverLimits(target):
     #Need to check current mover limits, see if we exceed them and if
     #so drop down to lower mover handler.
-    originalMover= interfaces.stageMover.mover.curHandlerIndex
-    limits = interfaces.stageMover.getIndividualSoftLimits(2)
-    currentPos= interfaces.stageMover.getPosition()[2]
+    originalMover= cockpit.interfaces.stageMover.mover.curHandlerIndex
+    limits = cockpit.interfaces.stageMover.getIndividualSoftLimits(2)
+    currentPos= cockpit.interfaces.stageMover.getPosition()[2]
     offset = target - currentPos
 
-    while (interfaces.stageMover.mover.curHandlerIndex >= 0):
-        if ((currentPos + offset)> limits[interfaces.stageMover.mover.curHandlerIndex][1] or
-            (currentPos + offset) < limits[interfaces.stageMover.mover.curHandlerIndex][0]):
+    while (cockpit.interfaces.stageMover.mover.curHandlerIndex >= 0):
+        if ((currentPos + offset)> limits[cockpit.interfaces.stageMover.mover.curHandlerIndex][1] or
+            (currentPos + offset) < limits[cockpit.interfaces.stageMover.mover.curHandlerIndex][0]):
             # need to drop down a handler to see if next handler can do the move
-            interfaces.stageMover.mover.curHandlerIndex -= 1
-            if (interfaces.stageMover.mover.curHandlerIndex < 0):
+            cockpit.interfaces.stageMover.mover.curHandlerIndex -= 1
+            if (cockpit.interfaces.stageMover.mover.curHandlerIndex < 0):
                 print ("Move too large for coarse Z motion")
             
         else: 
-            interfaces.stageMover.goToZ(target)
+            cockpit.interfaces.stageMover.goToZ(target)
             break
 
     #retrun to original active mover.
-    interfaces.stageMover.mover.curHandlerIndex = originalMover
+    cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
         
 
 ## Event for when users type into one of the text boxes for the save top/bottom
@@ -221,9 +221,9 @@ def getBottomAndTop():
 
 def onUserLogin(userName):
     global savedTop, savedBottom    
-    savedTop=util.userConfig.getValue('savedTop', isGlobal = False,
+    savedTop=cockpit.util.userConfig.getValue('savedTop', isGlobal = False,
                                       default= 3010)
-    savedBottom=util.userConfig.getValue('savedBottom', isGlobal =
+    savedBottom=cockpit.util.userConfig.getValue('savedBottom', isGlobal =
                                          False, default = 3000)
     topPosControl.SetValue("%.1f" % savedTop)
     bottomPosControl.SetValue("%.1f" % savedBottom)

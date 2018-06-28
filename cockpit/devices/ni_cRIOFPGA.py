@@ -49,7 +49,6 @@
 
 import decimal
 import matplotlib
-from string import rjust
 import json
 from time import sleep
 matplotlib.use('WXAgg')
@@ -61,23 +60,23 @@ import socket
 import time
 import wx
 
-import depot
+from cockpit import depot
 
 from . import device
-import events
-import gui.toggleButton
-import handlers.executor
-import handlers.genericHandler
-import handlers.genericPositioner
-import handlers.imager
-import handlers.lightSource
-import handlers.stagePositioner
+from cockpit import events
+import cockpit.gui.toggleButton
+import cockpit.handlers.executor
+import cockpit.handlers.genericHandler
+import cockpit.handlers.genericPositioner
+import cockpit.handlers.imager
+import cockpit.handlers.lightSource
+import cockpit.handlers.stagePositioner
 import threading
-import util.threads
+import cockpit.util.threads
 
 from six import iteritems
 
-from config import config, LIGHTS, CAMERAS, AOUTS
+from cockpit.config import config, LIGHTS, CAMERAS, AOUTS
 CLASS_NAME = 'NIcRIO'
 COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2, 'SI angle': -1}
 CONFIG_NAME = 'nicrio9068'
@@ -164,7 +163,7 @@ class NIcRIO(device.Device):
         ## Values for anologue positions at startup.
         self.startupAnalogPositions = [None] * 4
 
-    @util.threads.locked
+    @cockpit.util.threads.locked
     def initialize(self):
         '''
         Connect to ni's RT-host computer.
@@ -199,7 +198,7 @@ class NIcRIO(device.Device):
         self.connection.abort()
         events.publish("DSP done") # TODO: change this to a FPGA-done
 
-    @util.threads.locked
+    @cockpit.util.threads.locked
     def finalizeInitialization(self):
         # Get all the other devices we can control, and add them to our
         # digital lines.
@@ -224,7 +223,7 @@ class NIcRIO(device.Device):
         # with no active illumination.
         for key, light in iteritems(LIGHTS):
             # Set up lightsource handlers with default 100ms expsure time.
-            handler = handlers.lightSource.LightHandler(
+            handler = cockpit.handlers.lightSource.LightHandler(
                 light['label'], "%s light source" % light['label'],
                 {'setEnabled': self.toggleLight,
                  'setExposureTime': self.setExposureTime,
@@ -239,7 +238,7 @@ class NIcRIO(device.Device):
         for key, aout in iteritems(AOUTS):
             if aout['cockpit_axis'] in 'xyzXYZ':
                 axisName = COCKPIT_AXES[aout['cockpit_axis'].lower()]
-                handler = handlers.stagePositioner.PositionerHandler(
+                handler = cockpit.handlers.stagePositioner.PositionerHandler(
                     "%s piezo" % axisName, "%s stage motion" % axisName, True,
 
                     {'moveAbsolute': self.movePiezoAbsolute,
@@ -263,7 +262,7 @@ class NIcRIO(device.Device):
 
             if aout['cockpit_axis'].lower() == 'si angle':
                 # Variable retarder.
-                self.retarderHandler = handlers.genericPositioner.GenericPositionerHandler(
+                self.retarderHandler = cockpit.handlers.genericPositioner.GenericPositionerHandler(
                     "SI angle", "structured illumination", True,
 
                     {'moveAbsolute': self.moveRetarderAbsolute,
@@ -276,16 +275,16 @@ class NIcRIO(device.Device):
                 self.handlerToAnalogLine[self.retarderHandler] = aout['aline']
 
         for name in self.otherTriggers:
-            handler = handlers.genericHandler.GenericHandler(
+            handler = cockpit.handlers.genericHandler.GenericHandler(
                 name, 'other triggers', True)
             self.handlerToDigitalLine[handler] = self.nameToDigitalLine[name]
             result.append(handler)
 
-        result.append(handlers.imager.ImagerHandler(
+        result.append(cockpit.handlers.imager.ImagerHandler(
             "NI-FPGA imager", "imager",
             {'takeImage': self.takeImage}))
 
-        result.append(handlers.executor.ExecutorHandler(
+        result.append(cockpit.handlers.executor.ExecutorHandler(
             "NI-FPGA experiment executor", "executor",
             {'examineActions': lambda *args: None,
 
@@ -457,7 +456,7 @@ class NIcRIO(device.Device):
         '''
         return (1, 1000)
 
-    @util.threads.locked
+    @cockpit.util.threads.locked
     def takeImage(self):
         '''
         Take an image with the current light sources and active cameras.
@@ -480,7 +479,7 @@ class NIcRIO(device.Device):
                 cameraReadTime = max(cameraReadTime, handler.getTimeBetweenExposures())
         self.connection.takeImage(cameraMask, lightTimePairs, cameraReadTime)
 
-    @util.threads.locked
+    @cockpit.util.threads.locked
     def takeBurst(self, frameCount = 10):
         '''
         Use the internal triggering of the camera to take a burst of images
@@ -1514,7 +1513,7 @@ class FPGAOutputWindow(wx.Frame):
                 if altLine & lineVal:
                     label = handler.name
                     break
-            button = gui.toggleButton.ToggleButton(
+            button = cockpit.gui.toggleButton.ToggleButton(
                     parent = panel, label = label,
                     activateAction = self.toggle,
                     deactivateAction = self.toggle,

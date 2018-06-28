@@ -51,7 +51,7 @@
 
 
 from . import device
-import handlers.lightSource
+import cockpit.handlers.lightSource
 
 CLASS_NAME = 'DummyLightsDevice'
 
@@ -73,7 +73,7 @@ class DummyLights(device.Device):
                 ('488 shutter', 488), 
                 ('640 shutter', 640)]:
             # Set up lightsource handlers. Default to 100ms exposure time.
-            handler = handlers.lightSource.LightHandler(
+            handler = cockpit.handlers.lightSource.LightHandler(
                 label, "%s light source" % label, 
                 {'setEnabled': lambda *args: None,
                  'setExposureTime': self.setExposureTime,

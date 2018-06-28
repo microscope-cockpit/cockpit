@@ -22,19 +22,19 @@
 
 import numpy
 from OpenGL.GL import *
-from util import ftgl
+from cockpit.util import ftgl
 import traceback
 import wx
 
-import depot
-import events
-import interfaces.stageMover
-import util.logger
-import util.userConfig
+from cockpit import depot
+from cockpit import events
+import cockpit.interfaces.stageMover
+import cockpit.util.logger
+import cockpit.util.userConfig
 
-import gui.macroStage.macroStageBase as macroStageBase
-import gui.macroStage.macroStageWindow as macroStageWindow
-import gui.saveTopBottomPanel
+import cockpit.gui.macroStage.macroStageBase as macroStageBase
+import cockpit.gui.macroStage.macroStageWindow as macroStageWindow
+import cockpit.gui.saveTopBottomPanel
 
 ## Width of an altitude line.
 HEIGHT_LINE_WIDTH = 3
@@ -125,7 +125,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         # our histograms.
         self.prevZSafety = None
 
-        minZ, maxZ = interfaces.stageMover.getHardLimitsForAxis(2)
+        minZ, maxZ = cockpit.interfaces.stageMover.getHardLimitsForAxis(2)
         ## Total size of the stage's range of motion.
         self.stageExtent = maxZ - minZ
 
@@ -146,7 +146,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
         self.shouldDraw = True
         ## Font for drawing text
         try:
-            from gui import FONTPATH
+            from cockpit.gui import FONTPATH
             self.font = ftgl.TextureFont(FONTPATH)
             self.font.setFaceSize(18)
         except Exception as e:
@@ -211,7 +211,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
     ## Calculate the histogram buckets and min/max settings
     # based on self.experimentAltitudes
     def calculateHistogram(self):
-        self.experimentAltitudes = list(util.userConfig.getValue('experimentAltitudes',
+        self.experimentAltitudes = list(cockpit.util.userConfig.getValue('experimentAltitudes',
                 default = [], isGlobal = True))
         ## Set of buckets, by altitude, of the experiments
         self.altitudeBuckets = [0 for i in range(int(self.minY),
@@ -220,7 +220,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             slot = int((altitude - self.minY) // ALTITUDE_BUCKET_SIZE)
             if slot < 0 or slot > len(self.altitudeBuckets):
                 # This should, of course, be impossible.
-                util.logger.log.warning("Impossible experiment altitude %f (min %f, max %f)",
+                cockpit.util.logger.log.warning("Impossible experiment altitude %f (min %f, max %f)",
                         altitude, self.minY, self.maxY)
             else:
             # bounds check slot
@@ -233,10 +233,10 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
     def onExperimentComplete(self, *args):
         # Update histogram data
         self.experimentAltitudes = list(
-                util.userConfig.getValue('experimentAltitudes', default = [], isGlobal = True)
+                cockpit.util.userConfig.getValue('experimentAltitudes', default = [], isGlobal = True)
         )
         self.experimentAltitudes.append(self.curStagePosition[2])
-        util.userConfig.setValue('experimentAltitudes', self.experimentAltitudes, isGlobal=True)
+        cockpit.util.userConfig.setValue('experimentAltitudes', self.experimentAltitudes, isGlobal=True)
         self.calculateHistogram()
 
 
@@ -252,11 +252,11 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
 
     ## Generate the larger of the two histograms.
     def makeBigHistogram(self, altitude):
-        minorLimits = interfaces.stageMover.getIndividualSoftLimits(2)
+        minorLimits = cockpit.interfaces.stageMover.getIndividualSoftLimits(2)
         # Add the max range of motion of the first fine-motion controller.
         #And subtract the lower limit if minor controller exisits.
         if(len(minorLimits)>1):
-            minorPos= interfaces.stageMover.getAllPositions()[1][2]
+            minorPos= cockpit.interfaces.stageMover.getAllPositions()[1][2]
             histogramMin = altitude-(minorPos-minorLimits[1][0]) - HISTOGRAM_MIN_PADDING
             histogramMax = altitude+(-minorPos+minorLimits[1][1])+HISTOGRAM_MIN_PADDING
         else:
@@ -287,7 +287,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             return
         self.curStagePosition[axis] = position
         # Ensure there's a histogram to work with based around current pos.
-        self.makeBigHistogram(interfaces.stageMover.getPosition()[2])
+        self.makeBigHistogram(cockpit.interfaces.stageMover.getPosition()[2])
         if self.shouldDraw:
             try:
                 motorPos = self.curStagePosition[2]
@@ -315,8 +315,8 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                         self.histograms = self.histograms[:-1]
                 self.Refresh
             except Exception as e:
-                util.logger.log.error("Error updating macro stage Z status: %s", e)
-                util.logger.log.error(traceback.format_exc())
+                cockpit.util.logger.log.error("Error updating macro stage Z status: %s", e)
+                cockpit.util.logger.log.error(traceback.format_exc())
                 self.shouldDraw = False
 
 
@@ -345,12 +345,12 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             motorPos = self.curStagePosition[2]
-            majorPos = interfaces.stageMover.getAllPositions()[0][2]
-            minorLimits = interfaces.stageMover.getIndividualSoftLimits(2)
+            majorPos = cockpit.interfaces.stageMover.getAllPositions()[0][2]
+            minorLimits = cockpit.interfaces.stageMover.getIndividualSoftLimits(2)
             # Add the max range of motion of the first fine-motion controller.
             #And subtract the lower limit
             if len(minorLimits) > 1:
-                minorPos= interfaces.stageMover.getAllPositions()[1][2]
+                minorPos= cockpit.interfaces.stageMover.getAllPositions()[1][2]
                 zMax = majorPos + minorLimits[1][1]
                 zMin = majorPos -(minorPos-minorLimits[1][0])
             else:
@@ -368,7 +368,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             glColor3f(0, 0, 0)
             glLineWidth(1)
             glBegin(GL_LINES)
-            minY, maxY = interfaces.stageMover.getHardLimitsForAxis(2)
+            minY, maxY = cockpit.interfaces.stageMover.getHardLimitsForAxis(2)
             scaleX = self.zHorizOffset
             self.scaledVertex(scaleX, minY)
             self.scaledVertex(scaleX, maxY)
@@ -400,8 +400,8 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                 glEnd()
 
             #Draw top and bottom positions of stack in blue.
-            self.stackdef=[gui.saveTopBottomPanel.savedTop,
-                          gui.saveTopBottomPanel.savedBottom]
+            self.stackdef=[cockpit.gui.saveTopBottomPanel.savedTop,
+                          cockpit.gui.saveTopBottomPanel.savedBottom]
             for pos in self.stackdef:
                 if pos is not None:
                     self.drawLine(pos, color = (0, 0, 1))
@@ -423,7 +423,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             #            color = (0, .8, 0), label = str(int(self.prevZSafety)))
 
             # Draw stage motion delta
-            stepSize = interfaces.stageMover.getCurStepSizes()[2]
+            stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
             if stepSize is not None:
                 glLineWidth(1)
                 glColor3f(1, 0, 0)
@@ -451,7 +451,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             # our stage position info.
 #            self.drawEvent.set()
         except Exception as e:
-            util.logger.log.error("Error drawing Z macro stage: %s", e)
+            cockpit.util.logger.log.error("Error drawing Z macro stage: %s", e)
             traceback.print_exc()
             self.shouldDraw = False
 
@@ -459,7 +459,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
     ## Draw all our histograms
     def drawHistograms(self):
         prevHistogram = self.dummyHistogram
-        minY, maxY = interfaces.stageMover.getHardLimitsForAxis(2)
+        minY, maxY = cockpit.interfaces.stageMover.getHardLimitsForAxis(2)
         for histogram in self.histograms:
             glColor3f(0, 0, 0)
             glLineWidth(HISTOGRAM_LINE_WIDTH)
@@ -498,7 +498,7 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
                         str(int(histogram.maxAltitude)), size = self.textSize)
 
             # Draw histogram stage motion delta
-            stepSize = interfaces.stageMover.getCurStepSizes()[2]
+            stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
             if stepSize is not None:
                 motorPos = self.curStagePosition[2]
                 glLineWidth(1)
@@ -636,15 +636,15 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             scale = (self.minY, self.maxY)
             # if we are on the first hist then use the coarest mover if not
             # then use the currently selected one.
-            originalMover= interfaces.stageMover.mover.curHandlerIndex
-            interfaces.stageMover.mover.curHandlerIndex = 0
+            originalMover= cockpit.interfaces.stageMover.mover.curHandlerIndex
+            cockpit.interfaces.stageMover.mover.curHandlerIndex = 0
 
             for histogram in self.histograms:
                 if canvasLoc[0] < histogram.xOffset + self.horizLineLength:
                     scale = (histogram.minAltitude, histogram.maxAltitude)
                     # not first hist so revert to current mover whatever that
                     #might be
-                    interfaces.stageMover.mover.curHandlerIndex = originalMover
+                    cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
                     break # fall through as we have found which
                           # histogram we clicked on
 
@@ -654,13 +654,13 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
             # Spurious clicks are problematic on a touchscreen. Rather than
             # moving directly to the clicked position, step in that direction
             # to avoid large moves that may cause damage.
-            if altitude < interfaces.stageMover.getPosition()[-1]:
+            if altitude < cockpit.interfaces.stageMover.getPosition()[-1]:
                 direction = (0, 0, -1)
             else:
                 direction = (0, 0, 1)
-            interfaces.stageMover.step(direction)
+            cockpit.interfaces.stageMover.step(direction)
             #make sure we are back to the expected mover
-            interfaces.stageMover.mover.curHandlerIndex = originalMover
+            cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
 
 
     ## Remap an XY tuple to stage coordinates.
@@ -709,11 +709,11 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
 #             glLineWidth(1)
 
 #             # Draw textual position coordinates.
-#             positions = interfaces.stageMover.getAllPositions()
+#             positions = cockpit.interfaces.stageMover.getAllPositions()
 #             positions = [p[2] for p in positions]
-#             stepSize = interfaces.stageMover.getCurStepSizes()[2]
+#             stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
 #             self.drawStagePosition('Z:', positions,
-#                     interfaces.stageMover.getCurHandlerIndex(), stepSize,
+#                     cockpit.interfaces.stageMover.getCurHandlerIndex(), stepSize,
 #                     (self.xOffset, self.yOffset), self.xExtent * .26,
 #                     self.xExtent * .05, self.textSize)
 
@@ -723,6 +723,6 @@ class slaveMacroStageZ(wx.glcanvas.GLCanvas):
 #             # our stage position info.
 #             self.drawEvent.set()
 #         except Exception as e:
-#             util.logger.log.error("Error drawing Z macro stage key: %s", e)
+#             cockpit.util.logger.log.error("Error drawing Z macro stage key: %s", e)
 #             traceback.print_exc()
 #             self.shouldDraw = False

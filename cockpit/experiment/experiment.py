@@ -52,12 +52,13 @@
 
 
 from . import dataSaver
-import depot
-import events
-import gui.guiUtils
-import handlers.camera
-import interfaces.stageMover
-import util.logger
+from cockpit import depot
+from cockpit import events
+from cockpit.gui import guiUtils
+
+import cockpit.handlers.camera
+import cockpit.interfaces.stageMover
+import cockpit.util.logger
 
 import decimal
 import gc
@@ -193,7 +194,7 @@ class Experiment:
     def run(self):
         # Check if the user is set to save to an already-existing file.
         if self.savePath and os.path.exists(self.savePath):
-            if not gui.guiUtils.getUserPermission(
+            if not guiUtils.getUserPermission(
                     ("The file:\n%s\nalready exists. " % self.savePath) +
                     "Are you sure you want to overwrite it?"):
                 return
@@ -210,7 +211,7 @@ class Experiment:
 
         # Indicate any frame transfer cameras for reset at start of table.
         for camera in self.cameras:
-            if camera.getExposureMode() == handlers.camera.TRIGGER_AFTER:
+            if camera.getExposureMode() == cockpit.handlers.camera.TRIGGER_AFTER:
                 self.cameraToIsReady[camera] = False
 
         self.createValidActionTable()
@@ -257,17 +258,17 @@ class Experiment:
     # in the correct mode.
     def prepareHandlers(self):
         # Store the pre-experiment altitude.
-        self.initialAltitude = interfaces.stageMover.getPosition()[-1]
+        self.initialAltitude = cockpit.interfaces.stageMover.getPosition()[-1]
         # Ensure that we're the only ones moving things around.
-        interfaces.stageMover.waitForStop()
+        cockpit.interfaces.stageMover.waitForStop()
         # TODO: Handling multiple movers on an axis is broken. Do not proceed if
         # anything but the innermost Z mover is selected. Needs a proper fix.
-        if interfaces.stageMover.mover.curHandlerIndex < len(depot.getSortedStageMovers()[2])-1:
+        if cockpit.interfaces.stageMover.mover.curHandlerIndex < len(depot.getSortedStageMovers()[2])-1:
             wx.MessageBox("Wrong axis mover selected.")
             raise Exception("Wrong axis mover selected.")
         # Prepare our position.
-        interfaces.stageMover.goToZ(self.altBottom, shouldBlock = True)
-        self.zStart = interfaces.stageMover.getAllPositions()[-1][-1]
+        cockpit.interfaces.stageMover.goToZ(self.altBottom, shouldBlock = True)
+        self.zStart = cockpit.interfaces.stageMover.getAllPositions()[-1][-1]
         events.publish('prepare for experiment', self)
         # Prepare cameras.
         for camera in self.cameras:
@@ -295,7 +296,7 @@ class Experiment:
 
     ## Run the experiment. Return True if it was successful.
     def execute(self):
-        util.logger.log.info("Experiment.execute started.")
+        cockpit.util.logger.log.info("Experiment.execute started.")
         # Iteratively find the ExperimentExecutor that can tackle the largest
         # portion of self.table, have them run it, and wait for them to finish.
         executors = depot.getHandlersOfType(depot.EXECUTOR)
@@ -314,7 +315,7 @@ class Experiment:
                     delay += max(0, time.time() - nextTime)
 
                 if self.shouldAbort:
-                    util.logger.log.error("Cancelling on rep %d after %d actions due to user abort" % (rep, curIndex))
+                    cockpit.util.logger.log.error("Cancelling on rep %d after %d actions due to user abort" % (rep, curIndex))
                     break
                 best = None
                 bestLen = 0
@@ -365,7 +366,7 @@ class Experiment:
 
             if shouldStop:
                 # All reps handled by an executor.
-                util.logger.log.debug("Stopping now at %.2f" % time.time())
+                cockpit.util.logger.log.debug("Stopping now at %.2f" % time.time())
                 break
             # Wait for the end of the rep.
             if rep != self.numReps - 1:
@@ -374,7 +375,7 @@ class Experiment:
         ## TODO: figure out how long we should wait for the last captures to complete.
         # For now, wait 1s.
         time.sleep(1.)
-        util.logger.log.info("Experiment.execute completed.")
+        cockpit.util.logger.log.info("Experiment.execute completed.")
         return True
 
     ## Wait for the provided thread(s) to finish, then clean up our handlers.
@@ -390,7 +391,7 @@ class Experiment:
         events.publish('cleanup after experiment')
         if self.initialAltitude is not None:
             # Restore our initial altitude.
-            interfaces.stageMover.goToZ(self.initialAltitude, shouldBlock = True)
+            cockpit.interfaces.stageMover.goToZ(self.initialAltitude, shouldBlock = True)
         events.publish('experiment complete')
         events.publish('update status light', 'device waiting',
                 '', (170, 170, 170))
@@ -427,7 +428,7 @@ class Experiment:
         titles = [
                 "Date & time: %s; pos: %s" % (
                     time.strftime('%Y/%m/%d %H:%M:%S'),
-                    str(['%.2f' % p for p in (interfaces.stageMover.getPosition())])
+                    str(['%.2f' % p for p in (cockpit.interfaces.stageMover.getPosition())])
                 )
         ]
         # Append the metadata we were given to start.
@@ -519,7 +520,7 @@ class Experiment:
         for camera in cameras:
             maxExposureTime = max(maxExposureTime,
                     camera.getMinExposureTime(isExact = True))
-            if camera.getExposureMode() == handlers.camera.TRIGGER_AFTER:
+            if camera.getExposureMode() == cockpit.handlers.camera.TRIGGER_AFTER:
                 nextReadyTime = self.getTimeWhenCameraCanExpose(table, camera)
                 # Ensure camera is exposing for long enough to finish reading
                 # out the last frame.
@@ -550,26 +551,26 @@ class Experiment:
         for camera in cameras:
             usedCams.add(camera)
             mode = camera.getExposureMode()
-            if mode == handlers.camera.TRIGGER_AFTER:
+            if mode == cockpit.handlers.camera.TRIGGER_AFTER:
                 table.addToggle(exposureEndTime, camera)
-            elif mode == handlers.camera.TRIGGER_DURATION:
+            elif mode == cockpit.handlers.camera.TRIGGER_DURATION:
                 table.addAction(exposureStartTime, camera, True)
                 table.addAction(exposureEndTime, camera, False)
-            elif mode == handlers.camera.TRIGGER_DURATION_PSEUDOGLOBAL:
+            elif mode == cockpit.handlers.camera.TRIGGER_DURATION_PSEUDOGLOBAL:
                 # We added some security time to the readout time that we have to remove now
                 cameraExposureStartTime = exposureStartTime - self.cameraToReadoutTime[camera] - decimal.Decimal(0.005)
                 table.addAction(cameraExposureStartTime, camera, True)
                 table.addAction(exposureEndTime, camera, False)
-            elif mode == handlers.camera.TRIGGER_BEFORE: # TRIGGER_BEFORE case.
+            elif mode == cockpit.handlers.camera.TRIGGER_BEFORE: # TRIGGER_BEFORE case.
                 table.addToggle(exposureStartTime, camera)
-            elif mode == handlers.camera.TRIGGER_SOFT:
+            elif mode == cockpit.handlers.camera.TRIGGER_SOFT:
                 table.addAction(exposureStartTime, camera, True)
             else:
                 raise Exception ('%s has no trigger mode set.' % camera)
             self.cameraToImageCount[camera] += 1
         for camera in self.cameras:
             if (camera not in usedCams and
-                    camera.getExposureMode() == handlers.camera.TRIGGER_AFTER):
+                    camera.getExposureMode() == cockpit.handlers.camera.TRIGGER_AFTER):
                 # Camera is a continuous-exposure/frame-transfer camera
                 # and therefore saw light it shouldn't have; invalidate it.
                 self.cameraToIsReady[camera] = False
@@ -593,9 +594,9 @@ class Experiment:
                     camera.getMinExposureTime(isExact = True),
                     camera.getExposureTime(isExact = True))
             exposureMode = camera.getExposureMode()
-            if exposureMode == handlers.camera.TRIGGER_AFTER:
+            if exposureMode == cockpit.handlers.camera.TRIGGER_AFTER:
                 table.addToggle(exposureStart + minExposureTime, camera)
-            elif exposureMode == handlers.camera.TRIGGER_DURATION:
+            elif exposureMode == cockpit.handlers.camera.TRIGGER_DURATION:
                 table.addAction(exposureStart, camera, True)
                 table.addAction(exposureStart + minExposureTime, camera, False)
             else: # TRIGGER_BEFORE case
@@ -627,7 +628,7 @@ class Experiment:
             return 0
 
         nextUseTime = lastUseTime
-        if camera.getExposureMode() == handlers.camera.TRIGGER_BEFORE:
+        if camera.getExposureMode() == cockpit.handlers.camera.TRIGGER_BEFORE:
             # The camera actually finished exposing (and started reading
             # out) some time after lastUseTime, depending on its declared
             # exposure time.

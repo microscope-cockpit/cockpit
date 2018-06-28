@@ -19,10 +19,10 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import depot
+from cockpit import depot
 from . import device
-import events
-import handlers.executor
+from cockpit import events
+import cockpit.handlers.executor
 
 import time
 
@@ -35,7 +35,7 @@ class DummyExecutor(device.Device):
 
     ## Generate an ExperimentExecutor handler.
     def getHandlers(self):
-        return [handlers.executor.ExecutorHandler(
+        return [cockpit.handlers.executor.ExecutorHandler(
             "Dummy experiment executor", "executor",
             {'examineActions': self.examineActions,
                 'executeTable': self.executeTable,})]
@@ -75,7 +75,7 @@ class DummyDigitalExecutor(DummyExecutor):
 
     ## Generate an ExperimentExecutor handler.
     def getHandlers(self):
-        return [handlers.executor.DigitalExecutorHandler(
+        return [cockpit.handlers.executor.DigitalExecutorHandler(
             "Dummy experiment executor", "executor",
             {'examineActions': self.examineActions,
              'executeTable': self.executeTable,
@@ -114,7 +114,7 @@ class DummyAnalogDigitalExecutor(DummyDigitalExecutor):
 
     ## Generate an ExperimentExecutor handler.
     def getHandlers(self):
-        return [handlers.executor.AnalogDigitalExecutorHandler(
+        return [cockpit.handlers.executor.AnalogDigitalExecutorHandler(
             "Dummy experiment executor", "executor",
             {'examineActions': self.examineActions,
              'executeTable': self.executeTable,

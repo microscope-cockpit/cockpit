@@ -51,13 +51,13 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import events
-import gui.guiUtils
-import handlers.stagePositioner
-import interfaces
-import util.logger
-import util.threads
-import util.userConfig
+from cockpit import events
+import cockpit.gui.guiUtils
+import cockpit.handlers.stagePositioner
+from cockpit import interfaces
+import cockpit.util.logger
+import cockpit.util.threads
+import cockpit.util.userConfig
 
 from . import stage
 from OpenGL.GL import *
@@ -182,14 +182,14 @@ class PhysikInstrumenteM687(stage.StageDevice):
     # around on its bearings; check how long it's been since the stage was
     # last exercised, and prompt the user if it's been more than a week.
     def promptExerciseStage(self):
-        lastExerciseTimestamp = util.userConfig.getValue(
+        lastExerciseTimestamp = cockpit.util.userConfig.getValue(
                 'PIM687LastExerciseTimestamp',
                 isGlobal = True, default = 0)
         curTime = time.time()
         delay = curTime - lastExerciseTimestamp
         daysPassed = delay / float(24 * 60 * 60)
         if (daysPassed > 7 and
-                gui.guiUtils.getUserPermission(
+                cockpit.gui.guiUtils.getUserPermission(
                     ("It has been %.1f days since " % daysPassed) +
                     "the stage was last exercised. Please exercise " +
                     "the stage regularly.\n\nExercise stage?",
@@ -201,16 +201,16 @@ class PhysikInstrumenteM687(stage.StageDevice):
             # necessary to avoid the banned rectangles, in case the stage is
             # in them when we start.
             initialPos = tuple(self.xyPositionCache)
-            interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
+            cockpit.interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
             for i in range(5):
                 print ("Rep %d of 5..." % i)
                 for position in self.softlimits:
-                    interfaces.stageMover.goToXY(position, shouldBlock = True)
-            interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
-            interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
+                    cockpit.interfaces.stageMover.goToXY(position, shouldBlock = True)
+            cockpit.interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
+            cockpit.interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
             print ("Exercising complete. Thank you!")
             
-            util.userConfig.setValue('PIM687LastExerciseTimestamp',
+            cockpit.util.userConfig.setValue('PIM687LastExerciseTimestamp',
                     time.time(), isGlobal = True)
 
 
@@ -238,7 +238,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
                     Ensure that there are no obstructions, then press 'OK' 
                     to home the stage.
                     """
-                    if gui.guiUtils.getUserPermission(msg):
+                    if cockpit.gui.guiUtils.getUserPermission(msg):
                         self.homeMotors()
                 elif error not in [0, 10]:
                     errorDesc = ERROR_CODES.get(error,
@@ -279,7 +279,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
 
         # Progress indicator.
         # TODO - rather than raw wx, this should probably be a class from
-        # gui.guiUtils.
+        # cockpit.gui.guiUtils.
         busy_box = wx.ProgressDialog(parent = None,
                                      title = 'Busy...', 
                                      message = 'Homing stage')
@@ -307,10 +307,10 @@ class PhysikInstrumenteM687(stage.StageDevice):
                 success = False
         
         if not success:
-            gui.guiUtils.showHelpDialog(None, msg)
+            cockpit.gui.guiUtils.showHelpDialog(None, msg)
         else:
             self.sendXYPositionUpdates()
-            gui.guiUtils.showHelpDialog(None, 'Homing successful.')
+            cockpit.gui.guiUtils.showHelpDialog(None, 'Homing successful.')
             
 
         return success
@@ -354,7 +354,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
         #IMD 2015-03-02 hacked in full range to see if we can access the full range
         for axis, minPos, maxPos in [(0, self.softlimits[0][0],self.softlimits[1][0]),
                     (1, self.softlimits[0][1],self.softlimits[1][1])]:
-            result.append(handlers.stagePositioner.PositionerHandler(
+            result.append(cockpit.handlers.stagePositioner.PositionerHandler(
                     "%d PI mover" % axis, "%d stage motion" % axis, False,
                     {'moveAbsolute': self.moveXYAbsolute,
                          'moveRelative': self.moveXYRelative,
@@ -435,7 +435,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
 
 
     ## Send updates on the XY stage's position, until it stops moving.
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def sendXYPositionUpdates(self):
         while True:
             prevX, prevY = self.xyPositionCache

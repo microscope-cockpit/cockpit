@@ -52,7 +52,7 @@
 
 
 import Pyro4
-import depot
+from cockpit import depot
 
 ## Simple class for managing connections to remote services.
 class Connection:

@@ -20,7 +20,7 @@
 
 import unittest
 
-import util.Mrc as Mrc
+import cockpit.util.Mrc as Mrc
 
 class TruncatedMrcFiles(unittest.TestCase):
     def test_adjust_data_shape(self):

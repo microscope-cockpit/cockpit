@@ -50,9 +50,9 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import events
+from cockpit import events
 from . import files
-import gui.loggingWindow
+import cockpit.gui.loggingWindow
 from . import logger
 from . import userConfig
 
@@ -121,8 +121,8 @@ def login(parent):
 ## Move the windows to where the user wants them to be.
 def setWindowPositions():
     # Imports here to fix cyclic dependancy.
-    import gui.mainWindow
-    import gui.mosaic.window
+    import cockpit.gui.mainWindow
+    import cockpit.gui.mosaic.window
     # Maps window titles to their positions.
     positions = userConfig.getValue('windowPositions', default =
             userConfig.getValue('defaultWindowPositions', isGlobal = True,
@@ -147,13 +147,13 @@ def setWindowPositions():
             userConfig.getValue('defaultMainWindowPosition', isGlobal = True,
                 default = None))
     if position:
-        gui.mainWindow.window.SetPosition(position)
+        cockpit.gui.mainWindow.window.SetPosition(position)
     # For the mosaic view, we want to set the rect, not the position.
     rect = userConfig.getValue('mosaicWindowRect', default =
             userConfig.getValue('defaultMosaicWindowRect', isGlobal = True,
                 default = None))
     if rect:
-        gui.mosaic.window.window.SetRect(rect)
+        cockpit.gui.mosaic.window.window.SetRect(rect)
 
 
 ## Record the current window positions. Note that this doesn't get the main
@@ -189,9 +189,9 @@ def logout(shouldLoginAgain = True):
         logger.log.debug("  *** MUI logout: %s at %s after %2dH:%02dM:%02dS",
                     curLoginName, timeString, hours, minutes, seconds)
         logger.log.debug("  *** STANDARD OUTPUT FOLLOWS ***  ")
-        logger.log.debug(gui.loggingWindow.getStdOut())
+        logger.log.debug(cockpit.gui.loggingWindow.getStdOut())
         logger.log.debug("  *** STANDARD ERROR FOLLOWS ***  ")
-        logger.log.debug(gui.loggingWindow.getStdErr())
+        logger.log.debug(cockpit.gui.loggingWindow.getStdErr())
     else:
         logger.log.debug("  *** MUI logout: Unknown login time.")
     if shouldLoginAgain:

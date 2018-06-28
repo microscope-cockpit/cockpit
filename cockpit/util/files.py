@@ -55,7 +55,7 @@ import os
 import sys
 import wx
 
-import depot
+import cockpit.depot
 
 ## @package util.files
 # This module contains file-related functions and constants. By default,
@@ -89,7 +89,7 @@ def initialize():
     global DATA_DIR
     global LOGS_DIR
     global CONFIG_DIR
-    configurators = depot.getHandlersOfType(depot.CONFIGURATOR)
+    configurators = cockpit.depot.getHandlersOfType(cockpit.depot.CONFIGURATOR)
     if configurators:
         for config in configurators:
             if config.getValue('dataDirectory'):

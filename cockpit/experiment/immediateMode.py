@@ -51,12 +51,12 @@
 
 
 from . import dataSaver
-import depot
-import events
+from cockpit import depot
+from cockpit import events
 from . import experiment
-import gui.guiUtils
-import interfaces.stageMover
-import util.logger
+from cockpit.gui import guiUtils
+import cockpit.interfaces.stageMover
+import cockpit.util.logger
 
 import gc
 import os
@@ -102,7 +102,7 @@ class ImmediateModeExperiment(experiment.Experiment):
     def run(self):
         # Check if the user is set to save to an already-existing file.
         if self.savePath and os.path.exists(self.savePath):
-            if not gui.guiUtils.getUserPermission(
+            if not guiUtils.getUserPermission(
                     ("The file:\n%s\nalready exists. " % self.savePath) +
                     "Are you sure you want to overwrite it?"):
                 return

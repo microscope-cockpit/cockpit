@@ -20,22 +20,22 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 
-"""gui.valueLogger
+"""cockpit.gui.valueLogger
 
 Adds a logging window to cockpit.
 """
-import events
-import interfaces.valueLogger
-import gui.guiUtils
-import gui.keyboard
-import util.files
+from cockpit import events
+import cockpit.interfaces.valueLogger
+import cockpit.gui.guiUtils
+import cockpit.gui.keyboard
+import cockpit.util.files
 import matplotlib
 import matplotlib.dates
 matplotlib.use('WXAgg')
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.figure import Figure
-import util.threads
-import util.userConfig
+import cockpit.util.threads
+import cockpit.util.userConfig
 import wx
 import datetime
 import os
@@ -56,7 +56,7 @@ class ValueLoggerWindow(wx.Frame):
         ## A mapping of name to labels.
         self.labels = {}
         ## A filehandle to use for logging values to file.
-        self.filehandle = interfaces.valueLogger.instance.filehandle
+        self.filehandle = cockpit.interfaces.valueLogger.instance.filehandle
         ## Flag to say if we are logging values to file or not. 
         self.logToFile = False
         ## matplotlib objects
@@ -68,8 +68,8 @@ class ValueLoggerWindow(wx.Frame):
         ## Main panel sizer.
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         ## Data sources
-        self.dataTimes = interfaces.valueLogger.instance.times
-        self.dataSeries = interfaces.valueLogger.instance.series
+        self.dataTimes = cockpit.interfaces.valueLogger.instance.times
+        self.dataSeries = cockpit.interfaces.valueLogger.instance.series
 
         # Add the canvas to the sizer.
         self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
@@ -95,7 +95,7 @@ class ValueLoggerWindow(wx.Frame):
         events.subscribe("user login", self.loadShowKeysFromConfig)
 
         # Add cockpit window bindings to this window.
-        gui.keyboard.setKeyboardHandlers(self)
+        cockpit.gui.keyboard.setKeyboardHandlers(self)
         self.SetSizeHints(600, 400)
         self.Show()
         
@@ -142,7 +142,7 @@ class ValueLoggerWindow(wx.Frame):
             menu.Check(i, enabled)
             menu.Bind(wx.EVT_MENU,  lambda event, k=key:self.toggleShowKey(k), id= i)
             i += 1
-        gui.guiUtils.placeMenuAtMouse(self, menu)
+        cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
 
     
     def draw(self, *args):
@@ -235,7 +235,7 @@ class ValueLoggerWindow(wx.Frame):
         self._doDraw()
 
 
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def _doDraw(self):
         self.canvas.draw()
         #self.canvas.flush_events()
@@ -243,14 +243,14 @@ class ValueLoggerWindow(wx.Frame):
 
     def loadShowKeysFromConfig(self, event):
         """Load which traces to show from config."""
-        showKeys = util.userConfig.getValue(USER_CONFIG_ENTRY)
+        showKeys = cockpit.util.userConfig.getValue(USER_CONFIG_ENTRY)
         if showKeys:
             self.showKeys = showKeys
 
 
     def saveShowKeysToConfig(self):
         """Save which traces to show to config."""
-        util.userConfig.setValue(USER_CONFIG_ENTRY, (self.showKeys))
+        cockpit.util.userConfig.setValue(USER_CONFIG_ENTRY, (self.showKeys))
 
         
     def toggleShowKey(self, key):
@@ -262,9 +262,9 @@ class ValueLoggerWindow(wx.Frame):
     def openLogFile(self):
         """Open a log file"""
         if self.filehandle is None:
-            interfaces.valueLogger.instance.filehandle=open(
+            cockpit.interfaces.valueLogger.instance.filehandle=open(
                 self.generateLogFilename(),'w')
-            self.filehandle=interfaces.valueLogger.instance.filehandle
+            self.filehandle=cockpit.interfaces.valueLogger.instance.filehandle
         else:
             #file already open
             pass
@@ -273,13 +273,13 @@ class ValueLoggerWindow(wx.Frame):
     def closeLogFile(self):
         """Close the open logfile"""
         if self.filehandle is not None:
-            interfaces.valueLogger.instance.filehandle.close
+            cockpit.interfaces.valueLogger.instance.filehandle.close
             self.filehandle=None
 
     def generateLogFilename(self):
         timestr=datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         filename="ValueLog"+timestr+".log"
-        filename = os.path.join(util.files.getLogDir(), filename)
+        filename = os.path.join(cockpit.util.files.getLogDir(), filename)
         return filename
 
         

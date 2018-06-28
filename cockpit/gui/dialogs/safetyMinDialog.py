@@ -51,8 +51,8 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import gui.guiUtils
-import interfaces.stageMover
+import cockpit.gui.guiUtils
+import cockpit.interfaces.stageMover
 
 import wx
 
@@ -88,10 +88,10 @@ class SafetyMinDialog(wx.Dialog):
                 "to move to."),
                 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 10)
 
-        self.minStageZ = gui.guiUtils.addLabeledInput(
+        self.minStageZ = cockpit.gui.guiUtils.addLabeledInput(
                 parent = self, sizer = self.mainSizer,
                 label = u"Stage Z minimum (\u03bcm):",
-                defaultValue = str(interfaces.stageMover.getSoftLimits()[2][0]),
+                defaultValue = str(cockpit.interfaces.stageMover.getSoftLimits()[2][0]),
                 size = (70, -1), minSize = (150, -1), 
                 shouldRightAlignInput = True, border = 3, 
                 controlType = wx.TextCtrl)
@@ -135,7 +135,7 @@ class SafetyMinDialog(wx.Dialog):
     # new min.
     def OnStart(self, event):
         self.Hide()
-        interfaces.stageMover.setSoftMin(2, float(self.minStageZ.GetValue()))
+        cockpit.interfaces.stageMover.setSoftMin(2, float(self.minStageZ.GetValue()))
 
 
 ## Global dialog singleton.

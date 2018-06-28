@@ -53,12 +53,12 @@
 
 import wx
 
-import depot
-import gui.camera.window
-import gui.guiUtils
-import gui.mosaic.window
-import interfaces.stageMover
-import util.user
+from cockpit import depot
+import cockpit.gui.camera.window
+import cockpit.gui.guiUtils
+import cockpit.gui.mosaic.window
+import cockpit.interfaces.stageMover
+import cockpit.util.user
 from distutils import version
 from itertools import chain
 
@@ -93,15 +93,15 @@ def setKeyboardHandlers(window):
             (6312, (0, -1, 0)), (6318, (0, 1, 0)), (6311, (0, 0, -1)),
             (6317, (0, 0, 1))]:
         window.Bind(wx.EVT_MENU,
-                    lambda e, d=direction: interfaces.stageMover.step(d),
+                    lambda e, d=direction: cockpit.interfaces.stageMover.step(d),
                     id=eventId)
-    window.Bind(wx.EVT_MENU, lambda e: gui.camera.window.rescaleViews(), id=6903)
-    window.Bind(wx.EVT_MENU, lambda e: interfaces.stageMover.changeMover(), id=6904)
-    window.Bind(wx.EVT_MENU, lambda e: gui.mosaic.window.transferCameraImage(), id=6905)
-    window.Bind(wx.EVT_MENU, lambda e: interfaces.stageMover.recenterFineMotion(), id=6906)
-    window.Bind(wx.EVT_MENU, lambda e: interfaces.stageMover.changeStepSize(-1), id= 6313)
-    window.Bind(wx.EVT_MENU, lambda e: interfaces.stageMover.changeStepSize(1), id=6319)
-    window.Bind(wx.EVT_MENU, lambda e: interfaces.imager.takeImage(), id=6320)
+    window.Bind(wx.EVT_MENU, lambda e: cockpit.gui.camera.window.rescaleViews(), id=6903)
+    window.Bind(wx.EVT_MENU, lambda e: cockpit.interfaces.stageMover.changeMover(), id=6904)
+    window.Bind(wx.EVT_MENU, lambda e: cockpit.gui.mosaic.window.transferCameraImage(), id=6905)
+    window.Bind(wx.EVT_MENU, lambda e: cockpit.interfaces.stageMover.recenterFineMotion(), id=6906)
+    window.Bind(wx.EVT_MENU, lambda e: cockpit.interfaces.stageMover.changeStepSize(-1), id= 6313)
+    window.Bind(wx.EVT_MENU, lambda e: cockpit.interfaces.stageMover.changeStepSize(1), id=6319)
+    window.Bind(wx.EVT_MENU, lambda e: cockpit.interfaces.imager.takeImage(), id=6320)
     window.Bind(wx.EVT_MENU, lambda e: martialWindows(window), id=6321)
 
 
@@ -117,7 +117,7 @@ def martialWindows(parent):
     menuId = 1
     menu.Append(menuId, "Reset window positions")
     parent.Bind(wx.EVT_MENU,
-                lambda e: util.user.setWindowPositions(), id= menuId)
+                lambda e: cockpit.util.user.setWindowPositions(), id= menuId)
     menuId += 1
     #for i, window in enumerate(windows):
     for i, window in enumerate(primaryWindows):
@@ -161,10 +161,10 @@ def martialWindows(parent):
         subMenu.Append(menuId, "Show/Hide")
         parent.Bind(wx.EVT_MENU,
                 lambda e, window = window: ((window.Restore() and
-                    (util.userConfig.setValue('windowState'+window.GetTitle(),
+                    (cockpit.util.userConfig.setValue('windowState'+window.GetTitle(),
                                                1,isGlobal=False)))
                                                 if window.IsIconized() 
-                                                else ((window.Show(not window.IsShown()) ) and (util.userConfig.setValue('windowState'+window.GetTitle(),0,isGlobal=False)))), id=menuId)
+                                                else ((window.Show(not window.IsShown()) ) and (cockpit.util.userConfig.setValue('windowState'+window.GetTitle(),0,isGlobal=False)))), id=menuId)
         menuId += 1
         subMenu.Append(menuId, "Move to mouse")
         parent.Bind(wx.EVT_MENU,
@@ -222,4 +222,4 @@ def martialWindows(parent):
                     id=menuId)
         menuId += 1
 
-    gui.guiUtils.placeMenuAtMouse(parent, menu)
+    cockpit.gui.guiUtils.placeMenuAtMouse(parent, menu)

@@ -51,14 +51,14 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import depot
-import experiment.experimentRegistry
-import gui.guiUtils
-import gui.saveTopBottomPanel
-import interfaces.stageMover
-import util.logger
-import util.userConfig
-import util.user
+from cockpit import depot
+import cockpit.experiment.experimentRegistry
+from cockpit.gui import guiUtils
+import cockpit.gui.saveTopBottomPanel
+import cockpit.interfaces.stageMover
+import cockpit.util.logger
+import cockpit.util.userConfig
+import cockpit.util.user
 
 import collections
 import decimal
@@ -106,7 +106,7 @@ class ExperimentConfigPanel(wx.Panel):
         self.resizeCallback = resizeCallback
         self.resetCallback = resetCallback
 
-        ## experiment.Experiment subclass instance -- mostly preserved for
+        ## cockpit.experiment.Experiment subclass instance -- mostly preserved for
         # debugging, so we can examine the state of the experiment.
         self.runner = None
 
@@ -125,20 +125,20 @@ class ExperimentConfigPanel(wx.Panel):
 
         ## Maps experiment description strings to experiment modules.
         self.experimentStringToModule = collections.OrderedDict()
-        for module in experiment.experimentRegistry.getExperimentModules():
+        for module in cockpit.experiment.experimentRegistry.getExperimentModules():
             self.experimentStringToModule[module.EXPERIMENT_NAME] = module            
         
         self.experimentType = wx.Choice(self,
                 choices = list(self.experimentStringToModule.keys()) )
         self.experimentType.SetSelection(0)
-        gui.guiUtils.addLabeledInput(self, universalSizer,
+        guiUtils.addLabeledInput(self, universalSizer,
                 label = "Experiment type:", control = self.experimentType)
 
-        self.numReps = gui.guiUtils.addLabeledInput(self,
+        self.numReps = guiUtils.addLabeledInput(self,
                 universalSizer, label = "Number of reps:",
                 defaultValue = self.settings['numReps'])
 
-        self.repDuration = gui.guiUtils.addLabeledInput(self,
+        self.repDuration = guiUtils.addLabeledInput(self,
                 universalSizer, label = "Rep duration (s):",
                 defaultValue = self.settings['repDuration'],
                 helperString = "Amount of time that must pass between the start " +
@@ -146,14 +146,14 @@ class ExperimentConfigPanel(wx.Panel):
 
         self.zPositionMode = wx.Choice(self, choices = Z_POSITION_MODES)
         self.zPositionMode.SetSelection(0)
-        gui.guiUtils.addLabeledInput(self, universalSizer,
+        guiUtils.addLabeledInput(self, universalSizer,
                 label = "Z position mode:", control = self.zPositionMode)
 
-        self.stackHeight = gui.guiUtils.addLabeledInput(self,
+        self.stackHeight = guiUtils.addLabeledInput(self,
                 universalSizer, label = u"Stack height (\u03bcm):",
                 defaultValue = self.settings['stackHeight'])
 
-        self.sliceHeight = gui.guiUtils.addLabeledInput(self,
+        self.sliceHeight = guiUtils.addLabeledInput(self,
                 universalSizer, label = u"Slice height (\u03bcm):",
                 defaultValue = self.settings['sliceHeight'])
 
@@ -192,7 +192,7 @@ class ExperimentConfigPanel(wx.Panel):
                 0, wx.ALL, 5)
         
         ## Ordered list of exposure times for simultaneous exposure mode.
-        self.lightExposureTimes, timeSizer = gui.guiUtils.makeLightsControls(
+        self.lightExposureTimes, timeSizer = guiUtils.makeLightsControls(
                 self.simultaneousExposurePanel,
                 [str(l.name) for l in self.allLights],
                 self.settings['simultaneousExposureTimes'])
@@ -242,12 +242,12 @@ class ExperimentConfigPanel(wx.Panel):
         # File controls.
         self.filePanel = wx.Panel(self)
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.filenameSuffix = gui.guiUtils.addLabeledInput(self.filePanel,
+        self.filenameSuffix = guiUtils.addLabeledInput(self.filePanel,
                 rowSizer, label = "Filename suffix:",
                 defaultValue = self.settings['filenameSuffix'],
                 size = (160, -1))
         self.filenameSuffix.Bind(wx.EVT_KEY_DOWN, self.generateFilename)
-        self.filename = gui.guiUtils.addLabeledInput(self.filePanel,
+        self.filename = guiUtils.addLabeledInput(self.filePanel,
                 rowSizer, label = "Filename:", size = (200, -1))
         self.generateFilename()
         updateButton = wx.Button(self.filePanel, -1, 'Update')
@@ -279,7 +279,7 @@ class ExperimentConfigPanel(wx.Panel):
     # changed out from under us, rendering some config entries (e.g. dealing
     # with light sources) invalid.
     def loadConfig(self):
-        result = util.userConfig.getValue(self.configKey, default = {
+        result = cockpit.util.userConfig.getValue(self.configKey, default = {
                 'filenameSuffix': '',
                 'numReps': '1',
                 'repDuration': '0',
@@ -357,7 +357,7 @@ class ExperimentConfigPanel(wx.Panel):
         # Get the filepath to save settings to.
         dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
                 message = 'Please select where to save the experiment.',
-                defaultDir = util.user.getUserSaveDir())
+                defaultDir = cockpit.util.user.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
             return
@@ -366,9 +366,9 @@ class ExperimentConfigPanel(wx.Panel):
         try:
             handle.write(json.dumps(settings))
         except Exception as e:
-            util.logger.log.error("Couldn't save experiment settings: %s" % e)
-            util.logger.log.error(traceback.format_exc())
-            util.logger.log.error("Settings are:\n%s" % str(settings))
+            cockpit.util.logger.log.error("Couldn't save experiment settings: %s" % e)
+            cockpit.util.logger.log.error(traceback.format_exc())
+            cockpit.util.logger.log.error("Settings are:\n%s" % str(settings))
         handle.close()
         
 
@@ -377,7 +377,7 @@ class ExperimentConfigPanel(wx.Panel):
     def onLoadExperiment(self, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_OPEN, wildcard = '*.txt',
                 message = 'Please select the experiment file to load.',
-                defaultDir = util.user.getUserSaveDir())
+                defaultDir = cockpit.util.user.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
             return
@@ -392,7 +392,7 @@ class ExperimentConfigPanel(wx.Panel):
             panel = self.experimentModuleToPanel[module]
             panel.saveSettings(settings['experimentSpecificValues'])
             del settings['experimentSpecificValues']
-        util.userConfig.setValue(self.configKey, settings)
+        cockpit.util.userConfig.setValue(self.configKey, settings)
         # Reset the panel, destroying us and creating a new panel with
         # the proper values in all parameters, except for experiment type.
         panel = self.resetCallback()
@@ -450,7 +450,7 @@ class ExperimentConfigPanel(wx.Panel):
                 if (self.allLights[i].getIsEnabled() and
                         self.lightExposureTimes[i].GetValue()):
                     lightTimePairs.append(
-                        (light, gui.guiUtils.tryParseNum(self.lightExposureTimes[i], decimal.Decimal)))
+                        (light, guiUtils.tryParseNum(self.lightExposureTimes[i], decimal.Decimal)))
             exposureSettings = [(cameras, lightTimePairs)]
         else:
             # A separate exposure for each camera.
@@ -462,30 +462,30 @@ class ExperimentConfigPanel(wx.Panel):
                         continue
                     timeControl = cameraSettings[i]
                     if timeControl.GetValue():
-                        settings.append((light, gui.guiUtils.tryParseNum(timeControl, decimal.Decimal)))
+                        settings.append((light, guiUtils.tryParseNum(timeControl, decimal.Decimal)))
                 exposureSettings.append(([camera], settings))
                 
-        altitude = interfaces.stageMover.getPositionForAxis(2)
+        altitude = cockpit.interfaces.stageMover.getPositionForAxis(2)
         # Default to "current is bottom"
         altBottom = altitude
-        zHeight = gui.guiUtils.tryParseNum(self.stackHeight, float)
+        zHeight = guiUtils.tryParseNum(self.stackHeight, float)
         if self.zPositionMode.GetStringSelection() == 'Current is center':
             altBottom = altitude - zHeight / 2
         elif self.zPositionMode.GetStringSelection() == 'Use saved top/bottom':
-            altBottom, altTop = gui.saveTopBottomPanel.getBottomAndTop()
+            altBottom, altTop = cockpit.gui.saveTopBottomPanel.getBottomAndTop()
             zHeight = altTop - altBottom
 
-        sliceHeight = gui.guiUtils.tryParseNum(self.sliceHeight, float)
+        sliceHeight = guiUtils.tryParseNum(self.sliceHeight, float)
         if zHeight == 0:
             # 2D mode.
             zHeight = 1e-6
             sliceHeight = 1e-6
 
-        savePath = os.path.join(util.user.getUserSaveDir(),
+        savePath = os.path.join(cockpit.util.user.getUserSaveDir(),
                 self.filename.GetValue())
         params = {
-                'numReps': gui.guiUtils.tryParseNum(self.numReps),
-                'repDuration': gui.guiUtils.tryParseNum(self.repDuration, float),
+                'numReps': guiUtils.tryParseNum(self.numReps),
+                'repDuration': guiUtils.tryParseNum(self.repDuration, float),
                 'zPositioner': mover,
                 'altBottom': altBottom,
                 'zHeight': zHeight,
@@ -528,5 +528,5 @@ class ExperimentConfigPanel(wx.Panel):
 
     ## Save the current experiment settings to config.
     def saveSettings(self):
-        util.userConfig.setValue(self.configKey, self.getSettingsDict())
+        cockpit.util.userConfig.setValue(self.configKey, self.getSettingsDict())
     

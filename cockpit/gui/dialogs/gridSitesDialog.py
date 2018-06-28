@@ -50,10 +50,10 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import depot
-import gui.guiUtils
-import interfaces.stageMover
-import util.userConfig
+from cockpit import depot
+import cockpit.gui.guiUtils
+import cockpit.interfaces.stageMover
+import cockpit.util.userConfig
 
 import wx
 import numpy
@@ -68,7 +68,7 @@ class GridSitesDialog(wx.Dialog):
         wx.Dialog.__init__(self, parent, -1, "Place a Grid of Sites")
 
         ## Config-loaded settings for the form.
-        self.settings = util.userConfig.getValue('gridSitesDialog', default = {
+        self.settings = cockpit.util.userConfig.getValue('gridSitesDialog', default = {
                 'numRows' : '10',
                 'numColumns' : '10',
                 'imageWidth' : '512',
@@ -84,19 +84,19 @@ class GridSitesDialog(wx.Dialog):
                 "stage position.")
         sizer.Add(label, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
 
-        self.numRows = gui.guiUtils.addLabeledInput(self, sizer,
+        self.numRows = cockpit.gui.guiUtils.addLabeledInput(self, sizer,
                 label = "Number of rows:",
                 defaultValue = self.settings['numRows'])
-        self.numColumns = gui.guiUtils.addLabeledInput(self, sizer,
+        self.numColumns = cockpit.gui.guiUtils.addLabeledInput(self, sizer,
                 label = "Number of columns:",
                 defaultValue = self.settings['numColumns'])
-        self.imageWidth = gui.guiUtils.addLabeledInput(self, sizer,
+        self.imageWidth = cockpit.gui.guiUtils.addLabeledInput(self, sizer,
                 label = "Horizontal spacing (pixels):",
                 defaultValue = self.settings['imageWidth'])
-        self.imageHeight = gui.guiUtils.addLabeledInput(self, sizer,
+        self.imageHeight = cockpit.gui.guiUtils.addLabeledInput(self, sizer,
                 label = "Vertical spacing (pixels):",
                 defaultValue = self.settings['imageHeight'])
-        self.markerSize = gui.guiUtils.addLabeledInput(self, sizer,
+        self.markerSize = cockpit.gui.guiUtils.addLabeledInput(self, sizer,
                 label = "Marker size (default 25):",
                 defaultValue = self.settings['markerSize'])
         
@@ -123,7 +123,7 @@ class GridSitesDialog(wx.Dialog):
     def OnStart(self, evt):
         self.saveSettings()
 
-        curLoc = interfaces.stageMover.getPosition()
+        curLoc = cockpit.interfaces.stageMover.getPosition()
         imageWidth = float(self.imageWidth.GetValue())
         imageHeight = float(self.imageHeight.GetValue())
         markerSize = float(self.markerSize.GetValue())
@@ -135,14 +135,14 @@ class GridSitesDialog(wx.Dialog):
             for yOffset in range(int(self.numRows.GetValue())):
                 yLoc = curLoc[1] - yOffset * pixelSize * imageHeight
                 target = numpy.array([xLoc, yLoc, curLoc[2]])
-                newSite = interfaces.stageMover.Site(target, size = markerSize)
-                interfaces.stageMover.saveSite(newSite)
+                newSite = cockpit.interfaces.stageMover.Site(target, size = markerSize)
+                cockpit.interfaces.stageMover.saveSite(newSite)
         self.Destroy()
 
 
     ## Save the user's settings to the configuration file.
     def saveSettings(self):
-        util.userConfig.setValue('gridSitesDialog', {
+        cockpit.util.userConfig.setValue('gridSitesDialog', {
                 'numRows': self.numRows.GetValue(),
                 'numColumns': self.numColumns.GetValue(),
                 'imageWidth': self.imageWidth.GetValue(),

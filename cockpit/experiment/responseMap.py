@@ -52,18 +52,18 @@
 
 from . import actionTable
 import decimal
-import depot
-import events
+from cockpit import depot
+from cockpit import events
 from . import experiment
-import gui.guiUtils
-import gui.imageSequenceViewer
-import gui.progressDialog
-import handlers.camera
+from cockpit.gui import guiUtils
+import cockpit.gui.imageSequenceViewer
+import cockpit.gui.progressDialog
+import cockpit.handlers.camera
 from . import offsetGainCorrection
-import util.correctNonlinear
-import util.datadoc
-import util.threads
-import util.userConfig
+import cockpit.util.correctNonlinear
+import cockpit.util.datadoc
+import cockpit.util.threads
+import cockpit.util.userConfig
 
 import matplotlib
 matplotlib.use('WXAgg')
@@ -117,7 +117,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
     # calculate the exposure times to use differently, and have a different
     # stopping condition. We also generate some output at the end to 
     # demonstrate our results.
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def run(self):
         # For debugging purposes
         experiment.lastExperiment = self
@@ -146,7 +146,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
                 self.camToLock[camera] = threading.Lock()
                 # Indicate any frame transfer cameras for reset at start of
                 # table.
-                if camera.getExposureMode() == handlers.camera.TRIGGER_AFTER:
+                if camera.getExposureMode() == cockpit.handlers.camera.TRIGGER_AFTER:
                     self.cameraToIsReady[camera] = False
                 
             self.table = self.generateActions(exposureTime)
@@ -164,7 +164,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
             
             # Wait until it's been a short time after the last received image.
             self.doneReceivingThread.join()
-            progress = gui.progressDialog.ProgressDialog("Processing images", 
+            progress = cockpit.gui.progressDialog.ProgressDialog("Processing images", 
                     "Processing images for exposure time %.4f" % exposureTime,
                     parent = None)
             self.processImages(exposureTime)
@@ -194,7 +194,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
                 exposureTimes.append(exposureTime)
         
         drawer = depot.getHandlersOfType(depot.DRAWER)[0]
-        header = util.datadoc.makeHeaderFor(allImages, 
+        header = cockpit.util.datadoc.makeHeaderFor(allImages, 
                 wavelengths = [cam.wavelength for cam in self.cameras])
 
         # Number of bytes allocated to the extended header: 4 per image, since
@@ -219,7 +219,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
         self.plotPixels(xVals, rawImages, "Pre-corrected pixel linearity survey")
         correctedImages = numpy.empty(rawImages.shape)
         for cam in range(rawImages.shape[1]):
-            corrector = util.correctNonlinear.Corrector(xVals, averagedImages[:, cam])
+            corrector = cockpit.util.correctNonlinear.Corrector(xVals, averagedImages[:, cam])
             correctedImages[:, cam] = map(corrector.correct, rawImages[:, cam])
         self.plotPixels(xVals, correctedImages, "Corrected pixel linearity survey")
 
@@ -234,9 +234,9 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
         # Ensure we have valid datatypes for display.
         rawImages = numpy.float32(rawImages)
         correctedImages = numpy.float32(correctedImages)
-        viewer1 = gui.imageSequenceViewer.ImageSequenceViewer(rawImages, 
+        viewer1 = cockpit.gui.imageSequenceViewer.ImageSequenceViewer(rawImages, 
                 "Uncorrected sample images", parent = None)
-        viewer2 = gui.imageSequenceViewer.ImageSequenceViewer(correctedImages,
+        viewer2 = cockpit.gui.imageSequenceViewer.ImageSequenceViewer(correctedImages,
                 "Corrected sample images", parent = None)
 
 
@@ -318,7 +318,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
             raws.append(images[-1])
             if self.shouldPreserveIntermediaryFiles:
                 # Save the raw data.
-                util.datadoc.writeDataAsMrc(images.astype(numpy.uint16),
+                cockpit.util.datadoc.writeDataAsMrc(images.astype(numpy.uint16),
                         '%s-raw-%s-%04.5fms' % (self.savePath, camera.name, exposureTime))
 
             # Calculate a threshold for cosmic ray strikes.
@@ -375,7 +375,7 @@ class ExperimentUI(wx.Panel):
                 ('responseMapCosmicRayThreshold', 
                     'Cosmic ray threshold',
                     "If any pixels in an image are more than this many standard deviations from the median, then the image is discarded.")]:
-            control = gui.guiUtils.addLabeledInput(self, sizer, 
+            control = guiUtils.addLabeledInput(self, sizer, 
                 label = label, defaultValue = self.settings[key],
                 helperString = helperString)
             self.responseArgs[key] = control
@@ -383,7 +383,7 @@ class ExperimentUI(wx.Panel):
         control = wx.CheckBox(self, label = 'Preserve intermediary files')
         control.SetValue(self.settings['responseMapShouldPreserveIntermediaryFiles'])
         rowSizer.Add(control)
-        gui.guiUtils.addHelperString(self, rowSizer, 
+        guiUtils.addHelperString(self, rowSizer, 
                 "Keep the raw data in addition to the averaged files.")
         self.responseArgs['responseMapShouldPreserveIntermediaryFiles'] = control
         sizer.Add(rowSizer)
@@ -394,18 +394,18 @@ class ExperimentUI(wx.Panel):
     # experiment instance, augment them with our special parameters.
     def augmentParams(self, params):
         self.saveSettings()
-        params['numExposures'] = gui.guiUtils.tryParseNum(self.responseArgs['responseMapNumExposures'])
+        params['numExposures'] = guiUtils.tryParseNum(self.responseArgs['responseMapNumExposures'])
         tokens = self.responseArgs['responseMapExposureTimes'].GetValue()
         tokens = tokens.split(',')
         params['exposureTimes'] = map(float, tokens)
-        params['cosmicRayThreshold'] = gui.guiUtils.tryParseNum(self.responseArgs['responseMapCosmicRayThreshold'])
+        params['cosmicRayThreshold'] = guiUtils.tryParseNum(self.responseArgs['responseMapCosmicRayThreshold'])
         params['shouldPreserveIntermediaryFiles'] = self.responseArgs['responseMapShouldPreserveIntermediaryFiles'].GetValue()
         return params        
 
 
     ## Load the saved experiment settings, if any.
     def loadSettings(self):
-        return util.userConfig.getValue(
+        return cockpit.util.userConfig.getValue(
                 self.configKey + 'responseMapExperimentSettings',
                 default = {
                     'responseMapCosmicRayThreshold': '10', 
@@ -425,6 +425,6 @@ class ExperimentUI(wx.Panel):
     def saveSettings(self, settings = None):
         if settings is None:
             settings = self.getSettingsDict()
-        util.userConfig.setValue(
+        cockpit.util.userConfig.setValue(
                 self.configKey + 'responseMapExperimentSettings',
                 settings)

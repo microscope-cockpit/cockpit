@@ -53,8 +53,8 @@
 ## This module creates a simple XY stage-positioning device.
 
 from . import device
-import events
-import handlers.stagePositioner
+from cockpit import events
+import cockpit.handlers.stagePositioner
 
 CLASS_NAME = 'DummyMoverDevice'
 
@@ -86,7 +86,7 @@ class DummyMover(device.Device):
         result = []
         for axis, (minVal, maxVal) in enumerate(
                 [(0, 25000), (0, 12000)]):
-            handler = handlers.stagePositioner.PositionerHandler(
+            handler = cockpit.handlers.stagePositioner.PositionerHandler(
                 "%d dummy mover" % axis, "%d stage motion" % axis, True, 
                 {'moveAbsolute': self.moveAbsolute,
                     'moveRelative': self.moveRelative, 
@@ -102,7 +102,7 @@ class DummyMover(device.Device):
 
 
     def getPrimitives(self):
-        from interfaces.stageMover import Primitive
+        from cockpit.interfaces.stageMover import Primitive
         primitives = [Primitive(self, 'c', (5000, 6000, 3000)),
                       Primitive(self, 'c', (20000, 6000, 3000)),
                       Primitive(self, 'r', (12500, 6000, 3000, 3000))]

@@ -52,10 +52,10 @@
 
 import wx
 
-import depot
+from cockpit import depot
 from . import deviceHandler
 
-import events
+from cockpit import events
 
 
 ## This handler represents any device that is capable of causing an image to 

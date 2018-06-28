@@ -23,10 +23,10 @@
 """ This module makes software-driven cameras available to cockpit.
 """
 from . import camera
-import events
-import handlers.camera
+from cockpit import events
+import cockpit.handlers.camera
 import numpy as np
-import util.listener
+import cockpit.util.listener
 import Pyro4
 
 SUPPORTED_CAMERAS = ['flycap2','picam']
@@ -45,7 +45,7 @@ class SoftCamera(camera.CameraDevice):
         self.remote =  Pyro4.Proxy('PYRO:%s@%s:%d' % ('pyroCam',
                                                       camConfig.get('ipAddress'),
                                                       camConfig.get('port')))
-        self.listener = util.listener.Listener(self.remote,
+        self.listener = cockpit.util.listener.Listener(self.remote,
                                                lambda *args: self.receiveData(*args))
 
 
@@ -65,7 +65,7 @@ class SoftCamera(camera.CameraDevice):
     def getHandlers(self):
         """Return camera handlers."""
         remote = self.remote
-        result = handlers.camera.CameraHandler(
+        result = cockpit.handlers.camera.CameraHandler(
                 "%s" % self.config.get('label'), "soft camera",
                 {'setEnabled': self.enableCamera,
                     'getImageSize': self.getImageSize,

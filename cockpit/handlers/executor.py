@@ -52,15 +52,15 @@
 
 
 import collections
-import depot
+from cockpit import depot
 from . import deviceHandler
-import events
-from handlers.genericPositioner import GenericPositionerHandler
+from cockpit import events
+from cockpit.handlers.genericPositioner import GenericPositionerHandler
 from numbers import Number
 import operator
 import time
-import util
-import gui
+from cockpit import util
+import cockpit.gui
 import wx
 import decimal
 from six import string_types
@@ -487,7 +487,7 @@ class ExecutorDebugWindow(wx.Frame):
                     label = '\n'.join(clients)
                 else:
                     label = str(line)
-                button = gui.toggleButton.ToggleButton(
+                button = cockpit.gui.toggleButton.ToggleButton(
                     parent=panel, label=label,
                     activateAction=lambda line=line: handler.setDigital(line, True),
                     deactivateAction=lambda line=line: handler.setDigital(line, False),
@@ -551,7 +551,7 @@ class DelegateTrigger(deviceHandler.DeviceHandler):
         if self._movementTime is None:
             # Ignored - using a method to determine movement time.
             return
-        newdt = gui.dialogs.getNumberDialog.getNumberFromUser(
+        newdt = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
                 None,
                 'Set settling time after trigger',
                 ('Sets the settling time after a trigger event.\n'

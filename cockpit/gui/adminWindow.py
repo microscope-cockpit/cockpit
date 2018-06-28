@@ -53,11 +53,11 @@
 
 import wx
 
-import gui.guiUtils
-import gui.mainWindow
-import gui.mosaic.window
-import util.user
-import util.userConfig
+import cockpit.gui.guiUtils
+import cockpit.gui.mainWindow
+import cockpit.gui.mosaic.window
+import cockpit.util.user
+import cockpit.util.userConfig
 
 ## This module handles various administrator capabilities.
 
@@ -83,7 +83,7 @@ class AdminWindow(wx.Frame):
         userSizer.Add(wx.StaticText(self.panel, -1, "Current users:"))
         self.userBox = wx.ListBox(self.panel,
                 style = wx.LB_SINGLE, size = (-1, 200))
-        for user in reversed(util.user.getUsers()):
+        for user in reversed(cockpit.util.user.getUsers()):
             self.userBox.Insert(user, 0)
         userSizer.Add(self.userBox)
         userSizer.Add(self.makeButton("Add new user", self.onAddUser,
@@ -111,14 +111,14 @@ class AdminWindow(wx.Frame):
         windows = wx.GetTopLevelWindows()
         positions = dict([(w.GetTitle(), tuple(w.GetPosition())) for w in windows])
         print ("Saving positions as",positions)
-        util.userConfig.setValue('defaultWindowPositions',
+        cockpit.util.userConfig.setValue('defaultWindowPositions',
                 positions, isGlobal = True)
         # The main window gets saved separately. See MainWindow.onMove for why.
-        util.userConfig.setValue('defaultMainWindowPosition',
-                tuple(gui.mainWindow.window.GetPosition()), isGlobal = True)
+        cockpit.util.userConfig.setValue('defaultMainWindowPosition',
+                tuple(cockpit.gui.mainWindow.window.GetPosition()), isGlobal = True)
         # The mosaic window gets its rect saved, not its position.
-        util.userConfig.setValue('defaultMosaicWindowRect',
-                tuple(gui.mosaic.window.window.GetRect()), isGlobal = True)
+        cockpit.util.userConfig.setValue('defaultMosaicWindowRect',
+                tuple(cockpit.gui.mosaic.window.window.GetRect()), isGlobal = True)
 
 
     ## Move all windows so their upper-left corners are at (0, 0).
@@ -132,7 +132,7 @@ class AdminWindow(wx.Frame):
         text = wx.GetTextFromUser("Please enter the new user's name")
         if not text:
             return
-        util.user.createUser(text)
+        cockpit.util.user.createUser(text)
         self.userBox.Insert(text, 0)
 
 
@@ -141,12 +141,12 @@ class AdminWindow(wx.Frame):
         if not self.userBox.GetSelection():
             # No selected user.
             return
-        if not gui.guiUtils.getUserPermission(
+        if not cockpit.gui.guiUtils.getUserPermission(
                 "Are you sure you want to delete this account?",
                 "Please confirm"):
             return
         user = self.userBox.GetStringSelection()
-        util.user.deleteUser(user)
+        cockpit.util.user.deleteUser(user)
         self.userBox.Delete(self.userBox.GetSelection())
 
 

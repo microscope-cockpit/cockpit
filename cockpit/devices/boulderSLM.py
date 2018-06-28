@@ -42,13 +42,13 @@ from itertools import groupby
 import Pyro4
 import wx
 
-import events
-import gui.device
-import gui.guiUtils
-import gui.toggleButton
-import handlers.executor
+from cockpit import events
+import cockpit.gui.device
+import cockpit.gui.guiUtils
+import cockpit.gui.toggleButton
+import cockpit.handlers.executor
 import time
-import util
+import cockpit.util
 
 
 class BoulderSLM(device.Device):
@@ -230,7 +230,7 @@ class BoulderSLM(device.Device):
         trigline = self.config.get('triggerline', None)
         dt = self.config.get('settlingtime', 10)
         result = []
-        self.handler = handlers.executor.DelegateTrigger("slm", "slm group",
+        self.handler = cockpit.handlers.executor.DelegateTrigger("slm", "slm group",
                                               trigsource, trigline,
                                               self.examineActions, dt)
         result.append(self.handler)
@@ -246,30 +246,30 @@ class BoulderSLM(device.Device):
         self.panel = wx.Panel(parent)
         self.panel.SetDoubleBuffered(True)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        label = gui.device.Label(
+        label = cockpit.gui.device.Label(
                 parent=self.panel, label='SLM')
         sizer.Add(label)
         rowSizer = wx.BoxSizer(wx.VERTICAL)
         self.elements = OrderedDict()
-        powerButton = gui.toggleButton.ToggleButton(
+        powerButton = cockpit.gui.toggleButton.ToggleButton(
                 label='OFF',
                 activateAction = self.enable,
                 deactivateAction = self.disable,
                 activeLabel = 'ON',
                 inactiveLabel = 'OFF',
                 parent=self.panel,
-                size=gui.device.DEFAULT_SIZE)
+                size=cockpit.gui.device.DEFAULT_SIZE)
         self.elements['powerButton'] = powerButton
         # Add a trigger button if we can trigger the SLM on demand.
-        triggerButton = gui.toggleButton.ToggleButton(
+        triggerButton = cockpit.gui.toggleButton.ToggleButton(
                 label='step',
                 parent=self.panel,
-                size=gui.device.DEFAULT_SIZE)
+                size=cockpit.gui.device.DEFAULT_SIZE)
         triggerButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.handler.triggerNow())
         self.elements['triggerButton'] = triggerButton
         triggerButton.Disable()
         # Add a position display.
-        posDisplay = gui.device.MultilineDisplay(parent=self.panel, numLines=3)
+        posDisplay = cockpit.gui.device.MultilineDisplay(parent=self.panel, numLines=3)
         posDisplay.Bind(wx.EVT_TIMER,
                         lambda event: self.updatePositionDisplay(event))
         # Set up a timer to update value displays.
@@ -324,7 +324,7 @@ class BoulderSLM(device.Device):
         self.updatePosition()
 
 
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def updatePosition(self):
         if not self.lastParms:
             self.lastParms = self.connection.get_sim_sequence()
@@ -377,12 +377,12 @@ class BoulderSLM(device.Device):
 
 
     def onRightMouse(self, event):
-        menu = gui.device.Menu(self.menuItems.keys(), self.menuCallback)
+        menu = cockpit.gui.device.Menu(self.menuItems.keys(), self.menuCallback)
         menu.show(event)
 
 
     def testSIMSequence(self):
-        inputs = gui.dialogs.getNumberDialog.getManyNumbersFromUser(
+        inputs = cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
                 self.panel,
                 'Generate a SIM sequence',
                 ['wavelength',
@@ -412,7 +412,7 @@ class BoulderSLM(device.Device):
             theta = self.connection.get_sim_diffraction_angle()
         except:
             raise Exception('Could not communicate with SLM service.')
-        newTheta = gui.dialogs.getNumberDialog.getNumberFromUser(
+        newTheta = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
                 self.panel,
                 'Set SIM diffraction angle',
                 ('Adjust diffraction angle to\nput spots at edge of pupil.\n'

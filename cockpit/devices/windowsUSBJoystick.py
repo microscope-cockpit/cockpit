@@ -25,12 +25,14 @@ from math import floor, ceil
 import time
 import ctypes
 import threading
+
 from . import device
-import events
-import interfaces.stageMover
-import gui.mosaic.window
-import gui.camera
-import depot
+from cockpit import events
+import cockpit.interfaces.stageMover
+import cockpit.interfaces.imager
+import cockpit.gui.mosaic.window
+import cockpit.gui.camera
+from cockpit import depot
 
 #patch from David to stop it breaking when not on windows.
 import os
@@ -231,9 +233,9 @@ class WindowsJoystick(device.Device):
     def readJoystickThread(self):
         # Fetch new joystick data until it returns non-0 (that is, it has been unplugged)
         buttons_text = " "
-        curPosition = interfaces.stageMover.getPosition()
-        self.mosaic = gui.mosaic.window.window
-        self.camera = gui.camera
+        curPosition = cockpit.interfaces.stageMover.getPosition()
+        self.mosaic = cockpit.gui.mosaic.window.window
+        self.camera = cockpit.gui.camera
         x_threshold = 0.075
         y_threshold = 0.075
         multiplier = 1.1
@@ -293,7 +295,7 @@ class WindowsJoystick(device.Device):
                 #If the left bumper is pressed, the stage is moved. Also functions
                 #as a dead-man switch.
                 if self.button_states["lb"] == True:
-                    interfaces.stageMover.moveRelative((-movement_speed_stage*x, -movement_speed_stage*y, 0), shouldBlock=False)
+                    cockpit.interfaces.stageMover.moveRelative((-movement_speed_stage*x, -movement_speed_stage*y, 0), shouldBlock=False)
                 #If the left bumper isn't pressed, the mosaic is moved.
                 else:
                     self.mosaic.canvas.dragView([movement_speed_mosaic*x, movement_speed_mosaic*y])
@@ -309,7 +311,7 @@ class WindowsJoystick(device.Device):
 
             #Pressing the back button takes an image
             if self.button_states["back"] == True:
-                interfaces.imager.takeImage()
+                cockpit.interfaces.imager.takeImage()
                 self.mosaic.transferCameraImage()
                 time.sleep(0.5)
 

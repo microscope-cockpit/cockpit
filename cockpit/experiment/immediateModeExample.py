@@ -50,13 +50,11 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import depot
-import events
+from cockpit import depot
+from cockpit import events
 from . import immediateMode
-import interfaces.imager
-import interfaces.stageMover
-
-import devices.lights
+import cockpit.interfaces.imager
+import cockpit.interfaces.stageMover
 
 import numpy
 import time
@@ -99,7 +97,7 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         allLights = list(allLights)
         # Print the names of all light sources.
         for light in allLights:
-            print light.name
+            print(light.name)
         # Get all power controls for light sources.
         allLightPowers = depot.getHandlersOfType(depot.LIGHT_POWER)
 
@@ -156,7 +154,7 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         # image to be taken! 
         eventName = 'new image %s' % activeCams[0].name
         image, timestamp = events.executeAndWaitFor(eventName,
-                interfaces.imager.takeImage, shouldBlock = True)
+                cockpit.interfaces.imager.takeImage, shouldBlock = True)
 
         # Get the min, max, median, and standard deviation of the image
         imageMin = image.min()
@@ -169,17 +167,17 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         # Some miscellaneous functions below.
 
         # Get the current stage position; positions are in microns.
-        curX, curY, curZ = interfaces.stageMover.getPosition()
+        curX, curY, curZ = cockpit.interfaces.stageMover.getPosition()
         # Move to a new Z position, and wait until we arrive.
-        interfaces.stageMover.goToZ(curZ + 5, shouldBlock = True)
+        cockpit.interfaces.stageMover.goToZ(curZ + 5, shouldBlock = True)
         # Move to a new XY position.
         # Note: the goToXY function expects a "tuple" for the position,
         # hence the extra parentheses (i.e. "goToXY(x, y)" is invalid;
         # "goToXY((x, y))" is correct). 
-        interfaces.stageMover.goToXY((curX + 50, curY - 50), shouldBlock = True)
+        cockpit.interfaces.stageMover.goToXY((curX + 50, curY - 50), shouldBlock = True)
 
         # Get the device responsible for the dichroics and light sources
-        lightsDevice = depot.getDevice(devices.lights)
+        lightsDevice = depot.getDevice(cockpit.devices.lights)
         # Set a new filter/dichroic for the lower turret.
         lightsDevice.setFilter(isFirstFilter = True, label = "2-488 L")
         # Set a new filter/dichroic for the upper turret.

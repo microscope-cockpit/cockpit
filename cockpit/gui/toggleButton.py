@@ -53,7 +53,7 @@
 
 import wx
 
-## @package gui.toggleButton
+## @package cockpit.gui.toggleButton
 # This module contains the ToggleButton class and all functions
 # associated with that class.
 

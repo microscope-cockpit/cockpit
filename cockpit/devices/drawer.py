@@ -63,7 +63,7 @@
 #
 
 from . import device
-from handlers.drawer import DrawerHandler, DrawerSettings
+from cockpit.handlers.drawer import DrawerHandler, DrawerSettings
 import re
 
 class Drawer(device.Device):

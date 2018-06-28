@@ -52,12 +52,12 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import events
-import gui.guiUtils
+from cockpit import events
+import cockpit.gui.guiUtils
 from . import image
-import util.threads
+import cockpit.util.threads
 
-from util import ftgl
+from cockpit.util import ftgl
 import numpy
 from OpenGL.GL import *
 from six.moves import queue
@@ -67,7 +67,7 @@ import wx
 import wx.glcanvas
 import operator
 
-## @package gui.imageViewer.viewCanvas
+## @package cockpit.gui.imageViewer.viewCanvas
 # This module provides a canvas for displaying camera images.
 
 ## Maximum number of bins for the histogram
@@ -185,7 +185,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
 
     ## Stop displaying anything. Optionally destroy the canvas at the end.
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def clear(self, shouldDestroy = False):
         # Clear out the queue of images.
         while True:
@@ -220,7 +220,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     # discard them. Because images can arrive very rapidly at times, we
     # want to ensure that we don't jam up -- if several images arrive while
     # we process one image, then the extras get discarded.
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def processImages(self):
         while self.shouldDraw:
             # Grab all images out of the queue; we'll use the most recent one.
@@ -249,7 +249,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
 
     ## Update our tiles, if necessary, because a new image has arrived.
-    @util.threads.callInMainThread
+    @cockpit.util.threads.callInMainThread
     def setTiles(self, imageData):
         if not self.shouldDraw:
             return
@@ -537,7 +537,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 id = wx.NewId()
                 menu.Append(id, label)
                 self.Bind(wx.EVT_MENU,  lambda event, action = action: action(), id= id)
-            gui.guiUtils.placeMenuAtMouse(self, menu)
+            cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
         elif event.Entering() and self.TopLevelParent.IsActive():
             self.SetFocus()
         else:
@@ -558,7 +558,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
     ## Let the user specify the blackpoint and whitepoint for image scaling.
     def onSetHistogram(self, event = None):
-        values = gui.dialogs.getNumberDialog.getManyNumbersFromUser(
+        values = cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
                 parent = self, title = "Set histogram scale parameters",
                 prompts = ["Blackpoint", "Whitepoint"],
                 defaultValues = [self.tiles[0][0].imageMin, self.tiles[0][0].imageMax])

@@ -53,14 +53,14 @@
 
 import wx
 
-import depot
+from cockpit import depot
 from . import deviceHandler
-import events
+from cockpit import events
 
-import gui.dialogs.getNumberDialog
-import gui.guiUtils
-import gui.toggleButton
-import util.threads
+import cockpit.gui.dialogs.getNumberDialog
+import cockpit.gui.guiUtils
+import cockpit.gui.toggleButton
+import cockpit.util.threads
 
 ## List of exposure times to allow the user to set.
 EXPOSURE_TIMES = [1, 5] + list(range(10, 100, 10)) + list(range(100, 1100, 100))
@@ -202,7 +202,7 @@ class LightHandler(deviceHandler.DeviceHandler):
                 label.append('')
             label[-1] += word + ' '
         label = "\n".join(label)
-        button = gui.device.EnableButton(parent=panel,
+        button = cockpit.gui.device.EnableButton(parent=panel,
                                                   leftAction=self.toggleState,
                                                   rightAction=self.setExposing,
                                                   prefix=label)
@@ -214,7 +214,7 @@ class LightHandler(deviceHandler.DeviceHandler):
             # Light source can also be just turned on and left on.
             helpText += "\nRight-click to leave on indefinitely."
         button.SetToolTip(wx.ToolTip(helpText))
-        self.exposureTime = gui.toggleButton.ToggleButton(
+        self.exposureTime = cockpit.gui.toggleButton.ToggleButton(
                 label = '', parent = panel, size = BUTTON_SIZE)
         self.exposureTime.Bind(wx.EVT_LEFT_DOWN,
                 lambda event: self.makeMenu(panel))
@@ -225,7 +225,7 @@ class LightHandler(deviceHandler.DeviceHandler):
 
 
     ## Set the light source to continuous exposure, if we have that option.
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def setExposing(self, args):
         if not self.enableLock.acquire(False):
             return
@@ -253,12 +253,12 @@ class LightHandler(deviceHandler.DeviceHandler):
             parent.Bind(wx.EVT_MENU,  lambda event, value = value: self.setExposureTime(value), id= i + 1)
         menu.Append(len(EXPOSURE_TIMES) + 1, '...')
         parent.Bind(wx.EVT_MENU,  lambda event: self.setCustomExposureTime(parent), id= len(EXPOSURE_TIMES) + 1)
-        gui.guiUtils.placeMenuAtMouse(parent, menu)
+        cockpit.gui.guiUtils.placeMenuAtMouse(parent, menu)
 
 
     ## Pop up a dialog to let the user input a custom exposure time.
     def setCustomExposureTime(self, parent):
-        value = gui.dialogs.getNumberDialog.getNumberFromUser(
+        value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
                 parent, "Input an exposure time:",
                 "Exposure time (ms):", self.getExposureTime())
         self.setExposureTime(float(value))

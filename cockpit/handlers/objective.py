@@ -53,13 +53,13 @@
 
 import wx
 
-import depot
+from cockpit import depot
 from . import deviceHandler
 
-import events
-import gui.guiUtils
-import gui.keyboard
-import gui.toggleButton
+from cockpit import events
+import cockpit.gui.guiUtils
+import cockpit.gui.keyboard
+import cockpit.gui.toggleButton
 
 
 ## This handler is responsible for tracking the current objective. 
@@ -109,7 +109,7 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
         for name in sorted(self.nameToPixelSize.keys()):
             colour = self.nameToColour.get(name)
             colour= (colour[0]*255,colour[1]*255,colour[2]*255)
-            button = gui.toggleButton.ToggleButton(
+            button = cockpit.gui.toggleButton.ToggleButton(
                 activeColor = colour,
                 label = name, parent = panel, 
                 size = (80, 40))
@@ -121,7 +121,7 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
         frame.SetClientSize(panel.GetSize())
         frame.SetPosition((2160, 0))
         frame.Show()
-        gui.keyboard.setKeyboardHandlers(frame)
+        cockpit.gui.keyboard.setKeyboardHandlers(frame)
         return None
 
 

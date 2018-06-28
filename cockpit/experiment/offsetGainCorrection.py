@@ -52,14 +52,14 @@
 
 from . import actionTable
 import decimal
-import depot
-import events
+from cockpit import depot
+from cockpit import events
 from . import experiment
-import gui.guiUtils
-import handlers.camera
-import util.datadoc
-import util.threads
-import util.userConfig
+from cockpit.gui import guiUtils
+import cockpit.handlers.camera
+import cockpit.util.datadoc
+import cockpit.util.threads
+import cockpit.util.userConfig
 
 import numpy
 import threading
@@ -133,7 +133,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
 
     ## Broadly similar to Experiment.run(), but we generate and execute multiple
     # tables.
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def run(self):
         # For debugging purposes
         experiment.lastExperiment = self
@@ -166,7 +166,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
                 self.camToLock[camera] = threading.Lock()
                 # Indicate any frame transfer cameras for reset at start of
                 # table.
-                if camera.getExposureMode() == handlers.camera.TRIGGER_AFTER:
+                if camera.getExposureMode() == cockpit.handlers.camera.TRIGGER_AFTER:
                     self.cameraToIsReady[camera] = False
 
             self.table = self.generateActions(multiplier, activeCameras)
@@ -206,12 +206,12 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         drawer = depot.getHandlersOfType(depot.DRAWER)[0]
         wavelengths = [c.wavelength for c in self.cameras]
-        header = util.datadoc.makeHeaderFor(results, 
+        header = cockpit.util.datadoc.makeHeaderFor(results, 
                 XYSize = objective.getPixelSize(), ZSize = 0, 
                 wavelengths = wavelengths)
 
         filehandle = open(self.savePath, 'wb')
-        util.datadoc.writeMrcHeader(header, filehandle)
+        cockpit.util.datadoc.writeMrcHeader(header, filehandle)
         filehandle.write(results)
         filehandle.close()
 
@@ -265,7 +265,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
             images = imageData[:self.camToNumImagesReceived[camera]]
             if self.shouldPreserveIntermediaryFiles:
                 # Save the raw data.
-                util.datadoc.writeDataAsMrc(images.astype(numpy.uint16),
+                cockpit.util.datadoc.writeDataAsMrc(images.astype(numpy.uint16),
                         '%s-raw-%s-%d' % (self.savePath, camera.name, multiplier))
                 
             stdDev = numpy.std(images)
@@ -326,7 +326,7 @@ class ExperimentUI(wx.Panel):
                     'Any images above this value are discarded; if we complete imaging and no images "survive", then we are done with data collection.'),
                 ('correctionCosmicRayThreshold', 'Cosmic ray threshold',
                     "If any pixels in an image are more than this many standard deviations from the median, then the image is discarded.")]:
-            control = gui.guiUtils.addLabeledInput(self, sizer, 
+            control = guiUtils.addLabeledInput(self, sizer, 
                 label = label, defaultValue = self.settings[key],
                 helperString = helperString)
             self.correctionArgs[key] = control
@@ -334,7 +334,7 @@ class ExperimentUI(wx.Panel):
         control = wx.CheckBox(self, label = 'Preserve intermediary files')
         control.SetValue(self.settings['correctionShouldPreserveIntermediaryFiles'])
         rowSizer.Add(control)
-        gui.guiUtils.addHelperString(self, rowSizer, 
+        guiUtils.addHelperString(self, rowSizer, 
                 "Keep the raw data in addition to the averaged files.")
         self.correctionArgs['correctionShouldPreserveIntermediaryFiles'] = control
         sizer.Add(rowSizer)
@@ -345,18 +345,18 @@ class ExperimentUI(wx.Panel):
     # experiment instance, augment them with our special parameters.
     def augmentParams(self, params):
         self.saveSettings()
-        params['numExposures'] = gui.guiUtils.tryParseNum(self.correctionArgs['correctionNumExposures'])
-        params['numCollections'] = gui.guiUtils.tryParseNum(self.correctionArgs['correctionNumCollections'])
-        params['exposureMultiplier'] = gui.guiUtils.tryParseNum(self.correctionArgs['correctionExposureMultiplier'], float)
-        params['maxIntensity'] = gui.guiUtils.tryParseNum(self.correctionArgs['correctionMaxIntensity'])
-        params['cosmicRayThreshold'] = gui.guiUtils.tryParseNum(self.correctionArgs['correctionCosmicRayThreshold'], float)
+        params['numExposures'] = guiUtils.tryParseNum(self.correctionArgs['correctionNumExposures'])
+        params['numCollections'] = guiUtils.tryParseNum(self.correctionArgs['correctionNumCollections'])
+        params['exposureMultiplier'] = guiUtils.tryParseNum(self.correctionArgs['correctionExposureMultiplier'], float)
+        params['maxIntensity'] = guiUtils.tryParseNum(self.correctionArgs['correctionMaxIntensity'])
+        params['cosmicRayThreshold'] = guiUtils.tryParseNum(self.correctionArgs['correctionCosmicRayThreshold'], float)
         params['shouldPreserveIntermediaryFiles'] = self.correctionArgs['correctionShouldPreserveIntermediaryFiles'].GetValue()
         return params
 
 
     ## Load the saved experiment settings, if any.
     def loadSettings(self):
-        return util.userConfig.getValue(
+        return cockpit.util.userConfig.getValue(
                 self.configKey + 'offsetGainExperimentSettings',
                 default = {
                     'correctionCosmicRayThreshold': '10',
@@ -378,7 +378,7 @@ class ExperimentUI(wx.Panel):
     def saveSettings(self, settings = None):
         if settings is None:
             settings = self.getSettingsDict()
-        util.userConfig.setValue(
+        cockpit.util.userConfig.setValue(
                 self.configKey + 'offsetGainExperimentSettings',
                 settings)
 

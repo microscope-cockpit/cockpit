@@ -58,15 +58,15 @@ import time
 import wx
 
 from . import camera
-import depot
-import events
-import handlers.camera
-import gui.device
-import gui.guiUtils
-import gui.toggleButton
+from cockpit import depot
+from cockpit import events
+import cockpit.handlers.camera
+import cockpit.gui.device
+from cockpit.gui import guiUtils
+import cockpit.gui.toggleButton
 import Pyro4
-import util.listener
-import util.threads
+import cockpit.util.listener
+import cockpit.util.threads
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
@@ -94,8 +94,8 @@ class AndorCameraDevice(camera.CameraDevice):
         ## Pyro proxy (formerly a copy of self.connection.connection).
         self.proxy =  Pyro4.Proxy(self.uri)
         ## A listner (formerly self.connection).
-        self.listener = util.listener.Listener(self.proxy,
-                                               lambda *args: self.receiveData(*args))
+        self.listener = cockpit.util.listener.Listener(self.proxy,
+                                                       lambda *args: self.receiveData(*args))
         self.imageSizes = ['Full', '512x256', '512x128']
         try:
             self.amplifierModes = self.proxy.get_amplifier_modes()
@@ -155,7 +155,7 @@ class AndorCameraDevice(camera.CameraDevice):
             trighandler = None
 
         """Return camera handlers."""
-        result = handlers.camera.CameraHandler(
+        result = cockpit.handlers.camera.CameraHandler(
                 "%s" % self.name, "iXon camera",
                 {'setEnabled': self.enableCamera,
                     'getImageSize': self.getImageSize,
@@ -313,7 +313,7 @@ class AndorCameraDevice(camera.CameraDevice):
             menu.Append(menuID, str(value))
             self.panel.Bind(wx.EVT_MENU,  lambda event, value=value: self.setGain(value), id= menuID)
             menuID += 1
-        gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+        guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
     def setGain(self, value):
@@ -338,7 +338,7 @@ class AndorCameraDevice(camera.CameraDevice):
                                 lambda event, m=mode: self.setAmplifierMode(m),
                                 id=menuID)
                 menuID += 1
-        gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+        guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
     def onRightMouse(self, event=None):
@@ -366,7 +366,7 @@ class AndorCameraDevice(camera.CameraDevice):
 
         menu.AppendSubMenu(tMenu, 'sensor set point')
 
-        gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+        guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
     def onTrigButton(self, event=None):
@@ -378,7 +378,7 @@ class AndorCameraDevice(camera.CameraDevice):
                             lambda event, m=mode: self.setExperimentTriggerMode(m),
                             id=menuID)
             menuID += 1
-        gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+        guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
     def setExperimentTriggerMode(self, mode):
@@ -431,21 +431,21 @@ class AndorCameraDevice(camera.CameraDevice):
         sizer = wx.BoxSizer(wx.VERTICAL)
         rowSizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.modeButton = gui.toggleButton.ToggleButton(
+        self.modeButton = cockpit.gui.toggleButton.ToggleButton(
                 label="Mode:\n%s" % 'not set',
                 parent=self.panel)
         self.modeButton.Bind(wx.EVT_LEFT_DOWN, self.onModeButton)
         self.modeButton.Unbind(wx.EVT_RIGHT_DOWN)
         rowSizer.Add(self.modeButton)
 
-        self.gainButton = gui.toggleButton.ToggleButton(
+        self.gainButton = cockpit.gui.toggleButton.ToggleButton(
                 label="EM Gain\n%d" % self.settings['EMGain'],
                 parent=self.panel)
         self.gainButton.Bind(wx.EVT_LEFT_DOWN, self.onGainButton)
         self.gainButton.Unbind(wx.EVT_RIGHT_DOWN)
         rowSizer.Add(self.gainButton)
 
-        self.trigButton = gui.toggleButton.ToggleButton(
+        self.trigButton = cockpit.gui.toggleButton.ToggleButton(
                 label='exp. trigger:\n%s' % self.experimentTriggerMode.label,
                 parent=self.panel)
         self.trigButton.Bind(wx.EVT_LEFT_DOWN, self.onTrigButton)

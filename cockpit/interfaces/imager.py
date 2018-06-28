@@ -50,9 +50,9 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import depot
-import events
-import util.threads
+from cockpit import depot
+from cockpit import events
+import cockpit.util.threads
 
 import time
 import traceback
@@ -137,7 +137,7 @@ class Imager:
     # \param shouldStopVideo True if we should stop video mode. Only really
     #        used by self.videoMode().
     def takeImage(self, shouldBlock = False, shouldStopVideo = True):
-        from experiment import experiment
+        from cockpit.experiment import experiment
         if experiment.isRunning():
             print("Skipping takeImage because an experiment is running.")
             return
@@ -159,7 +159,7 @@ class Imager:
     # button is pressed. We also limit our image rate if there are any
     # non-room-light light sources to 1 image per second, to avoid excessive
     # sample damage.
-    @util.threads.callInNewThread
+    @cockpit.util.threads.callInNewThread
     def videoMode(self):
         if not self.activeCameras:
             # No cameras, no video mode.

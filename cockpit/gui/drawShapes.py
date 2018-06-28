@@ -23,8 +23,10 @@
 #Gather the drawing primitives in one place to draw scaled vertex,
 #circle, square and arrows.
 
-from util import ftgl
-from gui import FONTPATH
+import numpy
+
+from cockpit.util import ftgl
+from cockpit.gui import FONTPATH
 
 ## Font for drawing text
 try:
@@ -76,7 +78,7 @@ def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
     glTranslatef(loc[0], loc[1], 0)
     glScalef(size * aspect, size, size)
     glColor3fv(color)
-    gui.drawShapes.font.render(text)
+    cockpit.gui.drawShapes.font.render(text)
     glPopMatrix()
 
 

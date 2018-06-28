@@ -51,12 +51,12 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import depot
-import gui.dialogs.safetyMinDialog
-import gui.keyboard
-import gui.saveTopBottomPanel
-import interfaces.stageMover
-import util.userConfig
+from cockpit import depot
+import cockpit.gui.dialogs.safetyMinDialog
+import cockpit.gui.keyboard
+import cockpit.gui.saveTopBottomPanel
+import cockpit.interfaces.stageMover
+import cockpit.util.userConfig
 
 from . import macroStageXY
 from . import macroStageZ
@@ -122,7 +122,7 @@ class MacroStageWindow(wx.Frame):
         self.commentsTimer = wx.Timer(self, -1)
         self.Bind(wx.EVT_TIMER, self.onCommentsTimer, self.commentsTimer)
 
-        self.saveTopBottomPanel = gui.saveTopBottomPanel.createSaveTopBottomPanel(self)
+        self.saveTopBottomPanel = cockpit.gui.saveTopBottomPanel.createSaveTopBottomPanel(self)
         self.sizer.Add(self.saveTopBottomPanel, (6, 8), (2, 3))
         
         self.SetSizerAndFit(self.sizer)
@@ -130,7 +130,7 @@ class MacroStageWindow(wx.Frame):
         self.Layout()
         self.Show(True)
 
-        gui.keyboard.setKeyboardHandlers(self)
+        cockpit.gui.keyboard.setKeyboardHandlers(self)
 
 
     ## Returns a sizer containing a set of buttons related to the XY macro stage
@@ -147,12 +147,12 @@ class MacroStageWindow(wx.Frame):
         self.motionControllerButton.SetToolTip(wx.ToolTip(
                 "Change which stage motion device the keypad controls."))
         self.motionControllerButton.Bind(wx.EVT_BUTTON, 
-                lambda event: interfaces.stageMover.changeMover())
+                lambda event: cockpit.interfaces.stageMover.changeMover())
         sizer.Add(self.motionControllerButton)
 
         button = wx.Button(self, -1, "Recenter")
         button.Bind(wx.EVT_BUTTON, 
-                lambda event: interfaces.stageMover.recenterFineMotion())
+                lambda event: cockpit.interfaces.stageMover.recenterFineMotion())
         sizer.Add(button)
         return sizer
 
@@ -161,14 +161,14 @@ class MacroStageWindow(wx.Frame):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         button = wx.Button(self, -1, "Set safeties")
         button.Bind(wx.EVT_BUTTON, 
-                lambda event: gui.dialogs.safetyMinDialog.showDialog(self.GetParent()))
+                lambda event: cockpit.gui.dialogs.safetyMinDialog.showDialog(self.GetParent()))
         sizer.Add(button)
         
         button = wx.Button(self, -1, "Touch down")
         touchdownAltitude = depot.getHandlersOfType(depot.CONFIGURATOR)[0].getValue('slideTouchdownAltitude')
         button.SetToolTip(wx.ToolTip(u"Bring the stage down to %d\u03bcm" % touchdownAltitude))
         button.Bind(wx.EVT_BUTTON, 
-                lambda event: interfaces.stageMover.goToZ(touchdownAltitude))
+                lambda event: cockpit.interfaces.stageMover.goToZ(touchdownAltitude))
         sizer.Add(button)
 
         return sizer
@@ -184,7 +184,7 @@ class MacroStageWindow(wx.Frame):
     ## Save the contents of the comments box.
     def onCommentsTimer(self, event):
         content = self.comments.GetValue()
-        util.userConfig.setValue('histogramComments', content)
+        cockpit.util.userConfig.setValue('histogramComments', content)
         self.commentsTimer.Stop()
 
 
@@ -212,5 +212,5 @@ def setXYLimit():
 ## Signals that the user has logged in and we can grab
 # any config-dependent values.
 def userLoggedIn():
-    comments = util.userConfig.getValue('histogramComments', default = '')
+    comments = cockpit.util.userConfig.getValue('histogramComments', default = '')
     window.comments.SetValue(comments)
