@@ -302,10 +302,10 @@ class MicroscopeFilter(MicroscopeBase):
         # position refers to wheel position.
         # index refers to an element in the list of filters.
         #self._proxy.set_setting('position', self.filters[index].position)
-        async = Pyro4.Proxy(self._proxy._pyroUri)
-        async._pyroAsync()
-        result = async.set_setting('position',
-                                   self.filters[index].position).then(callback)
+        asproxy = Pyro4.Proxy(self._proxy._pyroUri)
+        asproxy._pyroAsync()
+        result = asproxy.set_setting('position',
+                                     self.filters[index].position).then(callback)
 
 
     def getPosition(self):
