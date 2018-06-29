@@ -57,6 +57,7 @@
 import ast
 import importlib
 import os
+import glob
 from six import string_types, iteritems
 from cockpit.handlers.deviceHandler import DeviceHandler
 
@@ -76,8 +77,11 @@ OBJECTIVE = "objective"
 POWER_CONTROL = "power control"
 SERVER = "server"
 STAGE_POSITIONER = "stage positioner"
-DEVICE_FOLDER = 'devices'
-THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+
+_DEVICE_DIR_FPATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    'devices'
+)
 
 SKIP_CONFIG = ['objectives', 'server']
 
@@ -111,10 +115,11 @@ class DeviceDepot:
     def loadConfig(self):
         if self._configurator:
             return
-        if os.path.exists(os.path.join(THIS_FOLDER,
-                                       DEVICE_FOLDER,
-                                       'configurator.py')):
+        try:
             from cockpit.devices.configurator import Configurator
+        except ModuleNotFoundError:
+            pass
+        else:
             self._configurator = Configurator()
             self.initDevice(self._configurator)
 
@@ -124,10 +129,9 @@ class DeviceDepot:
     # containers. Yield the names of the modules holding the Devices as we go.
     def initialize(self, config):
         # Parse device files to map classes to their module.
-        modfiles = [fn for fn in os.listdir(DEVICE_FOLDER) if fn.endswith('.py')]
-        for m in modfiles:
-            modname = m[0:-3] # Strip .py extension
-            with open(os.path.join(DEVICE_FOLDER, m), 'r') as f:
+        for modfile in glob.glob(os.path.join(_DEVICE_DIR_FPATH, '*.py')):
+            modname = modfile[0:-3] # Strip .py extension
+            with open(os.path.join(_DEVICE_DIR_FPATH, modfile), 'r') as f:
                 # Extract class definitions from the module
                 try:
                     classes = [c for c in ast.parse(f.read()).body
