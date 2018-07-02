@@ -22,13 +22,16 @@
 
 import ctypes
 import os
+import sys
 
 from ctypes import POINTER, c_char_p, c_int, c_uint
 
 if os.name in ('nt', 'ce'):
-    _ftgl = ctypes.WinDLL("ftgl")
+    _ftgl = ctypes.WinDLL('ftgl')
+elif sys.platform == 'darwin':
+    _ftgl = ctypes.CDLL('libftgl.dylib')
 else:
-    _ftgl = ctypes.CDLL("libftgl.so")
+    _ftgl = ctypes.CDLL('libftgl.so')
 
 class _FTGLfont(ctypes.Structure):
     pass
