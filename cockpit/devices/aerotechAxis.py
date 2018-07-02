@@ -46,21 +46,21 @@ LIMITS_PAT = r"(?P<limits>\(?\s*[-]?\d*\s*,\s*[-]?\d*\s*\)?)"
 
 ## Characters used by the SoloistCP controller.
 # CommandTerminatingCharacter
-CTC = chr(10)
+CTC = 10
 # CommandSuccessCharacter
-CSC = chr(37)
+CSC = 37
 # CommandInvalidCharacter
-CIC = chr(33)
+CIC = 33
 # CommandFaultCharacter
-CFC = chr(35)
+CFC = 35
 # CommandTimeOutCharacter
-CTOC = chr(36)
+CTOC = 36
 # Map character to meaning
 RESPONSE_CHARS = {
-    CSC: 'command success',
-    CIC: 'command invalid',
-    CFC: 'command caused fault',
-    CTOC: 'command timeout',
+    CSC: b'command success',
+    CIC: b'command invalid',
+    CFC: b'command caused fault',
+    CTOC: b'command timeout',
     }
 
 
@@ -98,7 +98,7 @@ class AerotechZStage(device.Device):
     ## Send a command to the Aerotech SoloistCP and fetch the response.
     def command(self, cmd):
         # The terminated command string.
-        cmdstr = cmd + CTC
+        cmdstr = cmd + bytes([CTC])
         # A flag indicating that a retry is needed.
         retry = False
 
@@ -122,7 +122,7 @@ class AerotechZStage(device.Device):
         response = self.socket.recv(256)
         # Response status character:
         response_char = response[0]
-        if response_char == chr(255):
+        if response_char == 255:
             # stray character
             response_char = response[1]
             response_data = response[2:]
@@ -132,9 +132,9 @@ class AerotechZStage(device.Device):
         # Did the controlle report a problem?
         if response_char != CSC and response in RESPONSE_CHARS:
             raise Exception('Aerotech controller error - %s.' 
-                            % RESPONSE_CHARS[response_char])
+                            % RESPONSE_CHARS[response_char].decode())
         elif response_char != CSC:
-            raise Exception('Aerotech controller error - unknown response %s' % response_char)
+            raise Exception('Aerotech controller error - unknown response %s' % chr(response_char))
         else:
             return response_data
 
@@ -163,9 +163,9 @@ class AerotechZStage(device.Device):
     def initialize(self):
         # Open a connection to the controller.
         self.openConnection()
-        self.position = self.command('CMDPOS')
-        self.speed = int(self.command('GETPARM(71)'))
-        self.acceleration = int(self.command('GETPARM(72'))
+        self.position = self.command(b'CMDPOS').decode()
+        self.speed = int(self.command(b'GETPARM(71)'))
+        self.acceleration = int(self.command(b'GETPARM(72'))
 
 
     ## Publish our current position.
@@ -177,39 +177,39 @@ class AerotechZStage(device.Device):
 
     ## User clicked the abort button; stop moving.
     def onAbort(self):
-        self.command('ABORT')
+        self.command(b'ABORT')
         axis = self.axis
         events.publish('stage stopped', '%d %s' % (axis, NAME_STRING))
 
 
     ## Move the stage to a given position.
     def moveAbsolute(self, axis, pos):
-        self.command('ENABLE')
-        self.command('MOVEABS D %f F %f'
+        self.command(b'ENABLE')
+        self.command(b'MOVEABS D %f F %f'
                         % (pos / 1000.0, self.speed))
         events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
         # Wait until the move has finished - status bit 2 is InPosition.
-        while not int(self.command('AXISSTATUS')) & (1 << 2):
+        while not int(self.command(b'AXISSTATUS')) & (1 << 2):
             sleep(0.1)
-        self.position = self.command('CMDPOS')
+        self.position = self.command(b'CMDPOS').decode()
         events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
         events.publish('stage stopped', '%d mover' % axis)
-        self.command ('DISABLE')
+        self.command (b'DISABLE')
 
 
     ## Move the stage piezo by a given delta.
     def moveRelative(self, axis, delta):
-        self.command('ENABLE')
-        self.command('MOVEINC D %f F %f'
+        self.command(b'ENABLE')
+        self.command(b'MOVEINC D %f F %f'
                         % (delta / 1000.0, self.speed))
         events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
         # Wait until the move has finished - status bit 2 is InPosition.
-        while not int(self.command('AXISSTATUS')) & (1 << 2):
+        while not int(self.command(b'AXISSTATUS')) & (1 << 2):
             sleep(0.1)
-        self.position = self.command('CMDPOS')
+        self.position = self.command(b'CMDPOS').decode()
         events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
         events.publish('stage stopped', '%d %s' % (axis, NAME_STRING))
-        self.command ('DISABLE')
+        self.command (b'DISABLE')
 
 
     ## Get the current piezo position.

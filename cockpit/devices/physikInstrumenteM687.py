@@ -173,8 +173,8 @@ class PhysikInstrumenteM687(stage.StageDevice):
         baud = self.baud
         timeout = self.timeout
         self.xyConnection = serial.Serial(port, baud, timeout=timeout)
-        self.sendXYCommand('SVO 1 1')
-        self.sendXYCommand('SVO 2 1')
+        self.sendXYCommand(b'SVO 1 1')
+        self.sendXYCommand(b'SVO 2 1')
         # Get the proper initial position.
         self.getXYPosition(shouldUseCache = False)
 
@@ -223,11 +223,11 @@ class PhysikInstrumenteM687(stage.StageDevice):
     # user-input motion commands and end up moving further than expected.
     def sendXYCommand(self, command, numExpectedLines = 1, shouldCheckErrors = True):
         with self.xyLock:
-            self.xyConnection.write(command + '\n')
+            self.xyConnection.write(command + b'\n')
             response = self.getXYResponse(numExpectedLines)
             if shouldCheckErrors:
                 # Check for errors
-                self.xyConnection.write('ERR?\n')
+                self.xyConnection.write(b'ERR?\n')
                 error = int(self.getXYResponse(1).strip())
                 #0 is "no error"; 10 is "motion stopped by user".
                 if error == 5:
@@ -243,7 +243,8 @@ class PhysikInstrumenteM687(stage.StageDevice):
                 elif error not in [0, 10]:
                     errorDesc = ERROR_CODES.get(error,
                             'Unknown error code [%s]' % error)
-                    raise RuntimeError("Error issuing command [%s] to the XY stage controller: %s" % (command, errorDesc))
+                    raise RuntimeError("Error issuing command [%s] to the XY stage controller: %s"
+                                       % (command.decode(), errorDesc))
             return response
 
 
@@ -251,13 +252,13 @@ class PhysikInstrumenteM687(stage.StageDevice):
     # at a time in the hopes of avoiding having to wait for a timeout. We
     # stop when we hit the right number of newlines.
     def getXYResponse(self, numExpectedLines):
-        response = ''
+        response = b''
         numLines = 0
         while True:
             output = self.xyConnection.read(1)
             if output:
                 response += output
-                if output == '\n':
+                if output == b'\n':
                     numLines += 1
                     if numLines == numExpectedLines:
                         break
@@ -271,9 +272,9 @@ class PhysikInstrumenteM687(stage.StageDevice):
     def homeMotors(self):
         # Clear output buffers
         self.xyConnection.readlines()
-        self.xyConnection.write('SVO 1 1\n')
-        self.xyConnection.write('SVO 2 1\n')
-        self.xyConnection.write('FRF\n')
+        self.xyConnection.write(b'SVO 1 1\n')
+        self.xyConnection.write(b'SVO 2 1\n')
+        self.xyConnection.write(b'FRF\n')
         # Motion status response.
         response = None
 
@@ -295,15 +296,15 @@ class PhysikInstrumenteM687(stage.StageDevice):
         busy_box.Destroy()
 		
         # Was homing successful?
-        self.xyConnection.write('FRF?\n')
+        self.xyConnection.write(b'FRF?\n')
         homestatus = self.xyConnection.readlines()
         success = True
 		
         msg = ''
         for status in homestatus:
-            motor, state = status.strip().split('=')
-            if state != '1':
-                msg += 'There was a problem homing motor %s.\n' % motor
+            motor, state = status.strip().split(b'=')
+            if state != b'1':
+                msg += 'There was a problem homing motor %s.\n' % motor.decode()
                 success = False
         
         if not success:
@@ -319,15 +320,15 @@ class PhysikInstrumenteM687(stage.StageDevice):
     ## When the user logs out, switch to open-loop mode.
     def onLogout(self, *args):
         # Switch to open loop
-        self.sendXYCommand('SVO 1 0')
-        self.sendXYCommand('SVO 2 0')
+        self.sendXYCommand(b'SVO 1 0')
+        self.sendXYCommand(b'SVO 2 0')
         self.xyConnection.close()
 
 
     ## Halt XY motion when the user aborts. Note we can't control Z motion
     # here because the piezo is under the DSP's control.
     def onAbort(self, *args):
-        self.sendXYCommand('HLT')
+        self.sendXYCommand(b'HLT')
 
 
     ## The XY Macro Stage view is painting itself; draw the banned
@@ -376,7 +377,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
             self.xyMotionTargets[axis] = None
             raise RuntimeError("Moving axis %d to %s would pass through unsafe zone" % (axis, pos))
         # The factor of 1000 converts from microns to millimeters.
-        self.sendXYCommand('MOV %d %f' %
+        self.sendXYCommand(b'MOV %d %f' %
                 (self.axisMapper[axis],
                  self.axisSignMapper[axis] * pos / 1000.0))
         self.sendXYPositionUpdates()
@@ -460,11 +461,11 @@ class PhysikInstrumenteM687(stage.StageDevice):
     # takes some time.
     def getXYPosition(self, axis = None, shouldUseCache = True):
         if not shouldUseCache:
-            position = self.sendXYCommand('POS?', 2, False)
-            y, x, null = position.split('\n')
+            position = self.sendXYCommand(b'POS?', 2, False)
+            y, x, null = position.split(b'\n')
             # Positions are in millimeters, and we need microns.
-            x = float(x.split('=')[1]) * 1000 * self.axisSignMapper[0]
-            y = float(y.split('=')[1]) * 1000 * self.axisSignMapper[1]
+            x = float(x.split(b'=')[1]) * 1000 * self.axisSignMapper[0]
+            y = float(y.split(b'=')[1]) * 1000 * self.axisSignMapper[1]
             self.xyPositionCache = (x, y)
         if axis is None:
             return self.xyPositionCache
@@ -484,28 +485,28 @@ class PhysikInstrumenteM687(stage.StageDevice):
         # Don't use sendXYCommand here because its error handling doesn't
         # deal with HPA?'s output properly -- there's an extra blank line
         # that makes it think output is done when it actually isn't.
-        self.xyConnection.write('HPA?\n')
-        lines = ''
+        self.xyConnection.write(b'HPA?\n')
+        lines = b''
         output = None
         
         while output or len(lines) < 1000:
             output = self.xyConnection.read(100)
             lines += output
-        lines = lines.split('\n')
+        lines = lines.split(b'\n')
         handle = open('params.txt', 'w')
         for line in lines:
-            if '0x' in line:
+            if b'0x' in line:
                 # Parameter line
-                param = line.split('=')[0]
-                desc = line.split('\t')[5]
+                param = line.split(b'=')[0]
+                desc = line.split(b'\t')[5]
                 for axis in (1, 2):
-                    val = self.sendXYCommand('SPA? %d %s' % (axis, param))
+                    val = self.sendXYCommand(b'SPA? %d %s' % (axis, param))
                     # Note val has a newline at the end here.
-                    handle.write("%s (%s): %s" % (desc, param, val))
+                    handle.write("%s (%s): %s" % (desc, param, val.decode()))
             else:
                 # Lines at the beginning/end don't have parameters in them.
                 handle.write(line)
-        handle.write('\n\n')
+        handle.write(b'\n\n')
         handle.close()
 
 
