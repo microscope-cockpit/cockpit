@@ -72,15 +72,9 @@ if (distutils.version.LooseVersion(Pyro4.__version__) >=
     Pyro4.config.SERIALIZER = 'pickle'
     Pyro4.config.REQUIRE_EXPOSE = False
 
-# We need these first to ensure that we can log failures during startup.
-from cockpit import depot
-depot.loadConfig()
-
+import cockpit.depot
 import cockpit.util.files
 import cockpit.util.logger
-cockpit.util.files.initialize()
-cockpit.util.files.ensureDirectoriesExist()
-cockpit.util.logger.makeLogger()
 
 from cockpit.config import config
 
@@ -273,6 +267,13 @@ class CockpitApp(wx.App):
 
 
 def main():
+    ## We need these first to ensure that we can log failures during
+    ## startup.
+    cockpit.depot.loadConfig()
+    cockpit.util.files.initialize()
+    cockpit.util.files.ensureDirectoriesExist()
+    cockpit.util.logger.makeLogger()
+
     CockpitApp(redirect = False).MainLoop()
     # HACK: manually exit the program. If we don't do this, then there's a small
     # possibility that non-daemonic threads (i.e. ones that don't exit when the
