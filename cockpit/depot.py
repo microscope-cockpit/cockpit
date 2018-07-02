@@ -57,7 +57,7 @@
 import ast
 import importlib
 import os
-import glob
+
 from six import string_types, iteritems
 from cockpit.handlers.deviceHandler import DeviceHandler
 
@@ -129,7 +129,9 @@ class DeviceDepot:
     # containers. Yield the names of the modules holding the Devices as we go.
     def initialize(self, config):
         # Parse device files to map classes to their module.
-        for modfile in glob.glob(os.path.join(_DEVICE_DIR_FPATH, '*.py')):
+        for modfile in os.listdir(_DEVICE_DIR_FPATH):
+            if not modfile.endswith('.py'):
+                continue
             modname = modfile[0:-3] # Strip .py extension
             with open(os.path.join(_DEVICE_DIR_FPATH, modfile), 'r') as f:
                 # Extract class definitions from the module
