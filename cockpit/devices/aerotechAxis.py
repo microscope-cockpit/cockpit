@@ -34,6 +34,8 @@ Sample config entry:
 
 """
 
+import six
+
 from . import device
 from cockpit import events
 import cockpit.handlers.stagePositioner
@@ -46,15 +48,15 @@ LIMITS_PAT = r"(?P<limits>\(?\s*[-]?\d*\s*,\s*[-]?\d*\s*\)?)"
 
 ## Characters used by the SoloistCP controller.
 # CommandTerminatingCharacter
-CTC = 10
+CTC = six.int2byte(10)
 # CommandSuccessCharacter
-CSC = 37
+CSC = six.int2byte(37)
 # CommandInvalidCharacter
-CIC = 33
+CIC = six.int2byte(33)
 # CommandFaultCharacter
-CFC = 35
+CFC = six.int2byte(35)
 # CommandTimeOutCharacter
-CTOC = 36
+CTOC = six.int2byte(36)
 # Map character to meaning
 RESPONSE_CHARS = {
     CSC: b'command success',
@@ -98,7 +100,7 @@ class AerotechZStage(device.Device):
     ## Send a command to the Aerotech SoloistCP and fetch the response.
     def command(self, cmd):
         # The terminated command string.
-        cmdstr = cmd + bytes([CTC])
+        cmdstr = cmd + CTC
         # A flag indicating that a retry is needed.
         retry = False
 
@@ -121,10 +123,10 @@ class AerotechZStage(device.Device):
         ## Fetch and parse the response
         response = self.socket.recv(256)
         # Response status character:
-        response_char = response[0]
-        if response_char == 255:
+        response_char = response[0:1]
+        if response_char == six.int2byte(255):
             # stray character
-            response_char = response[1]
+            response_char = response[1:2]
             response_data = response[2:]
         else:
             response_data = response[1:]
@@ -134,7 +136,8 @@ class AerotechZStage(device.Device):
             raise Exception('Aerotech controller error - %s.' 
                             % RESPONSE_CHARS[response_char].decode())
         elif response_char != CSC:
-            raise Exception('Aerotech controller error - unknown response %s' % chr(response_char))
+            raise Exception(('Aerotech controller error - unknown response %s'
+                             % response_char.decode()))
         else:
             return response_data
 
