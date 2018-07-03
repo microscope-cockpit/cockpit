@@ -94,8 +94,6 @@ def login(parent):
     dialog = wx.SingleChoiceDialog(parent,
             "Please tell me who you are", "login",
             loginUsers, wx.OK | wx.CANCEL | wx.STAY_ON_TOP)
-    dialog.SetSize((400, 400))
-    dialog.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
     global curLoginID
     if curLoginID is not None:
         dialog.SetSelection(curLoginID)
