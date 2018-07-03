@@ -69,6 +69,7 @@ setuptools.setup(
         'Pyro4',
         'pyserial',
         'PyOpenGL',
+        'six',
     ] + extra_requires,
 
     test_suite = 'cockpit.testsuite',
