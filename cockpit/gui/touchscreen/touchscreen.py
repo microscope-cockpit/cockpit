@@ -1176,9 +1176,10 @@ class LightToggleButton(SBitmapToggleButton):
                         wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
     _dc.SelectObject(_bmp)
     _dc.DrawCircle(size/2, size/2, size/3)
-    _dc.SelectObject(wx.NullBitmap)
+    #We need to keep the bitmaop around to do a GetTextExtent call later.
+    #_dc.SelectObject(wx.NullBitmap)
     mask = wx.Mask(_bmp)
-    del _bmp
+    #del _bmp
 
     def __init__(self, parent, light, **kwargs):
         size = (LightToggleButton.size, LightToggleButton.size)
