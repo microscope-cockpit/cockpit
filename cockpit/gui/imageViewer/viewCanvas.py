@@ -401,12 +401,15 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                         glPopMatrix()
 
                 glDisable(GL_TEXTURE_2D)
+
+                if self.showCrosshair:
+                    glTranslatef(0, -HISTOGRAM_HEIGHT, 0)
+                    self.drawCrosshair()
+
                 glPopMatrix()
 
                 self.drawHistogram()
 
-                if self.showCrosshair:
-                    self.drawCrosshair()
 
             glFlush()
             self.SwapBuffers()
