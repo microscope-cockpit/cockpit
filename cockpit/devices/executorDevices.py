@@ -350,8 +350,7 @@ class LegacyDSP(ExecutorDevice):
             # DSP uses offsets from value when the profile was loaded.
             offsets = map(lambda base, new: new - base, self._lastAnalogs, aargs)
             for offset, a in zip(offsets, analogs):
-                if ((len(a) == 0 and offset != 0) or
-                        (len(a) > 0 and offset != a[-1][1])):
+                if ( (len(a) == 0 ) or (len(a) > 0 and offset != a[-1][1])):
                     a.append((ticks, offset))
                     tLastA = t
 
