@@ -289,13 +289,14 @@ class DeviceDepot:
     # set up.
     def finalizeInitialization(self):
         from concurrent.futures import ThreadPoolExecutor
-        pool = ThreadPoolExecutor(max_workers=4)
-        for device in self.nameToDevice.values():
-            pool.submit(device.finalizeInitialization)
-        for handler in self.handlersList:
-            pool.submit(handler.finalizeInitialization)
-        pool.shutdown(wait=True)
-        
+        with ThreadPoolExecutor(max_workers=4) as pool:
+           for device in self.nameToDevice.values():
+               pool.submit(device.finalizeInitialization)
+        # Context manager ensures devices are finalized before handlers.
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            for handler in self.handlersList:
+                pool.submit(handler.finalizeInitialization)
+
 
     ## Return a mapping of axis to a sorted list of positioners for that axis.
     # We sort by range of motion, with the largest range coming first in the
