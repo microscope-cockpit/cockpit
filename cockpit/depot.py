@@ -187,6 +187,9 @@ class DeviceDepot:
             for dependency in ['triggersource', 'analogsource']:
                 other = d.config.get(dependency)
                 if other:
+                    if other not in self.nameToDevice:
+                        raise Exception("Device %s depends on non-existent device %s." %
+                                        (d, other))
                     depends.append(other)
 
             if any([other not in done for other in depends]):
