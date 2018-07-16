@@ -65,6 +65,7 @@ class StatusLightsWindow(wx.Frame):
         wx.Frame.__init__(self, parent, title = "Status information",
                 style = wx.RESIZE_BORDER | wx.CAPTION | wx.FRAME_TOOL_WINDOW)
         self.panel = wx.Panel(self)
+        self.panel.SetDoubleBuffered(True)
 
         ## Maps status light names to the lights themselves. Each light is
         # a ToggleButton instance.
