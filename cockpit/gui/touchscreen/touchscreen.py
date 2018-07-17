@@ -1204,11 +1204,10 @@ class LightToggleButton(SBitmapToggleButton):
         bmpOn.SetMask(LightToggleButton.mask)
 
         dc = LightToggleButton._dc
-        tw, th = dc.GetTextExtent(label)
-
         dc.SelectObject(bmpOff)
         dc.SetBackground(wx.Brush((192,192,192)))
         dc.Clear()
+        tw, th = dc.GetTextExtent(label)
         dc.DrawText(label, (size[0]-tw)/2, (size[1]-th)/2)
 
         dc.SelectObject(bmpOn)
