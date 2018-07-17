@@ -231,9 +231,9 @@ class SIExperiment(experiment.Experiment):
             curTime += decimal.Decimal('1e-6')
         if self.phaseHandler is not None:
             table.addAction(curTime, self.phaseHandler, 0)
-            curTime += decimal.Decimal('1e-6')
+            curTime += decimal.Decimal('1')
         table.addAction(curTime, self.zPositioner, self.zStart)
-        curTime += decimal.Decimal('1e-6')
+        curTime += decimal.Decimal('1')
 
         if self.slmHandler is not None:
             # Add a first trigger of the SLM to get first new image.
