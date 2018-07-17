@@ -205,7 +205,7 @@ class DataSaver:
         if drawer:
             wavelengths = [c.wavelength for c in self.cameras]
         else:
-            wavelengths = [0 for c in self.cameras]
+            wavelengths = [c.wavelength for c in self.cameras]
 
         ## Size of one image's worth of metadata in the extended header.
         # We store 1 4-byte float per image.
