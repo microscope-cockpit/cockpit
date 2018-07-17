@@ -127,18 +127,19 @@ class LinkamStage(stage.StageDevice):
             self.sendPositionUpdates()
             self.updateUI()
             #update fill timer status light
-            timeSinceFill = self.status.get('timeSinceMainFill') 
-            if( timeSinceFill > (0.9*self.lastFillCycle)):
-               self.timerbackground = (190, 0, 0)
-            if( timeSinceFill < self.lastFillTimer ):
-                #refilled so need to reset cycle time and background
-                self.lastFillCycle = self.lastFillTimer
-                self.timerbackground = (170, 170, 170)
-            events.publish('update status light','Fill Timer',
+            timeSinceFill = self.status.get('timeSinceMainFill')
+            if (timeSinceFill is not None):			
+                if( timeSinceFill > (0.9*self.lastFillCycle)):
+                    self.timerbackground = (190, 0, 0)
+                if( timeSinceFill < self.lastFillTimer ):
+                    #refilled so need to reset cycle time and background
+                    self.lastFillCycle = self.lastFillTimer
+                    self.timerbackground = (170, 170, 170)
+                events.publish('update status light','Fill Timer',
                            'Fill Timer\n%2.1f/%2.1f' %(timeSinceFill/60.0,
                                                        self.lastFillCycle/60.0)
                            ,self.timerbackground)
-            self.lastFillTimer = timeSinceFill
+                self.lastFillTimer = timeSinceFill
 
             if not TEMPERATURE_LOGGING:
                 continue
