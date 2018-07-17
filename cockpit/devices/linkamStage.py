@@ -136,9 +136,12 @@ class LinkamStage(stage.StageDevice):
                     self.lastFillCycle = self.lastFillTimer
                     self.timerbackground = (170, 170, 170)
                 events.publish('update status light','Fill Timer',
-                           'Fill Timer\n%2.1f/%2.1f' %(timeSinceFill/60.0,
-                                                       self.lastFillCycle/60.0)
-                           ,self.timerbackground)
+                                'Fill Timer\n%2d:%02d/%2d:%02d' %(
+                                int(timeSinceFill/60.0),
+                                timeSinceFill%60.0,
+                                int(self.lastFillCycle/60.0),
+                                self.lastFillCycle%60.0),
+                                self.timerbackground)
                 self.lastFillTimer = timeSinceFill
 
             if not TEMPERATURE_LOGGING:
