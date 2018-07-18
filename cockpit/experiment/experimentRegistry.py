@@ -62,12 +62,13 @@ from . import stutteredZStack
 from . import sweptShutter
 from . import zStack
 from . import si2d
+from . import rotatorSweep
 
 ## List of registered modules.
 registeredModules = [zStack, sweptShutter,
             offsetGainCorrection, responseMap, stutteredZStack,
             optoScriptExample, structuredIllumination,
-            si2d]
+                     si2d, rotatorSweep]
 
 
 ## Add another experiment to the registered set.
