@@ -180,11 +180,13 @@ class MainWindow(wx.Frame):
         otherThings = list(depot.getAllDevices())
         otherThings.sort(key = lambda d: d.__class__.__name__)
         otherThings.extend(depot.getAllHandlers())
-        for thing in ignoreThings: 
-            if thing in otherThings:
-                otherThings.remove(thing)
         # Make the UI elements for the cameras.
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
+        hs = depot.getHandlersOfType(depot.OBJECTIVE)
+        for h in hs:
+            rowSizer.Add(h.makeUI(topPanel))
+            rowSizer.AddSpacer(COL_SPACER)
+        ignoreThings.extend(hs)
         for camera in cameraThings:
             # Clear cameraUI so we don't use previous value.
             cameraUI = None
@@ -198,6 +200,9 @@ class MainWindow(wx.Frame):
                 rowSizer.Add(cameraUI)
                 rowSizer.AddSpacer(COL_SPACER)
         # Make the UI elements for eveything else.
+        for thing in ignoreThings:
+            if thing in otherThings:
+                otherThings.remove(thing)
         for thing in otherThings:
             if depot.getHandler(thing, depot.CAMERA):
                 # Camera UIs already drawn.
