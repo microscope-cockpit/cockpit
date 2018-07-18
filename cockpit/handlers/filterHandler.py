@@ -66,12 +66,19 @@ class FilterHandler(deviceHandler.DeviceHandler):
 
     ### UI functions ####
     def makeUI(self, parent):
-        self.display = cockpit.gui.toggleButton.ToggleButton(
-                        parent=parent, label='', isBold=False)
-        self.display.Bind(wx.EVT_LEFT_DOWN, self.menuFunc)
-        #self.display.Bind(wx.EVT_RIGHT_DOWN, self._device.showSettings)
+        from cockpit.gui.device import OptionButtons
+        self.buttons = OptionButtons(parent, label=self.name)
+        # options: [(label, action), ...]
+        options = map(lambda f: (str(f),
+                                 lambda flt=f: self.setFilter(flt)),
+                      self.callbacks['getFilters']())
+        self.buttons.setOptions(options)
         self.updateAfterMove()
-        return self.display
+        return self.buttons
+
+
+    def setFilter(self, filter):
+        self.callbacks['setPosition'](filter.position, callback=self.updateAfterMove)
 
 
     def currentFilter(self):
@@ -86,7 +93,7 @@ class FilterHandler(deviceHandler.DeviceHandler):
         # Accept *args so that can be called directly as a Pyro callback
         # or an event handler.
         f = self.currentFilter()
-        self.display.SetLabel('%s\n%s' % (self.name, f))
+        self.buttons.setOption(str(f))
         # Emission filters
         for camera in self.cameras:
             h = depot.getHandler(camera, depot.CAMERA)
@@ -95,13 +102,3 @@ class FilterHandler(deviceHandler.DeviceHandler):
         # Excitation filters
         for h in self.lights:
             pass
-
-
-    def menuFunc(self, evt=None):
-        items = [str(f) for f in self.callbacks['getFilters']()]
-        menu = cockpit.gui.device.Menu(items, self.menuCallback)
-        menu.show(evt)
-
-
-    def menuCallback(self, index, item):
-        self.callbacks['setPosition'](index, callback=self.updateAfterMove)
