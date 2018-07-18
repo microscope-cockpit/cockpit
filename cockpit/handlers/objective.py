@@ -102,27 +102,15 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
 
     ## Generate a row of buttons, one for each possible objective.
     def makeUI(self, parent):
-        frame = wx.Frame(parent, title = "Objectives",
-                style = wx.RESIZE_BORDER | wx.CAPTION | wx.FRAME_TOOL_WINDOW)
-        panel = wx.Panel(frame)
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        for name in sorted(self.nameToPixelSize.keys()):
-            colour = self.nameToColour.get(name)
-            colour= (colour[0]*255,colour[1]*255,colour[2]*255)
-            button = cockpit.gui.toggleButton.ToggleButton(
-                activeColor = colour,
-                label = name, parent = panel, 
-                size = (80, 40))
-            button.Bind(wx.EVT_LEFT_DOWN, 
-                    lambda event, name = name: self.changeObjective(name))
-            sizer.Add(button)
-            self.buttons.append(button)
-        panel.SetSizerAndFit(sizer)
-        frame.SetClientSize(panel.GetSize())
-        frame.SetPosition((2160, 0))
+        from cockpit.gui.device import OptionButtons
+        names = sorted(self.nameToPixelSize.keys())
+        frame = OptionButtons(parent, label="Objective")
         frame.Show()
-        cockpit.gui.keyboard.setKeyboardHandlers(frame)
-        return None
+        frame.setOptions(map(lambda name: (name,
+                                           lambda n=name: self.changeObjective(n)), names))
+
+        events.subscribe("objective change", lambda *a, **kw: frame.setOption(a[0]))
+        return frame
 
 
     ## Let everyone know what the initial objective.
@@ -139,10 +127,7 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
                 pixelSize=self.nameToPixelSize[newName], 
                 transform=self.nameToTransform[newName],
                 offset=self.nameToOffset[newName])				
-        targetIndex = sorted(self.nameToPixelSize.keys()).index(newName)
-        for i, button in enumerate(self.buttons):
-            button.setActive(i == targetIndex)
-                
+
 
     ## Get the current pixel size.
     def getPixelSize(self):
