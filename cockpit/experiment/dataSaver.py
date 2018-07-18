@@ -200,13 +200,9 @@ class DataSaver:
 
         pixelSizeXY = depot.getHandlersOfType(depot.OBJECTIVE)[0].getPixelSize()
         lensID = depot.getHandlersOfType(depot.OBJECTIVE)[0].getLensID()
-        ## TODO: handle missing drawer better.
-        drawer = [depot.getHandlersOfType(depot.DRAWER) or None][0]
-        if drawer:
-            wavelengths = [c.wavelength for c in self.cameras]
-        else:
-            wavelengths = [0 for c in self.cameras]
-
+        #wavelength should always be on camera even if "0"
+        wavelengths = [c.wavelength for c in self.cameras]
+        
         ## Size of one image's worth of metadata in the extended header.
         # We store 1 4-byte float per image.
         self.extendedBytes = 4
