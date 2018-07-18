@@ -68,14 +68,6 @@ from six import iteritems
 ## Unique ID for identifying saver instances
 uniqueID = 0
 
-# cast to long
-try:
-    # python 2
-    LCAST = long
-except:
-    # python 3
-    LCAST = int
-
 
 ## This class simply records all data received during an experiment and saves
 # it to disk in MRC format.
@@ -422,12 +414,10 @@ class DataSaver:
 
         numCameras = len(self.cameras)
         # Index of the image into the 1D array of images we are effectively
-        # generating as we write data to the file. Note casting to long, since
-        # these numbers can be big and by default Python doesn't always pick
-        # the right type.
+        # generating as we write data to the file.
 
-        imageOffset = LCAST(timepoint * self.maxImagesPerRep * numCameras) + \
-                (zIndex * numCameras) + cameraIndex
+        imageOffset = (int(timepoint * self.maxImagesPerRep * numCameras)
+                       + (zIndex * numCameras) + cameraIndex)
 
         height, width = imageData.shape
 
@@ -445,7 +435,7 @@ class DataSaver:
             # it; repeat for the image data.
             try:
                 # Write the timestamp. 1024 is the size of the standard header.
-                handle.seek(LCAST(1024 + self.extendedBytes * imageOffset))
+                handle.seek(int(1024 + (self.extendedBytes * imageOffset)))
                 handle.write(timestamp)
 
                 header = self.headers[fileIndex]
@@ -454,8 +444,7 @@ class DataSaver:
                 # amount (depending on how many timepoints are in this file).
                 headerOffset = 1024 + header.next
                 # Write the image data.
-                byteOffset = LCAST(headerOffset +
-                        imageOffset * self.imageBytes)
+                byteOffset = int(headerOffset + (imageOffset * self.imageBytes))
                 handle.seek(byteOffset)
                 handle.write(paddedBuffer)
                 self.imagesKept[cameraIndex] += 1
