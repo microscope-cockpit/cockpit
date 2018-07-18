@@ -67,7 +67,7 @@ from . import si2d
 registeredModules = [zStack, sweptShutter,
             offsetGainCorrection, responseMap, stutteredZStack,
             optoScriptExample, structuredIllumination,
-            si2d]
+                     si2d, rotatorSweep]
 
 
 ## Add another experiment to the registered set.
