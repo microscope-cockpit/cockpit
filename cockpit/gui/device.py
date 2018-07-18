@@ -439,11 +439,10 @@ class OptionButtons(wx.Panel):
         super().__init__(*args, **kwargs)
         s = wx.BoxSizer(wx.VERTICAL)
         if label:
-            print ("ADDING LABEL")
             labelctrl = Label(parent=self, label=label)
             s.Add(labelctrl)
 
-        self.mainButton = Button(label='OBJECTIVE',
+        self.mainButton = Button(label='...',
                                  parent=self,
                                  size=TALL_SIZE)
         self.mainButton.Bind(wx.EVT_LEFT_UP, self.showButtons)
