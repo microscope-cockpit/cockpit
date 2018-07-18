@@ -423,3 +423,83 @@ class SettingsEditor(wx.Frame):
             if desc['readonly']:
                 prop.Enable(False)
             grid.Append(prop)
+
+
+class OptionButtons(wx.Panel):
+    """A control to select one of many mutually-exclusive options.
+
+    A dropdown using style buttons.
+    Presents a single button labelled with the current setting. When
+    clicked, a panel showing buttons for all options is displayed.
+
+    Note that this control does not yet support scrolling: if there
+    are too many options, they will just extend off screen.
+    """
+    def __init__(self, *args, label="", **kwargs):
+        super().__init__(*args, **kwargs)
+        s = wx.BoxSizer(wx.VERTICAL)
+        if label:
+            print ("ADDING LABEL")
+            labelctrl = Label(parent=self, label=label)
+            s.Add(labelctrl)
+
+        self.mainButton = Button(label='OBJECTIVE',
+                                 parent=self,
+                                 size=TALL_SIZE)
+        self.mainButton.Bind(wx.EVT_LEFT_UP, self.showButtons)
+        s.Add(self.mainButton)
+        self.SetSizerAndFit(s)
+
+        self.subframe = wx.Frame(self)
+        self.subframe.Bind(wx.EVT_KILL_FOCUS, lambda evt: self.subframe.Hide())
+        self.subframe.SetWindowStyle(wx.BORDER_NONE)
+        self.subframe.SetSizer(wx.GridSizer(1, 0, 1))
+        self.buttons = []
+
+
+    def activateOneButton(self, button):
+        # Activate one button in the set.
+        button.SetBackgroundColour((128,255,128))
+        for other in self.buttons:
+            if other != button:
+                other.SetBackgroundColour((128,128,128))
+
+
+    def setOption(self, optionName):
+        # Set state to named option.
+        for b in self.buttons:
+            if b.LabelText.strip()== optionName:
+                self.activateOneButton(b)
+                break
+        self.mainButton.SetLabel(optionName)
+
+
+    def setOptions(self, options):
+        # Set buttons with options = [(label, callback or None), ...]
+        for b in self.buttons:
+            del (b)
+        for label, callback in options:
+            b = Button(label=label, parent=self.subframe, size=TALL_SIZE)
+            b.Bind(wx.EVT_LEFT_UP, lambda evt, b=b, c=callback: self.onButton(b, c))
+            self.subframe.Sizer.Add(b)
+            self.buttons.append(b)
+        self.subframe.Fit()
+
+
+    def onButton(self, button, callback):
+        # Set button states and trigger callback.
+        self.activateOneButton(button)
+        self.mainButton.SetLabel(button.LabelText)
+        self.subframe.Hide()
+        if callback is not None:
+            callback()
+
+
+    def showButtons(self, evt):
+        # Show the subpanel of option buttons.
+        if not self.buttons:
+            return
+        here = self.ClientToScreen(self.mainButton.GetPosition())
+        here += (0, self.mainButton.Size[1] + 4)
+        self.subframe.Move(here)
+        self.subframe.Show()
