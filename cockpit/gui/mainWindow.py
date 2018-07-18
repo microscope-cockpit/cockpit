@@ -180,14 +180,14 @@ class MainWindow(wx.Frame):
         otherThings = list(depot.getAllDevices())
         otherThings.sort(key = lambda d: d.__class__.__name__)
         otherThings.extend(depot.getAllHandlers())
-        # Make the UI elements for the cameras.
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
         hs = depot.getHandlersOfType(depot.OBJECTIVE)
         for h in hs:
             rowSizer.Add(h.makeUI(topPanel))
             rowSizer.AddSpacer(COL_SPACER)
         ignoreThings.extend(hs)
-        for camera in cameraThings:
+        # Make the UI elements for the cameras.
+        for camera in sorted(cameraThings):
             # Clear cameraUI so we don't use previous value.
             cameraUI = None
             # See if the camera has a function to make UI elements.
@@ -199,11 +199,23 @@ class MainWindow(wx.Frame):
             if cameraUI:
                 rowSizer.Add(cameraUI)
                 rowSizer.AddSpacer(COL_SPACER)
+        # Make UI elements for filters.
+        hs = sorted(depot.getHandlersOfType(depot.LIGHT_FILTER))
+        for i, h in enumerate(hs):
+            if i%2 == 0:
+                s = wx.BoxSizer(wx.VERTICAL)
+                rowSizer.Add(s)
+                rowSizer.AddSpacer(COL_SPACER)
+            else:
+                s.AddSpacer(ROW_SPACER)
+            s.Add(h.makeUI(topPanel))
+        rowSizer.AddSpacer(COL_SPACER)
+        ignoreThings.extend(hs)
         # Make the UI elements for eveything else.
         for thing in ignoreThings:
             if thing in otherThings:
                 otherThings.remove(thing)
-        for thing in otherThings:
+        for thing in sorted(otherThings):
             if depot.getHandler(thing, depot.CAMERA):
                 # Camera UIs already drawn.
                 continue
@@ -267,8 +279,6 @@ class MainWindow(wx.Frame):
                 # Put a spacer in so this widget has the same vertical size.
                 columnSizer.Add((-1, 1), 1, wx.EXPAND)
             lightUI = light.makeUI(lightPanel)
-            lightWidth = lightUI.GetSize()[0]
-                
             columnSizer.Add(lightUI)
             events.publish('create light controls', lightPanel,
                     columnSizer, light)
