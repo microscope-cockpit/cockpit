@@ -59,6 +59,12 @@ class Device(object):
         'port': int,
     }
 
+
+    # Define __lt__ to make handlers sortable.
+    def __lt__(self, other):
+        return self.name.lower() < other.name.lower()
+
+
     def __init__(self, name='', config={}):
         ## Set to False to disable this device. Disabled devices will not be 
         # initialized on startup. 
