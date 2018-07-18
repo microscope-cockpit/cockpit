@@ -62,6 +62,7 @@ from . import stutteredZStack
 from . import sweptShutter
 from . import zStack
 from . import si2d
+from . import rotatorSweep
 
 ## List of registered modules.
 registeredModules = [zStack, sweptShutter,
