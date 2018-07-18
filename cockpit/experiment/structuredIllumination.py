@@ -173,7 +173,7 @@ class SIExperiment(experiment.Experiment):
     # \param bleachCompensations A dictionary mapping light handlers to
     #        how much to increase their exposure times on successive angles,
     #        to compensate for bleaching.
-    def __init__(self, numAngles, collectionOrder, bleachCompensations,
+    def __init__(self, collectionOrder, bleachCompensations, numAngles, numPhases,
             angleHandler = None, phaseHandler = None, polarizerHandler = None,
             slmHandler = None,
             *args, **kwargs):
@@ -186,7 +186,7 @@ class SIExperiment(experiment.Experiment):
             kwargs['metadata'] = metadata
         experiment.Experiment.__init__(self, *args, **kwargs)
         self.numAngles = numAngles
-        self.numPhases = 5
+        self.numPhases = numPhases
         self.numZSlices = int(math.ceil(self.zHeight / self.sliceHeight))
         if self.zHeight > 1e-6:
             # Non-2D experiment; tack on an extra image to hit the top of
@@ -198,6 +198,7 @@ class SIExperiment(experiment.Experiment):
         self.polarizerHandler = polarizerHandler
         self.slmHandler = slmHandler
         self.handlerToBleachCompensation = bleachCompensations
+        print (self.numAngles, self.numPhases)
 
     ## Generate a sequence of (angle, phase, Z) positions for SI experiments,
     # based on the order the user specified.
@@ -532,6 +533,7 @@ class ExperimentUI(wx.Panel):
     def augmentParams(self, params):
         self.saveSettings()
         params['numAngles'] = 3
+        params['numPhases'] = 5
         if self.shouldOnlyDoOneAngle.GetValue():
             params['numAngles'] = 1
         params['collectionOrder'] = self.siCollectionOrder.GetStringSelection()
