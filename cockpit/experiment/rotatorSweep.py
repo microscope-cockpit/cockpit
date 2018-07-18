@@ -41,7 +41,7 @@ class RotatorSweepExperiment(experiment.Experiment):
         self.polarizerHandler = polarizerHandler
         self.settlingTime = settlingTime
         # Look up the rotator analogue line handler.
-        self.lineHandler = polarizerHandler.getLineHandler()
+        self.lineHandler = polarizerHandler
         self.vRange = (startV, maxV, vSteps)
         vDelta = float(maxV - startV) / vSteps
         # Add voltage parameters to the metadata.
