@@ -294,9 +294,7 @@ class DataSaver:
             self.lambdas.append(func)
             events.subscribe('new image %s' % camera.name, func)
 
-            # \todo Assuming no value will ever be over 2**128, which ought
-            # to be safe since our cameras are only 16-bit anyway.
-            self.minMaxVals.append((2 ** 128, -(2 ** 128)))
+            self.minMaxVals.append((float('inf'), float('-inf')))
         events.subscribe('user abort', self.onAbort)
         self.statusThread.start()
 
