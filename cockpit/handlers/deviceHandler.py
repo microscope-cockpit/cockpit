@@ -152,6 +152,12 @@ class DeviceHandler(object):
         self.enableLock = threading.Lock()
         self.clear_cache = self.__cache.clear
 
+
+    # Define __lt__ to make handlers sortable.
+    def __lt__(self, other):
+        return self.name.lower() < other.name.lower()
+
+
     ## Return a string that identifies the device.
     def getIdentifier(self):
         return "%s:%s" % (self.deviceType, self.name)
