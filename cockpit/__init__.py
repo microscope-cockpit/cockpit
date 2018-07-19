@@ -195,8 +195,7 @@ class CockpitApp(wx.App):
                 self.primaryWindows.remove(status)
             status.Destroy()
 
-            cockpit.util.user.login(frame)
-            cockpit.util.logger.log.debug("Login complete as %s", util.user.getUsername())
+            wx.CallAfter(self.doInitialLogin)
 
             #now loop over secondary windows open and closeing as needed.
             for w in self.secondaryWindows:
@@ -227,6 +226,13 @@ class CockpitApp(wx.App):
             cockpit.util.logger.log.error("Initialization failed: %s" % e)
             cockpit.util.logger.log.error(traceback.format_exc())
             return False
+
+
+    def doInitialLogin(self):
+        cockpit.util.user.login(wx.TopLevelWindow())
+        cockpit.util.logger.log.debug("Login complete as %s" % util.user.getUsername())
+        print("Login complete as %s" % util.user.getUsername())
+
 
     def onActivateApp(self, event):
         if not event.Active:
