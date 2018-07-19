@@ -77,7 +77,7 @@ class ValueLogger(object):
         self.lastTime = 0
         ## A thread to perform the logging.
         self.loggingThread = threading.Thread(target=self.log)
-        self.loggingThread.Daemon = True
+        self.loggingThread.daemon = True
         self.loggingThread.start()
         # Subscribe to position updates.
         events.subscribe("stage mover", self.onMover)
