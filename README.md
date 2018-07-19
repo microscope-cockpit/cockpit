@@ -27,7 +27,9 @@ Assuming the directories defined above.
 
 3. Grab pyFTGL from micronadmin:/cockpitdependencies
 copy the libaries in the build directory into
-C:\WinPython-64bit-2.7.10.3\python-2.7.10.amd64\Lib
+C:\WinPython-64bit-2.7.10.3\python-2.7.10.amd64\Lib (Note: For Windows10
+copy the libaries in the build directory into
+C:\WinPython-64bit-2.7.10.3\python-2.7.10.amd64)
 
 
 4. Install wx python (current version wxPython3.0-win64-3.0.2.0-py27)
