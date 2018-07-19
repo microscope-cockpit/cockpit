@@ -435,8 +435,13 @@ class OptionButtons(wx.Panel):
     Note that this control does not yet support scrolling: if there
     are too many options, they will just extend off screen.
     """
-    def __init__(self, *args, label="", **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        try:
+            label = kwargs.pop("label")
+        except:
+            label = None
+        super(OptionButtons, self).__init__(*args, **kwargs)
+
         s = wx.BoxSizer(wx.VERTICAL)
         if label:
             labelctrl = Label(parent=self, label=label)
