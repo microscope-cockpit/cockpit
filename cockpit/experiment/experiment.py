@@ -224,11 +224,28 @@ class Experiment:
 
         saveThread = None
         if self.savePath and max(self.cameraToImageCount.values()):
+
+            cameraToExcitation = {c: 0.0 for c in self.cameras}
+            for cameras, lightTimePairs in self.exposureSettings:
+                ## If there's multiple light sources for the same
+                ## camera pick the one with highest wavelength.  Main
+                ## case of multiple light sources is single molecule
+                ## localisation where a lower wavelength is doing the
+                ## pumping while but excitation for fluorescence is
+                ## with the higher wavelength.
+                max_wavelength = max([l.wavelength for l,t in lightTimePairs])
+                for camera in cameras:
+                    if camera not in self.cameras:
+                        continue
+                    cameraToExcitation[camera] = max(cameraToExcitation[camera],
+                                                     max_wavelength)
+
             saver = dataSaver.DataSaver(self.cameras, self.numReps,
                                         self.cameraToImageCount,
                                         self.cameraToIgnoredImageIndices,
                                         runThread, self.savePath,
-                                        self.sliceHeight, self.generateTitles())
+                                        self.sliceHeight, self.generateTitles(),
+                                        cameraToExcitation)
             saver.startCollecting()
             saveThread = threading.Thread(target=saver.executeAndSave)
             saveThread.start()

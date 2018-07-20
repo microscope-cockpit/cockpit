@@ -85,14 +85,25 @@ class DataSaver:
     # \param titles List of strings to insert into the MRC file's header.
     #        Per the file format, each string can be up to 80 characters long
     #        and there can be up to 10 of them.
+    # \param cameraToExcitation Maps camera handlers to the excitation
+    #        wavelength used to generate the images it will acquire.
     def __init__(self, cameras, numReps, cameraToImagesPerRep,
-            cameraToIgnoredImageIndices, runThread,
-            savePath, pixelSizeZ, titles):
+                 cameraToIgnoredImageIndices, runThread, savePath, pixelSizeZ,
+                 titles, cameraToExcitation):
         self.cameras = cameras
         self.numReps = numReps
         self.cameraToImagesPerRep = cameraToImagesPerRep
         self.cameraToIgnoredImageIndices = cameraToIgnoredImageIndices
         self.runThread = runThread
+
+        ## We want to write the excitation wavelength for each image
+        ## on the metadata (see issue #290).  We only allow one
+        ## excitation wavelength per image.  This is a limitation of
+        ## the dv format.  We also assume that all images from a
+        ## camera will have the same light source.  This is a
+        ## limitation of the cockpit interface.
+        self.cameraToExcitation = cameraToExcitation
+
         ## Maximum size, in megabytes, of each file generated.  If the
         # experiment data exceeds this, then a new file will be opened, and
         # each file will have a suffix appended to it (e.g.  ".001", ".002",
@@ -444,6 +455,9 @@ class DataSaver:
         imageMin = imageData.min()
         imageMax = imageData.max()
 
+        ex_wavelength = self.cameraToExcitation[camera]
+        em_wavelength = camera.wavelength
+
         with self.fileLocks[fileIndex]:
             handle = self.filehandles[fileIndex]
 
@@ -472,9 +486,9 @@ class DataSaver:
             metadataBuffer[1] = timestamp
             metadataBuffer[5] = imageMin
             metadataBuffer[6] = imageMax
-            metadataBuffer[8] = 0.0 # TODO exposure time in seconds
-            metadataBuffer[10] = 0.0 # TODO excitation wavelength
-            metadataBuffer[11] = 0.0 # TODO emission wavelength
+            # TODO metadataBuffer[8] could be exposure time in seconds
+            metadataBuffer[10] = ex_wavelength
+            metadataBuffer[11] = em_wavelength
 
             try:
                 handle.seek(metadataOffset)
