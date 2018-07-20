@@ -467,7 +467,7 @@ def getHardLimitsForAxis(axis):
 ## Repeat the above for each axis.
 def getHardLimits():
     result = []
-    for axis in mover.axisToHandlers.keys():
+    for axis in sorted(mover.axisToHandlers.keys()):
         result.append(getHardLimitsForAxis(axis))
     return result
 
@@ -492,7 +492,7 @@ def getSoftLimitsForAxis(axis):
 ## Repeat the above for each axis.
 def getSoftLimits():
     result = []
-    for axis in mover.axisToHandlers.keys():
+    for axis in sorted(mover.axisToHandlers.keys()):
         result.append(getSoftLimitsForAxis(axis))
     return result
 
