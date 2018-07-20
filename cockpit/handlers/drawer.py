@@ -88,7 +88,7 @@ class DrawerHandler(deviceHandler.DeviceHandler):
             # Nothing to be done here.
             return None
         frame = wx.Frame(parent, title = "Drawers",
-                style = wx.RESIZE_BORDER | wx.CAPTION | wx.FRAME_TOOL_WINDOW)
+                style = wx.RESIZE_BORDER | wx.CAPTION | wx.FRAME_NO_TASKBAR)
         panel = wx.Panel(frame)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         for setting in self.settings:

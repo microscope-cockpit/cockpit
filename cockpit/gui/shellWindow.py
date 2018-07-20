@@ -78,4 +78,4 @@ class DropTarget(wx.FileDropTarget):
 
 def makeWindow(parent):
     shell = ShellWindow(parent, title = "Python shell",
-            style = wx.CAPTION | wx.MAXIMIZE_BOX | wx.FRAME_TOOL_WINDOW | wx.RESIZE_BORDER)
+            style = wx.CAPTION | wx.MAXIMIZE_BOX | wx.FRAME_NO_TASKBAR | wx.RESIZE_BORDER)

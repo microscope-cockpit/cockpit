@@ -234,7 +234,7 @@ class NI6036e(device.Device):
 
         # #IMX 20170320 commented out as should be moved to valuelogger.
         # plotFrame = wx.Frame(parent, title = "Temperature sensor plot",
-        #         style = wx.RESIZE_BORDER | wx.FRAME_TOOL_WINDOW | wx.CAPTION)
+        #         style = wx.RESIZE_BORDER | wx.FRAME_NO_TASKBAR | wx.CAPTION)
         # self.figure = matplotlib.figure.Figure((6, 4), dpi = 100,
         #         facecolor = (1, 1, 1))
         # self.canvas = matplotlib.backends.backend_wxagg.FigureCanvasWxAgg(

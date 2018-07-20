@@ -66,7 +66,7 @@ from . import viewPanel
 class CamerasWindow(wx.Frame):
     def __init__(self, parent):
         wx.Frame.__init__(self, parent, title = "Camera views",
-                          style=wx.FRAME_TOOL_WINDOW | wx.CAPTION)
+                          style=wx.FRAME_NO_TASKBAR | wx.CAPTION)
         
         self.numCameras = len(depot.getHandlersOfType(depot.CAMERA))
 
