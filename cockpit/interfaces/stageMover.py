@@ -402,11 +402,10 @@ def loadSites(filename):
 ## Return the exact stage position, as the aggregate of all handlers'
 # positions.
 def getPosition():
-    result = []
+    result = 3 * [0]
     for axis, handlers in iteritems(mover.axisToHandlers):
-        result.append(0)
         for handler in handlers:
-            result[-1] += handler.getPosition()
+            result[axis] += handler.getPosition()
     return result
 
 
