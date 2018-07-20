@@ -455,10 +455,19 @@ class OptionButtons(wx.Panel):
         self.SetSizerAndFit(s)
 
         self.subframe = wx.Frame(self)
-        self.subframe.Bind(wx.EVT_KILL_FOCUS, lambda evt: self.subframe.Hide())
+        self.subframe.Bind(wx.EVT_ACTIVATE, self.onSubframeEvtActivate)
         self.subframe.SetWindowStyle(wx.BORDER_NONE)
         self.subframe.SetSizer(wx.GridSizer(1, 0, 1))
         self.buttons = []
+
+
+    def onSubframeEvtActivate(self, event):
+        # Hide subframe if it loses focus.
+        # Binding to EVT_KILL_FOCUS is simpler and works under windows,
+        # but we don't see that event under Linux when another window
+        # gains focus.
+        if not event.Active:
+            self.subframe.Hide()
 
 
     def activateOneButton(self, button):
