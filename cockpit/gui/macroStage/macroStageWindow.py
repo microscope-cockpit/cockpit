@@ -76,7 +76,7 @@ class MacroStageWindow(wx.Frame):
                  'Macro Stage Z' + (' ' * 10) +
                  'Experiment Histogram',
                  id = -1, pos = (1058, 5),
-                 style = wx.CAPTION | wx.FRAME_TOOL_WINDOW):
+                 style = wx.CAPTION | wx.FRAME_NO_TASKBAR):
         wx.Frame.__init__(self, parent, id, title, pos, style = style)
 
         # For relative sizing of items. The overall window is

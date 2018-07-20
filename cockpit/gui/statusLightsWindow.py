@@ -63,7 +63,7 @@ import cockpit.util.threads
 class StatusLightsWindow(wx.Frame):
     def __init__(self, parent):
         wx.Frame.__init__(self, parent, title = "Status information",
-                style = wx.RESIZE_BORDER | wx.CAPTION | wx.FRAME_TOOL_WINDOW)
+                style = wx.RESIZE_BORDER | wx.CAPTION | wx.FRAME_NO_TASKBAR)
         self.panel = wx.Panel(self)
 
         ## Maps status light names to the lights themselves. Each light is
