@@ -454,7 +454,7 @@ class OptionButtons(wx.Panel):
         s.Add(self.mainButton)
         self.SetSizerAndFit(s)
 
-        self.subframe = wx.Frame(self)
+        self.subframe = wx.Frame(self, style=wx.FRAME_TOOL_WINDOW | wx.BORDER_NONE)
         self.subframe.Bind(wx.EVT_ACTIVATE, self.onSubframeEvtActivate)
         self.subframe.SetWindowStyle(wx.BORDER_NONE)
         self.subframe.SetSizer(wx.GridSizer(1, 0, 1))
