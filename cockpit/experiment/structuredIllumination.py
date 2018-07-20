@@ -334,6 +334,11 @@ class SIExperiment(experiment.Experiment):
             table.addAction(curTime, self.polarizerHandler, (0, 'default'))
             finalWaitTime = finalWaitTime + decimal.Decimal(1e-6)
 
+        # Set SLM back to 0th image ready for next measurement in timelapse or multi-site.
+        if self.slmHandler is not None:
+            # Toggle the slmHandler's digital line handler to advance one frame.
+            table.addToggle(curTime, self.slmHandler)
+
         return table
 
 
