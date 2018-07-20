@@ -231,7 +231,6 @@ class CockpitApp(wx.App):
     def doInitialLogin(self):
         cockpit.util.user.login(wx.TopLevelWindow())
         cockpit.util.logger.log.debug("Login complete as %s" % util.user.getUsername())
-        print("Login complete as %s" % util.user.getUsername())
 
 
     def onActivateApp(self, event):
