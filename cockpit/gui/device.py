@@ -33,6 +33,7 @@ import cockpit.gui.guiUtils
 from cockpit.handlers.deviceHandler import STATES
 from .toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 import cockpit.util.userConfig
+import cockpit.util.threads
 import cockpit.gui.loggingWindow as log
 from cockpit import events
 from distutils import version
@@ -207,6 +208,7 @@ class EnableButton(Button):
         wx.CallAfter(lambda: self.onEnabledEvent(STATES.disabled))
 
 
+    @cockpit.util.threads.callInMainThread
     def onEnabledEvent(self, state):
         # Update button responsiveness
         if state is STATES.enabling:
