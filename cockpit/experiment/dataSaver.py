@@ -212,13 +212,14 @@ class DataSaver:
         wavelengths = [c.wavelength for c in self.cameras]
 
         ## Size of one plane's worth of metadata in the extended header.
-        numIntegers = 0
-        numFloats = 14
+        numIntegers = 8
+        numFloats = 32
         self.extendedBytes = 4 * (numIntegers + numFloats)
 
         ## MRC header objects for each file.
         self.headers = []
-        self.metadataBuffers = []
+        self.intMetadataBuffers = []
+        self.floatMetadataBuffers = []
         for i in range(len(self.filehandles)):
             # Calculate how many timepoints fit into this particular file
             # (potentially different for the final file).
@@ -263,9 +264,12 @@ class DataSaver:
             ## could create a new array each time for each plane but
             ## these arrays are small and there will be many image
             ## planes.  We do this to avoid memory fragmentation.
-            metadataBuffer = numpy.array([0.0] * numFloats, dtype=numpy.float32)
-            metadataBuffer[12] = 1.0 # intensity scaling
-            self.metadataBuffers.append(metadataBuffer)
+            self.intMetadataBuffers.append(numpy.array([0] * numIntegers,
+                                                      dtype=numpy.int32))
+            floatMetadataBuffer = numpy.array([0.0] * numFloats,
+                                              dtype=numpy.float32)
+            floatMetadataBuffer[12] = 1.0 # intensity scaling
+            self.floatMetadataBuffers.append(floatMetadataBuffer)
 
 
         # Write the headers, to get us started. We will re-write this at the
@@ -461,8 +465,14 @@ class DataSaver:
         with self.fileLocks[fileIndex]:
             handle = self.filehandles[fileIndex]
 
-            ## The extended header has the following values *per*
+            ## The extended header has the following structure per
             ## plane (see issue #290):
+            ##
+            ##     8 32bit signed integers whose meaning we don't
+            ##     know.  Often are all set to zero.
+            ##
+            ##     Followed by 32 32bit floats.  We only what the
+            ##     first 14 are:
             ##
             ##     photosensor reading (typically in mV)
             ##     elapsed time (seconds since experiment began)
@@ -482,17 +492,19 @@ class DataSaver:
             ## Experience from inspecting actual dv files from API
             ## systems, tells us that we can leave most of them at
             ## zero.
-            metadataBuffer = self.metadataBuffers[fileIndex]
-            metadataBuffer[1] = timestamp
-            metadataBuffer[5] = imageMin
-            metadataBuffer[6] = imageMax
-            # TODO metadataBuffer[8] could be exposure time in seconds
-            metadataBuffer[10] = ex_wavelength
-            metadataBuffer[11] = em_wavelength
+            intMetadataBuffer = self.intMetadataBuffers[fileIndex]
+            floatMetadataBuffer = self.floatMetadataBuffers[fileIndex]
+            floatMetadataBuffer[1] = timestamp
+            floatMetadataBuffer[5] = imageMin
+            floatMetadataBuffer[6] = imageMax
+            # TODO floatMetadataBuffer[8] could be exposure time in seconds
+            floatMetadataBuffer[10] = ex_wavelength
+            floatMetadataBuffer[11] = em_wavelength
 
             try:
                 handle.seek(metadataOffset)
-                handle.write(metadataBuffer)
+                handle.write(intMetadataBuffer)
+                handle.write(floatMetadataBuffer)
                 handle.seek(dataOffset)
                 handle.write(paddedBuffer)
             except Exception as e:
