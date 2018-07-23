@@ -81,6 +81,7 @@ class MicroscopeCamera(camera.CameraDevice):
 
 
     def finalizeInitialization(self):
+        super(MicroscopeCamera, self).finalizeInitialization()
         # Decorate updateSettings. Can't do this from the outset, as camera
         # is initialized before interfaces.imager.
         self.updateSettings = pauseVideo(self.updateSettings)
