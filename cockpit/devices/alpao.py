@@ -55,7 +55,7 @@ class Alpao(device.Device):
         #Create accurate look up table for certain Z positions
         ##LUT dict has key of Z positions
         try:
-            LUT_array = np.loadtxt("C:\\cockpit\\nick\cockpit\\remote_focus_LUT.txt")
+            LUT_array = np.loadtxt("C:\\cockpit\\nick\\cockpit\\remote_focus_LUT.txt")
             self.LUT = {}
             for ii in (LUT_array[:,0])[:]:
                 self.LUT[ii] = LUT_array[np.where(LUT_array == ii)[0][0],1:]
@@ -90,6 +90,7 @@ class Alpao(device.Device):
             actuator_intercepts[kk] = i
         return actuator_slopes, actuator_intercepts
 
+
     def examineActions(self, table):
         # Extract pattern parameters from the table.
         # patternParms is a list of tuples (angle, phase, wavelength)
@@ -108,7 +109,6 @@ class Alpao(device.Device):
                 sequenceLength = length
                 break
         sequence = reducedParams[0:sequenceLength]
-
         #Calculate DM positions
         ac_positions = np.outer(reducedParams, self.actuator_slopes.T) \
                                         + self.actuator_intercepts
@@ -497,11 +497,6 @@ class Alpao(device.Device):
         resize_dim = original_dim/2
         while original_dim % resize_dim is not 0:
             resize_dim -= 1
-        interferogram_ft_resize = np.log(abs(self.bin_ndarray(unwrapped_phase, new_shape=
-                                    (resize_dim, resize_dim), operation='mean')))
-        app_ft = View(image_np=interferogram_ft_resize)
-        app_ft.master.title('Interferogram Fourier transform')
-        app_ft.mainloop()
         unwrapped_phase_resize = self.bin_ndarray(unwrapped_phase, new_shape=
                                     (resize_dim, resize_dim), operation='mean')
         app = View(image_np=unwrapped_phase_resize)
@@ -697,7 +692,7 @@ class View(tk.Frame):
         self.canvas = tk.Canvas(self, width=700, height=700)
         self.array = np.asarray(self.image_np)
         self.array_norm = (self.image_np/np.max(self.image_np))*255.0
-        self.convert = Image.fromarray(self.array)
+        self.convert = Image.fromarray(self.array_norm)
         self.convert_flip = self.convert.transpose(Image.FLIP_TOP_BOTTOM)
         self.image = ImageTk.PhotoImage(image = self.convert_flip)
         self.canvas.create_image(self.offset[0], self.offset[1], anchor = tk.NW, image = self.image)
