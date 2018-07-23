@@ -175,7 +175,6 @@ class ViewPanel(wx.Panel):
             # camera enabling failed.
             events.unsubscribe("new image %s" % self.curCamera.name, self.onImage)
             self.curCamera = None
-            self.canvas.clear()
         if self.canvas is not None:
             # Destroy the canvas.
             self.canvas.clear(shouldDestroy = True)
