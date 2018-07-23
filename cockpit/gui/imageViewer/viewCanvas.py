@@ -163,6 +163,11 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: 0)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
         self.Bind(wx.EVT_MOUSEWHEEL, self.onMouseWheel)
+        # Right click also creates context menu event, which will pass up
+        # if unhandled. Bind it to None to prevent the main window
+        # context menu being displayed after our own.
+        self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
+
 
 
     def onMouseWheel(self, event):
