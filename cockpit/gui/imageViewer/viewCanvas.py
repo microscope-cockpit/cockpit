@@ -354,7 +354,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def getRelativeScaling(self):
         return (self.blackPoint, self.whitePoint)
 
-        
+
+    @cockpit.util.threads.callInMainThread
     def onPaint(self, event):
         if not self.shouldDraw:
             return
@@ -425,6 +426,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.shouldDraw = False
 
 
+    @cockpit.util.threads.callInMainThread
     def drawCrosshair(self):
         glColor3f(0, 255, 255)
         glBegin(GL_LINES)
@@ -435,7 +437,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         glEnd()
 
 
-    ## Draw the histogram of our data. 
+    ## Draw the histogram of our data.
+    @cockpit.util.threads.callInMainThread
     def drawHistogram(self):
         # White box over all
         glColor3f(255, 255, 255)
