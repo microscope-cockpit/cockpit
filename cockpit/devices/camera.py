@@ -71,3 +71,10 @@ class CameraDevice(device.Device):
         self.settings['baseTransform'] = Transform(config.get('transform', None))
         self.settings['pathTransfom'] = (0, 0, 0)
 
+
+    def finalizeInitialization(self):
+        # Set fixed filter if defined in config
+        if self.handler.wavelength is None and self.handler.dye is None:
+            dye = self.config.get('dye', None)
+            wavelength = self.config.get('wavelength', None)
+            self.handler.updateFilter(dye, wavelength)
