@@ -122,6 +122,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.Bind(wx.EVT_LEFT_DCLICK, self.OnLeftDoubleClick)
         self.Bind(wx.EVT_RIGHT_UP, self.OnRightClick)
         self.Bind(wx.EVT_RIGHT_DCLICK, self.OnRightDoubleClick)
+        # Bind context menu event to None to prevent main window context menu
+        # being displayed in preference to our own.
+        self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         events.subscribe("soft safety limit", self.onSafetyChange)
         events.subscribe('objective change', self.onObjectiveChange)
         self.SetToolTip(wx.ToolTip("Left double-click to move the stage. " +
