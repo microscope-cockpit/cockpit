@@ -222,7 +222,7 @@ class Image:
 
     ## Free the allocated GL texture
     def wipe(self):
-        GL.glDeleteTextures(self.textureID)
+        GL.glDeleteTextures([self.textureID])
         self.textureID = None
    
 
