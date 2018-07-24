@@ -212,7 +212,7 @@ class CockpitApp(wx.App):
 
 
             depot.makeInitialPublications()
-            interfaces.makeInitialPublications()
+            cockpit.interfaces.makeInitialPublications()
             events.publish('cockpit initialization complete')
             self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
             return True
@@ -229,8 +229,8 @@ class CockpitApp(wx.App):
 
 
     def doInitialLogin(self):
-        cockpit.util.user.login()
-        cockpit.util.logger.log.debug("Login complete as %s" % util.user.getUsername())
+        cockpit.util.user.login(wx.TopLevelWindow())
+        cockpit.util.logger.log.debug("Login complete as %s" % cockpit.util.user.getUsername())
 
 
     def onActivateApp(self, event):
