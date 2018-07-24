@@ -186,6 +186,7 @@ class Alpao(device.Device):
                        + self.actuator_intercepts
         ## Tell the DM to prepare the pattern sequence.
         asyncResult = self.AlpaoConnection.queue_patterns(ac_positions)
+        self.position = 0
 
         # Track sequence index set by last set of triggers.
         lastIndex = 0
@@ -244,11 +245,11 @@ class Alpao(device.Device):
         #for i in range(12):
         #    self.handler.triggerNow()
         #    time.sleep(0.01)
-        # Ensure that we're at position 0.
-        #while self.position != 0:
-        #    self.handler.triggerNow()
-        #    time.sleep(0.01)
-        #    self.position = self.getCurrentPosition()
+        # Ensure that we're at not at end position.
+        while self.position != (lastIndex-1):
+            self.handler.triggerNow()
+            time.sleep(0.01)
+            self.position = self.getCurrentPosition()
 
     def getCurrentPosition(self):
         return self.AlpaoConnection.get_pattern_index()
