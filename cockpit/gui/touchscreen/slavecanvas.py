@@ -200,7 +200,6 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
 
             glFlush()
             self.SwapBuffers()
-            events.publish('mosaic canvas paint')
 
         except Exception as e:
             print ("Error rendering the canvas:",e)
