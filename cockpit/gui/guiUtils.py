@@ -92,7 +92,11 @@ class _BaseValidator(wx.Validator):
 
 
 class FloatValidator(_BaseValidator):
-    """A validator to enforce floating point input."""
+    """A validator to enforce floating point input.
+
+    * Restricts input to numeric characters an a single decimal point.
+    * Validate() tests that string can be parsed as a float.
+    """
     def Validate(self, parent):
         ctrl = self.GetWindow()
         val = ctrl.GetValue()
@@ -108,20 +112,25 @@ class FloatValidator(_BaseValidator):
     def OnChar(self, event):
         key = event.GetKeyCode()
         if key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
+            # Pass cursors, backspace, etc. to control
             event.Skip()
         elif chr(key) in string.digits:
-          event.Skip()
-        elif chr(key) == '.':
-          tc = self.GetWindow()
-          val = tc.GetValue()
-          if '.' not in val:
+            # Pass any digit to control.
             event.Skip()
+        elif chr(key) == '.':
+            # Only allow a single '.'
+            tc = self.GetWindow()
+            val = tc.GetValue()
+            if '.' not in val:
+                event.Skip()
         return
 
 
-
 class IntValidator(_BaseValidator):
-    """A validator to enforce floating point input."""
+    """A validator to enforce floating point input.
+
+    * Restricts input to numeric characters.
+    * Validate() tests that string can be parsed as an int."""
     def Validate(self, parent):
         ctrl = self.GetWindow()
         val = ctrl.GetValue()
@@ -137,9 +146,11 @@ class IntValidator(_BaseValidator):
     def OnChar(self, event):
         key = event.GetKeyCode()
         if key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
+            # Pass cursors, backspace, etc. to control
             event.Skip()
         elif chr(key) in string.digits:
-          event.Skip()
+            # Pass any digit to control.
+            event.Skip()
         return
 
 ## Create a basic panel with some text.
