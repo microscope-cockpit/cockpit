@@ -154,7 +154,7 @@ def addLabeledInput(parent, sizer, id = -1, label = '',
     if control is None:
         if controlType is None:
             controlType = wx.TextCtrl
-        control = controlType(parent, id, defaultValue, size = size)
+        control = controlType(parent, id, defaultValue, size = size, name=label)
     text = wx.StaticText(parent, -1, label)
     rowSizer = wx.BoxSizer(wx.HORIZONTAL)
     rowSizer.SetMinSize(minSize)
