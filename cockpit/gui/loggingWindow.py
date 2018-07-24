@@ -105,10 +105,12 @@ class LoggingWindow(wx.Frame):
         if '\n' in self.textCache:
             # Ended a line; send the text to the logs, minus any trailing
             # whitespace (since the logs add their own trailing newline.
+            # We strip any unicode with filter to prevent a cascade of
+            # ---Logging Error--- messages.
             if target is self.stdOut:
-                cockpit.util.logger.log.debug(self.textCache.rstrip())
+                cockpit.util.logger.log.debug(filter(lambda c: ord(c) < 128, self.textCache))
             else:
-                cockpit.util.logger.log.error(self.textCache.rstrip())
+                cockpit.util.logger.log.error(filter(lambda c: ord(c) < 128, self.textCache))
             self.textCache = ''
 
 
