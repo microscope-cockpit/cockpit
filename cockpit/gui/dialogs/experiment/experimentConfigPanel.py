@@ -137,12 +137,14 @@ class ExperimentConfigPanel(wx.Panel):
         self.numReps = guiUtils.addLabeledInput(self,
                 universalSizer, label = "Number of reps:",
                 defaultValue = self.settings['numReps'])
+        self.numReps.SetValidator(guiUtils.IntValidator())
 
         self.repDuration = guiUtils.addLabeledInput(self,
                 universalSizer, label = "Rep duration (s):",
                 defaultValue = self.settings['repDuration'],
                 helperString = "Amount of time that must pass between the start " +
                 "of each rep. Use 0 if you don't want any wait time.")
+        self.repDuration.SetValidator(guiUtils.FloatValidator())
 
         self.zPositionMode = wx.Choice(self, choices = Z_POSITION_MODES)
         self.zPositionMode.SetSelection(0)
@@ -152,10 +154,12 @@ class ExperimentConfigPanel(wx.Panel):
         self.stackHeight = guiUtils.addLabeledInput(self,
                 universalSizer, label = u"Stack height (\u03bcm):",
                 defaultValue = self.settings['stackHeight'])
+        self.stackHeight.SetValidator(guiUtils.FloatValidator())
 
         self.sliceHeight = guiUtils.addLabeledInput(self,
                 universalSizer, label = u"Slice height (\u03bcm):",
                 defaultValue = self.settings['sliceHeight'])
+        self.sliceHeight.SetValidator(guiUtils.FloatValidator())
 
         self.sizer.Add(universalSizer, 0, wx.ALL, border=5)
 
