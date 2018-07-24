@@ -51,15 +51,96 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
+import string
 import threading
 import time
 import wx
-
+import  wx.lib.newevent
 
 ## @package cockpit.gui.guiUtils
 # This module contains many functions related to the GUI, mostly for setting
 # up UI elements and updating various status displays.
 
+# Create a custom event for validation errors.
+CockpitValidationErrorEvent, EVT_COCKPIT_VALIDATION_ERROR= wx.lib.newevent.NewCommandEvent()
+
+class _BaseValidator(wx.Validator):
+    def __init__(self):
+        wx.Validator.__init__(self)
+        self.Bind(wx.EVT_CHAR, self.OnChar)
+
+
+    def Clone(self):
+        return self.__class__()
+
+
+    def TransferToWindow(self):
+        return True
+
+
+    def TransferFromWindow(self):
+        return True
+
+
+    def Validate(self):
+        # Define in subclass
+        pass
+
+    def OnChar(self):
+        # Define in subclass
+        pass
+
+
+class FloatValidator(_BaseValidator):
+    """A validator to enforce floating point input."""
+    def Validate(self, parent):
+        ctrl = self.GetWindow()
+        val = ctrl.GetValue()
+        try:
+            float(val)
+        except:
+            evt = CockpitValidationErrorEvent(id=wx.ID_ANY, control=ctrl.GetName())
+            wx.PostEvent(ctrl, evt)
+            return False
+        return True
+
+
+    def OnChar(self, event):
+        key = event.GetKeyCode()
+        if key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
+            event.Skip()
+        elif chr(key) in string.digits:
+          event.Skip()
+        elif chr(key) == '.':
+          tc = self.GetWindow()
+          val = tc.GetValue()
+          if '.' not in val:
+            event.Skip()
+        return
+
+
+
+class IntValidator(_BaseValidator):
+    """A validator to enforce floating point input."""
+    def Validate(self, parent):
+        ctrl = self.GetWindow()
+        val = ctrl.GetValue()
+        try:
+            int(val)
+        except:
+            evt = CockpitValidationErrorEvent(id=wx.ID_ANY, control=ctrl.GetName())
+            wx.PostEvent(ctrl, evt)
+            return False
+        return True
+
+
+    def OnChar(self, event):
+        key = event.GetKeyCode()
+        if key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
+            event.Skip()
+        elif chr(key) in string.digits:
+          event.Skip()
+        return
 
 ## Create a basic panel with some text.
 def createTextPanel(parent, panelId, textId, textContent, panelStyle = 0, 
