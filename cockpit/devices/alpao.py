@@ -6,6 +6,7 @@
 #mirror as currently mounted on DeepSIM in Oxford
 
 from collections import OrderedDict
+import cockpit.devices
 from cockpit.devices import device
 from cockpit import depot
 from cockpit import events
@@ -137,7 +138,7 @@ class Alpao(device.Device):
                         break
                     if self.awaitimage:
                         if (self.slmdev is None):
-                            self.slmdev=depot.getDevice(devices.boulderSLM)
+                            self.slmdev=depot.getDevice(cockpit.devices.boulderSLM)
                             self.slmsize=self.slmdev.connection.get_shape()
                             print self.slmsize
                             print self.wavelength
@@ -240,16 +241,17 @@ class Alpao(device.Device):
         self.lastParms = sequence
         #self.connection.run()
         # Fire several triggers to ensure that the sequence is loaded.
-        for i in range(12):
-            self.handler.triggerNow()
-            time.sleep(0.01)
+        #for i in range(12):
+        #    self.handler.triggerNow()
+        #    time.sleep(0.01)
         # Ensure that we're at position 0.
-        #self.position = self.getCurrentPosition()
         #while self.position != 0:
         #    self.handler.triggerNow()
         #    time.sleep(0.01)
         #    self.position = self.getCurrentPosition()
 
+    def getCurrentPosition(self):
+        return self.AlpaoConnection.get_pattern_index()
 
     def getHandlers(self):
         trigsource = self.config.get('triggersource', None)
