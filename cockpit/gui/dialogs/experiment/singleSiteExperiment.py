@@ -53,6 +53,7 @@
 
 import wx
 from . import experimentConfigPanel
+from cockpit.gui.guiUtils import EVT_COCKPIT_VALIDATION_ERROR
 
 ## A simple wrapper around the ExperimentConfigPanel class.
 class SingleSiteExperimentDialog(wx.Dialog):
@@ -60,6 +61,9 @@ class SingleSiteExperimentDialog(wx.Dialog):
         wx.Dialog.__init__(self, parent,
                 title = "OMX single-site experiment",
                 style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        self.SetExtraStyle(wx.WS_EX_VALIDATE_RECURSIVELY)
+        self.Bind(EVT_COCKPIT_VALIDATION_ERROR, self.onValidationError)
+
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         ## Contains all the actual UI elements beyond the dialog window itself.
@@ -86,17 +90,28 @@ class SingleSiteExperimentDialog(wx.Dialog):
         self.buttonBox.Add(button, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
 
         self.sizer.Add(self.buttonBox, 1, wx.EXPAND)
-        
+
+        self.statusbar = wx.StaticText(self, -1, name="status bar",
+                                       style=wx.ALIGN_RIGHT | wx.ST_NO_AUTORESIZE)
+        self.sizer.Add(self.statusbar, 0, wx.EXPAND)
+
         self.SetSizerAndFit(self.sizer)
+
+
+    def onValidationError(self, evt):
+        self.statusbar.SetLabel("Invalid value for %s." % evt.control)
 
 
     ## Our experiment panel resized itself.
     def onExperimentPanelResize(self, panel):
         self.SetSizerAndFit(self.sizer)
-    
+
 
     ## Attempt to run the experiment. If the testrun fails, report why.
     def onStart(self, event = None):
+        self.statusbar.SetLabel('')
+        if not self.Validate():
+            return
         message = self.panel.runExperiment()
         if message is not None:
             wx.MessageBox("The experiment cannot be run:\n%s" % message,
