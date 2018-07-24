@@ -212,7 +212,7 @@ class CockpitApp(wx.App):
 
 
             depot.makeInitialPublications()
-            interfaces.makeInitialPublications()
+            cockpit.interfaces.makeInitialPublications()
             events.publish('cockpit initialization complete')
             self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
             return True
