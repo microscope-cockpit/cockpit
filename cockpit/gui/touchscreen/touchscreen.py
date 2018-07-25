@@ -109,6 +109,10 @@ class TouchScreenWindow(wx.Frame):
 
         ## Size of the box to draw at the center of the crosshairs.
         self.crosshairBoxSize = 0
+        ## Color to use when making new Site instances.
+        self.siteColor = SITE_COLORS[0][1]
+        ## Current selected sites for highlighting with crosshairs.
+        self.selectedSites = set()
 
         ## Parameters defining the focal plane -- a tuple of
         # (point on plane, normal vector to plane).
@@ -469,6 +473,7 @@ class TouchScreenWindow(wx.Frame):
         self.nameToButton[label] = button
         return button
 
+
     def snapImage(self):
         #check that we have a camera and light source
         cams=0
@@ -681,6 +686,9 @@ class TouchScreenWindow(wx.Frame):
                     self.canvas.multiplyZoom(zoomFactor)
                 else:
                     self.canvas.dragView(delta)
+                # Clear the currently-selected sites so the user doesn't have
+                # to see crosshairs all the time.
+                self.selectedSites = set()
             elif event.GetWheelRotation():
                 # Adjust zoom, based on the zoom rate.
                 delta = event.GetWheelRotation()
@@ -766,6 +774,9 @@ class TouchScreenWindow(wx.Frame):
             glVertex2f(-end[0], start[1])
             glEnd()
 
+        # Highlight selected sites with crosshairs.
+        for site in self.selectedSites:
+            self.drawCrosshairs(site.position[:2], (0, 0, 1), 10000)
 
         # Draw the soft and hard stage motion limits
         glEnable(GL_LINE_STIPPLE)
@@ -968,6 +979,78 @@ class TouchScreenWindow(wx.Frame):
         self.Refresh()
 
 
+    ## call main mosaic function and refresh
+    def saveSite(self, color = None):
+        self.masterMosaic.saveSite(cockpit.gui.mosaic.window.window, color)
+        self.Refresh()
+
+
+    ## Set the site marker color.
+    def setSiteColor(self, color):
+        self.masterMosaic.setSiteColor(cockpit.gui.mosaic.window.window, color)
+
+    ## Display a menu that allows the user to control the appearance of
+    # the markers used to mark sites.
+    def displaySiteMakerMenu(self, event = None):
+        menu = wx.Menu()
+        for i, (label, color) in enumerate(SITE_COLORS):
+            menu.Append(i + 1, "Mark sites in %s" % label)
+            wx.EVT_MENU(self.panel, i + 1,
+                    lambda event, color = color: self.setSiteColor(color))
+        cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+
+
+    # ## Calculate the focal plane of the sample.
+    # def setFocalPlane(self, event = None):
+    #     sites = self.getSelectedSites()
+    #     positions = [s.position for s in sites]
+    #     if len(positions) < 3:
+    #         wx.MessageDialog(self,
+    #                 "Please select at least 3 in-focus sites.",
+    #                 "Insufficient input.").ShowModal()
+    #         return
+    #     positions = numpy.array(positions)
+    #     # Pick a point in the plane, as the average of all site positions.
+    #     center = positions.mean(axis = 0)
+    #     # Try every combinations of points, and average their resulting normal
+    #     # vectors together.
+    #     normals = []
+    #     for i in range(len(positions)):
+    #         p1 = positions[i] - center
+    #         for j in range(i + 1, len(positions)):
+    #             p2 = positions[j] - center
+    #             for k in range(j + 1, len(positions)):
+    #                 p3 = positions[k] - center
+    #                 points = numpy.rot90([p1, p2, p3])
+    #                 # Calculate normal vector, and normalize
+    #                 normal = numpy.cross(p2 - p1, p3 - p1)
+    #                 magnitude = numpy.sqrt(sum(normal * normal))
+    #                 normals.append(normal / magnitude)
+
+    #     # Ensure all normals point in the same direction. If they oppose,
+    #     # their sum should be ~0; if they are aligned, it should be
+    #     # ~2.
+    #     normals = numpy.array(normals)
+    #     base = normals[0]
+    #     for normal in normals[1:]:
+    #         if sum(base + normal) < .5:
+    #             # Opposed normals.
+    #             normal *= -1
+    #     self.focalPlaneParams = (center, normals.mean(axis = 0))
+    #     deltas = []
+    #     for site in sites:
+    #         pos = numpy.array(site.position)
+    #         z = self.getFocusZ(pos)
+    #         deltas.append(pos[2] - z)
+    #         print ("Delta for",pos,"is",(pos[2] - z))
+    #     print ("Average delta is",numpy.mean(deltas),"with std",numpy.std(deltas))
+
+
+    # ## Clear the focal plane settings.
+    # def clearFocalPlane(self):
+    #     self.focalPlaneParams = None
+
+
     ## Go to the specified XY position. If we have a focus plane defined,
     # go to the appropriate Z position to maintain focus.
     def goTo(self, target, shouldBlock = False):
@@ -991,6 +1074,60 @@ class TouchScreenWindow(wx.Frame):
         z = -numpy.dot(normal[:2], point[:2] - center[:2]) / normal[2] + center[2]
         return z
 
+
+    ## User clicked on a site in the sites box; draw a crosshairs on it.
+    # \todo Enforcing int site IDs here.
+    def onSelectSite(self, event = None):
+        self.selectedSites = set()
+        for item in self.sitesBox.GetSelections():
+            text = self.sitesBox.GetString(item)
+            siteID = int(text.split(':')[0])
+            self.selectedSites.add(interfaces.stageMover.getSite(siteID))
+        self.Refresh()
+
+
+    ## User double-clicked on a site in the sites box; go to that site.
+    # \todo Enforcing int site IDs here.
+    def onDoubleClickSite(self, event):
+        item = event.GetString()
+        siteID = int(item.split(':')[0])
+        interfaces.stageMover.goToSite(siteID)
+
+
+    ## Return a list of of the currently-selected Sites.
+    def getSelectedSites(self):
+        result = []
+        for item in self.sitesBox.GetSelections()[::-1]:
+            text = self.sitesBox.GetString(item)
+            siteID = int(text.split(':')[0])
+            result.append(interfaces.stageMover.getSite(siteID))
+        return result
+
+
+
+
+
+    ## A new site was created (from any source); add it to our sites box.
+    def onNewSiteCreated(self, site, shouldRefresh = True):
+        # This display is a bit compressed, so that all positions are visible
+        # even if there's a scrollbar in the sites box.
+        position = ",".join(["%d" % p for p in site.position])
+        label = site.uniqueID
+        # HACK: most uniqueID instances will be ints, which we zero-pad
+        # so that they stay in appropriate order.
+        if type(label) is int:
+            label = '%04d' % label
+        self.sitesBox.Append("%s: %s" % (label, position))
+        if shouldRefresh:
+            self.Refresh()
+
+
+    ## A site was deleted; remove it from our sites box.
+    def onSiteDeleted(self, site):
+        for item in self.sitesBox.GetItems():
+            if site.uniqueID == item:
+                self.sitesBox.Delete(item)
+                break
 
     ##Wrapper functions to call the main mosaic window version
     def displayMosaicMenu(self):
