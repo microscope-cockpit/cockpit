@@ -105,6 +105,8 @@ class MosaicWindow(wx.Frame):
         self.panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
+        ## Prevent r-click on buttons displaying MainWindow context menu.
+        self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         ## Last known location of the mouse.
         self.prevMousePos = None
         ## Last click position of the mouse.
