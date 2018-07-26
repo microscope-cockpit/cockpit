@@ -91,87 +91,11 @@ class Alpao(device.Device):
             # DM is not used in this experiment.
             return
 
-        # Remove consecutive duplicates and position resets.
-        reducedParams = [p[0] for p in groupby(patternParams)
-                          if type(p[0]) is float]
-        # Find the repeating unit in the sequence.
-        sequenceLength = len(reducedParams)
-        for length in range(2, len(reducedParams) // 2):
-            if reducedParams[0:length] == reducedParams[length:2*length]:
-                sequenceLength = length
-                break
-        sequence = reducedParams[0:sequenceLength]
-        ac_positions = np.outer(sequence, self.actuator_slopes.T) \
-                       + self.actuator_intercepts
-        ## Tell the DM to prepare the pattern sequence.
-        asyncResult = self.AlpaoConnection.queue_patterns(ac_positions)
-        self.position = 0
-
-        # Track sequence index set by last set of triggers.
-        lastIndex = 0
-        for i, (t, handler, action) in enumerate(table.actions):
-            if handler is not self.handler:
-                # Nothing to do
-                continue
-            elif action in [True, False]:
-                # Trigger action generated on earlier pass through.
-                continue
-            # Action specifies a target frame in the sequence.
-            # Remove original event.
-            table[i] = None
-            # How many triggers?
-            if type(action) is tuple and action != sequence[lastIndex]:
-                # Next pattern does not match last, so step one pattern.
-                    numTriggers = 1
-            elif type(action) is int:
-                if action >= lastIndex:
-                    numTriggers = action - lastIndex
-                else:
-                    numTriggers = sequenceLength - lastIndex - action
-            else:
-                numTriggers = 0
-
-            """
-            Used to calculate time to execute triggers and settle here, 
-            then push back all later events, but that leads to very long
-            delays before the experiment starts. For now, comment out
-            this code, and rely on a fixed time passed back to the action
-            table generator (i.e. experiment class).
-
-            # How long will the triggers take?
-            # Time between triggers must be > table.toggleTime.
-            dt = self.settlingTime + 2 * numTriggers * table.toggleTime
-            ## Shift later table entries to allow for triggers and settling.
-            table.shiftActionsBack(time, dt)
-            for trig in range(numTriggers):
-                t = table.addToggle(t, triggerHandler)
-                t += table.toggleTime
-            """
-            for trig in range(numTriggers):
-                t = table.addToggle(t, self.handler)
-                t += table.toggleTime
-
-            lastIndex += numTriggers
-            if lastIndex >= sequenceLength:
-                lastIndex = lastIndex % sequenceLength
-        table.clearBadEntries()
-        # Wait until SLM has finished generating and loading patterns.
-        #self.wait(asyncResult, "DM is generating pattern sequence.")
-        # Store the parameters used to generate the sequence.
-        self.lastParms = sequence
-        #self.connection.run()
-        # Fire several triggers to ensure that the sequence is loaded.
-        #for i in range(12):
-        #    self.handler.triggerNow()
-        #    time.sleep(0.01)
-        # Ensure that we're at not at end position.
-        while self.position != (lastIndex-1):
-            self.handler.triggerNow()
-            time.sleep(0.01)
-            self.position = self.getCurrentPosition()
-
-    def getCurrentPosition(self):
-        return self.AlpaoConnection.get_pattern_index()
+        if type(patternParams[0]) == float:
+            ac_positions = np.outer(patternParams[0], self.actuator_slopes.T) \
+                                    + self.actuator_intercepts
+        ## Send pattern to DM.
+        self.AlpaoConnection.send(ac_positions)
 
     def getHandlers(self):
         trigsource = self.config.get('triggersource', None)
