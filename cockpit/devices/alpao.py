@@ -37,22 +37,10 @@ class Alpao(device.Device):
         self.curCamera = None
 
         self.buttonName='Alpao'
-        events.subscribe('camera enable', lambda c, isOn: self.onCameraEnable(c, isOn))
 
         ## Connect to the remote program
     def initialize(self):
         self.AlpaoConnection = Pyro4.Proxy(self.uri)
-        self.socket=socket.socket()
-        self.socket.bind(('129.67.73.152',8867))
-        self.socket.listen(2)
-        self.listenthread()
-        self.awaitimage=False
-        #No using a connection, using a listening socket.
-        #self.connectthread()
-        #subscribe to enable camera event to get access the new image queue
-        events.subscribe('camera enable',
-                lambda c, isOn: self.enablecamera( c, isOn))
-
         self.no_actuators = self.AlpaoConnection.get_n_actuators()
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
@@ -94,75 +82,6 @@ class Alpao(device.Device):
             actuator_slopes[kk] = s
             actuator_intercepts[kk] = i
         return actuator_slopes, actuator_intercepts
-
-    @cockpit.util.threads.callInNewThread
-    def listenthread(self):
-        while 1:
-            (self.clientsocket, address)=self.socket.accept()
-            if self.clientsocket:
-                print "socket connected", address
-                noerror=True
-                while noerror:
-                    try:
-                        input=self.clientsocket.recv(100)
-                        print input
-                    except socket.error,e:
-                        noerror=False
-                        print 'Labview socket disconnected'
-                        break
-
-                    if(input[:4]=='getZ'):
-                        reply=str(self.getPiezoPos())+'\r\n'
-                    elif (input[:4]=='setZ'):
-                        pos=float(input[4:])
-                        reply=str(self.movePiezoAbsolute(pos))+'\r\n'
-                    elif (input[:8]=='getimage'):
-                        self.sendImage=True
-                        self.takeImage()
-                        reply=None
-                    elif (input[:13]=='setWavelength'):
-                        print "setWavelength",input
-                        self.wavelength=float(input[14:])
-                        print "wavelength=",self.wavelength
-                        reply=str(self.wavelength)+'\r\n'
-                        self.awaitimage=True
-                    else:
-                        reply='Unknown command\r\n'
-                    #print reply
-                    try:
-                        if (reply is not None):
-                            self.clientsocket.send(reply)
-                    except socket.error,e:
-                        noerror=False
-                        print 'Labview socket disconnected'
-                        break
-                    if self.awaitimage:
-                        if (self.slmdev is None):
-                            self.slmdev=depot.getDevice(cockpit.devices.boulderSLM)
-                            self.slmsize=self.slmdev.connection.get_shape()
-                            print self.slmsize
-                            print self.wavelength
-                        #self.slmImage=N.zero((512,512),dtype=uint16)
-                        try:
-                            data=self.clientsocket.recv(512*512*2)
-                            print len(data)
-                            tdata=struct.unpack('H'*(512*512),data)
-                            print tdata[:10]
-                            #self.slmImage=N.frombuffer(
-                             #   buffer(self.clientsocket.recv(512*512*2)),
-                              #  dtype='uint16',count=512*512)
-                            self.awaitimage=False
-                            self.slmdev.connection.set_custom_sequence(
-                                self.wavelength,
-                                [tdata,tdata])
-
-                        except socket.error,e:
-                            noerror=False
-                            print 'Labview socket disconnected'
-                            break
-
-    def onCameraEnable(self, camera, isOn):
-        self.curCamera = camera
 
     def examineActions(self, table):
         # Extract pattern parameters from the table.
@@ -355,44 +274,6 @@ class Alpao(device.Device):
         self.hasUI = True
         return self.panel
 
-
-    @cockpit.util.threads.callInNewThread
-    def connectthread(self):
-        self.socket=socket.socket()
-        self.socket.connect(('129.67.77.21',8868))
- #       self.socket.setblocking(0)
-        i=0
-        while 1:
-            i=i+1
-            input=self.recv_end(self.socket)
-
-            print input
-
-            output=self.socket.send('hello'+str(i)+'\r\n')
-            print "sent bytes",output
-            time.sleep(1)
-
-
-
-    def recv_end(self,the_socket):
-        End='crlf'
-        total_data=[];data=''
-        while True:
-            data=the_socket.recv(100)
-            print data
-            if End in data:
-                total_data.append(data[:data.find(End)])
-                break
-            total_data.append(data)
-            if len(total_data)>1:
-                #check if end_of_data was split
-                last_pair=total_data[-2]+total_data[-1]
-                if End in last_pair:
-                    total_data[-2]=last_pair[:last_pair.find(End)]
-                    total_data.pop()
-                    break
-        return ''.join(total_data)
-
     def getPiezoPos(self):
         return(cockpit.interfaces.stageMover.getAllPositions()[1][2])
 
@@ -465,15 +346,6 @@ class Alpao(device.Device):
             return
         self.AlpaoConnection.set_roi(self.parameters[0], self.parameters[1],
                                          self.parameters[2])
-
-    def enablecamera(self,camera,isOn):
-        self.curCamera = camera
-        # Subscribe to new image events only after canvas is prepared.
-        if (isOn is True):
-            events.subscribe("new image %s" % self.curCamera.name, self.onImage)
-        else:
-            events.unsubscribe("new image %s" % self.curCamera.name, self.onImage)
-        ## Receive a new image and send it to our canvas.
 
     def onCalibrate(self):
         try:
@@ -595,32 +467,6 @@ class Alpao(device.Device):
                 raise e
         flat_values = self.AlpaoConnection.flatten_phase(iterations=10)
         Config.setValue('alpao_flat_values', np.ndarray.tolist(flat_values), isGlobal=True)
-
-
-
-    def onImage(self, data, *args):
-        if(self.sendImage):
-            if(self.clientsocket):
-                try:
-                    message=''
-                    t=time.clock()
-                    print data.shape
-                    print "presend"
-                    #for i in range(data.shape[0]):
-                    #    for j in range(data.shape[1]):
-                    #        message=message+str(data[i,j])+'\t'
-                    #    message=message+'\n'
-                    #print message
-                    self.clientsocket.send(data)
-                    print "sent data"
- #                   self.clientsocket.send('\r\n')
- #                   print "sent end"
-                    self.sendImage=False
-                    end=time.clock()-t
-                    print "time=",end
-                except socket.error,e:
-                    noerror=False
-                    print 'Labview socket disconnected'
 
     def showDebugWindow(self):
         # Ensure only a single instance of the window.
