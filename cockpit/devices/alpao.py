@@ -90,7 +90,6 @@ class Alpao(device.Device):
             actuator_intercepts[kk] = i
         return actuator_slopes, actuator_intercepts
 
-
     def examineActions(self, table):
         # Extract pattern parameters from the table.
         # patternParms is a list of tuples (angle, phase, wavelength)
