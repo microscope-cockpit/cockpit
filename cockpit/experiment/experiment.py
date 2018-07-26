@@ -233,7 +233,10 @@ class Experiment:
                 ## localisation where a lower wavelength is doing the
                 ## pumping while but excitation for fluorescence is
                 ## with the higher wavelength.
-                max_wavelength = max([l.wavelength for l,t in lightTimePairs])
+                if lightTimePairs:
+                    max_wavelength = max([l.wavelength for l,t in lightTimePairs])
+                else:
+                    max_wavelength = 0.0
                 for camera in cameras:
                     if camera not in self.cameras:
                         continue
