@@ -41,6 +41,7 @@ class Alpao(device.Device):
         ## Connect to the remote program
     def initialize(self):
         self.AlpaoConnection = Pyro4.Proxy(self.uri)
+        self.AlpaoConnection.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
         self.no_actuators = self.AlpaoConnection.get_n_actuators()
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
@@ -48,7 +49,7 @@ class Alpao(device.Device):
         #Create accurate look up table for certain Z positions
         ##LUT dict has key of Z positions
         try:
-            LUT_array = np.loadtxt("remote_focus_LUT.txt")
+            LUT_array = np.loadtxt("C:\\cockpit\\nick\cockpit\\remote_focus_LUT.txt")
             self.LUT = {}
             for ii in (LUT_array[:,0])[:]:
                 self.LUT[ii] = LUT_array[np.where(LUT_array == ii)[0][0],1:]
@@ -91,11 +92,72 @@ class Alpao(device.Device):
             # DM is not used in this experiment.
             return
 
-        if type(patternParams[0]) == float:
-            ac_positions = np.outer(patternParams[0], self.actuator_slopes.T) \
-                                    + self.actuator_intercepts
-        ## Send pattern to DM.
-        self.AlpaoConnection.send(ac_positions)
+        # Remove consecutive duplicates and position resets.
+        reducedParams = [p[0] for p in groupby(patternParams)
+                             if type(p[0]) is float]
+        # Find the repeating unit in the sequence.
+        sequenceLength = len(reducedParams)
+        for length in range(2, len(reducedParams) // 2):
+            if reducedParams[0:length] == reducedParams[length:2*length]:
+                sequenceLength = length
+                break
+        sequence = reducedParams[0:sequenceLength]
+
+        #Calculate DM positions
+        ac_positions = np.outer(reducedParams, self.actuator_slopes.T) \
+                                        + self.actuator_intercepts
+        ## Queue patterns on DM.
+        self.AlpaoConnection.queue_patterns(ac_positions)
+
+        # Track sequence index set by last set of triggers.
+        lastIndex = 0
+        for i, (t, handler, action) in enumerate(table.actions):
+            if handler is not self.handler:
+                # Nothing to do
+                continue
+            elif action in [True, False]:
+                # Trigger action generated on earlier pass through.
+                continue
+            # Action specifies a target frame in the sequence.
+            # Remove original event.
+            table[i] = None
+            # How many triggers?
+            if type(action) is float and action != sequence[lastIndex]:
+                # Next pattern does not match last, so step one pattern.
+                numTriggers = 1
+            elif type(action) is int:
+                if action >= lastIndex:
+                    numTriggers = action - lastIndex
+                else:
+                    numTriggers = sequenceLength - lastIndex - action
+            else:
+                numTriggers = 0
+            """
+            Used to calculate time to execute triggers and settle here, 
+            then push back all later events, but that leads to very long
+            delays before the experiment starts. For now, comment out
+            this code, and rely on a fixed time passed back to the action
+            table generator (i.e. experiment class).
+
+            # How long will the triggers take?
+            # Time between triggers must be > table.toggleTime.
+            dt = self.settlingTime + 2 * numTriggers * table.toggleTime
+            ## Shift later table entries to allow for triggers and settling.
+            table.shiftActionsBack(time, dt)
+            for trig in range(numTriggers):
+            t = table.addToggle(t, triggerHandler)
+            t += table.toggleTime
+            """
+            for trig in range(numTriggers):
+                t = table.addToggle(t, self.handler)
+                t += table.toggleTime
+
+            lastIndex += numTriggers
+            if lastIndex >= sequenceLength:
+                lastIndex = lastIndex % sequenceLength
+        table.clearBadEntries()
+        # Store the parameters used to generate the sequence.
+        self.lastParms = ac_positions
 
     def getHandlers(self):
         trigsource = self.config.get('triggersource', None)
