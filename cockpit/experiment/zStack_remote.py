@@ -11,7 +11,7 @@ EXPERIMENT_NAME = 'Remote Z-stack'
 ## This class handles classic Z-stack experiments.
 class RemoteZStackExperiment(experiment.Experiment):
 
-    def __init__(self, dmHandler = None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         experiment.Experiment.__init__(self, *args, **kwargs)
 
         dmHandler = cockpit.depot.getHandlerWithName('dm')
