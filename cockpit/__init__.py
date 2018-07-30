@@ -229,7 +229,7 @@ class CockpitApp(wx.App):
 
 
     def doInitialLogin(self):
-        cockpit.util.user.login(wx.TopLevelWindow())
+        cockpit.util.user.login()
         cockpit.util.logger.log.debug("Login complete as %s" % util.user.getUsername())
 
 
