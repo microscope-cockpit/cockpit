@@ -79,11 +79,16 @@ class AlpaoLabview(device.Device):
                         self.sendImage=True
                         self.takeImage()
                         reply=None
-                    elif (input[:13]=='setWavelength'):
-                        print "setWavelength",input
-                        self.wavelength=float(input[14:])
-                        print "wavelength=",self.wavelength
-                        reply=str(self.wavelength)+'\r\n'
+                    elif (input[:7]=='stepSLM'):
+                        if(self.slmdev is None):
+                            self.slmdev=depot.getDeviceWithName(self.config.get('slmdevice'))
+                        self.slmdev.handler.triggerNow()
+                        reply=None
+                    elif (input[:12]=='setSLMImages'):
+                        inputImages,inputWavelength=input[13:].split(',')
+                        self.numSLMImages=int(inputImages)
+                        self.wavelength=float(inputWavelength)
+                        reply=str(self.numSLMImages)+'\r\n'
                         self.awaitimage=True
                     else:
                         reply='Unknown command\r\n'
@@ -97,7 +102,7 @@ class AlpaoLabview(device.Device):
                         break
                     if self.awaitimage:
                         if (self.slmdev is None):
-                            self.slmdev=depot.getDevice(cockpit.devices.boulderSLM)
+                            self.slmdev=depot.getDeviceWithName('slm')
                             self.slmsize=self.slmdev.connection.get_shape()
                             print self.slmsize
                             print self.wavelength
