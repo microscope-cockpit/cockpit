@@ -5,36 +5,32 @@
 #This file provides the cockpit end of the driver for the Alpao deformable
 #mirror as currently mounted on DeepSIM in Oxford
 
-import device
-import depot
-import devices.boulderSLM
-import events
+from . import device
+from cockpit import depot
+import cockpit.devices.boulderSLM
+from cockpit import events
 import Pyro4
-from config import config
+#from config import config
 import wx
-import interfaces.stageMover
-import interfaces.imager
+import cockpit.interfaces.stageMover
+import cockpit.interfaces.imager
 import socket
-import util
+from cockpit import util
 import time
 import numpy as N
 import struct
 
-CLASS_NAME = 'AO'
-CONFIG_NAME = 'alpao-labview'
+CLASS_NAME = 'Alpao-labview'
+CONFIG_NAME = 'ao'
 
 
 
 #the AO device subclasses Device to provide compatibility with microscope. 
-class AO(device.Device):
-    def __init__(self):
-        self.isActive = config.has_section(CONFIG_NAME)
-        self.priority = 10000
-        if not self.isActive:
-            return
-        else:
-            self.ipAddress = config.get(CONFIG_NAME, 'ipAddress')
-            self.port = config.get(CONFIG_NAME, 'port')
+class AlpaoLabview(device.Device):
+    def __init__(self,name, config={}):
+        device.Device.__init__(self, name, config)
+        self.ipAddress = config.get('ipAddress','')
+        self.port = config.get('port','')
 
         self.AlpaoConnection = None
         self.sendImage=False
@@ -101,7 +97,7 @@ class AO(device.Device):
                         break
                     if self.awaitimage:
                         if (self.slmdev is None):
-                            self.slmdev=depot.getDevice(devices.boulderSLM)
+                            self.slmdev=depot.getDevice(cockpit.devices.boulderSLM)
                             self.slmsize=self.slmdev.connection.get_shape()
                             print self.slmsize
                             print self.wavelength
@@ -166,7 +162,7 @@ class AO(device.Device):
         
                 
     def getPiezoPos(self):
-        return(interfaces.stageMover.getAllPositions()[1][2])
+        return(cockpit.interfaces.stageMover.getAllPositions()[1][2])
 
     def movePiezoRelative(self, distance):
         current=self.getPiezoPos()
@@ -175,15 +171,13 @@ class AO(device.Device):
 
         
     def movePiezoAbsolute(self, position):
-#        originalHandlerIndex= interfaces.stageMover.mover.curHandlerIndex
-#        interfaces.stageMover.mover.curHandlerIndex=1
-        handler=interfaces.stageMover.mover.axisToHandlers[2][1]
+        # Hack assumes that the piezo is [2][1]
+        handler=cockpit.interfaces.stageMover.mover.axisToHandlers[2][1]
         handler.moveAbsolute(position)
-#        interfaces.stageMover.mover.curHandlerIndex=originalHandlerIndex
         return (self.getPiezoPos())
         
     def takeImage(self):
-        interfaces.imager.takeImage()
+        cockpit.interfaces.imager.takeImage()
         
     def enablecamera(self,camera,isOn):
         self.curCamera = camera
@@ -229,7 +223,7 @@ class alpaoOutputWindow(wx.Frame):
         self.panel = wx.Panel(self)
         font=wx.Font(12,wx.FONTFAMILY_DEFAULT,wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
         mainSizer = wx.BoxSizer(wx.VERTICAL)
-        allPositions = interfaces.stageMover.getAllPositions()
+        allPositions = cockpit.interfaces.stageMover.getAllPositions()
         self.piezoPos = allPositions[1][2]
         textSizer=wx.BoxSizer(wx.VERTICAL)
         self.piezoText=wx.StaticText(self.panel,-1,str(self.piezoPos),
@@ -246,7 +240,7 @@ class alpaoOutputWindow(wx.Frame):
             # We only care about the Z axis.
             return
         self.piezoText.SetLabel(
-            str(interfaces.stageMover.getAllPositions()[1][2]))
+            str(cockpit.interfaces.stageMover.getAllPositions()[1][2]))
 
 
 ## Debugging function: display a DSPOutputWindow.
