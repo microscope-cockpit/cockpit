@@ -377,8 +377,6 @@ class SettingsEditor(wx.Frame):
                     prop.SetTextColour('red')
             else:
                 value = self.current[name]
-                if type(value) is long:
-                    value = int(value)
                 prop.SetValue(value)
             try:
                 prop.Enable(not self.settings[name]['readonly'])
