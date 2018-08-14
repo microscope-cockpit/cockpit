@@ -87,6 +87,8 @@ def setKeyboardHandlers(window):
 
         # Pop up a menu to help the user find hidden windows.
         (wx.ACCEL_CTRL, ord('M'), 6321),
+        # toggle python shell state with ^P
+                (wx.ACCEL_CTRL, ord('P'), 6322),
     ])
     window.SetAcceleratorTable(accelTable)
     for eventId, direction in [(6314, (1, 0, 0)), (6316, (-1, 0, 0)),
@@ -103,7 +105,7 @@ def setKeyboardHandlers(window):
     window.Bind(wx.EVT_MENU, lambda e: cockpit.interfaces.stageMover.changeStepSize(1), id=6319)
     window.Bind(wx.EVT_MENU, lambda e: cockpit.interfaces.imager.takeImage(), id=6320)
     window.Bind(wx.EVT_MENU, lambda e: martialWindows(window), id=6321)
-
+    window.Bind(wx.EVT_MENU, lambda e: showHideShell(window), id=6322)
 
 ## Pop up a menu under the mouse that helps the user find a window they may
 # have lost.
@@ -223,3 +225,12 @@ def martialWindows(parent):
         menuId += 1
 
     cockpit.gui.guiUtils.placeMenuAtMouse(parent, menu)
+
+#Function to show/hide the pythion shell window
+def showHideShell(parent):
+    secondaryWindows = wx.GetApp().secondaryWindows
+    for window in secondaryWindows:
+        if (window.GetTitle() == 'Python shell'):
+            window.Show(not window.IsShown())
+            cockpit.util.userConfig.setValue('windowState'+window.GetTitle()
+                                             ,window.IsShown(),isGlobal=False)
