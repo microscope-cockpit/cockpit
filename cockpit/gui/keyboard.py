@@ -148,7 +148,10 @@ def martialWindows(parent):
         if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
             menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
         else:
-            menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
+            #Append (self, id, item, subMenu, helpString=””)
+
+
+            menu.AppendSubMenu(subMenu, str(window.GetTitle())[:50])
         menuId += 1
 
     menu.AppendSeparator()
@@ -177,7 +180,7 @@ def martialWindows(parent):
         if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
             menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
         else:
-            menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
+            menu.AppendSubMenu(subMenu, str(window.GetTitle())[:50])
         menuId += 1
 
     menu.AppendSeparator()
