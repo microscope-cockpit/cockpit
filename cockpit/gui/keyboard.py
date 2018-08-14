@@ -88,7 +88,7 @@ def setKeyboardHandlers(window):
         # Pop up a menu to help the user find hidden windows.
         (wx.ACCEL_CTRL, ord('M'), 6321),
         # toggle python shell state with ^P
-                (wx.ACCEL_CTRL, ord('P'), 6322),
+        (wx.ACCEL_CTRL, ord('P'), 6322),
     ])
     window.SetAcceleratorTable(accelTable)
     for eventId, direction in [(6314, (1, 0, 0)), (6316, (-1, 0, 0)),
@@ -148,9 +148,6 @@ def martialWindows(parent):
         if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
             menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
         else:
-            #Append (self, id, item, subMenu, helpString=””)
-
-
             menu.AppendSubMenu(subMenu, str(window.GetTitle())[:50])
         menuId += 1
 
