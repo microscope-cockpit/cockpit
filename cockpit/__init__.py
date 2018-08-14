@@ -151,9 +151,6 @@ class CockpitApp(wx.App):
             cockpit.gui.macroStage.macroStageWindow.makeWindow(frame)
             status.Update(updateNum, " ... shell window")
             updateNum+=1
-            cockpit.gui.shellWindow.makeWindow(frame)
-            status.Update(updateNum, " ... statuslights window")
-            updateNum+=1
             cockpit.gui.statusLightsWindow.makeWindow(frame)
 
             # At this point, we have all the main windows are displayed.
@@ -162,6 +159,9 @@ class CockpitApp(wx.App):
             # windows that won't appear in the primary window marshalling
             # list.
             status.Update(updateNum, " ... secondary windows")
+            updateNum+=1
+            cockpit.gui.shellWindow.makeWindow(frame)
+            status.Update(updateNum, " ... statuslights window")
             updateNum+=1
             #start touchscreen only if enableds.
             #if(util.userConfig.getValue('touchScreen',
