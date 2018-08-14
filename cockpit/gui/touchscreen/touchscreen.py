@@ -28,7 +28,6 @@ import os
 import threading
 import wx
 from wx.lib.agw.shapedbutton import SBitmapButton,SBitmapToggleButton
-
 from cockpit.gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 from cockpit.handlers.deviceHandler import STATES
 
@@ -347,7 +346,7 @@ class TouchScreenWindow(wx.Frame):
 
         #run sizer fitting on button panel
         self.buttonPanel.SetSizerAndFit(rightSideSizer)
-        sizer.Add(self.buttonPanel, 1, wx.EXPAND,wx.RAISED_BORDER)
+        sizer.Add(self.buttonPanel, 0, wx.EXPAND,wx.RAISED_BORDER)
 
         limits = cockpit.interfaces.stageMover.getHardLimits()[:2]
         ## start a slaveCanvas instance.
@@ -358,7 +357,7 @@ class TouchScreenWindow(wx.Frame):
         leftSizer= wx.BoxSizer(wx.VERTICAL)
         #add a macrostageXY overview section
         self.macroStageXY=slaveOverview.MacroStageXY(self.panel)
-        leftSizer.Add(self.macroStageXY,3, wx.EXPAND)
+        leftSizer.Add(self.macroStageXY,2, wx.EXPAND)
 
         ##start a TSmacrostageZ instance
         self.macroStageZ=slaveMacroStageZ.slaveMacroStageZ(self.panel)
@@ -374,7 +373,7 @@ class TouchScreenWindow(wx.Frame):
                       'plus.png',
                       "Increase Z step",(30,30))]:
             button = self.makeButton(self.panel, *args)
-            zButtonSizer.Add(button, 0, wx.EXPAND|wx.ALL,border=2)
+            zButtonSizer.Add(button, 1, wx.EXPAND|wx.ALL,border=2)
         ##Text of position and step size
         font=wx.Font(12,wx.FONTFAMILY_DEFAULT,wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
         zPositionText = wx.StaticText(self.panel,-1,
@@ -409,13 +408,14 @@ class TouchScreenWindow(wx.Frame):
 
 
 
-        sizer.Add(leftSizer,1,wx.EXPAND)
+        sizer.Add(leftSizer,0,wx.EXPAND)
 
         self.panel.SetSizerAndFit(sizer)
         self.SetRect((0, 0, 1800, 1000))
 
         events.subscribe('stage position', self.onAxisRefresh)
         events.subscribe('stage step size', self.onAxisRefresh)
+        events.subscribe('stage step index', self.onAxisRefresh)
         events.subscribe('soft safety limit', self.onAxisRefresh)
         events.subscribe('objective change', self.onObjectiveChange)
         events.subscribe('user abort', self.onAbort)
@@ -593,16 +593,16 @@ class TouchScreenWindow(wx.Frame):
         cockpit.interfaces.stageMover.step((0,0,-1))
     def zIncStep(self):
         cockpit.interfaces.stageMover.changeStepSize(1)
+        self.onAxisRefresh(2)
     def zDecStep(self):
         cockpit.interfaces.stageMover.changeStepSize(-1)
-
+        self.onAxisRefresh(2)
 
     ## Resize our canvas.
     def onSize(self, event):
-        size = self.GetClientSize()
-        self.panel.SetSize(size)
-        # Subtract off the pixels dedicated to the sidebar.
-        self.canvas.SetClientSize((size[0] - SIDEBAR_WIDTH, size[1]))
+        csize = self.GetClientSize()
+        self.panel.SetClientSize((csize[0], csize[1]))
+
 
 
     ## User logged in, so we may well have changed size; adjust our zoom to
