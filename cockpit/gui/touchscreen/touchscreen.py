@@ -415,7 +415,7 @@ class TouchScreenWindow(wx.Frame):
 
         events.subscribe('stage position', self.onAxisRefresh)
         events.subscribe('stage step size', self.onAxisRefresh)
-        events.subscribe('stage step index', self.onAxisRefresh)
+        events.subscribe('stage step index', self.stageIndexChange)
         events.subscribe('soft safety limit', self.onAxisRefresh)
         events.subscribe('objective change', self.onObjectiveChange)
         events.subscribe('user abort', self.onAbort)
@@ -615,6 +615,11 @@ class TouchScreenWindow(wx.Frame):
                                                default = 0)
         self.drawPrimitives=cockpit.util.userConfig.getValue('mosaicDrawPrimitives',
                                             isGlobal = False, default = True)
+    ##Called when the stage handler index is chnaged. All we need
+    #to do is update the display
+    def stageIndexChange(self, *args):
+        #call on axis refresh to update the display
+        self.onAxisRefresh(2)
 
     ## Get updated about new stage position info or step size.
     # This requires redrawing the display, if the axis is the X or Y axes.
