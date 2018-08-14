@@ -67,7 +67,7 @@ import cockpit.util.logger
 class LoggingWindow(wx.Frame):
     def __init__(self, parent, title = 'Logging panels',
                  style = wx.CAPTION | wx.MAXIMIZE_BOX | wx.FRAME_NO_TASKBAR |
-                         wx.RESIZE_BORDER | wx.STAY_ON_TOP):
+                         wx.RESIZE_BORDER ):
         wx.Frame.__init__(self, parent, title = title, style = style)
 
         self.auiManager = wx.aui.AuiManager()
