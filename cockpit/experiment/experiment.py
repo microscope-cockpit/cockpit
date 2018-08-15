@@ -462,8 +462,13 @@ class Experiment:
             for handler in handlers:
                 text = handler.getSavefileInfo()
                 if handler in self.lightToExposureTime and self.lightToExposureTime[handler]:
+                    text += ': ' + ','.join(["%.3fms" % t for t in sorted(self.lightToExposureTime[handler]) ])
                     # Record the exposure duration(s) of the light source.
-                    text += ': ' + ','.join(["%.3fms" % t for t in sorted(self.lightToExposureTime[handler])])
+                    # find associated power entries (if they have them)
+                    
+                    for hand in depot.getHandlersInGroup(handler.groupName):
+                        if hand.deviceType == 'light power':
+                            text += " %3.3f mW" % hand.lastPower
                 if text:
                     entries.append(text)
             if entries:
