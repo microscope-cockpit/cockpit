@@ -291,12 +291,20 @@ class CockpitApp(wx.App):
 
 
 def main():
+    ## wxglcanvas (used in the mosaic windows) does not work with
+    ## wayland (see https://trac.wxwidgets.org/ticket/17702).  The
+    ## workaround is to force GTK to use the x11 backend.  See also
+    ## cockpit issue #347
+    if wx.Platform == '__WXGTK__' and 'GDK_BACKEND' not in os.environ:
+        os.environ['GDK_BACKEND'] = 'x11'
+
     ## We need these first to ensure that we can log failures during
     ## startup.
     cockpit.depot.loadConfig()
     cockpit.util.files.initialize()
     cockpit.util.files.ensureDirectoriesExist()
     cockpit.util.logger.makeLogger()
+
     CockpitApp(redirect = False).MainLoop()
 
 
