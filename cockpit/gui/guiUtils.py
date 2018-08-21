@@ -50,12 +50,10 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 import string
-import threading
-import time
+
 import wx
-import  wx.lib.newevent
+import wx.lib.newevent
 
 ## @package cockpit.gui.guiUtils
 # This module contains many functions related to the GUI, mostly for setting
@@ -152,47 +150,6 @@ class IntValidator(_BaseValidator):
             # Pass any digit to control.
             event.Skip()
         return
-
-## Create a basic panel with some text.
-def createTextPanel(parent, panelId, textId, textContent, panelStyle = 0, 
-                    textStyle = 0, isBold = True,
-                    orientation = wx.HORIZONTAL,
-                    minSize = None):
-    panel = wx.Panel(parent, panelId, style = panelStyle)
-    text = wx.StaticText(panel, textId, textContent, style = textStyle)
-    fontStyle = wx.BOLD
-    if not isBold:
-        fontStyle = wx.NORMAL
-    text.SetFont(wx.Font(10, wx.DEFAULT, wx.NORMAL, fontStyle))
-    sizer = wx.BoxSizer(orientation)
-    sizer.Add(text, 1)
-    if minSize is not None:
-        sizer.SetMinSize(minSize)
-    panel.SetSizerAndFit(sizer)
-    panel.Show(0)
-    return (panel, text)
-
-
-## Width of a normal button (as opposed to a custom UI element, like
-# a ToggleButton).
-ORDINARY_BUTTON_WIDTH = 100
-## Create a header string in a large font, along with a help
-# button and any other provided buttons
-def makeHeader(parent, label, helpString = '',
-               extraButtons = [], buttonSize = (ORDINARY_BUTTON_WIDTH, -1)):
-    sizer = wx.BoxSizer(wx.HORIZONTAL)
-    text = wx.StaticText(parent, -1, label)
-    text.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-    sizer.Add(text)
-    if helpString:
-        button = wx.Button(parent, -1, "Help",
-                size = (ORDINARY_BUTTON_WIDTH, -1))
-        button.Bind(wx.EVT_BUTTON, lambda event: showHelpDialog(parent, helpString))
-        sizer.Add(button, 0, wx.LEFT, 10)
-    for button in extraButtons:
-        button.SetSize(buttonSize)
-        sizer.Add(button)
-    return sizer
 
 
 ## Generate a set of small text boxes for controlling individual lights.
