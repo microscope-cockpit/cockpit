@@ -296,29 +296,3 @@ def tryParseNum(control, convertFunc = int, default = 0):
         return convertFunc(control.GetValue())
     except:
         return default
-
-
-
-## This class waits a specified amount of time and then displays a message
-# dialog unless told to stop.
-class WaitMessageDialog(threading.Thread):
-    def __init__(self, message, title, waitTime):
-        threading.Thread.__init__(self)
-        self.message = message
-        self.title = title
-        self.waitTime = waitTime
-        ## Set to True to stop showing the dialog, or never show it if it
-        # hasn't been shown yet.
-        self.shouldStop = False
-
-
-    def run(self):
-        time.sleep(self.waitTime)
-        if not self.shouldStop:
-            dialog = wx.ProgressDialog(parent = None,
-                    title = self.title, message = self.message)
-            dialog.Show()
-            while not self.shouldStop:
-                time.sleep(.01)
-            dialog.Hide()
-            dialog.Destroy()
