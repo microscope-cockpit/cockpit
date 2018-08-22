@@ -130,6 +130,12 @@ class LightHandler(deviceHandler.DeviceHandler):
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
         events.subscribe('light exposure update', self.setLabel)
+        # Most lasers use bulb-type triggering. Ensure they're not left on after
+        # an abort event.
+        if trigHandler and trigLine:
+            onAbort = lambda *args: trigHandler.setDigital(trigLine, False)
+            events.subscribe('user abort', onAbort)
+
 
     ## Save our settings in the provided dict.
     def onSaveSettings(self, settings):
