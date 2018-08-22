@@ -148,7 +148,7 @@ class DataSaver:
 
         ## Number of bytes to allocate for each image in the file.
         # \todo Assuming unsigned 16-bit integer here.
-        self.planeBytes = (self.maxWidth * self.maxHeight * 2)
+        self.planeBytes = int(self.maxWidth * self.maxHeight * 2)
 
         ## Number of timepoints per file, based on the above and
         # self.maxFilesize.
@@ -443,7 +443,7 @@ class DataSaver:
         ## for the plane data in the image section.  1024 is the
         ## length of the base header.
         metadataOffset = 1024 + (planeIndex * self.extendedBytes)
-        dataOffset = (1024 + self.headers[fileIndex].next
+        dataOffset = (1024 + int(self.headers[fileIndex].next)
                       + (planeIndex * self.planeBytes))
 
         height, width = imageData.shape
