@@ -423,7 +423,6 @@ class TouchScreenWindow(wx.Frame):
         events.subscribe('mosaic start', self.mosaicStart)
         events.subscribe('mosaic stop', self.mosaicStop)
         events.subscribe('mosaic update', self.mosaicUpdate)
-        events.subscribe('light source enable', self.lightSourceEnable)
         events.subscribe('laser power update', self.laserPowerUpdate)
         events.subscribe('light exposure update', self.laserExpUpdate)
 
@@ -505,15 +504,6 @@ class TouchScreenWindow(wx.Frame):
             button.SetBackgroundColour(BACKGROUND_COLOUR)
             events.publish('light source enable', light, False)
 
-    def lightSourceEnable(self, light, state):
-        #check to see if there is a power handler
-        powerHandler=None
-        for handler in depot.getHandlersInGroup(light.groupName):
-            if handler is not light:
-                powerHandler=handler
-        #if there is a powerHandler set the colour of the active button
-        if powerHandler:
-            button.SetOwnBackgroundColour(powerHandler.color)
 
     def laserPowerUpdate(self, light):
         textString=self.nameToText[light.groupName+'power']
