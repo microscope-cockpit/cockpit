@@ -173,7 +173,11 @@ class CameraHandler(deviceHandler.DeviceHandler):
     @cockpit.interfaces.imager.pauseVideo
     @reset_cache
     def setEnabled(self, shouldEnable = True):
-        self.isEnabled = self.callbacks['setEnabled'](self.name, shouldEnable)
+        try:
+            self.isEnabled = self.callbacks['setEnabled'](self.name, shouldEnable)
+        except:
+            self.isEnabled = False
+            raise
         if self.isEnabled != shouldEnable:
             raise Exception("Problem enabling device with handler %s" % self)
         # Subscribe / unsubscribe to the prepare-for-experiment event.
