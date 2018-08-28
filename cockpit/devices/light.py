@@ -51,7 +51,7 @@ class SimpleLight(device.Device):
             trighandler = None
         self._exposureTime = 100
         self.handlers.append(cockpit.handlers.lightSource.LightHandler(
-            self.name + ' toggle',
+            self.name,
             self.name + ' light source',
             {'setEnabled': lambda name, on: time.sleep(0.5),
              'setExposureTime': lambda name, value: setattr(self, '_exposureTime', value),

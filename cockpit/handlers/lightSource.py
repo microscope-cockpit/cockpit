@@ -199,10 +199,7 @@ class LightHandler(deviceHandler.DeviceHandler):
         sizer = wx.BoxSizer(wx.VERTICAL)
         # Split the name across multiple lines.
         label = ['']
-        if self.name.endswith('toggle'):
-            name = self.name[0:-7].strip()
-        else:
-            name = self.name.strip()
+        name = self.name.strip()
         for i, word in enumerate(name.split(' ')):
             if len(label[-1] + word) > 10 and i > 0:
                 label.append('')
