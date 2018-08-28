@@ -182,16 +182,19 @@ INTVALIDATOR = IntValidator()
 ## Generate a set of small text boxes for controlling individual lights.
 # Return a list of the controls, and the sizer they are contained in.
 def makeLightsControls(parent, labels, defaults):
-    sizer = wx.FlexGridSizer(2, len(labels), 0, 0)
-    for label in labels:
+    sizer = wx.FlexGridSizer(2, len(labels), 0, 4)
+    controls = []
+    for label, defaultVal in zip(labels, defaults):
         sizer.Add(wx.StaticText(parent, -1, label),
                 0, wx.ALIGN_RIGHT | wx.ALL, 5)
-    controls = []
-    for defaultVal in defaults:
-        control = wx.TextCtrl(parent, size = (40, -1))
-        control.SetValue(defaultVal)
-        controls.append(control)
-        sizer.Add(control, 0, wx.ALL, 5)
+        # Changed 'control' to 'ctrl' to more clearly discriminate from 'controls'.
+        ctrl = wx.TextCtrl(parent, size = (40, -1), name=label)
+        ctrl.SetValue(defaultVal)
+        # allowEmpty=True lets validator know this control may be empty
+        ctrl.SetValidator(FLOATVALIDATOR)
+        ctrl.allowEmpty = True
+        controls.append(ctrl)
+        sizer.Add(ctrl, 0, wx.ALL, 5)
     return controls, sizer
 
 
