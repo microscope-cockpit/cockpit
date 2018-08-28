@@ -246,7 +246,7 @@ class MicroscopeLaser(MicroscopeBase):
             trighandler = None
         self._exposureTime = 100
         self.handlers.append(cockpit.handlers.lightSource.LightHandler(
-            self.name + ' toggle',
+            self.name,
             self.name + ' light source',
             {'setEnabled': lambda name, on: self._setEnabled(on),
              'setExposureTime': lambda name, value: setattr(self, '_exposureTime', value),
