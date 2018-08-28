@@ -137,14 +137,14 @@ class ExperimentConfigPanel(wx.Panel):
         self.numReps = guiUtils.addLabeledInput(self,
                 universalSizer, label = "Number of reps:",
                 defaultValue = self.settings['numReps'])
-        self.numReps.SetValidator(guiUtils.IntValidator())
+        self.numReps.SetValidator(guiUtils.INTVALIDATOR)
 
         self.repDuration = guiUtils.addLabeledInput(self,
                 universalSizer, label = "Rep duration (s):",
                 defaultValue = self.settings['repDuration'],
                 helperString = "Amount of time that must pass between the start " +
                 "of each rep. Use 0 if you don't want any wait time.")
-        self.repDuration.SetValidator(guiUtils.FloatValidator())
+        self.repDuration.SetValidator(guiUtils.FLOATVALIDATOR)
 
         self.zPositionMode = wx.Choice(self, choices = Z_POSITION_MODES)
         self.zPositionMode.SetSelection(0)
@@ -154,12 +154,12 @@ class ExperimentConfigPanel(wx.Panel):
         self.stackHeight = guiUtils.addLabeledInput(self,
                 universalSizer, label = u"Stack height (\u03bcm):",
                 defaultValue = self.settings['stackHeight'])
-        self.stackHeight.SetValidator(guiUtils.FloatValidator())
+        self.stackHeight.SetValidator(guiUtils.FLOATVALIDATOR)
 
         self.sliceHeight = guiUtils.addLabeledInput(self,
                 universalSizer, label = u"Slice height (\u03bcm):",
                 defaultValue = self.settings['sliceHeight'])
-        self.sliceHeight.SetValidator(guiUtils.FloatValidator())
+        self.sliceHeight.SetValidator(guiUtils.FLOATVALIDATOR)
 
         self.sizer.Add(universalSizer, 0, wx.ALL, border=5)
 
@@ -227,10 +227,15 @@ class ExperimentConfigPanel(wx.Panel):
                     wx.StaticText(self.sequencedExposurePanel, -1, str(camera.name)),
                     0, wx.TOP | wx.ALIGN_RIGHT, 8)
             times = []
-            for defaultVal in self.settings['sequencedExposureSettings'][i]:
+            for (label, defaultVal) in zip([str(l.name) for l in self.allLights],
+                                           self.settings['sequencedExposureSettings'][i]):
                 exposureTime = wx.TextCtrl(
-                        self.sequencedExposurePanel, size = (40, -1))
+                        self.sequencedExposurePanel, size = (40, -1),
+                        name = "exposure: %s for %s" % (label, camera.name))
                 exposureTime.SetValue(defaultVal)
+                # allowEmpty=True lets validator know this control may be empty.
+                exposureTime.SetValidator(guiUtils.FLOATVALIDATOR)
+                exposureTime.allowEmpty = True
                 sequenceSizer.Add(exposureTime, 0, wx.ALL, border=5)
                 times.append(exposureTime)
             self.cameraToExposureTimes[camera] = times
@@ -326,8 +331,12 @@ class ExperimentConfigPanel(wx.Panel):
     # appropriate.
     def onExposureCheckbox(self, event = None):
         val = self.shouldExposeSimultaneously.GetValue()
+        # Show the relevant light panel. Disable the unused panel to
+        # prevent validation of its controls.
         self.simultaneousExposurePanel.Show(val)
+        self.simultaneousExposurePanel.Enable(val)
         self.sequencedExposurePanel.Show(not val)
+        self.sequencedExposurePanel.Enable(not val)
         self.SetSizerAndFit(self.sizer)
         self.resizeCallback(self)
 
