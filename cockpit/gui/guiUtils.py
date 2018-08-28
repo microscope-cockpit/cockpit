@@ -63,12 +63,19 @@ import wx.lib.newevent
 CockpitValidationErrorEvent, EVT_COCKPIT_VALIDATION_ERROR= wx.lib.newevent.NewCommandEvent()
 
 class _BaseValidator(wx.Validator):
-    def __init__(self):
+    """Validators for text controls used for numeric entry.
+
+    SomeControl.SetValidator applies a validator via a copy constructor, so
+    each derived class has an instance created in this file for passing to
+    SetValidator.
+    """
+    def __init__(self, allowEmpty=False):
         wx.Validator.__init__(self)
         self.Bind(wx.EVT_CHAR, self.OnChar)
 
 
     def Clone(self):
+        # The copy constructor mentioned above.
         return self.__class__()
 
 
@@ -80,11 +87,41 @@ class _BaseValidator(wx.Validator):
         return True
 
 
-    def Validate(self):
-        # Define in subclass
+    # Abstract - define in derived calss.
+    def _validate(self, value):
+        # Test a value. Raise an exception if it is not valid.
         pass
 
-    def OnChar(self):
+
+    def Validate(self, parent):
+        ctrl = self.GetWindow()
+        # Don't validate disabled controls.
+        if not ctrl.IsEnabled():
+            return True
+
+        val = ctrl.GetValue().strip()
+
+        # Validate empty case
+        if val == '':
+            #if self.allowEmpty:
+            if getattr(ctrl, 'allowEmpty', False):
+                return True
+            else:
+                evt = CockpitValidationErrorEvent(id=wx.ID_ANY, control=ctrl, empty=True)
+                wx.PostEvent(ctrl, evt)
+                return False
+
+        # Test with derived class _validate method.
+        try:
+            self._validate(val)
+            return True
+        except:
+            evt = CockpitValidationErrorEvent(id=wx.ID_ANY, control=ctrl)
+            wx.PostEvent(ctrl, evt)
+            return False
+
+
+    def OnChar(self, event):
         # Define in subclass
         pass
 
@@ -93,18 +130,13 @@ class FloatValidator(_BaseValidator):
     """A validator to enforce floating point input.
 
     * Restricts input to numeric characters an a single decimal point.
-    * Validate() tests that string can be parsed as a float.
+    * _validate() tests that string can be parsed as a float.
     """
-    def Validate(self, parent):
-        ctrl = self.GetWindow()
-        val = ctrl.GetValue()
-        try:
-            float(val)
-        except:
-            evt = CockpitValidationErrorEvent(id=wx.ID_ANY, control=ctrl.GetName())
-            wx.PostEvent(ctrl, evt)
-            return False
-        return True
+    def _validate(self, val):
+        # Allow special case of single decimal point.
+        if val == '.':
+            val = '0.'
+        return float(val)
 
 
     def OnChar(self, event):
@@ -119,7 +151,8 @@ class FloatValidator(_BaseValidator):
             # Only allow a single '.'
             tc = self.GetWindow()
             val = tc.GetValue()
-            if '.' not in val:
+            selection = event.EventObject.GetStringSelection()
+            if '.' not in val or '.' in selection:
                 event.Skip()
         return
 
@@ -128,17 +161,9 @@ class IntValidator(_BaseValidator):
     """A validator to enforce floating point input.
 
     * Restricts input to numeric characters.
-    * Validate() tests that string can be parsed as an int."""
-    def Validate(self, parent):
-        ctrl = self.GetWindow()
-        val = ctrl.GetValue()
-        try:
-            int(val)
-        except:
-            evt = CockpitValidationErrorEvent(id=wx.ID_ANY, control=ctrl.GetName())
-            wx.PostEvent(ctrl, evt)
-            return False
-        return True
+    * _validate() tests that string can be parsed as an int."""
+    def _validate(self, val):
+        return int(val)
 
 
     def OnChar(self, event):
@@ -151,6 +176,8 @@ class IntValidator(_BaseValidator):
             event.Skip()
         return
 
+FLOATVALIDATOR = FloatValidator()
+INTVALIDATOR = IntValidator()
 
 ## Generate a set of small text boxes for controlling individual lights.
 # Return a list of the controls, and the sizer they are contained in.
