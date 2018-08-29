@@ -572,7 +572,7 @@ class TouchScreenWindow(wx.Frame):
         if (self.crosshairBoxSize == 0):
             self.crosshairBoxSize = 512 * objective.getPixelSize()
         self.offset = objective.getOffset()
-        scale = (1/objective.getPixelSize())*(10./self.crosshairBoxSize)
+        scale = (150./self.crosshairBoxSize)
         self.canvas.zoomTo(-curPosition[0]+self.offset[0],
                            curPosition[1]-self.offset[1], scale)
 
