@@ -130,6 +130,22 @@ class CameraHandler(deviceHandler.DeviceHandler):
                     "%s imager" % name, "imager",
                     {'takeImage': softTrigger}))
 
+        #subscribe to save and load setting calls to enabvle saving and
+        #loading of configurations.
+        events.subscribe('save exposure settings', self.onSaveSettings)
+        events.subscribe('load exposure settings', self.onLoadSettings)
+
+
+    ## Save our settings in the provided dict.
+    def onSaveSettings(self, settings):
+        settings[self.name] = self.getIsEnabled()
+
+    ## Load our settings from the provided dict.
+    def onLoadSettings(self, settings):
+        if self.name in settings:
+            # only chnage state if we need to as this is slow
+            if (self.getIsEnabled() != settings[self.name]):
+                self.setEnabled(settings[self.name])
 
     @property
     def color(self):
