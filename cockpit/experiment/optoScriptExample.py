@@ -260,6 +260,9 @@ class ExperimentUI(wx.Panel):
 
 ## This panel lets the user define a sequence of illumination sequences (on and
 # off) for a specific light.
+
+from cockpit.gui.guiUtils import FLOATVALIDATOR
+
 class OptoPanel(wx.Panel):
     def __init__(self, parent, light, sequence, doesStartOn):
         wx.Panel.__init__(self, parent)
@@ -292,11 +295,15 @@ class OptoPanel(wx.Panel):
         self.startText.SetToolTip(wx.ToolTip(
                 'Time, in seconds, at which to start illumination'))
         sizer.Add(self.startText)
+        self.startText.SetValidator(FLOATVALIDATOR)
+        self.startText.allowEmpty = True
 
         self.stopText = wx.TextCtrl(self, -1, size = (40, -1))
         self.startText.SetToolTip(wx.ToolTip(
                 'Time, in seconds, at which to stop illumination'))
         sizer.Add(self.stopText)
+        self.stopText.SetValidator(FLOATVALIDATOR)
+        self.stopText.allowEmpty = True
 
         button = wx.Button(self, -1, 'Add', size = (80, -1))
         button.Bind(wx.EVT_BUTTON, self.onAdd)

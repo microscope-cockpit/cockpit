@@ -301,10 +301,11 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
 
 ## A consistent name to use to refer to the experiment class itself.
 EXPERIMENT_CLASS = OffsetGainCorrectionExperiment
-
+from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR
 
 ## Generate the UI for special parameters used by this experiment.
 class ExperimentUI(wx.Panel):
+
     def __init__(self, parent, configKey):
         wx.Panel.__init__(self, parent = parent)
 
@@ -315,20 +316,26 @@ class ExperimentUI(wx.Panel):
         ## Maps strings to TextCtrls describing how to configure 
         # correction file experiments.
         self.correctionArgs = {}
-        for key, label, helperString in [
+        for key, label, helperString, validator in [
                 ('correctionNumExposures', 'Number of exposures', 
-                    "How many exposures to take for each exposure time."),
+                    "How many exposures to take for each exposure time.",
+                 INTVALIDATOR),
                 ('correctionNumCollections', 'Number of collections',
-                    "Maximum number of exposure times to collect data for."),
+                    "Maximum number of exposure times to collect data for.",
+                 INTVALIDATOR),
                 ('correctionExposureMultiplier', 'Exposure multiplier',
-                    "Multiplicative factor that governs how quickly we increase exposure time for measuring the camera's response."),
+                    "Multiplicative factor that governs how quickly we increase exposure time for measuring the camera's response.",
+                 FLOATVALIDATOR),
                 ('correctionMaxIntensity', 'Max intensity',
-                    'Any images above this value are discarded; if we complete imaging and no images "survive", then we are done with data collection.'),
+                    'Any images above this value are discarded; if we complete imaging and no images "survive", then we are done with data collection.',
+                 FLOATVALIDATOR),
                 ('correctionCosmicRayThreshold', 'Cosmic ray threshold',
-                    "If any pixels in an image are more than this many standard deviations from the median, then the image is discarded.")]:
+                    "If any pixels in an image are more than this many standard deviations from the median, then the image is discarded.",
+                 FLOATVALIDATOR)]:
             control = guiUtils.addLabeledInput(self, sizer, 
                 label = label, defaultValue = self.settings[key],
                 helperString = helperString)
+            control.SetValidator(validator)
             self.correctionArgs[key] = control
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
         control = wx.CheckBox(self, label = 'Preserve intermediary files')

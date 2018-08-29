@@ -114,8 +114,7 @@ class StutteredZStackExperiment(zStack.ZStackExperiment):
 
 ## A consistent name to use to refer to the class itself.
 EXPERIMENT_CLASS = StutteredZStackExperiment
-
-
+from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR
 
 class ExperimentUI(wx.Panel):
     def __init__(self, parent, configKey):
@@ -155,11 +154,13 @@ class ExperimentUI(wx.Panel):
         self.interval = wx.TextCtrl(self, -1, size = (60, -1))
         self.interval.SetToolTip(wx.ToolTip("Amount of time, in seconds, that " +
                 "passes between each rep for this portion of the experiment."))
+        self.interval.SetValidator(FLOATVALIDATOR)
         sizer.Add(self.interval)
 
         self.numReps = wx.TextCtrl(self, -1, size = (60, -1))
         self.numReps.SetToolTip(wx.ToolTip("Number of reps to perform at this " +
                 "sampling interval."))
+        self.numReps.SetValidator(INTVALIDATOR)
         sizer.Add(self.numReps)
 
         button = wx.Button(self, -1, 'Add')
