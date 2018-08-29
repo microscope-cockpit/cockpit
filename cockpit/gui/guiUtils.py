@@ -144,6 +144,8 @@ class FloatValidator(_BaseValidator):
         if key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
             # Pass cursors, backspace, etc. to control
             event.Skip()
+        elif chr(key) is '-' and event.EventObject.InsertionPoint == 0:
+            event.Skip()
         elif chr(key) in string.digits:
             # Pass any digit to control.
             event.Skip()
