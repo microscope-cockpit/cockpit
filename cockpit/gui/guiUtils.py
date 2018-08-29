@@ -177,8 +177,42 @@ class IntValidator(_BaseValidator):
             event.Skip()
         return
 
+
+class CSVValidator(_BaseValidator):
+    """A validator to enforce floating point input.
+
+    * Restricts input to numeric characters an a single decimal point.
+    * _validate() tests that string can be parsed as a float.
+    """
+    def _validate(self, val):
+        converted = []
+        for v in val.split(','):
+            converted.append(float(v))
+        return converted
+
+
+    def OnChar(self, event):
+        key = event.GetKeyCode()
+        if key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
+            # Pass cursors, backspace, etc. to control
+            event.Skip()
+        elif chr(key) in string.digits:
+            # Pass any digit to control.
+            event.Skip()
+        elif chr(key) is '-':
+            event.Skip()
+        elif chr(key) == ',' and len(event.EventObject.Value) > 0:
+            # Could also check that adjacent characters are not ','.
+            event.Skip()
+        elif chr(key) == '.':
+            # Could also check that there's only one '.' in the block
+            # of text between delimiters.
+            event.Skip()
+        return
+
 FLOATVALIDATOR = FloatValidator()
 INTVALIDATOR = IntValidator()
+CSVVALIDATOR = CSVValidator()
 
 ## Generate a set of small text boxes for controlling individual lights.
 # Return a list of the controls, and the sizer they are contained in.
