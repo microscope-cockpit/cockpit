@@ -96,14 +96,13 @@ class _BaseValidator(wx.Validator):
     def Validate(self, parent):
         ctrl = self.GetWindow()
         # Don't validate disabled controls.
-        if not ctrl.IsEnabled():
+        if not (ctrl.Enabled and ctrl.Shown):
             return True
 
         val = ctrl.GetValue().strip()
 
         # Validate empty case
         if val == '':
-            #if self.allowEmpty:
             if getattr(ctrl, 'allowEmpty', False):
                 return True
             else:

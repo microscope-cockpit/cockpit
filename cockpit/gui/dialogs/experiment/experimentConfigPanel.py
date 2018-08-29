@@ -323,6 +323,7 @@ class ExperimentConfigPanel(wx.Panel):
                 # to be shown/hidden.
                 panel = self.experimentModuleToPanel[module]
                 panel.Show(expString == newType)
+                panel.Enable(expString == newType)
         self.SetSizerAndFit(self.sizer)
         self.resizeCallback(self)
 
