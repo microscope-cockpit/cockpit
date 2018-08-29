@@ -112,12 +112,14 @@ class CamerasWindow(wx.Frame):
 
     ## Load our settings from the provided dict.
     def onLoadSettings(self, settings):
-        for view in self.views:
-            view.disableCamera()
-        for i, camName in enumerate(settings.get('camera view window', [])):
-            camera = depot.getHandlerWithName(camName)
-            self.views[i].enableCamera(camera)
-
+        # This code breaks as the views dont nessecarily exist.
+        # now subscribing from individual cameras.
+#        for view in self.views:
+#            view.disableCamera()
+#        for i, camName in enumerate(settings.get('camera view window', [])):
+#            camera = depot.getHandlerWithName(camName)
+#            self.views[i].enableCamera(camera)
+        pass
 
     @cockpit.util.threads.callInMainThread
     def onCameraEnableEvent(self, camera, enabled):
