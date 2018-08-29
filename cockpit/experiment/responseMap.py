@@ -354,7 +354,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
 
 ## A consistent name to use to refer to the experiment class itself.
 EXPERIMENT_CLASS = ResponseMapExperiment
-from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR
+from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR, CSVVALIDATOR
 
 ## Generate the UI for special parameters used by this experiment.
 class ExperimentUI(wx.Panel):
@@ -372,7 +372,7 @@ class ExperimentUI(wx.Panel):
                  INTVALIDATOR),
                 ('responseMapExposureTimes', 'Exposure times', 
                     "Comma-separated list of exposure times at which to collect data.",
-                 None),
+                 CSVVALIDATOR),
                 ('responseMapCosmicRayThreshold', 
                     'Cosmic ray threshold',
                     "If any pixels in an image are more than this many standard deviations from the median, then the image is discarded.",
