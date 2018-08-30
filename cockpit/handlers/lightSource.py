@@ -150,7 +150,7 @@ class LightHandler(deviceHandler.DeviceHandler):
             #Only chnbage settings if needed.
             if (self.getExposureTime != settings[self.name]['exposureTime']):
                 self.setExposureTime(settings[self.name]['exposureTime'])
-            if (self.getIs Enabled != settings[self.name]['isEnabled']):
+            if (self.getIsEnabled != settings[self.name]['isEnabled']):
                 self.setEnabled(settings[self.name]['isEnabled'])
 
 
