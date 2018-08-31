@@ -104,7 +104,8 @@ class MainWindow(wx.Frame):
         ## Maps LightSource handlers to their associated panels of controls.
         self.lightToPanel = dict()
         ##repload stored modes with save, new and load
-        self.storedModes = {'load..': 0, 'save...': 0, 'new...': 0}
+        self.storedModes = {'New...': 0, 'Update': 0,'Load...': 0, 'Save...': 0} 
+        self.currentMode = None
 
         # Construct the UI.
         # Sizer for all controls. We'll split them into bottom half (light
@@ -363,16 +364,21 @@ class MainWindow(wx.Frame):
     ##filter whieels etc...
     def setMode(self, name):
         #store mode to text file
-        if name == 'save...':
-            self.onSaveExposureSettings()
-        elif name == 'new...':
+        if name == 'Save...':
+            self.onSaveExposureSettings(self.currentMode)
+        elif name == 'Load...':
+            self.onLoadExposureSettings()
+        elif name == 'Update' and self.currentMode != None:
+            events.publish('save exposure settings',
+                           self.storedModes[self.currentMode])
+            self.storeButton.setOption(self.currentMode)
+        elif name == 'New...':
             self.createNewMode()
         else:
             print ('selected mode ',name) 
             events.publish('load exposure settings', self.storedModes[name])
+            self.currentMode = name
             self.storeButton.setOption(name)
-            
-            
 
     def createNewMode(self):
         #get name for new mode
@@ -390,38 +396,59 @@ class MainWindow(wx.Frame):
                                          self.storedModes))
         #and set button value. 
         self.storeButton.setOption(value)
+        self.currentMode = value
 
                        
                 
     ## User wants to save the current exposure settings; get a file path
     # to save to, collect exposure information via an event, and save it.
-    def onSaveExposureSettings(self, event = None):
+    def onSaveExposureSettings(self, name, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
+                               defaultFile=name+'.txt',
                 message = "Please select where to save the settings.",
                 defaultDir = cockpit.util.user.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
+            self.storeButton.setOption(name)
             return
         settings = dict()
         events.publish('save exposure settings', settings)
         handle = open(dialog.GetPath(), 'w')
         handle.write(json.dumps(settings))
         handle.close()
+        self.storeButton.setOption(name)
 
     
     ## User wants to load an old set of exposure settings; get a file path
     # to load from, and publish an event with the data.
     def onLoadExposureSettings(self, event = None):
+        import os.path
         dialog = wx.FileDialog(self, style = wx.FD_OPEN, wildcard = '*.txt',
                 message = "Please select the settings file to load.",
                 defaultDir = cockpit.util.user.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
+            self.storeButton.setOption(self.currentMode)
             return
         handle = open(dialog.GetPath(), 'r')
-        settings = json.loads('\n'.join(handle.readlines()))
+        modeName=os.path.splitext(os.path.basename(handle.name))[0]
+        #get name for new mode
+        # abuse get value dialog which will also return a string. 
+        name = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
+            parent=self.topPanel, default=modeName, title='New Mode Name',
+            prompt='Name')
+        self.storedModes[name] = json.loads('\n'.join(handle.readlines()))
         handle.close()
-        events.publish('load exposure settings', settings)
+        events.publish('load exposure settings', self.storedModes[name])
+        #update button list
+        self.storeButton.setOptions(map(lambda name: (name,
+                                                       lambda n=name:
+                                                       self.setMode(n)),
+                                         self.storedModes))
+        #and set button value. 
+        self.storeButton.setOption(name)
+        self.currentMode = name
+       
 
         # If we're using the listbox approach to show/hide light controls,
         # then make sure all enabled lights are shown and vice versa.
