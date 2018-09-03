@@ -151,18 +151,14 @@ class MainWindow(wx.Frame):
         self.videoButton.Bind(wx.EVT_LEFT_DOWN,
                 lambda event: cockpit.interfaces.imager.videoMode())
         buttonSizer.Add(self.videoButton)
-        self.storeButton =  OptionButtons(parent= topPanel)
+        self.storeButton =  OptionButtons(parent= topPanel, label = "Store/Recall",
+                )
         
         self.storeButton.setOptions (map(lambda name: (name,
                                                        lambda n=name:
                                                        self.setMode(n)),
                                          self.storedModes))
         buttonSizer.Add(self.storeButton)
-        loadButton = toggleButton.ToggleButton(textSize = 12,
-                label = "Recall Exposure\nSettings",
-                size = (120, 80), parent = topPanel)
-        loadButton.Bind(wx.EVT_LEFT_DOWN, self.onLoadExposureSettings)        
-        buttonSizer.Add(loadButton)
         snapButton = toggleButton.ToggleButton(textSize = 12,
                 label = "Snap",
                 size = (120, 80), parent = topPanel)
