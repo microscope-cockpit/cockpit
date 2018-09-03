@@ -106,7 +106,7 @@ class LinkamStage(stage.StageDevice):
                 self.condensorOn()
             else:
                 self.condensorOff()
-       
+
     def finalizeInitialization(self):
         """Finalize device initialization."""
         self.statusThread = threading.Thread(target=self.pollStatus)
