@@ -493,6 +493,7 @@ class OptionButtons(wx.Panel):
         # Set buttons with options = [(label, callback or None), ...]
         for b in self.buttons:
             del (b)
+        self.subframe.Sizer.Clear()
         for label, callback in options:
             b = Button(label=label, parent=self.subframe, size=self.size)
             b.Bind(wx.EVT_LEFT_UP, lambda evt, b=b, c=callback: self.onButton(b, c))

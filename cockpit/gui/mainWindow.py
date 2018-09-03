@@ -58,6 +58,7 @@ from __future__ import absolute_import
 
 import json
 import wx
+import os.path
 
 from cockpit import depot
 from .dialogs.experiment import multiSiteExperiment
@@ -71,6 +72,8 @@ from . import toggleButton
 import cockpit.util.user
 import cockpit.util.userConfig
 from . import viewFileDropTarget
+from cockpit.gui.device import OptionButtons
+
 
 from six import iteritems
 
@@ -101,6 +104,9 @@ class MainWindow(wx.Frame):
 
         ## Maps LightSource handlers to their associated panels of controls.
         self.lightToPanel = dict()
+        ##repload stored modes with save, new and load
+        self.storedModes = {'New...': 0, 'Update': 0,'Load...': 0, 'Save...': 0} 
+        self.currentMode = None
 
         # Construct the UI.
         # Sizer for all controls. We'll split them into bottom half (light
@@ -110,7 +116,9 @@ class MainWindow(wx.Frame):
         # Panel for holding the non-lightsource controls.
         topPanel = wx.Panel(self)
         topPanel.SetBackgroundColour((170, 170, 170))
+        self.topPanel=topPanel
         topSizer = wx.BoxSizer(wx.VERTICAL)
+ 
 
         # A row of buttons for various actions we know we can take.
         buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -143,16 +151,14 @@ class MainWindow(wx.Frame):
         self.videoButton.Bind(wx.EVT_LEFT_DOWN,
                 lambda event: cockpit.interfaces.imager.videoMode())
         buttonSizer.Add(self.videoButton)
-        saveButton = toggleButton.ToggleButton(textSize = 12,
-                label = "Save Exposure\nSettings",
-                size = (120, 80), parent = topPanel)
-        saveButton.Bind(wx.EVT_LEFT_DOWN, self.onSaveExposureSettings)        
-        buttonSizer.Add(saveButton)
-        loadButton = toggleButton.ToggleButton(textSize = 12,
-                label = "Load Exposure\nSettings",
-                size = (120, 80), parent = topPanel)
-        loadButton.Bind(wx.EVT_LEFT_DOWN, self.onLoadExposureSettings)        
-        buttonSizer.Add(loadButton)
+        self.storeButton =  OptionButtons(parent= topPanel,size=(120, 80))
+        
+        self.storeButton.setOptions (map(lambda name: (name,
+                                                       lambda n=name:
+                                                       self.setMode(n)),
+                                         self.storedModes))
+        self.storeButton.mainButton.SetLabel(text='Path')
+        buttonSizer.Add(self.storeButton)
         snapButton = toggleButton.ToggleButton(textSize = 12,
                 label = "Snap",
                 size = (120, 80), parent = topPanel)
@@ -351,20 +357,63 @@ class MainWindow(wx.Frame):
                 print ("Opening first of %d files. Others can be viewed by dragging them from the filesystem onto the main window of the Cockpit." % len(filenames))
 
 
+    ##user defined modes which include cameras and lasers active,
+    ##filter whieels etc...
+    def setMode(self, name):
+        #store mode to text file
+        if name == 'Save...':
+            self.onSaveExposureSettings(self.currentMode)
+        elif name == 'Load...':
+            self.onLoadExposureSettings()
+        elif name == 'Update' and self.currentMode != None:
+            events.publish('save exposure settings',
+                           self.storedModes[self.currentMode])
+            self.storeButton.setOption(self.currentMode)
+        elif name == 'New...':
+            self.createNewMode()
+        else:
+            print ('selected mode ',name) 
+            events.publish('load exposure settings', self.storedModes[name])
+            self.currentMode = name
+            self.storeButton.setOption(name)
+
+    def createNewMode(self):
+        #get name for new mode
+        # abuse get value dialog which will also return a string. 
+        value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
+            parent=self.topPanel, default='', title='New Mode Name',
+            prompt='Name', atMouse=True)
+        self.storedModes[value]=dict()
+        #publish an event to populate mode settings.
+        events.publish('save exposure settings', self.storedModes[value])
+        #update button entries.
+        self.storeButton.setOptions(map(lambda name: (name,
+                                                       lambda n=name:
+                                                       self.setMode(n)),
+                                         self.storedModes))
+        #and set button value. 
+        self.storeButton.setOption(value)
+        self.currentMode = value
+
+                       
+                
     ## User wants to save the current exposure settings; get a file path
     # to save to, collect exposure information via an event, and save it.
-    def onSaveExposureSettings(self, event = None):
+    def onSaveExposureSettings(self, name, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
+                               defaultFile=name+'.txt',
                 message = "Please select where to save the settings.",
                 defaultDir = cockpit.util.user.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
+            self.storeButton.setOption(name)
             return
         settings = dict()
         events.publish('save exposure settings', settings)
         handle = open(dialog.GetPath(), 'w')
         handle.write(json.dumps(settings))
         handle.close()
+        self.storeButton.setOption(name)
 
     
     ## User wants to load an old set of exposure settings; get a file path
@@ -375,11 +424,27 @@ class MainWindow(wx.Frame):
                 defaultDir = cockpit.util.user.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
+            self.storeButton.setOption(self.currentMode)
             return
         handle = open(dialog.GetPath(), 'r')
-        settings = json.loads('\n'.join(handle.readlines()))
+        modeName=os.path.splitext(os.path.basename(handle.name))[0]
+        #get name for new mode
+        # abuse get value dialog which will also return a string. 
+        name = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
+            parent=self.topPanel, default=modeName, title='New Mode Name',
+            prompt='Name')
+        self.storedModes[name] = json.loads('\n'.join(handle.readlines()))
         handle.close()
-        events.publish('load exposure settings', settings)
+        events.publish('load exposure settings', self.storedModes[name])
+        #update button list
+        self.storeButton.setOptions(map(lambda name: (name,
+                                                       lambda n=name:
+                                                       self.setMode(n)),
+                                         self.storedModes))
+        #and set button value. 
+        self.storeButton.setOption(name)
+        self.currentMode = name
+       
 
         # If we're using the listbox approach to show/hide light controls,
         # then make sure all enabled lights are shown and vice versa.
