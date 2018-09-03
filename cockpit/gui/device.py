@@ -442,6 +442,8 @@ class OptionButtons(wx.Panel):
             label = None
         super(OptionButtons, self).__init__(*args, **kwargs)
 
+        self.size = kwargs.get('size', TALL_SIZE)
+
         s = wx.BoxSizer(wx.VERTICAL)
         if label:
             labelctrl = Label(parent=self, label=label)
@@ -449,7 +451,7 @@ class OptionButtons(wx.Panel):
 
         self.mainButton = Button(label='...',
                                  parent=self,
-                                 size=TALL_SIZE)
+                                 size=self.size)
         self.mainButton.Bind(wx.EVT_LEFT_UP, self.showButtons)
         s.Add(self.mainButton)
         self.SetSizerAndFit(s)
@@ -492,7 +494,7 @@ class OptionButtons(wx.Panel):
         for b in self.buttons:
             del (b)
         for label, callback in options:
-            b = Button(label=label, parent=self.subframe, size=TALL_SIZE)
+            b = Button(label=label, parent=self.subframe, size=self.size)
             b.Bind(wx.EVT_LEFT_UP, lambda evt, b=b, c=callback: self.onButton(b, c))
             self.subframe.Sizer.Add(b)
             self.buttons.append(b)
