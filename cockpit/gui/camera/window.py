@@ -85,8 +85,6 @@ class CamerasWindow(wx.Frame):
 
         events.subscribe("camera enable", self.onCameraEnableEvent)
         events.subscribe("image pixel info", self.onImagePixelInfo)
-        events.subscribe('save exposure settings', self.onSaveSettings)
-        events.subscribe('load exposure settings', self.onLoadSettings)
         cockpit.gui.keyboard.setKeyboardHandlers(self)
 
         self.Bind(wx.EVT_CLOSE, self.onClose)
@@ -101,25 +99,6 @@ class CamerasWindow(wx.Frame):
         events.publish('program exit')
         event.Skip()
 
-
-    ## Save our settings in the provided dict.
-    def onSaveSettings(self, settings):
-        settings['camera view window'] = []
-        for view in self.views:
-            if view.curCamera is not None:
-                settings['camera view window'].append(view.curCamera.name)
-
-
-    ## Load our settings from the provided dict.
-    def onLoadSettings(self, settings):
-        # This code breaks as the views dont nessecarily exist.
-        # now subscribing from individual cameras.
-#        for view in self.views:
-#            view.disableCamera()
-#        for i, camName in enumerate(settings.get('camera view window', [])):
-#            camera = depot.getHandlerWithName(camName)
-#            self.views[i].enableCamera(camera)
-        pass
 
     @cockpit.util.threads.callInMainThread
     def onCameraEnableEvent(self, camera, enabled):
