@@ -157,7 +157,7 @@ class MainWindow(wx.Frame):
                                                        lambda n=name:
                                                        self.setMode(n)),
                                          self.storedModes))
-        self.storeButton.mainButton.SetLabel(text='Config\npath')
+        self.storeButton.mainButton.SetLabel(text='Path')
         buttonSizer.Add(self.storeButton)
         snapButton = toggleButton.ToggleButton(textSize = 12,
                 label = "Snap",
@@ -382,7 +382,7 @@ class MainWindow(wx.Frame):
         # abuse get value dialog which will also return a string. 
         value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
             parent=self.topPanel, default='', title='New Mode Name',
-            prompt='Name')
+            prompt='Name', atMouse=True)
         self.storedModes[value]=dict()
         #publish an event to populate mode settings.
         events.publish('save exposure settings', self.storedModes[value])
