@@ -93,8 +93,8 @@ class LinkamStage(stage.StageDevice):
         events.subscribe('load exposure settings', self.onLoadSettings)
 
 
-     ## Save our settings in the provided dict.
-     def onSaveSettings(self, settings):
+    ## Save our settings in the provided dict.
+    def onSaveSettings(self, settings):
          #hack as no way to read state at the momnent. Need to FIX.
          settings[self.name] = {'condensor': 0 }
 
