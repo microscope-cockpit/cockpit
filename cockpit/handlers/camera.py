@@ -144,7 +144,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
     def onLoadSettings(self, settings):
         if self.name in settings:
             # only chnage state if we need to as this is slow
-            if (self.getIsEnabled() != settings[self.name]):
+            if self.getIsEnabled() != settings[self.name]:
                 self.setEnabled(settings[self.name])
 
     @property
