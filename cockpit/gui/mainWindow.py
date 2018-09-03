@@ -73,7 +73,8 @@ import cockpit.util.user
 import cockpit.util.userConfig
 from . import viewFileDropTarget
 from cockpit.gui.device import OptionButtons
-
+import cockpit.gui
+import os.path
 
 from six import iteritems
 
@@ -93,6 +94,13 @@ class MainWindow(wx.Frame):
     # user interface; we assume that the devices have already been initialized.
     def __init__(self):
         wx.Frame.__init__(self, parent = None, title = "Cockpit program")
+
+        #set window icon
+        self.bitmapsPath = cockpit.gui.BITMAPS_PATH
+        icon = wx.Icon(wx.Bitmap(os.path.join( self.bitmapsPath,
+                                               "cockpit.ico"), 
+                                 wx.BITMAP_TYPE_ANY))
+        self.SetIcon(icon)
 
         # Find out what devices we have to work with.
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
