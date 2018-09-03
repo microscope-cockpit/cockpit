@@ -58,6 +58,7 @@ from __future__ import absolute_import
 
 import json
 import wx
+import os.path
 
 from cockpit import depot
 from .dialogs.experiment import multiSiteExperiment
@@ -422,7 +423,6 @@ class MainWindow(wx.Frame):
     ## User wants to load an old set of exposure settings; get a file path
     # to load from, and publish an event with the data.
     def onLoadExposureSettings(self, event = None):
-        import os.path
         dialog = wx.FileDialog(self, style = wx.FD_OPEN, wildcard = '*.txt',
                 message = "Please select the settings file to load.",
                 defaultDir = cockpit.util.user.getUserSaveDir())
