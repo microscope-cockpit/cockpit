@@ -353,8 +353,9 @@ class Alpao(device.Device):
             except:
                 raise e
 
-        controlMatrix = self.AlpaoConnection.calibrate()
+        controlMatrix, sys_flat = self.AlpaoConnection.calibrate()
         Config.setValue('alpao_controlMatrix', np.ndarray.tolist(controlMatrix), isGlobal=True)
+        Config.setValue('alpao_sys_flat', np.ndarray.tolist(sys_flat), isGlobal=True)
 
     def onCharacterise(self):
         try:
