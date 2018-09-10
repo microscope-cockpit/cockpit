@@ -294,8 +294,8 @@ class Alpao(device.Device):
             label='Reset DM',
             parent=self.panel,
             size=cockpit.gui.device.DEFAULT_SIZE)
-        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt:self.AlpaoConnection.send((
-                                                    np.zeros(self.no_actuators) + 0.5)))
+        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt:self.AlpaoConnection.send(
+                                            np.zeros(self.AlpaoConnection.get_n_actuators())+0.5))
         self.elements['resetButton'] = resetButton
 
         # Visualise current interferometric phase
@@ -691,8 +691,8 @@ class View(tk.Frame):
     def create_widgets(self):
         self.canvas = tk.Canvas(self, width=700, height=700)
         self.array = np.asarray(self.image_np)
-        self.array_norm = (self.image_np/np.max(self.image_np))*255.0
-        self.convert = Image.fromarray(self.array_norm)
+        #self.array_norm = (self.image_np/np.max(self.image_np))*255.0
+        self.convert = Image.fromarray(self.array)
         self.convert_flip = self.convert.transpose(Image.FLIP_TOP_BOTTOM)
         self.image = ImageTk.PhotoImage(image = self.convert_flip)
         self.canvas.create_image(self.offset[0], self.offset[1], anchor = tk.NW, image = self.image)
