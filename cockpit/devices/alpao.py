@@ -497,6 +497,11 @@ class Alpao(device.Device):
         resize_dim = original_dim/2
         while original_dim % resize_dim is not 0:
             resize_dim -= 1
+        interferogram_ft_resize = np.log(abs(self.bin_ndarray(unwrapped_phase, new_shape=
+                                    (resize_dim, resize_dim), operation='mean')))
+        app_ft = View(image_np=interferogram_ft_resize)
+        app_ft.master.title('Interferogram Fourier transform')
+        app_ft.mainloop()
         unwrapped_phase_resize = self.bin_ndarray(unwrapped_phase, new_shape=
                                     (resize_dim, resize_dim), operation='mean')
         app = View(image_np=unwrapped_phase_resize)
@@ -691,7 +696,7 @@ class View(tk.Frame):
     def create_widgets(self):
         self.canvas = tk.Canvas(self, width=700, height=700)
         self.array = np.asarray(self.image_np)
-        #self.array_norm = (self.image_np/np.max(self.image_np))*255.0
+        self.array_norm = (self.image_np/np.max(self.image_np))*255.0
         self.convert = Image.fromarray(self.array)
         self.convert_flip = self.convert.transpose(Image.FLIP_TOP_BOTTOM)
         self.image = ImageTk.PhotoImage(image = self.convert_flip)
