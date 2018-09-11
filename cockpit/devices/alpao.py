@@ -41,7 +41,7 @@ class Alpao(device.Device):
         ## Connect to the remote program
     def initialize(self):
         self.AlpaoConnection = Pyro4.Proxy(self.uri)
-        #self.AlpaoConnection.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
+        self.AlpaoConnection.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
         self.no_actuators = self.AlpaoConnection.get_n_actuators()
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
