@@ -373,7 +373,6 @@ class MainWindow(wx.Frame):
         elif name == 'New...':
             self.createNewPath()
         else:
-            print ('selected path ',name) 
             events.publish('load exposure settings', self.paths[name])
             self.currentPath = name
             self.pathButton.setOption(name)
