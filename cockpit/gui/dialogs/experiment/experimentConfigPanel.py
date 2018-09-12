@@ -439,6 +439,7 @@ class ExperimentConfigPanel(wx.Panel):
 
     ## Run the experiment per the user's settings.
     def runExperiment(self):
+        # Returns True to close dialog box, None or False otherwise.
         self.saveSettings()
         # Find the Z mover with the smallest range of motion, assumed
         # to be our experiment mover.
@@ -452,7 +453,7 @@ class ExperimentConfigPanel(wx.Panel):
             wx.MessageDialog(self,
                     message = "No cameras are enabled, so the experiment cannot be run.",
                     style = wx.ICON_EXCLAMATION | wx.STAY_ON_TOP | wx.OK).ShowModal()
-            return
+            return True
         lights = list(filter(lambda l: l.getIsEnabled(),
                 depot.getHandlersOfType(depot.LIGHT_TOGGLE)))
         
@@ -516,7 +517,7 @@ class ExperimentConfigPanel(wx.Panel):
             params = self.experimentModuleToPanel[module].augmentParams(params)
 
         self.runner = module.EXPERIMENT_CLASS(**params)
-        self.runner.run()
+        return self.runner.run()
 
 
     ## Generate a dict of our current settings.
