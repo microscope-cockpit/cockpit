@@ -445,10 +445,10 @@ class MainWindow(wx.Frame):
         name = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
             parent=self.topPanel, default=modeName, title='New Path Name',
             prompt='Name')
-        self.paths[name] = json.loads('\n'.join(handle.readlines()))
-        handle.close()
         if name not in self.paths:
             self.pathList.append(name)
+        self.paths[name] = json.loads('\n'.join(handle.readlines()))
+        handle.close()
         events.publish('load exposure settings', self.paths[name])
         #update button list
         self.pathButton.setOptions(map(lambda name: (name,
