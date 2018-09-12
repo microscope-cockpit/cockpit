@@ -127,12 +127,7 @@ class SingleSiteExperimentDialog(wx.Dialog):
         self.statusbar.SetLabel('')
         if not self.Validate():
             return
-        message = self.panel.runExperiment()
-        if message is not None:
-            wx.MessageBox("The experiment cannot be run:\n%s" % message,
-                    "Error", wx.OK | wx.ICON_ERROR | wx.STAY_ON_TOP)
-            return
-        else:
+        if self.panel.runExperiment():
             self.Hide()
 
 
