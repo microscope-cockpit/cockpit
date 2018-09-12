@@ -105,8 +105,9 @@ class MainWindow(wx.Frame):
         ## Maps LightSource handlers to their associated panels of controls.
         self.lightToPanel = dict()
         ##repload stored modes with save, new and load
-        self.storedModes = {'New...': 0, 'Update': 0,'Load...': 0, 'Save...': 0} 
-        self.currentMode = None
+        self.pathList = ['New...', 'Update','Load...', 'Save...']
+        self.paths=dict()
+        self.currentPath = None
 
         # Construct the UI.
         # Sizer for all controls. We'll split them into bottom half (light
@@ -151,14 +152,14 @@ class MainWindow(wx.Frame):
         self.videoButton.Bind(wx.EVT_LEFT_DOWN,
                 lambda event: cockpit.interfaces.imager.videoMode())
         buttonSizer.Add(self.videoButton)
-        self.storeButton =  OptionButtons(parent= topPanel,size=(120, 80))
+        self.pathButton =  OptionButtons(parent= topPanel,size=(120, 80))
         
-        self.storeButton.setOptions (map(lambda name: (name,
+        self.pathButton.setOptions (map(lambda name: (name,
                                                        lambda n=name:
-                                                       self.setMode(n)),
-                                         self.storedModes))
-        self.storeButton.mainButton.SetLabel(text='Path')
-        buttonSizer.Add(self.storeButton)
+                                                       self.setPath(n)),
+                                         self.pathList))
+        self.pathButton.mainButton.SetLabel(text='Path')
+        buttonSizer.Add(self.pathButton)
         snapButton = toggleButton.ToggleButton(textSize = 12,
                 label = "Snap",
                 size = (120, 80), parent = topPanel)
@@ -359,41 +360,42 @@ class MainWindow(wx.Frame):
 
     ##user defined modes which include cameras and lasers active,
     ##filter whieels etc...
-    def setMode(self, name):
+    def setPath(self, name):
         #store mode to text file
         if name == 'Save...':
-            self.onSaveExposureSettings(self.currentMode)
+            self.onSaveExposureSettings(self.currentPath)
         elif name == 'Load...':
             self.onLoadExposureSettings()
-        elif name == 'Update' and self.currentMode != None:
+        elif name == 'Update' and self.currentPath != None:
             events.publish('save exposure settings',
-                           self.storedModes[self.currentMode])
-            self.storeButton.setOption(self.currentMode)
+                           self.paths[self.currentPath])
+            self.pathButton.setOption(self.currentPath)
         elif name == 'New...':
-            self.createNewMode()
+            self.createNewPath()
         else:
-            print ('selected mode ',name) 
-            events.publish('load exposure settings', self.storedModes[name])
-            self.currentMode = name
-            self.storeButton.setOption(name)
+            print ('selected path ',name) 
+            events.publish('load exposure settings', self.paths[name])
+            self.currentPath = name
+            self.pathButton.setOption(name)
 
-    def createNewMode(self):
+    def createNewPath(self):
         #get name for new mode
         # abuse get value dialog which will also return a string. 
-        value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-            parent=self.topPanel, default='', title='New Mode Name',
+        pathName = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
+            parent=self.topPanel, default='', title='New Path Name',
             prompt='Name', atMouse=True)
-        self.storedModes[value]=dict()
+        self.paths[pathName]=dict()
+        self.pathList.append(pathName)
         #publish an event to populate mode settings.
-        events.publish('save exposure settings', self.storedModes[value])
+        events.publish('save exposure settings', self.paths[pathName])
         #update button entries.
-        self.storeButton.setOptions(map(lambda name: (name,
+        self.pathButton.setOptions(map(lambda name: (name,
                                                        lambda n=name:
-                                                       self.setMode(n)),
-                                         self.storedModes))
+                                                       self.setPath(n)),
+                                         self.pathList))
         #and set button value. 
-        self.storeButton.setOption(value)
-        self.currentMode = value
+        self.pathButton.setOption(pathName)
+        self.currentPath = pathName
 
                        
                 
@@ -406,14 +408,14 @@ class MainWindow(wx.Frame):
                 defaultDir = cockpit.util.user.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
-            self.storeButton.setOption(name)
+            self.pathButton.setOption(name)
             return
         settings = dict()
         events.publish('save exposure settings', settings)
         handle = open(dialog.GetPath(), 'w')
         handle.write(json.dumps(settings))
         handle.close()
-        self.storeButton.setOption(name)
+        self.pathButton.setOption(name)
 
     
     ## User wants to load an old set of exposure settings; get a file path
@@ -424,26 +426,27 @@ class MainWindow(wx.Frame):
                 defaultDir = cockpit.util.user.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
-            self.storeButton.setOption(self.currentMode)
+            self.pathButton.setOption(self.currentPath)
             return
         handle = open(dialog.GetPath(), 'r')
         modeName=os.path.splitext(os.path.basename(handle.name))[0]
         #get name for new mode
         # abuse get value dialog which will also return a string. 
         name = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-            parent=self.topPanel, default=modeName, title='New Mode Name',
+            parent=self.topPanel, default=modeName, title='New Path Name',
             prompt='Name')
-        self.storedModes[name] = json.loads('\n'.join(handle.readlines()))
+        self.paths[name] = json.loads('\n'.join(handle.readlines()))
         handle.close()
-        events.publish('load exposure settings', self.storedModes[name])
+        self.pathList.append(name)
+        events.publish('load exposure settings', self.paths[name])
         #update button list
-        self.storeButton.setOptions(map(lambda name: (name,
+        self.pathButton.setOptions(map(lambda name: (name,
                                                        lambda n=name:
-                                                       self.setMode(n)),
-                                         self.storedModes))
+                                                       self.setPath(n)),
+                                         self.pathList))
         #and set button value. 
-        self.storeButton.setOption(name)
-        self.currentMode = name
+        self.pathButton.setOption(name)
+        self.currentPath = name
        
 
         # If we're using the listbox approach to show/hide light controls,
