@@ -42,9 +42,15 @@ class Alpao(device.Device):
     def initialize(self):
         self.AlpaoConnection = Pyro4.Proxy(self.uri)
         self.AlpaoConnection.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
+        self.AlpaoConnection.set_trigger(cp_ttype="SOFTWARE",cp_tmode="ONCE")
         self.no_actuators = self.AlpaoConnection.get_n_actuators()
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
+
+        #Excercise the DM to remove residual static and then set to 0 position
+        for ii in range(20):
+            self.AlpaoConnection.send((np.ones(self.no_actuators)*(ii%2)))
+        self.AlpaoConnection.send((np.zeros(self.no_actuators) + 0.5))
 
         #Create accurate look up table for certain Z positions
         ##LUT dict has key of Z positions
@@ -217,8 +223,8 @@ class Alpao(device.Device):
             label='Reset DM',
             parent=self.panel,
             size=cockpit.gui.device.DEFAULT_SIZE)
-        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt:self.AlpaoConnection.send(
-                                            np.zeros(self.AlpaoConnection.get_n_actuators())+0.5))
+        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt:self.AlpaoConnection.send((
+                                                    np.zeros(self.no_actuators) + 0.5)))
         self.elements['resetButton'] = resetButton
 
         # Visualise current interferometric phase
