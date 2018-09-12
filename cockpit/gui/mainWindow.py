@@ -386,6 +386,13 @@ class MainWindow(wx.Frame):
         pathName = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
             parent=self.topPanel, default='', title='New Path Name',
             prompt='Name', atMouse=True)
+        if pathName =='':
+            return()
+        if pathName in self.paths :
+            events.publish('save exposure settings',
+                           self.paths[pathName])
+            self.pathButton.setOption(pathName)
+            return()
         self.paths[pathName]=dict()
         self.pathList.append(pathName)
         #publish an event to populate mode settings.
