@@ -491,8 +491,7 @@ class OptionButtons(wx.Panel):
 
     def setOptions(self, options):
         # Set buttons with options = [(label, callback or None), ...]
-        for b in self.buttons:
-            del (b)
+        self.buttons=[]
         self.subframe.Sizer.Clear()
         for label, callback in options:
             b = Button(label=label, parent=self.subframe, size=self.size)
