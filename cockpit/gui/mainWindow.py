@@ -104,7 +104,7 @@ class MainWindow(wx.Frame):
 
         ## Maps LightSource handlers to their associated panels of controls.
         self.lightToPanel = dict()
-        ##repload stored modes with save, new and load
+        ##objects to store paths and button names
         self.pathList = ['New...', 'Update','Load...', 'Save...']
         self.paths=dict()
         self.currentPath = None
@@ -361,15 +361,18 @@ class MainWindow(wx.Frame):
     ##user defined modes which include cameras and lasers active,
     ##filter whieels etc...
     def setPath(self, name):
-        #store mode to text file
+        #store current path to text file
         if name == 'Save...':
             self.onSaveExposureSettings(self.currentPath)
+        #load stored path
         elif name == 'Load...':
             self.onLoadExposureSettings()
+        #update settings for current path
         elif name == 'Update' and self.currentPath != None:
             events.publish('save exposure settings',
                            self.paths[self.currentPath])
             self.pathButton.setOption(self.currentPath)
+        #create newe stored path with current settings.
         elif name == 'New...':
             self.createNewPath()
         else:
