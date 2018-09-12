@@ -386,7 +386,8 @@ class MainWindow(wx.Frame):
         pathName = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
             parent=self.topPanel, default='', title='New Path Name',
             prompt='Name', atMouse=True)
-        if pathName =='':
+        if not pathName:
+            #None or empty string
             return()
         if pathName in self.paths :
             events.publish('save exposure settings',
