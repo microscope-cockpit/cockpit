@@ -447,7 +447,8 @@ class MainWindow(wx.Frame):
             prompt='Name')
         self.paths[name] = json.loads('\n'.join(handle.readlines()))
         handle.close()
-        self.pathList.append(name)
+        if name not in self.paths:
+            self.pathList.append(name)
         events.publish('load exposure settings', self.paths[name])
         #update button list
         self.pathButton.setOptions(map(lambda name: (name,
