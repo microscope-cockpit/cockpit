@@ -193,6 +193,7 @@ class Alpao(device.Device):
         # (time, self).
 
         actions = []
+        remote_focus_LUT = []
 
         tPrev = None
         hPrev = None
@@ -228,12 +229,18 @@ class Alpao(device.Device):
                     pass
                 elif type(args) == np.ndarray:
                     self.AlpaoConnection.send(args)
-                elif type(args) == str:
-                    if args == "flatten":
-                        self.AlpaoConnection.flatten_phase()
+                elif type(args) == tuple:
+                    if args[1] == "flatten":
+                        LUT_values = np.zeros(self.no_actuators + 1)
+                        LUT_values[0] = args[0]
+                        LUT_values[1:] = self.AlpaoConnection.flatten_phase()
+                        remote_focus_LUT.append(np.ndarray.tolist(LUT_values))
                 else:
                     raise Exception("Argument Error: Argument type %s not understood." % str(type(args)))
 
+        if len(remote_focus_LUT) != 0:
+            np.savetxt('remote_focus_LUT.txt', remote_focus_LUT)
+            
         events.publish('update status light', 'device waiting',
                         'Waiting for\n%s to finish' % self.name, (255, 255, 0))
 
