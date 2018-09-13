@@ -170,6 +170,70 @@ class Alpao(device.Device):
         result.append(self.handler)
         return result
 
+    ## Run a portion of a table describing the actions to perform in a given
+    # experiment.
+    # \param table An ActionTable instance.
+    # \param startIndex Index of the first entry in the table to run.
+    # \param stopIndex Index of the entry before which we stop (i.e. it is
+    #        not performed).
+    # \param numReps Number of times to iterate the execution.
+    # \param repDuration Amount of time to wait between reps, or None for no
+    #        wait time.
+    def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
+        # The actions between startIndex and stopIndex may include actions for
+        # this handler, or for this handler's clients. All actions are
+        # ultimately carried out by this handler, so we need to parse the
+        # table to replace client actions, resulting in a table of
+        # (time, self).
+
+        actions = []
+
+        tPrev = None
+        hPrev = None
+        argsPrev = None
+
+        for i in range(startIndex, stopIndex):
+            t, h, args = table[i]
+            # Check for simultaneous actions.
+            if tPrev is not None and t == tPrev:
+                if h not in hPrev:
+                    # Update last action to merge actions at same timepoint.
+                    actions[-1] = (t, self)
+                    # Add handler and args to list for next check.
+                    hPrev.append(h)
+                    argsPrev.append(args)
+                elif args == argsPrev[hPrev.index(h)]:
+                    # Just a duplicate entry
+                    continue
+                else:
+                    # Simultaneous, different actions with same handler.
+                    raise Exception("Simultaneous actions with same hander, %s." % h)
+            else:
+                # Append new action.
+                actions.append((t, self))
+                # Reinitialise hPrev and argsPrev for next check.
+                hPrev, argsPrev = [h], [args]
+                tPrev = t
+
+            if h is self.handler:
+                if type(args) == float:
+                    # This should have been replaced by a trigger and the entry cleared
+                    # Theoretically, this check should always be False
+                    pass
+                elif type(args) == np.ndarray:
+                    self.AlpaoConnection.send(args)
+                elif type(args) == str:
+                    if args == "flatten":
+                        self.AlpaoConnection.flatten_phase()
+                else:
+                    raise Exception("Argument Error: Argument type %s not understood." % str(type(args)))
+
+        events.publish('update status light', 'device waiting',
+                        'Waiting for\n%s to finish' % self.name, (255, 255, 0))
+
+        return self.callbacks['executeTable'](self.name, actions, 0,
+                                                len(actions), numReps, repDuration)
+
     ### UI functions ###
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
