@@ -56,6 +56,7 @@ from . import experiment
 
 import decimal
 import math
+import cockpit.depot
 
 ## Provided so the UI knows what to call this experiment.
 EXPERIMENT_NAME = 'Remote Focus Z-stack Calibration'
@@ -63,6 +64,12 @@ EXPERIMENT_NAME = 'Remote Focus Z-stack Calibration'
 
 ## This class handles classic Z-stack experiments.
 class RFZStackCalibration(experiment.Experiment):
+    def __init__(self, *args, **kwargs):
+        experiment.Experiment.__init__(self, *args, **kwargs)
+
+        dmHandler = cockpit.depot.getHandlerWithName('dm')
+        self.dmHandler = dmHandler
+
     ## Create the ActionTable needed to run the experiment. We simply move to
     # each Z-slice in turn, take an image, then move to the next.
     def generateActions(self):
@@ -83,6 +90,8 @@ class RFZStackCalibration(experiment.Experiment):
                 motionTime, stabilizationTime = self.zPositioner.getMovementTime(prevAltitude, zTarget)
             curTime += motionTime
             table.addAction(curTime, self.zPositioner, zTarget)
+            if self.dmHandler is not None:
+                table.addAction(curTime, self.dmhandler, (zTarget, 'flatten'))
             curTime += stabilizationTime
             prevAltitude = zTarget
 
