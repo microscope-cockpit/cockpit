@@ -425,11 +425,6 @@ class Alpao(device.Device):
         resize_dim = original_dim/2
         while original_dim % resize_dim is not 0:
             resize_dim -= 1
-        interferogram_ft_resize = np.log(abs(self.bin_ndarray(unwrapped_phase, new_shape=
-                                    (resize_dim, resize_dim), operation='mean')))
-        app_ft = View(image_np=interferogram_ft_resize)
-        app_ft.master.title('Interferogram Fourier transform')
-        app_ft.mainloop()
         unwrapped_phase_resize = self.bin_ndarray(unwrapped_phase, new_shape=
                                     (resize_dim, resize_dim), operation='mean')
         app = View(image_np=unwrapped_phase_resize)
