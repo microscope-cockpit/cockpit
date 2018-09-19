@@ -41,7 +41,7 @@ class Alpao(device.Device):
         ## Connect to the remote program
     def initialize(self):
         self.AlpaoConnection = Pyro4.Proxy(self.uri)
-        self.AlpaoConnection.set_trigger(cp_ttype="SOFTWARE",cp_tmode="ONCE")
+        #self.AlpaoConnection.set_trigger(cp_ttype="SOFTWARE",cp_tmode="ONCE")
         self.no_actuators = self.AlpaoConnection.get_n_actuators()
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
@@ -222,8 +222,7 @@ class Alpao(device.Device):
             label='Reset DM',
             parent=self.panel,
             size=cockpit.gui.device.DEFAULT_SIZE)
-        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt:self.AlpaoConnection.send((
-                                                    np.zeros(self.no_actuators) + 0.5)))
+        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt:self.AlpaoConnection.reset())
         self.elements['resetButton'] = resetButton
 
         # Visualise current interferometric phase
