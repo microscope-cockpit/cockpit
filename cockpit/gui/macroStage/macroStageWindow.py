@@ -108,19 +108,6 @@ class MacroStageWindow(wx.Frame):
                 size = (width * 3, height * 1), id = -1)
         self.sizer.Add(self.macroStageZKey, (6, 5), (1, 3))
         self.sizer.Add(self.makeZButtons(), (7, 5), (1, 3))
-        
-        ## This allows the user to write notes to themselves, which
-        # we save.
-        self.comments = wx.TextCtrl(self, -1,
-                style = wx.BORDER_SUNKEN | wx.TE_MULTILINE)
-        self.comments.SetMinSize((width * 1, height * 6))
-        self.comments.Bind(wx.EVT_TEXT, self.onUpdateComments)
-        self.sizer.Add(self.comments, (0, 10), (6, 1))
-        ## onUpdateComments starts a timer that, when it hits zero,
-        # causes us to save the comments. This saves us from
-        # writing the config file too often
-        self.commentsTimer = wx.Timer(self, -1)
-        self.Bind(wx.EVT_TIMER, self.onCommentsTimer, self.commentsTimer)
 
         self.saveTopBottomPanel = cockpit.gui.saveTopBottomPanel.createSaveTopBottomPanel(self)
         self.sizer.Add(self.saveTopBottomPanel, (6, 8), (2, 3))
@@ -174,20 +161,6 @@ class MacroStageWindow(wx.Frame):
         return sizer
 
 
-    ## The user updated the comments. Start a countdown to
-    # save the contents when they stop typing.
-    def onUpdateComments(self, event):
-        self.commentsTimer.Stop()
-        self.commentsTimer.Start(10000)
-
-
-    ## Save the contents of the comments box.
-    def onCommentsTimer(self, event):
-        content = self.comments.GetValue()
-        cockpit.util.userConfig.setValue('histogramComments', content)
-        self.commentsTimer.Stop()
-
-
     ## Passthrough to MacroStageXY.setXYLimit()
     def setXYLimit(self, *args):
         self.macroStageXY.setXYLimit(*args)
@@ -207,10 +180,3 @@ def makeWindow(parent):
 ## Passthrough
 def setXYLimit():
     window.setXYLimit()
-
-
-## Signals that the user has logged in and we can grab
-# any config-dependent values.
-def userLoggedIn():
-    comments = cockpit.util.userConfig.getValue('histogramComments', default = '')
-    window.comments.SetValue(comments)

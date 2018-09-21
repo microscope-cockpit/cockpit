@@ -66,22 +66,22 @@ import time
 
 
 ## Immediate-mode experiments are Experiments which perform actions via the
-# standard cockpit interactions (e.g. using interfaces.imager.takeImage()) 
-# instead of by generating an ActionTable. As a result, they are easier to 
+# standard cockpit interactions (e.g. using interfaces.imager.takeImage())
+# instead of by generating an ActionTable. As a result, they are easier to
 # write, but may not benefit from speed enhancements that the ActionTable
-# approach allows. 
+# approach allows.
 class ImmediateModeExperiment(experiment.Experiment):
     ## We need to provide enough information here to fill in certain important
     # values in the header. Specifically, we need to know how many images
     # per rep, and how many reps. We would also like to know the Z pixel
-    # size (i.e. the distance between images in a 3D volume), if applicable. 
+    # size (i.e. the distance between images in a 3D volume), if applicable.
     # And of course we need the save path for the file (or else no data will
-    # be recorded). Optionally, additional metadata can be supplied. 
+    # be recorded). Optionally, additional metadata can be supplied.
     def __init__(self, numReps, repDuration, imagesPerRep, sliceHeight = 0,
             metadata = '', savePath = ''):
         ## Number of images to be collected per camera per rep.
         self.imagesPerRep = imagesPerRep
-        ## List of cameras. Assume our cameras are all active cameras. 
+        ## List of cameras. Assume our cameras are all active cameras.
         self.cameras = []
         for cam in depot.getHandlersOfType(depot.CAMERA):
             if cam.getIsEnabled():
@@ -91,44 +91,22 @@ class ImmediateModeExperiment(experiment.Experiment):
         for light in depot.getHandlersOfType(depot.LIGHT_TOGGLE):
             if light.getIsEnabled():
                 self.lights.append(light)
-        experiment.Experiment.__init__(self, numReps, repDuration, 
-                None, 0, 0, sliceHeight, self.cameras, self.lights, {}, 
+        experiment.Experiment.__init__(self, numReps, repDuration,
+                None, 0, 0, sliceHeight, self.cameras, self.lights, {},
                 metadata = metadata, savePath = savePath)
 
+    def prepareHandlers(self):
+        """Unlike with normal experiments, we don't prep handlers."""
+        pass
 
-    ## Run the experiment. Unlike with normal experiments, we don't prep 
-    # handlers, and our DataSaver setup is a bit different. We still spin
-    # off saving and execution into separate threads.
+    def createValidActionTable(self):
+        pass
+
+    ## This experiment will generate images, which need to be saved.
+    ## Assume we use all active cameras and light sources.
     def run(self):
-        # Check if the user is set to save to an already-existing file.
-        if self.savePath and os.path.exists(self.savePath):
-            if not guiUtils.getUserPermission(
-                    ("The file:\n%s\nalready exists. " % self.savePath) +
-                    "Are you sure you want to overwrite it?"):
-                return
-        
-        # For debugging purposes, this could still be handy.
-        experiment.lastExperiment = self
-
-        runThread = threading.Thread(target = self.execute)
-        saver = None
-        saveThread = None
-        if self.savePath and self.imagesPerRep:
-            # This experiment will generate images, which need to be saved.
-            # Assume we use all active cameras and light sources.
-            camToImageCount = dict([(cam, self.imagesPerRep) for cam in self.cameras])
-            saver = dataSaver.DataSaver(self.cameras, self.numReps, 
-                    camToImageCount, self.cameraToIgnoredImageIndices, 
-                    runThread, self.savePath,
-                    self.sliceHeight, self.generateTitles())
-            saver.startCollecting()
-            saveThread = threading.Thread(target = saver.executeAndSave)
-            saveThread.start()
-            experiment.generatedFilenames.append(saver.getFilenames())
-            
-        runThread.start()
-        # Start up a thread to clean up after the experiment finishes.
-        threading.Thread(target = self.cleanup, args = [runThread, saveThread]).start()
+        self.cameraToImageCount = {c: self.imagesPerRep for c in self.cameras}
+        return experiment.Experiment.run(self)
 
 
     ## Run the experiment. Return True if it was successful. This will call
@@ -152,4 +130,3 @@ class ImmediateModeExperiment(experiment.Experiment):
     def executeRep(self, repNum):
         raise RuntimeError(("Immediate-mode experiment %s " % self) +
                 "didn't implement its executeRep function.")
-

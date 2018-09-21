@@ -26,13 +26,17 @@ import sys
 
 from ctypes import POINTER, c_char_p, c_int, c_uint
 
-if os.name in ('nt', 'ce'):
-    _ftgl = ctypes.WinDLL('ftgl')
-elif sys.platform == 'darwin':
-    _ftgl = ctypes.CDLL('libftgl.dylib')
-else:
-    _ftgl = ctypes.CDLL('libftgl.so')
+try:
+    if os.name in ('nt', 'ce'):
+        _ftgl = ctypes.WinDLL('ftgl')
+    elif sys.platform == 'darwin':
+        _ftgl = ctypes.CDLL('libftgl.dylib')
+    else:
+        _ftgl = ctypes.CDLL('libftgl.so')
 
+except:
+    raise RuntimeError('Unable to load ftgl libary')
+        
 class _FTGLfont(ctypes.Structure):
     pass
 

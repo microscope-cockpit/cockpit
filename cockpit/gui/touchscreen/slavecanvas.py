@@ -60,8 +60,6 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
         self.stageHardLimits = stageHardLimits
         self.overlayCallback = overlayCallback
 
-        ## Width and height of the canvas, in pixels.
-        self.width = self.height = None
         ## X and Y translation when rendering.
         self.dx, self.dy = 0.0, 0.0
         ## Scaling factor.
@@ -111,7 +109,6 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
     # We can now create textures, for example, so it's time to create our
     # MegaTiles.
     def initGL(self):
-        self.width, self.height = self.GetClientSize()
         glClearColor(1, 1, 1, 0)
         #tiles defined by main mosaic canvas.
         #        for x in range(self.stageHardLimits[0][0], self.stageHardLimits[0][1],
@@ -166,10 +163,12 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
             if not self.haveInitedGL:
                 self.initGL()
 
-            glViewport(0, 0, self.width, self.height)
+            width, height = self.GetClientSize()
+
+            glViewport(0, 0, width, height)
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
-            glOrtho(-.375, (self.width) - .375, -.375, self.height - .375, 1, -1)
+            glOrtho(-.375, width - .375, -.375, height - .375, 1, -1)
             glMatrixMode(GL_MODELVIEW)
 
             #Dont need this code as it is done in the main mosaic
@@ -200,7 +199,6 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
 
             glFlush()
             self.SwapBuffers()
-            events.publish('mosaic canvas paint')
 
         except Exception as e:
             print ("Error rendering the canvas:",e)
@@ -219,8 +217,10 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
         # Paranoia
         if not scale:
             return
-        self.dx = -x * scale + self.width / 2
-        self.dy = -y * scale + self.height / 2
+
+        width, height = self.GetClientSize()
+        self.dx = -x * scale + width / 2
+        self.dy = -y * scale + height / 2
         self.scale = scale
         self.Refresh()
 
@@ -232,8 +232,10 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
         if multiplier == 0:
             return
         self.scale *= multiplier
-        halfWidth = self.width / 2
-        halfHeight = self.height / 2
+        width, height = self.GetClientSize()
+
+        halfWidth = width / 2
+        halfHeight = height / 2
         self.dx = halfWidth - (halfWidth - self.dx) * multiplier
         self.dy = halfHeight - (halfHeight - self.dy) * multiplier
         self.Refresh()
@@ -248,16 +250,18 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
 
     ## Remap an (X, Y) tuple of screen coordinates to a location on the stage.
     def mapScreenToCanvas(self, pos):
+        height = self.GetClientSize()[1]
         return ((self.dx - pos[0]) / self.scale,
-                -(self.dy - self.height + pos[1]) / self.scale)
+                -(self.dy - height + pos[1]) / self.scale)
 
 
     ## Return a (bottom left, top right) tuple showing what part
     # of the stage is currently visible.
     def getViewBox(self):
+        width, height = self.GetClientSize()
         bottomLeft = (-self.dx / self.scale, -self.dy / self.scale)
-        topRight = (-(self.dx - self.width) / self.scale,
-                       -(self.dy - self.height) / self.scale)
+        topRight = (-(self.dx - width) / self.scale,
+                       -(self.dy - height) / self.scale)
         return (bottomLeft, topRight)
 
 
@@ -267,12 +271,6 @@ class SlaveCanvas(wx.glcanvas.GLCanvas):
             self.m_noShowLayers.add(layer)
         elif layer in self.m_noShowLayers:
             self.m_noShowLayers.remove(layer)
-
-
-    ## Accept a new size.
-    def setSize(self, size):
-        self.width, self.height = size
-        self.Refresh()
 
 
     ## Return our list of Tiles.

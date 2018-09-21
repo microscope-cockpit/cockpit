@@ -120,10 +120,7 @@ class ValueLoggerWindow(wx.Frame):
     def onRightMouse(self, *args):
         """Show a menu of available data on right mouse click."""
         menu = wx.Menu()
-        i = 0
-        menu.Append(i, 'Save to user config.')
-        menu.Bind(wx.EVT_MENU,  lambda event:self.saveShowKeysToConfig(), id= i)
-        i += 1
+        i = 1
         #if no logfile open then show openlogfile option
         if self.filehandle==None:
             menu.Append(i, 'Open logfile.')

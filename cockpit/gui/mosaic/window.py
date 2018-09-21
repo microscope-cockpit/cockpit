@@ -105,6 +105,8 @@ class MosaicWindow(wx.Frame):
         self.panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
+        ## Prevent r-click on buttons displaying MainWindow context menu.
+        self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         ## Last known location of the mouse.
         self.prevMousePos = None
         ## Last click position of the mouse.
@@ -282,7 +284,7 @@ class MosaicWindow(wx.Frame):
         if (self.crosshairBoxSize == 0):
             self.crosshairBoxSize = 512 * objective.getPixelSize()
         self.offset = objective.getOffset()
-        scale = (1/objective.getPixelSize())*(10./self.crosshairBoxSize)
+        scale = (150./self.crosshairBoxSize)
         self.canvas.zoomTo(-curPosition[0]+self.offset[0],
                            curPosition[1]-self.offset[1], scale)
 
@@ -292,7 +294,7 @@ class MosaicWindow(wx.Frame):
         size = self.GetClientSize()
         self.panel.SetSize(size)
         # Subtract off the pixels dedicated to the sidebar.
-        self.canvas.setSize((size[0] - SIDEBAR_WIDTH, size[1]))
+        self.canvas.SetClientSize((size[0] - SIDEBAR_WIDTH, size[1]))
 
 
     ## User logged in, so we may well have changed size; adjust our zoom to

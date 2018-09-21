@@ -105,8 +105,12 @@ class AndorCameraDevice(camera.CameraDevice):
         self.cached_settings={}
         self.settings['exposureTime'] = 0.001
         # Has water cooling? Default to False to ensure fan is active.
-        self.settings['isWaterCooled'] = False
-        self.settings['targetTemperature'] = -40
+        # but read from system config if we should enable water cooling.
+        if (self.config.get('iswatercooled')=='True'):
+            self.settings.update({'isWaterCooled': True})
+        else:
+            self.settings.update({'isWaterCooled': False})
+        self.settings.update({'targetTemperature': int(self.config.get('targettemperature', -40))})
         self.settings['EMGain'] = 0
         self.settings['amplifierMode'] = None
         self.settings['triggerMode'] = 1

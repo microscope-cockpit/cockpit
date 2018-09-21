@@ -246,7 +246,7 @@ class MicroscopeLaser(MicroscopeBase):
             trighandler = None
         self._exposureTime = 100
         self.handlers.append(cockpit.handlers.lightSource.LightHandler(
-            self.name + ' toggle',
+            self.name,
             self.name + ' light source',
             {'setEnabled': lambda name, on: self._setEnabled(on),
              'setExposureTime': lambda name, value: setattr(self, '_exposureTime', value),
@@ -308,14 +308,10 @@ class MicroscopeFilter(MicroscopeBase):
         return self.handlers
 
 
-    def setPosition(self, index, callback=None):
-        # position refers to wheel position.
-        # index refers to an element in the list of filters.
-        #self._proxy.set_setting('position', self.filters[index].position)
+    def setPosition(self, position, callback=None):
         asproxy = Pyro4.Proxy(self._proxy._pyroUri)
         asproxy._pyroAsync()
-        result = asproxy.set_setting('position',
-                                     self.filters[index].position).then(callback)
+        result = asproxy.set_setting('position', position).then(callback)
 
 
     def getPosition(self):

@@ -130,6 +130,12 @@ class LightHandler(deviceHandler.DeviceHandler):
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
         events.subscribe('light exposure update', self.setLabel)
+        # Most lasers use bulb-type triggering. Ensure they're not left on after
+        # an abort event.
+        if trigHandler and trigLine:
+            onAbort = lambda *args: trigHandler.setDigital(trigLine, False)
+            events.subscribe('user abort', onAbort)
+
 
     ## Save our settings in the provided dict.
     def onSaveSettings(self, settings):
@@ -141,8 +147,11 @@ class LightHandler(deviceHandler.DeviceHandler):
     ## Load our settings from the provided dict.
     def onLoadSettings(self, settings):
         if self.name in settings:
-            self.setExposureTime(settings[self.name]['exposureTime'])
-            self.setEnabled(settings[self.name]['isEnabled'])
+            #Only chnbage settings if needed.
+            if self.getExposureTime != settings[self.name]['exposureTime']:
+                self.setExposureTime(settings[self.name]['exposureTime'])
+            if self.getIsEnabled != settings[self.name]['isEnabled']:
+                self.setEnabled(settings[self.name]['isEnabled'])
 
 
     ## Turn the laser on, off, or set continuous exposure.
@@ -193,10 +202,7 @@ class LightHandler(deviceHandler.DeviceHandler):
         sizer = wx.BoxSizer(wx.VERTICAL)
         # Split the name across multiple lines.
         label = ['']
-        if self.name.endswith('toggle'):
-            name = self.name[0:-7].strip()
-        else:
-            name = self.name.strip()
+        name = self.name.strip()
         for i, word in enumerate(name.split(' ')):
             if len(label[-1] + word) > 10 and i > 0:
                 label.append('')

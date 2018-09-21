@@ -200,7 +200,6 @@ class MicroscopeCamera(camera.CameraDevice):
             trigline)
         # will be set with value from hardware later
         self.handler = result
-        self.handler.addListener(self)
         return [result]
 
 
@@ -231,13 +230,9 @@ class MicroscopeCamera(camera.CameraDevice):
         result.wait(timeout=10)
         #raise Exception("Problem enabling %s." % self.name)
         self.enabled = True
+        self.handler.exposureMode = self.proxy.get_trigger_type()
+        self.listener.connect()
         return self.enabled
-
-
-    def onEnabledEvent(self, evt=None):
-        if self.enabled:
-            self.handler.exposureMode = self.proxy.get_trigger_type()
-            self.listener.connect()
 
 
     def onPyroError(self, err, *args):
