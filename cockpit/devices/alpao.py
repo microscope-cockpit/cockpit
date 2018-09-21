@@ -48,8 +48,8 @@ class Alpao(device.Device):
 
         #Excercise the DM to remove residual static and then set to 0 position
         for ii in range(20):
-            self.AlpaoConnection.send((np.ones(self.no_actuators)*(ii%2)))
-        self.AlpaoConnection.send((np.zeros(self.no_actuators) + 0.5))
+            self.AlpaoConnection.send((np.ones(self.no_actuators)+((ii%2)*-2)))
+        self.AlpaoConnection.send((np.zeros(self.no_actuators)))
 
         #Create accurate look up table for certain Z positions
         ##LUT dict has key of Z positions
@@ -426,8 +426,11 @@ class Alpao(device.Device):
             resize_dim -= 1
         unwrapped_phase_resize = self.bin_ndarray(unwrapped_phase, new_shape=
                                     (resize_dim, resize_dim), operation='mean')
+        cycle_diff = abs(np.max(unwrapped_phase) - np.min(unwrapped_phase))/(2.0*np.pi)
         app = View(image_np=unwrapped_phase_resize)
-        app.master.title('Unwrapped interferogram')
+        app.master.title('Unwrapped interferogram. Max phase = %d, Min phase = %d, '
+                         'Cycle difference = %f'
+                         %(np.max(unwrapped_phase), np.min(unwrapped_phase), cycle_diff))
         app.mainloop()
 
     def onFlatten(self):
