@@ -67,6 +67,7 @@ from cockpit import events
 import cockpit.experiment.experiment
 from . import fileViewerWindow
 import cockpit.interfaces.imager
+from . import joystick
 from . import keyboard
 from . import toggleButton
 import cockpit.util.user
@@ -93,7 +94,6 @@ class MainWindow(wx.Frame):
     # user interface; we assume that the devices have already been initialized.
     def __init__(self):
         wx.Frame.__init__(self, parent = None, title = "Cockpit program")
-
         # Find out what devices we have to work with.
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         lightToggles = sorted(lightToggles, key = lambda l: float(l.wavelength))
@@ -312,6 +312,7 @@ class MainWindow(wx.Frame):
         self.SetSizerAndFit(mainSizer)
 
         keyboard.setKeyboardHandlers(self)
+        self.joystick = joystick.Joystick(self)
         self.SetDropTarget(viewFileDropTarget.ViewFileDropTarget(self))
         self.Bind(wx.EVT_MOVE, self.onMove)
         self.Bind(wx.EVT_CLOSE, self.onClose)
