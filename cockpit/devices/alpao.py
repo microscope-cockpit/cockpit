@@ -48,8 +48,8 @@ class Alpao(device.Device):
 
         #Excercise the DM to remove residual static and then set to 0 position
         for ii in range(20):
-            self.AlpaoConnection.send((np.ones(self.no_actuators)+((ii%2)*-2)))
-        self.AlpaoConnection.send((np.zeros(self.no_actuators)))
+            self.AlpaoConnection.send((np.zeros(self.no_actuators)+(ii%2)))
+        self.AlpaoConnection.reset()
 
         #Create accurate look up table for certain Z positions
         ##LUT dict has key of Z positions
@@ -66,6 +66,19 @@ class Alpao(device.Device):
         if self.LUT is not None:
             self.actuator_slopes, self.actuator_intercepts = \
                 self.remote_ac_fits(LUT_array, self.no_actuators)
+
+        #Load values from config
+        try:
+            self.parameters = Config.getValue('alpao_circleParams', isGlobal=True)
+            self.AlpaoConnection.set_roi(self.parameters[0], self.parameters[1],
+                                     self.parameters[2])
+        except:
+            pass
+        try:
+            self.controlMatrix = Config.getValue('alpao_controlMatrix', isGlobal=True)
+            self.AlpaoConnection.set_controlMatrix(self.controlMatrix)
+        except:
+            pass
 
 
     def remote_ac_fits(self,LUT_array, no_actuators):
