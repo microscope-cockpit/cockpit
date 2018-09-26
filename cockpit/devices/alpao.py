@@ -238,6 +238,14 @@ class Alpao(device.Device):
         resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt:self.AlpaoConnection.reset())
         self.elements['resetButton'] = resetButton
 
+        # Step the focal plane up one step
+        applySysFlat = cockpit.gui.toggleButton.ToggleButton(
+            label='System Flat',
+            parent=self.panel,
+            size=cockpit.gui.device.DEFAULT_SIZE)
+        applySysFlat.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.onApplySysFlat())
+        self.elements['applySysFlat'] = applySysFlat
+
         # Visualise current interferometric phase
         visPhaseButton = cockpit.gui.toggleButton.ToggleButton(
             label='Visualise Phase',
@@ -253,22 +261,6 @@ class Alpao(device.Device):
             size=cockpit.gui.device.DEFAULT_SIZE)
         flattenButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.onFlatten())
         self.elements['flattenButton'] = flattenButton
-
-        # Step the focal plane up one step
-        stepUpButton = cockpit.gui.toggleButton.ToggleButton(
-            label='Step up',
-            parent=self.panel,
-            size=cockpit.gui.device.DEFAULT_SIZE)
-        stepUpButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: None)
-        self.elements['stepUpButton'] = stepUpButton
-
-        # Step the focal plane up one step
-        stepDownButton = cockpit.gui.toggleButton.ToggleButton(
-            label='Step down',
-            parent=self.panel,
-            size=cockpit.gui.device.DEFAULT_SIZE)
-        stepDownButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: None)
-        self.elements['stepDownButton'] = stepDownButton
 
         for e in self.elements.values():
             rowSizer.Add(e)
@@ -476,6 +468,10 @@ class Alpao(device.Device):
                 raise e
         flat_values = self.AlpaoConnection.flatten_phase(iterations=10)
         Config.setValue('alpao_flat_values', np.ndarray.tolist(flat_values), isGlobal=True)
+
+    def onApplySysFlat(self):
+        sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat', isGlobal=True))
+        self.AlpaoConnection.send(sys_flat_values)
 
     def showDebugWindow(self):
         # Ensure only a single instance of the window.
