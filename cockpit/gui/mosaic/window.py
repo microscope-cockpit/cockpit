@@ -272,10 +272,7 @@ class MosaicWindow(wx.Frame):
         for item in [self, self.panel, self.canvas, self.sitesPanel]:
             cockpit.gui.keyboard.setKeyboardHandlers(item)
 
-        self.shouldReconfigure = True
-        self.shouldRestart = True
-        self.mosaicThread = threading.Thread(target=self.mosaicLoop)
-        self.mosaicThread.start()
+        self.mosaicThread = None
 
 
     ## Create a button with the appropriate properties.
@@ -666,6 +663,11 @@ class MosaicWindow(wx.Frame):
 
     ## Toggle run / stop state of the mosaicLoop.
     def toggleMosaic(self):
+        if self.mosaicThread is None or not self.mosaicThread.is_alive():
+            self.shouldReconfigure = True
+            self.shouldRestart = True
+            self.mosaicThread = threading.Thread(target=self.mosaicLoop)
+            self.mosaicThread.start()
         if self.shouldContinue.is_set():
             self.shouldContinue.clear()
         else:
