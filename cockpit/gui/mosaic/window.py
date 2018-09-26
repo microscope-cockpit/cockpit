@@ -87,7 +87,7 @@ SITE_COLORS = [('green', (0, 1, 0)), ('red', (1, 0, 0)),
 SIDEBAR_WIDTH = 150
 
 ## Timeout for mosaic new image events
-CAMERA_TIMEOUT = 5
+CAMERA_TIMEOUT = 1
 ##how good a circle to draw
 CIRCLE_SEGMENTS = 32
 PI = 3.141592654
@@ -95,6 +95,24 @@ PI = 3.141592654
 ## Simple structure for marking potential beads.
 BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 
+from functools import wraps
+
+
+def _pauseMosaicLoop(func):
+    @wraps(func)
+    def wrapped(self, *args, **kwargs):
+        is_running = self.shouldContinue.is_set()
+        if not is_running:
+            return func(self, *args, **kwargs)
+        else:
+            self.shouldContinue.clear()
+            try:
+                return func(self, *args, **kwargs)
+            except:
+                raise
+            finally:
+                self.shouldContinue.set()
+    return wrapped
 
 
 ## This class handles the UI of the mosaic.
@@ -104,6 +122,7 @@ class MosaicWindow(wx.Frame):
         self.SetWindowStyle(self.GetWindowStyle() | wx.FRAME_NO_TASKBAR)
         self.panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
+
 
         ## Prevent r-click on buttons displaying MainWindow context menu.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
@@ -117,18 +136,11 @@ class MosaicWindow(wx.Frame):
         self.amGeneratingMosaic = False
         ## Offset (set by objective change)
         self.offset=(0,0)
+        ## Event object to control run state of mosaicLoop.
+        self.shouldContinue = threading.Event()
 
-        ## Lock on generating mosaics.
-        self.mosaicGenerationLock = threading.Lock()
-        ## Boolean that indicates if the current mosaic generation thread
-        # should exit.
-        self.shouldEndOldMosaic = False
-        ## Boolean that indicates if the current mosaic generation thread
-        # should pause.
-        self.shouldPauseMosaic = False
-
-        ## Camera we last used for making a mosaic.
-        self.prevMosaicCamera = None
+        ## Camera used for making a mosaic
+        self.camera = None
 
         ## Mosaic tile overlap
         self.overlap = 0.0
@@ -259,6 +271,11 @@ class MosaicWindow(wx.Frame):
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
         for item in [self, self.panel, self.canvas, self.sitesPanel]:
             cockpit.gui.keyboard.setKeyboardHandlers(item)
+
+        self.shouldReconfigure = True
+        self.shouldRestart = True
+        self.mosaicThread = threading.Thread(target=self.mosaicLoop)
+        self.mosaicThread.start()
 
 
     ## Create a button with the appropriate properties.
@@ -647,119 +664,130 @@ class MosaicWindow(wx.Frame):
             i += 1
 
 
-    ## Generate a spiral mosaic. This function just checks to see if we have
-    # an existing mosaic thread, and if so, tells it to end before calling
-    # generateMosaic2() which does the actual mosaic generation.
+    ## Toggle run / stop state of the mosaicLoop.
+    def toggleMosaic(self):
+        if self.shouldContinue.is_set():
+            self.shouldContinue.clear()
+        else:
+            self.shouldContinue.set()
+
+
+    # Detect stage movement when paused and flag that the mosaic loop
+    # should start a new spiral if the stage has moved.
+    def onStageMoveWhenPaused(self, axis, position):
+        if axis == 2:
+            return
+        events.unsubscribe("stage position", self.onStageMoveWhenPaused)
+        self.shouldRestart = True
+
+
+    ## Generate a spiral mosaic.
     # \param camera Handler of the camera we're collecting images from.
-    @cockpit.util.threads.callInNewThread
     def generateMosaic(self, camera):
-        if self.shouldPauseMosaic:
-            # We have a paused mosaic that needs to be destroyed.
-            self.shouldEndOldMosaic = True
-            # Mosaic thread may sleep for 0.1s before testing
-            # self.shouldEndOldMosaic, so wait 0.1s.
-            time.sleep(0.1)
-        self.generateMosaic2(camera)
+        self.camera = camera
+        self.toggleMosaic()
 
 
     ## Move the stage in a spiral pattern, stopping to take images at regular
     # intervals, to generate a stitched-together high-level view of the stage
-    # contents. This function is suspended when the Abort button (or the
-    # Stop Mosaic button) is pressed, and can be resumed later. Only one
-    # such suspended thread is allowed to be active at a time.
-    def generateMosaic2(self, camera):
-        # Acquire the mosaic lock so no other mosaics can run.
-        events.publish('mosaic start')
-        if not self.mosaicGenerationLock.acquire(False):
-            # Do not block. Otherwise, multiple calls to generateMosaic
-            # can result in multiple threads waiting here for the lock.
-            return
+    # contents.
+    def mosaicLoop(self):
+        from sys import stderr
+        stepper = self.mosaicStepper()
+        while True:
+            if not self.shouldContinue.is_set():
+                ## Enter idle state.
+                # Update button label in main thread.
+                events.publish("mosaic stop")
+                wx.CallAfter(self.nameToButton['Run mosaic'].SetLabel, 'Run mosaic')
+                # Detect stage movement so know whether to start new spiral on new position.
+                events.subscribe("stage position", self.onStageMoveWhenPaused)
+                # Wait for shouldContinue event.
+                self.shouldContinue.wait()
+                # Clear subscription
+                events.unsubscribe("stage position", self.onStageMoveWhenPaused)
+                # Update button label in main thread.
+                wx.CallAfter(self.nameToButton['Run mosaic'].SetLabel, 'Stop mosaic')
+                # Set reconfigure flag: cameras or objective may have changed.
+                self.shouldReconfigure = True
+                events.publish("mosaic start")
 
-        self.amGeneratingMosaic = True
-        self.nameToButton['Run mosaic'].SetLabel('Stop mosaic')
-        self.prevMosaicCamera = camera
-        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        width, height = camera.getImageSize()
-        width *= objective.getPixelSize()
-        height *= objective.getPixelSize()
-        self.offset= objective.getOffset()
-        pos=cockpit.interfaces.stageMover.getPosition()
-#IMD 20150303 always work in shifted coords in mosaic
-        centerX=pos[0]-self.offset[0]
-        centerY=pos[1]+self.offset[1]
-        curZ=pos[2]-self.offset[2]
-#        centerX, centerY, curZ) = cockpit.interfaces.stageMover.getPosition()+self.offset
-        prevPosition = (centerX, centerY)
-        for dx, dy in self.mosaicStepper():
-            while self.shouldPauseMosaic:
-                # Wait until the mosaic is unpaused.
-                if self.shouldEndOldMosaic:
-                    # End the mosaic.
-                    self.exitMosaicLoop()
-                    return
-                time.sleep(.1)
-            # Take an image.
-            # If anything happens to the camera, the mosaic gets
-            # stuck here and can not be restarted, so we use a
-            # timeout.
+            if self.shouldRestart:
+                # Start a new spiral about current stage position.
+                stepper = self.mosaicStepper()
+                pos = cockpit.interfaces.stageMover.getPosition()
+                centerX = pos[0] - self.offset[0]
+                centerY = pos[1] + self.offset[1]
+                self.shouldRestart = False
+
+            if self.shouldReconfigure:
+                #  Check that camera is valid
+                active = depot.getActiveCameras()
+                if len(active) == 0:
+                    self.shouldContinue.clear()
+                    stderr.write("Mosaic stopping: no active cameras.\n")
+                    continue
+                camera = self.camera
+                # Fallback to 0th active camera.
+                if camera not in active:
+                    camera = active[0]
+                # Set image width and height based on camera and objective.
+                objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+                width, height = camera.getImageSize()
+                width *= objective.getPixelSize()
+                height *= objective.getPixelSize()
+                self.offset = objective.getOffset()
+                # Successfully reconfigured: clear the flag.
+                self.shouldReconfigure = False
+
+            pos = cockpit.interfaces.stageMover.getPosition()
+            curZ = pos[2] - self.offset[2]
+            # Take an image. Use timeout to prevent getting stuck here.
             try:
-                #data, timestamp = events.executeAndWaitForOrTimeout(
                 data, timestamp = events.executeAndWaitForOrTimeout(
-                        events.NEW_IMAGE % camera.name,
-                        cockpit.interfaces.imager.takeImage,
-                        CAMERA_TIMEOUT,
-                        shouldBlock = True)
-            except:
-                # Exit gracefully on timeout.
-                self.exitMosaicLoop()
-                raise
+                    events.NEW_IMAGE % camera.name,
+                    cockpit.interfaces.imager.takeImage,
+                    camera.getExposureTime()/1000 + CAMERA_TIMEOUT,
+                    shouldBlock=True)
+            except Exception as e:
+                # Go to idle state.
+                self.shouldContinue.clear()
+                stderr.write("Mosaic stopping: %s\n" % str(e))
+                continue
+
             # Get the scaling for the camera we're using, since they may
             # have changed.
             try:
                 minVal, maxVal = cockpit.gui.camera.window.getCameraScaling(camera)
-            except:
-                # Camera may have been deactivated.
-                self.exitMosaicLoop()
-                raise
-            pos=cockpit.interfaces.stageMover.getPosition()
-            events.executeAndWaitFor('mosaic canvas paint',
-                    self.canvas.addImage, data,
-                    # This assumes perfect positioning.
-                    #(-prevPosition[0] - width / 2,
-                    #    prevPosition[1] - height / 2, curZ),
-                    # Use the actual position, instead.
-                    ( -pos[0] + self.offset[0] - width/2,
-                      pos[1] - self.offset[1] - height/2,
-                      curZ,) ,
-                    (width, height), scalings = (minVal, maxVal),
-                    shouldRefresh = True)
+            except Exception as e:
+                # Go to idle state.
+                self.shouldContinue.clear()
+                stderr.write("Mosaic stopping: %s\n" % str(e))
+                continue
+
+            # Paint the tile at the stage position at which image was captured.
+            self.canvas.addImage(data,
+                                 ( -pos[0] + self.offset[0] - width / 2,
+                                    pos[1] - self.offset[1] - height / 2,
+                                    curZ,),
+                                 (width, height), scalings=(minVal, maxVal))
             # Move to the next position in shifted coords.
-            target = (centerX +self.offset[0]+ dx * width,
-                      centerY -self.offset[1]+ dy * height)
+            dx, dy = next(stepper)
+            target = (centerX + self.offset[0] + dx * width,
+                      centerY - self.offset[1] + dy * height)
             try:
                 self.goTo(target, True)
-            except:
-                # On any movement error, terminate the mosaic cleanly.
-                self.exitMosaicLoop()
-                raise
-            prevPosition = (centerX + dx * width,
-                      centerY + dy * height)
-            curZ = cockpit.interfaces.stageMover.getPositionForAxis(2)-self.offset[2]
-
-
-    def exitMosaicLoop(self):
-        self.shouldEndOldMosaic = False
-        self.shouldPauseMosaic = False
-        self.amGeneratingMosaic = False
-        self.nameToButton['Run mosaic'].SetLabel('Run mosaic')
-        self.mosaicGenerationLock.release()
+            except Exception as e:
+                self.shouldContinue.clear()
+                stderr.write("Mosaic stopping: %s\n" % str(e))
+                continue
 
 
     ## Display dialogue box to set tile overlap.
     def setTileOverlap(self):
         value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
                     self.GetParent(),
-                    "Set mosiac tile overlap.",
+                    "Set mosaic tile overlap.",
                     "Tile overlap in %",
                     self.overlap,
                     atMouse=True)
@@ -767,11 +795,10 @@ class MosaicWindow(wx.Frame):
         cockpit.util.userConfig.setValue('mosaicTileOverlap', self.overlap, isGlobal=False)
 
 
-
     ## Transfer an image from the active camera (or first camera) to the
     # mosaic at the current stage position.
     def transferCameraImage(self):
-        camera = self.prevMosaicCamera
+        camera = self.camera
         if camera is None or not camera.getIsEnabled():
             # Select the first active camera.
             for cam in depot.getHandlersOfType(depot.CAMERA):
@@ -1037,9 +1064,8 @@ class MosaicWindow(wx.Frame):
     # available, then we just do the mosaic.
     def displayMosaicMenu(self):
         # If we're already running a mosaic, stop it instead.
-        if self.amGeneratingMosaic:
-            self.onAbort()
-            self.amGeneratingMosaic = False
+        if self.shouldContinue.is_set():
+            self.shouldContinue.clear()
             return
 
         self.showCameraMenu("Make mosaic with %s camera",
@@ -1051,15 +1077,11 @@ class MosaicWindow(wx.Frame):
     # similar to self.displayMosaicMenu.
     def continueMosaic(self):
         # If we're already running a mosaic, stop it instead.
-        if self.amGeneratingMosaic:
-            self.onAbort()
-            self.amGeneratingMosaic = False
+        if self.shouldContinue.is_set():
+            self.shouldContinue.clear()
             return
-
-        self.shouldPauseMosaic = False
-        self.amGeneratingMosaic = True
-        self.nameToButton['Run mosaic'].SetLabel('Stop mosaic')
-        events.publish('mosaic start') 
+        self.shouldRestart = False
+        self.shouldContinue.set()
 
 
     ## Generate a menu where the user can select a camera to use to perform
@@ -1104,15 +1126,18 @@ class MosaicWindow(wx.Frame):
 
     ## Delete all tiles in the mosaic, after prompting the user for
     # confirmation.
+    @_pauseMosaicLoop
     def onDeleteAllTiles(self, event = None):
         if not cockpit.gui.guiUtils.getUserPermission(
                 "Are you sure you want to delete every tile in the mosaic?",
                 "Delete confirmation"):
             return
         self.canvas.deleteAll()
+        self.shouldRestart = True
 
 
     ## Rescale each tile according to that tile's own values.
+    @_pauseMosaicLoop
     def autoscaleTiles(self, event = None):
         self.canvas.rescale(None)
 
@@ -1125,6 +1150,7 @@ class MosaicWindow(wx.Frame):
 
     ## Given a camera handler, rescale the mosaic tiles based on that
     # camera's display's black- and white-points.
+    @_pauseMosaicLoop
     def rescaleWithCamera(self, camera):
         self.canvas.rescale(cockpit.gui.camera.window.getCameraScaling(camera))
 
@@ -1308,7 +1334,7 @@ class MosaicWindow(wx.Frame):
     ## Handle the user clicking the abort button.
     def onAbort(self, *args):
         if self.amGeneratingMosaic:
-            self.shouldPauseMosaic = True
+            self.shouldContinue.clear()
         events.publish('mosaic stop')
         self.nameToButton['Run mosaic'].SetLabel('Run mosaic')
         # Stop deleting tiles, while we're at it.
@@ -1331,4 +1357,3 @@ def makeWindow(parent):
 ## Transfer a camera image to the mosaic.
 def transferCameraImage():
     window.transferCameraImage()
-

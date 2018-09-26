@@ -65,9 +65,11 @@ import cockpit.util.datadoc
 import cockpit.util.logger
 import cockpit.util.threads
 import itertools
+import queue
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1
+BUFFER_LENGTH = 32
 
 ## This class handles drawing the mosaic. Mosaics consist of collections of 
 # images from the cameras.
@@ -108,10 +110,14 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # further rendering to avoid error spew.
         self.renderError = None
 
+        ## A buffer of images waiting to be added to the mosaic.
+        self.pendingImages = queue.Queue(BUFFER_LENGTH)
+
         self.Bind(wx.EVT_PAINT, self.onPaint)
         self.Bind(wx.EVT_MOUSE_EVENTS, mouseCallback)
         # Do nothing on this event, to avoid flickering.
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event)
+        self.Bind(wx.EVT_IDLE, self.onIdle)
 
 
     ## Now that OpenGL's ready to go, perform any necessary initialization.
@@ -266,27 +272,33 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         events.publish('mosaic update')
 
 
-    ## Add a new image to the mosaic.
-    @cockpit.util.threads.callInMainThread
-    def addImage(self, data, pos, size, scalings = (None, None), 
-            layer = 0, shouldRefresh = False):
-
-        pos = numpy.asarray(pos)
-        size = numpy.asarray(size)
-
+    def onIdle(self, event):
+        if not self.pendingImages:
+            return
+        # Draw as many images as possible in 50ms.
+        import time
+        t = time.time()
+        newTiles = []
         self.SetCurrent(self.context)
-
-        newTile = tile.Tile(data, pos, size, scalings, layer)
-        self.tiles.append(newTile)
+        while not self.pendingImages.empty() and (time.time()-t < 0.05):
+            data, pos, size, scalings, layer = self.pendingImages.get()
+            newTiles.append(tile.Tile(data, pos, size, scalings, layer))
+        self.tiles.extend(newTiles)
         for megaTile in self.megaTiles:
-            megaTile.prerenderTiles([newTile], self)
+            megaTile.prerenderTiles(newTiles, self)
 
-        self.shouldRerender = True
-        self.tilesToRefresh.add(newTile)
-        if shouldRefresh:
-            self.Refresh()
+        self.tilesToRefresh.update(newTiles)
+
+        self.Refresh()
         events.publish('mosaic update')
+        if not self.pendingImages.empty():
+            event.RequestMore()
 
+
+    ## Add a new image to the mosaic.
+    #@cockpit.util.threads.callInMainThread
+    def addImage(self, data, pos, size, scalings=(None, None), layer=0):
+        self.pendingImages.put((data, pos, size, scalings, layer))
 
 
     ## Rescale the tiles.
