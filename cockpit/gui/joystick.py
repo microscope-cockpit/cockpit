@@ -118,8 +118,8 @@ class Joystick(object):
             changeMover()
         elif event.ButtonChange & 0b100:
             imager.imager.takeImage()
-        # elif event.ButtonChange & 0b1000:
-        #     mosaic.window.toggleMosaic()
+        elif event.ButtonChange & 0b1000:
+             mosaic.window.toggleMosaic()
 
 
     def _onMoveEvent(self, event):
