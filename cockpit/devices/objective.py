@@ -98,6 +98,7 @@ class ObjectiveDevice(device.Device):
             offsets = {obj: (0,0,0) for obj in pixel_sizes.keys()}
             lensIDs = {obj: 0 for obj in pixel_sizes.keys()}
             colours = {obj: (1,1,1) for obj in pixel_sizes.keys()}
+            offsets['40x'] = (-100,50,0) # Add a test offset to one objective.
         else:
             for obj, cfg in self.config.items():
                 parsed = re.search(CONFIG_PAT, cfg)
