@@ -18,10 +18,27 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-from operator import sub, lt
+
+from operator import sub
+import sys
 import time
 import wx
 import wx.adv
+
+# Define a button comparison function that supports the different
+# enumeration schemes on Windows and Linux as at wxWidgets version 3.1.2.
+# Currently:
+#   win32 enumerates buttons as 0b1, 0b10, 0b100, ...
+#   linux enumerates buttons as 0, 1, 2, 3 ...
+# It is likely that one or the other scheme will be chosen in the near
+# future, but it may take several months for this to roll out to
+# wxPython.
+
+if sys.platform == 'win32':
+    buttonTest = lambda variable, constant: variable & (1 << constant)
+else:
+    buttonTest = lambda a, b: a == b
+
 
 # Stick movement threshold
 _CLICKMS = 200
@@ -29,13 +46,13 @@ _THRESHOLD = 300
 
 # Joystick behaviour
 #   move, no button     - pan mosaic window
-#   move, button 1 held - move XY stage
-#   move, button 2 held - move Z stage
-#   press button 1      - centre stage in mosaic window
-#   press button 2      - toggle mover
-#   press button 3      - snap image (implicit stop video mode)
-#   hold button 3       - start video mode
-#   press button 4      - start mosaic
+#   move, button 0 held - move XY stage
+#   move, button 1 held - move Z stage
+#   press button 0      - centre stage in mosaic window
+#   press button 1      - toggle mover
+#   press button 2      - snap image (implicit stop video mode)
+#   hold button 2      - start video mode
+#   press button 3      - start mosaic
 
 # Can't use `from cockpit.interfaces.imager import imager`
 # here as imager is None at time of import, so must either:
@@ -61,7 +78,7 @@ class Joystick(object):
 
 
     def _longPress(self, button, func):
-        if self._stick.ButtonState & button:
+        if buttonTest(self._stick.ButtonState, button):
             func()
 
 
@@ -70,8 +87,8 @@ class Joystick(object):
         # so fallback to time.time().
         ts = event.GetTimestamp() or (time.time() * 1000)
         self._buttonDownTimes[event.ButtonChange] = ts
-        if event.ButtonChange & 0b100:
-            wx.CallLater(_CLICKMS, self._longPress, 0b100, imager.imager.videoMode)
+        if buttonTest(event.ButtonChange, 2):
+            wx.CallLater(_CLICKMS, self._longPress, 2, imager.imager.videoMode)
 
 
     def _onButtonUp(self, event):
@@ -80,14 +97,14 @@ class Joystick(object):
         if ts - self._buttonDownTimes[event.ButtonChange] > _CLICKMS:
             return
         # Short press
-        if event.ButtonChange & 0b1:
+        if buttonTest(event.ButtonChange, 0):
             mosaic.window.centerCanvas()
-        elif event.ButtonChange & 0b10:
+        elif buttonTest(event.ButtonChange, 1):
             from cockpit.interfaces.stageMover import changeMover
             changeMover()
-        elif event.ButtonChange & 0b100:
+        elif buttonTest(event.ButtonChange, 2):
             imager.imager.takeImage()
-        elif event.ButtonChange & 0b1000:
+        elif buttonTest(event.ButtonChange, 3):
              mosaic.window.toggleMosaic()
 
 
@@ -102,9 +119,9 @@ class Joystick(object):
             elif event.ZPosition < -_THRESHOLD:
                 mosaic.window.canvas.multiplyZoom(1.01)
             return
-        if event.ButtonState == 0b1:
+        if buttonTest(event.ButtonState, 0):
             moveRelative([-0.01*d for d in delta] + [0], False)
-        elif event.ButtonState == 0b10:
+        elif buttonTest(event.ButtonState, 1):
             moveRelative([0, 0, -0.01*delta[1]], False)
         else:
             mosaic.window.canvas.dragView(tuple(0.01*d for d in delta))
