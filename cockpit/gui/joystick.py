@@ -27,17 +27,20 @@ import wx.adv
 
 # Define a button comparison function that supports the different
 # enumeration schemes on Windows and Linux as at wxWidgets version 3.1.2.
-# Currently:
-#   win32 enumerates buttons as 0b1, 0b10, 0b100, ...
-#   linux enumerates buttons as 0, 1, 2, 3 ...
+# Currently, different platforms enumerate changed buttons as follows:
+#   win32    0b1, 0b10, 0b100, ...
+#   linux    0, 1, 2, 3, ...
+#   mac      1, 2, 3, 4, ...
 # It is likely that one or the other scheme will be chosen in the near
 # future, but it may take several months for this to roll out to
 # wxPython.
 
 if sys.platform == 'win32':
     buttonTest = lambda variable, constant: variable & (1 << constant)
-else:
+elif sys.platform == 'linux':
     buttonTest = lambda a, b: a == b
+else:
+    buttonTest = lambda a, b: a-1 ==  b
 
 
 # Stick movement threshold
