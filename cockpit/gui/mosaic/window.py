@@ -696,6 +696,7 @@ class MosaicWindow(wx.Frame):
     def mosaicLoop(self):
         from sys import stderr
         stepper = self.mosaicStepper()
+        target = None
         while True:
             if not self.shouldContinue.is_set():
                 ## Enter idle state.
@@ -705,7 +706,9 @@ class MosaicWindow(wx.Frame):
                 # Detect stage movement so know whether to start new spiral on new position.
                 events.subscribe("stage position", self.onStageMoveWhenPaused)
                 # Wait for shouldContinue event.
+                print("Waiting...")
                 self.shouldContinue.wait()
+                print("...done")
                 # Clear subscription
                 events.unsubscribe("stage position", self.onStageMoveWhenPaused)
                 # Update button label in main thread.
@@ -713,6 +716,10 @@ class MosaicWindow(wx.Frame):
                 # Set reconfigure flag: cameras or objective may have changed.
                 self.shouldReconfigure = True
                 events.publish("mosaic start")
+                # Catch case that stage has moved but user wants to continue mosaic.
+                if not self.shouldRestart and target is not None:
+                    self.goTo(target, True)
+
 
             if self.shouldRestart:
                 # Start a new spiral about current stage position.
@@ -1074,16 +1081,10 @@ class MosaicWindow(wx.Frame):
                 self.generateMosaic)
 
 
-    ## Display a menu to the user letting them choose which camera
-    # to use to continue generating a pre-existing mosaic. Very
-    # similar to self.displayMosaicMenu.
+    ## Force continuation of mosaic after stage move.
     def continueMosaic(self):
-        # If we're already running a mosaic, stop it instead.
-        if self.shouldContinue.is_set():
-            self.shouldContinue.clear()
-            return
         self.shouldRestart = False
-        self.shouldContinue.set()
+        self.toggleMosaic()
 
 
     ## Generate a menu where the user can select a camera to use to perform
