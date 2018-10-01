@@ -108,8 +108,6 @@ def _pauseMosaicLoop(func):
             self.shouldContinue.clear()
             try:
                 return func(self, *args, **kwargs)
-            except:
-                raise
             finally:
                 self.shouldContinue.set()
     return wrapped
