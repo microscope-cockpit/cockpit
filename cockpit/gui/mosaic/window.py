@@ -757,7 +757,7 @@ class MosaicWindow(wx.Frame):
             except Exception as e:
                 # Go to idle state.
                 self.shouldContinue.clear()
-                stderr.write("Mosaic stopping: %s\n" % str(e))
+                stderr.write("Mosaic stopping - problem taking image: %s\n" % str(e))
                 continue
 
             # Get the scaling for the camera we're using, since they may
@@ -767,7 +767,7 @@ class MosaicWindow(wx.Frame):
             except Exception as e:
                 # Go to idle state.
                 self.shouldContinue.clear()
-                stderr.write("Mosaic stopping: %s\n" % str(e))
+                stderr.write("Mosaic stopping - problem in getCameraScaling: %s\n" % str(e))
                 continue
 
             # Paint the tile at the stage position at which image was captured.
@@ -784,7 +784,7 @@ class MosaicWindow(wx.Frame):
                 self.goTo(target, True)
             except Exception as e:
                 self.shouldContinue.clear()
-                stderr.write("Mosaic stopping: %s\n" % str(e))
+                stderr.write("Mosaic stopping - problem in target calculation: %s\n" % str(e))
                 continue
 
 
