@@ -44,7 +44,7 @@ from six import iteritems, string_types
 
 class ValueLoggerTestSource(object):
     def __init__(self):
-        self.thread = threading.Thread(target=self.generateValues)
+        self.thread = threading.Thread(target=self.generateValues, name="ValueLoggerTestSource")
         self.thread.Daemon = True
         self.thread.start()
 
@@ -76,7 +76,7 @@ class ValueLogger(object):
         ## Last time at which point added to series.
         self.lastTime = 0
         ## A thread to perform the logging.
-        self.loggingThread = threading.Thread(target=self.log)
+        self.loggingThread = threading.Thread(target=self.log, name="ValueLogger-logging")
         self.loggingThread.daemon = True
         self.loggingThread.start()
         # Subscribe to position updates.
