@@ -704,9 +704,7 @@ class MosaicWindow(wx.Frame):
                 # Detect stage movement so know whether to start new spiral on new position.
                 events.subscribe("stage position", self.onStageMoveWhenPaused)
                 # Wait for shouldContinue event.
-                print("Waiting...")
                 self.shouldContinue.wait()
-                print("...done")
                 # Clear subscription
                 events.unsubscribe("stage position", self.onStageMoveWhenPaused)
                 # Update button label in main thread.
