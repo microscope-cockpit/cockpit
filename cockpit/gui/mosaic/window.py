@@ -664,7 +664,7 @@ class MosaicWindow(wx.Frame):
         if self.mosaicThread is None or not self.mosaicThread.is_alive():
             self.shouldReconfigure = True
             self.shouldRestart = True
-            self.mosaicThread = threading.Thread(target=self.mosaicLoop)
+            self.mosaicThread = threading.Thread(target=self.mosaicLoop, name="mosaic")
             self.mosaicThread.start()
         if self.shouldContinue.is_set():
             self.shouldContinue.clear()
