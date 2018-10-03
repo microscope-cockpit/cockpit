@@ -31,9 +31,9 @@ from wx.lib.agw.shapedbutton import SBitmapButton,SBitmapToggleButton
 from cockpit.gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 from cockpit.handlers.deviceHandler import STATES
 
-from . import slaveOverview
-from . import slaveMacroStageZ
 import cockpit.gui.macroStage.macroStageBase
+from cockpit.gui.macroStage.macroStageXY import MacroStageXY
+from cockpit.gui.macroStage.macroStageZ import MacroStageZ
 from cockpit import depot
 from cockpit import events
 import cockpit.gui
@@ -362,11 +362,11 @@ class TouchScreenWindow(wx.Frame):
         sizer.Add(self.canvas, 3, wx.EXPAND)
         leftSizer= wx.BoxSizer(wx.VERTICAL)
         #add a macrostageXY overview section
-        self.macroStageXY=slaveOverview.MacroStageXY(self.panel)
+        self.macroStageXY = MacroStageXY(self.panel, size=(168, 392), id=-1)
         leftSizer.Add(self.macroStageXY,2, wx.EXPAND)
 
         ##start a TSmacrostageZ instance
-        self.macroStageZ=slaveMacroStageZ.slaveMacroStageZ(self.panel)
+        self.macroStageZ = MacroStageZ(self.panel, size=(168, 392), id=-1)
         leftSizer.Add(self.macroStageZ, 3,wx.EXPAND)
 
         ## Z control buttons
