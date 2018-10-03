@@ -129,9 +129,6 @@ def deserializeSite(line):
     result.uniqueID = id
     return result
 
-# A class to store data for drawing primitives on the macrostage.
-Primitive = namedtuple('Primitive', ['device', 'type', 'data'])
-
 
 ## This class provides an interface between the rest of the UI and the Devices
 # that handle moving the stage.
