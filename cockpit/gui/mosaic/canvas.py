@@ -66,6 +66,7 @@ import cockpit.util.logger
 import cockpit.util.threads
 import itertools
 import queue
+import time
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1
@@ -276,7 +277,6 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         if not self.pendingImages:
             return
         # Draw as many images as possible in 50ms.
-        import time
         t = time.time()
         newTiles = []
         self.SetCurrent(self.context)
