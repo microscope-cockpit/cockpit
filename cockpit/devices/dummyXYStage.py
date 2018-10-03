@@ -52,15 +52,20 @@
 
 ## This module creates a simple XY stage-positioning device.
 
-from . import device
+from . import stage
 from cockpit import events
 import cockpit.handlers.stagePositioner
 
 CLASS_NAME = 'DummyMoverDevice'
 
-class DummyMover(device.Device):
+class DummyMover(stage.StageDevice):
     def __init__(self, name="dummy XY stage", config={}):
-        device.Device.__init__(self, name, config)
+        config['primitives'] = \
+            "r 12500 6000 3000 3000\n" \
+            "c 5000 6000 3000\n"       \
+            "c 20000, 6000, 3000\n"
+
+        super(DummyMover, self).__init__(name, config)
         # List of 2 doubles indicating our X/Y position.
         self.curPosition = [1000, 1000]
         events.subscribe('user abort', self.onAbort)
@@ -99,14 +104,6 @@ class DummyMover(device.Device):
                 2, (minVal, maxVal), (minVal, maxVal))
             result.append(handler)
         return result
-
-
-    def getPrimitives(self):
-        from cockpit.interfaces.stageMover import Primitive
-        primitives = [Primitive(self, 'c', (5000, 6000, 3000)),
-                      Primitive(self, 'c', (20000, 6000, 3000)),
-                      Primitive(self, 'r', (12500, 6000, 3000, 3000))]
-        return primitives
 
 
     ## Publish our current position.
