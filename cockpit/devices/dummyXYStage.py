@@ -83,7 +83,7 @@ class DummyMover(stage.StageDevice):
         events.subscribe('user abort', self.onAbort)
         self.active = True
         pass
-        
+
 
     ## We control which light sources are active, as well as a set of 
     # stage motion piezos. 
@@ -92,10 +92,10 @@ class DummyMover(stage.StageDevice):
         for axis, (minVal, maxVal) in enumerate(
                 [(0, 25000), (0, 12000)]):
             handler = cockpit.handlers.stagePositioner.PositionerHandler(
-                "%d dummy mover" % axis, "%d stage motion" % axis, True, 
+                "%d dummy mover" % axis, "%d stage motion" % axis, True,
                 {'moveAbsolute': self.moveAbsolute,
-                    'moveRelative': self.moveRelative, 
-                    'getPosition': self.getPosition, 
+                    'moveRelative': self.moveRelative,
+                    'getPosition': self.getPosition,
                     'getMovementTime': self.getMovementTime,
                     'cleanupAfterExperiment': self.cleanup,
                     'setSafety': self.setSafety,
@@ -125,7 +125,7 @@ class DummyMover(stage.StageDevice):
     def moveAbsolute(self, axis, pos):
         self.curPosition[axis] = pos
         # Dummy movers finish movement immediately.
-        events.publish('stage mover', '%d dummy mover' % axis, axis, 
+        events.publish('stage mover', '%d dummy mover' % axis, axis,
                 self.curPosition[axis])
         events.publish('stage stopped', '%d dummy mover' % axis)
 
@@ -134,7 +134,7 @@ class DummyMover(stage.StageDevice):
     def moveRelative(self, axis, delta):
         self.curPosition[axis] += delta
         # Dummy movers finish movement immediately.
-        events.publish('stage mover', '%d dummy mover' % axis, axis, 
+        events.publish('stage mover', '%d dummy mover' % axis, axis,
                 self.curPosition[axis])
         events.publish('stage stopped', '%d dummy mover' % axis)
 
