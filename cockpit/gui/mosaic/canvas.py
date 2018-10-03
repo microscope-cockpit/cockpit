@@ -75,7 +75,20 @@ BUFFER_LENGTH = 32
 ## This class handles drawing the mosaic. Mosaics consist of collections of 
 # images from the cameras.
 class MosaicCanvas(wx.glcanvas.GLCanvas):
-    ## \param stageHardLimits An ((xMin, xMax), (yMin, yMax)) tuple 
+    ## Tiles and context are shared amongst all instances, since all
+    # offer views of the same data.
+    # The first instance creates the context.
+    ## List of MegaTiles. These will be created in self.initGL.
+    megaTiles = []
+    ## List of Tiles. These are created as we receive new images from
+    # our parent.
+    tiles = []
+    ## Set of tiles that need to be rerendered in the next onPaint call.
+    tilesToRefresh = set()
+    ## WX rendering context
+    context = None
+
+    ## \param stageHardLimits An ((xMin, xMax), (yMin, yMax)) tuple
     #         describing the limits of motion, in microns, of the stage.
     # \param overlayCallback Function to call, during rendering, to draw
     #        the overlay on top of the mosaic.
@@ -97,15 +110,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         ## Controls whether we rerender tiles during our onPaint.
         self.shouldRerender = True
         ## WX rendering context
-        self.context = wx.glcanvas.GLContext(self)
-
-        ## List of MegaTiles. These will be created in self.initGL.
-        self.megaTiles = []
-        ## List of Tiles. These are created as we receive new images from
-        # our parent.
-        self.tiles = []
-        ## Set of tiles that need to be rerendered in the next onPaint call.
-        self.tilesToRefresh = set()
+        if MosaicCanvas.context is None:
+            MosaicCanvas.context = wx.glcanvas.GLContext(self)
 
         ## Error that occurred when rendering. If this happens, we prevent
         # further rendering to avoid error spew.
