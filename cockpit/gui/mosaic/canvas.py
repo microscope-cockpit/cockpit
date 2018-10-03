@@ -280,7 +280,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
 
 
     def onIdle(self, event):
-        if not self.pendingImages:
+        if self.pendingImages.empty():# or not self.IsShownOnScreen():
             return
         # Draw as many images as possible in 50ms.
         t = time.time()
