@@ -31,7 +31,6 @@ from wx.lib.agw.shapedbutton import SBitmapButton,SBitmapToggleButton
 from cockpit.gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 from cockpit.handlers.deviceHandler import STATES
 
-from . import slavecanvas
 from . import slaveOverview
 from . import slaveMacroStageZ
 import cockpit.gui.macroStage.macroStageBase
@@ -44,12 +43,13 @@ import cockpit.gui.dialogs.offsetSitesDialog
 import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
 import cockpit.gui.mosaic.window
+import cockpit.gui.mosaic.canvas
 import cockpit.interfaces.stageMover
 import cockpit.util.colors
 import cockpit.util.user
 import cockpit.util.threads
 import cockpit.util.userConfig
-import math
+import types
 
 ## Size of the crosshairs indicating the stage position.
 CROSSHAIR_SIZE = 10000
@@ -77,8 +77,14 @@ class TouchScreenWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
         self.panel = wx.Panel(self)
-        self.masterMosaic=cockpit.gui.mosaic.window.MosaicWindow
+        self.masterMosaic=cockpit.gui.mosaic.window.window
         sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.drawOverlay = types.MethodType(
+            cockpit.gui.mosaic.window.MosaicWindow.drawOverlay, self)
+        self.drawCrosshairs = types.MethodType(
+            cockpit.gui.mosaic.window.MosaicWindow.drawCrosshairs, self)
+        self.primitives = cockpit.gui.mosaic.window.window.primitives
+
 
         ## Last known location of the mouse.
         self.prevMousePos = None
@@ -350,9 +356,9 @@ class TouchScreenWindow(wx.Frame):
 
         limits = cockpit.interfaces.stageMover.getHardLimits()[:2]
         ## start a slaveCanvas instance.
-        self.canvas = slavecanvas.SlaveCanvas(self.panel, limits,
-                                              self.drawOverlay,
-                                              self.onMouse)
+        self.canvas = cockpit.gui.mosaic.canvas.MosaicCanvas(self.panel, limits,
+                                                             self.drawOverlay,
+                                                             self.onMouse)
         sizer.Add(self.canvas, 3, wx.EXPAND)
         leftSizer= wx.BoxSizer(wx.VERTICAL)
         #add a macrostageXY overview section
@@ -729,131 +735,6 @@ class TouchScreenWindow(wx.Frame):
             self.canvas.SetFocus()
 
 
-    ## Draw the overlay. This largely consists of a crosshairs indicating
-    # the current stage position, and any sites the user has saved.
-    def drawOverlay(self):
-        for site in cockpit.interfaces.stageMover.getAllSites():
-            # Draw a crude circle.
-            x, y = site.position[:2]
-            x = -x
-            # Set line width based on zoom factor.
-            lineWidth = max(1, self.canvas.scale * 1.5)
-            glLineWidth(lineWidth)
-            glColor3f(*site.color)
-            glBegin(GL_LINE_LOOP)
-            for i in range(8):
-                glVertex3f(x + site.size * numpy.cos(numpy.pi * i / 4.0),
-                        y + site.size * numpy.sin(numpy.pi * i / 4.0), 0)
-            glEnd()
-            glLineWidth(1)
-
-            glPushMatrix()
-            glTranslatef(x, y, 0)
-            # Scale the text with respect to the current zoom factor.
-            fontScale = 3 / max(5.0, self.canvas.scale)
-            glScalef(fontScale, fontScale, 1)
-            self.sitefont.render(str(site.uniqueID))
-            glPopMatrix()
-
-        self.drawCrosshairs(cockpit.interfaces.stageMover.getPosition()[:2], (1, 0, 0))
-
-        # If we're selecting tiles, draw the box the user is selecting.
-        if self.selectTilesFunc is not None and self.lastClickPos is not None:
-            start = self.canvas.mapScreenToCanvas(self.lastClickPos)
-            end = self.canvas.mapScreenToCanvas(self.prevMousePos)
-            glColor3f(0, 0, 1)
-            glBegin(GL_LINE_LOOP)
-            glVertex2f(-start[0], start[1])
-            glVertex2f(-start[0], end[1])
-            glVertex2f(-end[0], end[1])
-            glVertex2f(-end[0], start[1])
-            glEnd()
-
-        # Highlight selected sites with crosshairs.
-        for site in self.selectedSites:
-            self.drawCrosshairs(site.position[:2], (0, 0, 1), 10000)
-
-        # Draw the soft and hard stage motion limits
-        glEnable(GL_LINE_STIPPLE)
-        glLineWidth(2)
-        softSafeties = cockpit.interfaces.stageMover.getSoftLimits()[:2]
-        hardSafeties = cockpit.interfaces.stageMover.getHardLimits()[:2]
-        for safeties, color, stipple in [(softSafeties, (0, 1, 0), 0x5555),
-                                         (hardSafeties, (0, 0, 1), 0xAAAA)]:
-            x1, x2 = safeties[0]
-            y1, y2 = safeties[1]
-            if hasattr (self, 'offset'):
-                x1 -=  self.offset[0]
-                x2 -=  self.offset[0]
-                y1 -=  self.offset[1]
-                y2 -=  self.offset[1]
-            glLineStipple(3, stipple)
-            glColor3f(*color)
-            glBegin(GL_LINE_LOOP)
-            glVertex2f(-x1, y1)
-            glVertex2f(-x2, y1)
-            glVertex2f(-x2, y2)
-            glVertex2f(-x1, y2)
-            glEnd()
-        glLineWidth(1)
-        glDisable(GL_LINE_STIPPLE)
-
-        #Draw a scale bar if the scalebar size is not zero.
-        if (self.scalebar != 0):
-            # Scale bar width.
-            self.scalebar = 100*(10**math.floor(math.log(1/self.canvas.scale,10)))
-            # Scale bar position, near the top left-hand corner.
-            scalebarPos = [30,-10]
-
-            # Scale bar vertices.
-            x1 = scalebarPos[0]/self.canvas.scale
-            x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
-            y1 = scalebarPos[1]/self.canvas.scale
-            canvasPos=self.canvas.mapScreenToCanvas((0,0))
-            x1 -= canvasPos[0]
-            x2 -= canvasPos[0]
-            y1 += canvasPos[1]
-
-
-            # Do the actual drawing
-            glColor3f(255, 0, 0)
-            # The scale bar itself.
-            glLineWidth(8)
-            glBegin(GL_LINES)
-            glVertex2f(x1,y1)
-            glVertex2f(x2,y1)
-            glEnd()
-            glLineWidth(1)
-            glPushMatrix()
-            labelPosX= x1
-            labelPosY= y1 - (20/self.canvas.scale)
-            glTranslatef(labelPosX, labelPosY, 0)
-            fontScale = 1 / self.canvas.scale
-            glScalef(fontScale, fontScale, 1)
-            if (self.scalebar>1.0):
-                self.scalefont.render('%d um' % self.scalebar)
-            else:
-                self.scalefont.render('%.3f um' % self.scalebar)
-            glPopMatrix()
-
-        #Draw stage primitives.
-        if(self.drawPrimitives):
-            # Draw device-specific primitives.
-            glEnable(GL_LINE_STIPPLE)
-            glLineStipple(1, 0xAAAA)
-            glColor3f(0.4, 0.4, 0.4)
-            primitives = cockpit.interfaces.stageMover.getPrimitives()
-            for p in primitives:
-                if p.type in ['c', 'C']:
-                    # circle: x0, y0, radius
-                    self.drawScaledCircle(p.data[0], p.data[1],
-                                          p.data[2], CIRCLE_SEGMENTS,
-                                          offset=False)
-                if p.type in ['r', 'R']:
-                    # rectangle: x0, y0, width, height
-                    self.drawScaledRectangle(*p.data, offset=False)
-            glDisable(GL_LINE_STIPPLE)
-
     def drawScaledCircle(self, x0, y0, r, n, offset=True):
         dTheta = 2. * PI / n
         cosTheta = numpy.cos(dTheta)
@@ -887,49 +768,6 @@ class TouchScreenWindow(wx.Frame):
         glBegin(GL_LINE_LOOP)
         for i in range(-1, 4):
             glVertex2f(-ps[i][0], ps[i][1])
-        glEnd()
-    # Draw a crosshairs at the specified position with the specified color.
-    # By default make the size of the crosshairs be really big.
-    def drawCrosshairs(self, position, color, size = None):
-        xSize = ySize = size
-        if size is None:
-            xSize = ySize = 100000
-        x, y = position
-        #if no offset defined we can't apply it!
-        if hasattr(self, 'offset'):
-            x = x-self.offset[0]
-            y = y-self.offset[1]
-
-        # Draw the crosshairs
-        glColor3f(*color)
-        glBegin(GL_LINES)
-        glVertex2d(-x - xSize, y)
-        glVertex2d(-x + xSize, y)
-        glVertex2d(-x, y - ySize)
-        glVertex2d(-x, y + ySize)
-        glEnd()
-
-        glBegin(GL_LINE_LOOP)
-
-        #get cams and objective opbjects
-        cams = depot.getActiveCameras()
-        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        #if there is a camera us its real pixel count
-        if (len(cams)>0):
-            width, height = cams[0].getImageSize()
-            self.crosshairBoxSize = width*objective.getPixelSize()
-            width = self.crosshairBoxSize
-            height = height*objective.getPixelSize()
-        else:
-            #else use the default which is 512Xpixel size from objective
-            width =self.crosshairBoxSize
-            height=self.crosshairBoxSize
-        
-        
-        # Draw the box.
-        for i, j in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
-            glVertex2d(-x + i * width / 2,
-                       y + j * height / 2)
         glEnd()
 
 
