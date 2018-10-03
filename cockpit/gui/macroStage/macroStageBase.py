@@ -234,24 +234,25 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         glColor3f(color[0], color[1], color[2])
         glLineWidth(ARROW_LINE_THICKNESS)
         glBegin(GL_LINES)
-        self.scaledVertex(baseLoc[0], baseLoc[1])
-        self.scaledVertex(pointLoc[0], pointLoc[1])
+        glVertex2f(baseLoc[0], baseLoc[1])
+        glVertex2f(pointLoc[0], pointLoc[1])
         glEnd()
         # Prevent the end of the line from showing through the
         # arrowhead by moving the arrowhead further along.
         pointLoc += delta * .1
         glBegin(GL_POLYGON)
-        self.scaledVertex(headLoc1[0], headLoc1[1])
-        self.scaledVertex(headLoc2[0], headLoc2[1])
-        self.scaledVertex(pointLoc[0], pointLoc[1])
+        glVertex2f(headLoc1[0], headLoc1[1])
+        glVertex2f(headLoc2[0], headLoc2[1])
+        glVertex2f(pointLoc[0], pointLoc[1])
         glEnd()
 
 
     ## Draw some text at the specified location
     def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
-        loc = self.scaledVertex(loc[0], loc[1], True)
         aspect = float(self.height) / self.width
         glPushMatrix()
+        glLoadIdentity()
+        loc = self.scaledVertex(loc[0], loc[1], True)
         glTranslatef(loc[0], loc[1], 0)
         glScalef(size * aspect, size, size)
         glColor3fv(color)

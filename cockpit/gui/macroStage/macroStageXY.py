@@ -144,6 +144,17 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             wx.CallAfter(self.Refresh)
 
 
+    def modelView(self):
+        ## Transform from stage co-ordinates to screen.
+        dx = self.maxX - self.minX
+        dy = self.maxY - self.minY
+        # Column-major ordering
+        return   [-2/dx,  0,     0,   0,
+                  0,      2/dy,  0,   0,
+                  0,      0,     1,   0,
+                  2*self.minX/dx+1,  -2*self.minY/dy-1, 0, 1]
+
+
     ## Draw the canvas. We draw the following:
     # - A blue dotted square representing the hard stage limits of
     #   [(4000, 4000), (25000, 25000)]
@@ -176,6 +187,11 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             hardLimits = cockpit.interfaces.stageMover.getHardLimits()[:2]
             # Rearrange limits to (x, y) tuples.
             hardLimits = list(zip(hardLimits[0], hardLimits[1]))
+
+            # Set up transform from stage to screen units
+            glMatrixMode(GL_MODELVIEW)
+            glLoadMatrixf(self.modelView())
+
             #Loop over objective offsets to draw limist in multiple colours.
             for obj in self.listObj:
                 offset=self.objective.nameToOffset.get(obj)
@@ -190,8 +206,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 glColor3f(*colour)
                 glBegin(GL_LINE_LOOP)
                 for (xIndex, yIndex) in squareOffsets:
-                    self.scaledVertex(hardLimits[xIndex][0]-offset[0],
-                                      hardLimits[yIndex][1]+offset[1])
+                    glVertex2f(hardLimits[xIndex][0]-offset[0],
+                               hardLimits[yIndex][1]+offset[1])
                 glEnd()
                 glDisable(GL_LINE_STIPPLE)
 
@@ -217,7 +233,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 glColor3f(0, 1, 0)
                 glBegin(GL_LINE_LOOP)
                 for (x, y) in [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]:
-                    self.scaledVertex(x-offset[0], y+offset[1])
+                    glVertex2f(x-offset[0], y+offset[1])
                 glEnd()
                 glDisable(GL_LINE_STIPPLE)
 
@@ -230,8 +246,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                         (softLimits[1], (-self.maxExtent * .1, 0)),
                         (softLimits[1], (0, -self.maxExtent * .1))]:
                     secondVertex = [vx + dx, vy + dy]
-                    self.scaledVertex(vx-offset[0], vy+offset[1])
-                    self.scaledVertex(secondVertex[0]-offset[0],
+                    glVertex2f(vx-offset[0], vy+offset[1])
+                    glVertex2f(secondVertex[0]-offset[0],
                                       secondVertex[1]+offset[1])
                 glEnd()
                 glLineWidth(1)
@@ -254,23 +270,13 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glEnable(GL_LINE_STIPPLE)
             glLineStipple(1, 0xAAAA)
             glColor3f(0.4, 0.4, 0.4)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            dx = self.maxX - self.minX
-            dy = self.maxY - self.minY
-            glLoadIdentity()
-            # Col-major order
-            glMultMatrixf([-2/dx,  0,     0,   0,
-                           0,      2/dy,  0,   0,
-                           0,      0,     1,   0,
-                           2*self.minX/dx+1,  -2*self.minY/dy-1, 0, 1])
             primitives = cockpit.interfaces.stageMover.getPrimitives()
             for p in primitives:
                 if p not in self.primitives:
                     self.primitives[p] = Primitive.factory(p)
                 self.primitives[p].render()
-            glPopMatrix()
             glDisable(GL_LINE_STIPPLE)
+
             #Draw possibloe stage positions for current objective
             obj = self.objective.curObjective
             offset=self.objective.nameToOffset.get(obj)
@@ -282,7 +288,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glColor3f(*colour)
             glBegin(GL_LINE_LOOP)
             for (x, y) in squareOffsets:
-                self.scaledVertex(motorPos[0]-offset[0] +
+                glVertex2f(motorPos[0]-offset[0] +
                                   squareSize * x - squareSize / 2,
                                   motorPos[1]+offset[1] +
                                   squareSize * y - squareSize / 2)
@@ -297,8 +303,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                     continue
                 offset = [0, 0]
                 offset[i] = stepSize
-                self.scaledVertex(motorPos[0] - offset[0], motorPos[1] - offset[1])
-                self.scaledVertex(motorPos[0] + offset[0], motorPos[1] + offset[1])
+                glVertex2f(motorPos[0] - offset[0], motorPos[1] - offset[1])
+                glVertex2f(motorPos[0] + offset[0], motorPos[1] + offset[1])
             glEnd()
 
             # Draw direction of motion
@@ -315,7 +321,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             # so ensure that at least one pixel in the middle
             # gets drawn.
             glBegin(GL_POINTS)
-            self.scaledVertex(motorPos[0]-self.offset[0],
+            glVertex2f(motorPos[0]-self.offset[0],
                               motorPos[1]+self.offset[1])
             glEnd()
 
@@ -324,8 +330,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glLineWidth(1)
             glBegin(GL_LINES)
             yOffset = self.minY + 0.9 * (self.viewDeltaY + 0.5 * (self.viewExtent - self.stageHeight))
-            self.scaledVertex(hardLimits[0][0], yOffset)
-            self.scaledVertex(hardLimits[0][1], yOffset)
+            glVertex2f(hardLimits[0][0], yOffset)
+            glVertex2f(hardLimits[0][1], yOffset)
             # Draw notches in the scale bar every 1mm.
             for scaleX in range(int(hardLimits[0][0]), int(hardLimits[0][1]) + 1000, 1000):
                 width = self.viewExtent * .015
@@ -333,8 +339,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                     width = self.viewExtent * .025
                 y1 = yOffset - width / 2
                 y2 = yOffset + width / 2
-                self.scaledVertex(scaleX, y1)
-                self.scaledVertex(scaleX, y2)
+                glVertex2f(scaleX, y1)
+                glVertex2f(scaleX, y2)
             glEnd()
             glLineWidth(1)
 
