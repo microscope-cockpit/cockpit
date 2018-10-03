@@ -491,7 +491,9 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     ## Load a text file describing a set of tiles, as well as the tile image
     # data. This is made a bit trickier by the fact that we want to display
     # a progress dialog that updates as new images are added, but addImage()
-    # must run in the main thread while we run in a different one. 
+    # must run in the main thread while we run in a different one ...
+    # although maybe not since MAP added a queue and a thread to process
+    # new tiles.
     @cockpit.util.threads.callInNewThread
     def loadTiles(self, filePath):
         with open(filePath, 'r') as handle:
