@@ -94,20 +94,9 @@ class TouchScreenWindow(wx.Frame):
         self.selectTilesFunc = None
         ## True if we're generating a mosaic.
         self.amGeneratingMosaic = False
-        ## get an objective handeler and list of all objectives.
+        ## get an objective handler and list of all objectives.
         self.objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         self.listObj = list(self.objective.nameToOffset.keys())
-        ## Lock on generating mosaics.
-        self.mosaicGenerationLock = threading.Lock()
-        ## Boolean that indicates if the current mosaic generation thread
-        # should exit.
-        self.shouldEndOldMosaic = False
-        ## Boolean that indicates if the current mosaic generation thread
-        # should pause.
-        self.shouldPauseMosaic = False
-
-        ## Camera we last used for making a mosaic.
-        self.prevMosaicCamera = None
 
         ## Mosaic tile overlap
         self.overlap = 0.0
@@ -928,10 +917,10 @@ class TouchScreenWindow(wx.Frame):
 
     ##Wrapper functions to call the main mosaic window version
     def displayMosaicMenu(self):
-        self.masterMosaic.displayMosaicMenu(cockpit.gui.mosaic.window.window)
+        self.masterMosaic.displayMosaicMenu()
 
     def continueMosaic(self):
-        self.masterMosaic.continueMosaic(cockpit.gui.mosaic.window.window)
+        self.masterMosaic.continueMosaic()
 
 
     ## trap start mosaic event
