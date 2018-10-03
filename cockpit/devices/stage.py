@@ -24,10 +24,10 @@
 
 from decimal import Decimal
 from . import device
-from cockpit.interfaces.stageMover import Primitive, AXIS_MAP
+from cockpit.interfaces.stageMover import AXIS_MAP
 from cockpit.handlers import stagePositioner
 from cockpit import depot
-import re
+
 
 class StageDevice(device.Device):
     """StageDevice sublcasses Device with additions appropriate to any stage."""
@@ -39,10 +39,10 @@ class StageDevice(device.Device):
     
 
     def getPrimitives(self):
-        """Return a list of Primitives to draw on MacroStageXY display.
+        """Return a list of Primitives to draw on stage displays.
 
         On first call, we read a list of primitives from the config file.
-        Primitives are defined as a config entry of the form:
+        Primitives are specified by a config entry of the form:
             primitives:  c 1000 1000 100
                          r 1000 1000 100 100
         where:
@@ -54,15 +54,10 @@ class StageDevice(device.Device):
         if self.primitives is None:
             # Primitives not yet read from config.
             self.primitives = []
-            primitives = self.config.get('primitives', None)
-            if primitives is not None:
-                primitives = primitives.split('\n')
-                for pstr in primitives:
-                    p = re.split('[ |,|;]*', re.sub("['|\"]", '', pstr))
-                    pType = p[0]
-                    pData = tuple(map(float, p[1:]))
-                    self.primitives.append(Primitive(self, pType, pData))
-
+            specs = self.config.get('primitives', None)
+            for s in specs.split('\n'):
+                if s:
+                    self.primitives.append(s)
         return self.primitives
 
 

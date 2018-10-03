@@ -57,6 +57,7 @@ import traceback
 import wx
 
 from cockpit import events
+from cockpit.gui.primitive import Primitive
 import cockpit.gui.mosaic.window
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
@@ -83,6 +84,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.firstSafetyMousePos = None
         ## Last seen mouse position
         self.lastMousePos = [0, 0]
+        ## Primitive objects - a map of specification to object.
+        self.primitives = {}
 
         hardLimits = cockpit.interfaces.stageMover.getHardLimits()
         self.minX, self.maxX = hardLimits[0]
@@ -240,23 +243,33 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                     x = softLimits[i][0]
                     y = softLimits[i][1]
                     self.drawTextAt((x + dx, y + dy),
-                            "(%d, %d)" % (x, y), size = self.textSize * .75)
+                                    "(%d, %d)" % (x, y), size = self.textSize * .75)
 
             glDisable(GL_LINE_STIPPLE)
 
             # Draw device-specific primitives.
+            # This uses vertex buffers with vertices in stage co-ordinates,
+            # so need to update the modelview matrix to render them in the
+            # right place.
             glEnable(GL_LINE_STIPPLE)
             glLineStipple(1, 0xAAAA)
             glColor3f(0.4, 0.4, 0.4)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            dx = self.maxX - self.minX
+            dy = self.maxY - self.minY
+            glLoadIdentity()
+            # Col-major order
+            glMultMatrixf([-2/dx,  0,     0,   0,
+                           0,      2/dy,  0,   0,
+                           0,      0,     1,   0,
+                           2*self.minX/dx+1,  -2*self.minY/dy-1, 0, 1])
             primitives = cockpit.interfaces.stageMover.getPrimitives()
             for p in primitives:
-                if p.type in ['c', 'C']:
-                    # circle: x0, y0, radius
-                    self.drawScaledCircle(p.data[0], p.data[1],
-                                          p.data[2], CIRCLE_SEGMENTS)
-                if p.type in ['r', 'R']:
-                    # rectangle: x0, y0, width, height
-                    self.drawScaledRectangle(*p.data)
+                if p not in self.primitives:
+                    self.primitives[p] = Primitive.factory(p)
+                self.primitives[p].render()
+            glPopMatrix()
             glDisable(GL_LINE_STIPPLE)
             #Draw possibloe stage positions for current objective
             obj = self.objective.curObjective
