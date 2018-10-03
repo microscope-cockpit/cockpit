@@ -311,6 +311,8 @@ class MegaTile(Tile):
     ## Go through the provided list of Tiles, find the ones that overlap
     # our area, and prerender them to our texture
     def prerenderTiles(self, tiles, viewer):
+        if not tiles:
+            return
         minX = self.pos[0]
         minY = self.pos[1]
         maxX = self.pos[0] + megaTileMicronSize
