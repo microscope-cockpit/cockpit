@@ -111,7 +111,10 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.shouldRerender = True
         ## WX rendering context
         if MosaicCanvas.context is None:
+            # This is the first (and master) instance.
             MosaicCanvas.context = wx.glcanvas.GLContext(self)
+            # Hook up onIdle - only one instance needs to process new tiles.
+            self.Bind(wx.EVT_IDLE, self.onIdle)
 
         ## Error that occurred when rendering. If this happens, we prevent
         # further rendering to avoid error spew.
@@ -124,7 +127,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.Bind(wx.EVT_MOUSE_EVENTS, mouseCallback)
         # Do nothing on this event, to avoid flickering.
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event)
-        self.Bind(wx.EVT_IDLE, self.onIdle)
+
 
 
     ## Now that OpenGL's ready to go, perform any necessary initialization.
