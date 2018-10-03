@@ -735,42 +735,6 @@ class TouchScreenWindow(wx.Frame):
             self.canvas.SetFocus()
 
 
-    def drawScaledCircle(self, x0, y0, r, n, offset=True):
-        dTheta = 2. * PI / n
-        cosTheta = numpy.cos(dTheta)
-        sinTheta = numpy.sin(dTheta)
-        if offset:
-            x0=x0-self.offset[0]
-            y0 =y0+self.offset[1]
-        x = r
-        y = 0.
-
-        glBegin(GL_LINE_LOOP)
-        for i in range(n):
-            glVertex2f(-(x0 + x), y0 + y)
-            xOld = x
-            x = cosTheta * x - sinTheta * y
-            y = sinTheta * xOld + cosTheta * y
-        glEnd()
-
-    ## Draw a rectangle centred on x0, y0 of width w and height h.
-    def drawScaledRectangle(self, x0, y0, w, h, offset=True):
-        dw = w / 2.
-        dh = h / 2.
-        if offset:
-            x0 = x0-self.offset[0]
-            y0 = y0+self.offset[1]
-        ps = [(x0-dw, y0-dh),
-              (x0+dw, y0-dh),
-              (x0+dw, y0+dh),
-              (x0-dw, y0+dh)]
-
-        glBegin(GL_LINE_LOOP)
-        for i in range(-1, 4):
-            glVertex2f(-ps[i][0], ps[i][1])
-        glEnd()
-
-
     ## Display dialogue box to set tile overlap.
     def setTileOverlap(self):
         value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
