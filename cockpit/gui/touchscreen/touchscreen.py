@@ -97,6 +97,8 @@ class TouchScreenWindow(wx.Frame):
             mosaic.MosaicWindow.drawOverlay, self)
         self.drawCrosshairs = types.MethodType(
             mosaic.MosaicWindow.drawCrosshairs, self)
+        self.goTo = types.MethodType(
+            mosaic.MosaicWindow.goTo, self)
 
 
         ## Last known location of the mouse.
@@ -740,21 +742,6 @@ class TouchScreenWindow(wx.Frame):
         self.Refresh()
 
 
-    ## Go to the specified XY position. If we have a focus plane defined,
-    # go to the appropriate Z position to maintain focus.
-    def goTo(self, target, shouldBlock = False):
-        if self.focalPlaneParams:
-            targetZ = self.getFocusZ(target)
-            cockpit.interfaces.stageMover.goTo((target[0], target[1], targetZ),
-                    shouldBlock)
-        else:
-            #IMD 20150306 Save current mover, change to coarse to generate mosaic
-			# do move, and change mover back.
-            originalMover= cockpit.interfaces.stageMover.mover.curHandlerIndex
-            cockpit.interfaces.stageMover.mover.curHandlerIndex = 0
-            cockpit.interfaces.stageMover.goToXY(target, shouldBlock)
-            cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
-
     ## Calculate the Z position in focus for a given XY position, according
     # to our focal plane parameters.
     def getFocusZ(self, point):
@@ -763,14 +750,6 @@ class TouchScreenWindow(wx.Frame):
         z = -numpy.dot(normal[:2], point[:2] - center[:2]) / normal[2] + center[2]
         return z
 
-
-
-    ## A site was deleted; remove it from our sites box.
-    def onSiteDeleted(self, site):
-        for item in self.sitesBox.GetItems():
-            if site.uniqueID == item:
-                self.sitesBox.Delete(item)
-                break
 
     ##Wrapper functions to call the main mosaic window version
     def displayMosaicMenu(self):
