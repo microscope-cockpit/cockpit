@@ -932,7 +932,8 @@ class MosaicWindow(wx.Frame):
             text = self.sitesBox.GetString(item)
             siteID = int(text.split(':')[0])
             self.selectedSites.add(cockpit.interfaces.stageMover.getSite(siteID))
-        self.Refresh()
+        # Refresh this and other mosaic views.
+        events.publish('mosaic update')
 
 
     ## User double-clicked on a site in the sites box; go to that site.
