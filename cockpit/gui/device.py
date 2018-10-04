@@ -25,6 +25,7 @@
 Class definitions for labels and value displays with default formatting.
 """
 
+import sys
 
 from collections import OrderedDict
 import wx
@@ -34,7 +35,6 @@ from cockpit.handlers.deviceHandler import STATES
 from .toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 import cockpit.util.userConfig
 import cockpit.util.threads
-import cockpit.gui.loggingWindow as log
 from cockpit import events
 from distutils import version
 
@@ -415,10 +415,8 @@ class SettingsEditor(wx.Frame):
                     # Int too large.
                     prop = wx.propgrid.FloatProperty(label=key, name=key, value=str(value or 0))
                 except Exception as e:
-                    log.window.write(log.window.stdErr,
-                                     "populateGrid threw exception for key %s with value %s: %s" %
-                                     (key, value, e.message))
-                    continue
+                    sys.stderr.write("populateGrid threw exception for key %s with value %s: %s"
+                                     % (key, value, e.message))
 
             if desc['readonly']:
                 prop.Enable(False)
