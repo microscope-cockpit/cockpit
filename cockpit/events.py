@@ -50,9 +50,11 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import threading
 from itertools import chain
 import re
+import sys
+import threading
+import traceback
 
 ## This module handles the event-passing system between the UI and the 
 # devices. Objects may publish events, subscribe to them, and unsubscribe from
@@ -93,8 +95,11 @@ def publish(eventType, *args, **kwargs):
         try:
             subscribeFunc(*args, **kwargs)
         except:
-            print('Error in subscribed func %s in %s.' % (subscribeFunc.__name__,
-                                                         subscribeFunc.__module__))
+            sys.stderr.write('Error in subscribed func %s.%s().  %s'
+                             % (subscribeFunc.__module__,
+                                subscribeFunc.__name__,
+                                traceback.format_exc()))
+
 
     while True:
         try:
