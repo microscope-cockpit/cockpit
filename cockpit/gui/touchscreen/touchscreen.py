@@ -819,22 +819,6 @@ class TouchScreenWindow(wx.Frame):
         self.canvas.deleteAll()
 
 
-    ## Rescale each tile according to that tile's own values.
-    def autoscaleTiles(self, event = None):
-        self.canvas.rescale(None)
-
-
-    ## Let the user select a camera to use to rescale the tiles.
-    def displayRescaleMenu(self, event = None):
-        self.showCameraMenu("Rescale according to %s camera",
-                self.rescaleWithCamera)
-
-
-    ## Given a camera handler, rescale the mosaic tiles based on that
-    # camera's display's black- and white-points.
-    def rescaleWithCamera(self, camera):
-        self.canvas.rescale(cockpit.gui.camera.window.getCameraScaling(camera))
-
     ##Function to load/unload objective
     def loadUnload(self):
         #toggle to load or unload the sample
