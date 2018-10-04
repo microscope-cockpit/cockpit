@@ -108,10 +108,6 @@ class TouchScreenWindow(wx.Frame):
 
         ## Size of the box to draw at the center of the crosshairs.
         self.crosshairBoxSize = 0
-        ## Color to use when making new Site instances.
-        self.siteColor = SITE_COLORS[0][1]
-        ## Current selected sites for highlighting with crosshairs.
-        self.selectedSites = set()
 
 
         ## Font to use for site labels.
@@ -859,6 +855,7 @@ class TouchScreenWindow(wx.Frame):
             loaded=False
         self.setSampleStateText(loaded)
 
+
     #set sample state text and button state depending on if loaded or not.
     def setSampleStateText(self, loaded=False):
         if(loaded):
@@ -927,8 +924,10 @@ class TouchScreenWindow(wx.Frame):
         # Stop deleting tiles, while we're at it.
         self.onDeleteTiles(shouldForceStop = True)
 
+
     def textInfoField(self,title,onText,onColour,offText,offColour):
         textSizer=wx.BoxSizer(wx.VERTICAL)
+
 
     def cameraToggle(self,camera,i):
         camera.toggleState()
