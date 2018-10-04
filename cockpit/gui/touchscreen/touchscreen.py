@@ -28,7 +28,6 @@ import wx
 from wx.lib.agw.shapedbutton import SBitmapButton,SBitmapToggleButton
 from cockpit.gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 from cockpit.handlers.deviceHandler import STATES
-from cockpit import depot
 
 import cockpit.gui.macroStage.macroStageBase
 from cockpit.gui.macroStage.macroStageXY import MacroStageXY
@@ -41,7 +40,7 @@ import cockpit.gui.dialogs.gridSitesDialog
 import cockpit.gui.dialogs.offsetSitesDialog
 import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
-import cockpit.gui.mosaic.window
+import cockpit.gui.mosaic.window as mosaic
 import cockpit.gui.mosaic.canvas
 import cockpit.interfaces.stageMover
 import cockpit.util.colors
@@ -75,13 +74,13 @@ class TouchScreenWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
         self.panel = wx.Panel(self)
-        self.masterMosaic=cockpit.gui.mosaic.window.window
+        self.masterMosaic=mosaic.window
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.drawOverlay = types.MethodType(
-            cockpit.gui.mosaic.window.MosaicWindow.drawOverlay, self)
+            mosaic.MosaicWindow.drawOverlay, self)
         self.drawCrosshairs = types.MethodType(
-            cockpit.gui.mosaic.window.MosaicWindow.drawCrosshairs, self)
-        self.primitives = cockpit.gui.mosaic.window.window.primitives
+            mosaic.MosaicWindow.drawCrosshairs, self)
+        self.primitives = mosaic.window.primitives
 
 
         ## Last known location of the mouse.
@@ -90,11 +89,6 @@ class TouchScreenWindow(wx.Frame):
         self.lastClickPos = None
         ## Function to call when tiles are selected.
         self.selectTilesFunc = None
-        ## True if we're generating a mosaic.
-        self.amGeneratingMosaic = False
-
-        ## Mosaic tile overlap
-        self.overlap = 0.0
 
         ## Size of the box to draw at the center of the crosshairs.
         self.crosshairBoxSize = 0
@@ -483,7 +477,7 @@ class TouchScreenWindow(wx.Frame):
                                  (list(cockpit.interfaces.imager.imager.activeCameras)[0].name),
                                  cockpit.interfaces.imager.imager.takeImage,
                                  shouldStopVideo = False)
-        cockpit.gui.mosaic.window.transferCameraImage()
+        mosaic.transferCameraImage()
         self.Refresh()
 
     def laserToggle(self, event, light, button):
@@ -592,8 +586,6 @@ class TouchScreenWindow(wx.Frame):
         self.centerCanvas()
         self.scalebar=cockpit.util.userConfig.getValue('mosaicScaleBar', isGlobal = False,
                                                default= 0)
-        self.overlap=cockpit.util.userConfig.getValue('mosaicTileOverlap', isGlobal=False,
-                                               default = 0)
         self.drawPrimitives=cockpit.util.userConfig.getValue('mosaicDrawPrimitives',
                                             isGlobal = False, default = True)
     ##Called when the stage handler index is chnaged. All we need
@@ -658,8 +650,8 @@ class TouchScreenWindow(wx.Frame):
                 newTarget = (currentTarget[0] + self.offset[0],
                              currentTarget[1] + self.offset[1])
                 #stop mosaic if we are already running one
-                if cockpit.gui.mosaic.window.window.amGeneratingMosaic:
-                    self.masterMosaic.onAbort(cockpit.gui.mosaic.window.window)
+                if mosaic.window.amGeneratingMosaic:
+                    self.masterMosaic.onAbort(mosaic.window)
                 self.goTo(newTarget)
             elif event.LeftIsDown() and not event.LeftDown():
                 # Dragging the mouse with the left mouse button: drag or
@@ -696,7 +688,7 @@ class TouchScreenWindow(wx.Frame):
             menu.AppendSeparator()
             menu.Append(menuId, "Set mosaic tile overlap")
             self.panel.Bind(wx.EVT_MENU,
-                            lambda event: self.setTileOverlap(), id= menuId)
+                            lambda event: mosaic.window.setTileOverlap(), id= menuId)
             menuId += 1
             menu.Append(menuId, "Toggle mosaic scale bar")
             self.panel.Bind(wx.EVT_MENU,
@@ -719,25 +711,6 @@ class TouchScreenWindow(wx.Frame):
         if self.IsActive():
             self.canvas.SetFocus()
 
-
-    ## Display dialogue box to set tile overlap.
-    def setTileOverlap(self):
-        value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-                    self.GetParent(),
-                    "Set mosiac tile overlap.",
-                    "Tile overlap in %",
-                    self.overlap,
-                    atMouse=True)
-        self.overlap = float(value)
-        cockpit.util.userConfig.setValue('mosaicTileOverlap', self.overlap, isGlobal=False)
-
-
-
-    ## Transfer an image from the active camera (or first camera) to the
-    # mosaic at the current stage position.
-    def transferCameraImage(self):
-        cockpit.gui.mosaic.window.transferCameraImage()
-        self.Refresh()
 
     def togglescalebar(self):
         #toggle the scale bar between 0 and 1.
@@ -763,13 +736,13 @@ class TouchScreenWindow(wx.Frame):
 
     ## call main mosaic function and refresh
     def saveSite(self, color = None):
-        self.masterMosaic.saveSite(cockpit.gui.mosaic.window.window, color)
+        self.masterMosaic.saveSite(mosaic.window, color)
         self.Refresh()
 
 
     ## Set the site marker color.
     def setSiteColor(self, color):
-        self.masterMosaic.setSiteColor(cockpit.gui.mosaic.window.window, color)
+        self.masterMosaic.setSiteColor(mosaic.window, color)
 
     ## Display a menu that allows the user to control the appearance of
     # the markers used to mark sites.
@@ -1176,5 +1149,5 @@ def makeWindow(parent):
 
 ## Transfer a camera image to the mosaic.
 def transferCameraImage():
-    cockpit.gui.mosaic.window.transferCameraImage()
+    mosaic.transferCameraImage()
 
