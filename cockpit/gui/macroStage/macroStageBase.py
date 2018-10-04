@@ -155,7 +155,6 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
 
     ## Set up some set-once things for OpenGL.
     def initGL(self):
-        (self.width, self.height) = self.GetClientSize()
         self.SetCurrent(self.context)
         glClearColor(1.0, 1.0, 1.0, 0.0)
 
@@ -249,7 +248,8 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
 
     ## Draw some text at the specified location
     def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
-        aspect = float(self.height) / self.width
+        width, height = self.GetClientSize()
+        aspect = float(height) / width
         glPushMatrix()
         glLoadIdentity()
         loc = self.scaledVertex(loc[0], loc[1], True)

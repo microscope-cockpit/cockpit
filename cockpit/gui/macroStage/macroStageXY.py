@@ -175,8 +175,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
             dc = wx.PaintDC(self)
             self.SetCurrent(self.context)
+            width, height = self.GetClientSize()
 
-            glViewport(0, 0, self.width, self.height)
+            glViewport(0, 0, width, height)
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -403,9 +404,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
     ## Moved the mouse. Record its position
     def OnMouseMotion(self, event):
-        self.lastMousePos = self.remapClick(event.GetPosition())
         if self.amSettingSafeties and self.firstSafetyMousePos:
             # Need to redraw to show the new safeties.
+            self.lastMousePos = self.remapClick(event.GetPosition())
             self.Refresh()
 
 
@@ -465,8 +466,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
     ## Remap a click location from pixel coordinates to realspace coordinates
     def remapClick(self, clickLoc):
-        x = float(self.width - clickLoc[0]) / self.width * (self.maxX - self.minX) + self.minX
-        y = float(self.height - clickLoc[1]) / self.height * (self.maxY - self.minY) + self.minY
+        width, height = self.GetClientSize()
+        x = float(width - clickLoc[0]) / width * (self.maxX - self.minX) + self.minX
+        y = float(height - clickLoc[1]) / height * (self.maxY - self.minY) + self.minY
         return [x+self.offset[0], y-self.offset[1]]
 
 
