@@ -980,18 +980,18 @@ class TouchScreenWindow(wx.Frame):
         configurator = depot.getHandlersOfType(depot.CONFIGURATOR)[0]
         currentZ=cockpit.interfaces.stageMover.getPosition()[2]
 
-        if (configurator.getValue('loadPosition') and
-            configurator.getValue('unloadPosition')):
-            loadPosition=configurator.getValue('loadPosition')
-            unloadPosition=configurator.getValue('unloadPosition')
-            if (currentZ < loadPosition):
-                #move with the smalled possible mover
-                self.moveZCheckMoverLimits(loadPosition)
-                loaded=True
-            else:
-                #move with the smalled possible mover
-                self.moveZCheckMoverLimits(unloadPosition)
-                loaded=False
+        if not configurator.has('loadPosition', 'unloadPosition'):
+            raise Exception("Missing loadPosition and/or unloadPositions in config.")
+        loadPosition=configurator.getValue('loadPosition')
+        unloadPosition=configurator.getValue('unloadPosition')
+        if (currentZ < loadPosition):
+            #move with the smalled possible mover
+            self.moveZCheckMoverLimits(loadPosition)
+            loaded=True
+        else:
+            #move with the smalled possible mover
+            self.moveZCheckMoverLimits(unloadPosition)
+            loaded=False
         self.setSampleStateText(loaded)
 
     #set sample state text and button state depending on if loaded or not.
