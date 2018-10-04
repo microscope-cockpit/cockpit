@@ -71,6 +71,23 @@ BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 
 ## This class handles the UI of the mosaic.
 class TouchScreenWindow(wx.Frame):
+    ## A number of properties are needed to fetch live values from the mosaic
+    # window. These are used in MosaicWindow methods that are rebound to
+    # our instance here to duplicate the same view.
+
+    @property
+    def selectedSites(self):
+        return mosaic.window.selectedSites
+
+    @property
+    def primitives(self):
+        return mosaic.window.primitives
+
+    @property
+    def focalPlaneParams(self):
+        return mosaic.window.focalPlaneParams
+
+
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
         self.panel = wx.Panel(self)
@@ -80,7 +97,6 @@ class TouchScreenWindow(wx.Frame):
             mosaic.MosaicWindow.drawOverlay, self)
         self.drawCrosshairs = types.MethodType(
             mosaic.MosaicWindow.drawCrosshairs, self)
-        self.primitives = mosaic.window.primitives
 
 
         ## Last known location of the mouse.
@@ -97,9 +113,6 @@ class TouchScreenWindow(wx.Frame):
         ## Current selected sites for highlighting with crosshairs.
         self.selectedSites = set()
 
-        ## Parameters defining the focal plane -- a tuple of
-        # (point on plane, normal vector to plane).
-        self.focalPlaneParams = None
 
         ## Font to use for site labels.
         self.sitefont = ftgl.TextureFont(cockpit.gui.FONT_PATH)
@@ -664,9 +677,6 @@ class TouchScreenWindow(wx.Frame):
                     self.canvas.multiplyZoom(zoomFactor)
                 else:
                     self.canvas.dragView(delta)
-                # Clear the currently-selected sites so the user doesn't have
-                # to see crosshairs all the time.
-                self.selectedSites = set()
             elif event.GetWheelRotation():
                 # Adjust zoom, based on the zoom rate.
                 delta = event.GetWheelRotation()
@@ -757,52 +767,6 @@ class TouchScreenWindow(wx.Frame):
         z = -numpy.dot(normal[:2], point[:2] - center[:2]) / normal[2] + center[2]
         return z
 
-
-    ## User clicked on a site in the sites box; draw a crosshairs on it.
-    # \todo Enforcing int site IDs here.
-    def onSelectSite(self, event = None):
-        self.selectedSites = set()
-        for item in self.sitesBox.GetSelections():
-            text = self.sitesBox.GetString(item)
-            siteID = int(text.split(':')[0])
-            self.selectedSites.add(interfaces.stageMover.getSite(siteID))
-        self.Refresh()
-
-
-    ## User double-clicked on a site in the sites box; go to that site.
-    # \todo Enforcing int site IDs here.
-    def onDoubleClickSite(self, event):
-        item = event.GetString()
-        siteID = int(item.split(':')[0])
-        interfaces.stageMover.goToSite(siteID)
-
-
-    ## Return a list of of the currently-selected Sites.
-    def getSelectedSites(self):
-        result = []
-        for item in self.sitesBox.GetSelections()[::-1]:
-            text = self.sitesBox.GetString(item)
-            siteID = int(text.split(':')[0])
-            result.append(interfaces.stageMover.getSite(siteID))
-        return result
-
-
-
-
-
-    ## A new site was created (from any source); add it to our sites box.
-    def onNewSiteCreated(self, site, shouldRefresh = True):
-        # This display is a bit compressed, so that all positions are visible
-        # even if there's a scrollbar in the sites box.
-        position = ",".join(["%d" % p for p in site.position])
-        label = site.uniqueID
-        # HACK: most uniqueID instances will be ints, which we zero-pad
-        # so that they stay in appropriate order.
-        if type(label) is int:
-            label = '%04d' % label
-        self.sitesBox.Append("%s: %s" % (label, position))
-        if shouldRefresh:
-            self.Refresh()
 
 
     ## A site was deleted; remove it from our sites box.
