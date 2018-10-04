@@ -291,35 +291,3 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.drawTextAt((drawLoc[0] - labelSpacer - len(positions) * spacer,
                 drawLoc[1]),
                 "step: %4.2fum" % stepSize, size = textSize)
-
-
-    ## Draw a circle of radius r centred on x0, y0 with n segments.
-    def drawScaledCircle(self, x0, y0, r, n):
-        dTheta = 2. * PI / n
-        cosTheta = numpy.cos(dTheta)
-        sinTheta = numpy.sin(dTheta)
-        x = r
-        y = 0.
-
-        glBegin(GL_LINE_LOOP)
-        for i in range(n):
-            self.scaledVertex(x0 + x, y0 + y)
-            xOld = x
-            x = cosTheta * x - sinTheta * y
-            y = sinTheta * xOld + cosTheta * y
-        glEnd()
-
-
-    ## Draw a rectangle centred on x0, y0 of width w and height h.
-    def drawScaledRectangle(self, x0, y0, w, h):
-        dw = w / 2.
-        dh = h / 2.
-        ps = [(x0-dw, y0-dh),
-              (x0+dw, y0-dh),
-              (x0+dw, y0+dh),
-              (x0-dw, y0+dh)]
-
-        glBegin(GL_LINE_LOOP)
-        for i in range(-1, 4):
-            self.scaledVertex(*ps[i])
-        glEnd()
