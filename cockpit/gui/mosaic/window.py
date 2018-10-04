@@ -824,7 +824,8 @@ class MosaicWindow(wx.Frame):
         cockpit.interfaces.stageMover.saveSite(
                 cockpit.interfaces.stageMover.Site(position, None, color,
                         size = self.crosshairBoxSize))
-        self.Refresh()
+        # Publish mosaic update event to update this and other views (e.g. touchscreen).
+        events.publish('mosaic update')
 
 
     ## Set the site marker color.
