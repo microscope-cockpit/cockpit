@@ -47,6 +47,7 @@ import cockpit.util.colors
 import cockpit.util.user
 import cockpit.util.threads
 import cockpit.util.userConfig
+from cockpit.gui.saveTopBottomPanel import moveZCheckMoverLimits
 import types
 
 ## Size of the crosshairs indicating the stage position.
@@ -810,7 +811,7 @@ class TouchScreenWindow(wx.Frame):
         unloadPosition=configurator.getValue('unloadPosition')
         if (currentZ < loadPosition):
             #move with the smalled possible mover
-            self.moveZCheckMoverLimits(loadPosition)
+            moveZCheckMoverLimits(loadPosition)
             loaded=True
         else:
             #move with the smalled possible mover
@@ -828,35 +829,6 @@ class TouchScreenWindow(wx.Frame):
             self.sampleStateText.SetLabel('Unloaded'.center(20))
             self.sampleStateText.SetBackgroundColour((0,255,0))
         self.nameToButton['Load/Unload'].SetValue(loaded)
-
-
-    def moveZCheckMoverLimits(self, target):
-        #Need to check current mover limits, see if we exceed them and if
-        #so drop down to lower mover handler.
-        originalMover= cockpit.interfaces.stageMover.mover.curHandlerIndex
-        limits = cockpit.interfaces.stageMover.getIndividualSoftLimits(2)
-        currentPos= cockpit.interfaces.stageMover.getPosition()[2]
-        offset = target - currentPos
-        doneMove=False
-        while (cockpit.interfaces.stageMover.mover.curHandlerIndex >= 0):
-            if ((currentPos + offset)<
-                limits[cockpit.interfaces.stageMover.mover.curHandlerIndex][1] and
-                (currentPos + offset) >
-                limits[cockpit.interfaces.stageMover.mover.curHandlerIndex][0]):
-
-                #Can do it with this mover...
-                cockpit.interfaces.stageMover.goToZ(target)
-                cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
-                doneMove=True
-                break
-            else:
-                cockpit.interfaces.stageMover.mover.curHandlerIndex -= 1
-
-        if not doneMove:
-            print ("cannot load/unload move too large for any Z axis!")
-        #retrun to original active mover.
-        cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
-
 
 
     ##Function to load/unload objective

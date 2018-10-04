@@ -189,7 +189,7 @@ def moveZCheckMoverLimits(target):
             # need to drop down a handler to see if next handler can do the move
             cockpit.interfaces.stageMover.mover.curHandlerIndex -= 1
             if (cockpit.interfaces.stageMover.mover.curHandlerIndex < 0):
-                print ("Move too large for coarse Z motion")
+                print ("Move too large for any Z mover.")
             
         else: 
             cockpit.interfaces.stageMover.goToZ(target)
