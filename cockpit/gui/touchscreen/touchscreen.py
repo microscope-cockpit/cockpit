@@ -23,13 +23,12 @@
 import collections
 from cockpit.util import ftgl
 import numpy
-from OpenGL.GL import *
 import os
-import threading
 import wx
 from wx.lib.agw.shapedbutton import SBitmapButton,SBitmapToggleButton
 from cockpit.gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 from cockpit.handlers.deviceHandler import STATES
+from cockpit import depot
 
 import cockpit.gui.macroStage.macroStageBase
 from cockpit.gui.macroStage.macroStageXY import MacroStageXY
@@ -71,7 +70,6 @@ PI = 3.141592654
 BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 
 
-
 ## This class handles the UI of the mosaic.
 class TouchScreenWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -94,9 +92,6 @@ class TouchScreenWindow(wx.Frame):
         self.selectTilesFunc = None
         ## True if we're generating a mosaic.
         self.amGeneratingMosaic = False
-        ## get an objective handler and list of all objectives.
-        self.objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        self.listObj = list(self.objective.nameToOffset.keys())
 
         ## Mosaic tile overlap
         self.overlap = 0.0
@@ -182,13 +177,14 @@ class TouchScreenWindow(wx.Frame):
         objectiveText.SetFont(font)
         textSizer2.Add(objectiveText, 0, wx.EXPAND|wx.ALL,border=5)
 
+        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+
         self.objectiveSelectedText=wx.StaticText(self.buttonPanel,-1,
                                                  style=wx.ALIGN_CENTER)
         self.objectiveSelectedText.SetFont(font)
-        self.objectiveSelectedText.SetLabel(self.objective.curObjective.center(15))
+        self.objectiveSelectedText.SetLabel(objective.curObjective.center(15))
 
-        colour = depot.getHandlersOfType(depot.OBJECTIVE)[0].nameToColour.get(self.objective.curObjective)
-        colour= (colour[0]*255,colour[1]*255,colour[2]*255)
+        colour = tuple(map(lambda x: 255*x, objective.getColour()))
         self.sampleStateText.SetBackgroundColour(colour)
         textSizer2.Add(self.objectiveSelectedText, 0, wx.CENTER|wx.ALL,border=5)
 
@@ -624,11 +620,11 @@ class TouchScreenWindow(wx.Frame):
 
     ## User changed the objective in use; resize our crosshair box to suit.
     def onObjectiveChange(self, name, pixelSize, transform, offset, **kwargs):
+        h = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         self.crosshairBoxSize = 512 * pixelSize
         self.offset = offset
         self.objectiveSelectedText.SetLabel(name.center(15))
-        colour = self.objective.nameToColour.get(name)
-        colour= (colour[0]*255,colour[1]*255,colour[2]*255)
+        colour = tuple(map(lambda x: 255*x, h.getColour()))
         self.objectiveSelectedText.SetBackgroundColour(colour)
 
         #force a redraw so that the crosshairs are properly sized
@@ -1040,27 +1036,23 @@ class TouchScreenWindow(wx.Frame):
 
     ##Function to load/unload objective
     def changeObjective(self):
-        #if we have only two objectioves, then simply flip them
-        currentObj=self.objective.curObjective
-        if (len(self.listObj) == 2):
-            for obj in self.listObj:
-                if currentObj != obj:
-                    self.objective.changeObjective(obj)
+        # If we have only two objectives, then simply flip them
+        h = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+        if (h.numObjectives == 2):
+            for obj in h.sortedObjectives:
+                if h.currentObj != obj:
+                    h.changeObjective(obj)
+                    break
         else:
-            #more than 2 objectives so need to present a list
-            showObjectiveMenu()
-
-
-
-    def showObjectiveMenu(self):
-        i=0
-        menu = wx.Menu()
-        for objective in self.listObj:
-            menu.Append(i + 1, objective)
-            wx.EVT_MENU(self.panel, i + 1,
-                        lambda event,
-                        objective:self.objective.changeObjective(objective))
+            # More than 2 objectives so need to present a list.
+            menu = wx.Menu()
+            for i, objective in enumerate(h.sortedObjectives):
+                menu.Append(i, objective)
+                menu.Bind(wx.EVT_MENU,
+                          lambda evt, obj=objective: h.changeObjective(obj),
+                          id=i)
             cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+
 
     ## Handle the user clicking the abort button.
     def onAbort(self, *args):
