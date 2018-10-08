@@ -7,16 +7,12 @@
 
 from collections import OrderedDict
 import cockpit.devices
-from cockpit.devices import device
-from cockpit import depot
+from cockpit.devices import device, executorDevices
 from cockpit import events
 import wx
 import cockpit.interfaces.stageMover
-import socket
 import cockpit.util
-import time
 from itertools import groupby
-import struct
 import cockpit.gui.device
 import cockpit.gui.toggleButton
 import Pyro4
@@ -49,13 +45,13 @@ class Alpao(device.Device):
 
         #Excercise the DM to remove residual static and then set to 0 position
         for ii in range(20):
-            self.AlpaoConnection.send((np.ones(self.no_actuators)*(ii%2)))
-        self.AlpaoConnection.send((np.zeros(self.no_actuators) + 0.5))
+            self.AlpaoConnection.send((np.zeros(self.no_actuators)+(ii%2)))
+        self.AlpaoConnection.reset()
 
         #Create accurate look up table for certain Z positions
         ##LUT dict has key of Z positions
         try:
-            LUT_array = np.loadtxt("C:\\cockpit\\nick\cockpit\\remote_focus_LUT.txt")
+            LUT_array = np.loadtxt("C:\\cockpit\\nick\\cockpit\\remote_focus_LUT_mantas.txt")
             self.LUT = {}
             for ii in (LUT_array[:,0])[:]:
                 self.LUT[ii] = LUT_array[np.where(LUT_array == ii)[0][0],1:]
@@ -68,6 +64,18 @@ class Alpao(device.Device):
             self.actuator_slopes, self.actuator_intercepts = \
                 self.remote_ac_fits(LUT_array, self.no_actuators)
 
+        #Load values from config
+        try:
+            self.parameters = Config.getValue('alpao_circleParams', isGlobal=True)
+            self.AlpaoConnection.set_roi(self.parameters[0], self.parameters[1],
+                                     self.parameters[2])
+        except:
+            pass
+        try:
+            self.controlMatrix = Config.getValue('alpao_controlMatrix', isGlobal=True)
+            self.AlpaoConnection.set_controlMatrix(self.controlMatrix)
+        except:
+            pass
 
     def remote_ac_fits(self,LUT_array, no_actuators):
         #For Z positions which have not been calibrated, approximate with
@@ -114,6 +122,11 @@ class Alpao(device.Device):
                                         + self.actuator_intercepts
         ## Queue patterns on DM.
         self.AlpaoConnection.queue_patterns(ac_positions)
+        if np.all(ac_positions.shape) != 0:
+            self.AlpaoConnection.queue_patterns(ac_positions)
+        else:
+            # No actuator values to queue, so pass
+            pass
 
         # Track sequence index set by last set of triggers.
         lastIndex = 0
@@ -126,7 +139,12 @@ class Alpao(device.Device):
                 continue
             # Action specifies a target frame in the sequence.
             # Remove original event.
-            table[i] = None
+            if type(action) is tuple:
+                # Don't remove event for tuple.
+                ## This is the type for remote focus calibration experiment
+                pass
+            else:
+                table[i] = None
             # How many triggers?
             if type(action) is float and action != sequence[lastIndex]:
                 # Next pattern does not match last, so step one pattern.
@@ -160,7 +178,10 @@ class Alpao(device.Device):
 
             lastIndex += numTriggers
             if lastIndex >= sequenceLength:
-                lastIndex = lastIndex % sequenceLength
+                if sequenceLength == 0:
+                    pass
+                else:
+                    lastIndex = lastIndex % sequenceLength
         table.clearBadEntries()
         # Store the parameters used to generate the sequence.
         self.lastParms = ac_positions
@@ -186,6 +207,7 @@ class Alpao(device.Device):
     # \param repDuration Amount of time to wait between reps, or None for no
     #        wait time.
     def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
+        print("In executeTable")
         # The actions between startIndex and stopIndex may include actions for
         # this handler, or for this handler's clients. All actions are
         # ultimately carried out by this handler, so we need to parse the
@@ -294,9 +316,16 @@ class Alpao(device.Device):
             label='Reset DM',
             parent=self.panel,
             size=cockpit.gui.device.DEFAULT_SIZE)
-        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt:self.AlpaoConnection.send((
-                                                    np.zeros(self.no_actuators) + 0.5)))
+        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt:self.AlpaoConnection.reset())
         self.elements['resetButton'] = resetButton
+
+        # Step the focal plane up one step
+        applySysFlat = cockpit.gui.toggleButton.ToggleButton(
+            label='System Flat',
+            parent=self.panel,
+            size=cockpit.gui.device.DEFAULT_SIZE)
+        applySysFlat.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.onApplySysFlat())
+        self.elements['applySysFlat'] = applySysFlat
 
         # Visualise current interferometric phase
         visPhaseButton = cockpit.gui.toggleButton.ToggleButton(
@@ -313,22 +342,6 @@ class Alpao(device.Device):
             size=cockpit.gui.device.DEFAULT_SIZE)
         flattenButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.onFlatten())
         self.elements['flattenButton'] = flattenButton
-
-        # Step the focal plane up one step
-        stepUpButton = cockpit.gui.toggleButton.ToggleButton(
-            label='Step up',
-            parent=self.panel,
-            size=cockpit.gui.device.DEFAULT_SIZE)
-        stepUpButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: None)
-        self.elements['stepUpButton'] = stepUpButton
-
-        # Step the focal plane up one step
-        stepDownButton = cockpit.gui.toggleButton.ToggleButton(
-            label='Step down',
-            parent=self.panel,
-            size=cockpit.gui.device.DEFAULT_SIZE)
-        stepDownButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: None)
-        self.elements['stepDownButton'] = stepDownButton
 
         for e in self.elements.values():
             rowSizer.Add(e)
@@ -497,15 +510,13 @@ class Alpao(device.Device):
         resize_dim = original_dim/2
         while original_dim % resize_dim is not 0:
             resize_dim -= 1
-        interferogram_ft_resize = np.log(abs(self.bin_ndarray(unwrapped_phase, new_shape=
-                                    (resize_dim, resize_dim), operation='mean')))
-        app_ft = View(image_np=interferogram_ft_resize)
-        app_ft.master.title('Interferogram Fourier transform')
-        app_ft.mainloop()
         unwrapped_phase_resize = self.bin_ndarray(unwrapped_phase, new_shape=
                                     (resize_dim, resize_dim), operation='mean')
+        cycle_diff = abs(np.max(unwrapped_phase) - np.min(unwrapped_phase))/(2.0*np.pi)
         app = View(image_np=unwrapped_phase_resize)
-        app.master.title('Unwrapped interferogram')
+        app.master.title('Unwrapped interferogram. Max phase = %d, Min phase = %d, '
+                         'Cycle difference = %f'
+                         %(np.max(unwrapped_phase), np.min(unwrapped_phase), cycle_diff))
         app.mainloop()
 
     def onFlatten(self):
@@ -538,6 +549,10 @@ class Alpao(device.Device):
                 raise e
         flat_values = self.AlpaoConnection.flatten_phase(iterations=10)
         Config.setValue('alpao_flat_values', np.ndarray.tolist(flat_values), isGlobal=True)
+
+    def onApplySysFlat(self):
+        sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat', isGlobal=True))
+        self.AlpaoConnection.send(sys_flat_values)
 
     def showDebugWindow(self):
         # Ensure only a single instance of the window.
