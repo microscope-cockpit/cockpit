@@ -91,7 +91,7 @@ class RFZStackCalibration(experiment.Experiment):
             curTime += motionTime
             table.addAction(curTime, self.zPositioner, zTarget)
             if self.dmHandler is not None:
-                table.addAction(curTime, self.dmhandler, (zTarget, 'flatten'))
+                table.addAction(curTime, self.dmHandler, (zTarget, 'flatten'))
             curTime += stabilizationTime
             prevAltitude = zTarget
 
