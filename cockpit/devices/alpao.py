@@ -7,16 +7,12 @@
 
 from collections import OrderedDict
 import cockpit.devices
-from cockpit.devices import device
-from cockpit import depot
+from cockpit.devices import device, executorDevices
 from cockpit import events
 import wx
 import cockpit.interfaces.stageMover
-import socket
 import cockpit.util
-import time
 from itertools import groupby
-import struct
 import cockpit.gui.device
 import cockpit.gui.toggleButton
 import Pyro4
@@ -41,7 +37,8 @@ class Alpao(device.Device):
         ## Connect to the remote program
     def initialize(self):
         self.AlpaoConnection = Pyro4.Proxy(self.uri)
-        #self.AlpaoConnection.set_trigger(cp_ttype="SOFTWARE",cp_tmode="ONCE")
+        self.AlpaoConnection.set_trigger(cp_ttype="SOFTWARE", cp_tmode="ONCE")
+        self.AlpaoConnection.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
         self.no_actuators = self.AlpaoConnection.get_n_actuators()
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
@@ -54,7 +51,7 @@ class Alpao(device.Device):
         #Create accurate look up table for certain Z positions
         ##LUT dict has key of Z positions
         try:
-            LUT_array = np.loadtxt("C:\\cockpit\\nick\cockpit\\remote_focus_LUT.txt")
+            LUT_array = np.loadtxt("C:\\cockpit\\nick\cockpit\\remote_focus_LUT_mantas.txt")
             self.LUT = {}
             for ii in (LUT_array[:,0])[:]:
                 self.LUT[ii] = LUT_array[np.where(LUT_array == ii)[0][0],1:]
@@ -125,7 +122,12 @@ class Alpao(device.Device):
         ac_positions = np.outer(reducedParams, self.actuator_slopes.T) \
                                         + self.actuator_intercepts
         ## Queue patterns on DM.
-        self.AlpaoConnection.queue_patterns(ac_positions)
+        if np.all(ac_positions.shape) != 0:
+            self.AlpaoConnection.queue_patterns(ac_positions)
+        else:
+            # No actuator values to queue, so pass
+            pass
+
 
         # Track sequence index set by last set of triggers.
         lastIndex = 0
@@ -138,7 +140,12 @@ class Alpao(device.Device):
                 continue
             # Action specifies a target frame in the sequence.
             # Remove original event.
-            table[i] = None
+            if type(action) is tuple:
+                # Don't remove event for tuple.
+                ## This is the type for remote focus calibration experiment
+                pass
+            else:
+                table[i] = None
             # How many triggers?
             if type(action) is float and action != sequence[lastIndex]:
                 # Next pattern does not match last, so step one pattern.
@@ -172,7 +179,10 @@ class Alpao(device.Device):
 
             lastIndex += numTriggers
             if lastIndex >= sequenceLength:
-                lastIndex = lastIndex % sequenceLength
+                if sequenceLength == 0:
+                    pass
+                else:
+                    lastIndex = lastIndex % sequenceLength
         table.clearBadEntries()
         # Store the parameters used to generate the sequence.
         self.lastParms = ac_positions
@@ -198,6 +208,7 @@ class Alpao(device.Device):
     # \param repDuration Amount of time to wait between reps, or None for no
     #        wait time.
     def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
+        print("In executeTable")
         # The actions between startIndex and stopIndex may include actions for
         # this handler, or for this handler's clients. All actions are
         # ultimately carried out by this handler, so we need to parse the
