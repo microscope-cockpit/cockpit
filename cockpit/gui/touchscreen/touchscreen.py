@@ -23,18 +23,15 @@
 import collections
 from cockpit.util import ftgl
 import numpy
-from OpenGL.GL import *
 import os
-import threading
 import wx
 from wx.lib.agw.shapedbutton import SBitmapButton,SBitmapToggleButton
 from cockpit.gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 from cockpit.handlers.deviceHandler import STATES
 
-from . import slavecanvas
-from . import slaveOverview
-from . import slaveMacroStageZ
 import cockpit.gui.macroStage.macroStageBase
+from cockpit.gui.macroStage.macroStageXY import MacroStageXY
+from cockpit.gui.macroStage.macroStageZ import MacroStageZ
 from cockpit import depot
 from cockpit import events
 import cockpit.gui
@@ -43,13 +40,15 @@ import cockpit.gui.dialogs.gridSitesDialog
 import cockpit.gui.dialogs.offsetSitesDialog
 import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
-import cockpit.gui.mosaic.window
+import cockpit.gui.mosaic.window as mosaic
+import cockpit.gui.mosaic.canvas
 import cockpit.interfaces.stageMover
 import cockpit.util.colors
 import cockpit.util.user
 import cockpit.util.threads
 import cockpit.util.userConfig
-import math
+from cockpit.gui.saveTopBottomPanel import moveZCheckMoverLimits
+import types
 
 ## Size of the crosshairs indicating the stage position.
 CROSSHAIR_SIZE = 10000
@@ -71,14 +70,37 @@ PI = 3.141592654
 BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 
 
-
 ## This class handles the UI of the mosaic.
 class TouchScreenWindow(wx.Frame):
+    ## A number of properties are needed to fetch live values from the mosaic
+    # window. These are used in MosaicWindow methods that are rebound to
+    # our instance here to duplicate the same view.
+
+    @property
+    def selectedSites(self):
+        return mosaic.window.selectedSites
+
+    @property
+    def primitives(self):
+        return mosaic.window.primitives
+
+    @property
+    def focalPlaneParams(self):
+        return mosaic.window.focalPlaneParams
+
+
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
         self.panel = wx.Panel(self)
-        self.masterMosaic=cockpit.gui.mosaic.window.MosaicWindow
+        self.masterMosaic=mosaic.window
         sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.drawOverlay = types.MethodType(
+            mosaic.MosaicWindow.drawOverlay, self)
+        self.drawCrosshairs = types.MethodType(
+            mosaic.MosaicWindow.drawCrosshairs, self)
+        self.goTo = types.MethodType(
+            mosaic.MosaicWindow.goTo, self)
+
 
         ## Last known location of the mouse.
         self.prevMousePos = None
@@ -86,36 +108,10 @@ class TouchScreenWindow(wx.Frame):
         self.lastClickPos = None
         ## Function to call when tiles are selected.
         self.selectTilesFunc = None
-        ## True if we're generating a mosaic.
-        self.amGeneratingMosaic = False
-        ## get an objective handeler and list of all objectives.
-        self.objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        self.listObj = list(self.objective.nameToOffset.keys())
-        ## Lock on generating mosaics.
-        self.mosaicGenerationLock = threading.Lock()
-        ## Boolean that indicates if the current mosaic generation thread
-        # should exit.
-        self.shouldEndOldMosaic = False
-        ## Boolean that indicates if the current mosaic generation thread
-        # should pause.
-        self.shouldPauseMosaic = False
-
-        ## Camera we last used for making a mosaic.
-        self.prevMosaicCamera = None
-
-        ## Mosaic tile overlap
-        self.overlap = 0.0
 
         ## Size of the box to draw at the center of the crosshairs.
         self.crosshairBoxSize = 0
-        ## Color to use when making new Site instances.
-        self.siteColor = SITE_COLORS[0][1]
-        ## Current selected sites for highlighting with crosshairs.
-        self.selectedSites = set()
 
-        ## Parameters defining the focal plane -- a tuple of
-        # (point on plane, normal vector to plane).
-        self.focalPlaneParams = None
 
         ## Font to use for site labels.
         self.sitefont = ftgl.TextureFont(cockpit.gui.FONT_PATH)
@@ -187,13 +183,14 @@ class TouchScreenWindow(wx.Frame):
         objectiveText.SetFont(font)
         textSizer2.Add(objectiveText, 0, wx.EXPAND|wx.ALL,border=5)
 
+        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+
         self.objectiveSelectedText=wx.StaticText(self.buttonPanel,-1,
                                                  style=wx.ALIGN_CENTER)
         self.objectiveSelectedText.SetFont(font)
-        self.objectiveSelectedText.SetLabel(self.objective.curObjective.center(15))
+        self.objectiveSelectedText.SetLabel(objective.curObjective.center(15))
 
-        colour = depot.getHandlersOfType(depot.OBJECTIVE)[0].nameToColour.get(self.objective.curObjective)
-        colour= (colour[0]*255,colour[1]*255,colour[2]*255)
+        colour = tuple(map(lambda x: 255*x, objective.getColour()))
         self.sampleStateText.SetBackgroundColour(colour)
         textSizer2.Add(self.objectiveSelectedText, 0, wx.CENTER|wx.ALL,border=5)
 
@@ -350,17 +347,17 @@ class TouchScreenWindow(wx.Frame):
 
         limits = cockpit.interfaces.stageMover.getHardLimits()[:2]
         ## start a slaveCanvas instance.
-        self.canvas = slavecanvas.SlaveCanvas(self.panel, limits,
-                                              self.drawOverlay,
-                                              self.onMouse)
+        self.canvas = cockpit.gui.mosaic.canvas.MosaicCanvas(self.panel, limits,
+                                                             self.drawOverlay,
+                                                             self.onMouse)
         sizer.Add(self.canvas, 3, wx.EXPAND)
         leftSizer= wx.BoxSizer(wx.VERTICAL)
         #add a macrostageXY overview section
-        self.macroStageXY=slaveOverview.MacroStageXY(self.panel)
+        self.macroStageXY = MacroStageXY(self.panel, size=(168, 392), id=-1)
         leftSizer.Add(self.macroStageXY,2, wx.EXPAND)
 
         ##start a TSmacrostageZ instance
-        self.macroStageZ=slaveMacroStageZ.slaveMacroStageZ(self.panel)
+        self.macroStageZ = MacroStageZ(self.panel, size=(168, 392), id=-1)
         leftSizer.Add(self.macroStageZ, 3,wx.EXPAND)
 
         ## Z control buttons
@@ -492,7 +489,7 @@ class TouchScreenWindow(wx.Frame):
                                  (list(cockpit.interfaces.imager.imager.activeCameras)[0].name),
                                  cockpit.interfaces.imager.imager.takeImage,
                                  shouldStopVideo = False)
-        cockpit.gui.mosaic.window.transferCameraImage()
+        mosaic.transferCameraImage()
         self.Refresh()
 
     def laserToggle(self, event, light, button):
@@ -601,8 +598,6 @@ class TouchScreenWindow(wx.Frame):
         self.centerCanvas()
         self.scalebar=cockpit.util.userConfig.getValue('mosaicScaleBar', isGlobal = False,
                                                default= 0)
-        self.overlap=cockpit.util.userConfig.getValue('mosaicTileOverlap', isGlobal=False,
-                                               default = 0)
         self.drawPrimitives=cockpit.util.userConfig.getValue('mosaicDrawPrimitives',
                                             isGlobal = False, default = True)
     ##Called when the stage handler index is chnaged. All we need
@@ -629,11 +624,11 @@ class TouchScreenWindow(wx.Frame):
 
     ## User changed the objective in use; resize our crosshair box to suit.
     def onObjectiveChange(self, name, pixelSize, transform, offset, **kwargs):
+        h = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         self.crosshairBoxSize = 512 * pixelSize
         self.offset = offset
         self.objectiveSelectedText.SetLabel(name.center(15))
-        colour = self.objective.nameToColour.get(name)
-        colour= (colour[0]*255,colour[1]*255,colour[2]*255)
+        colour = tuple(map(lambda x: 255*x, h.getColour()))
         self.objectiveSelectedText.SetBackgroundColour(colour)
 
         #force a redraw so that the crosshairs are properly sized
@@ -667,8 +662,8 @@ class TouchScreenWindow(wx.Frame):
                 newTarget = (currentTarget[0] + self.offset[0],
                              currentTarget[1] + self.offset[1])
                 #stop mosaic if we are already running one
-                if cockpit.gui.mosaic.window.window.amGeneratingMosaic:
-                    self.masterMosaic.onAbort(cockpit.gui.mosaic.window.window)
+                if mosaic.window.amGeneratingMosaic:
+                    self.masterMosaic.onAbort(mosaic.window)
                 self.goTo(newTarget)
             elif event.LeftIsDown() and not event.LeftDown():
                 # Dragging the mouse with the left mouse button: drag or
@@ -681,9 +676,6 @@ class TouchScreenWindow(wx.Frame):
                     self.canvas.multiplyZoom(zoomFactor)
                 else:
                     self.canvas.dragView(delta)
-                # Clear the currently-selected sites so the user doesn't have
-                # to see crosshairs all the time.
-                self.selectedSites = set()
             elif event.GetWheelRotation():
                 # Adjust zoom, based on the zoom rate.
                 delta = event.GetWheelRotation()
@@ -700,12 +692,12 @@ class TouchScreenWindow(wx.Frame):
             for label, color in SITE_COLORS:
                 menu.Append(menuId, "Mark site with %s marker" % label)
                 self.panel.Bind(wx.EVT_MENU,
-                                lambda event, color = color: self.saveSite(color), id= menuId)
+                                lambda event, color = color: mosaic.window.saveSite(color), id= menuId)
                 menuId += 1
             menu.AppendSeparator()
             menu.Append(menuId, "Set mosaic tile overlap")
             self.panel.Bind(wx.EVT_MENU,
-                            lambda event: self.setTileOverlap(), id= menuId)
+                            lambda event: mosaic.window.setTileOverlap(), id= menuId)
             menuId += 1
             menu.Append(menuId, "Toggle mosaic scale bar")
             self.panel.Bind(wx.EVT_MENU,
@@ -729,229 +721,6 @@ class TouchScreenWindow(wx.Frame):
             self.canvas.SetFocus()
 
 
-    ## Draw the overlay. This largely consists of a crosshairs indicating
-    # the current stage position, and any sites the user has saved.
-    def drawOverlay(self):
-        for site in cockpit.interfaces.stageMover.getAllSites():
-            # Draw a crude circle.
-            x, y = site.position[:2]
-            x = -x
-            # Set line width based on zoom factor.
-            lineWidth = max(1, self.canvas.scale * 1.5)
-            glLineWidth(lineWidth)
-            glColor3f(*site.color)
-            glBegin(GL_LINE_LOOP)
-            for i in range(8):
-                glVertex3f(x + site.size * numpy.cos(numpy.pi * i / 4.0),
-                        y + site.size * numpy.sin(numpy.pi * i / 4.0), 0)
-            glEnd()
-            glLineWidth(1)
-
-            glPushMatrix()
-            glTranslatef(x, y, 0)
-            # Scale the text with respect to the current zoom factor.
-            fontScale = 3 / max(5.0, self.canvas.scale)
-            glScalef(fontScale, fontScale, 1)
-            self.sitefont.render(str(site.uniqueID))
-            glPopMatrix()
-
-        self.drawCrosshairs(cockpit.interfaces.stageMover.getPosition()[:2], (1, 0, 0))
-
-        # If we're selecting tiles, draw the box the user is selecting.
-        if self.selectTilesFunc is not None and self.lastClickPos is not None:
-            start = self.canvas.mapScreenToCanvas(self.lastClickPos)
-            end = self.canvas.mapScreenToCanvas(self.prevMousePos)
-            glColor3f(0, 0, 1)
-            glBegin(GL_LINE_LOOP)
-            glVertex2f(-start[0], start[1])
-            glVertex2f(-start[0], end[1])
-            glVertex2f(-end[0], end[1])
-            glVertex2f(-end[0], start[1])
-            glEnd()
-
-        # Highlight selected sites with crosshairs.
-        for site in self.selectedSites:
-            self.drawCrosshairs(site.position[:2], (0, 0, 1), 10000)
-
-        # Draw the soft and hard stage motion limits
-        glEnable(GL_LINE_STIPPLE)
-        glLineWidth(2)
-        softSafeties = cockpit.interfaces.stageMover.getSoftLimits()[:2]
-        hardSafeties = cockpit.interfaces.stageMover.getHardLimits()[:2]
-        for safeties, color, stipple in [(softSafeties, (0, 1, 0), 0x5555),
-                                         (hardSafeties, (0, 0, 1), 0xAAAA)]:
-            x1, x2 = safeties[0]
-            y1, y2 = safeties[1]
-            if hasattr (self, 'offset'):
-                x1 -=  self.offset[0]
-                x2 -=  self.offset[0]
-                y1 -=  self.offset[1]
-                y2 -=  self.offset[1]
-            glLineStipple(3, stipple)
-            glColor3f(*color)
-            glBegin(GL_LINE_LOOP)
-            glVertex2f(-x1, y1)
-            glVertex2f(-x2, y1)
-            glVertex2f(-x2, y2)
-            glVertex2f(-x1, y2)
-            glEnd()
-        glLineWidth(1)
-        glDisable(GL_LINE_STIPPLE)
-
-        #Draw a scale bar if the scalebar size is not zero.
-        if (self.scalebar != 0):
-            # Scale bar width.
-            self.scalebar = 100*(10**math.floor(math.log(1/self.canvas.scale,10)))
-            # Scale bar position, near the top left-hand corner.
-            scalebarPos = [30,-10]
-
-            # Scale bar vertices.
-            x1 = scalebarPos[0]/self.canvas.scale
-            x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
-            y1 = scalebarPos[1]/self.canvas.scale
-            canvasPos=self.canvas.mapScreenToCanvas((0,0))
-            x1 -= canvasPos[0]
-            x2 -= canvasPos[0]
-            y1 += canvasPos[1]
-
-
-            # Do the actual drawing
-            glColor3f(255, 0, 0)
-            # The scale bar itself.
-            glLineWidth(8)
-            glBegin(GL_LINES)
-            glVertex2f(x1,y1)
-            glVertex2f(x2,y1)
-            glEnd()
-            glLineWidth(1)
-            glPushMatrix()
-            labelPosX= x1
-            labelPosY= y1 - (20/self.canvas.scale)
-            glTranslatef(labelPosX, labelPosY, 0)
-            fontScale = 1 / self.canvas.scale
-            glScalef(fontScale, fontScale, 1)
-            if (self.scalebar>1.0):
-                self.scalefont.render('%d um' % self.scalebar)
-            else:
-                self.scalefont.render('%.3f um' % self.scalebar)
-            glPopMatrix()
-
-        #Draw stage primitives.
-        if(self.drawPrimitives):
-            # Draw device-specific primitives.
-            glEnable(GL_LINE_STIPPLE)
-            glLineStipple(1, 0xAAAA)
-            glColor3f(0.4, 0.4, 0.4)
-            primitives = cockpit.interfaces.stageMover.getPrimitives()
-            for p in primitives:
-                if p.type in ['c', 'C']:
-                    # circle: x0, y0, radius
-                    self.drawScaledCircle(p.data[0], p.data[1],
-                                          p.data[2], CIRCLE_SEGMENTS,
-                                          offset=False)
-                if p.type in ['r', 'R']:
-                    # rectangle: x0, y0, width, height
-                    self.drawScaledRectangle(*p.data, offset=False)
-            glDisable(GL_LINE_STIPPLE)
-
-    def drawScaledCircle(self, x0, y0, r, n, offset=True):
-        dTheta = 2. * PI / n
-        cosTheta = numpy.cos(dTheta)
-        sinTheta = numpy.sin(dTheta)
-        if offset:
-            x0=x0-self.offset[0]
-            y0 =y0+self.offset[1]
-        x = r
-        y = 0.
-
-        glBegin(GL_LINE_LOOP)
-        for i in range(n):
-            glVertex2f(-(x0 + x), y0 + y)
-            xOld = x
-            x = cosTheta * x - sinTheta * y
-            y = sinTheta * xOld + cosTheta * y
-        glEnd()
-
-    ## Draw a rectangle centred on x0, y0 of width w and height h.
-    def drawScaledRectangle(self, x0, y0, w, h, offset=True):
-        dw = w / 2.
-        dh = h / 2.
-        if offset:
-            x0 = x0-self.offset[0]
-            y0 = y0+self.offset[1]
-        ps = [(x0-dw, y0-dh),
-              (x0+dw, y0-dh),
-              (x0+dw, y0+dh),
-              (x0-dw, y0+dh)]
-
-        glBegin(GL_LINE_LOOP)
-        for i in range(-1, 4):
-            glVertex2f(-ps[i][0], ps[i][1])
-        glEnd()
-    # Draw a crosshairs at the specified position with the specified color.
-    # By default make the size of the crosshairs be really big.
-    def drawCrosshairs(self, position, color, size = None):
-        xSize = ySize = size
-        if size is None:
-            xSize = ySize = 100000
-        x, y = position
-        #if no offset defined we can't apply it!
-        if hasattr(self, 'offset'):
-            x = x-self.offset[0]
-            y = y-self.offset[1]
-
-        # Draw the crosshairs
-        glColor3f(*color)
-        glBegin(GL_LINES)
-        glVertex2d(-x - xSize, y)
-        glVertex2d(-x + xSize, y)
-        glVertex2d(-x, y - ySize)
-        glVertex2d(-x, y + ySize)
-        glEnd()
-
-        glBegin(GL_LINE_LOOP)
-
-        #get cams and objective opbjects
-        cams = depot.getActiveCameras()
-        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        #if there is a camera us its real pixel count
-        if (len(cams)>0):
-            width, height = cams[0].getImageSize()
-            self.crosshairBoxSize = width*objective.getPixelSize()
-            width = self.crosshairBoxSize
-            height = height*objective.getPixelSize()
-        else:
-            #else use the default which is 512Xpixel size from objective
-            width =self.crosshairBoxSize
-            height=self.crosshairBoxSize
-        
-        
-        # Draw the box.
-        for i, j in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
-            glVertex2d(-x + i * width / 2,
-                       y + j * height / 2)
-        glEnd()
-
-
-    ## Display dialogue box to set tile overlap.
-    def setTileOverlap(self):
-        value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-                    self.GetParent(),
-                    "Set mosiac tile overlap.",
-                    "Tile overlap in %",
-                    self.overlap,
-                    atMouse=True)
-        self.overlap = float(value)
-        cockpit.util.userConfig.setValue('mosaicTileOverlap', self.overlap, isGlobal=False)
-
-
-
-    ## Transfer an image from the active camera (or first camera) to the
-    # mosaic at the current stage position.
-    def transferCameraImage(self):
-        cockpit.gui.mosaic.window.transferCameraImage()
-        self.Refresh()
-
     def togglescalebar(self):
         #toggle the scale bar between 0 and 1.
         if (self.scalebar!=0):
@@ -974,93 +743,6 @@ class TouchScreenWindow(wx.Frame):
         self.Refresh()
 
 
-    ## call main mosaic function and refresh
-    def saveSite(self, color = None):
-        self.masterMosaic.saveSite(cockpit.gui.mosaic.window.window, color)
-        self.Refresh()
-
-
-    ## Set the site marker color.
-    def setSiteColor(self, color):
-        self.masterMosaic.setSiteColor(cockpit.gui.mosaic.window.window, color)
-
-    ## Display a menu that allows the user to control the appearance of
-    # the markers used to mark sites.
-    def displaySiteMakerMenu(self, event = None):
-        menu = wx.Menu()
-        for i, (label, color) in enumerate(SITE_COLORS):
-            menu.Append(i + 1, "Mark sites in %s" % label)
-            self.panel.Bind(wx.EVT_MENU,
-                            lambda event, color = color: self.setSiteColor(color), id= i + 1)
-        cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
-
-
-    # ## Calculate the focal plane of the sample.
-    # def setFocalPlane(self, event = None):
-    #     sites = self.getSelectedSites()
-    #     positions = [s.position for s in sites]
-    #     if len(positions) < 3:
-    #         wx.MessageDialog(self,
-    #                 "Please select at least 3 in-focus sites.",
-    #                 "Insufficient input.").ShowModal()
-    #         return
-    #     positions = numpy.array(positions)
-    #     # Pick a point in the plane, as the average of all site positions.
-    #     center = positions.mean(axis = 0)
-    #     # Try every combinations of points, and average their resulting normal
-    #     # vectors together.
-    #     normals = []
-    #     for i in range(len(positions)):
-    #         p1 = positions[i] - center
-    #         for j in range(i + 1, len(positions)):
-    #             p2 = positions[j] - center
-    #             for k in range(j + 1, len(positions)):
-    #                 p3 = positions[k] - center
-    #                 points = numpy.rot90([p1, p2, p3])
-    #                 # Calculate normal vector, and normalize
-    #                 normal = numpy.cross(p2 - p1, p3 - p1)
-    #                 magnitude = numpy.sqrt(sum(normal * normal))
-    #                 normals.append(normal / magnitude)
-
-    #     # Ensure all normals point in the same direction. If they oppose,
-    #     # their sum should be ~0; if they are aligned, it should be
-    #     # ~2.
-    #     normals = numpy.array(normals)
-    #     base = normals[0]
-    #     for normal in normals[1:]:
-    #         if sum(base + normal) < .5:
-    #             # Opposed normals.
-    #             normal *= -1
-    #     self.focalPlaneParams = (center, normals.mean(axis = 0))
-    #     deltas = []
-    #     for site in sites:
-    #         pos = numpy.array(site.position)
-    #         z = self.getFocusZ(pos)
-    #         deltas.append(pos[2] - z)
-    #         print ("Delta for",pos,"is",(pos[2] - z))
-    #     print ("Average delta is",numpy.mean(deltas),"with std",numpy.std(deltas))
-
-
-    # ## Clear the focal plane settings.
-    # def clearFocalPlane(self):
-    #     self.focalPlaneParams = None
-
-
-    ## Go to the specified XY position. If we have a focus plane defined,
-    # go to the appropriate Z position to maintain focus.
-    def goTo(self, target, shouldBlock = False):
-        if self.focalPlaneParams:
-            targetZ = self.getFocusZ(target)
-            cockpit.interfaces.stageMover.goTo((target[0], target[1], targetZ),
-                    shouldBlock)
-        else:
-            #IMD 20150306 Save current mover, change to coarse to generate mosaic
-			# do move, and change mover back.
-            originalMover= cockpit.interfaces.stageMover.mover.curHandlerIndex
-            cockpit.interfaces.stageMover.mover.curHandlerIndex = 0
-            cockpit.interfaces.stageMover.goToXY(target, shouldBlock)
-            cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
-
     ## Calculate the Z position in focus for a given XY position, according
     # to our focal plane parameters.
     def getFocusZ(self, point):
@@ -1070,66 +752,12 @@ class TouchScreenWindow(wx.Frame):
         return z
 
 
-    ## User clicked on a site in the sites box; draw a crosshairs on it.
-    # \todo Enforcing int site IDs here.
-    def onSelectSite(self, event = None):
-        self.selectedSites = set()
-        for item in self.sitesBox.GetSelections():
-            text = self.sitesBox.GetString(item)
-            siteID = int(text.split(':')[0])
-            self.selectedSites.add(interfaces.stageMover.getSite(siteID))
-        self.Refresh()
-
-
-    ## User double-clicked on a site in the sites box; go to that site.
-    # \todo Enforcing int site IDs here.
-    def onDoubleClickSite(self, event):
-        item = event.GetString()
-        siteID = int(item.split(':')[0])
-        interfaces.stageMover.goToSite(siteID)
-
-
-    ## Return a list of of the currently-selected Sites.
-    def getSelectedSites(self):
-        result = []
-        for item in self.sitesBox.GetSelections()[::-1]:
-            text = self.sitesBox.GetString(item)
-            siteID = int(text.split(':')[0])
-            result.append(interfaces.stageMover.getSite(siteID))
-        return result
-
-
-
-
-
-    ## A new site was created (from any source); add it to our sites box.
-    def onNewSiteCreated(self, site, shouldRefresh = True):
-        # This display is a bit compressed, so that all positions are visible
-        # even if there's a scrollbar in the sites box.
-        position = ",".join(["%d" % p for p in site.position])
-        label = site.uniqueID
-        # HACK: most uniqueID instances will be ints, which we zero-pad
-        # so that they stay in appropriate order.
-        if type(label) is int:
-            label = '%04d' % label
-        self.sitesBox.Append("%s: %s" % (label, position))
-        if shouldRefresh:
-            self.Refresh()
-
-
-    ## A site was deleted; remove it from our sites box.
-    def onSiteDeleted(self, site):
-        for item in self.sitesBox.GetItems():
-            if site.uniqueID == item:
-                self.sitesBox.Delete(item)
-                break
-
     ##Wrapper functions to call the main mosaic window version
     def displayMosaicMenu(self):
-        self.masterMosaic.displayMosaicMenu(cockpit.gui.mosaic.window.window)
+        self.masterMosaic.displayMosaicMenu()
 
     def continueMosaic(self):
-        self.masterMosaic.continueMosaic(cockpit.gui.mosaic.window.window)
+        self.masterMosaic.continueMosaic()
 
 
     ## trap start mosaic event
@@ -1171,41 +799,26 @@ class TouchScreenWindow(wx.Frame):
         self.canvas.deleteAll()
 
 
-    ## Rescale each tile according to that tile's own values.
-    def autoscaleTiles(self, event = None):
-        self.canvas.rescale(None)
-
-
-    ## Let the user select a camera to use to rescale the tiles.
-    def displayRescaleMenu(self, event = None):
-        self.showCameraMenu("Rescale according to %s camera",
-                self.rescaleWithCamera)
-
-
-    ## Given a camera handler, rescale the mosaic tiles based on that
-    # camera's display's black- and white-points.
-    def rescaleWithCamera(self, camera):
-        self.canvas.rescale(cockpit.gui.camera.window.getCameraScaling(camera))
-
     ##Function to load/unload objective
     def loadUnload(self):
         #toggle to load or unload the sample
         configurator = depot.getHandlersOfType(depot.CONFIGURATOR)[0]
         currentZ=cockpit.interfaces.stageMover.getPosition()[2]
 
-        if (configurator.getValue('loadPosition') and
-            configurator.getValue('unloadPosition')):
-            loadPosition=configurator.getValue('loadPosition')
-            unloadPosition=configurator.getValue('unloadPosition')
-            if (currentZ < loadPosition):
-                #move with the smalled possible mover
-                self.moveZCheckMoverLimits(loadPosition)
-                loaded=True
-            else:
-                #move with the smalled possible mover
-                self.moveZCheckMoverLimits(unloadPosition)
-                loaded=False
+        if not configurator.has('loadPosition', 'unloadPosition'):
+            raise Exception("Missing loadPosition and/or unloadPositions in config.")
+        loadPosition=configurator.getValue('loadPosition')
+        unloadPosition=configurator.getValue('unloadPosition')
+        if (currentZ < loadPosition):
+            #move with the smalled possible mover
+            moveZCheckMoverLimits(loadPosition)
+            loaded=True
+        else:
+            #move with the smalled possible mover
+            self.moveZCheckMoverLimits(unloadPosition)
+            loaded=False
         self.setSampleStateText(loaded)
+
 
     #set sample state text and button state depending on if loaded or not.
     def setSampleStateText(self, loaded=False):
@@ -1218,58 +831,25 @@ class TouchScreenWindow(wx.Frame):
         self.nameToButton['Load/Unload'].SetValue(loaded)
 
 
-    def moveZCheckMoverLimits(self, target):
-        #Need to check current mover limits, see if we exceed them and if
-        #so drop down to lower mover handler.
-        originalMover= cockpit.interfaces.stageMover.mover.curHandlerIndex
-        limits = cockpit.interfaces.stageMover.getIndividualSoftLimits(2)
-        currentPos= cockpit.interfaces.stageMover.getPosition()[2]
-        offset = target - currentPos
-        doneMove=False
-        while (cockpit.interfaces.stageMover.mover.curHandlerIndex >= 0):
-            if ((currentPos + offset)<
-                limits[cockpit.interfaces.stageMover.mover.curHandlerIndex][1] and
-                (currentPos + offset) >
-                limits[cockpit.interfaces.stageMover.mover.curHandlerIndex][0]):
-
-                #Can do it with this mover...
-                cockpit.interfaces.stageMover.goToZ(target)
-                cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
-                doneMove=True
-                break
-            else:
-                cockpit.interfaces.stageMover.mover.curHandlerIndex -= 1
-
-        if not doneMove:
-            print ("cannot load/unload move too large for any Z axis!")
-        #retrun to original active mover.
-        cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
-
-
-
     ##Function to load/unload objective
     def changeObjective(self):
-        #if we have only two objectioves, then simply flip them
-        currentObj=self.objective.curObjective
-        if (len(self.listObj) == 2):
-            for obj in self.listObj:
-                if currentObj != obj:
-                    self.objective.changeObjective(obj)
+        # If we have only two objectives, then simply flip them
+        h = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+        if (h.numObjectives == 2):
+            for obj in h.sortedObjectives:
+                if h.currentObj != obj:
+                    h.changeObjective(obj)
+                    break
         else:
-            #more than 2 objectives so need to present a list
-            showObjectiveMenu()
-
-
-
-    def showObjectiveMenu(self):
-        i=0
-        menu = wx.Menu()
-        for objective in self.listObj:
-            menu.Append(i + 1, objective)
-            wx.EVT_MENU(self.panel, i + 1,
-                        lambda event,
-                        objective:self.objective.changeObjective(objective))
+            # More than 2 objectives so need to present a list.
+            menu = wx.Menu()
+            for i, objective in enumerate(h.sortedObjectives):
+                menu.Append(i, objective)
+                menu.Bind(wx.EVT_MENU,
+                          lambda evt, obj=objective: h.changeObjective(obj),
+                          id=i)
             cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+
 
     ## Handle the user clicking the abort button.
     def onAbort(self, *args):
@@ -1279,8 +859,10 @@ class TouchScreenWindow(wx.Frame):
         # Stop deleting tiles, while we're at it.
         self.onDeleteTiles(shouldForceStop = True)
 
+
     def textInfoField(self,title,onText,onColour,offText,offColour):
         textSizer=wx.BoxSizer(wx.VERTICAL)
+
 
     def cameraToggle(self,camera,i):
         camera.toggleState()
@@ -1393,5 +975,5 @@ def makeWindow(parent):
 
 ## Transfer a camera image to the mosaic.
 def transferCameraImage():
-    cockpit.gui.mosaic.window.transferCameraImage()
+    mosaic.transferCameraImage()
 

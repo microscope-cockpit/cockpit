@@ -82,13 +82,7 @@ class ActionTable:
     ## Like addDigital, but rapidly toggle the output on and then off.
     # Return the time after the toggle is completed.
     def addToggle(self, time, handler):
-        self.actions.append((time, handler, True))
-        time += self.toggleTime
-        self.actions.append((time, handler, False))
-        if self.firstActionTime is None or self.firstActionTime > time:
-            self.firstActionTime = time
-        if self.lastActionTime is None or self.lastActionTime < time:
-            self.lastActionTime = time
+        time, dt = handler.addToggle(time, self)
         return time
 
 

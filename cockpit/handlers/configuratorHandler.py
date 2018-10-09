@@ -79,3 +79,10 @@ class ConfiguratorHandler(deviceHandler.DeviceHandler):
         if key not in self.config:
             raise KeyError("Invalid config key [%s]" % key)
         return self.config[key]
+
+
+    def has(self, *keys):
+        result = True
+        for key in keys:
+            result &= key in self.config
+        return result

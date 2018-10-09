@@ -229,7 +229,7 @@ class Experiment:
         # display appropriate warnings.
         self.lastMinuteActions()
 
-        runThread = threading.Thread(target = self.execute)
+        runThread = threading.Thread(target=self.execute, name="Experiment-execute")
         global _runThread
         _runThread = runThread
 
@@ -261,13 +261,13 @@ class Experiment:
                                         self.sliceHeight, self.generateTitles(),
                                         cameraToExcitation)
             saver.startCollecting()
-            saveThread = threading.Thread(target=saver.executeAndSave)
+            saveThread = threading.Thread(target=saver.executeAndSave, name="Experiment-execute-save")
             saveThread.start()
             generatedFilenames.append(saver.getFilenames())
 
         runThread.start()
         # Start up a thread to clean up after the experiment finishes.
-        threading.Thread(target = self.cleanup, args = [runThread, saveThread]).start()
+        threading.Thread(target=self.cleanup, args=[runThread, saveThread], name="Experiment-cleanup").start()
         return True
 
     ## Create an ActionTable by calling self.generateActions, and give our

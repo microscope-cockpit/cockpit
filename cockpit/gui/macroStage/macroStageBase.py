@@ -142,7 +142,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.shouldForceRedraw = False
 
         ## Thread that ensures we don't spam redisplaying ourselves.
-        self.redrawTimerThread = threading.Thread(target = self.refreshWaiter)
+        self.redrawTimerThread = threading.Thread(target=self.refreshWaiter, name="macrostage-refresh")
         self.redrawTimerThread.start()
 
         self.Bind(wx.EVT_PAINT, self.onPaint)
@@ -155,7 +155,6 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
 
     ## Set up some set-once things for OpenGL.
     def initGL(self):
-        (self.width, self.height) = self.GetClientSize()
         self.SetCurrent(self.context)
         glClearColor(1.0, 1.0, 1.0, 0.0)
 
@@ -234,24 +233,26 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         glColor3f(color[0], color[1], color[2])
         glLineWidth(ARROW_LINE_THICKNESS)
         glBegin(GL_LINES)
-        self.scaledVertex(baseLoc[0], baseLoc[1])
-        self.scaledVertex(pointLoc[0], pointLoc[1])
+        glVertex2f(baseLoc[0], baseLoc[1])
+        glVertex2f(pointLoc[0], pointLoc[1])
         glEnd()
         # Prevent the end of the line from showing through the
         # arrowhead by moving the arrowhead further along.
         pointLoc += delta * .1
         glBegin(GL_POLYGON)
-        self.scaledVertex(headLoc1[0], headLoc1[1])
-        self.scaledVertex(headLoc2[0], headLoc2[1])
-        self.scaledVertex(pointLoc[0], pointLoc[1])
+        glVertex2f(headLoc1[0], headLoc1[1])
+        glVertex2f(headLoc2[0], headLoc2[1])
+        glVertex2f(pointLoc[0], pointLoc[1])
         glEnd()
 
 
     ## Draw some text at the specified location
     def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
-        loc = self.scaledVertex(loc[0], loc[1], True)
-        aspect = float(self.height) / self.width
+        width, height = self.GetClientSize()
+        aspect = float(height) / width
         glPushMatrix()
+        glLoadIdentity()
+        loc = self.scaledVertex(loc[0], loc[1], True)
         glTranslatef(loc[0], loc[1], 0)
         glScalef(size * aspect, size, size)
         glColor3fv(color)
@@ -290,35 +291,3 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.drawTextAt((drawLoc[0] - labelSpacer - len(positions) * spacer,
                 drawLoc[1]),
                 "step: %4.2fum" % stepSize, size = textSize)
-
-
-    ## Draw a circle of radius r centred on x0, y0 with n segments.
-    def drawScaledCircle(self, x0, y0, r, n):
-        dTheta = 2. * PI / n
-        cosTheta = numpy.cos(dTheta)
-        sinTheta = numpy.sin(dTheta)
-        x = r
-        y = 0.
-
-        glBegin(GL_LINE_LOOP)
-        for i in range(n):
-            self.scaledVertex(x0 + x, y0 + y)
-            xOld = x
-            x = cosTheta * x - sinTheta * y
-            y = sinTheta * xOld + cosTheta * y
-        glEnd()
-
-
-    ## Draw a rectangle centred on x0, y0 of width w and height h.
-    def drawScaledRectangle(self, x0, y0, w, h):
-        dw = w / 2.
-        dh = h / 2.
-        ps = [(x0-dw, y0-dh),
-              (x0+dw, y0-dh),
-              (x0+dw, y0+dh),
-              (x0-dw, y0+dh)]
-
-        glBegin(GL_LINE_LOOP)
-        for i in range(-1, 4):
-            self.scaledVertex(*ps[i])
-        glEnd()

@@ -109,7 +109,7 @@ class LinkamStage(stage.StageDevice):
 
     def finalizeInitialization(self):
         """Finalize device initialization."""
-        self.statusThread = threading.Thread(target=self.pollStatus)
+        self.statusThread = threading.Thread(target=self.pollStatus, name="Linkam-status")
         events.subscribe('cockpit initialization complete', self.statusThread.start)
 
 

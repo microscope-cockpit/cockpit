@@ -273,3 +273,10 @@ class DeviceHandler(object):
             raise Exception('Problem encountered en/disabling %s:\n%s' % (self.name, e))
         finally:
             self.enableLock.release()
+
+    ## Add a toggle event to the action table.
+    # Return time of last action, and response time before ready after trigger.
+    def addToggle(self, time, table):
+        table.addAction(time, self, True)
+        table.addAction(time + table.toggleTime, self, False)
+        return time + table.toggleTime, 0
