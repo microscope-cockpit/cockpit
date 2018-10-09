@@ -120,8 +120,8 @@ class CameraHandler(deviceHandler.DeviceHandler):
         self.dye = None
         # Set up trigger handling.
         if trigHandler and trigLine:
-            trigHandler.registerDigital(self, trigLine)
-            self.triggerNow = lambda: trigHandler.triggerDigital(self)
+            h = trigHandler.registerDigital(self, trigLine)
+            self.triggerNow = h.triggerNow
         else:
             softTrigger = self.callbacks.get('softTrigger', None)
             self.triggerNow = lambda: softTrigger
