@@ -118,8 +118,8 @@ class LightHandler(deviceHandler.DeviceHandler):
         self.exposureTime = None
         # Set up trigger handling.
         if trigHandler and trigLine:
-            trigHandler.registerDigital(self, trigLine)
-            self.triggerNow = lambda: trigHandler.triggerDigital(self)
+            h = trigHandler.registerDigital(self, trigLine)
+            self.triggerNow = h.triggerNow
             if 'setExposing' not in callbacks:
                 cb = lambda name, state: trigHandler.setDigital(trigLine, state)
                 callbacks['setExposing'] = cb
