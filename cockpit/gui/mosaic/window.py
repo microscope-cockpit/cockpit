@@ -71,6 +71,7 @@ import cockpit.gui.dialogs.gridSitesDialog
 import cockpit.gui.dialogs.offsetSitesDialog
 import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
+from cockpit.gui.primitive import Primitive
 import cockpit.interfaces.stageMover
 import cockpit.util.user
 import cockpit.util.threads
@@ -121,7 +122,8 @@ class MosaicWindow(wx.Frame):
         self.panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-
+        ## Mapping of primitive specifications to Primitives.
+        self.primitives = {}
         ## Prevent r-click on buttons displaying MainWindow context menu.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         ## Last known location of the mouse.
@@ -546,53 +548,19 @@ class MosaicWindow(wx.Frame):
             glEnable(GL_LINE_STIPPLE)
             glLineStipple(1, 0xAAAA)
             glColor3f(0.4, 0.4, 0.4)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            # Reflect x-cordinates.
+            glMultMatrixf([-1.,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1])
             primitives = cockpit.interfaces.stageMover.getPrimitives()
             for p in primitives:
-                if p.type in ['c', 'C']:
-                    # circle: x0, y0, radius
-                    self.drawScaledCircle(p.data[0], p.data[1],
-                                          p.data[2], CIRCLE_SEGMENTS,
-                                          offset=False)
-                if p.type in ['r', 'R']:
-                    # rectangle: x0, y0, width, height
-                    self.drawScaledRectangle(*p.data, offset=False)
+                if p not in self.primitives:
+                    self.primitives[p] = Primitive.factory(p)
+                self.primitives[p].render()
+            glPopMatrix()
             glDisable(GL_LINE_STIPPLE)
 
 
-    def drawScaledCircle(self, x0, y0, r, n, offset=True):
-        dTheta = 2. * PI / n
-        cosTheta = numpy.cos(dTheta)
-        sinTheta = numpy.sin(dTheta)
-        if offset:
-            x0=x0-self.offset[0]
-            y0 =y0+self.offset[1]
-        x = r
-        y = 0.
-
-        glBegin(GL_LINE_LOOP)
-        for i in range(n):
-            glVertex2f(-(x0 + x), y0 + y)
-            xOld = x
-            x = cosTheta * x - sinTheta * y
-            y = sinTheta * xOld + cosTheta * y
-        glEnd()
-		
-    ## Draw a rectangle centred on x0, y0 of width w and height h.
-    def drawScaledRectangle(self, x0, y0, w, h, offset=True):
-        dw = w / 2.
-        dh = h / 2.
-        if offset:
-            x0 = x0-self.offset[0]
-            y0 = y0+self.offset[1]
-        ps = [(x0-dw, y0-dh),
-              (x0+dw, y0-dh),
-              (x0+dw, y0+dh),
-              (x0-dw, y0+dh)]
-
-        glBegin(GL_LINE_LOOP)
-        for i in range(-1, 4):
-            glVertex2f(-ps[i][0], ps[i][1])
-        glEnd()
     # Draw a crosshairs at the specified position with the specified color.
     # By default make the size of the crosshairs be really big.
     def drawCrosshairs(self, position, color, size = None, offset=False):
@@ -664,7 +632,7 @@ class MosaicWindow(wx.Frame):
         if self.mosaicThread is None or not self.mosaicThread.is_alive():
             self.shouldReconfigure = True
             self.shouldRestart = True
-            self.mosaicThread = threading.Thread(target=self.mosaicLoop)
+            self.mosaicThread = threading.Thread(target=self.mosaicLoop, name="mosaic")
             self.mosaicThread.start()
         if self.shouldContinue.is_set():
             self.shouldContinue.clear()
@@ -856,7 +824,8 @@ class MosaicWindow(wx.Frame):
         cockpit.interfaces.stageMover.saveSite(
                 cockpit.interfaces.stageMover.Site(position, None, color,
                         size = self.crosshairBoxSize))
-        self.Refresh()
+        # Publish mosaic update event to update this and other views (e.g. touchscreen).
+        events.publish('mosaic update')
 
 
     ## Set the site marker color.
@@ -963,7 +932,8 @@ class MosaicWindow(wx.Frame):
             text = self.sitesBox.GetString(item)
             siteID = int(text.split(':')[0])
             self.selectedSites.add(cockpit.interfaces.stageMover.getSite(siteID))
-        self.Refresh()
+        # Refresh this and other mosaic views.
+        events.publish('mosaic update')
 
 
     ## User double-clicked on a site in the sites box; go to that site.

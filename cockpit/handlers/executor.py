@@ -244,10 +244,15 @@ class DigitalMixin(object):
     ## Digital handler mixin.
 
     ## Register a client device that is connected to one of our lines.
+    # returns a virtual TriggerProxy.
     def registerDigital(self, client, line):
-        self.digitalClients[client] = int(line)
-        # Return a function to trigger the device.
-        return lambda client=client: self.triggerDigital(client)
+        h = TriggerProxy(client.name, self)
+        self.digitalClients[h] = int(line)
+        # If the client not a DelegateTrigger executor, all of its actions
+        # are handled here.
+        if not isinstance(client, DelegateTrigger):
+            self.digitalClients[client] = int(line)
+        return h
 
 
     ## Set or clear a single line.
@@ -516,35 +521,82 @@ class ExecutorDebugWindow(wx.Frame):
         self.SetClientSize(panel.GetSize())
 
 
-## This handler can examine and modify an action table, but delegates
-# running it to some other ExecutorHandler
-class DelegateTrigger(deviceHandler.DeviceHandler):
-    def __init__(self, name, groupName, trigSource, trigLine, examineActions, movementTime=0):
-        if trigSource is None:
-            def _triggerNow():
-                print("Dummy trigger on %s." % name)
-            triggerNow = _triggerNow
-            isEligibleForExperiments = False
-        else:
-            if isinstance(trigSource, string_types):
-                trigSource = depot.getHandler(trigSource, depot.EXECUTOR)
-            triggerNow = trigSource.registerDigital(self, trigLine)
-            isEligibleForExperiments = trigSource.isEligibleForExperiments
-        deviceHandler.DeviceHandler.__init__(self, name, groupName,
-                                             isEligibleForExperiments,
-                                             {}, depot.EXECUTOR)
-        self.triggerNow = triggerNow
-        self.examineActions = examineActions
-        if callable(movementTime):
-            self.getMovementTime = movementTime
-            self._movementTime = None
-        else:
-            self._movementTime = movementTime
-            self.getMovementTime = lambda self=self: decimal.Decimal(self._movementTime)
+## A class for a handler that can perform actions in an experiment,
+# but doesn't have any analogue or digital capabilities.
+class SimpleExecutor(deviceHandler.DeviceHandler):
+    def __init__(self, name, groupName, isEligibleForExperiments, callbacks):
+        super(SimpleExecutor, self).__init__(name, groupName, isEligibleForExperiments,
+                                             callbacks, depot.EXECUTOR)
+        for cbname, cb in callbacks.items():
+            if cbname is 'executeTable':
+                continue
+            if not callable(cb):
+                cb = lambda *args, **kwargs: cb
+            self.__setattr__(cbname, cb)
+
+    ## Execute whatever the device does and publish an event on completion.
+    def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
+        self.callbacks['executeTable'](table, startIndex, stopIndex,
+                                       numReps, repDuration)
+        events.publish(events.EXPERIMENT_EXECUTION)
 
 
+    ## Return number of lines this handler can run.
     def getNumRunnableLines(self, table, index):
-        return 0
+        count = 0
+        if not self.isEligibleForExperiments:
+            return 0
+        for time, handler, parameter in table[index:]:
+            if handler is not self:
+                break
+            count += 1
+        return count
+
+
+## A trigger handler to allow discrimination of trigger and
+# triggered device in the action table.
+class TriggerProxy(deviceHandler.DeviceHandler):
+    def __init__(self, name, trigSource):
+        super(TriggerProxy, self).__init__(name + " trigger", name + " group",
+                                             False, {}, depot.GENERIC_DEVICE)
+        self.triggerNow = lambda: trigSource.triggerDigital(self)
+        self.setHigh = lambda: trigHandler.setDigital(trigLine, state)
+
+
+## This handler can examine and modify an action table, but delegates
+# running it to some other ExecutorHandler.
+# The DelegateTrigger instance should be created with any non-trigger actions
+# handled in callback named 'executeTable', and then connected to a trigger
+# source with the delegateTo method.
+
+class DelegateTrigger(SimpleExecutor):
+    #def __init__(self, name, groupName, trigSource, trigLine, examineActions, movementTime=0):
+    def __init__(self, name, groupName, isEligibleForExperiments, callbacks):
+        super(DelegateTrigger, self).__init__(name, groupName, isEligibleForExperiments,
+                                              callbacks)
+        self._trigger = None
+        self._triggerTime = 0
+        self._responseTime = 0
+        self.triggerNow = lambda: None
+
+
+    ## Delegate trigger actions to some trigSource
+    def delegateTo(self, trigSource, trigLine, trigTime=0, responseTime=0):
+        if isinstance(trigSource, string_types):
+            trigSource = depot.getHandler(trigSource, depot.EXECUTOR)
+        self._trigger = trigSource.registerDigital(self, trigLine)
+        self.triggerNow = self._trigger.triggerNow
+        self._triggerTime = trigTime
+        self._responseTime = responseTime
+
+
+    ## Add a toggle event to the action table.
+    # Return time of last action, and response time before ready after trigger.
+    def addToggle(self, time, table):
+        dt = max(self._triggerTime, table.toggleTime)
+        table.addAction(time, self._trigger, True)
+        table.addAction(time + dt, self._trigger, False)
+        return time + dt, self._responseTime
 
 
     def setMovementTimeUI(self):
