@@ -65,7 +65,7 @@ import cockpit.util.datadoc
 import cockpit.util.logger
 import cockpit.util.threads
 import itertools
-import queue
+import Queue
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1
@@ -111,7 +111,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.renderError = None
 
         ## A buffer of images waiting to be added to the mosaic.
-        self.pendingImages = queue.Queue(BUFFER_LENGTH)
+        self.pendingImages = Queue.Queue(BUFFER_LENGTH)
+
 
         self.Bind(wx.EVT_PAINT, self.onPaint)
         self.Bind(wx.EVT_MOUSE_EVENTS, mouseCallback)
