@@ -121,7 +121,6 @@ class Alpao(device.Device):
         ac_positions = np.outer(reducedParams, self.actuator_slopes.T) \
                                         + self.actuator_intercepts
         ## Queue patterns on DM.
-        self.AlpaoConnection.queue_patterns(ac_positions)
         if np.all(ac_positions.shape) != 0:
             self.AlpaoConnection.queue_patterns(ac_positions)
         else:
