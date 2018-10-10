@@ -191,9 +191,12 @@ class Alpao(device.Device):
         trigline = self.config.get('triggerline', None)
         dt = self.config.get('settlingtime', 10)
         result = []
-        self.handler = cockpit.handlers.executor.DelegateTrigger("dm", "dm group",
-                                              trigsource, trigline,
-                                              self.examineActions, dt)
+        self.handler = cockpit.handlers.executor.DelegateTrigger(
+            "dm", "dm group", True,
+            {'examineActions': self.examineActions,
+             'getMovementTime': lambda *args: dt,
+             'executeTable': self.executeTable})
+        self.handler.delegateTo(trigsource, trigline, 0, dt)
         result.append(self.handler)
         return result
 
