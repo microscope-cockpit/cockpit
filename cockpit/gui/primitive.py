@@ -54,7 +54,7 @@ class Primitive(object):
         pData = tuple(map(float, p[1:]))
         # Spec is a type and some data
         if pType in ['c', 'C']:
-            return Circle(*pData, CIRCLE_SEGMENTS)
+            return Circle(*pData, n=CIRCLE_SEGMENTS)
         if pType in ['r', 'R']:
             return Rectangle(*pData)
 
