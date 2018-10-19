@@ -415,7 +415,6 @@ class TouchScreenWindow(wx.Frame):
         events.subscribe('stage step index', self.stageIndexChange)
         events.subscribe('soft safety limit', self.onAxisRefresh)
         events.subscribe('objective change', self.onObjectiveChange)
-        events.subscribe('user abort', self.onAbort)
         events.subscribe('user login', self.onLogin)
         events.subscribe('mosaic start', self.mosaicStart)
         events.subscribe('mosaic stop', self.mosaicStop)
@@ -849,15 +848,6 @@ class TouchScreenWindow(wx.Frame):
                           lambda evt, obj=objective: h.changeObjective(obj),
                           id=i)
             cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
-
-
-    ## Handle the user clicking the abort button.
-    def onAbort(self, *args):
-        if self.amGeneratingMosaic:
-            self.shouldPauseMosaic = True
-        self.nameToButton['Run mosaic'].SetLabel('Run mosaic')
-        # Stop deleting tiles, while we're at it.
-        self.onDeleteTiles(shouldForceStop = True)
 
 
     def textInfoField(self,title,onText,onColour,offText,offColour):
