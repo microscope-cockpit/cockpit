@@ -64,6 +64,9 @@ class Alpao(device.Device):
             self.actuator_slopes, self.actuator_intercepts = \
                 self.remote_ac_fits(LUT_array, self.no_actuators)
 
+        #Initiate a table for calibrating the look up table
+        self.remote_focus_LUT = []
+
         #Load values from config
         try:
             self.parameters = Config.getValue('alpao_circleParams', isGlobal=True)
@@ -209,43 +212,13 @@ class Alpao(device.Device):
     # \param repDuration Amount of time to wait between reps, or None for no
     #        wait time.
     def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
-        print("In executeTable")
         # The actions between startIndex and stopIndex may include actions for
         # this handler, or for this handler's clients. All actions are
         # ultimately carried out by this handler, so we need to parse the
         # table to replace client actions, resulting in a table of
         # (time, self).
 
-        actions = []
-        remote_focus_LUT = []
-
-        tPrev = None
-        hPrev = None
-        argsPrev = None
-
-        for i in range(startIndex, stopIndex):
-            t, h, args = table[i]
-            # Check for simultaneous actions.
-            if tPrev is not None and t == tPrev:
-                if h not in hPrev:
-                    # Update last action to merge actions at same timepoint.
-                    actions[-1] = (t, self)
-                    # Add handler and args to list for next check.
-                    hPrev.append(h)
-                    argsPrev.append(args)
-                elif args == argsPrev[hPrev.index(h)]:
-                    # Just a duplicate entry
-                    continue
-                else:
-                    # Simultaneous, different actions with same handler.
-                    raise Exception("Simultaneous actions with same hander, %s." % h)
-            else:
-                # Append new action.
-                actions.append((t, self))
-                # Reinitialise hPrev and argsPrev for next check.
-                hPrev, argsPrev = [h], [args]
-                tPrev = t
-
+        for t, h, args in table[startIndex:stopIndex]:
             if h is self.handler:
                 if type(args) == float:
                     # This should have been replaced by a trigger and the entry cleared
@@ -253,23 +226,27 @@ class Alpao(device.Device):
                     pass
                 elif type(args) == np.ndarray:
                     self.AlpaoConnection.send(args)
+                elif type(args) == str:
+                    if args[1] == "clean":
+                        # Clean any pre-exisitng values from the LUT
+                        self.remote_focus_LUT = []
+                    else:
+                        raise Exception("Argument Error: Argument type %s not understood." % str(type(args)))
                 elif type(args) == tuple:
                     if args[1] == "flatten":
                         LUT_values = np.zeros(self.no_actuators + 1)
                         LUT_values[0] = args[0]
-                        LUT_values[1:] = self.AlpaoConnection.flatten_phase()
-                        remote_focus_LUT.append(np.ndarray.tolist(LUT_values))
+                        LUT_values[1:] = \
+                            self.AlpaoConnection.flatten_phase(iterations = 5)
+                        self.AlpaoConnection.reset()
+                        self.remote_focus_LUT.append(np.ndarray.tolist(LUT_values))
+                    else:
+                        raise Exception("Argument Error: Argument type %s not understood." % str(type(args)))
                 else:
                     raise Exception("Argument Error: Argument type %s not understood." % str(type(args)))
 
-        if len(remote_focus_LUT) != 0:
-            np.savetxt('remote_focus_LUT.txt', remote_focus_LUT)
-            
-        events.publish('update status light', 'device waiting',
-                        'Waiting for\n%s to finish' % self.name, (255, 255, 0))
-
-        return self.callbacks['executeTable'](self.name, actions, 0,
-                                                len(actions), numReps, repDuration)
+        if len(self.remote_focus_LUT) != 0:
+            np.savetxt('C:\\cockpit\\nick\\cockpit\\remote_focus_LUT.txt', self.remote_focus_LUT)
 
     ### UI functions ###
     def makeUI(self, parent):
@@ -504,10 +481,10 @@ class Alpao(device.Device):
                 raise e
 
         interferogram, unwrapped_phase = self.AlpaoConnection.acquire_unwrapped_phase()
-        np.save('./interferogram', interferogram)
+        np.save('C:\\cockpit\\nick\\cockpit\\interferogram', interferogram)
         interferogram_ft = np.fft.fftshift(np.fft.fft2(interferogram))
-        np.save('./interferogram_ft', interferogram_ft)
-        np.save('./unwrapped_phase', unwrapped_phase)
+        np.save('C:\\cockpit\\nick\\cockpit\\interferogram_ft', interferogram_ft)
+        np.save('C:\\cockpit\\nick\\cockpit\\unwrapped_phase', unwrapped_phase)
         original_dim = int(np.shape(unwrapped_phase)[0])
         resize_dim = original_dim/2
         while original_dim % resize_dim is not 0:
@@ -515,10 +492,11 @@ class Alpao(device.Device):
         unwrapped_phase_resize = self.bin_ndarray(unwrapped_phase, new_shape=
                                     (resize_dim, resize_dim), operation='mean')
         cycle_diff = abs(np.max(unwrapped_phase) - np.min(unwrapped_phase))/(2.0*np.pi)
+        rms_phase = np.sqrt(np.mean(unwrapped_phase**2))
         app = View(image_np=unwrapped_phase_resize)
-        app.master.title('Unwrapped interferogram. Max phase = %d, Min phase = %d, '
-                         'Cycle difference = %f'
-                         %(np.max(unwrapped_phase), np.min(unwrapped_phase), cycle_diff))
+        app.master.title('Unwrapped interferogram. '
+                         'Cycle difference = %f, RMS phase = %f'
+                         %(cycle_diff, rms_phase))
         app.mainloop()
 
     def onFlatten(self):
