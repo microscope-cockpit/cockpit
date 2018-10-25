@@ -203,7 +203,7 @@ class SIExperiment(experiment.Experiment):
         self.polarizerHandler = polarizerHandler
         self.slmHandler = slmHandler
         self.handlerToBleachCompensation = bleachCompensations
-        print (self.numAngles, self.numPhases)
+
 
     ## Generate a sequence of (angle, phase, Z) positions for SI experiments,
     # based on the order the user specified.
