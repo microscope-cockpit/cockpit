@@ -528,7 +528,7 @@ def setSoftMax(axis, value):
 # use it if it's superior, on the assumption that users will typically
 # select sites in some basically sane order.
 # \param baseOrder List of site IDs.
-def optimizeSiteOrder(baseOrder):
+def optimisedSiteOrder(baseOrder):
     markedPoints = set()
     pointsInOrder = []
     totalTourCost = 0
@@ -566,5 +566,5 @@ def optimizeSiteOrder(baseOrder):
     if simpleTourCost < totalTourCost:
         # Nearest-neighbor is worse than just going in the
         # user-specified order
-        return baseOrder
+        return baseOrder.copy()
     return pointsInOrder
