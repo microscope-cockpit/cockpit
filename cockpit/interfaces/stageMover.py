@@ -529,6 +529,8 @@ def setSoftMax(axis, value):
 # select sites in some basically sane order.
 # \param baseOrder List of site IDs.
 def optimisedSiteOrder(baseOrder):
+    if len(baseOrder) == 0:
+        return []
     markedPoints = set()
     pointsInOrder = []
     totalTourCost = 0
