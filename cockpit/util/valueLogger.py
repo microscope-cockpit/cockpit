@@ -115,3 +115,15 @@ class PollingLogger(ValueLogger):
                 self.poll()
             except Exception as e:
                 print(e, file=sys.stderr)
+
+
+class TestSource:
+    def __init__(self, name="ValueLoggerTest", dt=15):
+        self.logger = PollingLogger(name, dt, self.getValues,
+                                    keys=['ch'+str(i) for i in range(4)])
+        print("Logging to %s" % self.logger.getLogFiles())
+
+
+    def getValues(self):
+        import random
+        return[i+random.random() for i in range(4)]
