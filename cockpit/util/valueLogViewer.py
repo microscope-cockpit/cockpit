@@ -3,6 +3,7 @@ import csv
 import matplotlib
 import numpy as np
 import os
+#import re
 import sys
 import wx
 
@@ -11,14 +12,18 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.figure import Figure
 matplotlib.use('WXAgg')
 
+DEBUG = False
+
 
 class DataFile:
     def __init__(self, path):
         self.path = os.path.abspath(path)
+        #self.label = re.sub(r"_?([0-9]{4}|[0-9]{2})[-_]?[0-9]+[_-}-?[0-9]+(\.log)?",
+        #                    "", os.path.basename(path))
+        self.label = os.path.basename(path).rstrip(".log")
         self._xdata = None
         self._ydata = None
         self._fh = None # Open file handled; opened by read_data.
-        self.label = os.path.basename(path)
         # Dialect determination fails on Windows if we read past EOF, so set a limit.
         f_len = os.path.getsize(path)
         with open(path) as fh:
@@ -102,13 +107,13 @@ class ValueLogViewer(wx.Frame):
         kwargs['title'] = "value log viewer"
         super(ValueLogViewer, self).__init__(*args, **kwargs)
         self.sources = []
-        self._watcher = wx.FileSystemWatcher()
-        self._watcher.SetOwner(self)
-        self.Bind(wx.EVT_FSWATCHER, self.on_path_change)
         self.item_to_trace = {}
         self.trace_to_item = {}
         self.trace_to_data = {}
         self._makeUI()
+        self._watch_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.update_data, self._watch_timer)
+        self._watch_timer.Start(1000)
 
 
     def _makeUI(self):
@@ -139,15 +144,10 @@ class ValueLogViewer(wx.Frame):
         self.Fit()
 
 
-    def on_path_change(self, evt):
-        # wx.FileSystemWatcher does not currently (@4.0.3) support monitoring
-        # individual files, so we watch paths then try to update all datasources
-        # on that path.
-        if not evt.GetChangeType() == wx.FSW_EVENT_MODIFY:
-            return
-        path = evt.GetPath()
-        sources = filter(lambda s: os.path.dirname(s.path) == path, self.sources)
-        for s in sources:
+    def update_data(self, evt):
+        current_sources = set([d[0] for d in self.trace_to_data.values()])
+
+        for s in current_sources:
             new_lines = s.fetch_new_data()
             if new_lines == 0:
                 continue
@@ -184,7 +184,10 @@ class ValueLogViewer(wx.Frame):
                 # Skip traces that have already been plotted.
                 continue
             src, col_num = self.tree.GetItemData(it)
-            trace = self.axis.plot(src.xdata, src.ydata[col_num])[0]
+            if src.xdata.size and src.ydata.size:
+                label = src.label + ": " + src.headers[col_num+1]
+                trace = self.axis.plot(src.xdata, src.ydata[col_num],
+                                       label=label)[0]
             self.item_to_trace[it] = trace
             self.trace_to_item[trace] = it
             self.trace_to_data[trace] = (src, col_num)
@@ -197,17 +200,11 @@ class ValueLogViewer(wx.Frame):
             # Don't try to rescale if no data - will cause datetime formatter error.
             self.axis.relim()
             self.axis.autoscale_view()
-            traces = []
-            labels = []
-            for tr, (src, col_num) in self.trace_to_data.items():
-                traces.append(tr)
-                labels.append(src.label + ': ' + src.headers[col_num+1])
-            self.axis.legend(traces, labels)
+            self.axis.legend()
         self.canvas.draw()
 
 
     def set_data_sources(self, filenames):
-        self._watcher.RemoveAll()
         wpaths = set()
         self.sources = []
         for fn in filenames:
@@ -222,10 +219,6 @@ class ValueLogViewer(wx.Frame):
             # First col contains x-axis data, so skip
             for colnum, ch in enumerate(src.headers[1:]):
                 self.tree.AppendItem(node, ch, data=(src, colnum))
-            # wx.FileSystemWatcher does not support monitoring individual files, so
-            # add containing path.
-            wpaths.add(os.path.dirname(src.path))
-        [self._watcher.Add(p) for p in wpaths]
 
 
 if __name__ == "__main__":
@@ -248,6 +241,7 @@ if __name__ == "__main__":
     window = ValueLogViewer(None)
     window.set_data_sources(filenames)
     window.Show()
-    it = InspectionTool()
-    it.Show()
+    if DEBUG:
+        it = InspectionTool()
+        it.Show()
     app.MainLoop()
