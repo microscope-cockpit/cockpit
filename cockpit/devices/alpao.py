@@ -7,7 +7,7 @@
 
 from collections import OrderedDict
 import cockpit.devices
-from cockpit.devices import device, executorDevices
+from cockpit.devices import device
 from cockpit import events
 import wx
 import cockpit.interfaces.stageMover
@@ -28,7 +28,7 @@ import scipy.stats as stats
 class Alpao(device.Device):
     def __init__(self, name, config={}):
         device.Device.__init__(self, name, config)
-        self.AlpaoConnection = None
+        self.proxy = None
         self.sendImage=False
         self.curCamera = None
 
@@ -36,17 +36,16 @@ class Alpao(device.Device):
 
         ## Connect to the remote program
     def initialize(self):
-        self.AlpaoConnection = Pyro4.Proxy(self.uri)
-        self.AlpaoConnection.set_trigger(cp_ttype="SOFTWARE", cp_tmode="ONCE")
-        self.AlpaoConnection.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
-        self.no_actuators = self.AlpaoConnection.get_n_actuators()
+        self.proxy = Pyro4.Proxy(self.uri)
+        self.proxy.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
+        self.no_actuators = self.proxy.get_n_actuators()
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
 
         #Excercise the DM to remove residual static and then set to 0 position
         for ii in range(20):
-            self.AlpaoConnection.send((np.zeros(self.no_actuators)+(ii%2)))
-        self.AlpaoConnection.reset()
+            self.proxy.send((np.zeros(self.no_actuators)+(ii%2)))
+        self.proxy.reset()
 
         #Create accurate look up table for certain Z positions
         ##LUT dict has key of Z positions
@@ -70,13 +69,13 @@ class Alpao(device.Device):
         #Load values from config
         try:
             self.parameters = Config.getValue('alpao_circleParams', isGlobal=True)
-            self.AlpaoConnection.set_roi(self.parameters[0], self.parameters[1],
+            self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                      self.parameters[2])
         except:
             pass
         try:
             self.controlMatrix = Config.getValue('alpao_controlMatrix', isGlobal=True)
-            self.AlpaoConnection.set_controlMatrix(self.controlMatrix)
+            self.proxy.set_controlMatrix(self.controlMatrix)
         except:
             pass
 
@@ -125,7 +124,7 @@ class Alpao(device.Device):
                                         + self.actuator_intercepts
         ## Queue patterns on DM.
         if np.all(ac_positions.shape) != 0:
-            self.AlpaoConnection.queue_patterns(ac_positions)
+            self.proxy.queue_patterns(ac_positions)
         else:
             # No actuator values to queue, so pass
             pass
@@ -184,6 +183,11 @@ class Alpao(device.Device):
                     pass
                 else:
                     lastIndex = lastIndex % sequenceLength
+
+            #should add a bunch of spurious triggers on the end to clear the buffer for AO
+            for trig in range(12):
+                t = table.addToggle(t, self.handler)
+                t += table.toggleTime
         table.clearBadEntries()
         # Store the parameters used to generate the sequence.
         self.lastParms = ac_positions
@@ -225,7 +229,7 @@ class Alpao(device.Device):
                     # Theoretically, this check should always be False
                     pass
                 elif type(args) == np.ndarray:
-                    self.AlpaoConnection.send(args)
+                    self.proxy.send(args)
                 elif type(args) == str:
                     if args[1] == "clean":
                         # Clean any pre-exisitng values from the LUT
@@ -237,8 +241,8 @@ class Alpao(device.Device):
                         LUT_values = np.zeros(self.no_actuators + 1)
                         LUT_values[0] = args[0]
                         LUT_values[1:] = \
-                            self.AlpaoConnection.flatten_phase(iterations = 5)
-                        self.AlpaoConnection.reset()
+                            self.proxy.flatten_phase(iterations = 5)
+                        self.proxy.reset()
                         self.remote_focus_LUT.append(np.ndarray.tolist(LUT_values))
                     else:
                         raise Exception("Argument Error: Argument type %s not understood." % str(type(args)))
@@ -295,7 +299,7 @@ class Alpao(device.Device):
             label='Reset DM',
             parent=self.panel,
             size=cockpit.gui.device.DEFAULT_SIZE)
-        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt:self.AlpaoConnection.reset())
+        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt:self.proxy.reset())
         self.elements['resetButton'] = resetButton
 
         # Step the focal plane up one step
@@ -380,7 +384,7 @@ class Alpao(device.Device):
         return ndarray
 
     def onSelectCircle(self):
-        image_raw = self.AlpaoConnection.acquire_raw()
+        image_raw = self.proxy.acquire_raw()
         if np.max(image_raw) > 10:
             temp = self.bin_ndarray(image_raw, new_shape=(512, 512), operation='mean')
             self.createCanvas(temp)
@@ -399,62 +403,62 @@ class Alpao(device.Device):
         except IOError:
             print("Error: Masking parameters do not exist. Please select circle.")
             return
-        self.AlpaoConnection.set_roi(self.parameters[0], self.parameters[1],
+        self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                          self.parameters[2])
 
     def onCalibrate(self):
         try:
-            self.AlpaoConnection.get_roi()
+            self.proxy.get_roi()
         except Exception as e:
             try:
                 self.parameters = Config.getValue('alpao_circleParams', isGlobal=True)
-                self.AlpaoConnection.set_roi(self.parameters[0], self.parameters[1],
+                self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                             self.parameters[2])
             except:
                 raise e
 
         try:
-            self.AlpaoConnection.get_fourierfilter()
+            self.proxy.get_fourierfilter()
         except Exception as e:
             try:
-                test_image = self.AlpaoConnection.acquire()
-                self.AlpaoConnection.set_fourierfilter(test_image=test_image)
+                test_image = self.proxy.acquire()
+                self.proxy.set_fourierfilter(test_image=test_image)
             except:
                 raise e
 
-        controlMatrix, sys_flat = self.AlpaoConnection.calibrate(numPokeSteps = 10)
+        controlMatrix, sys_flat = self.proxy.calibrate(numPokeSteps = 10)
         Config.setValue('alpao_controlMatrix', np.ndarray.tolist(controlMatrix), isGlobal=True)
         Config.setValue('alpao_sys_flat', np.ndarray.tolist(sys_flat), isGlobal=True)
 
     def onCharacterise(self):
         try:
-            self.AlpaoConnection.get_roi()
+            self.proxy.get_roi()
         except Exception as e:
             try:
                 self.parameters = Config.getValue('alpao_circleParams', isGlobal=True)
-                self.AlpaoConnection.set_roi(self.parameters[0], self.parameters[1],
+                self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                              self.parameters[2])
             except:
                 raise e
 
         try:
-            self.AlpaoConnection.get_fourierfilter()
+            self.proxy.get_fourierfilter()
         except Exception as e:
             try:
-                test_image = self.AlpaoConnection.acquire()
-                self.AlpaoConnection.set_fourierfilter(test_image=test_image)
+                test_image = self.proxy.acquire()
+                self.proxy.set_fourierfilter(test_image=test_image)
             except:
                 raise e
 
         try:
-            self.AlpaoConnection.get_controlMatrix()
+            self.proxy.get_controlMatrix()
         except Exception as e:
             try:
                 self.controlMatrix = Config.getValue('alpao_controlMatrix', isGlobal=True)
-                self.AlpaoConnection.set_controlMatrix(self.controlMatrix)
+                self.proxy.set_controlMatrix(self.controlMatrix)
             except:
                 raise e
-        assay = self.AlpaoConnection.assess_character()
+        assay = self.proxy.assess_character()
         np.save('C:\\cockpit\\nick\\cockpit\\characterisation_assay', assay)
         app = View(image_np=assay)
         app.master.title('Characterisation')
@@ -462,25 +466,25 @@ class Alpao(device.Device):
 
     def onVisualisePhase(self):
         try:
-            self.AlpaoConnection.get_roi()
+            self.proxy.get_roi()
         except Exception as e:
             try:
                 param = np.asarray(Config.getValue('alpao_circleParams', isGlobal=True))
-                self.AlpaoConnection.set_roi(y0 = param[0], x0 = param[1],
+                self.proxy.set_roi(y0 = param[0], x0 = param[1],
                                              radius = param[2])
             except:
                 raise e
 
         try:
-            self.AlpaoConnection.get_fourierfilter()
+            self.proxy.get_fourierfilter()
         except:
             try:
-                test_image = self.AlpaoConnection.acquire()
-                self.AlpaoConnection.set_fourierfilter(test_image=test_image)
+                test_image = self.proxy.acquire()
+                self.proxy.set_fourierfilter(test_image=test_image)
             except Exception as e:
                 raise e
 
-        interferogram, unwrapped_phase = self.AlpaoConnection.acquire_unwrapped_phase()
+        interferogram, unwrapped_phase = self.proxy.acquire_unwrapped_phase()
         np.save('C:\\cockpit\\nick\\cockpit\\interferogram', interferogram)
         interferogram_ft = np.fft.fftshift(np.fft.fft2(interferogram))
         np.save('C:\\cockpit\\nick\\cockpit\\interferogram_ft', interferogram_ft)
@@ -501,38 +505,38 @@ class Alpao(device.Device):
 
     def onFlatten(self):
         try:
-            self.AlpaoConnection.get_roi()
+            self.proxy.get_roi()
         except Exception as e:
             try:
                 self.parameters = Config.getValue('alpao_circleParams', isGlobal=True)
-                self.AlpaoConnection.set_roi(self.parameters[0], self.parameters[1],
+                self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                              self.parameters[2])
             except:
                 raise e
 
         try:
-            self.AlpaoConnection.get_fourierfilter()
+            self.proxy.get_fourierfilter()
         except Exception as e:
             try:
-                test_image = self.AlpaoConnection.acquire()
-                self.AlpaoConnection.set_fourierfilter(test_image=test_image)
+                test_image = self.proxy.acquire()
+                self.proxy.set_fourierfilter(test_image=test_image)
             except:
                 raise e
 
         try:
-            self.AlpaoConnection.get_controlMatrix()
+            self.proxy.get_controlMatrix()
         except Exception as e:
             try:
                 self.controlMatrix = Config.getValue('alpao_controlMatrix', isGlobal=True)
-                self.AlpaoConnection.set_controlMatrix(self.controlMatrix)
+                self.proxy.set_controlMatrix(self.controlMatrix)
             except:
                 raise e
-        flat_values = self.AlpaoConnection.flatten_phase(iterations=10)
+        flat_values = self.proxy.flatten_phase(iterations=10)
         Config.setValue('alpao_flat_values', np.ndarray.tolist(flat_values), isGlobal=True)
 
     def onApplySysFlat(self):
         sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat', isGlobal=True))
-        self.AlpaoConnection.send(sys_flat_values)
+        self.proxy.send(sys_flat_values)
 
     def showDebugWindow(self):
         # Ensure only a single instance of the window.
