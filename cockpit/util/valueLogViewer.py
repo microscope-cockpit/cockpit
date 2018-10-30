@@ -9,6 +9,7 @@ import wx
 
 import matplotlib.dates
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as NavigationToolbar
 from matplotlib.figure import Figure
 matplotlib.use('WXAgg')
 
@@ -117,7 +118,9 @@ class ValueLogViewer(wx.Frame):
 
 
     def _makeUI(self):
-        splitter = wx.SplitterWindow(self, -1, style=wx.SP_LIVE_UPDATE)
+        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        splitter = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         splitter.SetMinimumPaneSize(96)
         splitter.SetSashGravity(0.0)
         
@@ -128,19 +131,24 @@ class ValueLogViewer(wx.Frame):
                 matplotlib.dates.DateFormatter('%H:%M'))
         self.axis.xaxis.set_major_locator(
                 matplotlib.ticker.LinearLocator() )
-        self.canvas = FigureCanvas(splitter, -1, figure)
-        wx.BoxSizer(wx.HORIZONTAL).Add(self.canvas, flag=wx.EXPAND, proportion=True)
-        
+
+        # Need to put navbar in same panel as the canvas - putting it
+        # in an outer layer means it may not be drawn correctly or at all.
+        fig_panel = wx.Panel(splitter)
+        fig_panel.Sizer = wx.BoxSizer(wx.VERTICAL)
+        self.canvas = FigureCanvas(fig_panel, -1, figure)
+        nav_bar = NavigationToolbar(self.canvas)
+        fig_panel.Sizer.Add(self.canvas, -1, wx.EXPAND)
+        fig_panel.Sizer.Add(nav_bar, 0, wx.LEFT)
+
         self.tree = wx.TreeCtrl(splitter, -1, wx.DefaultPosition, wx.Size(160,100),
                                 style=wx.TR_MULTIPLE | wx.TR_HAS_BUTTONS | wx.EXPAND |
                                       wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT)
         self.tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.on_tree_sel_changed)
-        wx.BoxSizer(wx.HORIZONTAL).Add(self.tree, flag=wx.EXPAND, proportion=True)
 
-        splitter.SplitVertically(self.tree, self.canvas)
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(splitter, flag=wx.EXPAND, proportion=True)
-        self.Sizer = sizer
+        splitter.SplitVertically(self.tree, fig_panel)
+
+        self.Sizer.Add(splitter, 1, flag=wx.EXPAND)
         self.Fit()
 
 
