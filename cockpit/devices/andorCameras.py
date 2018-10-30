@@ -53,7 +53,6 @@ Sample config entry:
 
 import collections
 import decimal
-import threading
 import time
 import wx
 
@@ -67,6 +66,7 @@ import cockpit.gui.toggleButton
 import Pyro4
 import cockpit.util.listener
 import cockpit.util.threads
+from cockpit.util import valueLogger
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION) = range(3)
@@ -114,17 +114,14 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings['EMGain'] = 0
         self.settings['amplifierMode'] = None
         self.settings['triggerMode'] = 1
-        self.lastTemperature = None
         self.experimentTriggerMode = TRIGGER_MODES[0]
         self.interactiveTrigger = TRIGGER_DURATION
         self.enabled = False
         self.handler = None
         self.hasUI = False
-        # A thread to publish status updates.
-        self.statusThread = threading.Thread(target=self.updateStatus)
-        self.statusThread.Daemon = True
-        self.statusThread.start()
-
+        self.logger = valueLogger.PollingLogger(name, 15,
+                                                self.proxy.get_temperature,
+                                                keys='temperature')
 
     def cleanupAfterExperiment(self):
         """Restore settings as they were prior to experiment."""
@@ -408,25 +405,6 @@ class AndorCameraDevice(camera.CameraDevice):
         self.settings.update({'isWaterCooled': newSetting})
         self.proxy.update_settings({'isWaterCooled': newSetting})
 
-
-    def updateStatus(self):
-        """Runs in a separate thread publish status updates."""
-        updatePeriod = 2
-        temperature = None
-        while True:
-            if self.proxy:
-                try:
-                    temperature = self.proxy.get_temperature()
-                except:
-                    ## There is a communication issue. It's not this thread's
-                    # job to fix it. Set temperature to None to avoid bogus
-                    # data.
-                    temperature = None
-            self.lastTemperature = temperature
-            events.publish("status update",
-                           self.name,
-                           {'temperature': temperature,})
-            time.sleep(updatePeriod)
 
 
     ### UI functions ###

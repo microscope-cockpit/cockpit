@@ -21,7 +21,7 @@
 
 
 from . import device
-from cockpit import depot
+from cockpit.util import valueLogger
 from cockpit import events
 import cockpit.gui.toggleButton
 import collections
@@ -86,13 +86,10 @@ class RaspberryPi(device.Device):
         self.lightPathButtons = []
         ## Current light path mode.
         self.curExMode = None
+        ## Log temperatures
+        self.logger = valueLogger.PollingLogger(name, 15,
+                                                self.RPiConnection.get_temperature)
 
-        # A thread to publish status updates.
-        # This reads temperature updates from the RaspberryPi
-        self.statusThread = threading.Thread(target=self.updateStatus, name="piDIO-update")
-        self.statusThread.Daemon = True
-        self.statusThread.start()
- 
 
         ## Connect to the remote program, and set widefield mode.
     def initialize(self):
@@ -153,27 +150,6 @@ class RaspberryPi(device.Device):
     def onObjectiveChange(self, name, pixelSize, transform, offset):
         for flips in self.objectiveToFlips[name]:
             self.flipDownUp(flips[0], flips[1])
-
-
-    #function to read temperature at set update frequency.
-    def updateStatus(self):
-        """Runs in a separate thread publish status updates."""
-        updatePeriod = 10.0
-        temperature = []
-        while True:
-            if self.RPiConnection:
-                try:
-                   temperature = self.RPiConnection.get_temperature()
-                except:
-                    ## There is a communication issue. It's not this thread's
-                    # job to fix it. Set temperature to None to avoid bogus
-                    # data.
-                    temperature = []
-            for i in range(len(temperature)):
-                events.publish("status update",
-                           'RPi',
-                           {'temperature'+str(i): temperature[i],})
-            time.sleep(updatePeriod)
 
 
     ## Debugging function: display a debug window.
