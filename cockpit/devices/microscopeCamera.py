@@ -274,6 +274,8 @@ class MicroscopeCamera(camera.CameraDevice):
         before another can be started, in milliseconds."""
         # Camera uses time in s; cockpit uses ms.
         t = self.proxy.get_cycle_time() * 1000.0
+        if name == 'interference':
+            t = 15
         if isExact:
             result = decimal.Decimal(t)
         else:
