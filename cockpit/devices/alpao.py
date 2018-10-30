@@ -422,7 +422,7 @@ class Alpao(device.Device):
             except:
                 raise e
 
-        controlMatrix, sys_flat = self.AlpaoConnection.calibrate()
+        controlMatrix, sys_flat = self.AlpaoConnection.calibrate(numPokeSteps = 10)
         Config.setValue('alpao_controlMatrix', np.ndarray.tolist(controlMatrix), isGlobal=True)
         Config.setValue('alpao_sys_flat', np.ndarray.tolist(sys_flat), isGlobal=True)
 
@@ -455,7 +455,7 @@ class Alpao(device.Device):
             except:
                 raise e
         assay = self.AlpaoConnection.assess_character()
-        np.save('characterisation_assay', assay)
+        np.save('C:\\cockpit\\nick\\cockpit\\characterisation_assay', assay)
         app = View(image_np=assay)
         app.master.title('Characterisation')
         app.mainloop()
