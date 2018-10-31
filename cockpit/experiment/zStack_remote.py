@@ -28,18 +28,22 @@ class RemoteZStackExperiment(experiment.Experiment):
             # Non-2D experiment; tack on an extra image to hit the top of
             # the volume.
             numZSlices += 1
+
+        zRelativeStart = self.zStart + self.sliceHeight * (numZSlices-1/2.0)
         for zIndex in range(numZSlices):
             # Move to the next position, then wait for the stage to
             # stabilize.
             zTarget = self.zStart + self.sliceHeight * zIndex
+            zRelative = zRelativeStart + self.sliceHeight * zIndex
 
             motionTime, stabilizationTime = 0, 0
             if prevAltitude is not None:
-                motionTime, stabilizationTime = self.zPositioner.getMovementTime(prevAltitude, zTarget)
+                if self.dmHandler is not None:
+                    motionTime, stabilizationTime = self.dmHandler.getMovementTime(prevAltitude, zTarget)
             curTime += motionTime
             #table.addAction(curTime, self.zPositioner, zTarget)
             if self.dmHandler is not None:
-                table.addAction(curTime, self.dmHandler, zTarget)
+                table.addAction(curTime, self.dmHandler, zRelative)
             curTime += stabilizationTime
             prevAltitude = zTarget
 
@@ -52,7 +56,7 @@ class RemoteZStackExperiment(experiment.Experiment):
             # Hold the Z motion flat during the exposure.
             #table.addAction(curTime, self.zPositioner, zTarget)
             if self.dmHandler is not None:
-                table.addAction(curTime, self.dmHandler, zTarget)
+                table.addAction(curTime, self.dmHandler, zRelativeStart)
 
         # Move back to the start so we're ready for the next rep.
         motionTime, stabilizationTime = self.zPositioner.getMovementTime(
@@ -60,7 +64,7 @@ class RemoteZStackExperiment(experiment.Experiment):
         curTime += motionTime
         #table.addAction(curTime, self.zPositioner, self.zStart)
         if self.dmHandler is not None:
-            table.addAction(curTime, self.dmHandler, self.zStart)
+            table.addAction(curTime, self.dmHandler, zRelativeStart)
         # Hold flat for the stabilization time, and any time needed for
         # the cameras to be ready. Only needed if we're doing multiple
         # reps, so we can proceed immediately to the next one.
@@ -74,7 +78,7 @@ class RemoteZStackExperiment(experiment.Experiment):
         #        self.zPositioner, self.zStart)
         if self.dmHandler is not None:
             table.addAction(max(curTime + stabilizationTime, cameraReadyTime),
-                        self.dmHandler, self.zStart)
+                        self.dmHandler, zRelativeStart)
 
         return table
 
