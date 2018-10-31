@@ -83,17 +83,20 @@ class RFZStackCalibration(experiment.Experiment):
             # Non-2D experiment; tack on an extra image to hit the top of
             # the volume.
             numZSlices += 1
+
+        zRelativeStart = self.zStart + self.sliceHeight * (numZSlices - 1 / 2.0)
         for zIndex in range(numZSlices):
             # Move to the next position, then wait for the stage to
             # stabilize.
             zTarget = self.zStart + self.sliceHeight * zIndex
+            zRelative = zRelativeStart + self.sliceHeight * zIndex
             motionTime, stabilizationTime = 0, 0
             if prevAltitude is not None:
                 motionTime, stabilizationTime = self.zPositioner.getMovementTime(prevAltitude, zTarget)
             curTime += motionTime
             table.addAction(curTime, self.zPositioner, zTarget)
             if self.dmHandler is not None:
-                table.addAction(curTime, self.dmHandler, (zTarget, 'flatten'))
+                table.addAction(curTime, self.dmHandler, (zRelative, 'flatten'))
             curTime += stabilizationTime
             prevAltitude = zTarget
 
@@ -108,7 +111,7 @@ class RFZStackCalibration(experiment.Experiment):
 
         # Move back to the start so we're ready for the next rep.
         motionTime, stabilizationTime = self.zPositioner.getMovementTime(
-                self.zHeight, 0)
+            self.zHeight, 0)
         curTime += motionTime
         table.addAction(curTime, self.zPositioner, self.zStart)
         # Hold flat for the stabilization time, and any time needed for
@@ -119,9 +122,9 @@ class RFZStackCalibration(experiment.Experiment):
             for cameras, lightTimePairs in self.exposureSettings:
                 for camera in cameras:
                     cameraReadyTime = max(cameraReadyTime,
-                            self.getTimeWhenCameraCanExpose(table, camera))
+                                          self.getTimeWhenCameraCanExpose(table, camera))
         table.addAction(max(curTime + stabilizationTime, cameraReadyTime),
-                self.zPositioner, self.zStart)
+                        self.zPositioner, self.zStart)
 
         return table
 
