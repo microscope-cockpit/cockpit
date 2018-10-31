@@ -250,7 +250,9 @@ class Alpao(device.Device):
                     raise Exception("Argument Error: Argument type %s not understood." % str(type(args)))
 
         if len(self.remote_focus_LUT) != 0:
-            np.savetxt('C:\\cockpit\\nick\\cockpit\\remote_focus_LUT.txt', self.remote_focus_LUT)
+            np.savetxt('C:\\cockpit\\nick\\cockpit\\remote_focus_LUT.txt',
+                       np.asanyarray(self.remote_focus_LUT))
+            Config.setValue('alpao_remote_focus_LUT', self.remote_focus_LUT, isGlobal=True)
 
     ### UI functions ###
     def makeUI(self, parent):
