@@ -325,7 +325,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
                 if i % frequency == 0:
                     sitesList.append(siteId)
             if self.shouldOptimizeSiteOrder.GetValue():
-                cycleNumToSitesList.append(cockpit.interfaces.stageMover.optimizeSiteOrder(sitesList))
+                cycleNumToSitesList.append(cockpit.interfaces.stageMover.optimisedSiteOrder(sitesList))
             else:
                 cycleNumToSitesList.append(sitesList)
         return (cycleRate, cycleNumToSitesList)
