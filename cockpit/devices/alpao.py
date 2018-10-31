@@ -183,14 +183,13 @@ class Alpao(device.Device):
                     pass
                 else:
                     lastIndex = lastIndex % sequenceLength
-
-            #should add a bunch of spurious triggers on the end to clear the buffer for AO
-            for trig in range(12):
-                t = table.addToggle(t, self.handler)
-                t += table.toggleTime
         table.clearBadEntries()
         # Store the parameters used to generate the sequence.
         self.lastParms = ac_positions
+        # should add a bunch of spurious triggers on the end to clear the buffer for AO
+        for trig in range(12):
+            t = table.addToggle(t, self.handler)
+            t += table.toggleTime
 
     def getHandlers(self):
         trigsource = self.config.get('triggersource', None)
@@ -428,7 +427,7 @@ class Alpao(device.Device):
             except:
                 raise e
 
-        controlMatrix, sys_flat = self.proxy.calibrate(numPokeSteps = 10)
+        controlMatrix, sys_flat = self.proxy.calibrate(numPokeSteps = 5)
         Config.setValue('alpao_controlMatrix', np.ndarray.tolist(controlMatrix), isGlobal=True)
         Config.setValue('alpao_sys_flat', np.ndarray.tolist(sys_flat), isGlobal=True)
 
