@@ -13,7 +13,7 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as Navigat
 from matplotlib.figure import Figure
 matplotlib.use('WXAgg')
 
-DEBUG = False
+DEBUG = True
 
 
 class DataFile:
@@ -118,12 +118,14 @@ class ValueLogViewer(wx.Frame):
 
 
     def _makeUI(self):
-        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
+        min_plot_w = min_plot_h = 400
+        min_tree_w = 160
 
-        splitter = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
-        splitter.SetMinimumPaneSize(96)
+        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
+        splitter = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE,
+                                     size=(min_plot_w+400, min_plot_h) )
+        splitter.SetMinimumPaneSize(1)
         splitter.SetSashGravity(0.0)
-        
         figure = Figure()
         self.axis = figure.add_axes((0.1,0.1,.8,.8))
         self.axis.xaxis_date()
@@ -134,19 +136,20 @@ class ValueLogViewer(wx.Frame):
 
         # Need to put navbar in same panel as the canvas - putting it
         # in an outer layer means it may not be drawn correctly or at all.
-        fig_panel = wx.Panel(splitter)
+        fig_panel = wx.Panel(splitter, size=(min_plot_w, min_plot_h))
         fig_panel.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.canvas = FigureCanvas(fig_panel, -1, figure)
         nav_bar = NavigationToolbar(self.canvas)
         fig_panel.Sizer.Add(self.canvas, -1, wx.EXPAND)
         fig_panel.Sizer.Add(nav_bar, 0, wx.LEFT)
 
-        self.tree = wx.TreeCtrl(splitter, -1, wx.DefaultPosition, wx.Size(160,100),
-                                style=wx.TR_MULTIPLE | wx.TR_HAS_BUTTONS | wx.EXPAND |
+        self.tree = wx.TreeCtrl(splitter, -1, wx.DefaultPosition, size=(min_tree_w, -1),
+                                style=wx.TR_MULTIPLE | wx.TR_HAS_BUTTONS |
                                       wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT)
         self.tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.on_tree_sel_changed)
 
         splitter.SplitVertically(self.tree, fig_panel)
+        splitter.SashPosition = min_tree_w
 
         self.Sizer.Add(splitter, 1, flag=wx.EXPAND)
         self.Fit()
