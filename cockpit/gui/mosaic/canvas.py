@@ -121,7 +121,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.renderError = None
 
         ## A buffer of images waiting to be added to the mosaic.
-        self.pendingImages = Queue.Queue(BUFFER_LENGTH)
+        self.pendingImages = queue.Queue(BUFFER_LENGTH)
 
 
         self.Bind(wx.EVT_PAINT, self.onPaint)
