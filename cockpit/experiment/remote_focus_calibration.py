@@ -83,8 +83,8 @@ class RFZStackCalibration(experiment.Experiment):
             # Non-2D experiment; tack on an extra image to hit the top of
             # the volume.
             numZSlices += 1
+        zRelativeStart = -1 * self.sliceHeight * ((numZSlices - 1) / 2.0)
 
-        zRelativeStart = self.zStart + self.sliceHeight * (numZSlices - 1 / 2.0)
         for zIndex in range(numZSlices):
             # Move to the next position, then wait for the stage to
             # stabilize.
