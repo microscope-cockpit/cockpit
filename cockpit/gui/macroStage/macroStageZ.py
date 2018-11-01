@@ -574,7 +574,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                           # histogram we clicked on
                 
             width, height = self.GetClientSize()
-            weight = 1 - float(clickLoc[1] / height)
+            weight = 1. - float(clickLoc[1]) / height
             altitude = (scale[1] - scale[0]) * weight + scale[0]
             zHardMax = cockpit.interfaces.stageMover.getIndividualHardLimits(2)[0][1]
             cockpit.interfaces.stageMover.goToZ(min(zHardMax, altitude))
