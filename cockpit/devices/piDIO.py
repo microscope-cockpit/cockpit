@@ -86,14 +86,14 @@ class RaspberryPi(device.Device):
         self.lightPathButtons = []
         ## Current light path mode.
         self.curExMode = None
-        ## Log temperatures
-        self.logger = valueLogger.PollingLogger(name, 15,
-                                                self.RPiConnection.get_temperature)
-
 
         ## Connect to the remote program, and set widefield mode.
     def initialize(self):
         self.RPiConnection = Pyro4.Proxy('PYRO:%s@%s:%d' % ('pi', self.ipAddress, self.port))
+        ## Log temperatures
+        self.logger = valueLogger.PollingLogger(self.name, 15,
+                                                self.RPiConnection.get_temperature)
+
 
     ## Try to switch to widefield mode.
     def finalizeInitialization(self):
