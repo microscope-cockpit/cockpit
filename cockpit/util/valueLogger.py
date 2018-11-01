@@ -7,7 +7,7 @@ from . import files
 import os
 DELIMITER = ';'
 
-class ValueLogger():
+class ValueLogger(object):
     _fhs = [] # A list of all filehandles opened in this session.
 
     def __init__(self, name, keys=None):
@@ -114,7 +114,7 @@ class PollingLogger(ValueLogger):
             try:
                 self.poll()
             except Exception as e:
-                print(e, file=sys.stderr)
+                sys.stderr.write(e)
 
 
 class TestSource:
