@@ -244,7 +244,8 @@ if __name__ == "__main__":
                 filenames.extend(glob.glob(os.path.join(arg, "*.log")))
             else:
                 filenames.append(arg)
-    [print(f) for f in filenames]
+    for f in filenames:
+        print(f)
 
     from wx.lib.inspection import InspectionTool
 
