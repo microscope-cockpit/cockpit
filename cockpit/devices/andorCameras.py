@@ -121,7 +121,7 @@ class AndorCameraDevice(camera.CameraDevice):
         self.hasUI = False
         self.logger = valueLogger.PollingLogger(name, 15,
                                                 self.proxy.get_temperature,
-                                                keys='temperature')
+                                                keys=['temperature',])
 
     def cleanupAfterExperiment(self):
         """Restore settings as they were prior to experiment."""
