@@ -50,6 +50,7 @@ import re # to get regular expression parsing for config file
 
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
 DEFAULT_LIMITS = ((0, 0), (11000, 3000))
+LOGGING_PERIOD = 30
 
 class LinkamStage(stage.StageDevice):
     def __init__(self, name, config={}):
