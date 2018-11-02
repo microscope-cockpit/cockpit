@@ -95,12 +95,20 @@ class RFZStackCalibration(experiment.Experiment):
                 motionTime, stabilizationTime = self.zPositioner.getMovementTime(prevAltitude, zTarget)
             curTime += motionTime
             table.addAction(curTime, self.zPositioner, zTarget)
+
+            # Image the sample before flattening
+            for cameras, lightTimePairs in self.exposureSettings:
+                curTime = self.expose(curTime, cameras, lightTimePairs, table)
+                # Advance the time very slightly so that all exposures
+                # are strictly ordered.
+                curTime += decimal.Decimal('1e-10')
+
             if self.dmHandler is not None:
                 table.addAction(curTime, self.dmHandler, (zRelative, 'flatten'))
             curTime += stabilizationTime
             prevAltitude = zTarget
 
-            # Image the sample.
+            # Image the sample after flattening
             for cameras, lightTimePairs in self.exposureSettings:
                 curTime = self.expose(curTime, cameras, lightTimePairs, table)
                 # Advance the time very slightly so that all exposures
