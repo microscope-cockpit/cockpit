@@ -50,7 +50,7 @@ class Alpao(device.Device):
         #Create accurate look up table for certain Z positions
         ##LUT dict has key of Z positions
         try:
-            LUT_array = np.loadtxt("C:\\cockpit\\nick\\cockpit\\remote_focus_LUT_mantas.txt")
+            LUT_array = np.loadtxt("C:\\cockpit\\nick\\cockpit\\remote_focus_LUT.txt")
             self.LUT = {}
             for ii in (LUT_array[:,0])[:]:
                 self.LUT[ii] = LUT_array[np.where(LUT_array == ii)[0][0],1:]
