@@ -242,6 +242,7 @@ class Alpao(device.Device):
                         LUT_values[1:] = \
                             self.proxy.flatten_phase(iterations = 5)
                         self.proxy.reset()
+                        self.proxy.send(LUT_values[1:])
                         self.remote_focus_LUT.append(np.ndarray.tolist(LUT_values))
                     else:
                         raise Exception("Argument Error: Argument type %s not understood." % str(type(args)))
