@@ -67,6 +67,8 @@ import cockpit.gui.mosaic.window as mosaic
 
 class Joystick(object):
     def __init__(self, window):
+        if sys.platform == 'darwin':
+            return None
         self._stick = wx.adv.Joystick()
         self._numsticks = self._stick.GetNumberJoysticks()
         self._stick.SetCapture(window, 50)
