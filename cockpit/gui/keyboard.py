@@ -180,6 +180,20 @@ def martialWindows(parent):
             menu.AppendSubMenu(subMenu, str(window.GetTitle())[:50])
         menuId += 1
 
+    # Add item to launch valueLogViewer.
+    from subprocess import Popen
+    from cockpit.util import valueLogger
+    menu.Append(menuId, "Launch ValueLogViewer")
+    logs = valueLogger.ValueLogger.getLogFiles()
+    if not logs:
+        menu.Enable(menuId, False)
+    else:
+        args = ['python', 'cockpit/util/valueLogViewer.py'] + logs
+        parent.Bind(wx.EVT_MENU,
+                    lambda e: Popen(args),
+                    id = menuId)
+    menuId += 1
+
     menu.AppendSeparator()
     for i, window in enumerate(otherWindows):
         if not window.GetTitle() or not window.IsShown():
