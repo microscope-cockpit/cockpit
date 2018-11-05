@@ -114,8 +114,221 @@ def _pauseMosaicLoop(func):
     return wrapped
 
 
+class MosaicCommon(object):
+    # A class to house methods that are common to both the Mosaic
+    # and TouchScreen windows. Previously, these were dynamically
+    # rebound on the TouchScreen window, which worked fine in
+    # python 3, but threw TypeErrors in python 2.
+    # TODO: refactor to eliminate this class; see notes on each method.
+
+    ## Go to the specified XY position. If we have a focus plane defined,
+    # go to the appropriate Z position to maintain focus.
+    # Refactoring: If the stageMover dealt with the focal plane params and mover
+    # switching, this method could probably be eliminated.
+    def goTo(self, target, shouldBlock=False):
+        if self.focalPlaneParams:
+            targetZ = self.getFocusZ(target)
+            cockpit.interfaces.stageMover.goTo((target[0], target[1], targetZ),
+                                               shouldBlock)
+        else:
+            # IMD 20150306 Save current mover, change to coarse to generate mosaic
+            # do move, and change mover back.
+            originalMover = cockpit.interfaces.stageMover.mover.curHandlerIndex
+            cockpit.interfaces.stageMover.mover.curHandlerIndex = 0
+            cockpit.interfaces.stageMover.goToXY(target, shouldBlock)
+            cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
+
+
+    ## Draw the overlay. This largely consists of a crosshairs indicating
+    # the current stage position, and any sites the user has saved.
+    # Refactoring: this could probably move to the Canvas class by eliminating
+    # references to data on the MosaicWindow as follows:
+    #   roll self.scalebar and self.drawCrosshairs into this method;
+    #   put self.scalefont onto the canvas;
+    #   pull self.offset straight from the objective;
+    #   move self.selectedSites to the stageMover or some other space manager;
+    #   eliminate self.drawPrimitives - they're useful for navigation and don't add much clutter.
+    def drawOverlay(self):
+        for site in cockpit.interfaces.stageMover.getAllSites():
+            # Draw a crude circle.
+            x, y = site.position[:2]
+            x = -x
+            # Set line width based on zoom factor.
+            lineWidth = max(1, self.canvas.scale * 1.5)
+            glLineWidth(lineWidth)
+            glColor3f(*site.color)
+            glBegin(GL_LINE_LOOP)
+            for i in range(8):
+                glVertex3f(x + site.size * numpy.cos(numpy.pi * i / 4.0),
+                        y + site.size * numpy.sin(numpy.pi * i / 4.0), 0)
+            glEnd()
+            glLineWidth(1)
+
+            glPushMatrix()
+            glTranslatef(x, y, 0)
+            # Scale the text with respect to the current zoom factor.
+            fontScale = 3 / max(5.0, self.canvas.scale)
+            glScalef(fontScale, fontScale, 1)
+            self.sitefont.render(str(site.uniqueID))
+            glPopMatrix()
+
+        self.drawCrosshairs(cockpit.interfaces.stageMover.getPosition()[:2], (1, 0, 0),
+                            offset=True)
+
+        # If we're selecting tiles, draw the box the user is selecting.
+        if self.selectTilesFunc is not None and self.lastClickPos is not None:
+            start = self.canvas.mapScreenToCanvas(self.lastClickPos)
+            end = self.canvas.mapScreenToCanvas(self.prevMousePos)
+            glColor3f(0, 0, 1)
+            glBegin(GL_LINE_LOOP)
+            glVertex2f(-start[0], start[1])
+            glVertex2f(-start[0], end[1])
+            glVertex2f(-end[0], end[1])
+            glVertex2f(-end[0], start[1])
+            glEnd()
+
+        # Highlight selected sites with crosshairs.
+        for site in self.selectedSites:
+            self.drawCrosshairs(site.position[:2], (0, 0, 1), 10000,
+                                offset=False)
+
+        # Draw the soft and hard stage motion limits
+        glEnable(GL_LINE_STIPPLE)
+        glLineWidth(2)
+        softSafeties = cockpit.interfaces.stageMover.getSoftLimits()[:2]
+        hardSafeties = cockpit.interfaces.stageMover.getHardLimits()[:2]
+        for safeties, color, stipple in [(softSafeties, (0, 1, 0), 0x5555),
+                                         (hardSafeties, (0, 0, 1), 0xAAAA)]:
+            x1, x2 = safeties[0]
+            y1, y2 = safeties[1]
+            if hasattr (self, 'offset'):
+                #once again consistancy of offset calculations.
+                x1 -=  self.offset[0]
+                x2 -=  self.offset[0]
+                y1 -=  self.offset[1]
+                y2 -=  self.offset[1]
+            glLineStipple(3, stipple)
+            glColor3f(*color)
+            glBegin(GL_LINE_LOOP)
+            glVertex2f(-x1, y1)
+            glVertex2f(-x2, y1)
+            glVertex2f(-x2, y2)
+            glVertex2f(-x1, y2)
+            glEnd()
+        glLineWidth(1)
+        glDisable(GL_LINE_STIPPLE)
+
+        #Draw a scale bar if the scalebar size is not zero.
+        if (self.scalebar != 0):
+            # Scale bar width.
+            self.scalebar = 100*(10**math.floor(math.log(1/self.canvas.scale,10)))
+            # Scale bar position, near the top left-hand corner.
+            scalebarPos = [30,-10]
+
+            # Scale bar vertices.
+            x1 = scalebarPos[0]/self.canvas.scale
+            x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
+            y1 = scalebarPos[1]/self.canvas.scale
+            canvasPos=self.canvas.mapScreenToCanvas((0,0))
+            x1 -= canvasPos[0]
+            x2 -= canvasPos[0]
+            y1 += canvasPos[1]
+
+
+            # Do the actual drawing
+            glColor3f(255, 0, 0)
+            # The scale bar itself.
+            glLineWidth(8)
+            glBegin(GL_LINES)
+            glVertex2f(x1,y1)
+            glVertex2f(x2,y1)
+            glEnd()
+            glLineWidth(1)
+            # The scale label.
+            glPushMatrix()
+            labelPosX= x1
+            labelPosY= y1 - (20./self.canvas.scale)
+            glTranslatef(labelPosX, labelPosY, 0)
+            fontScale = 1. / self.canvas.scale
+            glScalef(fontScale, fontScale, 1.)
+            if (self.scalebar>1.0):
+                self.scalefont.render('%d um' % self.scalebar)
+            else:
+                self.scalefont.render('%.3f um' % self.scalebar)
+            glPopMatrix()
+
+        #Draw stage primitives.
+        if(self.drawPrimitives):
+            # Draw device-specific primitives.
+            glEnable(GL_LINE_STIPPLE)
+            glLineStipple(1, 0xAAAA)
+            glColor3f(0.4, 0.4, 0.4)
+            glColor3f(0.4, 0.4, 0.4)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            # Reflect x-cordinates.
+            glMultMatrixf([-1.,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1])
+            primitives = cockpit.interfaces.stageMover.getPrimitives()
+            for p in primitives:
+                if p not in self.primitives:
+                    self.primitives[p] = Primitive.factory(p)
+                self.primitives[p].render()
+            glPopMatrix()
+            glDisable(GL_LINE_STIPPLE)
+
+
+    # Draw a crosshairs at the specified position with the specified color.
+    # By default make the size of the crosshairs be really big.
+    # Refactor: this could move to Canvas by eliminating self.crosshairBoxSize,
+    # which is only set and used here, and in centerCanvas.
+    def drawCrosshairs(self, position, color, size=None, offset=False):
+        xSize = ySize = size
+        if size is None:
+            xSize = ySize = 100000
+        x, y = position
+        # offset applied for stage position but not marks!
+        if offset:
+            # if no offset defined we can't apply it!
+            if hasattr(self, 'offset'):
+                # sign consistancy! Here we have -(x-offset) = -x + offset!
+                x = x - self.offset[0]
+                y = y - self.offset[1]
+
+        # Draw the crosshairs
+        glColor3f(*color)
+        glBegin(GL_LINES)
+        glVertex2d(-x - xSize, y)
+        glVertex2d(-x + xSize, y)
+        glVertex2d(-x, y - ySize)
+        glVertex2d(-x, y + ySize)
+        glEnd()
+
+        glBegin(GL_LINE_LOOP)
+        # Draw the box.
+        # get cams and objective opbjects
+        cams = depot.getActiveCameras()
+        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+        # if there is a camera us its real pixel count
+        if (len(cams) > 0):
+            width, height = cams[0].getImageSize()
+            self.crosshairBoxSize = width * objective.getPixelSize()
+            width = self.crosshairBoxSize
+            height = height * objective.getPixelSize()
+        else:
+            # else use the default which is 512Xpixel size from objective
+            width = self.crosshairBoxSize
+            height = self.crosshairBoxSize
+
+        for i, j in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
+            glVertex2d(-x + i * width / 2,
+                       y + j * height / 2)
+        glEnd()
+
+
+
+
 ## This class handles the UI of the mosaic.
-class MosaicWindow(wx.Frame):
+class MosaicWindow(wx.Frame, MosaicCommon):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
         self.SetWindowStyle(self.GetWindowStyle() | wx.FRAME_NO_TASKBAR)
@@ -431,182 +644,6 @@ class MosaicWindow(wx.Frame):
             self.canvas.SetFocus()
 
 
-    ## Draw the overlay. This largely consists of a crosshairs indicating
-    # the current stage position, and any sites the user has saved.
-    def drawOverlay(self):
-        for site in cockpit.interfaces.stageMover.getAllSites():
-            # Draw a crude circle.
-            x, y = site.position[:2]
-            x = -x 
-            # Set line width based on zoom factor.
-            lineWidth = max(1, self.canvas.scale * 1.5)
-            glLineWidth(lineWidth)
-            glColor3f(*site.color)
-            glBegin(GL_LINE_LOOP)
-            for i in range(8):
-                glVertex3f(x + site.size * numpy.cos(numpy.pi * i / 4.0),
-                        y + site.size * numpy.sin(numpy.pi * i / 4.0), 0)
-            glEnd()
-            glLineWidth(1)
-
-            glPushMatrix()
-            glTranslatef(x, y, 0)
-            # Scale the text with respect to the current zoom factor.
-            fontScale = 3 / max(5.0, self.canvas.scale)
-            glScalef(fontScale, fontScale, 1)
-            self.sitefont.render(str(site.uniqueID))
-            glPopMatrix()
-
-        self.drawCrosshairs(cockpit.interfaces.stageMover.getPosition()[:2], (1, 0, 0),
-                            offset=True)
-
-        # If we're selecting tiles, draw the box the user is selecting.
-        if self.selectTilesFunc is not None and self.lastClickPos is not None:
-            start = self.canvas.mapScreenToCanvas(self.lastClickPos)
-            end = self.canvas.mapScreenToCanvas(self.prevMousePos)
-            glColor3f(0, 0, 1)
-            glBegin(GL_LINE_LOOP)
-            glVertex2f(-start[0], start[1])
-            glVertex2f(-start[0], end[1])
-            glVertex2f(-end[0], end[1])
-            glVertex2f(-end[0], start[1])
-            glEnd()
-
-        # Highlight selected sites with crosshairs.
-        for site in self.selectedSites:
-            self.drawCrosshairs(site.position[:2], (0, 0, 1), 10000,
-                                offset=False)
-
-        # Draw the soft and hard stage motion limits
-        glEnable(GL_LINE_STIPPLE)
-        glLineWidth(2)
-        softSafeties = cockpit.interfaces.stageMover.getSoftLimits()[:2]
-        hardSafeties = cockpit.interfaces.stageMover.getHardLimits()[:2]
-        for safeties, color, stipple in [(softSafeties, (0, 1, 0), 0x5555),
-                                         (hardSafeties, (0, 0, 1), 0xAAAA)]:
-            x1, x2 = safeties[0]
-            y1, y2 = safeties[1]
-            if hasattr (self, 'offset'):
-                #once again consistancy of offset calculations. 
-                x1 -=  self.offset[0]
-                x2 -=  self.offset[0]
-                y1 -=  self.offset[1]
-                y2 -=  self.offset[1]
-            glLineStipple(3, stipple)
-            glColor3f(*color)
-            glBegin(GL_LINE_LOOP)
-            glVertex2f(-x1, y1)
-            glVertex2f(-x2, y1)
-            glVertex2f(-x2, y2)
-            glVertex2f(-x1, y2)
-            glEnd()
-        glLineWidth(1)
-        glDisable(GL_LINE_STIPPLE)
-
-        #Draw a scale bar if the scalebar size is not zero.
-        if (self.scalebar != 0):
-            # Scale bar width.
-            self.scalebar = 100*(10**math.floor(math.log(1/self.canvas.scale,10)))
-            # Scale bar position, near the top left-hand corner.
-            scalebarPos = [30,-10]
-
-            # Scale bar vertices.
-            x1 = scalebarPos[0]/self.canvas.scale
-            x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
-            y1 = scalebarPos[1]/self.canvas.scale
-            canvasPos=self.canvas.mapScreenToCanvas((0,0))
-            x1 -= canvasPos[0]
-            x2 -= canvasPos[0]
-            y1 += canvasPos[1]
-
-
-            # Do the actual drawing
-            glColor3f(255, 0, 0)
-            # The scale bar itself.
-            glLineWidth(8)
-            glBegin(GL_LINES)
-            glVertex2f(x1,y1)
-            glVertex2f(x2,y1)
-            glEnd()
-            glLineWidth(1)
-            # The scale label.
-            glPushMatrix()
-            labelPosX= x1
-            labelPosY= y1 - (20./self.canvas.scale)
-            glTranslatef(labelPosX, labelPosY, 0)
-            fontScale = 1. / self.canvas.scale
-            glScalef(fontScale, fontScale, 1.)
-            if (self.scalebar>1.0):
-                self.scalefont.render('%d um' % self.scalebar)
-            else:
-                self.scalefont.render('%.3f um' % self.scalebar)
-            glPopMatrix()
-
-        #Draw stage primitives.
-        if(self.drawPrimitives):
-            # Draw device-specific primitives.
-            glEnable(GL_LINE_STIPPLE)
-            glLineStipple(1, 0xAAAA)
-            glColor3f(0.4, 0.4, 0.4)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            # Reflect x-cordinates.
-            glMultMatrixf([-1.,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1])
-            primitives = cockpit.interfaces.stageMover.getPrimitives()
-            for p in primitives:
-                if p not in self.primitives:
-                    self.primitives[p] = Primitive.factory(p)
-                self.primitives[p].render()
-            glPopMatrix()
-            glDisable(GL_LINE_STIPPLE)
-
-
-    # Draw a crosshairs at the specified position with the specified color.
-    # By default make the size of the crosshairs be really big.
-    def drawCrosshairs(self, position, color, size = None, offset=False):
-        xSize = ySize = size
-        if size is None:
-            xSize = ySize = 100000
-        x, y = position
-        #offset applied for stage position but not marks!
-        if offset:
-            #if no offset defined we can't apply it!
-            if hasattr(self, 'offset'):
-                #sign consistancy! Here we have -(x-offset) = -x + offset!
-                x = x-self.offset[0]
-                y = y-self.offset[1]
-
-        # Draw the crosshairs
-        glColor3f(*color)
-        glBegin(GL_LINES)
-        glVertex2d(-x - xSize, y)
-        glVertex2d(-x + xSize, y)
-        glVertex2d(-x, y - ySize)
-        glVertex2d(-x, y + ySize)
-        glEnd()
-
-        glBegin(GL_LINE_LOOP)
-        # Draw the box.
-        #get cams and objective opbjects
-        cams = depot.getActiveCameras()
-        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        #if there is a camera us its real pixel count
-        if (len(cams)>0):
-            width, height = cams[0].getImageSize()
-            self.crosshairBoxSize = width*objective.getPixelSize()
-            width = self.crosshairBoxSize
-            height = height*objective.getPixelSize()
-        else:
-            #else use the default which is 512Xpixel size from objective
-            width =self.crosshairBoxSize
-            height=self.crosshairBoxSize
-        
-        for i, j in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
-            glVertex2d(-x + i * width / 2,
-                    y + j * height / 2)
-        glEnd()
-
-
     ## This generator function creates a clockwise spiral pattern.
     def mosaicStepper(self):
         directions = [(0, -1), (-1, 0), (0, 1), (1, 0)]
@@ -899,21 +936,6 @@ class MosaicWindow(wx.Frame):
     def clearFocalPlane(self):
         self.focalPlaneParams = None
 
-
-    ## Go to the specified XY position. If we have a focus plane defined,
-    # go to the appropriate Z position to maintain focus.
-    def goTo(self, target, shouldBlock = False):
-        if self.focalPlaneParams:
-            targetZ = self.getFocusZ(target)
-            cockpit.interfaces.stageMover.goTo((target[0], target[1], targetZ),
-                    shouldBlock)
-        else:
-            #IMD 20150306 Save current mover, change to coarse to generate mosaic
-			# do move, and change mover back.			
-            originalMover= cockpit.interfaces.stageMover.mover.curHandlerIndex
-            cockpit.interfaces.stageMover.mover.curHandlerIndex = 0
-            cockpit.interfaces.stageMover.goToXY(target, shouldBlock)
-            cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
 
     ## Calculate the Z position in focus for a given XY position, according
     # to our focal plane parameters.
