@@ -24,20 +24,9 @@ class DataFile:
         self.label = os.path.basename(path).rstrip(".log")
         self._xdata = None
         self._ydata = None
-        self._fh = None # Open file handled; opened by read_data.
-        # Dialect determination fails on Windows if we read past EOF, so set a limit.
-        f_len = os.path.getsize(path)
-        with open(path) as fh:
-            head = fh.read(min(4096, f_len))
-            self._dialect = csv.Sniffer().sniff(head)()
-            self._has_header = csv.Sniffer().has_header(head)
-            fh.seek(0)
-            reader = csv.reader(fh, self._dialect)
-            row = reader.__next__()
-            if self._has_header:
-                self.headers = row
-            else:
-                self.headers = ['col'+str(i) for i in range(len(row)-1)]
+        self._fh = None
+        self._dialect = None
+        self._headers = None
 
 
     def __del__(self):
@@ -49,6 +38,29 @@ class DataFile:
         self._fh.close()
         self._xdata = None
         self._ydata = None
+
+
+    def get_headers(self):
+        if self._headers is None:
+            # Dialect determination fails on Windows if we read past EOF, so set a limit.
+            f_len = os.path.getsize(self.path)
+            with open(self.path) as fh:
+                head = fh.read(min(4096, f_len))
+                self._dialect = csv.Sniffer().sniff(head)()
+                self._has_header = csv.Sniffer().has_header(head)
+                fh.seek(0)
+                reader = csv.reader(fh, self._dialect)
+                row = reader.__next__()
+                if self._has_header:
+                    self._headers = row
+                else:
+                    self._headers = ['col' + str(i) for i in range(len(row) - 1)]
+        return self._headers
+
+
+    @property
+    def opened(self):
+        return self._fh is not None
 
 
     @property
@@ -75,7 +87,7 @@ class DataFile:
             self._fh.close()
         skiprows = [0,1][self._has_header]
         delimiter = self._dialect.delimiter
-        cols = range(1,len(self.headers))
+        cols = range(1,len(self._headers))
         self._xdata = np.loadtxt(self.path, dtype='datetime64', usecols=0,
                                 delimiter=delimiter, skiprows=skiprows).T
         self._ydata = np.loadtxt(self.path, usecols=cols,
@@ -170,39 +182,68 @@ class ValueLogViewer(wx.Frame):
 
 
     def on_tree_sel_changed(self, evt):
-        # Select any children of selected items
-        for it in self.tree.GetSelections():
-            if self.tree.ItemHasChildren(it):
-                ch = self.tree.GetFirstChild(it)[0]
-                while wx.TreeItemId.IsOk(ch):
-                    self.tree.SelectItem(ch)
-                    ch = self.tree.GetNextSibling(ch)
-        # Update the plot - must iterate over updated selection.
-        selected = self.tree.GetSelections()
+        # Filters for GetSelections.
+        f_top = lambda o: self.tree.GetItemParent(o) == self.tree.RootItem
+        f_not_top = lambda o : not(f_top(o))
+
+        busy_cursor = wx.BusyCursor()
+        for node in filter(f_top, self.tree.GetSelections() ):
+            # Add child nodes if this is first access.
+            if not self.tree.ItemHasChildren(node):
+                src = self.tree.GetItemData(node)
+                try:
+                    headers = src.get_headers()
+                except:
+                    self.tree.SetItemTextColour(node, 'red')
+                    self.tree.SelectItem(node, False)
+                    continue
+                else:
+                    self.tree.SetItemTextColour(node, 'black')
+                # First col contains x-axis data, so skip
+                for colnum, ch in enumerate(headers[1:]):
+                    self.tree.AppendItem(node, ch, data=(src, colnum))
+
+            # Select any children of selected items
+            child = self.tree.GetFirstChild(node)[0]
+            while wx.TreeItemId.IsOk(child):
+                self.tree.SelectItem(child)
+                child = self.tree.GetNextSibling(child)
+
+        # Update the plot.
+        selected = set( filter(f_not_top, self.tree.GetSelections() ))
         # Remove de-selected traces.
-        for (it, tr) in self.item_to_trace.items():
-            if tr is not None and it not in selected:
+        for (node, tr) in self.item_to_trace.items():
+            if tr is not None and node not in selected:
                 tr.remove()
-                self.item_to_trace[it] = None
+                self.item_to_trace[node] = None
                 self.trace_to_data.pop(tr, None)
         # Add new traces.
-        for it in self.tree.GetSelections():
-            if self.tree.ItemHasChildren(it):
-                # Skip anything that isn't a channel of data.
-                continue
-            trace = self.item_to_trace.get(it)
+        for node in selected:
+            trace = self.item_to_trace.get(node)
             if trace is not None:
                 # Skip traces that have already been plotted.
                 continue
-            src, col_num = self.tree.GetItemData(it)
-            if src.xdata.size and src.ydata.size:
-                label = src.label + ": " + src.headers[col_num+1]
-                trace = self.axis.plot(src.xdata, src.ydata[col_num],
-                                       label=label)[0]
-            self.item_to_trace[it] = trace
-            self.trace_to_item[trace] = it
-            self.trace_to_data[trace] = (src, col_num)
+            src, col_num = self.tree.GetItemData(node)
+            headers = src.get_headers()
+            try:
+                xlen = src.xdata.size
+            except:
+                # Indicate a problem reading the data.
+                self.tree.SetItemTextColour(node, 'red')
+            else:
+                if xlen > 2:
+                    label = src.label + ": " + headers[col_num+1]
+                    trace = self.axis.plot(src.xdata, src.ydata[col_num],
+                                           label=label)[0]
+                    self.tree.SetItemTextColour(node, 'black')
+                else:
+                    self.tree.SetItemTextColour(node, 'grey')
+                    self.tree.SetItemTextColour(self.tree.GetItemParent(node), 'grey')
+                self.item_to_trace[node] = trace
+                self.trace_to_item[trace] = node
+                self.trace_to_data[trace] = (src, col_num)
         # Rescale axes and update the canvas.
+        del busy_cursor
         self.redraw()
 
 
@@ -216,7 +257,6 @@ class ValueLogViewer(wx.Frame):
 
 
     def set_data_sources(self, filenames):
-        wpaths = set()
         self.sources = []
         for fn in filenames:
             try:
@@ -226,10 +266,7 @@ class ValueLogViewer(wx.Frame):
         # Add all files and their channels to the tree
         root = self.tree.AddRoot('Files')
         for src in self.sources:
-            node = self.tree.AppendItem(root, src.name, data=None)
-            # First col contains x-axis data, so skip
-            for colnum, ch in enumerate(src.headers[1:]):
-                self.tree.AppendItem(node, ch, data=(src, colnum))
+            node = self.tree.AppendItem(root, src.name, data=src)
 
 
 if __name__ == "__main__":
@@ -244,8 +281,6 @@ if __name__ == "__main__":
                 filenames.extend(glob.glob(os.path.join(arg, "*.log")))
             else:
                 filenames.append(arg)
-    for f in filenames:
-        print(f)
 
     from wx.lib.inspection import InspectionTool
 
