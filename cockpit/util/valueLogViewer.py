@@ -127,6 +127,13 @@ class ValueLogViewer(wx.Frame):
         self._watch_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.update_data, self._watch_timer)
         self._watch_timer.Start(1000)
+        self.Bind(wx.EVT_CLOSE, self._on_close)
+
+
+    def _on_close(self, evt):
+        # Unbind event to prevent "wrapped C/C++ object has been deleted" errors.
+        self.tree.Unbind(wx.EVT_TREE_SEL_CHANGED)
+        evt.Skip()
 
 
     def _makeUI(self):
