@@ -986,6 +986,9 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             self.selectedSites.remove(cockpit.interfaces.stageMover.getSite(siteID))
             cockpit.interfaces.stageMover.deleteSite(siteID)
             self.sitesBox.Delete(item)
+        ## Deselect everything to work around issue #408 (under gtk,
+        ## deleting items will move the selection to the next item)
+        self.sitesBox.SetSelection(wx.NOT_FOUND)
         self.Refresh()
 
 
