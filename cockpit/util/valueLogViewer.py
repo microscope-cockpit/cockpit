@@ -266,7 +266,7 @@ class ValueLogViewer(wx.Frame):
             while wx.TreeItemId.IsOk(child):
                 self.tree.SelectItem(child)
                 child = self.tree.GetNextSibling(child)
-            self.tree.SetItemTextColour(node, 'black')
+            self.tree.SetItemTextColour(node, wx.SystemSettings.GetColour(wx.SYS_COLOUR_LISTBOXTEXT))
             self.tree.Expand(node)
 
         selected = set( filter(f_not_top, self.tree.GetSelections() ))
@@ -298,7 +298,7 @@ class ValueLogViewer(wx.Frame):
             except:
                 error_nodes.update([node, self.tree.GetItemParent(node)])
                 continue
-            self.tree.SetItemTextColour(node, 'black')
+            self.tree.SetItemTextColour(node, wx.SystemSettings.GetColour(wx.SYS_COLOUR_LISTBOXTEXT))
             self.tree.SetItemImage(node, C_TO_I[trace.get_c()])
             self.item_to_trace[node] = trace
             self.trace_to_item[trace] = node
