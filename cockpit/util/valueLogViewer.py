@@ -12,12 +12,12 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as NavigationToolbar
 from matplotlib.figure import Figure
 matplotlib.use('WXAgg')
-
 DEBUG = True
 
 
 class DataFile:
     def __init__(self, path):
+        """A wrapper around CSV-formatted data in a file."""
         self.path = os.path.abspath(path)
         #self.label = re.sub(r"_?([0-9]{4}|[0-9]{2})[-_]?[0-9]+[_-}-?[0-9]+(\.log)?",
         #                    "", os.path.basename(path))
@@ -29,38 +29,23 @@ class DataFile:
         self._headers = None
 
 
-    def __del__(self):
-        if self._fh is not None and not self._fh.closed:
-            self._fh.close()
-
-
-    def close(self):
-        self._fh.close()
-        self._xdata = None
-        self._ydata = None
-
-
     def get_headers(self):
+        """Determine source file dialect and parse headers."""
         if self._headers is None:
             # Dialect determination fails on Windows if we read past EOF, so set a limit.
             f_len = os.path.getsize(self.path)
             with open(self.path) as fh:
                 head = fh.read(min(4096, f_len))
                 self._dialect = csv.Sniffer().sniff(head)()
-                self._has_header = csv.Sniffer().has_header(head)
+                has_header = csv.Sniffer().has_header(head)
                 fh.seek(0)
                 reader = csv.reader(fh, self._dialect)
                 row = reader.__next__()
-                if self._has_header:
+                if has_header:
                     self._headers = row
                 else:
                     self._headers = ['col' + str(i) for i in range(len(row) - 1)]
         return self._headers
-
-
-    @property
-    def opened(self):
-        return self._fh is not None
 
 
     @property
@@ -83,9 +68,11 @@ class DataFile:
 
 
     def read_data(self):
+        """Read complete data from source file."""
         if self._fh is not None and not self._fh.closed:
             self._fh.close()
-        skiprows = [0,1][self._has_header]
+        headers = self.get_headers()
+        skiprows = [0,1][headers is not None]
         delimiter = self._dialect.delimiter
         cols = range(1,len(self._headers))
         self._xdata = np.loadtxt(self.path, dtype='datetime64', usecols=0,
@@ -98,8 +85,8 @@ class DataFile:
 
 
     def fetch_new_data(self):
+        """Fetch new data from an open file."""
         if self._fh is None:
-            # file not opened yet
             return 0
         rows_added = 0
         while True:
@@ -117,6 +104,7 @@ class DataFile:
 
 class ValueLogViewer(wx.Frame):
     def __init__(self, *args, **kwargs):
+        """ValueLogViewer instance"""
         kwargs['title'] = "value log viewer"
         super(ValueLogViewer, self).__init__(*args, **kwargs)
         self.sources = []
@@ -131,12 +119,13 @@ class ValueLogViewer(wx.Frame):
 
 
     def _on_close(self, evt):
-        # Unbind event to prevent "wrapped C/C++ object has been deleted" errors.
+        """On close, unbind an event to prevent access to deleted C/C++ objects."""
         self.tree.Unbind(wx.EVT_TREE_SEL_CHANGED)
         evt.Skip()
 
 
     def _makeUI(self):
+        """Make the window and all widgets"""
         min_plot_w = min_plot_h = 400
         min_tree_w = 160
 
@@ -175,6 +164,7 @@ class ValueLogViewer(wx.Frame):
 
 
     def update_data(self, evt):
+        """Update a data source with new points"""
         current_sources = set([d[0] for d in self.trace_to_data.values()])
 
         for s in current_sources:
@@ -189,11 +179,14 @@ class ValueLogViewer(wx.Frame):
 
 
     def on_tree_sel_changed(self, evt):
+        """Read data for selected items and add to plot."""
+        self.tree.SetEvtHandlerEnabled(False) # Prevent re-entrance.
+        busy_cursor = wx.BusyCursor()
         # Filters for GetSelections.
         f_top = lambda o: self.tree.GetItemParent(o) == self.tree.RootItem
         f_not_top = lambda o : not(f_top(o))
-
-        busy_cursor = wx.BusyCursor()
+        error_nodes = set() # Nodes with data errors
+        empty_nodes = set() # Nodes with insufficient data
         for node in filter(f_top, self.tree.GetSelections() ):
             # Add child nodes if this is first access.
             if not self.tree.ItemHasChildren(node):
@@ -201,22 +194,20 @@ class ValueLogViewer(wx.Frame):
                 try:
                     headers = src.get_headers()
                 except:
-                    self.tree.SetItemTextColour(node, 'red')
-                    self.tree.SelectItem(node, False)
+                    error_nodes.add(node)
                     continue
-                else:
-                    self.tree.SetItemTextColour(node, 'black')
+                if len(headers) < 2:
+                    empty_nodes.add(node)
                 # First col contains x-axis data, so skip
                 for colnum, ch in enumerate(headers[1:]):
                     self.tree.AppendItem(node, ch, data=(src, colnum))
-
             # Select any children of selected items
             child = self.tree.GetFirstChild(node)[0]
             while wx.TreeItemId.IsOk(child):
                 self.tree.SelectItem(child)
                 child = self.tree.GetNextSibling(child)
+            self.tree.SetItemTextColour(node, 'black')
 
-        # Update the plot.
         selected = set( filter(f_not_top, self.tree.GetSelections() ))
         # Remove de-selected traces.
         for (node, tr) in self.item_to_trace.items():
@@ -227,50 +218,62 @@ class ValueLogViewer(wx.Frame):
         # Add new traces.
         for node in selected:
             trace = self.item_to_trace.get(node)
-            if trace is not None:
-                # Skip traces that have already been plotted.
+            if trace is not None: # Skip items already on the plot.
                 continue
             src, col_num = self.tree.GetItemData(node)
-            headers = src.get_headers()
             try:
+                headers = src.get_headers()
                 xlen = src.xdata.size
             except:
-                # Indicate a problem reading the data.
-                self.tree.SetItemTextColour(node, 'red')
-            else:
-                if xlen > 2:
-                    label = src.label + ": " + headers[col_num+1]
-                    trace = self.axis.plot(src.xdata, src.ydata[col_num],
-                                           label=label)[0]
-                    self.tree.SetItemTextColour(node, 'black')
-                else:
-                    self.tree.SetItemTextColour(node, 'grey')
-                    self.tree.SetItemTextColour(self.tree.GetItemParent(node), 'grey')
-                self.item_to_trace[node] = trace
-                self.trace_to_item[trace] = node
-                self.trace_to_data[trace] = (src, col_num)
-        # Rescale axes and update the canvas.
+                error_nodes.update([node, self.tree.GetItemParent(node)])
+                continue
+            if xlen <= 2:
+                empty_nodes.update([node, self.tree.GetItemParent(node)])
+                continue
+            try:
+                label = src.label + ": " + headers[col_num+1]
+                trace = self.axis.plot(src.xdata, src.ydata[col_num],
+                                       label=label)[0]
+            except:
+                error_nodes.update([node, self.tree.GetItemParent(node)])
+                continue
+            self.tree.SetItemTextColour(node, 'black')
+            self.item_to_trace[node] = trace
+            self.trace_to_item[trace] = node
+            self.trace_to_data[trace] = (src, col_num)
+
+        for node in empty_nodes:
+            self.tree.SetItemTextColour(node, 'grey')
+            self.tree.SelectItem(node, False)
+        for node in error_nodes:
+            self.tree.SetItemTextColour(node, 'red')
+            self.tree.SelectItem(node, False)
+
         del busy_cursor
+        self.tree.SetEvtHandlerEnabled(True)
         self.redraw()
 
 
     def redraw(self):
+        """Redraw the plot."""
         if any(self.item_to_trace.values()):
             # Don't try to rescale if no data - will cause datetime formatter error.
             self.axis.relim()
             self.axis.autoscale_view()
             self.axis.legend()
+        else:
+            self.axis.legend([]).remove() # Remove previous legend when no data.
         self.canvas.draw()
 
 
     def set_data_sources(self, filenames):
+        """Set data sources and populate tree."""
         self.sources = []
         for fn in filenames:
             try:
                 self.sources.append(DataFile(fn))
             except Exception as e:
                 sys.stderr.write("Could not open %s.\n%s" % (fn, e))
-        # Add all files and their channels to the tree
         root = self.tree.AddRoot('Files')
         for src in self.sources:
             node = self.tree.AppendItem(root, src.name, data=src)
