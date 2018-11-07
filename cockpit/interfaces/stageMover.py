@@ -244,14 +244,24 @@ def removePrimitivesByDevice(device):
 #        negative) to take along that axis.
 def step(direction):
     for axis, sign in enumerate(direction):
+        currentMover=mover.curHandlerIndex
         if (axis in mover.axisToHandlers and
                 mover.curHandlerIndex < len(mover.axisToHandlers[axis])):
             #IMD 20150414 don't need to move if sign==0.
             # Prevents aerotech axis unlocking stage on every keyboard move.
             if (sign !=0):
                 mover.axisToHandlers[axis][mover.curHandlerIndex].moveStep(sign)
-
-
+        else:
+            #IMD 20181107 if this mover cant move on this axis try the one below
+            while (mover.curHandlerIndex>=0):
+                mover.curHandlerIndex -= 1
+                if (axis in mover.axisToHandlers and
+                    mover.curHandlerIndex < len(mover.axisToHandlers[axis])):
+                    break
+            if (sign !=0):
+                mover.axisToHandlers[axis][mover.curHandlerIndex].moveStep(sign)
+            mover.curHandlerIndex=currentMover
+        
 ## Change to the next handler.
 def changeMover():
     newIndex = (mover.curHandlerIndex + 1) % max(map(len, mover.axisToHandlers.values()))
