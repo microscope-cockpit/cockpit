@@ -4,15 +4,29 @@ import matplotlib
 import numpy as np
 import os
 #import re
-import sys
 import wx
 
+matplotlib.use('WXAgg')
 import matplotlib.dates
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as NavigationToolbar
+from matplotlib import colors
+from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
-matplotlib.use('WXAgg')
+
+
 DEBUG = True
+BMP_SIZE = (16, 16)
+C_TO_I = {}
+for i, hex in enumerate(plt.rcParams["axes.prop_cycle"].by_key()["color"]):
+    C_TO_I[hex.lower()] = i+1
+
+
+def make_bitmap(hex):
+    """Return a square bitmap for use in TreeCtrl imagelist."""
+    rgb = [int(flt*255) for flt in colors.to_rgb(hex)]
+    return wx.Bitmap.FromRGBA(*BMP_SIZE, red=rgb[0], green=rgb[1], blue=rgb[2],
+                              alpha=wx.ALPHA_OPAQUE)
 
 
 class DataFile:
@@ -111,8 +125,9 @@ class ValueLogViewer(wx.Frame):
         self.item_to_trace = {}
         self.trace_to_item = {}
         self.trace_to_data = {}
-        self._makeUI()
         self._watch_timer = wx.Timer(self)
+
+        self._makeUI()
         self.Bind(wx.EVT_TIMER, self.update_data, self._watch_timer)
         self._watch_timer.Start(1000)
         self.Bind(wx.EVT_CLOSE, self._on_close)
@@ -160,6 +175,15 @@ class ValueLogViewer(wx.Frame):
         splitter.SashPosition = min_tree_w
 
         self.Sizer.Add(splitter, 1, flag=wx.EXPAND)
+
+        # Create am imagelist so the tree also acts as a legend.
+        # The 0th element is a bitmap with the tree's background colour.
+        iml = wx.ImageList(*BMP_SIZE, False, 0)
+        iml.Add(wx.Bitmap.FromRGBA(*BMP_SIZE, *self.tree.GetBackgroundColour() ))
+        for hex in sorted(C_TO_I, key=C_TO_I.get):
+            iml.Add(make_bitmap(hex))
+        self.tree.AssignImageList(iml)
+
         self.Fit()
 
 
@@ -182,11 +206,15 @@ class ValueLogViewer(wx.Frame):
         """Read data for selected items and add to plot."""
         self.tree.SetEvtHandlerEnabled(False) # Prevent re-entrance.
         busy_cursor = wx.BusyCursor()
+
         # Filters for GetSelections.
         f_top = lambda o: self.tree.GetItemParent(o) == self.tree.RootItem
         f_not_top = lambda o : not(f_top(o))
+
+        # Nodes to mark later
         error_nodes = set() # Nodes with data errors
         empty_nodes = set() # Nodes with insufficient data
+
         for node in filter(f_top, self.tree.GetSelections() ):
             # Add child nodes if this is first access.
             if not self.tree.ItemHasChildren(node):
@@ -207,6 +235,7 @@ class ValueLogViewer(wx.Frame):
                 self.tree.SelectItem(child)
                 child = self.tree.GetNextSibling(child)
             self.tree.SetItemTextColour(node, 'black')
+            self.tree.Expand(node)
 
         selected = set( filter(f_not_top, self.tree.GetSelections() ))
         # Remove de-selected traces.
@@ -215,6 +244,7 @@ class ValueLogViewer(wx.Frame):
                 tr.remove()
                 self.item_to_trace[node] = None
                 self.trace_to_data.pop(tr, None)
+                self.tree.SetItemImage(node, 0)
         # Add new traces.
         for node in selected:
             trace = self.item_to_trace.get(node)
@@ -238,6 +268,7 @@ class ValueLogViewer(wx.Frame):
                 error_nodes.update([node, self.tree.GetItemParent(node)])
                 continue
             self.tree.SetItemTextColour(node, 'black')
+            self.tree.SetItemImage(node, C_TO_I[trace.get_c()])
             self.item_to_trace[node] = trace
             self.trace_to_item[trace] = node
             self.trace_to_data[trace] = (src, col_num)
@@ -260,9 +291,6 @@ class ValueLogViewer(wx.Frame):
             # Don't try to rescale if no data - will cause datetime formatter error.
             self.axis.relim()
             self.axis.autoscale_view()
-            self.axis.legend()
-        else:
-            self.axis.legend([]).remove() # Remove previous legend when no data.
         self.canvas.draw()
 
 
