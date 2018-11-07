@@ -156,6 +156,7 @@ class ValueLogViewer(wx.Frame):
                 matplotlib.dates.DateFormatter('%H:%M'))
         self.axis.xaxis.set_major_locator(
                 matplotlib.ticker.LinearLocator() )
+        self.axis_r = self.axis.twinx()
 
         # Need to put navbar in same panel as the canvas - putting it
         # in an outer layer means it may not be drawn correctly or at all.
@@ -170,6 +171,7 @@ class ValueLogViewer(wx.Frame):
                                 style=wx.TR_MULTIPLE | wx.TR_HAS_BUTTONS |
                                       wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT)
         self.tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.on_tree_sel_changed)
+        self.tree.Bind(wx.EVT_CONTEXT_MENU, self.on_tree_right_click)
 
         splitter.SplitVertically(self.tree, fig_panel)
         splitter.SashPosition = min_tree_w
@@ -200,6 +202,36 @@ class ValueLogViewer(wx.Frame):
                     continue
                 t.set_data(src.xdata, src.ydata[col_num])
         self.redraw()
+
+
+    def on_tree_right_click(self, evt):
+        """On right click in tree, move node's trace to the other y-axis."""
+        pos = self.ScreenToClient(evt.GetPosition())
+        node, flags = self.tree.HitTest(pos)
+        if not node.IsOk():
+            return
+
+        if not any([flags & test for test in [ wx.TREE_HITTEST_ONITEM,
+                                               wx.TREE_HITTEST_ONITEMBUTTON,
+                                               wx.TREE_HITTEST_ONITEMICON,
+                                               wx.TREE_HITTEST_ONITEMLABEL] ]):
+            return
+
+        trace = self.item_to_trace.get(node)
+        if trace is None:
+            return
+
+        src, col_num = self.trace_to_data[trace]
+        colour = trace.properties().get('color')
+        new_axis = [self.axis, self.axis_r][trace.axes == self.axis]
+        new_trace = new_axis.plot(src.xdata, src.ydata[col_num],
+                                  color=colour)[0]
+        trace.remove()
+        self.trace_to_item.pop(trace, None)
+        self.trace_to_data.pop(trace, None)
+        self.item_to_trace[node] = new_trace
+        self.trace_to_item[new_trace] = node
+        self.trace_to_data[new_trace] = (src, col_num)
 
 
     def on_tree_sel_changed(self, evt):
@@ -262,8 +294,7 @@ class ValueLogViewer(wx.Frame):
                 continue
             try:
                 label = src.label + ": " + headers[col_num+1]
-                trace = self.axis.plot(src.xdata, src.ydata[col_num],
-                                       label=label)[0]
+                trace = self.axis.plot(src.xdata, src.ydata[col_num])[0]
             except:
                 error_nodes.update([node, self.tree.GetItemParent(node)])
                 continue
@@ -289,8 +320,9 @@ class ValueLogViewer(wx.Frame):
         """Redraw the plot."""
         if any(self.item_to_trace.values()):
             # Don't try to rescale if no data - will cause datetime formatter error.
-            self.axis.relim()
-            self.axis.autoscale_view()
+            for ax in [self.axis, self.axis_r]:
+                ax.relim()
+                ax.autoscale_view()
         self.canvas.draw()
 
 
