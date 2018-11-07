@@ -1,7 +1,10 @@
 import time
 import threading
 import sys
-from collections import Iterable
+try:
+    from collections.abc import Iterable
+except:
+    from collections import Iterable
 from datetime import datetime
 from . import files
 import os
