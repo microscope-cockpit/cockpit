@@ -3,7 +3,6 @@ import csv
 import matplotlib
 import numpy as np
 import os
-#import re
 import wx
 
 matplotlib.use('WXAgg')
@@ -37,18 +36,22 @@ def make_bitmap(hex, text=None):
     return bmp
 
 
-class DataFile:
-    def __init__(self, path):
+class DataSource:
+    def __init__(self, path, node):
         """A wrapper around CSV-formatted data in a file."""
         self.path = os.path.abspath(path)
-        #self.label = re.sub(r"_?([0-9]{4}|[0-9]{2})[-_]?[0-9]+[_-}-?[0-9]+(\.log)?",
-        #                    "", os.path.basename(path))
         self.label = os.path.basename(path).rstrip(".log")
         self._xdata = None
         self._ydata = None
         self._fh = None
         self._dialect = None
         self._headers = None
+        self.trace = None
+        self.node = node
+
+
+    def set_trace(self, trace):
+        self.trace = trace
 
 
     def get_headers(self):
@@ -129,7 +132,7 @@ class ValueLogViewer(wx.Frame):
         """ValueLogViewer instance"""
         kwargs['title'] = "value log viewer"
         super(ValueLogViewer, self).__init__(*args, **kwargs)
-        self.sources = []
+        self.fn_to_src = {}
         self.item_to_trace = {}
         self.trace_to_item = {}
         self.trace_to_data = {}
@@ -147,10 +150,29 @@ class ValueLogViewer(wx.Frame):
         evt.Skip()
 
 
+    def _on_select_file(self, evt):
+        style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE
+        with wx.FileDialog(self, "Open files", style=style) as fd:
+            if fd.ShowModal() == wx.ID_CANCEL:
+                return
+            self.add_data_sources(fd.Paths)
+
+
     def _makeUI(self):
         """Make the window and all widgets"""
         min_plot_w = min_plot_h = 400
         min_tree_w = 160
+
+        menubar = wx.MenuBar()
+        menu = wx.Menu()
+        self.SetMenuBar(menubar)
+        self.Bind(wx.EVT_MENU, self._on_select_file,
+                  menu.Append(wx.ID_OPEN, 'Open', 'Open a file or folder'))
+        menu.AppendSeparator()
+        self.Bind(wx.EVT_MENU, lambda evt: self.Close(),
+                  menu.Append(wx.ID_EXIT, 'Quit', 'Quit application'))
+        menubar.Append(menu, '&File')
+
 
         self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
         splitter = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE,
@@ -241,6 +263,17 @@ class ValueLogViewer(wx.Frame):
                                                wx.TREE_HITTEST_ONITEMLABEL] ]):
             return
 
+        menu = wx.Menu()
+        if self.tree.GetItemParent(node) == self.tree.RootItem:
+            remove = menu.Append(wx.ID_REMOVE, 'delete')
+            self.Bind(wx.EVT_MENU, lambda evt, node=node: self.del_data_source(node), remove)
+        else:
+            swap = menu.Append(wx.ID_ANY, 'swap y-axis')
+            self.Bind(wx.EVT_MENU, lambda evt, node=node: self.swap_axis(node), swap)
+        self.PopupMenu(menu)
+
+
+    def swap_axis(self, node):
         trace = self.item_to_trace.get(node)
         if trace is None:
             return
@@ -351,17 +384,45 @@ class ValueLogViewer(wx.Frame):
         self.canvas.draw()
 
 
-    def set_data_sources(self, filenames):
+    def del_data_source(self, node):
+        self.tree.SetEvtHandlerEnabled(False)
+        parent = self.tree.GetItemParent(node)
+        if  parent != self.tree.RootItem:
+            node = parent
+
+        src = self.tree.GetItemData(node)
+        self.fn_to_src.pop(src.path, None)
+
+        child = self.tree.GetFirstChild(node)[0]
+        while wx.TreeItemId.IsOk(child):
+            trace = self.item_to_trace.pop(child, None)
+            if trace is not None:
+                trace.remove()
+                self.trace_to_data.pop(trace, None)
+            self.tree.Delete(child)
+            child = self.tree.GetFirstChild(node)[0]
+        self.tree.Delete(node)
+        del src
+        self.tree.SetEvtHandlerEnabled(True)
+
+
+    def add_data_sources(self, filenames, defer_open=False):
         """Set data sources and populate tree."""
-        self.sources = []
+        root = self.tree.GetRootItem() or self.tree.AddRoot('Files')
         for fn in filenames:
-            try:
-                self.sources.append(DataFile(fn))
-            except Exception as e:
-                sys.stderr.write("Could not open %s.\n%s" % (fn, e))
-        root = self.tree.AddRoot('Files')
-        for src in self.sources:
-            node = self.tree.AppendItem(root, src.name, data=src)
+            if os.path.abspath(fn) not in self.fn_to_src:
+                node = self.tree.AppendItem(root, 'empty')
+                try:
+                    src = DataSource(fn, node)
+                except Exception as e:
+                    sys.stderr.write("Could not open %s.\n%s" % (fn, e))
+                    self.tree.Delete(node)
+                    continue
+                self.tree.SetItemText(src.node, src.label)
+                self.tree.SetItemData(src.node, src)
+                self.fn_to_src[src.path] = src
+            if not defer_open:
+                self.tree.SelectItem(src.node)
 
 
 if __name__ == "__main__":
@@ -381,7 +442,7 @@ if __name__ == "__main__":
 
     app = wx.App(False)
     window = ValueLogViewer(None)
-    window.set_data_sources(filenames)
+    window.add_data_sources(filenames, defer_open=True)
     window.Show()
     if DEBUG:
         it = InspectionTool()
