@@ -14,19 +14,27 @@ from matplotlib import colors
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 
-
 DEBUG = True
+
+# We use images of size BMP_SIZE in the tree to act as a legend.
 BMP_SIZE = (16, 16)
+# A mapping of matplotlib colour to a base image index.
 C_TO_I = {}
 for i, hex in enumerate(plt.rcParams["axes.prop_cycle"].by_key()["color"]):
     C_TO_I[hex.lower()] = i+1
 
-
-def make_bitmap(hex):
+def make_bitmap(hex, text=None):
     """Return a square bitmap for use in TreeCtrl imagelist."""
     rgb = [int(flt*255) for flt in colors.to_rgb(hex)]
-    return wx.Bitmap.FromRGBA(*BMP_SIZE, red=rgb[0], green=rgb[1], blue=rgb[2],
-                              alpha=wx.ALPHA_OPAQUE)
+    bmp = wx.Bitmap.FromRGBA(*BMP_SIZE, red=rgb[0], green=rgb[1], blue=rgb[2],
+                             alpha=wx.ALPHA_OPAQUE)
+    if text is not None:
+        dc = wx.MemoryDC()
+        dc.SelectObject(bmp)
+        w, h = dc.GetTextExtent(text)
+        dc.DrawText(text, (BMP_SIZE[0] - w) / 2,  (BMP_SIZE[1] - h) / 2)
+        dc.SelectObject(wx.NullBitmap)
+    return bmp
 
 
 class DataFile:
@@ -183,10 +191,26 @@ class ValueLogViewer(wx.Frame):
         iml = wx.ImageList(*BMP_SIZE, False, 0)
         iml.Add(wx.Bitmap.FromRGBA(*BMP_SIZE, *self.tree.GetBackgroundColour() ))
         for hex in sorted(C_TO_I, key=C_TO_I.get):
-            iml.Add(make_bitmap(hex))
+            iml.Add(make_bitmap(hex, 'L'))
+            iml.Add(make_bitmap(hex, 'R'))
         self.tree.AssignImageList(iml)
 
         self.Fit()
+
+
+    def set_node_image(self, node):
+        """Set the image for a node to act as legend for the plot.
+
+         The imageshows the colour of the trace, and also indicates which Y-axis
+         the trace is plotted against. either 'L'eft or 'R'ight.
+        """
+        trace = self.item_to_trace.get(node)
+        if trace is None:
+            index = 0
+        else:
+            # Image index: first term selects colour, second term selects L or R variant.
+            index = 2 * C_TO_I[trace.get_c()] - (trace.axes == self.axis)
+        self.tree.SetItemImage(node, index)
 
 
     def update_data(self, evt):
@@ -232,6 +256,7 @@ class ValueLogViewer(wx.Frame):
         self.item_to_trace[node] = new_trace
         self.trace_to_item[new_trace] = node
         self.trace_to_data[new_trace] = (src, col_num)
+        self.set_node_image(node)
 
 
     def on_tree_sel_changed(self, evt):
@@ -276,7 +301,7 @@ class ValueLogViewer(wx.Frame):
                 tr.remove()
                 self.item_to_trace[node] = None
                 self.trace_to_data.pop(tr, None)
-                self.tree.SetItemImage(node, 0)
+                self.set_node_image(node)
         # Add new traces.
         for node in selected:
             trace = self.item_to_trace.get(node)
@@ -299,10 +324,10 @@ class ValueLogViewer(wx.Frame):
                 error_nodes.update([node, self.tree.GetItemParent(node)])
                 continue
             self.tree.SetItemTextColour(node, wx.SystemSettings.GetColour(wx.SYS_COLOUR_LISTBOXTEXT))
-            self.tree.SetItemImage(node, C_TO_I[trace.get_c()])
             self.item_to_trace[node] = trace
             self.trace_to_item[trace] = node
             self.trace_to_data[trace] = (src, col_num)
+            self.set_node_image(node)
 
         for node in empty_nodes:
             self.tree.SetItemTextColour(node, 'grey')
