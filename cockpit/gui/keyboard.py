@@ -190,7 +190,7 @@ def martialWindows(parent):
     else:
         args = ['python', 'cockpit/util/valueLogViewer.py'] + logs
         parent.Bind(wx.EVT_MENU,
-                    lambda e: Popen(args),
+                    lambda e: Popen(args, shell=True),
                     id = menuId)
     menuId += 1
 
