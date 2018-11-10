@@ -46,6 +46,7 @@ class DataSource:
         self._fh = None
         self._dialect = None
         self._headers = None
+        self.has_headers = None
         self.trace = None
         self.node = node
 
@@ -67,9 +68,11 @@ class DataSource:
                 reader = csv.reader(fh, self._dialect)
                 row = reader.__next__()
                 if has_header:
-                    self._headers = row
+                    self._headers = [h.strip() for h in row]
+                    self.has_headers = True
                 else:
                     self._headers = ['col' + str(i) for i in range(len(row) - 1)]
+                    self.has_headers = False
         return self._headers
 
 
@@ -97,13 +100,16 @@ class DataSource:
         if self._fh is not None and not self._fh.closed:
             self._fh.close()
         headers = self.get_headers()
-        skiprows = [0,1][headers is not None]
+        skiprows = [0,1][self.has_headers]
         delimiter = self._dialect.delimiter
         cols = range(1,len(self._headers))
+        converters = {col: lambda val: float(val.strip() or 'nan') for col in cols}
         self._xdata = np.loadtxt(self.path, dtype='datetime64', usecols=0,
-                                delimiter=delimiter, skiprows=skiprows).T
-        self._ydata = np.loadtxt(self.path, usecols=cols,
-                                delimiter=delimiter, skiprows=skiprows).T
+                                delimiter=delimiter, skiprows=skiprows, unpack=True)
+        self._ydata = np.loadtxt(self.path, usecols=cols, converters=converters,
+                                delimiter=delimiter, skiprows=skiprows, unpack=True)
+        if self._ydata.ndim == 1:
+            self._ydata = self._ydata.reshape((1, -1))
         if self._xdata.size and self._ydata.size:
             self._fh = open(self.path)
             self._fh.seek(0, os.SEEK_END)
@@ -350,6 +356,9 @@ class ValueLogViewer(wx.Frame):
             if xlen <= 2:
                 empty_nodes.update([node, self.tree.GetItemParent(node)])
                 continue
+            if all(np.isnan(src.ydata[col_num])):
+                empty_nodes.update([node])
+                continue
             try:
                 label = src.label + ": " + headers[col_num+1]
                 trace = self.axis.plot(src.xdata, src.ydata[col_num])[0]
@@ -364,9 +373,11 @@ class ValueLogViewer(wx.Frame):
 
         for node in empty_nodes:
             self.tree.SetItemTextColour(node, 'grey')
+            self.tree.SetItemImage(node, 0)
             self.tree.SelectItem(node, False)
         for node in error_nodes:
             self.tree.SetItemTextColour(node, 'red')
+            self.tree.SetItemImage(node, 0)
             self.tree.SelectItem(node, False)
 
         del busy_cursor
