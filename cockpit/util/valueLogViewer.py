@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import csv
+import glob
 import matplotlib
 import numpy as np
 import os
@@ -152,16 +153,43 @@ class ValueLogViewer(wx.Frame):
 
     def _on_close(self, evt):
         """On close, unbind an event to prevent access to deleted C/C++ objects."""
+        style = wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION
+        with wx.MessageDialog(self, "Exit?", style=style) as md:
+            if md.ShowModal() == wx.ID_NO:
+                return
         self.tree.Unbind(wx.EVT_TREE_SEL_CHANGED)
         evt.Skip()
 
 
+    def _on_remove_all(self, evt):
+        style = wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION
+        with wx.MessageDialog(self, "Remove all data sources?", style=style) as md:
+            if md.ShowModal() == wx.ID_NO:
+                return
+        for line in self.axis.lines + self.axis_r.lines:
+            line.remove()
+        self.fn_to_src.clear()
+        self.trace_to_data.clear()
+        self.trace_to_item.clear()
+        self.item_to_trace.clear()
+        self.tree.DeleteAllItems()
+
+
     def _on_select_file(self, evt):
-        style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE
+        style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE |wx.FD_CHANGE_DIR
         with wx.FileDialog(self, "Open files", style=style) as fd:
             if fd.ShowModal() == wx.ID_CANCEL:
                 return
-            self.add_data_sources(fd.Paths)
+            self.add_data_sources(fd.Paths, defer_open=len(fd.Paths) > 2)
+
+
+    def _on_select_folder(self, evt):
+        style = wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST | wx.DD_CHANGE_DIR
+        with wx.DirDialog(self, "Open folder", style=style) as fd:
+            if fd.ShowModal() == wx.ID_CANCEL:
+                return
+            files = glob.glob(fd.Path + '/*')
+            self.add_data_sources(files, defer_open=len(files) > 2)
 
 
     def _makeUI(self):
@@ -173,10 +201,12 @@ class ValueLogViewer(wx.Frame):
         menu = wx.Menu()
         self.SetMenuBar(menubar)
         self.Bind(wx.EVT_MENU, self._on_select_file,
-                  menu.Append(wx.ID_OPEN, 'Open', 'Open a file or folder'))
+                  menu.Append(wx.ID_FILE, 'Open &file(s)', 'Open a file'))
+        self.Bind(wx.EVT_MENU, self._on_select_folder,
+                  menu.Append(wx.ID_OPEN, 'Open fol&der', 'Open a folder'))
         menu.AppendSeparator()
         self.Bind(wx.EVT_MENU, lambda evt: self.Close(),
-                  menu.Append(wx.ID_EXIT, 'Quit', 'Quit application'))
+                  menu.Append(wx.ID_EXIT, '&Quit', 'Quit application'))
         menubar.Append(menu, '&File')
 
 
@@ -271,11 +301,14 @@ class ValueLogViewer(wx.Frame):
 
         menu = wx.Menu()
         if self.tree.GetItemParent(node) == self.tree.RootItem:
-            remove = menu.Append(wx.ID_REMOVE, 'delete')
+            remove = menu.Append(wx.ID_REMOVE, 'remove')
             self.Bind(wx.EVT_MENU, lambda evt, node=node: self.del_data_source(node), remove)
         else:
             swap = menu.Append(wx.ID_ANY, 'swap y-axis')
             self.Bind(wx.EVT_MENU, lambda evt, node=node: self.swap_axis(node), swap)
+            menu.AppendSeparator()
+        remove_all = menu.Append(wx.ID_CLEAR, 'remove all')
+        self.Bind(wx.EVT_MENU, self._on_remove_all, remove_all)
         self.PopupMenu(menu)
 
 
@@ -432,13 +465,14 @@ class ValueLogViewer(wx.Frame):
                 self.tree.SetItemText(src.node, src.label)
                 self.tree.SetItemData(src.node, src)
                 self.fn_to_src[src.path] = src
+            else:
+                src = self.fn_to_src[fn]
             if not defer_open:
                 self.tree.SelectItem(src.node)
 
 
 if __name__ == "__main__":
     import sys
-    import glob
     if len(sys.argv) <= 1:
         filenames = glob.glob("*.log")
     else:
