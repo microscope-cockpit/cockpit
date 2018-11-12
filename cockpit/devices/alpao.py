@@ -12,6 +12,7 @@ from cockpit import events
 import wx
 import cockpit.interfaces.stageMover
 import cockpit.util
+import cockpit.interfaces.imager
 from itertools import groupby
 import cockpit.gui.device
 import cockpit.gui.toggleButton
@@ -79,6 +80,22 @@ class Alpao(device.Device):
         except:
             pass
 
+        # subscribe to enable camera event to get access the new image queue
+        events.subscribe('camera enable',
+                        lambda c, isOn: self.enablecamera(c, isOn))
+
+    def takeImage(self):
+        cockpit.interfaces.imager.takeImage()
+
+    def enablecamera(self, camera, isOn):
+        self.curCamera = camera
+        # Subscribe to new image events only after canvas is prepared.
+        if (isOn is True):
+            events.subscribe("new image %s" % self.curCamera.name, self.onImage)
+        else:
+            events.unsubscribe("new image %s" % self.curCamera.name, self.onImage)
+        ## Receive a new image and send it to our canvas.
+
     def remote_ac_fits(self,LUT_array, no_actuators):
         #For Z positions which have not been calibrated, approximate with
         #a regression of known positions.
@@ -99,6 +116,8 @@ class Alpao(device.Device):
             actuator_slopes[kk] = s
             actuator_intercepts[kk] = i
         return actuator_slopes, actuator_intercepts
+
+    ### Experiment functions ###
 
     def examineActions(self, table):
         # Extract pattern parameters from the table.
@@ -240,7 +259,7 @@ class Alpao(device.Device):
                         LUT_values = np.zeros(self.no_actuators + 1)
                         LUT_values[0] = args[0]
                         LUT_values[1:] = \
-                            self.proxy.flatten_phase(iterations = 5)
+                            self.proxy.flatten_phase(iterations=5)
                         self.proxy.reset()
                         self.proxy.send(LUT_values[1:])
                         self.remote_focus_LUT.append(np.ndarray.tolist(LUT_values))
