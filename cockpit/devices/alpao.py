@@ -347,6 +347,14 @@ class Alpao(device.Device):
         flattenButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.onFlatten())
         self.elements['flattenButton'] = flattenButton
 
+        # Button to perform sensorless correction
+        sensorlessAOButton = cockpit.gui.toggleButton.ToggleButton(
+            label='Sensorless AO',
+            parent=self.panel,
+            size=cockpit.gui.device.DEFAULT_SIZE)
+        flattenButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.correctSensorlessSetup())
+        self.elements['Sensorless AO'] = sensorlessAOButton
+
         for e in self.elements.values():
             rowSizer.Add(e)
         sizer.Add(rowSizer)
