@@ -573,6 +573,65 @@ class Alpao(device.Device):
         global _deviceInstance
         alpaoOutputWindow(self, parent=wx.GetApp().GetTopWindow()).Show()
 
+    ### Sensorless AO functions ###
+
+    def correctSensorlessSetup(self,nollZernike = None):
+        # Note: Default is to correct Primary and Secondary Spherical aberration and both
+        # orientations of coma, astigmatism and trefoil
+        try:
+            self.proxy.get_controlMatrix()
+        except Exception as e:
+            try:
+                self.controlMatrix = Config.getValue('alpao_controlMatrix', isGlobal=True)
+                self.proxy.set_controlMatrix(self.controlMatrix)
+            except:
+                raise e
+
+        if np.any(nollZernike) == None:
+            self.nollZernike = np.array([5, 6, 7, 8, 9, 10, 11, 22])
+        else:
+            self.nollZernike = nollZernike
+
+        #Subscribe to camera events
+        events.subscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
+
+        #Initialise the Zernike modes to apply
+        z_steps = np.linspace(-3,3,4)
+        self.zernike_applied = np.zeros((z_steps.shape[0]*self.nollZernike.shape[0],self.no_actuators))
+        for noll_ind in self.nollZernike:
+            ind = np.where(self.nollZernike == noll_ind)[0][0]
+            self.zernike_applied[ind * z_steps.shape[0]:(ind + 1) * z_steps.shape[0], noll_ind - 1] = z_steps
+
+        # Apply the first Zernike mode
+        self.prog_ind = 0
+        self.proxy.set_phase(self.zernike_applied[self.prog_ind, :])
+        self.correction_stack = []
+
+        # Take image. This will trigger the iterative sensorless AO correction
+        self.takeImage()
+
+    def correctSensorlessImage(self, image, timestamp):
+        if self.prog_ind <= self.zernike_applied.shape[0]:
+            #Store image for current applied phase
+            self.correction_stack.append(np.ndarray.tolist(image))
+         wx.CallAfter(self.correctSensorlessProcessing())
+
+
+    def correctSensorlessProcessing(self):
+        if self.prog_ind <= self.zernike_applied.shape[0]:
+            #Advance counter by 1 and apply next phase
+            self.prog_ind += 1
+            self.proxy.set_phase(self.zernike_applied[self.prog_ind, :])
+
+            #Take image, but ensure it's called after the phase is applied
+            wx.CallAfter(self.takeImage())
+        else:
+            self.correction_stack = np.asarray(self.correction_stack)
+            sensorless_correct_coef = self.proxy.get_zernike_modes_sensorless(self.correction_stack,
+                                                                              self.zernike_applied, self.nollZernike)
+            self.proxy.send(sensorless_correct_coef)
+
+            events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessSetup)
 
 ## This debugging window lets each digital lineout of the DSP be manipulated
 # individually.
