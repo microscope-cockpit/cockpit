@@ -622,7 +622,8 @@ class Alpao(device.Device):
         if self.prog_ind <= self.zernike_applied.shape[0]:
             #Store image for current applied phase
             self.correction_stack.append(np.ndarray.tolist(image))
-         wx.CallAfter(self.correctSensorlessProcessing())
+
+        wx.CallAfter(self.correctSensorlessProcessing())
 
 
     def correctSensorlessProcessing(self):
