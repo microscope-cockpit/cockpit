@@ -90,11 +90,6 @@ class Alpao(device.Device):
     def enablecamera(self, camera, isOn):
         self.curCamera = camera
         # Subscribe to new image events only after canvas is prepared.
-        if (isOn is True):
-            events.subscribe("new image %s" % self.curCamera.name, self.onImage)
-        else:
-            events.unsubscribe("new image %s" % self.curCamera.name, self.onImage)
-        ## Receive a new image and send it to our canvas.
 
     def remote_ac_fits(self,LUT_array, no_actuators):
         #For Z positions which have not been calibrated, approximate with
@@ -352,7 +347,7 @@ class Alpao(device.Device):
             label='Sensorless AO',
             parent=self.panel,
             size=cockpit.gui.device.DEFAULT_SIZE)
-        flattenButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.correctSensorlessSetup())
+        sensorlessAOButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.correctSensorlessSetup())
         self.elements['Sensorless AO'] = sensorlessAOButton
 
         for e in self.elements.values():
@@ -584,6 +579,7 @@ class Alpao(device.Device):
     ### Sensorless AO functions ###
 
     def correctSensorlessSetup(self,nollZernike = None):
+        print("Performing sensorless AO setup")
         # Note: Default is to correct Primary and Secondary Spherical aberration and both
         # orientations of coma, astigmatism and trefoil
         try:
@@ -610,37 +606,47 @@ class Alpao(device.Device):
             ind = np.where(self.nollZernike == noll_ind)[0][0]
             self.zernike_applied[ind * z_steps.shape[0]:(ind + 1) * z_steps.shape[0], noll_ind - 1] = z_steps
 
-        # Apply the first Zernike mode
-        self.prog_ind = 0
-        self.proxy.set_phase(self.zernike_applied[self.prog_ind, :])
+        #Initialise stack to store correction iumages
         self.correction_stack = []
 
+        # Apply the first Zernike mode
+        self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :])
+
         # Take image. This will trigger the iterative sensorless AO correction
-        self.takeImage()
+        wx.CallAfter(self.takeImage)
 
     def correctSensorlessImage(self, image, timestamp):
-        if self.prog_ind <= self.zernike_applied.shape[0]:
+        if len(self.correction_stack) < self.zernike_applied.shape[0]:
+            print("Correction image %i/%i" %(len(self.correction_stack)+1,self.zernike_applied.shape[0]))
             #Store image for current applied phase
             self.correction_stack.append(np.ndarray.tolist(image))
-
-        wx.CallAfter(self.correctSensorlessProcessing())
+            wx.CallAfter(self.correctSensorlessProcessing)
+        else:
+            print("Error in unsubscribing to camera events. Trying again")
+            events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
 
 
     def correctSensorlessProcessing(self):
-        if self.prog_ind <= self.zernike_applied.shape[0]:
+        print("Processing sensorless image")
+        if len(self.correction_stack) < self.zernike_applied.shape[0]:
             #Advance counter by 1 and apply next phase
-            self.prog_ind += 1
-            self.proxy.set_phase(self.zernike_applied[self.prog_ind, :])
+            self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :])
 
             #Take image, but ensure it's called after the phase is applied
-            wx.CallAfter(self.takeImage())
+            wx.CallAfter(self.takeImage)
         else:
+            #Once all images have been obtained, unsubscribe
+            events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
+
+            #Save full stack of images used
             self.correction_stack = np.asarray(self.correction_stack)
+            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_correction_stack", self.correction_stack)
+
+            #Find aberration amplitudes and correct
             sensorless_correct_coef = self.proxy.get_zernike_modes_sensorless(self.correction_stack,
                                                                               self.zernike_applied, self.nollZernike)
+            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_correct_coef", sensorless_correct_coef)
             self.proxy.send(sensorless_correct_coef)
-
-            events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessSetup)
 
 ## This debugging window lets each digital lineout of the DSP be manipulated
 # individually.
