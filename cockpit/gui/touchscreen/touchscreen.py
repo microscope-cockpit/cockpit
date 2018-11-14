@@ -19,7 +19,6 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import collections
 from cockpit.util import ftgl
 import numpy
@@ -48,7 +47,6 @@ import cockpit.util.user
 import cockpit.util.threads
 import cockpit.util.userConfig
 from cockpit.gui.saveTopBottomPanel import moveZCheckMoverLimits
-import types
 
 ## Size of the crosshairs indicating the stage position.
 CROSSHAIR_SIZE = 10000
@@ -71,7 +69,7 @@ BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 
 
 ## This class handles the UI of the mosaic.
-class TouchScreenWindow(wx.Frame):
+class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
     ## A number of properties are needed to fetch live values from the mosaic
     # window. These are used in MosaicWindow methods that are rebound to
     # our instance here to duplicate the same view.
@@ -94,12 +92,6 @@ class TouchScreenWindow(wx.Frame):
         self.panel = wx.Panel(self)
         self.masterMosaic=mosaic.window
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.drawOverlay = types.MethodType(
-            mosaic.MosaicWindow.drawOverlay, self)
-        self.drawCrosshairs = types.MethodType(
-            mosaic.MosaicWindow.drawCrosshairs, self)
-        self.goTo = types.MethodType(
-            mosaic.MosaicWindow.goTo, self)
 
 
         ## Last known location of the mouse.
