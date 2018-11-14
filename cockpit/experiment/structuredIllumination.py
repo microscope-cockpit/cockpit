@@ -179,6 +179,11 @@ class SIExperiment(experiment.Experiment):
             *args, **kwargs):
         # Store the collection order in the MRC header.
         metadata = 'SI order: %s' % collectionOrder
+        #Store the diffraction angle in MRC metadata
+        slmdev=depot.getDeviceWithName('slm')
+        if(slmdev):
+            diffangle=slmdev.connection.get_sim_diffraction_angle()
+            metadata += ': SLM diff_angle %.3f' % diffangle
         if 'metadata' in kwargs:
             # Augment the existing string.
             kwargs['metadata'] += "; %s" % metadata
@@ -198,7 +203,7 @@ class SIExperiment(experiment.Experiment):
         self.polarizerHandler = polarizerHandler
         self.slmHandler = slmHandler
         self.handlerToBleachCompensation = bleachCompensations
-        print (self.numAngles, self.numPhases)
+
 
     ## Generate a sequence of (angle, phase, Z) positions for SI experiments,
     # based on the order the user specified.

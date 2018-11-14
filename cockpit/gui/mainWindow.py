@@ -58,6 +58,7 @@ from __future__ import absolute_import
 
 import json
 import wx
+import os.path
 
 from cockpit import depot
 from .dialogs.experiment import multiSiteExperiment
@@ -66,11 +67,14 @@ from cockpit import events
 import cockpit.experiment.experiment
 from . import fileViewerWindow
 import cockpit.interfaces.imager
+from . import joystick
 from . import keyboard
 from . import toggleButton
 import cockpit.util.user
 import cockpit.util.userConfig
 from . import viewFileDropTarget
+from cockpit.gui.device import OptionButtons
+
 
 from six import iteritems
 
@@ -90,7 +94,6 @@ class MainWindow(wx.Frame):
     # user interface; we assume that the devices have already been initialized.
     def __init__(self):
         wx.Frame.__init__(self, parent = None, title = "Cockpit program")
-
         # Find out what devices we have to work with.
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         lightToggles = sorted(lightToggles, key = lambda l: float(l.wavelength))
@@ -101,6 +104,10 @@ class MainWindow(wx.Frame):
 
         ## Maps LightSource handlers to their associated panels of controls.
         self.lightToPanel = dict()
+        ##objects to store paths and button names
+        self.pathList = ['New...', 'Update','Load...', 'Save...']
+        self.paths=dict()
+        self.currentPath = None
 
         # Construct the UI.
         # Sizer for all controls. We'll split them into bottom half (light
@@ -110,7 +117,9 @@ class MainWindow(wx.Frame):
         # Panel for holding the non-lightsource controls.
         topPanel = wx.Panel(self)
         topPanel.SetBackgroundColour((170, 170, 170))
+        self.topPanel=topPanel
         topSizer = wx.BoxSizer(wx.VERTICAL)
+ 
 
         # A row of buttons for various actions we know we can take.
         buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -143,16 +152,14 @@ class MainWindow(wx.Frame):
         self.videoButton.Bind(wx.EVT_LEFT_DOWN,
                 lambda event: cockpit.interfaces.imager.videoMode())
         buttonSizer.Add(self.videoButton)
-        saveButton = toggleButton.ToggleButton(textSize = 12,
-                label = "Save Exposure\nSettings",
-                size = (120, 80), parent = topPanel)
-        saveButton.Bind(wx.EVT_LEFT_DOWN, self.onSaveExposureSettings)        
-        buttonSizer.Add(saveButton)
-        loadButton = toggleButton.ToggleButton(textSize = 12,
-                label = "Load Exposure\nSettings",
-                size = (120, 80), parent = topPanel)
-        loadButton.Bind(wx.EVT_LEFT_DOWN, self.onLoadExposureSettings)        
-        buttonSizer.Add(loadButton)
+        self.pathButton =  OptionButtons(parent= topPanel,size=(120, 80))
+        
+        self.pathButton.setOptions (map(lambda name: (name,
+                                                       lambda n=name:
+                                                       self.setPath(n)),
+                                         self.pathList))
+        self.pathButton.mainButton.SetLabel(text='Path')
+        buttonSizer.Add(self.pathButton)
         snapButton = toggleButton.ToggleButton(textSize = 12,
                 label = "Snap",
                 size = (120, 80), parent = topPanel)
@@ -305,6 +312,8 @@ class MainWindow(wx.Frame):
         self.SetSizerAndFit(mainSizer)
 
         keyboard.setKeyboardHandlers(self)
+        self.joystick = joystick.Joystick(self)
+            
         self.SetDropTarget(viewFileDropTarget.ViewFileDropTarget(self))
         self.Bind(wx.EVT_MOVE, self.onMove)
         self.Bind(wx.EVT_CLOSE, self.onClose)
@@ -351,20 +360,74 @@ class MainWindow(wx.Frame):
                 print ("Opening first of %d files. Others can be viewed by dragging them from the filesystem onto the main window of the Cockpit." % len(filenames))
 
 
+    ##user defined modes which include cameras and lasers active,
+    ##filter whieels etc...
+    def setPath(self, name):
+        #store current path to text file
+        if name == 'Save...':
+            self.onSaveExposureSettings(self.currentPath)
+        #load stored path
+        elif name == 'Load...':
+            self.onLoadExposureSettings()
+        #update settings for current path
+        elif name == 'Update' and self.currentPath != None:
+            events.publish('save exposure settings',
+                           self.paths[self.currentPath])
+            self.pathButton.setOption(self.currentPath)
+        #create newe stored path with current settings.
+        elif name == 'New...':
+            self.createNewPath()
+        else:
+            events.publish('load exposure settings', self.paths[name])
+            self.currentPath = name
+            self.pathButton.setOption(name)
+
+    def createNewPath(self):
+        #get name for new mode
+        # abuse get value dialog which will also return a string. 
+        pathName = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
+            parent=self.topPanel, default='', title='New Path Name',
+            prompt='Name', atMouse=True)
+        if not pathName:
+            #None or empty string
+            return()
+        if pathName in self.paths :
+            events.publish('save exposure settings',
+                           self.paths[pathName])
+            self.pathButton.setOption(pathName)
+            return()
+        self.paths[pathName]=dict()
+        self.pathList.append(pathName)
+        #publish an event to populate mode settings.
+        events.publish('save exposure settings', self.paths[pathName])
+        #update button entries.
+        self.pathButton.setOptions(map(lambda name: (name,
+                                                       lambda n=name:
+                                                       self.setPath(n)),
+                                         self.pathList))
+        #and set button value. 
+        self.pathButton.setOption(pathName)
+        self.currentPath = pathName
+
+                       
+                
     ## User wants to save the current exposure settings; get a file path
     # to save to, collect exposure information via an event, and save it.
-    def onSaveExposureSettings(self, event = None):
+    def onSaveExposureSettings(self, name, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
+                               defaultFile=name+'.txt',
                 message = "Please select where to save the settings.",
                 defaultDir = cockpit.util.user.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
+            self.pathButton.setOption(name)
             return
         settings = dict()
         events.publish('save exposure settings', settings)
         handle = open(dialog.GetPath(), 'w')
         handle.write(json.dumps(settings))
         handle.close()
+        self.pathButton.setOption(name)
 
     
     ## User wants to load an old set of exposure settings; get a file path
@@ -375,11 +438,29 @@ class MainWindow(wx.Frame):
                 defaultDir = cockpit.util.user.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
+            self.pathButton.setOption(self.currentPath)
             return
         handle = open(dialog.GetPath(), 'r')
-        settings = json.loads('\n'.join(handle.readlines()))
+        modeName=os.path.splitext(os.path.basename(handle.name))[0]
+        #get name for new mode
+        # abuse get value dialog which will also return a string. 
+        name = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
+            parent=self.topPanel, default=modeName, title='New Path Name',
+            prompt='Name')
+        if name not in self.paths:
+            self.pathList.append(name)
+        self.paths[name] = json.loads('\n'.join(handle.readlines()))
         handle.close()
-        events.publish('load exposure settings', settings)
+        events.publish('load exposure settings', self.paths[name])
+        #update button list
+        self.pathButton.setOptions(map(lambda name: (name,
+                                                       lambda n=name:
+                                                       self.setPath(n)),
+                                         self.pathList))
+        #and set button value. 
+        self.pathButton.setOption(name)
+        self.currentPath = name
+       
 
         # If we're using the listbox approach to show/hide light controls,
         # then make sure all enabled lights are shown and vice versa.

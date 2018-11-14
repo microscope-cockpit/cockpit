@@ -51,7 +51,6 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 from cockpit import depot
 from cockpit import events
 import cockpit.util.datadoc
@@ -86,14 +85,25 @@ class DataSaver:
     # \param titles List of strings to insert into the MRC file's header.
     #        Per the file format, each string can be up to 80 characters long
     #        and there can be up to 10 of them.
+    # \param cameraToExcitation Maps camera handlers to the excitation
+    #        wavelength used to generate the images it will acquire.
     def __init__(self, cameras, numReps, cameraToImagesPerRep,
-            cameraToIgnoredImageIndices, runThread,
-            savePath, pixelSizeZ, titles):
+                 cameraToIgnoredImageIndices, runThread, savePath, pixelSizeZ,
+                 titles, cameraToExcitation):
         self.cameras = cameras
         self.numReps = numReps
         self.cameraToImagesPerRep = cameraToImagesPerRep
         self.cameraToIgnoredImageIndices = cameraToIgnoredImageIndices
         self.runThread = runThread
+
+        ## We want to write the excitation wavelength for each image
+        ## on the metadata (see issue #290).  We only allow one
+        ## excitation wavelength per image.  This is a limitation of
+        ## the dv format.  We also assume that all images from a
+        ## camera will have the same light source.  This is a
+        ## limitation of the cockpit interface.
+        self.cameraToExcitation = cameraToExcitation
+
         ## Maximum size, in megabytes, of each file generated.  If the
         # experiment data exceeds this, then a new file will be opened, and
         # each file will have a suffix appended to it (e.g.  ".001", ".002",
@@ -138,12 +148,12 @@ class DataSaver:
 
         ## Number of bytes to allocate for each image in the file.
         # \todo Assuming unsigned 16-bit integer here.
-        self.imageBytes = (self.maxWidth * self.maxHeight * 2)
+        self.planeBytes = int(self.maxWidth * self.maxHeight * 2)
 
         ## Number of timepoints per file, based on the above and
         # self.maxFilesize.
         self.maxRepsPerFile = self.maxFilesize // (self.maxImagesPerRep
-                                                   * self.imageBytes
+                                                   * self.planeBytes
                                                    * len(self.cameras)
                                                    / 1024.0 / 1024.0)
         # Sanity check.
@@ -201,12 +211,15 @@ class DataSaver:
         #wavelength should always be on camera even if "0"
         wavelengths = [c.wavelength for c in self.cameras]
 
-        ## Size of one image's worth of metadata in the extended header.
-        # We store 1 4-byte float per image.
-        self.extendedBytes = 4
+        ## Size of one plane's worth of metadata in the extended header.
+        numIntegers = 8
+        numFloats = 32
+        self.extendedBytes = 4 * (numIntegers + numFloats)
 
         ## MRC header objects for each file.
         self.headers = []
+        self.intMetadataBuffers = []
+        self.floatMetadataBuffers = []
         for i in range(len(self.filehandles)):
             # Calculate how many timepoints fit into this particular file
             # (potentially different for the final file).
@@ -237,13 +250,27 @@ class DataSaver:
                     len(self.filehandles), i * self.maxRepsPerFile))
             header.NumTitles = len(tempTitles)
             header.title[:len(tempTitles)] = tempTitles
-            # Write the size of the extended header, in bytes. We'll be storing
-            # a timestamp for each image, as a 32-bit floating point value.
+            # Write the size of the extended header, in bytes.
             header.next = (self.extendedBytes * self.maxImagesPerRep *
-                    len(self.cameras) * numTimepoints)
-            # Number of 32-bit floats in the extended header, per image.
-            header.NumFloats = 1
+                           len(self.cameras) * numTimepoints)
+            # Number of 32-bit ints and floats in extended header, per plane.
+            header.NumIntegers = numIntegers
+            header.NumFloats = numFloats
+
             self.headers.append(header)
+
+            ## This will hold the metadata for one image plane at a
+            ## time and will be written into the extended header.  We
+            ## could create a new array each time for each plane but
+            ## these arrays are small and there will be many image
+            ## planes.  We do this to avoid memory fragmentation.
+            self.intMetadataBuffers.append(numpy.array([0] * numIntegers,
+                                                      dtype=numpy.int32))
+            floatMetadataBuffer = numpy.array([0.0] * numFloats,
+                                              dtype=numpy.float32)
+            floatMetadataBuffer[12] = 1.0 # intensity scaling
+            self.floatMetadataBuffers.append(floatMetadataBuffer)
+
 
         # Write the headers, to get us started. We will re-write this at the
         # end when we have more metadata to fill in (specifically, the min/max
@@ -397,8 +424,6 @@ class DataSaver:
             # This image is one that should be discarded.
             return
 
-        # Convert the timestamp into something we can cleanly write.
-        timestamp = numpy.float32(timestamp)
         # Calculate the time and Z indices for the new image. This will in turn
         # help us to calculate which file to write to and the offset of the
         # image in the file.
@@ -411,11 +436,15 @@ class DataSaver:
         zIndex = numImages % self.cameraToImagesKeptPerRep[camera]
 
         numCameras = len(self.cameras)
-        # Index of the image into the 1D array of images we are effectively
-        # generating as we write data to the file.
+        planeIndex = (int(timepoint * self.maxImagesPerRep * numCameras)
+                      + (zIndex * numCameras) + cameraIndex)
 
-        imageOffset = (int(timepoint * self.maxImagesPerRep * numCameras)
-                       + (zIndex * numCameras) + cameraIndex)
+        ## Offsets for the plane metadata in the extended header, and
+        ## for the plane data in the image section.  1024 is the
+        ## length of the base header.
+        metadataOffset = 1024 + (planeIndex * self.extendedBytes)
+        dataOffset = (1024 + int(self.headers[fileIndex].next)
+                      + (planeIndex * self.planeBytes))
 
         height, width = imageData.shape
 
@@ -424,35 +453,70 @@ class DataSaver:
         # to the filehandle if we don't.
         # \todo Figure out why this is necessary.
         paddedBuffer = numpy.zeros((self.maxHeight, self.maxWidth),
-                dtype = numpy.uint16)
+                                   dtype=numpy.uint16)
         paddedBuffer[:height, :width] = imageData
+
+        imageMin = imageData.min()
+        imageMax = imageData.max()
+
+        ex_wavelength = self.cameraToExcitation[camera]
+        em_wavelength = camera.wavelength
 
         with self.fileLocks[fileIndex]:
             handle = self.filehandles[fileIndex]
-            # Seek to the appropriate byte offset for the timestamp; write
-            # it; repeat for the image data.
-            try:
-                # Write the timestamp. 1024 is the size of the standard header.
-                handle.seek(int(1024 + (self.extendedBytes * imageOffset)))
-                handle.write(timestamp)
 
-                header = self.headers[fileIndex]
-                # Offset in the file of the first image. The standard header
-                # takes 1024 bytes and the extended header takes a variable
-                # amount (depending on how many timepoints are in this file).
-                headerOffset = 1024 + header.next
-                # Write the image data.
-                byteOffset = int(headerOffset + (imageOffset * self.imageBytes))
-                handle.seek(byteOffset)
+            ## The extended header has the following structure per
+            ## plane (see issue #290):
+            ##
+            ##     8 32bit signed integers whose meaning we don't
+            ##     know.  Often are all set to zero.
+            ##
+            ##     Followed by 32 32bit floats.  We only what the
+            ##     first 14 are:
+            ##
+            ##     photosensor reading (typically in mV)
+            ##     elapsed time (seconds since experiment began)
+            ##     x stage coordinates
+            ##     y stage coordinates
+            ##     z stage coordinates
+            ##     minimum intensity
+            ##     maximum intensity
+            ##     mean intensity
+            ##     exposure time (seconds)
+            ##     neutral density (fraction of 1 or percentage)
+            ##     excitation wavelength
+            ##     emission wavelength
+            ##     intensity scaling (usually 1)
+            ##     energy conversion factor (usually 1)
+            ##
+            ## Experience from inspecting actual dv files from API
+            ## systems, tells us that we can leave most of them at
+            ## zero.
+            intMetadataBuffer = self.intMetadataBuffers[fileIndex]
+            floatMetadataBuffer = self.floatMetadataBuffers[fileIndex]
+            floatMetadataBuffer[1] = timestamp
+            floatMetadataBuffer[5] = imageMin
+            floatMetadataBuffer[6] = imageMax
+            # TODO floatMetadataBuffer[8] could be exposure time in seconds
+            floatMetadataBuffer[10] = ex_wavelength
+            floatMetadataBuffer[11] = em_wavelength
+
+            try:
+                handle.seek(metadataOffset)
+                handle.write(intMetadataBuffer)
+                handle.write(floatMetadataBuffer)
+                handle.seek(dataOffset)
                 handle.write(paddedBuffer)
-                self.imagesKept[cameraIndex] += 1
-                self.lastImageTime = time.time()
-                curMin, curMax = self.minMaxVals[cameraIndex]
-                self.minMaxVals[cameraIndex] = (min(curMin, imageData.min()),
-                        max(curMax, imageData.max()))
             except Exception as e:
                 print ("Error writing image:",e)
                 raise e
+
+            self.imagesKept[cameraIndex] += 1
+            self.lastImageTime = time.time()
+
+            curMin, curMax = self.minMaxVals[cameraIndex]
+            self.minMaxVals[cameraIndex] = (min(curMin, imageMin),
+                                            max(curMax, imageMax))
 
         # Update the status text. But first, check for abort/experiment
         # completion, since we may actually be done now and we don't want
@@ -483,6 +547,7 @@ class StatusUpdateThread(threading.Thread):
         self.totals = totals
         ## Set to True to end the thread.
         self.shouldStop = False
+        self.name = "DataSaver-status"
 
 
     def run(self):

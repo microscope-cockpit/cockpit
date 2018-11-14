@@ -50,72 +50,186 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import string
 
-import threading
-import time
 import wx
-
+import wx.lib.newevent
 
 ## @package cockpit.gui.guiUtils
 # This module contains many functions related to the GUI, mostly for setting
 # up UI elements and updating various status displays.
 
+# Create a custom event for validation errors.
+CockpitValidationErrorEvent, EVT_COCKPIT_VALIDATION_ERROR= wx.lib.newevent.NewCommandEvent()
 
-## Create a basic panel with some text.
-def createTextPanel(parent, panelId, textId, textContent, panelStyle = 0, 
-                    textStyle = 0, isBold = True,
-                    orientation = wx.HORIZONTAL,
-                    minSize = None):
-    panel = wx.Panel(parent, panelId, style = panelStyle)
-    text = wx.StaticText(panel, textId, textContent, style = textStyle)
-    fontStyle = wx.BOLD
-    if not isBold:
-        fontStyle = wx.NORMAL
-    text.SetFont(wx.Font(10, wx.DEFAULT, wx.NORMAL, fontStyle))
-    sizer = wx.BoxSizer(orientation)
-    sizer.Add(text, 1)
-    if minSize is not None:
-        sizer.SetMinSize(minSize)
-    panel.SetSizerAndFit(sizer)
-    panel.Show(0)
-    return (panel, text)
+class _BaseValidator(wx.Validator):
+    """Validators for text controls used for numeric entry.
+
+    SomeControl.SetValidator applies a validator via a copy constructor, so
+    each derived class has an instance created in this file for passing to
+    SetValidator.
+    """
+    def __init__(self, allowEmpty=False):
+        wx.Validator.__init__(self)
+        self.Bind(wx.EVT_CHAR, self.OnChar)
 
 
-## Width of a normal button (as opposed to a custom UI element, like
-# a ToggleButton).
-ORDINARY_BUTTON_WIDTH = 100
-## Create a header string in a large font, along with a help
-# button and any other provided buttons
-def makeHeader(parent, label, helpString = '',
-               extraButtons = [], buttonSize = (ORDINARY_BUTTON_WIDTH, -1)):
-    sizer = wx.BoxSizer(wx.HORIZONTAL)
-    text = wx.StaticText(parent, -1, label)
-    text.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-    sizer.Add(text)
-    if helpString:
-        button = wx.Button(parent, -1, "Help",
-                size = (ORDINARY_BUTTON_WIDTH, -1))
-        button.Bind(wx.EVT_BUTTON, lambda event: showHelpDialog(parent, helpString))
-        sizer.Add(button, 0, wx.LEFT, 10)
-    for button in extraButtons:
-        button.SetSize(buttonSize)
-        sizer.Add(button)
-    return sizer
+    def Clone(self):
+        # The copy constructor mentioned above.
+        return self.__class__()
 
+
+    def TransferToWindow(self):
+        return True
+
+
+    def TransferFromWindow(self):
+        return True
+
+
+    # Abstract - define in derived calss.
+    def _validate(self, value):
+        # Test a value. Raise an exception if it is not valid.
+        pass
+
+
+    def Validate(self, parent):
+        ctrl = self.GetWindow()
+        # Don't validate disabled controls.
+        if not (ctrl.Enabled and ctrl.Shown):
+            return True
+
+        val = ctrl.GetValue().strip()
+
+        # Validate empty case
+        if val == '':
+            if getattr(ctrl, 'allowEmpty', False):
+                return True
+            else:
+                evt = CockpitValidationErrorEvent(id=wx.ID_ANY, control=ctrl, empty=True)
+                wx.PostEvent(ctrl, evt)
+                return False
+
+        # Test with derived class _validate method.
+        try:
+            self._validate(val)
+            return True
+        except:
+            evt = CockpitValidationErrorEvent(id=wx.ID_ANY, control=ctrl)
+            wx.PostEvent(ctrl, evt)
+            return False
+
+
+    def OnChar(self, event):
+        # Define in subclass
+        pass
+
+
+class FloatValidator(_BaseValidator):
+    """A validator to enforce floating point input.
+
+    * Restricts input to numeric characters an a single decimal point.
+    * _validate() tests that string can be parsed as a float.
+    """
+    def _validate(self, val):
+        # Allow special case of single decimal point.
+        if val == '.':
+            val = '0.'
+        return float(val)
+
+
+    def OnChar(self, event):
+        key = event.GetKeyCode()
+        if key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
+            # Pass cursors, backspace, etc. to control
+            event.Skip()
+        elif chr(key) is '-' and event.EventObject.InsertionPoint == 0:
+            event.Skip()
+        elif chr(key) in string.digits:
+            # Pass any digit to control.
+            event.Skip()
+        elif chr(key) == '.':
+            # Only allow a single '.'
+            tc = self.GetWindow()
+            val = tc.GetValue()
+            selection = event.EventObject.GetStringSelection()
+            if '.' not in val or '.' in selection:
+                event.Skip()
+        return
+
+
+class IntValidator(_BaseValidator):
+    """A validator to enforce floating point input.
+
+    * Restricts input to numeric characters.
+    * _validate() tests that string can be parsed as an int."""
+    def _validate(self, val):
+        return int(val)
+
+
+    def OnChar(self, event):
+        key = event.GetKeyCode()
+        if key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
+            # Pass cursors, backspace, etc. to control
+            event.Skip()
+        elif chr(key) in string.digits:
+            # Pass any digit to control.
+            event.Skip()
+        return
+
+
+class CSVValidator(_BaseValidator):
+    """A validator to enforce floating point input.
+
+    * Restricts input to numeric characters an a single decimal point.
+    * _validate() tests that string can be parsed as a float.
+    """
+    def _validate(self, val):
+        converted = []
+        for v in val.split(','):
+            converted.append(float(v))
+        return converted
+
+
+    def OnChar(self, event):
+        key = event.GetKeyCode()
+        if key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
+            # Pass cursors, backspace, etc. to control
+            event.Skip()
+        elif chr(key) in string.digits:
+            # Pass any digit to control.
+            event.Skip()
+        elif chr(key) is '-':
+            event.Skip()
+        elif chr(key) == ',' and len(event.EventObject.Value) > 0:
+            # Could also check that adjacent characters are not ','.
+            event.Skip()
+        elif chr(key) == '.':
+            # Could also check that there's only one '.' in the block
+            # of text between delimiters.
+            event.Skip()
+        return
+
+FLOATVALIDATOR = FloatValidator()
+INTVALIDATOR = IntValidator()
+CSVVALIDATOR = CSVValidator()
 
 ## Generate a set of small text boxes for controlling individual lights.
 # Return a list of the controls, and the sizer they are contained in.
 def makeLightsControls(parent, labels, defaults):
-    sizer = wx.FlexGridSizer(2, len(labels), 0, 0)
-    for label in labels:
+    sizer = wx.FlexGridSizer(2, len(labels), 0, 4)
+    controls = []
+    for label, defaultVal in zip(labels, defaults):
         sizer.Add(wx.StaticText(parent, -1, label),
                 0, wx.ALIGN_RIGHT | wx.ALL, 5)
-    controls = []
-    for defaultVal in defaults:
-        control = wx.TextCtrl(parent, size = (40, -1))
-        control.SetValue(defaultVal)
-        controls.append(control)
-        sizer.Add(control, 0, wx.ALL, 5)
+        # Changed 'control' to 'ctrl' to more clearly discriminate from 'controls'.
+        ctrl = wx.TextCtrl(parent, size = (40, -1), name=label)
+        ctrl.SetValue(defaultVal)
+        # allowEmpty=True lets validator know this control may be empty
+        ctrl.SetValidator(FLOATVALIDATOR)
+        ctrl.allowEmpty = True
+        controls.append(ctrl)
+        sizer.Add(ctrl, 0, wx.ALL, 5)
     return controls, sizer
 
 
@@ -154,7 +268,7 @@ def addLabeledInput(parent, sizer, id = -1, label = '',
     if control is None:
         if controlType is None:
             controlType = wx.TextCtrl
-        control = controlType(parent, id, defaultValue, size = size)
+        control = controlType(parent, id, defaultValue, size = size, name=label)
     text = wx.StaticText(parent, -1, label)
     rowSizer = wx.BoxSizer(wx.HORIZONTAL)
     rowSizer.SetMinSize(minSize)
@@ -204,29 +318,3 @@ def tryParseNum(control, convertFunc = int, default = 0):
         return convertFunc(control.GetValue())
     except:
         return default
-
-
-
-## This class waits a specified amount of time and then displays a message
-# dialog unless told to stop.
-class WaitMessageDialog(threading.Thread):
-    def __init__(self, message, title, waitTime):
-        threading.Thread.__init__(self)
-        self.message = message
-        self.title = title
-        self.waitTime = waitTime
-        ## Set to True to stop showing the dialog, or never show it if it
-        # hasn't been shown yet.
-        self.shouldStop = False
-
-
-    def run(self):
-        time.sleep(self.waitTime)
-        if not self.shouldStop:
-            dialog = wx.ProgressDialog(parent = None,
-                    title = self.title, message = self.message)
-            dialog.Show()
-            while not self.shouldStop:
-                time.sleep(.01)
-            dialog.Hide()
-            dialog.Destroy()

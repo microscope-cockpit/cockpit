@@ -88,10 +88,10 @@ def getUsers():
 
 ## Ask the user what their username is, then set a variety of different
 # internal settings and "reset" the program to its base state.
-def login(parent):
+def login():
     loginUsers = getUsers()
 
-    dialog = wx.SingleChoiceDialog(parent,
+    dialog = wx.SingleChoiceDialog(None,
             "Please tell me who you are", "login",
             loginUsers, wx.OK | wx.CANCEL | wx.STAY_ON_TOP)
     global curLoginID

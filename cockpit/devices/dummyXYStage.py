@@ -52,15 +52,20 @@
 
 ## This module creates a simple XY stage-positioning device.
 
-from . import device
+from . import stage
 from cockpit import events
 import cockpit.handlers.stagePositioner
 
 CLASS_NAME = 'DummyMoverDevice'
 
-class DummyMover(device.Device):
+class DummyMover(stage.StageDevice):
     def __init__(self, name="dummy XY stage", config={}):
-        device.Device.__init__(self, name, config)
+        config['primitives'] = \
+            "r 12500 6000 3000 3000\n" \
+            "c 5000 6000 3000\n"       \
+            "c 20000, 6000, 3000\n"
+
+        super(DummyMover, self).__init__(name, config)
         # List of 2 doubles indicating our X/Y position.
         self.curPosition = [1000, 1000]
         events.subscribe('user abort', self.onAbort)
@@ -78,7 +83,7 @@ class DummyMover(device.Device):
         events.subscribe('user abort', self.onAbort)
         self.active = True
         pass
-        
+
 
     ## We control which light sources are active, as well as a set of 
     # stage motion piezos. 
@@ -87,10 +92,10 @@ class DummyMover(device.Device):
         for axis, (minVal, maxVal) in enumerate(
                 [(0, 25000), (0, 12000)]):
             handler = cockpit.handlers.stagePositioner.PositionerHandler(
-                "%d dummy mover" % axis, "%d stage motion" % axis, True, 
+                "%d dummy mover" % axis, "%d stage motion" % axis, True,
                 {'moveAbsolute': self.moveAbsolute,
-                    'moveRelative': self.moveRelative, 
-                    'getPosition': self.getPosition, 
+                    'moveRelative': self.moveRelative,
+                    'getPosition': self.getPosition,
                     'getMovementTime': self.getMovementTime,
                     'cleanupAfterExperiment': self.cleanup,
                     'setSafety': self.setSafety,
@@ -99,14 +104,6 @@ class DummyMover(device.Device):
                 2, (minVal, maxVal), (minVal, maxVal))
             result.append(handler)
         return result
-
-
-    def getPrimitives(self):
-        from cockpit.interfaces.stageMover import Primitive
-        primitives = [Primitive(self, 'c', (5000, 6000, 3000)),
-                      Primitive(self, 'c', (20000, 6000, 3000)),
-                      Primitive(self, 'r', (12500, 6000, 3000, 3000))]
-        return primitives
 
 
     ## Publish our current position.
@@ -128,7 +125,7 @@ class DummyMover(device.Device):
     def moveAbsolute(self, axis, pos):
         self.curPosition[axis] = pos
         # Dummy movers finish movement immediately.
-        events.publish('stage mover', '%d dummy mover' % axis, axis, 
+        events.publish('stage mover', '%d dummy mover' % axis, axis,
                 self.curPosition[axis])
         events.publish('stage stopped', '%d dummy mover' % axis)
 
@@ -137,7 +134,7 @@ class DummyMover(device.Device):
     def moveRelative(self, axis, delta):
         self.curPosition[axis] += delta
         # Dummy movers finish movement immediately.
-        events.publish('stage mover', '%d dummy mover' % axis, axis, 
+        events.publish('stage mover', '%d dummy mover' % axis, axis,
                 self.curPosition[axis])
         events.publish('stage stopped', '%d dummy mover' % axis)
 

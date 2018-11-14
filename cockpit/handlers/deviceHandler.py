@@ -56,6 +56,7 @@ from six.moves import filter
 
 import cockpit.events
 import cockpit.util.threads
+import sys
 
 ## A DeviceHandler acts as the interface between the GUI and the device module.
 # In other words, it tells the GUI what the device does, and translates GUI
@@ -244,8 +245,12 @@ class DeviceHandler(object):
         for thing in self.listeners:
             try:
                 thing.onEnabledEvent(self._state)
-            except:
-                raise
+            except Exception as e:
+                # A UI element may have been destroyed since we updated the list.
+                # Warn of the problem, but continue to update other listeners.
+                sys.stderr.write(("Exception in %s.notifyListeners() " +
+                                  "when notifying listener %s of state " +
+                                  "change.\n\t%s\n") % (self, thing, e))
 
 
     ## A function that any control can call to toggle enabled/disabled state.
@@ -268,3 +273,10 @@ class DeviceHandler(object):
             raise Exception('Problem encountered en/disabling %s:\n%s' % (self.name, e))
         finally:
             self.enableLock.release()
+
+    ## Add a toggle event to the action table.
+    # Return time of last action, and response time before ready after trigger.
+    def addToggle(self, time, table):
+        table.addAction(time, self, True)
+        table.addAction(time + table.toggleTime, self, False)
+        return time + table.toggleTime, 0

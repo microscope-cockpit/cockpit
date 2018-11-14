@@ -89,7 +89,7 @@ class RaspberryPi(device.Device):
 
         # A thread to publish status updates.
         # This reads temperature updates from the RaspberryPi
-        self.statusThread = threading.Thread(target=self.updateStatus)
+        self.statusThread = threading.Thread(target=self.updateStatus, name="piDIO-update")
         self.statusThread.Daemon = True
         self.statusThread.start()
  

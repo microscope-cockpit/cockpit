@@ -354,8 +354,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
 
 ## A consistent name to use to refer to the experiment class itself.
 EXPERIMENT_CLASS = ResponseMapExperiment
-
-
+from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR, CSVVALIDATOR
 
 ## Generate the UI for special parameters used by this experiment.
 class ExperimentUI(wx.Panel):
@@ -367,17 +366,21 @@ class ExperimentUI(wx.Panel):
         # response curve experiments.
         self.settings = self.loadSettings()
         self.responseArgs = {}
-        for key, label, helperString in [
+        for key, label, helperString, validator in [
                 ('responseMapNumExposures', 'Number of exposures', 
-                    "How many exposures to take for each exposure time."),
+                    "How many exposures to take for each exposure time.",
+                 INTVALIDATOR),
                 ('responseMapExposureTimes', 'Exposure times', 
-                    "Comma-separated list of exposure times at which to collect data."),
+                    "Comma-separated list of exposure times at which to collect data.",
+                 CSVVALIDATOR),
                 ('responseMapCosmicRayThreshold', 
                     'Cosmic ray threshold',
-                    "If any pixels in an image are more than this many standard deviations from the median, then the image is discarded.")]:
+                    "If any pixels in an image are more than this many standard deviations from the median, then the image is discarded.",
+                 FLOATVALIDATOR)]:
             control = guiUtils.addLabeledInput(self, sizer, 
                 label = label, defaultValue = self.settings[key],
                 helperString = helperString)
+            if validator is not None: control.SetValidator(validator)
             self.responseArgs[key] = control
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
         control = wx.CheckBox(self, label = 'Preserve intermediary files')

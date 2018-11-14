@@ -88,11 +88,28 @@ class LinkamStage(stage.StageDevice):
             self.softlimits = DEFAULT_LIMITS
         events.subscribe('user logout', self.onLogout)
         events.subscribe('user abort', self.onAbort)
+        #store and recall condensor LED status.
+        events.subscribe('save exposure settings', self.onSaveSettings)
+        events.subscribe('load exposure settings', self.onLoadSettings)
 
+
+    ## Save our settings in the provided dict.
+    def onSaveSettings(self, settings):
+         #hack as no way to read state at the momnent. Need to FIX.
+         settings[self.name] = {'condensor': 0 }
+
+    ## Load our settings from the provided dict.
+    def onLoadSettings(self, settings):
+        if self.name in settings:
+            #Only chnbage settings if needed.
+            if settings[self.name]['condensor']:
+                self.condensorOn()
+            else:
+                self.condensorOff()
 
     def finalizeInitialization(self):
         """Finalize device initialization."""
-        self.statusThread = threading.Thread(target=self.pollStatus)
+        self.statusThread = threading.Thread(target=self.pollStatus, name="Linkam-status")
         events.subscribe('cockpit initialization complete', self.statusThread.start)
 
 

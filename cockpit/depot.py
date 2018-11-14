@@ -128,6 +128,10 @@ class DeviceDepot:
     # the device's Handler instances and insert them into our various
     # containers. Yield the names of the modules holding the Devices as we go.
     def initialize(self, config):
+        import inspect
+        print("Cockpit is running from %s" % os.path.split(os.path.abspath(__file__))[0])
+        print("depot is using config from %s" %
+          os.path.split(os.path.abspath(inspect.getfile(config.__class__)))[0])
         # Parse device files to map classes to their module.
         for modfile in os.listdir(_DEVICE_DIR_FPATH):
             if not modfile.endswith('.py'):

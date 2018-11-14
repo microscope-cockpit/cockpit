@@ -25,6 +25,7 @@
 Class definitions for labels and value displays with default formatting.
 """
 
+import sys
 
 from collections import OrderedDict
 import wx
@@ -34,7 +35,6 @@ from cockpit.handlers.deviceHandler import STATES
 from .toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 import cockpit.util.userConfig
 import cockpit.util.threads
-import cockpit.gui.loggingWindow as log
 from cockpit import events
 from distutils import version
 
@@ -377,8 +377,6 @@ class SettingsEditor(wx.Frame):
                     prop.SetTextColour('red')
             else:
                 value = self.current[name]
-                if type(value) is long:
-                    value = int(value)
                 prop.SetValue(value)
             try:
                 prop.Enable(not self.settings[name]['readonly'])
@@ -417,10 +415,8 @@ class SettingsEditor(wx.Frame):
                     # Int too large.
                     prop = wx.propgrid.FloatProperty(label=key, name=key, value=str(value or 0))
                 except Exception as e:
-                    log.window.write(log.window.stdErr,
-                                     "populateGrid threw exception for key %s with value %s: %s" %
-                                     (key, value, e.message))
-                    continue
+                    sys.stderr.write("populateGrid threw exception for key %s with value %s: %s"
+                                     % (key, value, e.message))
 
             if desc['readonly']:
                 prop.Enable(False)
@@ -444,6 +440,8 @@ class OptionButtons(wx.Panel):
             label = None
         super(OptionButtons, self).__init__(*args, **kwargs)
 
+        self.size = kwargs.get('size', TALL_SIZE)
+
         s = wx.BoxSizer(wx.VERTICAL)
         if label:
             labelctrl = Label(parent=self, label=label)
@@ -451,7 +449,7 @@ class OptionButtons(wx.Panel):
 
         self.mainButton = Button(label='...',
                                  parent=self,
-                                 size=TALL_SIZE)
+                                 size=self.size)
         self.mainButton.Bind(wx.EVT_LEFT_UP, self.showButtons)
         s.Add(self.mainButton)
         self.SetSizerAndFit(s)
@@ -491,10 +489,10 @@ class OptionButtons(wx.Panel):
 
     def setOptions(self, options):
         # Set buttons with options = [(label, callback or None), ...]
-        for b in self.buttons:
-            del (b)
+        self.buttons=[]
+        self.subframe.Sizer.Clear()
         for label, callback in options:
-            b = Button(label=label, parent=self.subframe, size=TALL_SIZE)
+            b = Button(label=label, parent=self.subframe, size=self.size)
             b.Bind(wx.EVT_LEFT_UP, lambda evt, b=b, c=callback: self.onButton(b, c))
             self.subframe.Sizer.Add(b)
             self.buttons.append(b)

@@ -120,8 +120,8 @@ class CameraHandler(deviceHandler.DeviceHandler):
         self.dye = None
         # Set up trigger handling.
         if trigHandler and trigLine:
-            trigHandler.registerDigital(self, trigLine)
-            self.triggerNow = lambda: trigHandler.triggerDigital(self)
+            h = trigHandler.registerDigital(self, trigLine)
+            self.triggerNow = h.triggerNow
         else:
             softTrigger = self.callbacks.get('softTrigger', None)
             self.triggerNow = lambda: softTrigger
@@ -130,6 +130,22 @@ class CameraHandler(deviceHandler.DeviceHandler):
                     "%s imager" % name, "imager",
                     {'takeImage': softTrigger}))
 
+        #subscribe to save and load setting calls to enabvle saving and
+        #loading of configurations.
+        events.subscribe('save exposure settings', self.onSaveSettings)
+        events.subscribe('load exposure settings', self.onLoadSettings)
+
+
+    ## Save our settings in the provided dict.
+    def onSaveSettings(self, settings):
+        settings[self.name] = self.getIsEnabled()
+
+    ## Load our settings from the provided dict.
+    def onLoadSettings(self, settings):
+        if self.name in settings:
+            # only chnage state if we need to as this is slow
+            if self.getIsEnabled() != settings[self.name]:
+                self.setEnabled(settings[self.name])
 
     @property
     def color(self):
@@ -173,7 +189,11 @@ class CameraHandler(deviceHandler.DeviceHandler):
     @cockpit.interfaces.imager.pauseVideo
     @reset_cache
     def setEnabled(self, shouldEnable = True):
-        self.isEnabled = self.callbacks['setEnabled'](self.name, shouldEnable)
+        try:
+            self.isEnabled = self.callbacks['setEnabled'](self.name, shouldEnable)
+        except:
+            self.isEnabled = False
+            raise
         if self.isEnabled != shouldEnable:
             raise Exception("Problem enabling device with handler %s" % self)
         # Subscribe / unsubscribe to the prepare-for-experiment event.

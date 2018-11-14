@@ -163,6 +163,11 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: 0)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
         self.Bind(wx.EVT_MOUSEWHEEL, self.onMouseWheel)
+        # Right click also creates context menu event, which will pass up
+        # if unhandled. Bind it to None to prevent the main window
+        # context menu being displayed after our own.
+        self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
+
 
 
     def onMouseWheel(self, event):
@@ -341,7 +346,13 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         if self.imageData is None or len(self.tiles) == 0:
             # No image to operate on yet.
             return (None, None)
-        return (self.tiles[0][0].imageMin, self.tiles[0][0].imageMax)
+        # Used to query image data for imageMin and imageMax, but could this
+        # occasionally hit an indexing error on the first image when images
+        # were arriving fast. Just do the simple arithmetic here.
+        #return (self.tiles[0][0].imageMin, self.tiles[0][0].imageMax)
+        imageRange = (self.imageMax - self.imageMin)
+        return (self.blackPoint * imageRange + self.imageMin,
+                self.whitePoint * imageRange + self.imageMin)
 
 
     ## As above, but the values used to calculate them instead of the
@@ -349,7 +360,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def getRelativeScaling(self):
         return (self.blackPoint, self.whitePoint)
 
-        
+
+    @cockpit.util.threads.callInMainThread
     def onPaint(self, event):
         if not self.shouldDraw:
             return
@@ -420,6 +432,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.shouldDraw = False
 
 
+    @cockpit.util.threads.callInMainThread
     def drawCrosshair(self):
         glColor3f(0, 255, 255)
         glBegin(GL_LINES)
@@ -430,7 +443,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         glEnd()
 
 
-    ## Draw the histogram of our data. 
+    ## Draw the histogram of our data.
+    @cockpit.util.threads.callInMainThread
     def drawHistogram(self):
         # White box over all
         glColor3f(255, 255, 255)

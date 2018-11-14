@@ -306,8 +306,9 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 
             dc = wx.PaintDC(self)
             self.SetCurrent(self.context)
+            width, height = self.GetClientSize()
 
-            glViewport(0, 0, self.width, self.height)
+            glViewport(0, 0, width, height)
             
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -427,14 +428,15 @@ class MacroStageZ(macroStageBase.MacroStageBase):
     def drawHistograms(self):
         prevHistogram = self.dummyHistogram
         minY, maxY = cockpit.interfaces.stageMover.getHardLimitsForAxis(2)
+        width, height = self.GetClientSize()
         for histogram in self.histograms:
             glColor3f(0, 0, 0)
             glLineWidth(HISTOGRAM_LINE_WIDTH)
             glBegin(GL_LINES)
-            for pixelOffset in range(0, self.height):
+            for pixelOffset in range(0, height):
                 # Convert pixel offset to altitude inside our histogram
                 # min/max values
-                altitude = float(pixelOffset) / self.height
+                altitude = float(pixelOffset) / height
                 altitude = altitude * (histogram.maxAltitude - histogram.minAltitude) + histogram.minAltitude
                 # Map that altitude to a bucket
                 bucketIndex = int(altitude - self.minY) // ALTITUDE_BUCKET_SIZE
@@ -571,8 +573,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                     break # fall through as we have found which
                           # histogram we clicked on
                 
-
-            weight = float(self.height - clickLoc[1]) / self.height
+            width, height = self.GetClientSize()
+            weight = 1. - float(clickLoc[1]) / height
             altitude = (scale[1] - scale[0]) * weight + scale[0]
             zHardMax = cockpit.interfaces.stageMover.getIndividualHardLimits(2)[0][1]
             cockpit.interfaces.stageMover.goToZ(min(zHardMax, altitude))
@@ -583,8 +585,9 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 
     ## Remap an XY tuple to stage coordinates.
     def mapClickToCanvas(self, loc):
-        x = float(self.width - loc[0]) / self.width * (self.maxY - self.minY) + self.minY
-        y = float(self.height - loc[1]) / self.height * (self.maxY - self.minY) + self.minY
+        width, height = self.GetClientSize()
+        x = float(width - loc[0]) / width * (self.maxY - self.minY) + self.minY
+        y = float(height - loc[1]) / height * (self.maxY - self.minY) + self.minY
         return (x, y)
 
 
@@ -621,7 +624,8 @@ class MacroStageZKey(macroStageBase.MacroStageBase):
             dc = wx.PaintDC(self)
             self.SetCurrent(self.context)
 
-            glViewport(0, 0, self.width, self.height)
+            width, height = self.GetClientSize()
+            glViewport(0, 0, width, height)
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             glLineWidth(1)

@@ -135,6 +135,17 @@ class BoulderSLM(device.Device):
             self.elements['triggerButton'].Enable()
 
 
+    def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
+        # Found a table entry with a simple index. Trigger until that index
+        # is reached.
+        for t, h, args in table[startIndex:stopIndex]:
+            events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
+                           'SLM moving to\nindex %d' % args,
+                           (255, 255, 0))
+            while (self.getCurrentPosition() != args):
+                self.handler.triggerNow()
+
+
     def examineActions(self, table):
         # Extract pattern parameters from the table.
         # patternParms is a list of tuples (angle, phase, wavelength)
@@ -230,15 +241,14 @@ class BoulderSLM(device.Device):
         trigline = self.config.get('triggerline', None)
         dt = self.config.get('settlingtime', 10)
         result = []
-        self.handler = cockpit.handlers.executor.DelegateTrigger("slm", "slm group",
-                                              trigsource, trigline,
-                                              self.examineActions, dt)
+        self.handler = cockpit.handlers.executor.DelegateTrigger(
+            "slm", "slm group", True,
+            {'examineActions': self.examineActions,
+             'getMovementTime': lambda *args: dt,
+             'executeTable': self.executeTable})
+        self.handler.delegateTo(trigsource, trigline, 0, dt)
         result.append(self.handler)
         return result
-
-
-    # def getMovementTime(self):
-    #     return self.settlingTime + 2 * actionTable.ActionTable.toggleTime
 
 
     ### UI functions ###

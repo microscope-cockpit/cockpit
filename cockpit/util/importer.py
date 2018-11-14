@@ -33,14 +33,17 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import imp
 import importlib
 import os.path
+
+import pkg_resources
 
 ## Scan through the specified root and import all modules in it that do not
 # contain a substring from the list forbiddenModules.
 def getModulesFrom(root, forbiddenModules = []):
-    path = os.path.join(imp.find_module('cockpit')[1], root)
+    ## TODO: rewrite this to use importlib once we drop support for Python 2
+    path = os.path.join(pkg_resources.get_distribution('cockpit').location,
+                        'cockpit', root)
     result = []
     for moduleName in os.listdir(path):
         # \todo Should we allow other file extensions?
@@ -61,4 +64,3 @@ def getModulesFrom(root, forbiddenModules = []):
             module = importlib.import_module(importPath)
             result.append(module)
     return result
-

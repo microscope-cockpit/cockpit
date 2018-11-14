@@ -41,6 +41,7 @@ import wx
 def callInNewThread(function):
     def wrappedFunc(*args, **kwargs):
         thread = threading.Thread(target = function, args = args, kwargs = kwargs)
+        thread.name = function.__name__
         # Ensure the thread will exit when the program does.
         thread.daemon = True
         thread.start()
@@ -49,10 +50,23 @@ def callInNewThread(function):
 
 ## Call the passed-in function in the main thread once the current queue of
 # events is cleared. This is necessary for anything that touches the user
-# interface or uses OpenGL.
+# interface or uses OpenGL. We first test if the current thread is the main
+# thread to avoid unnecessary requeuing.
+
+from sys import version_info
+if version_info[0] >= 3 and version_info[1] >= 4:
+    __isMainThread = lambda: threading.current_thread() is threading.main_thread()
+else:
+    __isMainThread = lambda: threading.current_thread().name is 'MainThread'
+
 def callInMainThread(function):
     def wrappedFunc(*args, **kwargs):
-        wx.CallAfter(function, *args, **kwargs)
+        if __isMainThread():
+            # Already in main thread.
+            function(*args, **kwargs)
+        else:
+            # Push call to main thread.
+            wx.CallAfter(function, *args, **kwargs)
     return wrappedFunc
 
 

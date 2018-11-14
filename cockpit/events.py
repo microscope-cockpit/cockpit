@@ -50,9 +50,11 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import threading
 from itertools import chain
 import re
+import sys
+import threading
+import traceback
 
 ## This module handles the event-passing system between the UI and the 
 # devices. Objects may publish events, subscribe to them, and unsubscribe from
@@ -93,8 +95,11 @@ def publish(eventType, *args, **kwargs):
         try:
             subscribeFunc(*args, **kwargs)
         except:
-            print('Error in subscribed func %s in %s.' % (subscribeFunc.__name__,
-                                                         subscribeFunc.__module__))
+            sys.stderr.write('Error in subscribed func %s.%s().  %s'
+                             % (subscribeFunc.__module__,
+                                subscribeFunc.__name__,
+                                traceback.format_exc()))
+
 
     while True:
         try:
@@ -231,22 +236,3 @@ def executeAndWaitForOrTimeout(eventType, func, timeout, *args, **kwargs):
                     del curSubscribers[i]
         # Raise an exception to indicate timeout.
         raise Exception('Event timeout: %s, %s' % (eventType, func))
-
-
-class Counter(object):
-    def __init__(self, incrementOn, resetOn=None):
-        self.count = 0
-        self.report = False
-        subscribe(incrementOn, self.increment)
-        if resetOn:
-            subscribe(resetOn, self.reset)
-
-    def increment(self, *args):
-        self.count += 1
-        if self.report:
-            print("COUNT ", self.count, self, args)
-
-    def reset(self, *args):
-        self.count = 0
-        if self.report:
-            print("RESET ", self.count, self, args)

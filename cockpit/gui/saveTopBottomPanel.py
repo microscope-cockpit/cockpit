@@ -183,13 +183,18 @@ def moveZCheckMoverLimits(target):
     currentPos= cockpit.interfaces.stageMover.getPosition()[2]
     offset = target - currentPos
 
+
+    ##IMD 2018-11-07 I think this test needs to be currentpos of the
+    ##current mover not the overall pos.
     while (cockpit.interfaces.stageMover.mover.curHandlerIndex >= 0):
-        if ((currentPos + offset)> limits[cockpit.interfaces.stageMover.mover.curHandlerIndex][1] or
-            (currentPos + offset) < limits[cockpit.interfaces.stageMover.mover.curHandlerIndex][0]):
+        handler=cockpit.interfaces.stageMover.mover.curHandlerIndex
+        moverPos=cockpit.interfaces.stageMover.getAllPositions()[handler][2]
+        if ((moverPos + offset)> limits[cockpit.interfaces.stageMover.mover.curHandlerIndex][1] or
+            (moverPos + offset) < limits[cockpit.interfaces.stageMover.mover.curHandlerIndex][0]):
             # need to drop down a handler to see if next handler can do the move
             cockpit.interfaces.stageMover.mover.curHandlerIndex -= 1
             if (cockpit.interfaces.stageMover.mover.curHandlerIndex < 0):
-                print ("Move too large for coarse Z motion")
+                print ("Move too large for any Z mover.")
             
         else: 
             cockpit.interfaces.stageMover.goToZ(target)

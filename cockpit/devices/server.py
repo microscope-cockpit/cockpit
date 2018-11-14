@@ -130,8 +130,8 @@ class ServerDaemon:
     def stop(self):
         # Per the documentation, these functions must be called
         # in separate threads, or else the process will hang.
-        threading.Thread(target = self.daemon.close).start()
-        threading.Thread(target = self.daemon.shutdown).start()
+        threading.Thread(target=self.daemon.close, name="server-close").start()
+        threading.Thread(target=self.daemon.shutdown, name="server-shutdown").start()
 
 
     ## Receive a function call from outside.

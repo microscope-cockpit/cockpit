@@ -71,6 +71,7 @@ import cockpit.gui.dialogs.gridSitesDialog
 import cockpit.gui.dialogs.offsetSitesDialog
 import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
+from cockpit.gui.primitive import Primitive
 import cockpit.interfaces.stageMover
 import cockpit.util.user
 import cockpit.util.threads
@@ -87,7 +88,7 @@ SITE_COLORS = [('green', (0, 1, 0)), ('red', (1, 0, 0)),
 SIDEBAR_WIDTH = 150
 
 ## Timeout for mosaic new image events
-CAMERA_TIMEOUT = 5
+CAMERA_TIMEOUT = 1
 ##how good a circle to draw
 CIRCLE_SEGMENTS = 32
 PI = 3.141592654
@@ -95,16 +96,249 @@ PI = 3.141592654
 ## Simple structure for marking potential beads.
 BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 
+from functools import wraps
+
+
+def _pauseMosaicLoop(func):
+    @wraps(func)
+    def wrapped(self, *args, **kwargs):
+        is_running = self.shouldContinue.is_set()
+        if not is_running:
+            return func(self, *args, **kwargs)
+        else:
+            self.shouldContinue.clear()
+            try:
+                return func(self, *args, **kwargs)
+            finally:
+                self.shouldContinue.set()
+    return wrapped
+
+
+class MosaicCommon(object):
+    # A class to house methods that are common to both the Mosaic
+    # and TouchScreen windows. Previously, these were dynamically
+    # rebound on the TouchScreen window, which worked fine in
+    # python 3, but threw TypeErrors in python 2.
+    # TODO: refactor to eliminate this class; see notes on each method.
+
+    ## Go to the specified XY position. If we have a focus plane defined,
+    # go to the appropriate Z position to maintain focus.
+    # Refactoring: If the stageMover dealt with the focal plane params and mover
+    # switching, this method could probably be eliminated.
+    def goTo(self, target, shouldBlock=False):
+        if self.focalPlaneParams:
+            targetZ = self.getFocusZ(target)
+            cockpit.interfaces.stageMover.goTo((target[0], target[1], targetZ),
+                                               shouldBlock)
+        else:
+            # IMD 20150306 Save current mover, change to coarse to generate mosaic
+            # do move, and change mover back.
+            originalMover = cockpit.interfaces.stageMover.mover.curHandlerIndex
+            cockpit.interfaces.stageMover.mover.curHandlerIndex = 0
+            cockpit.interfaces.stageMover.goToXY(target, shouldBlock)
+            cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
+
+
+    ## Draw the overlay. This largely consists of a crosshairs indicating
+    # the current stage position, and any sites the user has saved.
+    # Refactoring: this could probably move to the Canvas class by eliminating
+    # references to data on the MosaicWindow as follows:
+    #   roll self.scalebar and self.drawCrosshairs into this method;
+    #   put self.scalefont onto the canvas;
+    #   pull self.offset straight from the objective;
+    #   move self.selectedSites to the stageMover or some other space manager;
+    #   eliminate self.drawPrimitives - they're useful for navigation and don't add much clutter.
+    def drawOverlay(self):
+        for site in cockpit.interfaces.stageMover.getAllSites():
+            # Draw a crude circle.
+            x, y = site.position[:2]
+            x = -x
+            # Set line width based on zoom factor.
+            lineWidth = max(1, self.canvas.scale * 1.5)
+            glLineWidth(lineWidth)
+            glColor3f(*site.color)
+            glBegin(GL_LINE_LOOP)
+            for i in range(8):
+                glVertex3f(x + site.size * numpy.cos(numpy.pi * i / 4.0),
+                        y + site.size * numpy.sin(numpy.pi * i / 4.0), 0)
+            glEnd()
+            glLineWidth(1)
+
+            glPushMatrix()
+            glTranslatef(x, y, 0)
+            # Scale the text with respect to the current zoom factor.
+            fontScale = 3 / max(5.0, self.canvas.scale)
+            glScalef(fontScale, fontScale, 1)
+            self.sitefont.render(str(site.uniqueID))
+            glPopMatrix()
+
+        self.drawCrosshairs(cockpit.interfaces.stageMover.getPosition()[:2], (1, 0, 0),
+                            offset=True)
+
+        # If we're selecting tiles, draw the box the user is selecting.
+        if self.selectTilesFunc is not None and self.lastClickPos is not None:
+            start = self.canvas.mapScreenToCanvas(self.lastClickPos)
+            end = self.canvas.mapScreenToCanvas(self.prevMousePos)
+            glColor3f(0, 0, 1)
+            glBegin(GL_LINE_LOOP)
+            glVertex2f(-start[0], start[1])
+            glVertex2f(-start[0], end[1])
+            glVertex2f(-end[0], end[1])
+            glVertex2f(-end[0], start[1])
+            glEnd()
+
+        # Highlight selected sites with crosshairs.
+        for site in self.selectedSites:
+            self.drawCrosshairs(site.position[:2], (0, 0, 1), 10000,
+                                offset=False)
+
+        # Draw the soft and hard stage motion limits
+        glEnable(GL_LINE_STIPPLE)
+        glLineWidth(2)
+        softSafeties = cockpit.interfaces.stageMover.getSoftLimits()[:2]
+        hardSafeties = cockpit.interfaces.stageMover.getHardLimits()[:2]
+        for safeties, color, stipple in [(softSafeties, (0, 1, 0), 0x5555),
+                                         (hardSafeties, (0, 0, 1), 0xAAAA)]:
+            x1, x2 = safeties[0]
+            y1, y2 = safeties[1]
+            if hasattr (self, 'offset'):
+                #once again consistancy of offset calculations.
+                x1 -=  self.offset[0]
+                x2 -=  self.offset[0]
+                y1 -=  self.offset[1]
+                y2 -=  self.offset[1]
+            glLineStipple(3, stipple)
+            glColor3f(*color)
+            glBegin(GL_LINE_LOOP)
+            glVertex2f(-x1, y1)
+            glVertex2f(-x2, y1)
+            glVertex2f(-x2, y2)
+            glVertex2f(-x1, y2)
+            glEnd()
+        glLineWidth(1)
+        glDisable(GL_LINE_STIPPLE)
+
+        #Draw a scale bar if the scalebar size is not zero.
+        if (self.scalebar != 0):
+            # Scale bar width.
+            self.scalebar = 100*(10**math.floor(math.log(1/self.canvas.scale,10)))
+            # Scale bar position, near the top left-hand corner.
+            scalebarPos = [30,-10]
+
+            # Scale bar vertices.
+            x1 = scalebarPos[0]/self.canvas.scale
+            x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
+            y1 = scalebarPos[1]/self.canvas.scale
+            canvasPos=self.canvas.mapScreenToCanvas((0,0))
+            x1 -= canvasPos[0]
+            x2 -= canvasPos[0]
+            y1 += canvasPos[1]
+
+
+            # Do the actual drawing
+            glColor3f(255, 0, 0)
+            # The scale bar itself.
+            glLineWidth(8)
+            glBegin(GL_LINES)
+            glVertex2f(x1,y1)
+            glVertex2f(x2,y1)
+            glEnd()
+            glLineWidth(1)
+            # The scale label.
+            glPushMatrix()
+            labelPosX= x1
+            labelPosY= y1 - (20./self.canvas.scale)
+            glTranslatef(labelPosX, labelPosY, 0)
+            fontScale = 1. / self.canvas.scale
+            glScalef(fontScale, fontScale, 1.)
+            if (self.scalebar>1.0):
+                self.scalefont.render('%d um' % self.scalebar)
+            else:
+                self.scalefont.render('%.3f um' % self.scalebar)
+            glPopMatrix()
+
+        #Draw stage primitives.
+        if(self.drawPrimitives):
+            # Draw device-specific primitives.
+            glEnable(GL_LINE_STIPPLE)
+            glLineStipple(1, 0xAAAA)
+            glColor3f(0.4, 0.4, 0.4)
+            glColor3f(0.4, 0.4, 0.4)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            # Reflect x-cordinates.
+            glMultMatrixf([-1.,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1])
+            primitives = cockpit.interfaces.stageMover.getPrimitives()
+            for p in primitives:
+                if p not in self.primitives:
+                    self.primitives[p] = Primitive.factory(p)
+                self.primitives[p].render()
+            glPopMatrix()
+            glDisable(GL_LINE_STIPPLE)
+
+
+    # Draw a crosshairs at the specified position with the specified color.
+    # By default make the size of the crosshairs be really big.
+    # Refactor: this could move to Canvas by eliminating self.crosshairBoxSize,
+    # which is only set and used here, and in centerCanvas.
+    def drawCrosshairs(self, position, color, size=None, offset=False):
+        xSize = ySize = size
+        if size is None:
+            xSize = ySize = 100000
+        x, y = position
+        # offset applied for stage position but not marks!
+        if offset:
+            # if no offset defined we can't apply it!
+            if hasattr(self, 'offset'):
+                # sign consistancy! Here we have -(x-offset) = -x + offset!
+                x = x - self.offset[0]
+                y = y - self.offset[1]
+
+        # Draw the crosshairs
+        glColor3f(*color)
+        glBegin(GL_LINES)
+        glVertex2d(-x - xSize, y)
+        glVertex2d(-x + xSize, y)
+        glVertex2d(-x, y - ySize)
+        glVertex2d(-x, y + ySize)
+        glEnd()
+
+        glBegin(GL_LINE_LOOP)
+        # Draw the box.
+        # get cams and objective opbjects
+        cams = depot.getActiveCameras()
+        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+        # if there is a camera us its real pixel count
+        if (len(cams) > 0):
+            width, height = cams[0].getImageSize()
+            self.crosshairBoxSize = width * objective.getPixelSize()
+            width = self.crosshairBoxSize
+            height = height * objective.getPixelSize()
+        else:
+            # else use the default which is 512Xpixel size from objective
+            width = self.crosshairBoxSize
+            height = self.crosshairBoxSize
+
+        for i, j in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
+            glVertex2d(-x + i * width / 2,
+                       y + j * height / 2)
+        glEnd()
+
+
 
 
 ## This class handles the UI of the mosaic.
-class MosaicWindow(wx.Frame):
+class MosaicWindow(wx.Frame, MosaicCommon):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
         self.SetWindowStyle(self.GetWindowStyle() | wx.FRAME_NO_TASKBAR)
         self.panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
+        ## Mapping of primitive specifications to Primitives.
+        self.primitives = {}
+        ## Prevent r-click on buttons displaying MainWindow context menu.
+        self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         ## Last known location of the mouse.
         self.prevMousePos = None
         ## Last click position of the mouse.
@@ -115,18 +349,11 @@ class MosaicWindow(wx.Frame):
         self.amGeneratingMosaic = False
         ## Offset (set by objective change)
         self.offset=(0,0)
+        ## Event object to control run state of mosaicLoop.
+        self.shouldContinue = threading.Event()
 
-        ## Lock on generating mosaics.
-        self.mosaicGenerationLock = threading.Lock()
-        ## Boolean that indicates if the current mosaic generation thread
-        # should exit.
-        self.shouldEndOldMosaic = False
-        ## Boolean that indicates if the current mosaic generation thread
-        # should pause.
-        self.shouldPauseMosaic = False
-
-        ## Camera we last used for making a mosaic.
-        self.prevMosaicCamera = None
+        ## Camera used for making a mosaic
+        self.camera = None
 
         ## Mosaic tile overlap
         self.overlap = 0.0
@@ -258,6 +485,8 @@ class MosaicWindow(wx.Frame):
         for item in [self, self.panel, self.canvas, self.sitesPanel]:
             cockpit.gui.keyboard.setKeyboardHandlers(item)
 
+        self.mosaicThread = None
+
 
     ## Create a button with the appropriate properties.
     def makeButton(self, parent, label, leftAction, rightAction, helpText,
@@ -282,7 +511,7 @@ class MosaicWindow(wx.Frame):
         if (self.crosshairBoxSize == 0):
             self.crosshairBoxSize = 512 * objective.getPixelSize()
         self.offset = objective.getOffset()
-        scale = (1/objective.getPixelSize())*(10./self.crosshairBoxSize)
+        scale = (150./self.crosshairBoxSize)
         self.canvas.zoomTo(-curPosition[0]+self.offset[0],
                            curPosition[1]-self.offset[1], scale)
 
@@ -292,7 +521,7 @@ class MosaicWindow(wx.Frame):
         size = self.GetClientSize()
         self.panel.SetSize(size)
         # Subtract off the pixels dedicated to the sidebar.
-        self.canvas.setSize((size[0] - SIDEBAR_WIDTH, size[1]))
+        self.canvas.SetClientSize((size[0] - SIDEBAR_WIDTH, size[1]))
 
 
     ## User logged in, so we may well have changed size; adjust our zoom to
@@ -415,216 +644,6 @@ class MosaicWindow(wx.Frame):
             self.canvas.SetFocus()
 
 
-    ## Draw the overlay. This largely consists of a crosshairs indicating
-    # the current stage position, and any sites the user has saved.
-    def drawOverlay(self):
-        for site in cockpit.interfaces.stageMover.getAllSites():
-            # Draw a crude circle.
-            x, y = site.position[:2]
-            x = -x 
-            # Set line width based on zoom factor.
-            lineWidth = max(1, self.canvas.scale * 1.5)
-            glLineWidth(lineWidth)
-            glColor3f(*site.color)
-            glBegin(GL_LINE_LOOP)
-            for i in range(8):
-                glVertex3f(x + site.size * numpy.cos(numpy.pi * i / 4.0),
-                        y + site.size * numpy.sin(numpy.pi * i / 4.0), 0)
-            glEnd()
-            glLineWidth(1)
-
-            glPushMatrix()
-            glTranslatef(x, y, 0)
-            # Scale the text with respect to the current zoom factor.
-            fontScale = 3 / max(5.0, self.canvas.scale)
-            glScalef(fontScale, fontScale, 1)
-            self.sitefont.render(str(site.uniqueID))
-            glPopMatrix()
-
-        self.drawCrosshairs(cockpit.interfaces.stageMover.getPosition()[:2], (1, 0, 0),
-                            offset=True)
-
-        # If we're selecting tiles, draw the box the user is selecting.
-        if self.selectTilesFunc is not None and self.lastClickPos is not None:
-            start = self.canvas.mapScreenToCanvas(self.lastClickPos)
-            end = self.canvas.mapScreenToCanvas(self.prevMousePos)
-            glColor3f(0, 0, 1)
-            glBegin(GL_LINE_LOOP)
-            glVertex2f(-start[0], start[1])
-            glVertex2f(-start[0], end[1])
-            glVertex2f(-end[0], end[1])
-            glVertex2f(-end[0], start[1])
-            glEnd()
-
-        # Highlight selected sites with crosshairs.
-        for site in self.selectedSites:
-            self.drawCrosshairs(site.position[:2], (0, 0, 1), 10000,
-                                offset=False)
-
-        # Draw the soft and hard stage motion limits
-        glEnable(GL_LINE_STIPPLE)
-        glLineWidth(2)
-        softSafeties = cockpit.interfaces.stageMover.getSoftLimits()[:2]
-        hardSafeties = cockpit.interfaces.stageMover.getHardLimits()[:2]
-        for safeties, color, stipple in [(softSafeties, (0, 1, 0), 0x5555),
-                                         (hardSafeties, (0, 0, 1), 0xAAAA)]:
-            x1, x2 = safeties[0]
-            y1, y2 = safeties[1]
-            if hasattr (self, 'offset'):
-                #once again consistancy of offset calculations. 
-                x1 -=  self.offset[0]
-                x2 -=  self.offset[0]
-                y1 -=  self.offset[1]
-                y2 -=  self.offset[1]
-            glLineStipple(3, stipple)
-            glColor3f(*color)
-            glBegin(GL_LINE_LOOP)
-            glVertex2f(-x1, y1)
-            glVertex2f(-x2, y1)
-            glVertex2f(-x2, y2)
-            glVertex2f(-x1, y2)
-            glEnd()
-        glLineWidth(1)
-        glDisable(GL_LINE_STIPPLE)
-
-        #Draw a scale bar if the scalebar size is not zero.
-        if (self.scalebar != 0):
-            # Scale bar width.
-            self.scalebar = 100*(10**math.floor(math.log(1/self.canvas.scale,10)))
-            # Scale bar position, near the top left-hand corner.
-            scalebarPos = [30,-10]
-
-            # Scale bar vertices.
-            x1 = scalebarPos[0]/self.canvas.scale
-            x2 = (scalebarPos[0]+self.scalebar*self.canvas.scale)/self.canvas.scale
-            y1 = scalebarPos[1]/self.canvas.scale
-            canvasPos=self.canvas.mapScreenToCanvas((0,0))
-            x1 -= canvasPos[0]
-            x2 -= canvasPos[0]
-            y1 += canvasPos[1]
-
-
-            # Do the actual drawing
-            glColor3f(255, 0, 0)
-            # The scale bar itself.
-            glLineWidth(8)
-            glBegin(GL_LINES)
-            glVertex2f(x1,y1)
-            glVertex2f(x2,y1)
-            glEnd()
-            glLineWidth(1)
-            # The scale label.
-            glPushMatrix()
-            labelPosX= x1
-            labelPosY= y1 - (20./self.canvas.scale)
-            glTranslatef(labelPosX, labelPosY, 0)
-            fontScale = 1. / self.canvas.scale
-            glScalef(fontScale, fontScale, 1.)
-            if (self.scalebar>1.0):
-                self.scalefont.render('%d um' % self.scalebar)
-            else:
-                self.scalefont.render('%.3f um' % self.scalebar)
-            glPopMatrix()
-
-        #Draw stage primitives.
-        if(self.drawPrimitives):
-            # Draw device-specific primitives.
-            glEnable(GL_LINE_STIPPLE)
-            glLineStipple(1, 0xAAAA)
-            glColor3f(0.4, 0.4, 0.4)
-            primitives = cockpit.interfaces.stageMover.getPrimitives()
-            for p in primitives:
-                if p.type in ['c', 'C']:
-                    # circle: x0, y0, radius
-                    self.drawScaledCircle(p.data[0], p.data[1],
-                                          p.data[2], CIRCLE_SEGMENTS,
-                                          offset=False)
-                if p.type in ['r', 'R']:
-                    # rectangle: x0, y0, width, height
-                    self.drawScaledRectangle(*p.data, offset=False)
-            glDisable(GL_LINE_STIPPLE)
-
-
-    def drawScaledCircle(self, x0, y0, r, n, offset=True):
-        dTheta = 2. * PI / n
-        cosTheta = numpy.cos(dTheta)
-        sinTheta = numpy.sin(dTheta)
-        if offset:
-            x0=x0-self.offset[0]
-            y0 =y0+self.offset[1]
-        x = r
-        y = 0.
-
-        glBegin(GL_LINE_LOOP)
-        for i in range(n):
-            glVertex2f(-(x0 + x), y0 + y)
-            xOld = x
-            x = cosTheta * x - sinTheta * y
-            y = sinTheta * xOld + cosTheta * y
-        glEnd()
-		
-    ## Draw a rectangle centred on x0, y0 of width w and height h.
-    def drawScaledRectangle(self, x0, y0, w, h, offset=True):
-        dw = w / 2.
-        dh = h / 2.
-        if offset:
-            x0 = x0-self.offset[0]
-            y0 = y0+self.offset[1]
-        ps = [(x0-dw, y0-dh),
-              (x0+dw, y0-dh),
-              (x0+dw, y0+dh),
-              (x0-dw, y0+dh)]
-
-        glBegin(GL_LINE_LOOP)
-        for i in range(-1, 4):
-            glVertex2f(-ps[i][0], ps[i][1])
-        glEnd()
-    # Draw a crosshairs at the specified position with the specified color.
-    # By default make the size of the crosshairs be really big.
-    def drawCrosshairs(self, position, color, size = None, offset=False):
-        xSize = ySize = size
-        if size is None:
-            xSize = ySize = 100000
-        x, y = position
-        #offset applied for stage position but not marks!
-        if offset:
-            #if no offset defined we can't apply it!
-            if hasattr(self, 'offset'):
-                #sign consistancy! Here we have -(x-offset) = -x + offset!
-                x = x-self.offset[0]
-                y = y-self.offset[1]
-
-        # Draw the crosshairs
-        glColor3f(*color)
-        glBegin(GL_LINES)
-        glVertex2d(-x - xSize, y)
-        glVertex2d(-x + xSize, y)
-        glVertex2d(-x, y - ySize)
-        glVertex2d(-x, y + ySize)
-        glEnd()
-
-        glBegin(GL_LINE_LOOP)
-        # Draw the box.
-        #get cams and objective opbjects
-        cams = depot.getActiveCameras()
-        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        #if there is a camera us its real pixel count
-        if (len(cams)>0):
-            width, height = cams[0].getImageSize()
-            self.crosshairBoxSize = width*objective.getPixelSize()
-            width = self.crosshairBoxSize
-            height = height*objective.getPixelSize()
-        else:
-            #else use the default which is 512Xpixel size from objective
-            width =self.crosshairBoxSize
-            height=self.crosshairBoxSize
-        
-        for i, j in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
-            glVertex2d(-x + i * width / 2,
-                    y + j * height / 2)
-        glEnd()
-
-
     ## This generator function creates a clockwise spiral pattern.
     def mosaicStepper(self):
         directions = [(0, -1), (-1, 0), (0, 1), (1, 0)]
@@ -645,119 +664,140 @@ class MosaicWindow(wx.Frame):
             i += 1
 
 
-    ## Generate a spiral mosaic. This function just checks to see if we have
-    # an existing mosaic thread, and if so, tells it to end before calling
-    # generateMosaic2() which does the actual mosaic generation.
+    ## Toggle run / stop state of the mosaicLoop.
+    def toggleMosaic(self):
+        if self.mosaicThread is None or not self.mosaicThread.is_alive():
+            self.shouldReconfigure = True
+            self.shouldRestart = True
+            self.mosaicThread = threading.Thread(target=self.mosaicLoop, name="mosaic")
+            self.mosaicThread.start()
+        if self.shouldContinue.is_set():
+            self.shouldContinue.clear()
+        else:
+            self.shouldContinue.set()
+
+
+    # Detect stage movement when paused and flag that the mosaic loop
+    # should start a new spiral if the stage has moved.
+    def onStageMoveWhenPaused(self, axis, position):
+        if axis == 2:
+            return
+        events.unsubscribe("stage position", self.onStageMoveWhenPaused)
+        self.shouldRestart = True
+
+
+    ## Generate a spiral mosaic.
     # \param camera Handler of the camera we're collecting images from.
-    @cockpit.util.threads.callInNewThread
     def generateMosaic(self, camera):
-        if self.shouldPauseMosaic:
-            # We have a paused mosaic that needs to be destroyed.
-            self.shouldEndOldMosaic = True
-            # Mosaic thread may sleep for 0.1s before testing
-            # self.shouldEndOldMosaic, so wait 0.1s.
-            time.sleep(0.1)
-        self.generateMosaic2(camera)
+        self.camera = camera
+        self.toggleMosaic()
 
 
     ## Move the stage in a spiral pattern, stopping to take images at regular
     # intervals, to generate a stitched-together high-level view of the stage
-    # contents. This function is suspended when the Abort button (or the
-    # Stop Mosaic button) is pressed, and can be resumed later. Only one
-    # such suspended thread is allowed to be active at a time.
-    def generateMosaic2(self, camera):
-        # Acquire the mosaic lock so no other mosaics can run.
-        events.publish('mosaic start')
-        if not self.mosaicGenerationLock.acquire(False):
-            # Do not block. Otherwise, multiple calls to generateMosaic
-            # can result in multiple threads waiting here for the lock.
-            return
+    # contents.
+    def mosaicLoop(self):
+        from sys import stderr
+        stepper = self.mosaicStepper()
+        target = None
+        while True:
+            if not self.shouldContinue.is_set():
+                ## Enter idle state.
+                # Update button label in main thread.
+                events.publish("mosaic stop")
+                wx.CallAfter(self.nameToButton['Run mosaic'].SetLabel, 'Run mosaic')
+                # Detect stage movement so know whether to start new spiral on new position.
+                events.subscribe("stage position", self.onStageMoveWhenPaused)
+                # Wait for shouldContinue event.
+                self.shouldContinue.wait()
+                # Clear subscription
+                events.unsubscribe("stage position", self.onStageMoveWhenPaused)
+                # Update button label in main thread.
+                wx.CallAfter(self.nameToButton['Run mosaic'].SetLabel, 'Stop mosaic')
+                # Set reconfigure flag: cameras or objective may have changed.
+                self.shouldReconfigure = True
+                events.publish("mosaic start")
+                # Catch case that stage has moved but user wants to continue mosaic.
+                if not self.shouldRestart and target is not None:
+                    self.goTo(target, True)
 
-        self.amGeneratingMosaic = True
-        self.nameToButton['Run mosaic'].SetLabel('Stop mosaic')
-        self.prevMosaicCamera = camera
-        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        width, height = camera.getImageSize()
-        width *= objective.getPixelSize()
-        height *= objective.getPixelSize()
-        self.offset= objective.getOffset()
-        pos=cockpit.interfaces.stageMover.getPosition()
-#IMD 20150303 always work in shifted coords in mosaic
-        centerX=pos[0]-self.offset[0]
-        centerY=pos[1]+self.offset[1]
-        curZ=pos[2]-self.offset[2]
-#        centerX, centerY, curZ) = cockpit.interfaces.stageMover.getPosition()+self.offset
-        prevPosition = (centerX, centerY)
-        for dx, dy in self.mosaicStepper():
-            while self.shouldPauseMosaic:
-                # Wait until the mosaic is unpaused.
-                if self.shouldEndOldMosaic:
-                    # End the mosaic.
-                    self.exitMosaicLoop()
-                    return
-                time.sleep(.1)
-            # Take an image.
-            # If anything happens to the camera, the mosaic gets
-            # stuck here and can not be restarted, so we use a
-            # timeout.
+
+            if self.shouldRestart:
+                # Start a new spiral about current stage position.
+                stepper = self.mosaicStepper()
+                pos = cockpit.interfaces.stageMover.getPosition()
+                centerX = pos[0] - self.offset[0]
+                centerY = pos[1] + self.offset[1]
+                self.shouldRestart = False
+
+            if self.shouldReconfigure:
+                #  Check that camera is valid
+                active = depot.getActiveCameras()
+                if len(active) == 0:
+                    self.shouldContinue.clear()
+                    stderr.write("Mosaic stopping: no active cameras.\n")
+                    continue
+                camera = self.camera
+                # Fallback to 0th active camera.
+                if camera not in active:
+                    camera = active[0]
+                # Set image width and height based on camera and objective.
+                objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+                width, height = camera.getImageSize()
+                width *= objective.getPixelSize()
+                height *= objective.getPixelSize()
+                self.offset = objective.getOffset()
+                # Successfully reconfigured: clear the flag.
+                self.shouldReconfigure = False
+
+            pos = cockpit.interfaces.stageMover.getPosition()
+            curZ = pos[2] - self.offset[2]
+            # Take an image. Use timeout to prevent getting stuck here.
             try:
-                #data, timestamp = events.executeAndWaitForOrTimeout(
                 data, timestamp = events.executeAndWaitForOrTimeout(
-                        events.NEW_IMAGE % camera.name,
-                        cockpit.interfaces.imager.takeImage,
-                        CAMERA_TIMEOUT,
-                        shouldBlock = True)
-            except:
-                # Exit gracefully on timeout.
-                self.exitMosaicLoop()
-                raise
+                    events.NEW_IMAGE % camera.name,
+                    cockpit.interfaces.imager.takeImage,
+                    camera.getExposureTime()/1000 + CAMERA_TIMEOUT,
+                    shouldBlock=True)
+            except Exception as e:
+                # Go to idle state.
+                self.shouldContinue.clear()
+                stderr.write("Mosaic stopping - problem taking image: %s\n" % str(e))
+                continue
+
             # Get the scaling for the camera we're using, since they may
             # have changed.
             try:
                 minVal, maxVal = cockpit.gui.camera.window.getCameraScaling(camera)
-            except:
-                # Camera may have been deactivated.
-                self.exitMosaicLoop()
-                raise
-            pos=cockpit.interfaces.stageMover.getPosition()
-            events.executeAndWaitFor('mosaic canvas paint',
-                    self.canvas.addImage, data,
-                    # This assumes perfect positioning.
-                    #(-prevPosition[0] - width / 2,
-                    #    prevPosition[1] - height / 2, curZ),
-                    # Use the actual position, instead.
-                    ( -pos[0] + self.offset[0] - width/2,
-                      pos[1] - self.offset[1] - height/2,
-                      curZ,) ,
-                    (width, height), scalings = (minVal, maxVal),
-                    shouldRefresh = True)
+            except Exception as e:
+                # Go to idle state.
+                self.shouldContinue.clear()
+                stderr.write("Mosaic stopping - problem in getCameraScaling: %s\n" % str(e))
+                continue
+
+            # Paint the tile at the stage position at which image was captured.
+            self.canvas.addImage(data,
+                                 ( -pos[0] + self.offset[0] - width / 2,
+                                    pos[1] - self.offset[1] - height / 2,
+                                    curZ,),
+                                 (width, height), scalings=(minVal, maxVal))
             # Move to the next position in shifted coords.
-            target = (centerX +self.offset[0]+ dx * width,
-                      centerY -self.offset[1]+ dy * height)
+            dx, dy = next(stepper)
+            target = (centerX + self.offset[0] + dx * width,
+                      centerY - self.offset[1] + dy * height)
             try:
                 self.goTo(target, True)
-            except:
-                # On any movement error, terminate the mosaic cleanly.
-                self.exitMosaicLoop()
-                raise
-            prevPosition = (centerX + dx * width,
-                      centerY + dy * height)
-            curZ = cockpit.interfaces.stageMover.getPositionForAxis(2)-self.offset[2]
-
-
-    def exitMosaicLoop(self):
-        self.shouldEndOldMosaic = False
-        self.shouldPauseMosaic = False
-        self.amGeneratingMosaic = False
-        self.nameToButton['Run mosaic'].SetLabel('Run mosaic')
-        self.mosaicGenerationLock.release()
+            except Exception as e:
+                self.shouldContinue.clear()
+                stderr.write("Mosaic stopping - problem in target calculation: %s\n" % str(e))
+                continue
 
 
     ## Display dialogue box to set tile overlap.
     def setTileOverlap(self):
         value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
                     self.GetParent(),
-                    "Set mosiac tile overlap.",
+                    "Set mosaic tile overlap.",
                     "Tile overlap in %",
                     self.overlap,
                     atMouse=True)
@@ -765,11 +805,10 @@ class MosaicWindow(wx.Frame):
         cockpit.util.userConfig.setValue('mosaicTileOverlap', self.overlap, isGlobal=False)
 
 
-
     ## Transfer an image from the active camera (or first camera) to the
     # mosaic at the current stage position.
     def transferCameraImage(self):
-        camera = self.prevMosaicCamera
+        camera = self.camera
         if camera is None or not camera.getIsEnabled():
             # Select the first active camera.
             for cam in depot.getHandlersOfType(depot.CAMERA):
@@ -822,7 +861,8 @@ class MosaicWindow(wx.Frame):
         cockpit.interfaces.stageMover.saveSite(
                 cockpit.interfaces.stageMover.Site(position, None, color,
                         size = self.crosshairBoxSize))
-        self.Refresh()
+        # Publish mosaic update event to update this and other views (e.g. touchscreen).
+        events.publish('mosaic update')
 
 
     ## Set the site marker color.
@@ -897,21 +937,6 @@ class MosaicWindow(wx.Frame):
         self.focalPlaneParams = None
 
 
-    ## Go to the specified XY position. If we have a focus plane defined,
-    # go to the appropriate Z position to maintain focus.
-    def goTo(self, target, shouldBlock = False):
-        if self.focalPlaneParams:
-            targetZ = self.getFocusZ(target)
-            cockpit.interfaces.stageMover.goTo((target[0], target[1], targetZ),
-                    shouldBlock)
-        else:
-            #IMD 20150306 Save current mover, change to coarse to generate mosaic
-			# do move, and change mover back.			
-            originalMover= cockpit.interfaces.stageMover.mover.curHandlerIndex
-            cockpit.interfaces.stageMover.mover.curHandlerIndex = 0
-            cockpit.interfaces.stageMover.goToXY(target, shouldBlock)
-            cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
-
     ## Calculate the Z position in focus for a given XY position, according
     # to our focal plane parameters.
     def getFocusZ(self, point):
@@ -929,7 +954,8 @@ class MosaicWindow(wx.Frame):
             text = self.sitesBox.GetString(item)
             siteID = int(text.split(':')[0])
             self.selectedSites.add(cockpit.interfaces.stageMover.getSite(siteID))
-        self.Refresh()
+        # Refresh this and other mosaic views.
+        events.publish('mosaic update')
 
 
     ## User double-clicked on a site in the sites box; go to that site.
@@ -960,6 +986,9 @@ class MosaicWindow(wx.Frame):
             self.selectedSites.remove(cockpit.interfaces.stageMover.getSite(siteID))
             cockpit.interfaces.stageMover.deleteSite(siteID)
             self.sitesBox.Delete(item)
+        ## Deselect everything to work around issue #408 (under gtk,
+        ## deleting items will move the selection to the next item)
+        self.sitesBox.SetSelection(wx.NOT_FOUND)
         self.Refresh()
 
 
@@ -1035,29 +1064,18 @@ class MosaicWindow(wx.Frame):
     # available, then we just do the mosaic.
     def displayMosaicMenu(self):
         # If we're already running a mosaic, stop it instead.
-        if self.amGeneratingMosaic:
-            self.onAbort()
-            self.amGeneratingMosaic = False
+        if self.shouldContinue.is_set():
+            self.shouldContinue.clear()
             return
 
         self.showCameraMenu("Make mosaic with %s camera",
                 self.generateMosaic)
 
 
-    ## Display a menu to the user letting them choose which camera
-    # to use to continue generating a pre-existing mosaic. Very
-    # similar to self.displayMosaicMenu.
+    ## Force continuation of mosaic after stage move.
     def continueMosaic(self):
-        # If we're already running a mosaic, stop it instead.
-        if self.amGeneratingMosaic:
-            self.onAbort()
-            self.amGeneratingMosaic = False
-            return
-
-        self.shouldPauseMosaic = False
-        self.amGeneratingMosaic = True
-        self.nameToButton['Run mosaic'].SetLabel('Stop mosaic')
-        events.publish('mosaic start') 
+        self.shouldRestart = False
+        self.toggleMosaic()
 
 
     ## Generate a menu where the user can select a camera to use to perform
@@ -1102,15 +1120,18 @@ class MosaicWindow(wx.Frame):
 
     ## Delete all tiles in the mosaic, after prompting the user for
     # confirmation.
+    @_pauseMosaicLoop
     def onDeleteAllTiles(self, event = None):
         if not cockpit.gui.guiUtils.getUserPermission(
                 "Are you sure you want to delete every tile in the mosaic?",
                 "Delete confirmation"):
             return
         self.canvas.deleteAll()
+        self.shouldRestart = True
 
 
     ## Rescale each tile according to that tile's own values.
+    @_pauseMosaicLoop
     def autoscaleTiles(self, event = None):
         self.canvas.rescale(None)
 
@@ -1123,6 +1144,7 @@ class MosaicWindow(wx.Frame):
 
     ## Given a camera handler, rescale the mosaic tiles based on that
     # camera's display's black- and white-points.
+    @_pauseMosaicLoop
     def rescaleWithCamera(self, camera):
         self.canvas.rescale(cockpit.gui.camera.window.getCameraScaling(camera))
 
@@ -1306,7 +1328,7 @@ class MosaicWindow(wx.Frame):
     ## Handle the user clicking the abort button.
     def onAbort(self, *args):
         if self.amGeneratingMosaic:
-            self.shouldPauseMosaic = True
+            self.shouldContinue.clear()
         events.publish('mosaic stop')
         self.nameToButton['Run mosaic'].SetLabel('Run mosaic')
         # Stop deleting tiles, while we're at it.
@@ -1329,4 +1351,3 @@ def makeWindow(parent):
 ## Transfer a camera image to the mosaic.
 def transferCameraImage():
     window.transferCameraImage()
-
