@@ -196,7 +196,7 @@ class StageMover:
                             event.wait(30)
                         except Exception as e:
                             print ("Failed waiting for stage to stop after 30s")
-                            
+
 
 
 ## Global singleton.
@@ -434,12 +434,13 @@ def getAllPositions():
 # If there's no controller for a given axis under the current step index,
 # then return None for that axis.
 def getCurStepSizes():
-    result = []
+    result = [None] * len(mover.axisToHandlers)
     for axis, handlers in iteritems(mover.axisToHandlers):
         if mover.curHandlerIndex < len(handlers):
-            result.append(handlers[mover.curHandlerIndex].getStepSize())
+            step_size = handlers[mover.curHandlerIndex].getStepSize()
         else:
-            result.append(None)
+            step_size = None
+        result[axis] = step_size
     return tuple(result)
 
 
@@ -528,7 +529,9 @@ def setSoftMax(axis, value):
 # use it if it's superior, on the assumption that users will typically
 # select sites in some basically sane order.
 # \param baseOrder List of site IDs.
-def optimizeSiteOrder(baseOrder):
+def optimisedSiteOrder(baseOrder):
+    if len(baseOrder) == 0:
+        return []
     markedPoints = set()
     pointsInOrder = []
     totalTourCost = 0
@@ -566,5 +569,5 @@ def optimizeSiteOrder(baseOrder):
     if simpleTourCost < totalTourCost:
         # Nearest-neighbor is worse than just going in the
         # user-specified order
-        return baseOrder
+        return baseOrder.copy()
     return pointsInOrder
