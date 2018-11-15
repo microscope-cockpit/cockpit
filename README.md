@@ -22,6 +22,10 @@ https://docs.python.org/3/using/windows.html#excursus-setting-environment-variab
 https://sourceforge.net/projects/ftgl/
 
 
+3a. Download and install PIL asd this is a wx dependency which is noty
+installed by wx. 
+```pip install Pillow```
+
 4. Obtain the cockpit source:
 ```git clone git@github.com:MicronOxford/cockpit.git```
 
