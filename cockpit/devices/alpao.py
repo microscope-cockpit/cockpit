@@ -599,6 +599,11 @@ class Alpao(device.Device):
         #Subscribe to camera events
         events.subscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
 
+        #Initialise Fourier ring mask
+        self.objectives = cockpit.depot.getHandlersOfType(cockpit.depot.OBJECTIVE)[0]
+        self.pixelSize = self.objectives.getPixelSize()
+        self.proxy.set_sensorless_ring_mask(size = self.curCamera.getImageSize(), pixel_size = self.pixelSize)
+
         #Initialise the Zernike modes to apply
         z_steps = np.linspace(-3,3,4)
         self.zernike_applied = np.zeros((z_steps.shape[0]*self.nollZernike.shape[0],self.no_actuators))
