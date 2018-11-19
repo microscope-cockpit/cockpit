@@ -1,4 +1,23 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+##
+## This file implements a CSV data plotter using wxPython.
+##
+## This file is free software: you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
+##
+## This file is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this file.  If not, see <http://www.gnu.org/licenses/>.
+
 import csv
 import glob
 import matplotlib
@@ -14,7 +33,7 @@ from matplotlib import colors
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 
-DEBUG = True
+DEBUG = False
 
 # We use images of size BMP_SIZE in the tree to act as a legend.
 BMP_SIZE = (16, 16)
@@ -105,10 +124,15 @@ class DataSource:
         delimiter = self._dialect.delimiter
         cols = range(1,len(self._headers))
         converters = {col: lambda val: float(val.strip() or 'nan') for col in cols}
-        self._xdata = np.loadtxt(self.path, dtype='datetime64', usecols=0,
-                                delimiter=delimiter, skiprows=skiprows, unpack=True)
-        self._ydata = np.loadtxt(self.path, usecols=cols, converters=converters,
-                                delimiter=delimiter, skiprows=skiprows, unpack=True)
+        try:
+            self._xdata = np.loadtxt(self.path, dtype='datetime64', usecols=0,
+                                     delimiter=delimiter, skiprows=skiprows, unpack=True)
+            self._ydata = np.loadtxt(self.path, usecols=cols, converters=converters,
+                                     delimiter=delimiter, skiprows=skiprows, unpack=True)
+        except:
+            self._xdata = None
+            self._ydata = None
+            return
         if self._ydata.ndim == 1:
             self._ydata = self._ydata.reshape((1, -1))
         if self._xdata.size and self._ydata.size:
@@ -134,11 +158,22 @@ class DataSource:
         return rows_added
 
 
-class ValueLogViewer(wx.Frame):
+class CSVPlotter(wx.Frame):
+    """This class implements CSVPlotter.
+
+    The window displays a tree of source files and the columns available in those
+    files, and a matplotlib plot with a single horizontal axis, and a pair of vertical axes.
+
+    Items selected in the tree are displayed on the plot.
+    Right-clicking on an item in the tree shows a context menu that allows a trace to be moved
+    between the left and right vertical axes.
+    The tree also serves as a plot legend, showing the colour of the trace for plotted data, and
+    the letter 'L' or 'R' to indicate whether the trace is on the _L_eft or _R_ight axis.
+    """
     def __init__(self, *args, **kwargs):
-        """ValueLogViewer instance"""
+        """CSVPlotter instance"""
         kwargs['title'] = "value log viewer"
-        super(ValueLogViewer, self).__init__(*args, **kwargs)
+        super(CSVPlotter, self).__init__(*args, **kwargs)
         self.fn_to_src = {}
         self.item_to_trace = {}
         self.trace_to_item = {}
@@ -162,6 +197,7 @@ class ValueLogViewer(wx.Frame):
 
 
     def _on_remove_all(self, evt):
+        """Remove all items from the tree."""
         style = wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION
         with wx.MessageDialog(self, "Remove all data sources?", style=style) as md:
             if md.ShowModal() == wx.ID_NO:
@@ -176,6 +212,7 @@ class ValueLogViewer(wx.Frame):
 
 
     def _on_select_file(self, evt):
+        """Display a dialog to allow selection of a data source file."""
         style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE |wx.FD_CHANGE_DIR
         with wx.FileDialog(self, "Open files", style=style) as fd:
             if fd.ShowModal() == wx.ID_CANCEL:
@@ -184,6 +221,7 @@ class ValueLogViewer(wx.Frame):
 
 
     def _on_select_folder(self, evt):
+        """Display a dialog to allow selection of a folder of data sources."""
         style = wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST | wx.DD_CHANGE_DIR
         with wx.DirDialog(self, "Open folder", style=style) as fd:
             if fd.ShowModal() == wx.ID_CANCEL:
@@ -313,6 +351,7 @@ class ValueLogViewer(wx.Frame):
 
 
     def swap_axis(self, node):
+        """Move a trace from one vertical axis to the other."""
         trace = self.item_to_trace.get(node)
         if trace is None:
             return
@@ -389,7 +428,7 @@ class ValueLogViewer(wx.Frame):
             if xlen <= 2:
                 empty_nodes.update([node, self.tree.GetItemParent(node)])
                 continue
-            if all(np.isnan(src.ydata[col_num])):
+            if src.ydata is None or all(np.isnan(src.ydata[col_num])):
                 empty_nodes.update([node])
                 continue
             try:
@@ -429,6 +468,7 @@ class ValueLogViewer(wx.Frame):
 
 
     def del_data_source(self, node):
+        """Delete a data source by its node id."""
         self.tree.SetEvtHandlerEnabled(False)
         parent = self.tree.GetItemParent(node)
         if  parent != self.tree.RootItem:
@@ -486,7 +526,7 @@ if __name__ == "__main__":
     from wx.lib.inspection import InspectionTool
 
     app = wx.App(False)
-    window = ValueLogViewer(None)
+    window = CSVPlotter(None)
     window.add_data_sources(filenames, defer_open=True)
     window.Show()
     if DEBUG:
