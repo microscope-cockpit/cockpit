@@ -112,7 +112,9 @@ class PollingLogger(ValueLogger):
 
 
     def setPeriod(self, dt):
-        """Set polling period, updating tNext and notifying worker thread."""
+        """Set polling period, updating tNext and notifying worker thread.
+        :param dt:   polling period in seconds
+        """
         with self.__condition:
             self.tNext = self.tNext - self.dt + dt
             self.dt = dt
@@ -128,7 +130,7 @@ class PollingLogger(ValueLogger):
 
 
     def __work(self):
-        """Periodically poll and log values."""
+        """Worker thread target: periodically poll and log values."""
         while not self.__stopEvent.isSet():
             self.__condition.acquire()
             if self.__condition.wait(self.tNext - time.time()):
