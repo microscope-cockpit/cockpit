@@ -3,6 +3,10 @@
 
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
 ##
+## Latest version available at
+##     https://github.com/mickp/csv_plotter
+##     git@github.com:mickp/csv_plotter.git
+##
 ## This file implements a CSV data plotter using wxPython.
 ##
 ## This file is free software: you can redistribute it and/or modify
