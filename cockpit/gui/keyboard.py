@@ -182,15 +182,18 @@ def martialWindows(parent):
 
     # Add item to launch valueLogViewer.
     from subprocess import Popen
+    from sys import platform
     from cockpit.util import valueLogger
+    from cockpit.util import csv_plotter
     menu.Append(menuId, "Launch ValueLogViewer")
     logs = valueLogger.ValueLogger.getLogFiles()
     if not logs:
         menu.Enable(menuId, False)
     else:
-        args = ['python', 'cockpit/util/valueLogViewer.py'] + logs
+        shell = platform == 'win32'
+        args = ['python', csv_plotter.__file__] + logs
         parent.Bind(wx.EVT_MENU,
-                    lambda e: Popen(args, shell=True),
+                    lambda e: Popen(args, shell=shell),
                     id = menuId)
     menuId += 1
 
