@@ -239,7 +239,7 @@ class BoulderSLM(device.Device):
     def getHandlers(self):
         trigsource = self.config.get('triggersource', None)
         trigline = self.config.get('triggerline', None)
-        dt = self.config.get('settlingtime', 10)
+        dt = decimal.Decimal(self.config.get('settlingtime', 10))
         result = []
         self.handler = cockpit.handlers.executor.DelegateTrigger(
             "slm", "slm group", True,
