@@ -288,8 +288,8 @@ class CSVPlotter(wx.Frame):
 
         # Create am imagelist so the tree also acts as a legend.
         # The 0th element is a bitmap with the tree's background colour.
-        iml = wx.ImageList(*BMP_SIZE, False, 0)
-        iml.Add(wx.Bitmap.FromRGBA(*BMP_SIZE, *self.tree.GetBackgroundColour() ))
+        iml = wx.ImageList(*BMP_SIZE, mask=False, initialCount=0)
+        iml.Add(wx.Bitmap.FromRGBA(BMP_SIZE[0], BMP_SIZE[1], *self.tree.GetBackgroundColour() ))
         for hex in sorted(C_TO_I, key=C_TO_I.get):
             iml.Add(make_bitmap(hex, 'L'))
             iml.Add(make_bitmap(hex, 'R'))
