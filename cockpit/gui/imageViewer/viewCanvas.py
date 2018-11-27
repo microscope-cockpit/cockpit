@@ -123,6 +123,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.imageMin = self.imageMax = 0
         ## Percentile scaling of min/max based on our histogram.
         self.blackPoint, self.whitePoint = 0.0, 1.0
+        ## Absolute scaling values.
+        self.scaling = (None, None)
 
         ## Size of image we've received, which we use for determining
         # scale.
@@ -331,6 +333,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         if newMin is None or newMax is None:
             # No image; can't do anything.
             return
+        self.scaling = (newMin, newMax)
         for i in range(self.tileShape[0]):
             for j in range(self.tileShape[1]):
                 self.tiles[i][j].setMinMax(newMin, newMax)
@@ -343,16 +346,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Return the blackpoint and whitepoint (i.e. the pixel values which
     # are displayed as black and white, respectively).
     def getScaling(self):
-        if self.imageData is None or len(self.tiles) == 0:
-            # No image to operate on yet.
-            return (None, None)
-        # Used to query image data for imageMin and imageMax, but could this
-        # occasionally hit an indexing error on the first image when images
-        # were arriving fast. Just do the simple arithmetic here.
-        #return (self.tiles[0][0].imageMin, self.tiles[0][0].imageMax)
-        imageRange = (self.imageMax - self.imageMin)
-        return (self.blackPoint * imageRange + self.imageMin,
-                self.whitePoint * imageRange + self.imageMin)
+        return self.scaling
 
 
     ## As above, but the values used to calculate them instead of the
