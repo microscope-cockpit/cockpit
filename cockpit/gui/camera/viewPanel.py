@@ -221,6 +221,9 @@ class ViewPanel(wx.Panel):
     ## Get the black- and white-point for the view.
     def getScaling(self):
         return self.canvas.getScaling()
+## Get the black- and white-point for the view.
+    def getCurrentScaling(self):
+        return self.canvas.getCurrentScaling()
 
 
     ## As above, but the relative values used to generate them instead.
