@@ -354,6 +354,12 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         return (self.blackPoint * imageRange + self.imageMin,
                 self.whitePoint * imageRange + self.imageMin)
 
+    def getCurrentScaling(self):
+        if self.imageData is None or len(self.tiles) == 0:
+            # No image to operate on yet.
+            return (None, None)
+        return(self.tiles[0][0].imageMin, self.tiles[0][0].imageMax)
+
 
     ## As above, but the values used to calculate them instead of the
     # absolute pixel values (e.g. (.1, .9) instead of (100, 400).
