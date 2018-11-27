@@ -768,7 +768,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             # Get the scaling for the camera we're using, since they may
             # have changed.
             try:
-                minVal, maxVal = cockpit.gui.camera.window.getCameraScaling(camera)
+                minVal, maxVal = cockpit.gui.camera.window.getCurrentCameraScaling(camera)
             except Exception as e:
                 # Go to idle state.
                 self.shouldContinue.clear()
@@ -826,7 +826,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                                     y-self.offset[1] - height / 2,
                                     z-self.offset[2]),
                 (width, height),
-                scalings = cockpit.gui.camera.window.getCameraScaling(camera))
+                scalings = cockpit.gui.camera.window.getCurrentCameraScaling(camera))
         self.Refresh()
 
     def togglescalebar(self):
@@ -1146,7 +1146,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     # camera's display's black- and white-points.
     @_pauseMosaicLoop
     def rescaleWithCamera(self, camera):
-        self.canvas.rescale(cockpit.gui.camera.window.getCameraScaling(camera))
+        self.canvas.rescale(cockpit.gui.camera.window.getCurrentCameraScaling(camera))
 
 
     ## Save the mosaic to disk. We generate a text file describing the
