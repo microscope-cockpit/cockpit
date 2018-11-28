@@ -168,8 +168,6 @@ class CockpitApp(wx.App):
             #                            isGlobal = True, default= 0) is 1):
             import cockpit.gui.touchscreen.touchscreen
             cockpit.gui.touchscreen.touchscreen.makeWindow(frame)
-            import cockpit.gui.valueLogger
-            cockpit.gui.valueLogger.makeWindow(frame)
             from cockpit.util import intensity
             intensity.makeWindow(frame)
             # All secondary windows created.

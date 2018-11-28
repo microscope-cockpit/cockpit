@@ -505,7 +505,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                 # X pixel size, Y pixel size, blackpoint, whitepoint, layer.
                 # We'll have to convert the pixel sizes and layer to
                 # ints later.
-                tileStats.append(map(float, line.strip().split(',')))
+                tileStats.append(list(map(float, line.strip().split(','))))
         numInitialTiles = len(self.tiles)
         try:
             doc = cockpit.util.datadoc.DataDoc(mrcPath)

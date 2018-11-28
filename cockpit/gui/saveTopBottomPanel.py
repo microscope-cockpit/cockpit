@@ -69,6 +69,8 @@ bottomPosControl = None
 ## Text label for the total height of the stack. 
 zStackHeightLabel = None
 
+savedTop = None
+savedBottom = None
 
 ## Create and lay out the "save top/bottom" panel, which allows the user to 
 # remember Z levels of interest.
