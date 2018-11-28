@@ -21,6 +21,7 @@
 
 
 from . import device
+from cockpit.util import valueLogger
 from cockpit import depot
 from cockpit import events
 import cockpit.gui.toggleButton
@@ -111,26 +112,12 @@ class NI6036e(device.Device):
                 
         self.lightPathButtons = []
 
-#        # A thread to publish status updates.
-#        # This reads temperature updates from the RaspberryPi
-#        self.statusThread = threading.Thread(target=self.updateStatus)
-#        self.statusThread.Daemon = True
-#        self.statusThread.start()
- 
         ## Current light path mode.
         self.curExMode = None
         self.curStageMode = None
         self.curDetMode = None
 
-
-        #Now done via the value logger.
-        # ## Matplotlib Figure of temperature data.
-        # self.figure = None
-        # ## Matplotlib canvas for the plot.
-        # self.canvas = None
-        # ## History of data we have received. Most recent datapoints are at
-        # # the beginning of the array.
-        # self.temperatureHistory = numpy.zeros((2, 10))
+        self.logger = valueLogger.ValueLogger(name)
 
 
     ## Connect to the remote program, and set widefield mode.
@@ -303,14 +290,10 @@ class NI6036e(device.Device):
 
     ## Receive temperature data from the remote program's sensors.
     def receiveTemperatureData(self, *args):
-        timepoint = args[1]
+        timepoint = args[1] # TODO? convert to datetime and pass to log call, below.
         values = args[2]
-        # Push all existing data over one timepoint and insert the new
-        # data at the beginning.
-        for i in range(len(values)):
-                           events.publish("status update",
-                           'NIcard',
-                           {'temperature'+str(i): values[i],})
+        self.logger.log(values)
+
 
     def onObjectiveChange(self, name, pixelSize, transform, offset):
         if name not in self.objectiveToFlips:

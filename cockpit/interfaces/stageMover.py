@@ -187,8 +187,8 @@ class StageMover:
         for axis, target in position:
             # Get the offset for the movers that aren't being adjusted.
             offset = 0
-            for i, handler in enumerate(self.axisToHandlers[axis]):
-                if i != self.curHandlerIndex:
+            for handler in self.axisToHandlers[axis]:
+                if handler != self.axisToHandlers[axis][self.curHandlerIndex]:
                     offset += handler.getPosition()
 
             handler = self.axisToHandlers[axis][self.curHandlerIndex]
@@ -409,7 +409,7 @@ def loadSites(filename):
 def getPosition():
     result = 3 * [0]
     for axis, handlers in iteritems(mover.axisToHandlers):
-        for handler in handlers:
+        for handler in set(handlers):
             result[axis] += handler.getPosition()
     return result
 
@@ -417,7 +417,7 @@ def getPosition():
 ## Return the exact stage position for the given axis.
 def getPositionForAxis(axis):
     result = 0
-    for handler in mover.axisToHandlers[axis]:
+    for handler in set(mover.axisToHandlers[axis]):
         result += handler.getPosition()
     return result
 
@@ -456,7 +456,7 @@ def getCurHandlerIndex():
 def getHardLimitsForAxis(axis):
     lowLimit = 0
     highLimit = 0
-    for handler in mover.axisToHandlers[axis]:
+    for handler in set(mover.axisToHandlers[axis]):
         low, high = handler.getHardLimits()
         lowLimit += low
         highLimit += high
@@ -481,7 +481,7 @@ def getIndividualHardLimits(axis):
 def getSoftLimitsForAxis(axis):
     lowLimit = 0
     highLimit = 0
-    for handler in mover.axisToHandlers[axis]:
+    for handler in set(mover.axisToHandlers[axis]):
         low, high = handler.getSoftLimits()
         lowLimit += low
         highLimit += high
