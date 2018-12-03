@@ -648,10 +648,10 @@ class Alpao(device.Device):
             np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_correction_stack", self.correction_stack)
 
             #Find aberration amplitudes and correct
-            sensorless_correct_coef = self.proxy.get_zernike_modes_sensorless(self.correction_stack,
+            sensorless_correct_coef, ac_pos_sensorless = self.proxy.correct_sensorless_all_modes(self.correction_stack,
                                                                               self.zernike_applied, self.nollZernike)
             np.save("C:\\cockpit\\nick\\cockpit\\sensorless_correct_coef", sensorless_correct_coef)
-            self.proxy.send(sensorless_correct_coef)
+            np.save("C:\\cockpit\\nick\\cockpit\\ac_pos_sensorless", ac_pos_sensorless)
 
 ## This debugging window lets each digital lineout of the DSP be manipulated
 # individually.
