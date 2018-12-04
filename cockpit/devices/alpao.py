@@ -602,10 +602,10 @@ class Alpao(device.Device):
         #Initialise Fourier ring mask
         self.objectives = cockpit.depot.getHandlersOfType(cockpit.depot.OBJECTIVE)[0]
         self.pixelSize = self.objectives.getPixelSize()
-        self.proxy.set_sensorless_ring_mask(size = self.curCamera.getImageSize(), pixel_size = self.pixelSize)
+        self.proxy.set_sensorless_ring_mask(size = self.curCamera.getImageSize(), pixel_size = self.pixelSize * 10 ** -6)
 
         #Initialise the Zernike modes to apply
-        z_steps = np.linspace(-3,3,4)
+        z_steps = np.linspace(-1.25,1.25,6)
         self.zernike_applied = np.zeros((z_steps.shape[0]*self.nollZernike.shape[0],self.no_actuators))
         for noll_ind in self.nollZernike:
             ind = np.where(self.nollZernike == noll_ind)[0][0]
@@ -646,10 +646,14 @@ class Alpao(device.Device):
             #Save full stack of images used
             self.correction_stack = np.asarray(self.correction_stack)
             np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_correction_stack", self.correction_stack)
+            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_zernike_applied", self.zernike_applied)
+            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_nollZernike", self.nollZernike)
 
             #Find aberration amplitudes and correct
             sensorless_correct_coef, ac_pos_sensorless = self.proxy.correct_sensorless_all_modes(self.correction_stack,
                                                                               self.zernike_applied, self.nollZernike)
+            print("Aberrations measured: ", sensorless_correct_coef)
+            print("Actuator positions applied: ", ac_pos_sensorless)
             np.save("C:\\cockpit\\nick\\cockpit\\sensorless_correct_coef", sensorless_correct_coef)
             np.save("C:\\cockpit\\nick\\cockpit\\ac_pos_sensorless", ac_pos_sensorless)
 
