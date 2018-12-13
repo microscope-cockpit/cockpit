@@ -485,11 +485,11 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
     def laserToggle(self, event, light, button):
         if event.GetIsDown():
             light.setEnabled(True)
-            events.publish('light source enable', light, True)
+            events.publish(events.LIGHT_SOURCE_ENABLE, light, True)
         else:
             light.setEnabled(False)
             button.SetBackgroundColour(BACKGROUND_COLOUR)
-            events.publish('light source enable', light, False)
+            events.publish(events.LIGHT_SOURCE_ENABLE, light, False)
 
 
     def laserPowerUpdate(self, light):

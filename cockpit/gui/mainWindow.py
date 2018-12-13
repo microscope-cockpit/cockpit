@@ -249,6 +249,9 @@ class MainWindow(wx.Frame):
         self.bottomPanel.SetBackgroundColour((170, 170, 170))
         bottomSizer = wx.BoxSizer(wx.VERTICAL)
 
+        import cockpit.gui.lights
+        bottomSizer.Add(cockpit.gui.lights.LightControlsPanel(self.bottomPanel))
+
         label = wx.StaticText(self.bottomPanel, -1, "Illumination controls:")
         label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         bottomSizer.Add(label)

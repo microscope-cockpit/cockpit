@@ -61,7 +61,7 @@ class ShutterDevice(device.Device):
                             self.onPrepareForExperiment)
             events.subscribe('experiment complete',
                             self.onCleanupAfterExperiment)
-            events.subscribe('light source enable', self.onLightSourceEnable)
+            events.subscribe(events.LIGHT_SOURCE_ENABLE, self.onLightSourceEnable)
 
 
     def enableTrigger(self, enable=True):
