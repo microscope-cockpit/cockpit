@@ -176,7 +176,7 @@ class NIcRIO(device.Device):
         control directly that we need to know about.
         '''
         events.subscribe('camera enable', self.toggleCamera)
-        events.subscribe('light source enable', self.toggleLightHandler)
+        events.subscribe(events.LIGHT_SOURCE_ENABLE, self.toggleLightHandler)
         events.subscribe('user abort', self.onAbort)
         events.subscribe('prepare for experiment', self.onPrepareForExperiment)
         events.subscribe('cleanup after experiment', self.cleanupAfterExperiment)

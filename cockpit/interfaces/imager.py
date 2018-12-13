@@ -94,7 +94,7 @@ class Imager:
                 lambda c, isOn: self.toggle(self.activeCameras, c, isOn))
         ## Set of active light sources, so we can check their exposure times.
         self.activeLights = set()
-        events.subscribe('light source enable',
+        events.subscribe(events.LIGHT_SOURCE_ENABLE,
                 lambda l, isOn: self.toggle(self.activeLights, l, isOn))
         ## Time of last call to takeImage(), so we can avoid calling it
         # faster than the time it takes to actually collect another image.
@@ -106,7 +106,7 @@ class Imager:
         events.subscribe('user abort', self.stopVideo)
         # Update exposure times on certain events.
         events.subscribe('light exposure update', self.updateExposureTime)
-        events.subscribe('light source enable', lambda *args: self.updateExposureTime())
+        events.subscribe(events.LIGHT_SOURCE_ENABLE, lambda *args: self.updateExposureTime())
         events.subscribe('camera enable', lambda *args: self.updateExposureTime())
 
 
