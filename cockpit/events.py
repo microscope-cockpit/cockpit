@@ -62,6 +62,7 @@ import traceback
 
 ## Define common event strings here. This way, they're here for reference,
 # and can be used elsewhere to avoid errors due to typos.
+DEVICE_STATUS = 'device status'
 EXPERIMENT_EXECUTION = 'experiment execution'
 EXPERIMENT_COMPLETE = 'experiment complete'
 UPDATE_STATUS_LIGHT = 'update status light'
