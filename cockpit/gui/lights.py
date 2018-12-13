@@ -20,26 +20,54 @@
 
 import wx
 from cockpit import depot
-from cockpit.events import LIGHT_SOURCE_ENABLE
+from cockpit.events import DEVICE_STATUS
 from cockpit.gui import CockpitEvent, EvtEmitter, EVT_COCKPIT
+from cockpit.handlers.deviceHandler import STATES
 
 BMP_SIZE=(16,16)
 
-BMP_OFF = wx.Bitmap.FromRGBA(*BMP_SIZE, red=255, green=0, blue=0,
+BMP_OFF = wx.Bitmap.FromRGBA(*BMP_SIZE, red=0, green=32, blue=0,
                              alpha=wx.ALPHA_OPAQUE)
 BMP_ON = wx.Bitmap.FromRGBA(*BMP_SIZE, red=0, green=255, blue=0,
                              alpha=wx.ALPHA_OPAQUE)
+BMP_WAIT = wx.Bitmap.FromRGBA(*BMP_SIZE, red=255, green=165, blue=0,
+                              alpha=wx.ALPHA_OPAQUE)
+BMP_ERR = wx.Bitmap.FromRGBA(*BMP_SIZE, red=255, green=0, blue=0,
+                             alpha=wx.ALPHA_OPAQUE)
+
 
 
 class LightPanel(wx.Panel):
     def __init__(self, parent, lightToggle, lightPower=None, lightFilters=[]):
         super().__init__(parent)
+        self.light = lightToggle
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.button = wx.ToggleButton(self, -1, lightToggle.name)
         self.button.SetBitmap(BMP_OFF)
-        self.button.Bind(wx.EVT_TOGGLEBUTTON,
-                         lambda evt: lightToggle.setEnabled(evt.EventObject.Value))
+        self.button.Bind(wx.EVT_TOGGLEBUTTON, self.light.toggleState)
         self.Sizer.Add(self.button)
+
+        listener = EvtEmitter(self, DEVICE_STATUS)
+        listener.Bind(EVT_COCKPIT, self.onStatus)
+
+
+    def onStatus(self, evt):
+        light, state = evt.EventData
+        if light != self.light:
+            return
+        print(state)
+        if state == STATES.enabling:
+            self.button.Disable()
+            self.button.SetBitmap(BMP_WAIT)
+        else:
+            self.button.Enable()
+        if state == STATES.enabled:
+            self.button.SetBitmap(BMP_ON)
+        elif state == STATES.disabled:
+            self.button.SetBitmap(BMP_OFF)
+        elif state == STATES.error:
+            self.button.SetBitmap(BMP_ERR)
+
 
 
 
@@ -61,13 +89,5 @@ class LightControlsPanel(wx.Panel):
             self.Sizer.Add(panel)
             self.panels[light] = panel
         self.Fit()
-
-        listener = EvtEmitter(self, LIGHT_SOURCE_ENABLE)
-        listener.Bind(EVT_COCKPIT, self.onLightSourceEnable)
-
-    def onLightSourceEnable(self, evt):
-        light, state = evt.EventData
-        if light in self.panels:
-            self.panels[light].button.SetBitmap([BMP_OFF, BMP_ON][state])
 
 

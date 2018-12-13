@@ -54,7 +54,7 @@ import threading
 
 from six.moves import filter
 
-import cockpit.events
+from cockpit import events
 import cockpit.util.threads
 import sys
 
@@ -220,37 +220,37 @@ class DeviceHandler(object):
         # If this is our first listener, subscribe this handler to enable event.
         if self.listeners is None:
             self.listeners = set()
-            cockpit.events.subscribe(self.deviceType + ' enable',
-                                     self.notifyListeners)
+            #events.subscribe(self.deviceType + ' enable',
+            #                         self.notifyListeners)
         self.listeners.add(listener)
 
 
-    ## Notify listeners that our device's state has changed.
-    def notifyListeners(self, source, *args, **kwargs):
-        if not self.listeners:
-            return
-        if source is not self:
-            return
-        if args[0] is True:
-            self._state = STATES.enabled
-        elif args[0] is False:
-            self._state = STATES.disabled
-        else:
-            self._state = args[0]
-        # Update our set of listeners to remove those that are no longer valid.
-        # (e.g. UI elements that have been destroyed)
-        self.listeners.difference_update(
-            [thing for thing in filter(lambda x: not(x), self.listeners)])
-        # Notify valid listeners.
-        for thing in self.listeners:
-            try:
-                thing.onEnabledEvent(self._state)
-            except Exception as e:
-                # A UI element may have been destroyed since we updated the list.
-                # Warn of the problem, but continue to update other listeners.
-                sys.stderr.write(("Exception in %s.notifyListeners() " +
-                                  "when notifying listener %s of state " +
-                                  "change.\n\t%s\n") % (self, thing, e))
+    # ## Notify listeners that our device's state has changed.
+    # def notifyListeners(self, source, *args, **kwargs):
+    #     if not self.listeners:
+    #         return
+    #     if source is not self:
+    #         return
+    #     if args[0] is True:
+    #         self._state = STATES.enabled
+    #     elif args[0] is False:
+    #         self._state = STATES.disabled
+    #     else:
+    #         self._state = args[0]
+    #     # Update our set of listeners to remove those that are no longer valid.
+    #     # (e.g. UI elements that have been destroyed)
+    #     self.listeners.difference_update(
+    #         [thing for thing in filter(lambda x: not(x), self.listeners)])
+    #     # Notify valid listeners.
+    #     for thing in self.listeners:
+    #         try:
+    #             thing.onEnabledEvent(self._state)
+    #         except Exception as e:
+    #             # A UI element may have been destroyed since we updated the list.
+    #             # Warn of the problem, but continue to update other listeners.
+    #             sys.stderr.write(("Exception in %s.notifyListeners() " +
+    #                               "when notifying listener %s of state " +
+    #                               "change.\n\t%s\n") % (self, thing, e))
 
 
     ## A function that any control can call to toggle enabled/disabled state.
@@ -265,14 +265,18 @@ class DeviceHandler(object):
         if not self.enableLock.acquire(False):
             return
 
-        self.notifyListeners(self, STATES.enabling)
+        #self.notifyListeners(self, STATES.enabling)
+        events.publish(events.DEVICE_STATUS, self, STATES.enabling)
         try:
             self.setEnabled(not(self.getIsEnabled()))
+            import time
+            time.sleep(1)
         except Exception as e:
-            self.notifyListeners(self, STATES.error)
+            events.publish(events.DEVICE_STATUS, self, STATES.error)
             raise Exception('Problem encountered en/disabling %s:\n%s' % (self.name, e))
         finally:
             self.enableLock.release()
+            events.publish(events.DEVICE_STATUS, self, self.getIsEnabled())
 
     ## Add a toggle event to the action table.
     # Return time of last action, and response time before ready after trigger.
