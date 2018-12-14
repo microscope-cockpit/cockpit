@@ -62,50 +62,64 @@ import cockpit.interfaces.stageMover
 from distutils import version
 from itertools import chain
 
+def onChar(evt):
+    print("MAIN onChar")
+    if isinstance(evt.EventObject, wx.TextCtrl):
+        evt.Skip()
+        return
+    if evt.KeyCode == wx.WXK_NUMPAD_MULTIPLY:
+        cockpit.gui.camera.window.rescaleViews()
+    elif evt.KeyCode == wx.WXK_NUMPAD_DIVIDE:
+        cockpit.interfaces.stageMover.changeMover()
+    elif evt.KeyCode == wx.WXK_NUMPAD_DECIMAL:
+        cockpit.gui.mosaic.window.transferCameraImage()
+    elif evt.KeyCode == wx.WXK_NUMPAD_SUBTRACT:
+        cockpit.interfaces.stageMover.recenterFineMotion()
+    elif evt.KeyCode == wx.WXK_DOWN:
+        # Z down
+        cockpit.interfaces.stageMover.step((0,0,-1))
+    elif evt.KeyCode == wx.WXK_NUMPAD2:
+        # Y down
+        cockpit.interfaces.stageMover.step((0, -1, 0))
+    elif evt.KeyCode == wx.WXK_NUMPAD3:
+        # Decrease delta
+        cockpit.interfaces.stageMover.changeStepSize(-1)
+    elif evt.KeyCode == wx.WXK_NUMPAD4:
+        # X up
+        cockpit.interfaces.stageMover.step((1, 0, 0))
+    elif evt.KeyCode == wx.WXK_NUMPAD5:
+        # Stop motion
+        # TODO: was never handled.
+        pass
+    elif evt.KeyCode == wx.WXK_NUMPAD6:
+        # X down
+        cockpit.interfaces.stageMover.step((-1, 0, 0))
+    elif evt.KeyCode == wx.WXK_UP:
+        # Z up
+        cockpit.interfaces.stageMover.step((0, 0, 1))
+    elif evt.KeyCode == wx.WXK_NUMPAD8:
+        # Y up
+        cockpit.interfaces.stageMover.step((0, 1, 0))
+    elif evt.KeyCode == wx.WXK_NUMPAD9:
+        # Increase delta
+        cockpit.interfaces.stageMover.changeStepSize(1)
+    elif evt.KeyCode in [wx.WXK_NUMPAD_ADD, wx.WXK_NUMPAD0]:
+        # Take image
+        cockpit.interfaces.imager.takeImage()
+
+
 ## Given a wx.Window instance, set up keyboard controls for that instance.
 def setKeyboardHandlers(window):
     accelTable = wx.AcceleratorTable([
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_MULTIPLY, 6903), # Rescale cameras
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_DIVIDE, 6904), # Switch stage control
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_DECIMAL, 6905), # Transfer image to mosaic
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_SUBTRACT, 6906), # Recentre fine motion
-
-        # Move the stage with the keypad
-        (wx.ACCEL_NORMAL, wx.WXK_DOWN, 6311), # Z down
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD2, 6312), # Y down
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD3, 6313), # Decrease delta
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD4, 6314), # X up
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD5, 6315), # Stop motion
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD6, 6316), # X down
-        (wx.ACCEL_NORMAL, wx.WXK_UP, 6317), # Z up
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD8, 6318), # Y up
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD9, 6319), # Increase delta
-
-        # Take an image
-        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_ADD, 6320),
-		(wx.ACCEL_NORMAL, wx.WXK_NUMPAD0, 6320),
-
         # Pop up a menu to help the user find hidden windows.
         (wx.ACCEL_CTRL, ord('M'), 6321),
         # toggle python shell state with ^P
         (wx.ACCEL_CTRL, ord('P'), 6322),
     ])
     window.SetAcceleratorTable(accelTable)
-    for eventId, direction in [(6314, (1, 0, 0)), (6316, (-1, 0, 0)),
-            (6312, (0, -1, 0)), (6318, (0, 1, 0)), (6311, (0, 0, -1)),
-            (6317, (0, 0, 1))]:
-        window.Bind(wx.EVT_MENU,
-                    lambda e, d=direction: cockpit.interfaces.stageMover.step(d),
-                    id=eventId)
-    window.Bind(wx.EVT_MENU, lambda e: cockpit.gui.camera.window.rescaleViews(), id=6903)
-    window.Bind(wx.EVT_MENU, lambda e: cockpit.interfaces.stageMover.changeMover(), id=6904)
-    window.Bind(wx.EVT_MENU, lambda e: cockpit.gui.mosaic.window.transferCameraImage(), id=6905)
-    window.Bind(wx.EVT_MENU, lambda e: cockpit.interfaces.stageMover.recenterFineMotion(), id=6906)
-    window.Bind(wx.EVT_MENU, lambda e: cockpit.interfaces.stageMover.changeStepSize(-1), id= 6313)
-    window.Bind(wx.EVT_MENU, lambda e: cockpit.interfaces.stageMover.changeStepSize(1), id=6319)
-    window.Bind(wx.EVT_MENU, lambda e: cockpit.interfaces.imager.takeImage(), id=6320)
     window.Bind(wx.EVT_MENU, lambda e: martialWindows(window), id=6321)
     window.Bind(wx.EVT_MENU, lambda e: showHideShell(window), id=6322)
+    window.Bind(wx.EVT_CHAR_HOOK, onChar)
 
 ## Pop up a menu under the mouse that helps the user find a window they may
 # have lost.
