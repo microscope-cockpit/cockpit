@@ -236,6 +236,9 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     def setMaxPower(self, maxPower):
         self.maxPower = maxPower
 
+    ## Fetch the current laser power.
+    def getPower(self):
+        return self.callbacks['getPower']()
 
     ## Handle the user selecting a new power level.
     def setPower(self, power):
