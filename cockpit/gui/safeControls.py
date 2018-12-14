@@ -663,9 +663,9 @@ class SetPointGauge(SafeControl, wx.Window):
         if self._value.last is None:
             return
 
-        if self._value.last <= self._value.min:
+        if self._value.last < self._value.min:
             dirn = -1
-        elif self._value.last >= self._value.max:
+        elif self._value.last > self._value.max:
             dirn = 1
         else:
             return
