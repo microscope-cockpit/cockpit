@@ -23,6 +23,7 @@ from cockpit import depot
 from cockpit.events import DEVICE_STATUS
 from cockpit.gui import CockpitEvent, EvtEmitter, EVT_COCKPIT, safeControls
 from cockpit.handlers.deviceHandler import STATES
+from cockpit.util.colors import wavelengthToColor
 
 BMP_SIZE=(16,16)
 
@@ -74,7 +75,11 @@ class LightPanel(wx.Panel):
                           lambda evt: self.light.setExposureTime(evt.Value))
 
         self.Sizer.Add(self.button, flag=wx.EXPAND)
-        self.Sizer.AddSpacer(4)
+        self.Sizer.AddSpacer(2)
+        line = wx.StaticLine(self, size=(4,4), style=wx.LI_HORIZONTAL)
+        line.SetBackgroundColour(wavelengthToColor(self.light.wavelength))
+        self.Sizer.Add(line, flag=wx.EXPAND)
+
         self.Sizer.Add(wx.StaticText(self, label='exposure / ms'),
                        flag=wx.ALIGN_CENTER_HORIZONTAL)
         self.Sizer.Add(expCtrl, flag=wx.EXPAND)
