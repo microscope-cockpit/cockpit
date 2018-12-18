@@ -110,12 +110,9 @@ class LightHandler(deviceHandler.DeviceHandler):
                 callbacks, depot.LIGHT_TOGGLE)
         self.wavelength = float(wavelength or 0)
         self.defaultExposureTime = exposureTime
+        self.exposureTime = exposureTime
         # Current enabled state
         self.state = deviceHandler.STATES.disabled
-        ## A text widget describing our exposure time and providing a
-        # menu for changing it.
-        # TODO - separate handler from ui; exposureTime is a widget, not a parameter.
-        self.exposureTime = None
         # Set up trigger handling.
         if trigHandler and trigLine:
             h = trigHandler.registerDigital(self, trigLine)
@@ -214,17 +211,17 @@ class LightHandler(deviceHandler.DeviceHandler):
                                                   prefix=label)
         button.SetLabel(deviceHandler.STATES.toStr(self.state))
         sizer.Add(button)
-        self.addListener(button)
+        #self.addListener(button)
         helpText = "Left-click to enable for taking images."
         if 'setExposing' in self.callbacks:
             # Light source can also be just turned on and left on.
             helpText += "\nRight-click to leave on indefinitely."
         button.SetToolTip(wx.ToolTip(helpText))
-        self.exposureTime = cockpit.gui.toggleButton.ToggleButton(
+        self.exposureTimeCtrl = cockpit.gui.toggleButton.ToggleButton(
                 label = '', parent = panel, size = BUTTON_SIZE)
-        self.exposureTime.Bind(wx.EVT_LEFT_DOWN,
+        self.exposureTimeCtrl.Bind(wx.EVT_LEFT_DOWN,
                 lambda event: self.makeMenu(panel))
-        sizer.Add(self.exposureTime)
+        sizer.Add(self.exposureTimeCtrl)
         panel.SetSizerAndFit(sizer)
         self.setLabel()
         return panel
@@ -280,7 +277,7 @@ class LightHandler(deviceHandler.DeviceHandler):
         else:
             # Show some decimal points.
             label = '%.3fms' % value
-        self.exposureTime.SetLabel(label)
+        self.exposureTimeCtrl.SetLabel(label)
 
 
     ## Set a new exposure time, in milliseconds.
@@ -295,6 +292,7 @@ class LightHandler(deviceHandler.DeviceHandler):
         events.publish('light exposure update', self)
         # Update exposure times for lights that share the same shutter.
         s = self.__class__.__lightToShutter.get(self, None)
+        self.exposureTime = value
         if s and outermost:
             if hasattr(s, 'setExposureTime'):
                 s.setExposureTime(value)
