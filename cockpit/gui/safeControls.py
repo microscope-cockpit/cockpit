@@ -738,7 +738,7 @@ class SpinGauge(wx.Panel):
                                      minValue=float(minValue), maxValue=float(maxValue), inc=increment)
         slider = SetPointGauge(self, minValue=minValue, maxValue=maxValue, fetch_current=fetch_current)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(spinner)
+        sizer.Add(spinner, flag=wx.EXPAND)
         sizer.Add(slider, flag=wx.EXPAND)
 
         self.SetSizerAndFit(sizer)
