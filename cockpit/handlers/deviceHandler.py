@@ -139,7 +139,7 @@ class DeviceHandler(object):
         # Set up dict for attribute-change listeners.
         super().__init__()
         self._watches = {}
-        self._state = None
+        self.state = None
         self.__cache = {}
         self.name = name
         self.groupName = groupName
@@ -265,7 +265,7 @@ class DeviceHandler(object):
     ## A function that any control can call to toggle enabled/disabled state.
     @cockpit.util.threads.callInNewThread
     def toggleState(self, *args, **kwargs):
-        if self._state == STATES.enabling:
+        if self.state == STATES.enabling:
             # Already processing a previous toggle request.
             return
         if not all([hasattr(self, 'setEnabled'), hasattr(self, 'getIsEnabled')]):

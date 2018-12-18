@@ -45,10 +45,7 @@ class EnableButton(wx.ToggleButton):
         self.SetBitmap(BMP_OFF, wx.RIGHT)
         self.Bind(wx.EVT_TOGGLEBUTTON, deviceHandler.toggleState)
 
-    def onStatusEvent(self, evt):
-        device, state = evt.EventData
-        if device != self.device:
-            return
+    def setState(self, state):
         if state == STATES.enabling:
             self.Disable()
             self.SetBitmap(BMP_WAIT, wx.RIGHT)
@@ -61,6 +58,12 @@ class EnableButton(wx.ToggleButton):
         elif state == STATES.error:
             self.SetBitmap(BMP_ERR, wx.RIGHT)
 
+    def onStatusEvent(self, evt):
+        device, state = evt.EventData
+        if device != self.device:
+            return
+        self.setState(state)
+
 
 class LightPanel(wx.Panel):
     def __init__(self, parent, lightToggle, lightPower=None, lightFilters=[]):
@@ -69,6 +72,7 @@ class LightPanel(wx.Panel):
         self.light = lightToggle
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.button = EnableButton(self, self.light)
+        self.button.setState(self.light.state)
 
         expCtrl = safeControls.SafeSpinCtrlDouble(self, inc=5)
         expCtrl.Bind(safeControls.EVT_SAFE_CONTROL_COMMIT,
