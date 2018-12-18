@@ -73,6 +73,8 @@ class LightPanel(wx.Panel):
         expCtrl = safeControls.SafeSpinCtrlDouble(self, inc=5)
         expCtrl.Bind(safeControls.EVT_SAFE_CONTROL_COMMIT,
                           lambda evt: self.light.setExposureTime(evt.Value))
+        lightToggle.addWatch('exposureTime', expCtrl.SetValue)
+        expCtrl.SetValue(lightToggle.exposureTime)
 
         self.Sizer.Add(self.button, flag=wx.EXPAND)
         self.Sizer.AddSpacer(2)
@@ -92,6 +94,7 @@ class LightPanel(wx.Panel):
                                              minValue = lightPower.minPower,
                                              maxValue = lightPower.maxPower,
                                              fetch_current=lightPower.getPower)
+            lightPower.addWatch('powerSetPoint', powCtrl.SetValue)
             powCtrl.Bind(safeControls.EVT_SAFE_CONTROL_COMMIT,
                          lambda evt: lightPower.setPower(evt.Value))
             self.Sizer.Add(powCtrl)
@@ -101,7 +104,6 @@ class LightPanel(wx.Panel):
         light, state = evt.EventData
         if light != self.light:
             return
-        print(state)
         if state == STATES.enabling:
             self.button.Disable()
             self.button.SetBitmap(BMP_WAIT)

@@ -66,15 +66,10 @@ import sys
 # implement its getHandlers() method so that it returns a list of
 # DeviceHandlers. 
 #
-# The device handler now supports multiple UI controls to en/disable those
-# devices that support this behaviour.
-# To add a toggle control anywhere in the UI:
-#  * Create a control with the method onEnabledEvent(enabled) that updates
-#    the control appearance depending on the device state. The function should
-#    import STATES and respond accordingly to each case.
-#  * Register the control with handler(addListener) so it receives
-#    device state updates.
-#  * Bind the control to handler(toggleState) so it can control device state.
+# The device handler now supports multiple UI controls by allowing them
+# to watch for device parameter changes: each control should use addWatch
+# to register a callback that takes the new value as its only argument:
+#    addWatch(parameterName, callback)
 
 ## Device states
 class STATES():
@@ -141,6 +136,9 @@ class DeviceHandler(object):
 
     def __init__(self, name, groupName,
                  isEligibleForExperiments, callbacks, deviceType):
+        # Set up dict for attribute-change listeners.
+        super().__init__()
+        self._watches = {}
         self._state = None
         self.__cache = {}
         self.name = name
@@ -149,9 +147,23 @@ class DeviceHandler(object):
         self.isEligibleForExperiments = isEligibleForExperiments
         self.deviceType = deviceType
         # A set of controls that listen for device events.
-        self.listeners = None
         self.enableLock = threading.Lock()
         self.clear_cache = self.__cache.clear
+
+
+    def __setattr__(self, key, value):
+        object.__setattr__(self, key, value)
+        if not hasattr(self, '_watches'):
+            return
+        if key not in self._watches:
+            return
+        for cb in self._watches[key]:
+            try:
+                cb(value)
+            except:
+                # Should maybe clean up failing watch callbacks.
+                pass
+
 
 
     # Define __lt__ to make handlers sortable.
@@ -215,14 +227,11 @@ class DeviceHandler(object):
         return "<%s named %s in group %s>" % (self.deviceType, self.name, self.groupName)
 
 
-    ## Add a listener to our set of listeners.
-    def addListener(self, listener):
-        # If this is our first listener, subscribe this handler to enable event.
-        if self.listeners is None:
-            self.listeners = set()
-            #events.subscribe(self.deviceType + ' enable',
-            #                         self.notifyListeners)
-        self.listeners.add(listener)
+    ## Add a watch on a device parameter.
+    def addWatch(self, attrName, callback):
+        if attrName not in self._watches:
+            self._watches[attrName] = set()
+        self._watches[attrName].add(callback)
 
 
     # ## Notify listeners that our device's state has changed.
