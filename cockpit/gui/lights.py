@@ -64,7 +64,7 @@ class EnableButton(wx.ToggleButton):
 class LightPanel(wx.Panel):
     def __init__(self, parent, lightToggle, lightPower=None, lightFilters=[]):
         super().__init__(parent, style=wx.BORDER_RAISED)
-        self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND))
+        self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
         self.light = lightToggle
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.button = EnableButton(self, self.light)
