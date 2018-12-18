@@ -616,7 +616,7 @@ class SetPointGauge(SafeControl, wx.Window):
             bar.width = rect.width * self._value.to_quotient(current)
             bar.height = rect.height // 3
             bar.Y += (rect.height // 2) - (bar.height // 2)
-        colour = [c['off_target'], c['on_target']][self._value.on_target()]
+        colour = c['on_target'] if self._value.on_target() else c['off_target']
         dc.SetBrush(wx.Brush(colour))
         dc.SetPen(wx.Pen(colour))
         dc.DrawRectangle(bar)
