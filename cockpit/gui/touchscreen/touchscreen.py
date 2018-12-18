@@ -318,7 +318,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             self.camButton[i] = cockpit.gui.device.EnableButton(label='Off',
                                              parent=self.buttonPanel,
                                                         leftAction=camera.toggleState)
-            camera.addListener(self.camButton[i])
+            #camera.addListener(self.camButton[i])
             cameraVSizer[i].Add(label)
             cameraVSizer[i].Add(self.camButton[i])
             cameraSizer.Add(cameraVSizer[i],0,wx.CENTRE|wx.ALL,border=5)
@@ -866,7 +866,7 @@ class LightToggleButton(SBitmapToggleButton):
     def __init__(self, parent, light, **kwargs):
         size = (LightToggleButton.size, LightToggleButton.size)
         self.light = light
-        light.addListener(self)
+        #light.addListener(self)
         if light.wavelength:
             label = str(int(light.wavelength))
             colour = cockpit.util.colors.wavelengthToColor(light.wavelength)
