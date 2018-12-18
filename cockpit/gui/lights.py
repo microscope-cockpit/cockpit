@@ -82,7 +82,7 @@ class LightPanel(wx.Panel):
 
         self.Sizer.Add(self.button, flag=wx.EXPAND)
         self.Sizer.AddSpacer(2)
-        line = wx.StaticLine(self, size=(4,4), style=wx.LI_HORIZONTAL)
+        line = wx.StaticBox(self, size=(-1,4), style=wx.LI_HORIZONTAL)
         line.SetBackgroundColour(wavelengthToColor(self.light.wavelength))
         self.Sizer.Add(line, flag=wx.EXPAND)
 
