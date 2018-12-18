@@ -173,7 +173,7 @@ class AndorCameraDevice(camera.CameraDevice):
                 trigline
         )
         self.handler = result
-        self.handler.addListener(self)
+        #elf.handler.addListener(self)
         return [result]
 
 

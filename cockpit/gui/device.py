@@ -252,7 +252,7 @@ class SettingsEditor(wx.Frame):
         self.SetTitle("Settings for %s." % device.name)
         self.settings = None
         self.handler = handler
-        self.handler.addListener(self)
+        #self.handler.addListener(self)
         #self.panel = wx.Panel(self, wx.ID_ANY, style=wx.WANTS_CHARS)
         sizer = wx.BoxSizer(wx.VERTICAL)
 

@@ -278,7 +278,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
         label = cockpit.gui.device.Label(
             parent=self.panel, label=name)
         button = cockpit.gui.device.EnableButton(label='Off', parent=self.panel, leftAction=self.toggleState)
-        self.addListener(button)
+        #self.addListener(button)
         sizer.Add(label)
         sizer.Add(button)
         if self.callbacks.get('makeUI', None):
