@@ -113,7 +113,6 @@ class SafeControl():
         p = self.GetParent()
         while not p.AcceptsFocus():
             p = p.GetParent()
-        print("Releasing focus to %s" % p)
         p.SetFocus()
 
 
