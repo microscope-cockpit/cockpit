@@ -152,54 +152,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
             cockpit.util.logger.log.warning("Failed to set prior power level %s for %s: %s" % (targetPower, self.name, e))
 
 
-    ## Construct a UI consisting of a clickable box that pops up a menu allowing
-    # the power to be changed, and a text field showing the current output
-    # power.
-    def makeUI(self, parent):
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        button = cockpit.gui.toggleButton.ToggleButton(inactiveColor = self.color,
-                textSize = 12, label = self.name, size = (120, 80),
-                parent = parent)
-        # Respond to clicks on the button.
-        button.Bind(wx.EVT_LEFT_DOWN, lambda event: self.makeMenu(parent))
-        button.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.makeMenu(parent))
-        button.Bind(wx.EVT_CONTEXT_MENU, lambda event: None) # don't pass up context_menu events
-        self.powerToggle = button
-        sizer.Add(button)
-        self.powerText = wx.StaticText(parent, -1,
-                '%.1f%s' % (self.lastPower, self.units),
-                style = wx.ALIGN_CENTRE_HORIZONTAL | wx.ST_NO_AUTORESIZE | wx.SUNKEN_BORDER,
-                size = (120, 40))
-        self.powerToggle.Enable(self.isEnabled)
-        # If maxPower is zero or unset, we can not determine the
-        # menu entries, so disable powerToggle button.
-        if not self.maxPower:
-            self.powerToggle.Enable(False)
-        self.powerText.Enable(self.isEnabled)
-        sizer.Add(self.powerText)
-        events.subscribe(self.name + ' update', self.updateDisplay)
-
-        return sizer
-
-
-    ## Generate a menu at the mouse letting the user select an
-    # output power level. They can select from 1 of 20 presets, or input
-    # an arbitrary value.
-    def makeMenu(self, parent):
-        menu = wx.Menu()
-        powerDelta = self.maxPower / self.numPowerLevels
-        powers = numpy.arange(self.minPower,
-                              self.maxPower + powerDelta,
-                              powerDelta)
-        for i, power in enumerate(powers):
-            menu.Append(i + 1, "%d%s" % (min(power, self.maxPower), self.units))
-            parent.Bind(wx.EVT_MENU, lambda event, power = power: self.setPower(power), id=i+1)
-        menu.Append(i + 2, '...')
-        parent.Bind(wx.EVT_MENU, lambda event: self.setPowerArbitrary(parent), id=i+2)
-
-        cockpit.gui.guiUtils.placeMenuAtMouse(parent, menu)
-
-
     ## Save our settings in the provided dict.
     def onSaveSettings(self, settings):
         settings[self.name] = self.powerSetPoint

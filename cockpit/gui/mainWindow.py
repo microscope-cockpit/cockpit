@@ -251,58 +251,6 @@ class MainWindow(wx.Frame):
 
         import cockpit.gui.lights
         bottomSizer.Add(cockpit.gui.lights.LightControlsPanel(self.bottomPanel))
-
-        label = wx.StaticText(self.bottomPanel, -1, "Illumination controls:")
-        label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        bottomSizer.Add(label)
-        lightSizer = wx.BoxSizer(wx.HORIZONTAL)
-        # If we have a lot (more than 7) of light sources, then we hide
-        # light sources by default and provide a listbox to let people show
-        # only the ones they need.
-        ## wx.ListBox of all lights, assuming we're using this UI modus.
-        self.lightList = None
-        if len(lightToggles) > 7:
-            haveDynamicLightDisplay = True
-            self.lightList = wx.ListBox(self.bottomPanel, -1,
-                    size = (-1, 200), style = wx.LB_MULTIPLE,
-                    choices = [light.name for light in lightToggles])
-            self.lightList.Bind(wx.EVT_LISTBOX, self.onLightSelect)
-            lightSizer.Add(self.lightList)
-        # Construct the lightsource widgets. One column per light source.
-        # Associated handlers on top, then then enable/disable toggle for the
-        # actual light source, then exposure time, then any widgets that the
-        # device code feels like adding.
-        for light in lightToggles:
-            lightPanel = wx.Panel(self.bottomPanel)
-            # Enable double-buffering so StaticText labels don't flicker.
-            lightPanel.SetDoubleBuffered(True)
-            self.lightToPanel[light] = lightPanel
-            columnSizer = wx.BoxSizer(wx.VERTICAL)
-            haveOtherHandler = False
-            for otherHandler in depot.getHandlersInGroup(light.groupName):
-                if otherHandler is not light:
-                    columnSizer.Add(otherHandler.makeUI(lightPanel))
-                    haveOtherHandler = True
-                    break
-            if not haveOtherHandler:
-                # Put a spacer in so this widget has the same vertical size.
-                columnSizer.Add((-1, 1), 1, wx.EXPAND)
-            lightUI = light.makeUI(lightPanel)
-            columnSizer.Add(lightUI)
-            events.publish('create light controls', lightPanel,
-                    columnSizer, light)
-            lightPanel.SetSizerAndFit(columnSizer)
-            if self.lightList is not None:
-                # Hide the panel by default; it will be shown only when
-                # selected in the listbox.
-                lightPanel.Hide()
-            # Hack: the ambient light source goes first in the list.
-            if 'Ambient' in light.groupName:
-                lightSizer.Insert(0, lightPanel, 1, wx.EXPAND | wx.VERTICAL)
-            else:
-                lightSizer.Add(lightPanel, 1, wx.EXPAND | wx.VERTICAL)
-        bottomSizer.Add(lightSizer)
-
         self.bottomPanel.SetSizerAndFit(bottomSizer)
         mainSizer.Add(self.bottomPanel)
 
