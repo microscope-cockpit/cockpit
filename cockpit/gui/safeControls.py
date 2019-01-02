@@ -109,6 +109,13 @@ class SafeControl():
         self.SetPending(None)
         self.Refresh()
 
+    def ReleaseFocus(self):
+        p = self.GetParent()
+        while not p.AcceptsFocus():
+            p = p.GetParent()
+        print("Releasing focus to %s" % p)
+        p.SetFocus()
+
 
 class SafeSpinCtrlDouble(SafeControl, wx.Panel):
     """A cross-platform spin control for double-precision floats.
@@ -173,9 +180,11 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
 
         # Use a timer to check control still has focus.
         self.Bind(wx.EVT_TIMER, self.CheckFocus)
-        self.Bind(wx.EVT_SET_FOCUS, self.OnFocus)
+        self.Bind(wx.EVT_SET_FOCUS, self.GetParent().SetFocus)
         self.Bind(wx.EVT_CHILD_FOCUS, self.OnFocus)
         self.Bind(wx.EVT_KILL_FOCUS, lambda evt: self.Cancel())
+        self.AcceptsFocusRecursively = lambda: True
+        self.AcceptsFocus = lambda: False
 
     def OnFocus(self, evt):
         """Start the timer that detects loss of focus.
@@ -183,7 +192,6 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
         Args:
           evt: A wx.EVT_SET_FOCUS or wx.EVT_CHILD_FOCUS event.
         """
-
         if not self._checkTimer.IsRunning():
             self._checkTimer.StartOnce(500)
 
@@ -244,6 +252,8 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
           evt (wx.CommandEvent(wx.wxEVT_TEXT)): The event.
         """
         self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT))
+        if evt.String == '':
+            return
         text = self.GetValue()
         self.SetPending(text)
         self.PostEvent()
@@ -261,12 +271,15 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
         if evt.KeyCode == wx.WXK_ESCAPE:
             # Cancel on escape
             self.Cancel()
+            wx.CallAfter(self.ReleaseFocus)
         elif evt.KeyCode in [wx.WXK_NUMPAD_ENTER, wx.WXK_RETURN, wx.WXK_SPACE,
                              wx.WXK_NUMPAD_TAB, wx.WXK_TAB]:
             if self._laststr is not '':
                 # Commit on return, enter, space or tab
                 self._pending = min(max(self.Value, self._min), self._max)
                 self.Commit()
+            if evt.KeyCode != wx.WXK_TAB:
+                wx.CallAfter(self.ReleaseFocus)
             evt.Skip()
         elif evt.KeyCode in [wx.WXK_UP, wx.WXK_NUMPAD_UP]:
             # Up arrows increment value
@@ -446,6 +459,7 @@ class SetPointGauge(SafeControl, wx.Window):
         self.Bind(wx.EVT_TIMER, self.OnTimer)
         self.Bind(wx.EVT_LEFT_DCLICK, self.OnLDClick)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnDrag)
+        self.AcceptsFocusFromKeyboard = lambda: False
 
     @property
     def Value(self):
@@ -756,6 +770,8 @@ class SpinGauge(wx.Panel):
         for c in self.controls:
             c.Bind(EVT_SAFE_CONTROL_PENDING, self.ChildOnSafeControlEvent)
             c.Bind(EVT_SAFE_CONTROL_COMMIT, self.ChildOnSafeControlEvent)
+        self.Bind(wx.EVT_SET_FOCUS, self.GetParent().SetFocus)
+        self.AcceptsFocus = lambda: False
 
     def ChildOnSafeControlEvent(self, evt):
         """Handle child control value change events and update other controls.

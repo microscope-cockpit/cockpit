@@ -104,6 +104,12 @@ class LightPanel(wx.Panel):
             self.Sizer.Add(powCtrl)
 
 
+    def SetFocus(self):
+        # Sets focus to the main button to avoid accidental data entry
+        # in power or exposure controls.
+        self.button.SetFocus()
+
+
     def onStatus(self, evt):
         light, state = evt.EventData
         if light != self.light:

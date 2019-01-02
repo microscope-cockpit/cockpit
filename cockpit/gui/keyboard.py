@@ -63,8 +63,12 @@ from distutils import version
 from itertools import chain
 
 def onChar(evt):
-    print("MAIN onChar")
-    if isinstance(evt.EventObject, wx.TextCtrl):
+    if isinstance(evt.EventObject, wx.TextCtrl) \
+            or evt.KeyCode in [wx.WXK_TAB, wx.WXK_ESCAPE]:
+        evt.Skip()
+        return
+    if isinstance(evt.EventObject, (wx.ToggleButton, wx.Button)) \
+            and evt.KeyCode in [wx.WXK_RETURN, wx.WXK_SPACE]:
         evt.Skip()
         return
     if evt.KeyCode == wx.WXK_NUMPAD_MULTIPLY:
