@@ -126,7 +126,6 @@ class LightHandler(deviceHandler.DeviceHandler):
 
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
-        events.subscribe('light exposure update', self.setLabel)
         # Most lasers use bulb-type triggering. Ensure they're not left on after
         # an abort event.
         if trigHandler and trigLine:
@@ -189,44 +188,6 @@ class LightHandler(deviceHandler.DeviceHandler):
     def getIsEnabled(self):
         return self.state == deviceHandler.STATES.enabled
 
-
-    ## Make the UI for our light: a toggle button for whether or not to use
-    # us, and a widget for setting the exposure time.
-    def makeUI(self, parent):
-        # Sequester to our own panel so that we don't propagate menu
-        # events with possibly-redundant IDs to the parent.
-        panel = wx.Panel(parent)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        # Split the name across multiple lines.
-        label = ['']
-        name = self.name.strip()
-        for i, word in enumerate(name.split(' ')):
-            if len(label[-1] + word) > 10 and i > 0:
-                label.append('')
-            label[-1] += word + ' '
-        label = "\n".join(label)
-        button = cockpit.gui.device.EnableButton(parent=panel,
-                                                  leftAction=self.toggleState,
-                                                  rightAction=self.setExposing,
-                                                  prefix=label)
-        button.SetLabel(deviceHandler.STATES.toStr(self.state))
-        sizer.Add(button)
-        #self.addListener(button)
-        helpText = "Left-click to enable for taking images."
-        if 'setExposing' in self.callbacks:
-            # Light source can also be just turned on and left on.
-            helpText += "\nRight-click to leave on indefinitely."
-        button.SetToolTip(wx.ToolTip(helpText))
-        self.exposureTimeCtrl = cockpit.gui.toggleButton.ToggleButton(
-                label = '', parent = panel, size = BUTTON_SIZE)
-        self.exposureTimeCtrl.Bind(wx.EVT_LEFT_DOWN,
-                lambda event: self.makeMenu(panel))
-        sizer.Add(self.exposureTimeCtrl)
-        panel.SetSizerAndFit(sizer)
-        self.setLabel()
-        return panel
-
-
     ## Set the light source to continuous exposure, if we have that option.
     @cockpit.util.threads.callInNewThread
     def setExposing(self, args):
@@ -265,19 +226,6 @@ class LightHandler(deviceHandler.DeviceHandler):
                 parent, "Input an exposure time:",
                 "Exposure time (ms):", self.getExposureTime())
         self.setExposureTime(float(value))
-
-
-    ## Update the label we show for our exposure time.
-    def setLabel(self, source=None):
-        if source is not None and source != self:
-            return
-        value = self.getExposureTime()
-        if int(value) == value:
-            label = '%dms' % value
-        else:
-            # Show some decimal points.
-            label = '%.3fms' % value
-        self.exposureTimeCtrl.SetLabel(label)
 
 
     ## Set a new exposure time, in milliseconds.
