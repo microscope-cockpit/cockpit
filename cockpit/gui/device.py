@@ -197,41 +197,56 @@ class Menu(wx.Menu):
         cockpit.gui.guiUtils.placeMenuAtMouse(event.GetEventObject(), self)
 
 
-class EnableButton(Button):
-    """A button to enable/disable devices."""
-    def __init__(self, *args, **kwargs):
-        self.prefix = kwargs.pop('prefix', None)
-        if 'size' not in kwargs:
-            kwargs['size'] = [TALL_SIZE, DEFAULT_SIZE][self.prefix is None]
-        super(EnableButton, self).__init__(*args, **kwargs)
-        # Button has no label, so call onEnabledEvent to update.
-        wx.CallAfter(lambda: self.onEnabledEvent(STATES.disabled))
 
+from cockpit.events import DEVICE_STATUS
+from cockpit.gui import EvtEmitter, EVT_COCKPIT
+
+BMP_SIZE=(16,16)
+
+BMP_OFF = wx.Bitmap.FromRGBA(*BMP_SIZE, red=0, green=32, blue=0,
+                             alpha=wx.ALPHA_OPAQUE)
+BMP_ON = wx.Bitmap.FromRGBA(*BMP_SIZE, red=0, green=255, blue=0,
+                             alpha=wx.ALPHA_OPAQUE)
+BMP_WAIT = wx.Bitmap.FromRGBA(*BMP_SIZE, red=255, green=165, blue=0,
+                              alpha=wx.ALPHA_OPAQUE)
+BMP_ERR = wx.Bitmap.FromRGBA(*BMP_SIZE, red=255, green=0, blue=0,
+                             alpha=wx.ALPHA_OPAQUE)
+
+class EnableButton(wx.ToggleButton):
+    def __init__(self, parent, deviceHandler):
+        super().__init__(parent, -1, deviceHandler.name)
+        self.device = deviceHandler
+        listener = EvtEmitter(self, DEVICE_STATUS)
+        listener.Bind(EVT_COCKPIT, self.onStatusEvent)
+        self.SetBitmap(BMP_OFF, wx.RIGHT)
+        self.Bind(wx.EVT_TOGGLEBUTTON, deviceHandler.toggleState)
+        self.state = None
 
     @cockpit.util.threads.callInMainThread
-    def onEnabledEvent(self, state):
-        # Update button responsiveness
-        if state is STATES.enabling:
+    def setState(self, state):
+        if self.state == state:
+            return
+        if state == STATES.enabling:
             self.Disable()
-            self.SetEvtHandlerEnabled(False)
+            self.SetBitmap(BMP_WAIT, wx.RIGHT)
         else:
-            self.Enable(True)
-            self.SetEvtHandlerEnabled(True)
+            self.Enable()
+        if state == STATES.enabled:
+            self.SetBitmap(BMP_ON, wx.RIGHT)
+        elif state == STATES.disabled:
+            self.SetBitmap(BMP_OFF, wx.RIGHT)
+        elif state == STATES.error:
+            self.SetBitmap(BMP_ERR, wx.RIGHT)
+        self.state = state
+        # Enabling/disabling control sets focus to None. Set it to parent so keypresses still handled.
+        wx.CallAfter(self.Parent.SetFocus)
 
-        # Update colour
-        colour = {STATES.enabled: ACTIVE_COLOR,
-                  STATES.disabled: INACTIVE_COLOR,
-                  STATES.enabling: (127, 127, 127),
-                  STATES.constant: (255, 255, 0),
-                  STATES.error: (255, 0, 0)}[state]
-        self.SetBackgroundColour(colour)
 
-        # Update label
-        label = STATES.toStr(state)
-        if self.prefix is not None:
-            label = '\n'.join((self.prefix, label))
-        self.SetLabel(label)
-        self.Refresh()
+    def onStatusEvent(self, evt):
+        device, state = evt.EventData
+        if device != self.device:
+            return
+        self.setState(state)
 
 
 class SettingsEditor(wx.Frame):

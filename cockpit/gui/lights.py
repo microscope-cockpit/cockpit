@@ -20,49 +20,10 @@
 
 import wx
 from cockpit import depot
-from cockpit.events import DEVICE_STATUS
-from cockpit.gui import CockpitEvent, EvtEmitter, EVT_COCKPIT, safeControls
 from cockpit.handlers.deviceHandler import STATES
 from cockpit.util.colors import wavelengthToColor
-
-BMP_SIZE=(16,16)
-
-BMP_OFF = wx.Bitmap.FromRGBA(*BMP_SIZE, red=0, green=32, blue=0,
-                             alpha=wx.ALPHA_OPAQUE)
-BMP_ON = wx.Bitmap.FromRGBA(*BMP_SIZE, red=0, green=255, blue=0,
-                             alpha=wx.ALPHA_OPAQUE)
-BMP_WAIT = wx.Bitmap.FromRGBA(*BMP_SIZE, red=255, green=165, blue=0,
-                              alpha=wx.ALPHA_OPAQUE)
-BMP_ERR = wx.Bitmap.FromRGBA(*BMP_SIZE, red=255, green=0, blue=0,
-                             alpha=wx.ALPHA_OPAQUE)
-
-class EnableButton(wx.ToggleButton):
-    def __init__(self, parent, deviceHandler):
-        super().__init__(parent, -1, deviceHandler.name)
-        self.device = deviceHandler
-        listener = EvtEmitter(self, DEVICE_STATUS)
-        listener.Bind(EVT_COCKPIT, self.onStatusEvent)
-        self.SetBitmap(BMP_OFF, wx.RIGHT)
-        self.Bind(wx.EVT_TOGGLEBUTTON, deviceHandler.toggleState)
-
-    def setState(self, state):
-        if state == STATES.enabling:
-            self.Disable()
-            self.SetBitmap(BMP_WAIT, wx.RIGHT)
-        else:
-            self.Enable()
-        if state == STATES.enabled:
-            self.SetBitmap(BMP_ON, wx.RIGHT)
-        elif state == STATES.disabled:
-            self.SetBitmap(BMP_OFF, wx.RIGHT)
-        elif state == STATES.error:
-            self.SetBitmap(BMP_ERR, wx.RIGHT)
-
-    def onStatusEvent(self, evt):
-        device, state = evt.EventData
-        if device != self.device:
-            return
-        self.setState(state)
+from cockpit.gui.device import EnableButton
+from cockpit.gui import safeControls
 
 
 class LightPanel(wx.Panel):
