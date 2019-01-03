@@ -110,6 +110,8 @@ def onChar(evt):
     elif evt.KeyCode in [wx.WXK_NUMPAD_ADD, wx.WXK_NUMPAD0]:
         # Take image
         cockpit.interfaces.imager.takeImage()
+    else:
+        evt.Skip()
 
 
 ## Given a wx.Window instance, set up keyboard controls for that instance.
