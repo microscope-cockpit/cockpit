@@ -315,10 +315,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             name = camera.name.replace('camera', '').replace('  ', ' ')
             label = cockpit.gui.device.Label(
                 parent=self.buttonPanel, label=name)
-            self.camButton[i] = cockpit.gui.device.EnableButton(label='Off',
-                                             parent=self.buttonPanel,
-                                                        leftAction=camera.toggleState)
-            #camera.addListener(self.camButton[i])
+            self.camButton[i] = cockpit.gui.device.EnableButton(self.buttonPanel, camera)
             cameraVSizer[i].Add(label)
             cameraVSizer[i].Add(self.camButton[i])
             cameraSizer.Add(cameraVSizer[i],0,wx.CENTRE|wx.ALL,border=5)
