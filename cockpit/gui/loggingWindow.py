@@ -112,9 +112,9 @@ class LoggingWindow(wx.Frame):
                 # We strip any unicode with filter to prevent a cascade of
                 # ---Logging Error--- messages.
                 if target is self.stdOut:
-                    cockpit.util.logger.log.debug(filter(lambda c: ord(c) < 128, self.textCache))
+                    cockpit.util.logger.log.debug(''.join(filter(lambda c: ord(c) < 128, self.textCache)))
                 else:
-                    cockpit.util.logger.log.error(filter(lambda c: ord(c) < 128, self.textCache))
+                    cockpit.util.logger.log.error(''.join(filter(lambda c: ord(c) < 128, self.textCache)))
                 self.textCache = ''
 
     def WriteToLogger(self, logger):
