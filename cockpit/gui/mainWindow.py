@@ -74,6 +74,7 @@ import cockpit.util.files
 import cockpit.util.userConfig
 from . import viewFileDropTarget
 from cockpit.gui.device import OptionButtons
+from cockpit.gui import mainPanels
 
 
 from six import iteritems
@@ -193,19 +194,7 @@ class MainWindow(wx.Frame):
             rowSizer.AddSpacer(COL_SPACER)
         ignoreThings.extend(hs)
         # Make the UI elements for the cameras.
-        for camera in sorted(cameraThings):
-            # Clear cameraUI so we don't use previous value.
-            cameraUI = None
-            # See if the camera has a function to make UI elements.
-            uiFunc = camera.makeUI
-            # If there is a UI function, evaluate it.
-            if uiFunc:
-                cameraUI = uiFunc(topPanel)
-            # uiFunc should return a panel.
-            if cameraUI:
-                rowSizer.Add(cameraUI)
-                rowSizer.AddSpacer(COL_SPACER)
-        # Make UI elements for filters.
+        rowSizer.Add(mainPanels.CameraControlsPanel(self.topPanel))
         hs = sorted(depot.getHandlersOfType(depot.LIGHT_FILTER))
         for i, h in enumerate(hs):
             if i%2 == 0:
@@ -249,8 +238,7 @@ class MainWindow(wx.Frame):
         self.bottomPanel.SetBackgroundColour((170, 170, 170))
         bottomSizer = wx.BoxSizer(wx.VERTICAL)
 
-        import cockpit.gui.lights
-        bottomSizer.Add(cockpit.gui.lights.LightControlsPanel(self.bottomPanel))
+        bottomSizer.Add(mainPanels.LightControlsPanel(self.bottomPanel))
         self.bottomPanel.SetSizerAndFit(bottomSizer)
         mainSizer.Add(self.bottomPanel)
 
