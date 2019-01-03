@@ -721,7 +721,10 @@ class SetPointGauge(SafeControl, wx.Window):
         Args:
           result (wx.lib.delayedresult.DelayedResult): The result to process.
         """
-        self._value.last = result.get()
+        try:
+            self._value.last = result.get()
+        except:
+            self._value.last = None
         self._fetching = False
 
 
