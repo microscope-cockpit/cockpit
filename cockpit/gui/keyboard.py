@@ -68,7 +68,7 @@ def onChar(evt):
         evt.Skip()
         return
     if isinstance(evt.EventObject, (wx.ToggleButton, wx.Button)) \
-            and evt.KeyCode in [wx.WXK_RETURN, wx.WXK_SPACE]:
+            and evt.KeyCode in [wx.WXK_RETURN, wx.WXK_SPACE, wx.WXK_TAB]:
         evt.Skip()
         return
     if evt.KeyCode == wx.WXK_NUMPAD_MULTIPLY:
