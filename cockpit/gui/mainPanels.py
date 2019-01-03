@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2018-19 Mick Phillips <mick.phillips@gmail.com>
 ##
 ## This file is part of Cockpit.
 ##
@@ -115,9 +115,64 @@ class LightControlsPanel(wx.Panel):
             power = next(filter(lambda p: p.groupName == light.groupName, lightPowers), None)
             filters = list(filter(lambda f: light.name in f.lights, lightFilters) )
             panel = LightPanel (self, light, power, filters)
-            self.Sizer.Add(panel)
+            sz.Add(panel)
             self.panels[light] = panel
-            self.Sizer.AddSpacer(4)
+            sz.AddSpacer(4)
         self.Fit()
 
 
+
+class CameraPanel(wx.Panel):
+    def __init__(self, parent, camera):
+        super().__init__(parent, style=wx.BORDER_RAISED)
+        self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
+        self.camera = camera
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        self.button = EnableButton(self, self.camera)
+        self.button.setState(self.camera.state)
+        self.Sizer.Add(self.button, flag=wx.EXPAND)
+        self.Sizer.AddSpacer(2)
+
+
+    def SetFocus(self):
+        # Sets focus to the main button to avoid accidental data entry
+        # in power or exposure controls.
+        self.button.SetFocus()
+
+    def onStatus(self, evt):
+        camera, state = evt.EventData
+        if camera != self.camera:
+            return
+        if state == STATES.enabling:
+            self.button.Disable()
+            self.button.SetBitmap(BMP_WAIT)
+        else:
+            self.button.Enable()
+        if state == STATES.enabled:
+            self.button.SetBitmap(BMP_ON)
+        elif state == STATES.disabled:
+            self.button.SetBitmap(BMP_OFF)
+        elif state == STATES.error:
+            self.button.SetBitmap(BMP_ERR)
+
+
+class CameraControlsPanel(wx.Panel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        sz = wx.BoxSizer(wx.HORIZONTAL)
+        label = PanelLabel(self, label="Cameras")
+        self.Sizer.Add(label)
+        self.Sizer.Add(sz)
+
+        cameras = sorted(depot.getHandlersOfType(depot.CAMERA),
+                              key=lambda c: c.name)
+
+        self.panels = {}
+
+        for cam in cameras:
+            panel = CameraPanel (self, cam)
+            sz.Add(panel)
+            self.panels[cam] = panel
+            sz.AddSpacer(4)
+        self.Fit()
