@@ -26,6 +26,15 @@ from cockpit.gui.device import EnableButton
 from cockpit.gui import safeControls
 
 
+class PanelLabel(wx.StaticText):
+    def __init__(self, parent, label=""):
+        super().__init__(parent, label=label)
+        # Can't seem to modify font in-situ: must modify via local ref then re-set.
+        font = self.Font.Bold()
+        font.SetSymbolicSize(wx.FONTSIZE_X_LARGE)
+        self.SetFont(font)
+
+
 class LightPanel(wx.Panel):
     def __init__(self, parent, lightToggle, lightPower=None, lightFilters=[]):
         super().__init__(parent, style=wx.BORDER_RAISED)
@@ -91,7 +100,10 @@ class LightPanel(wx.Panel):
 class LightControlsPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
-        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        self.Sizer.Add(PanelLabel(self, label="Lights"))
+        sz = wx.BoxSizer(wx.HORIZONTAL)
+        self.Sizer.Add(sz)
 
         lightToggles = sorted(depot.getHandlersOfType(depot.LIGHT_TOGGLE),
                               key=lambda l: l.wavelength)
