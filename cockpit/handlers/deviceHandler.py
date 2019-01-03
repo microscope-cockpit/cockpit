@@ -278,14 +278,12 @@ class DeviceHandler(object):
         events.publish(events.DEVICE_STATUS, self, STATES.enabling)
         try:
             self.setEnabled(not(self.getIsEnabled()))
-            import time
-            time.sleep(1)
         except Exception as e:
             events.publish(events.DEVICE_STATUS, self, STATES.error)
             raise Exception('Problem encountered en/disabling %s:\n%s' % (self.name, e))
         finally:
             self.enableLock.release()
-            events.publish(events.DEVICE_STATUS, self, self.getIsEnabled())
+        events.publish(events.DEVICE_STATUS, self, self.getIsEnabled())
 
     ## Add a toggle event to the action table.
     # Return time of last action, and response time before ready after trigger.
