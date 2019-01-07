@@ -175,7 +175,7 @@ class NIcRIO(device.Device):
         via external trigger. There are also some light sources that we don't
         control directly that we need to know about.
         '''
-        events.subscribe('camera enable', self.toggleCamera)
+        events.subscribe(events.CAMERA_ENABLE, self.toggleCamera)
         events.subscribe(events.LIGHT_SOURCE_ENABLE, self.toggleLightHandler)
         events.subscribe('user abort', self.onAbort)
         events.subscribe('prepare for experiment', self.onPrepareForExperiment)

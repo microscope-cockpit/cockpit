@@ -90,7 +90,7 @@ class Imager:
         self.imageHandlers = depot.getHandlersOfType(depot.IMAGER)
         ## Set of active cameras, so we can check their framerates.
         self.activeCameras = set()
-        events.subscribe('camera enable',
+        events.subscribe(events.CAMERA_ENABLE,
                 lambda c, isOn: self.toggle(self.activeCameras, c, isOn))
         ## Set of active light sources, so we can check their exposure times.
         self.activeLights = set()
@@ -107,7 +107,7 @@ class Imager:
         # Update exposure times on certain events.
         events.subscribe('light exposure update', self.updateExposureTime)
         events.subscribe(events.LIGHT_SOURCE_ENABLE, lambda *args: self.updateExposureTime())
-        events.subscribe('camera enable', lambda *args: self.updateExposureTime())
+        events.subscribe(events.CAMERA_ENABLE, lambda *args: self.updateExposureTime())
 
 
 
