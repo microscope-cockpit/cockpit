@@ -138,7 +138,7 @@ class ViewPanel(wx.Panel):
         menu = wx.Menu()
         if self.curCamera is not None:
             item = menu.Append(-1, "Disable %s" % self.curCamera.descriptiveName)
-            self.Bind(wx.EVT_MENU, lambda event: self.curCamera.setEnabled(False), item)
+            self.Bind(wx.EVT_MENU, lambda event: self.curCamera.toggleState(), item)
             menu.InsertSeparator(1)
             items = self.canvas.getMenuActions()
             for label, action in items:
@@ -159,7 +159,7 @@ class ViewPanel(wx.Panel):
                 if not camera.getIsEnabled():
                     item = menu.Append(-1, "Enable %s" % camera.descriptiveName)
                     self.Bind(wx.EVT_MENU, 
-                            lambda event, cam=camera: cam.setEnabled(True), item)
+                            lambda event, cam=camera: cam.toggleState(), item)
         cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
 
 
