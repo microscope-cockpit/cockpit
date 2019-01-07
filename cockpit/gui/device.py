@@ -261,10 +261,10 @@ class SettingsEditor(wx.Frame):
                              str(str): wx.propgrid.StringProperty, }
 
 
-    def __init__(self, device, handler=None):
-        wx.Frame.__init__(self, None, wx.ID_ANY, style=wx.DEFAULT_FRAME_STYLE & ~wx.CLOSE_BOX)
+    def __init__(self, device, parent=None, handler=None):
+        wx.Frame.__init__(self, parent, wx.ID_ANY, style=wx.FRAME_FLOAT_ON_PARENT)
         self.device = device
-        self.SetTitle("Settings for %s." % device.name)
+        self.SetTitle("%s settings" % device.name)
         self.settings = None
         self.handler = handler
         #self.handler.addListener(self)
