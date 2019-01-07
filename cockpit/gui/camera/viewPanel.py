@@ -135,6 +135,8 @@ class ViewPanel(wx.Panel):
     # We also let them set the camera's readout size here, if a camera is
     # active.
     def onSelector(self, event):
+        ## TODO: fix focus issue so that key bindings work immediately after camera enable.
+        ## Currently, have to mouse-over the bitmap area, or click in another window.
         menu = wx.Menu()
         if self.curCamera is not None:
             item = menu.Append(-1, "Disable %s" % self.curCamera.descriptiveName)
