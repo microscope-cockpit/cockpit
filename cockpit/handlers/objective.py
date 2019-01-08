@@ -113,19 +113,6 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
         return sorted(self.nameToPixelSize.keys(), key=parseMag)
 
 
-    ## Generate a row of buttons, one for each possible objective.
-    def makeUI(self, parent):
-        from cockpit.gui.device import OptionButtons
-        names = self.sortedObjectives
-        frame = OptionButtons(parent, label="Objective")
-        frame.Show()
-        frame.setOptions(map(lambda name: (name,
-                                           lambda n=name: self.changeObjective(n)), names))
-
-        events.subscribe("objective change", lambda *a, **kw: frame.setOption(a[0]))
-        return frame
-
-
     ## Let everyone know what the initial objective.
     def makeInitialPublications(self):
         self.changeObjective(self.curObjective)
