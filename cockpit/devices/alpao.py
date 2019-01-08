@@ -599,10 +599,9 @@ class Alpao(device.Device):
         #Subscribe to camera events
         events.subscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
 
-        #Initialise Fourier ring mask
+        #Get pixel size
         self.objectives = cockpit.depot.getHandlersOfType(cockpit.depot.OBJECTIVE)[0]
         self.pixelSize = self.objectives.getPixelSize()
-        self.proxy.set_sensorless_ring_mask(size = self.curCamera.getImageSize(), pixel_size = self.pixelSize * 10 ** -6)
 
         #Initialise the Zernike modes to apply
         z_steps = np.linspace(-1.25,1.25,6)
@@ -651,7 +650,8 @@ class Alpao(device.Device):
 
             #Find aberration amplitudes and correct
             sensorless_correct_coef, ac_pos_sensorless = self.proxy.correct_sensorless_all_modes(self.correction_stack,
-                                                                              self.zernike_applied, self.nollZernike)
+                                                                              self.zernike_applied, self.nollZernike,
+                                                                              self.pixelSize * 10 ** -6)
             print("Aberrations measured: ", sensorless_correct_coef)
             print("Actuator positions applied: ", ac_pos_sensorless)
             np.save("C:\\cockpit\\nick\\cockpit\\sensorless_correct_coef", sensorless_correct_coef)
