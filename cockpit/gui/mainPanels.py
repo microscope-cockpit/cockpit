@@ -19,7 +19,7 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 import wx
-from cockpit import depot
+from cockpit import depot, events
 from cockpit.handlers.deviceHandler import STATES
 from cockpit.util.colors import wavelengthToColor
 from cockpit.gui.device import EnableButton
@@ -195,3 +195,19 @@ class CameraControlsPanel(wx.Panel):
             self.panels[cam] = panel
             sz.AddSpacer(4)
         self.Fit()
+
+
+class ObjectiveControls(wx.Panel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        label = PanelLabel(self, label="Objective")
+        self.Sizer.Add(label)
+
+        for o in depot.getHandlersOfType(depot.OBJECTIVE):
+            ctrl = wx.Choice(self)
+            ctrl.Set(o.sortedObjectives)
+            self.Sizer.Add(ctrl)
+            ctrl.Bind(wx.EVT_CHOICE, lambda evt: o.changeObjective(evt.GetString()))
+            events.subscribe("objective change",
+                             lambda *a, **kw: ctrl.SetSelection(ctrl.FindString(a[0])))
