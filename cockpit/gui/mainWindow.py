@@ -188,10 +188,11 @@ class MainWindow(wx.Frame):
         otherThings.sort(key = lambda d: d.__class__.__name__)
         otherThings.extend(depot.getAllHandlers())
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        rowSizer.Add(mainPanels.ObjectiveControls(self))
+        rowSizer.AddSpacer(COL_SPACER)
+
         hs = depot.getHandlersOfType(depot.OBJECTIVE)
-        for h in hs:
-            rowSizer.Add(h.makeUI(topPanel))
-            rowSizer.AddSpacer(COL_SPACER)
         ignoreThings.extend(hs)
         # Make the UI elements for the cameras.
         rowSizer.Add(mainPanels.CameraControlsPanel(self.topPanel))
