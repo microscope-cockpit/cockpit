@@ -27,6 +27,7 @@ from cockpit.gui import safeControls
 
 
 class PanelLabel(wx.StaticText):
+    """A formatted label for panels of controls."""
     def __init__(self, parent, label=""):
         super().__init__(parent, label=label)
         # Can't seem to modify font in-situ: must modify via local ref then re-set.
@@ -36,9 +37,9 @@ class PanelLabel(wx.StaticText):
 
 
 class LightPanel(wx.Panel):
+    """A panel of controls for a single light source."""
     def __init__(self, parent, lightToggle, lightPower=None, lightFilters=[]):
         super().__init__(parent, style=wx.BORDER_RAISED)
-        self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
         self.light = lightToggle
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.button = EnableButton(self, self.light)
@@ -73,6 +74,13 @@ class LightPanel(wx.Panel):
                          lambda evt: lightPower.setPower(evt.Value))
             self.Sizer.Add(powCtrl)
 
+        if lightFilters:
+            self.Sizer.AddSpacer(4)
+            self.Sizer.Add(wx.StaticText(self, label="Filters"),
+                           flag=wx.ALIGN_CENTER_HORIZONTAL)
+            for f in lightFilters:
+                self.Sizer.Add(f.makeSelector(self), flag=wx.EXPAND)
+        self.Sizer.Add(wx.StaticText(self, label="Too short???"))
 
     def SetFocus(self):
         # Sets focus to the main button to avoid accidental data entry
@@ -98,6 +106,7 @@ class LightPanel(wx.Panel):
 
 
 class LightControlsPanel(wx.Panel):
+    """Creates a LightPanel for each light source."""
     def __init__(self, parent):
         super().__init__(parent)
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
@@ -121,11 +130,10 @@ class LightControlsPanel(wx.Panel):
         self.Fit()
 
 
-
 class CameraPanel(wx.Panel):
+    """A panel of controls for a single camera."""
     def __init__(self, parent, camera):
         super().__init__(parent, style=wx.BORDER_RAISED)
-        self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
         self.camera = camera
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.button = EnableButton(self, self.camera)
@@ -176,6 +184,7 @@ class CameraPanel(wx.Panel):
 
 
 class CameraControlsPanel(wx.Panel):
+    """Creates a CameraPanel for each camera."""
     def __init__(self, parent):
         super().__init__(parent)
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
@@ -198,6 +207,7 @@ class CameraControlsPanel(wx.Panel):
 
 
 class ObjectiveControls(wx.Panel):
+    """A panel with an objective selector."""
     def __init__(self, parent):
         super().__init__(parent)
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
@@ -211,3 +221,20 @@ class ObjectiveControls(wx.Panel):
             ctrl.Bind(wx.EVT_CHOICE, lambda evt: o.changeObjective(evt.GetString()))
             events.subscribe("objective change",
                              lambda *a, **kw: ctrl.SetSelection(ctrl.FindString(a[0])))
+
+
+class FilterControls(wx.Panel):
+    """A panel with controls for all filter wheels."""
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        self.Sizer.Add(PanelLabel(self, label="Filters"))
+        hsizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.Sizer.Add(hsizer)
+
+        for i, f in enumerate(depot.getHandlersOfType(depot.LIGHT_FILTER)):
+            if i%3 == 0:
+                sz = wx.BoxSizer(wx.VERTICAL)
+                if i > 0: hsizer.AddSpacer(4)
+                hsizer.Add(sz)
+            sz.Add(f.makeUI(self), flag=wx.EXPAND)

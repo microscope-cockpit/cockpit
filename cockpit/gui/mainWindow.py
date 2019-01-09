@@ -97,11 +97,6 @@ class MainWindow(wx.Frame):
         wx.Frame.__init__(self, parent = None, title = "Cockpit")
         # Find out what devices we have to work with.
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
-        lightToggles = sorted(lightToggles, key = lambda l: float(l.wavelength))
-        # Set of objects that are in the same group as any light toggle.
-        # lightAssociates = set()
-        # for toggle in lightToggles:
-        #     lightAssociates.update(depot.getHandlersInGroup(toggle.groupName))
 
         ## Maps LightSource handlers to their associated panels of controls.
         self.lightToPanel = dict()
@@ -113,11 +108,11 @@ class MainWindow(wx.Frame):
         # Construct the UI.
         # Sizer for all controls. We'll split them into bottom half (light
         # sources) and top half (everything else).
-        mainSizer = wx.BoxSizer(wx.VERTICAL)
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Panel for holding the non-lightsource controls.
         topPanel = wx.Panel(self)
-        topPanel.SetBackgroundColour((170, 170, 170))
+        topPanel.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
         self.topPanel=topPanel
         topSizer = wx.BoxSizer(wx.VERTICAL)
  
@@ -180,7 +175,6 @@ class MainWindow(wx.Frame):
         # ordered slots, giving the user control over exposure order.
         cameraThings = depot.getHandlersOfType(depot.CAMERA)
         # Ignore anything that is handled specially.
-        #ignoreThings = lightToggles + list(lightAssociates) + lightPowerThings
         ignoreThings = lightToggles + lightPowerThings
         ignoreThings += cameraThings
         # Remove ignoreThings from the full list of devices.
@@ -196,17 +190,12 @@ class MainWindow(wx.Frame):
         ignoreThings.extend(hs)
         # Make the UI elements for the cameras.
         rowSizer.Add(mainPanels.CameraControlsPanel(self.topPanel))
-        hs = sorted(depot.getHandlersOfType(depot.LIGHT_FILTER))
-        for i, h in enumerate(hs):
-            if i%2 == 0:
-                s = wx.BoxSizer(wx.VERTICAL)
-                rowSizer.Add(s)
-                rowSizer.AddSpacer(COL_SPACER)
-            else:
-                s.AddSpacer(ROW_SPACER)
-            s.Add(h.makeUI(topPanel))
-        rowSizer.AddSpacer(COL_SPACER)
-        ignoreThings.extend(hs)
+
+        lightfilters = sorted(depot.getHandlersOfType(depot.LIGHT_FILTER))
+        ignoreThings.extend(lightfilters)
+
+        rowSizer.Add(mainPanels.FilterControls(self))
+
         # Make the UI elements for eveything else.
         for thing in ignoreThings:
             if thing in otherThings:
@@ -228,27 +217,22 @@ class MainWindow(wx.Frame):
                     rowSizer.AddSpacer(COL_SPACER)
                 rowSizer.Add(item)
 
-        topSizer.Add(rowSizer, 1)
+        topSizer.Add(rowSizer)
 
         topPanel.SetSizerAndFit(topSizer)
-        mainSizer.Add(topPanel)
-        mainSizer.AddSpacer(ROW_SPACER)
+
+        self.Sizer.Add(topPanel)
+        self.Sizer.AddSpacer(ROW_SPACER)
 
         ## Panel for holding light sources.
-        self.bottomPanel = wx.Panel(self)
-        self.bottomPanel.SetBackgroundColour((170, 170, 170))
-        bottomSizer = wx.BoxSizer(wx.VERTICAL)
-
-        bottomSizer.Add(mainPanels.LightControlsPanel(self.bottomPanel))
-        self.bottomPanel.SetSizerAndFit(bottomSizer)
-        mainSizer.Add(self.bottomPanel)
+        self.Sizer.Add(mainPanels.LightControlsPanel(self))
 
         # Ensure we use our full width if possible.
-        size = mainSizer.GetMinSize()
+        size = self.Sizer.GetMinSize()
         if size[0] < MAX_WIDTH:
-            mainSizer.SetMinSize((MAX_WIDTH, size[1]))
+            self.Sizer.SetMinSize((MAX_WIDTH, size[1]))
         
-        self.SetSizerAndFit(mainSizer)
+        self.SetSizerAndFit(self.Sizer)
 
         keyboard.setKeyboardHandlers(self)
         self.joystick = joystick.Joystick(self)
