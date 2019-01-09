@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2018-2019 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
 ## Copyright (C) 2018 Julio Mateos Langerak <julio.mateos-langerak@igh.cnrs.fr>
 ## Copyright (C) 2018 David Pinto <david.pinto@bioch.ox.ac.uk>
@@ -165,7 +165,6 @@ class CockpitApp(wx.App):
             status.Update(updateNum, " ... macrostage window")
             updateNum+=1
             cockpit.gui.macroStage.macroStageWindow.makeWindow(frame)
-            status.Update(updateNum, " ... shell window")
             updateNum+=1
             cockpit.gui.statusLightsWindow.makeWindow(frame)
 
@@ -240,14 +239,31 @@ class CockpitApp(wx.App):
             return False
 
     def onActivateApp(self, event):
+        # If we move to another app then back to cockpit, only MainWindow is
+        # raised - our other windows can remain hidden by the other app, so
+        # we need to raise all our top-level windows.
         if not event.Active:
             return
 
         top = wx.GetApp().GetTopWindow()
-        windows = top.GetChildren()
-        for w in windows:
-            if w.IsShown(): w.Raise()
-        top.Raise()
+        # wx.Choice controls cause emission of wxEVT_ACTIVATE_APP events for
+        # some reason. We don't want to re-raise windows just because the user
+        # clicked a wx.Choice. The only way I can find to discriminate these
+        # events from those we want to respond to is to look at top.FindFocus().
+        # This returns None if the event is a result of using a wx.Choice, or
+        # a reference to a control or window otherwise.
+        focussed = top.FindFocus()
+        if focussed is None:
+            return
+        for w in top.GetChildren():
+            if isinstance(w, wx.TopLevelWindow) and w.IsShown():
+                w.Raise()
+        uppermost = focussed.GetTopLevelParent()
+        # Ensure focussed item's window is at top of Z-stack.
+        uppermost.Raise()
+        # Ensure main window is raised.
+        if top is not uppermost:
+            top.Raise()
 
     ## Startup failed; log the failure information and exit.
     def onStartupFail(self, *args):
