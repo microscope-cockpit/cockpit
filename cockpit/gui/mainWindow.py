@@ -183,7 +183,7 @@ class MainWindow(wx.Frame):
         otherThings.extend(depot.getAllHandlers())
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        rowSizer.Add(mainPanels.ObjectiveControls(self))
+        rowSizer.Add(mainPanels.ObjectiveControls(self.topPanel))
         rowSizer.AddSpacer(COL_SPACER)
 
         hs = depot.getHandlersOfType(depot.OBJECTIVE)
@@ -194,7 +194,7 @@ class MainWindow(wx.Frame):
         lightfilters = sorted(depot.getHandlersOfType(depot.LIGHT_FILTER))
         ignoreThings.extend(lightfilters)
 
-        rowSizer.Add(mainPanels.FilterControls(self))
+        rowSizer.Add(mainPanels.FilterControls(self.topPanel))
 
         # Make the UI elements for eveything else.
         for thing in ignoreThings:
