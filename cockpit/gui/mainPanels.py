@@ -209,12 +209,10 @@ class FilterControls(wx.Panel):
         super().__init__(parent)
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.Sizer.Add(PanelLabel(self, label="Filters"))
-        hsizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.Sizer.Add(hsizer)
+        subpanel = wx.Panel(self, style=wx.BORDER_RAISED)
+        self.Sizer.Add(subpanel, 1, wx.EXPAND)
+        subpanel.Sizer = wx.WrapSizer(orient=wx.VERTICAL)
 
         for i, f in enumerate(depot.getHandlersOfType(depot.LIGHT_FILTER)):
-            if i%3 == 0:
-                sz = wx.BoxSizer(wx.VERTICAL)
-                if i > 0: hsizer.AddSpacer(4)
-                hsizer.Add(sz)
-            sz.Add(f.makeUI(self), flag=wx.EXPAND)
+            subpanel.Sizer.Add(f.makeUI(subpanel), 0,
+                               wx.EXPAND | wx.RIGHT | wx.BOTTOM, 8)

@@ -194,7 +194,7 @@ class MainWindow(wx.Frame):
         lightfilters = sorted(depot.getHandlersOfType(depot.LIGHT_FILTER))
         ignoreThings.extend(lightfilters)
 
-        rowSizer.Add(mainPanels.FilterControls(self.topPanel))
+        rowSizer.Add(mainPanels.FilterControls(self.topPanel), flag=wx.EXPAND)
 
         # Make the UI elements for eveything else.
         for thing in ignoreThings:
