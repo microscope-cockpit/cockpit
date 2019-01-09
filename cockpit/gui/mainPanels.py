@@ -92,17 +92,7 @@ class LightPanel(wx.Panel):
         light, state = evt.EventData
         if light != self.light:
             return
-        if state == STATES.enabling:
-            self.button.Disable()
-            self.button.SetBitmap(BMP_WAIT)
-        else:
-            self.button.Enable()
-        if state == STATES.enabled:
-            self.button.SetBitmap(BMP_ON)
-        elif state == STATES.disabled:
-            self.button.SetBitmap(BMP_OFF)
-        elif state == STATES.error:
-            self.button.SetBitmap(BMP_ERR)
+        self.button.setState(state)
 
 
 class LightControlsPanel(wx.Panel):
@@ -170,17 +160,7 @@ class CameraPanel(wx.Panel):
         camera, state = evt.EventData
         if camera != self.camera:
             return
-        if state == STATES.enabling:
-            self.button.Disable()
-            self.button.SetBitmap(BMP_WAIT)
-        else:
-            self.button.Enable()
-        if state == STATES.enabled:
-            self.button.SetBitmap(BMP_ON)
-        elif state == STATES.disabled:
-            self.button.SetBitmap(BMP_OFF)
-        elif state == STATES.error:
-            self.button.SetBitmap(BMP_ERR)
+        self.button.setState(state)
 
 
 class CameraControlsPanel(wx.Panel):
