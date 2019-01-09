@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2018-2019 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
@@ -935,8 +935,11 @@ def makeWindow(parent):
                                  style = wx.CAPTION| wx.RESIZE_BORDER |
                                  wx.MINIMIZE_BOX | wx.CLOSE_BOX)
     TSwindow.SetSize((1500,1000))
-    TSwindow.Show()
-    TSwindow.centerCanvas()
+    # TODO - determine if we need to Show the touchscreen or not.
+    # TODO - if the touchscreen is shown, ensure it is shown *on screen* ...
+    # otherwise, it suddenly appears when raised on re-activating the app.
+    #TSwindow.Show()
+    #TSwindow.centerCanvas()
 
 
 ## Transfer a camera image to the mosaic.
