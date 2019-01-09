@@ -443,9 +443,11 @@ class SetPointGauge(SafeControl, wx.Window):
         self._fetching = False
         self._vertical = style & wx.SL_VERTICAL > 0
         if self._vertical:
-            self.MinSize = (24, 96)
+            self.MinSize = (18, 96)
+            self.Size = (18, -1)
         else:
-            self.MinSize = (96, 24)
+            self.MinSize = (96, 18)
+            self.Size = (-1, 18)
         self._anim = []
         self._displayed = self._value.setpoint
         self._pending = None
