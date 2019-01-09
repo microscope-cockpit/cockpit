@@ -227,10 +227,7 @@ class EnableButton(wx.ToggleButton):
         if self.state == state:
             return
         if state == STATES.enabling:
-            self.Disable()
             self.SetBitmap(BMP_WAIT, wx.RIGHT)
-        else:
-            self.Enable()
         if state == STATES.enabled:
             self.SetBitmap(BMP_ON, wx.RIGHT)
         elif state == STATES.disabled:
