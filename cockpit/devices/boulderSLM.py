@@ -48,6 +48,41 @@ import cockpit.handlers.executor
 import time
 import cockpit.util
 
+class LastParameters(object):
+    """A class to keep a record of last SIM parmeters using async calls."""
+    def __init__(self, slm):
+        self.slm = slm
+        self._params = None
+        self._result = None
+        from threading import Lock
+        self._lock = Lock()
+
+    @property
+    def params(self):
+        """Return the last recorded SIM parameters."""
+        if self._result and self._result.ready:
+            # Updated parameters are available.
+            with self._lock:
+                try:
+                    self._params = self._result.value
+                except:
+                    pass
+                finally:
+                    self._result = None
+        return self._params
+
+    @params.setter
+    def params(self, value):
+        """Set recorded parameters explicitly."""
+        with self._lock:
+            self._result = None
+            self._params = value
+
+    def update(self):
+        """Dispatch async call to update record from hardware."""
+        if self.slm.asproxy:
+            self._result = self.slm.asproxy.get_sim_sequence()
+
 
 class BoulderSLM(device.Device):
     _config_types = {
@@ -61,14 +96,11 @@ class BoulderSLM(device.Device):
             return
         self.connection = None
         self.asproxy = None
-        self.executor = None
-        self.order = None
         self.position = None
         self.wasPowered = None
-        self.settlingTime = decimal.Decimal('10.')
         self.slmTimeout = 10
         self.slmRetryLimit = 3
-        self.lastParms = None
+        self.last = LastParameters(self)
 
 
     def initialize(self):
@@ -94,49 +126,40 @@ class BoulderSLM(device.Device):
         self.menuItems = OrderedDict(menuTuples)
 
 
-    def disable(self):
-        self.connection.stop()
-
-
     def getIsEnabled(self):
         return self.connection.get_is_enabled()
 
 
     def setEnabled(self, state):
         if state:
-            self.enable()
+            """Enable the SLM.
+            Often, after calling connection.run(), the SLM pattern and the image
+            index reported are not synchronised until a few triggers have been
+            sent, so we need to compensate for this. We do the best we can,
+            but any other trigger-device activity during this call can mean that
+            we miss the target frame by +/- 1.
+            """
+            # Target position
+            if self.last.params == self.connection.get_sim_sequence():
+                # Hardware and software sequences match
+                targetPosition = self.getCurrentPosition()
+            else:
+                targetPosition = 0
+            # Enable the hardware.
+            self.connection.run()
+            # Send a few triggers to clear synch. errors.
+            for i in range(3):
+                self.handler.triggerNow()
+                time.sleep(0.01)
+            # Cycle to the target position.
+            pos = self.getCurrentPosition()
+            delta = (targetPosition - pos) + (targetPosition < pos) * len(self.last.params)
+            for i in range(delta):
+                self.handler.triggerNow()
+                time.sleep(0.01)
         else:
-            self.disable()
-        #events.publish(events.DEVICE_STATUS, self.getIsEnabled())
-
-
-    def enable(self):
-        """Enable the SLM.
-
-        Often, after calling connection.run(), the SLM pattern and the image
-        index reported are not synchronised until a few triggers have been
-        sent, so we need to compensate for this. We do the best we can,
-        but any other trigger-device activity during this call can mean that
-        we miss the target frame by +/- 1.
-        """
-        # Target position
-        if self.lastParms == self.connection.get_sim_sequence():
-            # Hardware and software sequences match
-            targetPosition = self.position
-        else:
-            targetPosition = 0
-        # Enable the hardware.
-        self.connection.run()
-        # Send a few triggers to clear synch. errors.
-        for i in range(3):
-            self.handler.triggerNow()
-            time.sleep(0.01)
-        # Cycle to the target position.
-        pos = self.getCurrentPosition()
-        delta = (targetPosition - pos) + (targetPosition < pos) * len(self.lastParms)
-        for i in range(delta):
-            self.handler.triggerNow()
-            time.sleep(0.01)
+            """Disable the SLM"""
+            self.connection.stop()
 
 
     def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
@@ -204,7 +227,6 @@ class BoulderSLM(device.Device):
 
             # How long will the triggers take?
             # Time between triggers must be > table.toggleTime.
-            dt = self.settlingTime + 2 * numTriggers * table.toggleTime
             ## Shift later table entries to allow for triggers and settling.
             table.shiftActionsBack(time, dt)
             for trig in range(numTriggers):
@@ -222,18 +244,18 @@ class BoulderSLM(device.Device):
         # Wait until SLM has finished generating and loading patterns.
         self.wait(asyncResult, "SLM is generating pattern sequence.")
         # Store the parameters used to generate the sequence.
-        self.lastParms = sequence
+        self.last.params = sequence
         self.connection.run()
         # Fire several triggers to ensure that the sequence is loaded.
         for i in range(12):
             self.handler.triggerNow()
             time.sleep(0.01)
         # Ensure that we're at position 0.
-        self.position = self.getCurrentPosition()
-        while self.position != 0:
+        position = self.getCurrentPosition()
+        while position != 0:
             self.handler.triggerNow()
             time.sleep(0.01)
-            self.position = self.getCurrentPosition()
+            position = self.getCurrentPosition()
 
 
     def getCurrentPosition(self):
@@ -267,9 +289,6 @@ class BoulderSLM(device.Device):
         triggerButton = wx.Button(panel, label="step")
         triggerButton.Bind(wx.EVT_BUTTON, lambda evt: self.handler.triggerNow())
         panel.Sizer.Add(triggerButton, 0, wx.EXPAND)
-        # triggerButton only enabled when device is enabled.
-        triggerButton.Disable()
-        powerButton.manageStateOf(triggerButton)
         # Add a position display.
         posDisplay = cockpit.gui.device.MultilineDisplay(parent=panel, numLines=3)
         posDisplay.Bind(wx.EVT_TIMER,
@@ -283,6 +302,10 @@ class BoulderSLM(device.Device):
         # so it now lives in a right-click menu rather than on a button.
         panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
         self.hasUI = True
+        # Controls other than powerButton only enabled when SLM is enabled.
+        triggerButton.Disable()
+        posDisplay.Disable()
+        powerButton.manageStateOf((triggerButton, posDisplay))
         return panel
 
 
@@ -296,22 +319,15 @@ class BoulderSLM(device.Device):
         display = event.GetEventObject()
         if not hasattr(display, 'SetLabel'):
             display = display.GetOwner()
+        self.position = self.getCurrentPosition()
         try:
-            parms = self.lastParms[self.position]
+            parms = self.last.params[self.position]
         except (IndexError, TypeError):
             # SLM parms updated since last position fetched, or lastParms is None.
+            self.last.update()
             parms = None
         if parms:
             display.SetLabel(baseStr % parms)
-        # Dispatch a call in new thread to fetch new values for next time
-        self.updatePosition()
-
-
-    @cockpit.util.threads.callInNewThread
-    def updatePosition(self):
-        if not self.lastParms:
-            self.lastParms = self.connection.get_sim_sequence()
-        self.position = self.getCurrentPosition()
 
 
     def onPrepareForExperiment(self, *args):
@@ -321,7 +337,7 @@ class BoulderSLM(device.Device):
 
     def cleanupAfterExperiment(self, *args):
         if not self.wasPowered:
-            self.disable()
+            self.setEnabled(False)
 
 
     def performSubscriptions(self):
@@ -381,7 +397,7 @@ class BoulderSLM(device.Device):
         ## Tell the SLM to prepare the pattern sequence.
         asyncResult = self.asproxy.set_sim_sequence(params)
         self.wait(asyncResult, "SLM is generating pattern sequence.")
-        self.lastParms = params
+        self.last.update()
 
 
     def setDiffractionAngle(self):
