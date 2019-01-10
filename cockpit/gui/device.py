@@ -228,6 +228,12 @@ class EnableButton(wx.ToggleButton):
         listener.Bind(EVT_COCKPIT, self.onStatusEvent)
         self.Bind(wx.EVT_TOGGLEBUTTON, deviceHandler.toggleState)
         self.state = None
+        self.others = [] # A list of controls that should be en/disabled accordingly.
+
+
+    def manageStateOf(self, other):
+        self.others.append(other)
+
 
     @cockpit.util.threads.callInMainThread
     def setState(self, state):
@@ -244,6 +250,10 @@ class EnableButton(wx.ToggleButton):
             self.Disable()
         else:
             self.Enable()
+        if state == STATES.enabled:
+            for o in self.others: o.Enable()
+        else:
+            for o in self.others: o.Disable()
         # Ensure button is in pressed state if device is enabled, because
         # other controls or events may cause a state change.
         self.SetValue(state == STATES.enabled)
