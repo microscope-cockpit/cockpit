@@ -248,9 +248,17 @@ class MicroscopeLaser(MicroscopeBase):
 
 
     def finalizeInitialization(self):
+        # This should probably work the other way around:
+        # after init, the handlers should query for the current state,
+        # rather than the device pushing state info to the handlers as
+        # we currently do here.
+        #
         # Query the remote to update max power on handler.
         ph = self.handlers[0] # powerhandler
         ph.setMaxPower(self._proxy.get_max_power_mw())
+        # Set lightHandler to enabled if light source is on.
+        lh = self.handlers[-1]
+        lh.state = int(self._proxy.get_is_on())
 
 
 class MicroscopeFilter(MicroscopeBase):
