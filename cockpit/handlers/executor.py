@@ -597,18 +597,3 @@ class DelegateTrigger(SimpleExecutor):
         table.addAction(time, self._trigger, True)
         table.addAction(time + dt, self._trigger, False)
         return time + dt, self._responseTime
-
-
-    def setMovementTimeUI(self):
-        ## Display a dialog box to fetch a new value for _movementTime.
-        if self._movementTime is None:
-            # Ignored - using a method to determine movement time.
-            return
-        newdt = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-                None,
-                'Set settling time after trigger',
-                ('Sets the settling time after a trigger event.\n'
-                 u'Current dt is %.2fms.' % self._movementTime ),
-                self._movementTime,
-                atMouse=True)
-        self._movementTime = float(newdt)

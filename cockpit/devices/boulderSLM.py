@@ -91,8 +91,7 @@ class BoulderSLM(device.Device):
         # A mapping of context-menu entries to functions.
         # Define in tuples - easier to read and reorder.
         menuTuples = (('Generate SIM sequence', self.testSIMSequence),
-                      ('SIM diff. angle', self.setDiffractionAngle),
-                      ('Set delay after trigger', self.handler.setMovementTimeUI),)
+                      ('SIM diff. angle', self.setDiffractionAngle),)
         # Store as ordered dict for easy item->func lookup.
         self.menuItems = OrderedDict(menuTuples)
 
