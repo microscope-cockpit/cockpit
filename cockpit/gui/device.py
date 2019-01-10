@@ -223,7 +223,6 @@ class EnableButton(wx.ToggleButton):
         self.device = deviceHandler
         listener = EvtEmitter(self, DEVICE_STATUS)
         listener.Bind(EVT_COCKPIT, self.onStatusEvent)
-        self.SetBitmap(BMP_OFF, wx.RIGHT)
         self.Bind(wx.EVT_TOGGLEBUTTON, deviceHandler.toggleState)
         self.state = None
 
