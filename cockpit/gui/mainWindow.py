@@ -181,7 +181,7 @@ class MainWindow(wx.Frame):
         otherThings = list(depot.getAllDevices())
         otherThings.sort(key = lambda d: d.__class__.__name__)
         otherThings.extend(depot.getAllHandlers())
-        rowSizer = wx.BoxSizer(wx.HORIZONTAL)
+        rowSizer = wx.WrapSizer(wx.HORIZONTAL)
 
         # Add objetive control
         rowSizer.Add(mainPanels.ObjectiveControls(self.topPanel), flag=wx.EXPAND)
@@ -210,22 +210,18 @@ class MainWindow(wx.Frame):
                 continue
             item = thing.makeUI(topPanel)
             if item is not None:
-                # Add it to the main controls display.
-                if item.GetMinSize()[0] + rowSizer.GetMinSize()[0] > MAX_WIDTH:
-                    # Start a new row, because the old one would be too
-                    # wide to accommodate the item.
-                    topSizer.Add(rowSizer, 1, wx.EXPAND)
-                    rowSizer = wx.BoxSizer(wx.HORIZONTAL)
+                itemsizer = wx.BoxSizer(wx.VERTICAL)
+                itemsizer.Add(cockpit.gui.mainPanels.PanelLabel(topPanel, thing.name))
+                itemsizer.Add(item, 1, wx.EXPAND)
                 if rowSizer.GetChildren():
                     # Add a spacer.
                     rowSizer.AddSpacer(COL_SPACER)
-                rowSizer.Add(item)
+                rowSizer.Add(itemsizer, flag=wx.EXPAND)
 
         topSizer.Add(rowSizer)
-
         topPanel.SetSizerAndFit(topSizer)
 
-        self.Sizer.Add(topPanel)
+        self.Sizer.Add(topPanel, flag=wx.EXPAND)
         self.Sizer.AddSpacer(ROW_SPACER)
 
         ## Panel for holding light sources.
