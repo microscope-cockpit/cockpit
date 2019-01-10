@@ -80,7 +80,6 @@ class LightPanel(wx.Panel):
                            flag=wx.ALIGN_CENTER_HORIZONTAL)
             for f in lightFilters:
                 self.Sizer.Add(f.makeSelector(self), flag=wx.EXPAND)
-        self.Sizer.Add(wx.StaticText(self, label="Too short???"))
 
     def SetFocus(self):
         # Sets focus to the main button to avoid accidental data entry
@@ -114,7 +113,7 @@ class LightControlsPanel(wx.Panel):
             power = next(filter(lambda p: p.groupName == light.groupName, lightPowers), None)
             filters = list(filter(lambda f: light.name in f.lights, lightFilters) )
             panel = LightPanel (self, light, power, filters)
-            sz.Add(panel)
+            sz.Add(panel, flag=wx.EXPAND)
             self.panels[light] = panel
             sz.AddSpacer(4)
         self.Fit()
@@ -141,7 +140,6 @@ class CameraPanel(wx.Panel):
         self.Sizer.AddSpacer(2)
 
         if hasattr(camera, 'modes'):
-            print("Has modes")
             modebutton = wx.Button(parent, label='Mode')
             self.Sizer.Add(modebutton)
 
@@ -185,7 +183,7 @@ class CameraControlsPanel(wx.Panel):
 
         for cam in cameras:
             panel = CameraPanel (self, cam)
-            sz.Add(panel)
+            sz.Add(panel, flag=wx.EXPAND)
             self.panels[cam] = panel
             sz.AddSpacer(4)
         self.Fit()
@@ -198,11 +196,14 @@ class ObjectiveControls(wx.Panel):
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         label = PanelLabel(self, label="Objective")
         self.Sizer.Add(label)
+        panel = wx.Panel(self, style=wx.RAISED_BORDER)
+        self.Sizer.Add(panel, 1, wx.EXPAND)
+        panel.Sizer =  wx.BoxSizer(wx.VERTICAL)
 
         for o in depot.getHandlersOfType(depot.OBJECTIVE):
-            ctrl = wx.Choice(self)
+            ctrl = wx.Choice(panel)
             ctrl.Set(o.sortedObjectives)
-            self.Sizer.Add(ctrl)
+            panel.Sizer.Add(ctrl)
             ctrl.Bind(wx.EVT_CHOICE, lambda evt: o.changeObjective(evt.GetString()))
             events.subscribe("objective change",
                              lambda *a, **kw: ctrl.SetSelection(ctrl.FindString(a[0])))

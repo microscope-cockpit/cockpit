@@ -183,17 +183,21 @@ class MainWindow(wx.Frame):
         otherThings.extend(depot.getAllHandlers())
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        rowSizer.Add(mainPanels.ObjectiveControls(self.topPanel))
+        # Add objetive control
+        rowSizer.Add(mainPanels.ObjectiveControls(self.topPanel), flag=wx.EXPAND)
         rowSizer.AddSpacer(COL_SPACER)
-
         hs = depot.getHandlersOfType(depot.OBJECTIVE)
         ignoreThings.extend(hs)
-        # Make the UI elements for the cameras.
-        rowSizer.Add(mainPanels.CameraControlsPanel(self.topPanel))
 
+        # Make the UI elements for the cameras.
+        rowSizer.Add(mainPanels.CameraControlsPanel(self.topPanel), flag=wx.EXPAND)
+        rowSizer.AddSpacer(COL_SPACER)
+
+        # Add light controls.
         lightfilters = sorted(depot.getHandlersOfType(depot.LIGHT_FILTER))
         ignoreThings.extend(lightfilters)
 
+        # Add filterwheel controls.
         rowSizer.Add(mainPanels.FilterControls(self.topPanel), flag=wx.EXPAND)
 
         # Make the UI elements for eveything else.
@@ -225,7 +229,7 @@ class MainWindow(wx.Frame):
         self.Sizer.AddSpacer(ROW_SPACER)
 
         ## Panel for holding light sources.
-        self.Sizer.Add(mainPanels.LightControlsPanel(self))
+        self.Sizer.Add(mainPanels.LightControlsPanel(self), flag=wx.EXPAND)
 
         # Ensure we use our full width if possible.
         size = self.Sizer.GetMinSize()
