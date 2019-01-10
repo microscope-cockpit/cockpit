@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2018-19 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
@@ -44,8 +44,6 @@ import wx
 
 from cockpit import events
 import cockpit.gui.device
-import cockpit.gui.guiUtils
-import cockpit.gui.toggleButton
 import cockpit.handlers.executor
 import time
 import cockpit.util
@@ -269,7 +267,9 @@ class BoulderSLM(device.Device):
         triggerButton = wx.Button(panel, label="step")
         triggerButton.Bind(wx.EVT_BUTTON, lambda evt: self.handler.triggerNow())
         panel.Sizer.Add(triggerButton, 0, wx.EXPAND)
-
+        # triggerButton only enabled when device is enabled.
+        triggerButton.Disable()
+        powerButton.manageStateOf(triggerButton)
         # Add a position display.
         posDisplay = cockpit.gui.device.MultilineDisplay(parent=panel, numLines=3)
         posDisplay.Bind(wx.EVT_TIMER,
