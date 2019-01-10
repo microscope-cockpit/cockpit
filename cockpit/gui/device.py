@@ -221,6 +221,9 @@ class EnableButton(wx.ToggleButton):
     def __init__(self, parent, deviceHandler):
         super().__init__(parent, -1, deviceHandler.name)
         self.device = deviceHandler
+        # Devices should update bitmap on startup, but reserve bitmap
+        # space for those that do not yet do so.
+        self.SetBitmap(BMP_OFF, wx.RIGHT)
         listener = EvtEmitter(self, DEVICE_STATUS)
         listener.Bind(EVT_COCKPIT, self.onStatusEvent)
         self.Bind(wx.EVT_TOGGLEBUTTON, deviceHandler.toggleState)
