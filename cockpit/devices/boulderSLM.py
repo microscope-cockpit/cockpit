@@ -98,8 +98,18 @@ class BoulderSLM(device.Device):
 
     def disable(self):
         self.connection.stop()
-        if self.elements.get('triggerButton'):
-            self.elements['triggerButton'].Disable()
+
+
+    def getIsEnabled(self):
+        return self.connection.get_is_enabled()
+
+
+    def setEnabled(self, state):
+        if state:
+            self.enable()
+        else:
+            self.disable()
+        #events.publish(events.DEVICE_STATUS, self.getIsEnabled())
 
 
     def enable(self):
@@ -129,9 +139,6 @@ class BoulderSLM(device.Device):
         for i in range(delta):
             self.handler.triggerNow()
             time.sleep(0.01)
-        # Update the display.
-        if self.elements.get('triggerButton'):
-            self.elements['triggerButton'].Enable()
 
 
     def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
@@ -244,7 +251,9 @@ class BoulderSLM(device.Device):
             "slm", "slm group", True,
             {'examineActions': self.examineActions,
              'getMovementTime': lambda *args: dt,
-             'executeTable': self.executeTable})
+             'executeTable': self.executeTable,
+             'setEnabled': self.setEnabled,
+             'getIsEnabled': self.getIsEnabled})
         self.handler.delegateTo(trigsource, trigline, 0, dt)
         result.append(self.handler)
         return result
@@ -252,49 +261,29 @@ class BoulderSLM(device.Device):
 
     ### UI functions ###
     def makeUI(self, parent):
-        self.panel = wx.Panel(parent)
-        self.panel.SetDoubleBuffered(True)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        label = cockpit.gui.device.Label(
-                parent=self.panel, label='SLM')
-        sizer.Add(label)
-        rowSizer = wx.BoxSizer(wx.VERTICAL)
-        self.elements = OrderedDict()
-        powerButton = cockpit.gui.toggleButton.ToggleButton(
-                label='OFF',
-                activateAction = self.enable,
-                deactivateAction = self.disable,
-                activeLabel = 'ON',
-                inactiveLabel = 'OFF',
-                parent=self.panel,
-                size=cockpit.gui.device.DEFAULT_SIZE)
-        self.elements['powerButton'] = powerButton
-        # Add a trigger button if we can trigger the SLM on demand.
-        triggerButton = cockpit.gui.toggleButton.ToggleButton(
-                label='step',
-                parent=self.panel,
-                size=cockpit.gui.device.DEFAULT_SIZE)
-        triggerButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.handler.triggerNow())
-        self.elements['triggerButton'] = triggerButton
-        triggerButton.Disable()
+        panel = wx.Panel(parent, style=wx.BORDER_RAISED)
+        panel.SetDoubleBuffered(True)
+        panel.Sizer = wx.BoxSizer(wx.VERTICAL)
+        powerButton = cockpit.gui.device.EnableButton(panel, self.handler)
+        panel.Sizer.Add(powerButton, 0, wx.EXPAND)
+        triggerButton = wx.Button(panel, label="step")
+        triggerButton.Bind(wx.EVT_BUTTON, lambda evt: self.handler.triggerNow())
+        panel.Sizer.Add(triggerButton, 0, wx.EXPAND)
+
         # Add a position display.
-        posDisplay = cockpit.gui.device.MultilineDisplay(parent=self.panel, numLines=3)
+        posDisplay = cockpit.gui.device.MultilineDisplay(parent=panel, numLines=3)
         posDisplay.Bind(wx.EVT_TIMER,
                         lambda event: self.updatePositionDisplay(event))
+        panel.Sizer.Add(posDisplay)
         # Set up a timer to update value displays.
         self.updateTimer = wx.Timer(posDisplay)
         self.updateTimer.Start(1000)
-        self.elements['posDisplay'] = posDisplay
-
+        self.display = posDisplay
         # Changed my mind. SIM diffraction angle is an advanced parameter,
         # so it now lives in a right-click menu rather than on a button.
-        self.panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
-        for e in self.elements.values():
-            rowSizer.Add(e)
-        sizer.Add(rowSizer)
-        self.panel.SetSizerAndFit(sizer)
+        panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
         self.hasUI = True
-        return self.panel
+        return panel
 
 
     def updatePositionDisplay(self, event):
@@ -314,21 +303,6 @@ class BoulderSLM(device.Device):
             parms = None
         if parms:
             display.SetLabel(baseStr % parms)
-        # This is a UI function so runs in the main thread. Comms errors
-        # will hang the main thread, unless they are caught and handled.
-        # Should refactor this to use the same buttons that the cameras use,
-        # but that will involve changes elsewhere, such as being able to
-        # pass callbacks to DelegateTriggerHandler.
-        try:
-            isPowered = self.connection.get_is_enabled()
-        except:
-            # comms error
-            isPowered = False
-        self.elements['powerButton'].updateState(isPowered)
-        if isPowered:
-            self.elements['triggerButton'].Enable()
-        else:
-            self.elements['triggerButton'].Disable()
         # Dispatch a call in new thread to fetch new values for next time
         self.updatePosition()
 
@@ -342,18 +316,12 @@ class BoulderSLM(device.Device):
 
     def onPrepareForExperiment(self, *args):
         self.position = self.getCurrentPosition()
-        if 'powerButton' in self.elements:
-            self.wasPowered = self.elements['powerButton'].isActive
+        self.wasPowered = self.getIsEnabled()
 
 
     def cleanupAfterExperiment(self, *args):
-        powerButton = self.elements['powerButton']
         if not self.wasPowered:
-            # SLM was not active prior to experiment.
-            if 'powerButton' in self.elements:
-                self.elements['powerButton'].deactivate()
-            else:
-                self.disable()
+            self.disable()
 
 
     def performSubscriptions(self):
@@ -392,7 +360,7 @@ class BoulderSLM(device.Device):
 
     def testSIMSequence(self):
         inputs = cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
-                self.panel,
+                None,
                 'Generate a SIM sequence',
                 ['wavelength',
                  'total angles',
@@ -421,12 +389,12 @@ class BoulderSLM(device.Device):
             theta = self.connection.get_sim_diffraction_angle()
         except:
             raise Exception('Could not communicate with SLM service.')
-        newTheta = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-                self.panel,
+        newTheta = float(cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
+                None,
                 'Set SIM diffraction angle',
                 ('Adjust diffraction angle to\nput spots at edge of pupil.\n'
                  u'Current angle is %.2f°.' % theta ),
                 theta,
-                atMouse=True)
+                atMouse=True))
         self.connection.set_sim_diffraction_angle(newTheta)
 
