@@ -131,14 +131,13 @@ class CameraPanel(wx.Panel):
         self.Sizer.Add(self.button, flag=wx.EXPAND)
         self.Sizer.AddSpacer(2)
 
-        line = wx.StaticBox(self, size=(-1,4), style=wx.LI_HORIZONTAL)
-        line.SetBackgroundColour(wavelengthToColor(self.camera.wavelength or 0))
-        self.Sizer.Add(line, flag=wx.EXPAND)
+        self.line = wx.StaticBox(self, size=(-1,4), style=wx.LI_HORIZONTAL)
+        self.line.SetBackgroundColour(wavelengthToColor(self.camera.wavelength or 0))
+        self.Sizer.Add(self.line, flag=wx.EXPAND)
         # If there are problems here, it's because the inline function below is
         # being called outside of the main thread and needs taking out and
         # wrapping with wx.CallAfter.
-        camera.addWatch('wavelength',
-                        lambda wl: line.SetBackgroundColour(wavelengthToColor(wl or 0)))
+        camera.addWatch('wavelength', self.onWavelengthChange)
         self.Sizer.AddSpacer(2)
 
         if hasattr(camera, 'modes'):
@@ -150,6 +149,12 @@ class CameraPanel(wx.Panel):
             self.Sizer.Add(camera.callbacks['makeUI'](self))
         self.Sizer.AddSpacer(2)
 
+
+    def onWavelengthChange(self, wl):
+        """Change the colour of our wavelength indicator."""
+        self.line.SetBackgroundColour(wavelengthToColor(wl or 0))
+        # Explicit refresh required under MSW.
+        wx.CallAfter(self.line.Refresh)
 
     def SetFocus(self):
         # Sets focus to the main button to avoid accidental data entry
