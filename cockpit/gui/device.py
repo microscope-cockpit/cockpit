@@ -231,8 +231,12 @@ class EnableButton(wx.ToggleButton):
         self.others = [] # A list of controls that should be en/disabled accordingly.
 
 
-    def manageStateOf(self, other):
-        self.others.append(other)
+    def manageStateOf(self, others):
+        try:
+            self.others.extend(others)
+        except:
+            # others is not iterable
+            self.others.append(others)
 
 
     @cockpit.util.threads.callInMainThread
