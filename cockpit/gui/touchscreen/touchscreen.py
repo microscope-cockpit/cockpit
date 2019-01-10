@@ -860,6 +860,7 @@ class LightToggleButton(SBitmapToggleButton):
     mask = wx.Mask(_bmp)
     del _bmp
 
+
     def __init__(self, parent, light, **kwargs):
         size = (LightToggleButton.size, LightToggleButton.size)
         self.light = light
@@ -902,26 +903,26 @@ class LightToggleButton(SBitmapToggleButton):
         self.SetBitmapDisabled(bmpOff)
         self.SetBitmapSelected(bmpOn)
         self.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.light.toggleState())
+        from cockpit.gui import EvtEmitter, EVT_COCKPIT
+        from cockpit.events import DEVICE_STATUS
+        listener = EvtEmitter(self, DEVICE_STATUS)
+        listener.Bind(EVT_COCKPIT, self.onStatusEvent)
 
 
-    def onEnabledEvent(self, state):
+    def onStatusEvent(self, evt):
+        device, state = evt.EventData
+        if device != self.light:
+            return
         # Disable response to clicks while waiting for light state change.
         if state is STATES.enabling:
             self.Enable(False)
         else:
             self.Enable(True)
 
-        if state is STATES.enabled:
-            self.SetToggle(True)
-        elif state is STATES.constant:
-            self.SetToggle(True)
-        elif state is STATES.disabled:
-            self.SetToggle(False)
-        elif state is STATES.enabling:
-            self.SetToggle(False)
-        elif state is STATES.error:
-            self.SetToggle(True)
-        self.Refresh()
+        toggle = state in [STATES.enabled, STATES.constant]
+
+        self.SetToggle(toggle)
+        wx.CallAfter(self.Refresh)
 
 
 
