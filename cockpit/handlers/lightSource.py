@@ -133,6 +133,11 @@ class LightHandler(deviceHandler.DeviceHandler):
             events.subscribe('user abort', onAbort)
 
 
+    def makeInitialPublications(self):
+        # Send state event to set initial state of any controls.
+        events.publish(events.DEVICE_STATUS, self, self.state)
+
+
     ## Save our settings in the provided dict.
     def onSaveSettings(self, settings):
         settings[self.name] = {
