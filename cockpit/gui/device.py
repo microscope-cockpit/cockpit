@@ -242,6 +242,9 @@ class EnableButton(wx.ToggleButton):
             self.Disable()
         else:
             self.Enable()
+        # Ensure button is in pressed state if device is enabled, because
+        # other controls or events may cause a state change.
+        self.SetValue(state == STATES.enabled)
         # Enabling/disabling control sets focus to None. Set it to parent so keypresses still handled.
         wx.CallAfter(self.Parent.SetFocus)
 
