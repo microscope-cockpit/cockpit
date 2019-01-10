@@ -212,6 +212,11 @@ BMP_WAIT = wx.Bitmap.FromRGBA(*BMP_SIZE, red=255, green=165, blue=0,
 BMP_ERR = wx.Bitmap.FromRGBA(*BMP_SIZE, red=255, green=0, blue=0,
                              alpha=wx.ALPHA_OPAQUE)
 
+BMPS = {STATES.enabling: BMP_WAIT,
+        STATES.enabled: BMP_ON,
+        STATES.disabled: BMP_OFF,
+        STATES.error: BMP_ERR}
+
 class EnableButton(wx.ToggleButton):
     def __init__(self, parent, deviceHandler):
         super().__init__(parent, -1, deviceHandler.name)
@@ -226,15 +231,17 @@ class EnableButton(wx.ToggleButton):
     def setState(self, state):
         if self.state == state:
             return
-        if state == STATES.enabling:
-            self.SetBitmap(BMP_WAIT, wx.RIGHT)
-        if state == STATES.enabled:
-            self.SetBitmap(BMP_ON, wx.RIGHT)
-        elif state == STATES.disabled:
-            self.SetBitmap(BMP_OFF, wx.RIGHT)
-        elif state == STATES.error:
-            self.SetBitmap(BMP_ERR, wx.RIGHT)
+        # GTK only needs SetBitmap, but MSW needs *all* bitmaps updating.
+        self.SetBitmap(BMPS[state], wx.RIGHT)
+        self.SetBitmapCurrent(BMPS[state])
+        self.SetBitmapFocus(BMPS[state])
+        self.SetBitmapPressed(BMPS[state])
+        self.SetBitmapDisabled(BMPS[state])
         self.state = state
+        if state == STATES.enabling:
+            self.Disable()
+        else:
+            self.Enable()
         # Enabling/disabling control sets focus to None. Set it to parent so keypresses still handled.
         wx.CallAfter(self.Parent.SetFocus)
 
