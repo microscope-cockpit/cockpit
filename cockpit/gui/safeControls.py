@@ -251,7 +251,7 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
           evt (wx.CommandEvent(wx.wxEVT_TEXT)): The event.
         """
         self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT))
-        if evt.String == '':
+        if evt.String in ['', '.', '-']:
             return
         text = self.GetValue()
         self.SetPending(text)
@@ -311,7 +311,7 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
         Args:
           value: The value to display as a string, int or float.
         """
-        if self.GetValue() in ['', '-', '.'] or (value is not None and self.Value != value):
+        if value is not None and (self.Value != value):
             s = str(value)
             if '.' in s:
                 s = s[:s.find('.') + self._places + 1]
@@ -325,9 +325,6 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
         """
         # Reset the focus-check timer.
         self._checkTimer.StartOnce(500)
-        # Don't update if no value defined.
-        if pending in ['', '.', '-']:
-            return
         super(self.__class__, self).SetPending(pending)
         if self._pending is not None and not self.HasFocus():
             self.Value = self._pending
