@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2018-19 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
 ## Copyright (C) 2018 David Pinto <david.pinto@bioch.ox.ac.uk>
 ##
@@ -554,7 +554,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             # Show a menu.
             menu = wx.Menu()
             for label, action in self.getMenuActions():
-                id = wx.NewId()
+                id = wx.NewIdRef()
                 menu.Append(id, label)
                 self.Bind(wx.EVT_MENU,  lambda event, action = action: action(), id= id)
             cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
