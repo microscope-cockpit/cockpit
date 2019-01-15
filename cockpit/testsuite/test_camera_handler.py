@@ -67,7 +67,6 @@ class CameraHandlerTestCase(unittest.TestCase):
         self.assertEqual(camera.descriptiveName,
                          self.args['name'] + ' (Test-Dye)')
 
-
     def test_camera_enable_event(self):
         camera = cockpit.handlers.camera.CameraHandler(**self.args)
 
@@ -81,7 +80,6 @@ class CameraHandlerTestCase(unittest.TestCase):
         event_handler.assert_called_once()
         event_handler.assert_called_with(camera, True)
         self.callback_mocks['setEnabled'].assert_called_with('mock', True)
-
 
     @unittest.mock.patch('cockpit.handlers.camera.events')
     def test_set_enabled_sends_experiment_event(self, mockEvents):
