@@ -21,6 +21,7 @@ import Tkinter as tk
 from PIL import Image, ImageTk
 import cockpit.util.userConfig as Config
 import cockpit.handlers.executor
+import time
 
 import numpy as np
 import scipy.stats as stats
@@ -38,7 +39,7 @@ class Alpao(device.Device):
         ## Connect to the remote program
     def initialize(self):
         self.proxy = Pyro4.Proxy(self.uri)
-        self.proxy.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
+        #self.proxy.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
         self.no_actuators = self.proxy.get_n_actuators()
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
@@ -46,6 +47,7 @@ class Alpao(device.Device):
         #Excercise the DM to remove residual static and then set to 0 position
         for ii in range(20):
             self.proxy.send((np.zeros(self.no_actuators)+(ii%2)))
+            time.sleep(0.01)
         self.proxy.reset()
 
         #Create accurate look up table for certain Z positions
