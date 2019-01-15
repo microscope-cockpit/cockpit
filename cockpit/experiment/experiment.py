@@ -69,7 +69,6 @@ import wx
 
 from six import iteritems
 
-TIME_FORMAT_STR = '%Y-%m-%d %H:%M:%S'
 
 ## Purely for debugging purposes, a copy of the last Experiment that was
 # executed.
