@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2018 Thomas Park <thomasparks@outlook.com>
+## Copyright (C) 2019 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
+## Copyright (C) 2019 Thomas Park <thomasparks@outlook.com>
 ##
 ## This file is part of Cockpit.
 ##
@@ -20,24 +21,30 @@
 
 import decimal
 import unittest
-import unittest.mock
 
-from cockpit.experiment.actionTable import ActionTable
+import cockpit.depot
+import cockpit.experiment.actionTable
+import cockpit.handlers.deviceHandler
+
+
+class _MockDeviceHandler(cockpit.handlers.deviceHandler.DeviceHandler):
+    def __init__(self, name='mock', groupName='testsuite'):
+        super().__init__(name, groupName, isEligibleForExperiments=False,
+                         callbacks={}, deviceType=cockpit.depot.GENERIC_DEVICE)
 
 
 class TestActionTable(unittest.TestCase):
     def setUp(self):
-        self.action_table = ActionTable()
-        self.handler = unittest.mock.Mock()
-        self.handler.name = 'Mock'
+        self.action_table = cockpit.experiment.actionTable.ActionTable()
 
     def test___getitem___single(self):
         self.action_table.addAction(0, None, None)
         self.assertEqual((0, None, None), self.action_table.__getitem__(0))
 
     def test___getitem___handler_is_unmodified(self):
-        self.action_table.addAction(0, self.handler, None)
-        self.assertTrue(self.action_table.__getitem__(0)[1] is self.handler)
+        handler = _MockDeviceHandler()
+        self.action_table.addAction(0, handler, None)
+        self.assertTrue(self.action_table.__getitem__(0)[1] is handler)
 
     def test___getitem___last(self):
         for n in range(5):
@@ -77,23 +84,27 @@ class TestActionTable(unittest.TestCase):
         self.assertEqual(self.action_table.prettyString(), '')
 
     def test_pretty_string_non_emtpy_length(self):
-        for n in range(5):
-             self.action_table.addAction(n, self.handler, None)
-        self.assertEqual(len(self.action_table.prettyString().splitlines()), 5)
+        handler = _MockDeviceHandler()
+        n_actions = 5
+        for i in range(n_actions):
+             self.action_table.addAction(i, handler, None)
+        self.assertEqual(len(self.action_table.prettyString().splitlines()),
+                         n_actions)
 
     def test_pretty_string_format(self):
         """The format returned is the repr's of 'time handler.name parameter'
         as a string.
         """
-        self.action_table.addAction(1, self.handler, None)
+        handler = _MockDeviceHandler()
+        self.action_table.addAction(1, handler, None)
         s = self.action_table.prettyString()
-        time, handler, parameter = s.split()
+        time, name, parameter = s.split()
 
         try:
             float(time)
         except ValueError:
             self.assertTrue(False)
-        self.assertEqual(handler, 'Mock')
+        self.assertEqual(name, handler.name)
         self.assertEqual(parameter, 'None')
 
     def test___setitem__(self):
@@ -112,12 +123,12 @@ class TestActionTable(unittest.TestCase):
 
     def test_addToggle(self):
         # Toggles are represented by 2 events
-        self.action_table.addToggle(1, None)
+        self.action_table.addToggle(1, _MockDeviceHandler())
         self.assertEqual(2, len(self.action_table))
 
     def test_addToggle_time_delta(self):
         # Toggles should be seperated by a single dt
-        self.action_table.addToggle(1, None)
+        self.action_table.addToggle(1, _MockDeviceHandler())
         dt = self.action_table.toggleTime
         self.assertEqual(self.action_table[0][0] + dt, self.action_table[1][0])
 
@@ -153,9 +164,9 @@ class TestActionTable(unittest.TestCase):
 
     @unittest.expectedFailure
     def test_enforcePositiveTimepoints_unsorted(self):
-        '''Enforcing the sorted order should move all elements forward by
+        """Enforcing the sorted order should move all elements forward by
         the most negative elements time.
-        '''
+        """
         timepoints = [0, -1]
         for time in timepoints:
             self.action_table.addAction(time, None, None)
@@ -187,9 +198,10 @@ class TestActionTable(unittest.TestCase):
         self.assertNotEqual(*times)
 
     def test_getLastActionFor(self):
-        self.action_table.addAction(0, self.handler, None)
-        self.assertEqual((0, None),
-                         self.action_table.getLastActionFor(self.handler))
+        handler = _MockDeviceHandler()
+        self.action_table.addAction(0, handler, None)
+        self.assertEqual(self.action_table.getLastActionFor(handler),
+                         (0, None))
 
     # TODO: test marktime, no elements, no elements that need to be moved
     def test_shiftActionsBack(self):
@@ -210,7 +222,7 @@ class TestActionTable(unittest.TestCase):
             self.assertLessEqual(self.action_table[i][0], action[0])
 
     def test_sort_reversed(self):
-        for t in range(5)[::-1]:
+        for t in range(4, -1, -1):
             self.action_table.addAction(t, None, None)
         self.action_table.sort()
         for i, action in enumerate(self.action_table):
