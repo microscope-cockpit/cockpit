@@ -67,6 +67,8 @@ import traceback
 import wx
 import wx.glcanvas
 import operator
+from skimage.filters import threshold_otsu
+from scipy.ndimage.measurements import center_of_mass
 
 ## @package cockpit.gui.imageViewer.viewCanvas
 # This module provides a canvas for displaying camera images.
@@ -78,6 +80,7 @@ HISTOGRAM_HEIGHT = 40
 
 ## Drag modes
 (DRAG_NONE, DRAG_CANVAS, DRAG_BLACKPOINT, DRAG_WHITEPOINT) = range(4)
+
 
 ## This class handles displaying multi-channel 2D images.
 # Most of the actual drawing logic is handled in the image.Image class.
@@ -97,6 +100,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
         ## Should we show a crosshair (used for alignment)?
         self.showCrosshair = False
+        self.showAligCentroid = False
+        self.showCurCentroid = False
+        self.aligCentroidCalculated = False
 
         ## Edge length of one tile.
         self.tileSize = tileSize
@@ -168,7 +174,12 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         # context menu being displayed after our own.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
 
-
+        self.y_alig_cent = None
+        self.x_alig_cent = None
+        self.y_cur_cent = None
+        self.x_cur_cent = None
+        self.diff_y = None
+        self.diff_x = None
 
     def onMouseWheel(self, event):
         # Only respond if event originated within window.
@@ -239,10 +250,20 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             # display with the image.
             shouldResetView = self.imageShape != newImage.shape
             self.imageShape = newImage.shape
-            
+
             self.imageMin = newImage.min()
             self.imageMax = newImage.max()
             self.recalculateHistogram(newImage)
+            if self.showAligCentroid:
+                if self.aligCentroidCalculated:
+                    pass
+                else:
+                    self.calcCurCentroid(newImage)
+                    self.x_alig_cent = self.x_cur_cent
+                    self.y_alig_cent = self.y_cur_cent
+                    self.aligCentroidCalculated = True
+            if self.showCurCentroid:
+                self.calcCurCentroid(newImage)
             self.setTiles(newImage)
             if shouldResetView:
                 self.resetView()
@@ -316,6 +337,20 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.binSizes = numpy.bincount(
             ((temp-temp.min()) * numBins / dataRange).astype(numpy.int32))
 
+    def calcCurCentroid(self, imageData):
+        thresh = threshold_otsu(imageData)
+        binaryIm = imageData > thresh
+        imageOtsu = imageData * binaryIm
+
+        y_cent, x_cent = center_of_mass(imageOtsu[10:-10, 10:-10])
+        self.y_cur_cent = (y_cent + 10)
+        self.x_cur_cent = (x_cent + 10)
+
+        if self.y_alig_cent == None or self.x_alig_cent == None:
+            pass
+        else:
+            self.diff_y = self.y_cur_cent - self.y_alig_cent
+            self.diff_x = self.x_cur_cent - self.x_alig_cent
 
     ## Reset our blackpoint/whitepoint based on the image data.
     def resetPixelScale(self):
@@ -413,11 +448,16 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                         glPopMatrix()
 
                 glDisable(GL_TEXTURE_2D)
-
+                glTranslatef(0, -HISTOGRAM_HEIGHT, 0)
                 if self.showCrosshair:
                     glTranslatef(0, -HISTOGRAM_HEIGHT, 0)
                     self.drawCrosshair()
-
+                if self.showAligCentroid:
+                    self.drawCentroidCross(y_cent=self.y_alig_cent, x_cent=self.x_alig_cent,
+                                           colour=(0, 255, 255))
+                if self.showCurCentroid:
+                    self.drawCentroidCross(y_cent=self.y_cur_cent, x_cent=self.x_cur_cent,
+                                           colour=(255, 0, 255))
                 glPopMatrix()
 
                 self.drawHistogram()
@@ -433,7 +473,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
 
     @cockpit.util.threads.callInMainThread
-    def drawCrosshair(self):
+    def drawCrosshair(self, ):
         glColor3f(0, 255, 255)
         glBegin(GL_LINES)
         glVertex2f(0, HISTOGRAM_HEIGHT + 0.5 * (self.h - HISTOGRAM_HEIGHT) )
@@ -442,6 +482,17 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         glVertex2f(0.5 * self.w, self.h)
         glEnd()
 
+    @cockpit.util.threads.callInMainThread
+    def drawCentroidCross(self, y_cent, x_cent, colour):
+        if x_cent == None or y_cent == None:
+            return
+        glColor3f(colour[0], colour[1], colour[2])
+        glBegin(GL_LINES)
+        glVertex2f(x_cent - 50, HISTOGRAM_HEIGHT + y_cent)
+        glVertex2f(x_cent + 50, HISTOGRAM_HEIGHT + y_cent)
+        glVertex2f(x_cent, HISTOGRAM_HEIGHT + y_cent - 50)
+        glVertex2f(x_cent, HISTOGRAM_HEIGHT + y_cent + 50)
+        glEnd()
 
     ## Draw the histogram of our data.
     @cockpit.util.threads.callInMainThread
@@ -497,18 +548,27 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         # Left-align the data min by padding with spaces.
         minVal = str(self.imageMin)
         minVal += ' ' * (10 - len(minVal))
-        self.font.render('%d [%s %10d] %d' %
-                (self.tiles[0][0].imageMin, self.imageMin,
-                 self.imageMax, self.tiles[0][0].imageMax))
+        if self.showCurCentroid:
+            if self.diff_y == None or self.diff_x == None:
+                self.font.render('%d [%s %10d] %d' %
+                                 (self.tiles[0][0].imageMin, self.imageMin,
+                                  self.imageMax, self.tiles[0][0].imageMax))
+            else:
+                self.font.render('%d [%s %10d] %d       X dist = %f, Y dist = %f' %
+                                 (self.tiles[0][0].imageMin, self.imageMin,
+                                  self.imageMax, self.tiles[0][0].imageMax,
+                                  self.diff_x, self.diff_y))
+        else:
+            self.font.render('%d [%s %10d] %d' %
+                             (self.tiles[0][0].imageMin, self.imageMin,
+                              self.imageMax, self.tiles[0][0].imageMax))
         glPopMatrix()
-
 
     ## Update the size of the canvas by scaling it.
     def setSize(self, size):
         if self.imageData is not None:
             self.w, self.h = size
         self.Refresh(0)
-
 
     def onMouse(self, event):
         if self.mouseHandler is not None:
@@ -570,8 +630,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         return [('Reset view', self.resetView),
                 ('Fill viewer', lambda: self.resetView(True)),
                 ('Set histogram parameters', self.onSetHistogram),
-                ('Toggle alignment crosshair', self.toggleCrosshair)]
-
+                ('Toggle alignment crosshair', self.toggleCrosshair),
+                ('Toggle show aligment centroid', self.toggleAligCentroid),
+                ('Toggle show current centroid', self.toggleCurCentroid)]
 
     ## Let the user specify the blackpoint and whitepoint for image scaling.
     def onSetHistogram(self, event = None):
@@ -590,6 +651,11 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def toggleCrosshair(self, event=None):
         self.showCrosshair = not(self.showCrosshair)
 
+    def toggleAligCentroid(self, event=None):
+        self.showAligCentroid = not (self.showAligCentroid)
+
+    def toggleCurCentroid(self, event=None):
+        self.showCurCentroid = not (self.showCurCentroid)
 
     ## Display information on the pixel under the mouse at the given
     # position.
