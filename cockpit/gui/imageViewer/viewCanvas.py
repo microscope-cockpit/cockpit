@@ -4,6 +4,7 @@
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
 ## Copyright (C) 2018 David Pinto <david.pinto@bioch.ox.ac.uk>
+## Copyright (C) 2019 Nicholas Hall <nicholas.hall@dtc.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -653,6 +654,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
     def toggleAligCentroid(self, event=None):
         self.showAligCentroid = not (self.showAligCentroid)
+        self.aligCentroidCalculated = False
 
     def toggleCurCentroid(self, event=None):
         self.showCurCentroid = not (self.showCurCentroid)
