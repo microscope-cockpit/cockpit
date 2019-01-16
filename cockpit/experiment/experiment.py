@@ -82,7 +82,10 @@ generatedFilenames = []
 def isRunning():
     """Is an experiment running?
     """
-    return lastExperiment.is_running()
+    if lastExperiment is None:
+        return False
+    else:
+        return lastExperiment.is_running()
 
 
 ## This class is the root class for generating and running experiments.
