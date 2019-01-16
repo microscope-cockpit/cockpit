@@ -70,6 +70,7 @@ import wx.glcanvas
 import operator
 from skimage.filters import threshold_otsu
 from scipy.ndimage.measurements import center_of_mass
+import winsound
 
 ## @package cockpit.gui.imageViewer.viewCanvas
 # This module provides a canvas for displaying camera images.
@@ -352,6 +353,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         else:
             self.diff_y = self.y_cur_cent - self.y_alig_cent
             self.diff_x = self.x_cur_cent - self.x_alig_cent
+            totaldist=(self.diff_y**2+self.diff_x**2)**0.5
+            winsound.Beep(5000/totaldist,50)
 
     ## Reset our blackpoint/whitepoint based on the image data.
     def resetPixelScale(self):
@@ -653,8 +656,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.showCrosshair = not(self.showCrosshair)
 
     def toggleAligCentroid(self, event=None):
-        self.showAligCentroid = not (self.showAligCentroid)
         self.aligCentroidCalculated = False
+        self.showAligCentroid = not (self.showAligCentroid)
 
     def toggleCurCentroid(self, event=None):
         self.showCurCentroid = not (self.showCurCentroid)
