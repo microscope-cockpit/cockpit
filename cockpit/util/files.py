@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2019 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -65,6 +66,25 @@ import cockpit.depot
 # a Configurator handler is available then its values for dataDirectory,
 # logDirectory, and configDirectory will be used instead.
 
+_PACKAGE_NAME = 'cockpit'
+
+def _default_log_dir():
+    if os.name in ("nt", "ce"):
+        base_dir = os.path.expandvars('%localappdata%')
+
+    elif os.name == 'darwin':
+        base_dir = os.path.expanduser('~/Library/Logs')
+
+    else: # default to freedesktop.org Base Directory Specification
+        ## Log files are not really cache files, but XDG spec says
+        ## "user-specific non-essential data files" and that's the
+        ## nearest thing we have.
+        base_dir = os.getenv('XDG_CACHE_HOME',
+                             os.path.join(os.environ['HOME'], '.cache'))
+
+    return os.path.join(base_dir, _PACKAGE_NAME)
+
+
 if os.name in ('nt', 'ce'): # Windows
     _ROOT_DIR = 'C:\\'
 else: # Everything else including Linux and OSX
@@ -73,7 +93,7 @@ else: # Everything else including Linux and OSX
 ## Default directory where user data is stored
 _DATA_DIR = os.path.join(_ROOT_DIR, 'MUI_DATA')
 ## Default directory where logfiles are stored
-_LOGS_DIR = os.path.join(_ROOT_DIR, 'MUI_LOGS')
+_LOGS_DIR = _default_log_dir()
 ## Default directory where user config is stored
 _CONFIG_DIR = os.path.join(_ROOT_DIR, 'MUI_CONFIG')
 
