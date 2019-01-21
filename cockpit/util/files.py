@@ -50,9 +50,11 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import numpy
 import os
+import os.path
 import sys
+
+import numpy
 import wx
 
 import cockpit.depot
@@ -63,22 +65,17 @@ import cockpit.depot
 # a Configurator handler is available then its values for dataDirectory,
 # logDirectory, and configDirectory will be used instead.
 
-## Default root directory for program output
-ROOT_DIR = 'C:' + os.path.sep
-## Default directory where user data is stored
-DATA_DIR = 'MUI_DATA'
-## Default directory where logfiles are stored
-LOGS_DIR = 'MUI_LOGS'
-## Default directory where user config is stored
-CONFIG_DIR = 'MUI_CONFIG'
+if os.name in ('nt', 'ce'): # Windows
+    _ROOT_DIR = 'C:\\'
+else: # Everything else including Linux and OSX
+    _ROOT_DIR = os.path.expanduser('~')
 
-if 'darwin' in sys.platform:
-    # OSX case.
-    ROOT_DIR = os.path.expanduser('~')
-elif 'win' not in sys.platform:
-    # Linux case
-    # \todo Is this the correct way to test for a Linux platform?
-    ROOT_DIR = os.path.expanduser('~')
+## Default directory where user data is stored
+_DATA_DIR = os.path.join(_ROOT_DIR, 'MUI_DATA')
+## Default directory where logfiles are stored
+_LOGS_DIR = os.path.join(_ROOT_DIR, 'MUI_LOGS')
+## Default directory where user config is stored
+_CONFIG_DIR = os.path.join(_ROOT_DIR, 'MUI_CONFIG')
 
 ## Filenames where experiment result files have been saved
 resultFiles = []
@@ -86,33 +83,32 @@ resultFiles = []
 
 ## Load directory information from the configuration.
 def initialize():
-    global DATA_DIR
-    global LOGS_DIR
-    global CONFIG_DIR
+    global _DATA_DIR
+    global _LOGS_DIR
+    global _CONFIG_DIR
     configurators = cockpit.depot.getHandlersOfType(cockpit.depot.CONFIGURATOR)
     if configurators:
         for config in configurators:
-            if config.getValue('dataDirectory'):
-                DATA_DIR = config.getValue('dataDirectory')
-            if config.getValue('logDirectory'):
-                LOGS_DIR = config.getValue('logDirectory')
-            if config.getValue('configDirectory'):
-                CONFIG_DIR = config.getValue('configDirectory')
-                
+            if config.has('dataDirectory'):
+                _DATA_DIR = config.getValue('dataDirectory')
+            if config.has('logDirectory'):
+                _LOGS_DIR = config.getValue('logDirectory')
+            if config.has('configDirectory'):
+                _CONFIG_DIR = config.getValue('configDirectory')
+
 
 ## Get the directory in which all users' directories are located
 def getDataDir():
-    return DATA_DIR
-
+    return _DATA_DIR
 
 ## Return the directory in which logfiles are stored
 def getLogDir():
-    return LOGS_DIR
+    return _LOGS_DIR
 
 
 ## Return the directory in which user config is stored
 def getConfigDir():
-    return CONFIG_DIR
+    return _CONFIG_DIR
 
 
 def ensureDirectoriesExist():
