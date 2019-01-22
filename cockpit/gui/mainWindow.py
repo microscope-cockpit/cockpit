@@ -163,8 +163,7 @@ class MainWindow(wx.Frame):
         snapButton = toggleButton.ToggleButton(textSize = 12,
                 label = "Snap",
                 size = (120, 80), parent = topPanel)
-        snapButton.Bind(wx.EVT_LEFT_DOWN,
-                        lambda event: cockpit.interfaces.imager.takeImage())
+        snapButton.Bind(wx.EVT_LEFT_DOWN, self.OnSnapButton)
         buttonSizer.Add(snapButton)
 
         topSizer.Add(buttonSizer)
@@ -337,6 +336,14 @@ class MainWindow(wx.Frame):
         events.publish('program exit')
         event.Skip()
 
+    def OnSnapButton(self, evt):
+        imager = cockpit.interfaces.imager.imager
+        if len(imager.activeCameras):
+            imager.takeImage()
+        else:
+            message = ('There are no active cameras to take an image.'
+                       ' Turn one of the camera "on" first.')
+            wx.MessageBox(message, caption='No cameras active', parent=self)
 
     ## User logged in; update our title.
     def onUserLogin(self, username):
