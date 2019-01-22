@@ -128,13 +128,12 @@ class DeviceDepot:
     # the device's Handler instances and insert them into our various
     # containers. Yield the names of the modules holding the Devices as we go.
     def initialize(self, config):
-        import inspect
+        import cockpit.config
         ## TODO: we will want to remove this print statements when
         ## we're done refactoring the location of the log and config
         ## files (issue #320)
         print("Cockpit is running from %s" % os.path.split(os.path.abspath(__file__))[0])
-        print("depot is using config from %s" %
-          os.path.split(os.path.abspath(inspect.getfile(config.__class__)))[0])
+        print("depot is using configs from %s" % cockpit.config._files)
         import cockpit.util.files
         print("logs files are at '%s'" % cockpit.util.files.getLogDir())
         # Parse device files to map classes to their module.
