@@ -76,7 +76,7 @@ import cockpit.depot
 import cockpit.util.files
 import cockpit.util.logger
 
-from cockpit.config import config
+from cockpit.config import config as cockpit_config
 
 
 class CockpitApp(wx.App):
@@ -98,7 +98,7 @@ class CockpitApp(wx.App):
             from cockpit import util
             from cockpit import depot
 
-            numDevices = len(config.sections()) + 1 # + 1 is for dummy devs.
+            numDevices = len(cockpit_config.sections()) + 1 # + 1 is for dummy devs.
             numNonDevices = 15
             status = wx.ProgressDialog(parent = None,
                     title = "Initializing OMX Cockpit",
@@ -127,10 +127,10 @@ class CockpitApp(wx.App):
 
             status.Update(updateNum, "Initializing devices...")
             updateNum+=1
-            for i, device in enumerate(depot.initialize(config)):
+            for i, device in enumerate(depot.initialize(cockpit_config)):
                 status.Update(updateNum, "Initializing devices...\n%s" % device)
                 updateNum+=1
-            #depot.initialize(config)
+            #depot.initialize(cockpit_config)
             status.Update(updateNum, "Initializing device interfaces...")
             updateNum+=1
             cockpit.interfaces.initialize()
