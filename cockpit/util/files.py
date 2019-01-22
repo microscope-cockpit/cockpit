@@ -97,9 +97,6 @@ _LOGS_DIR = _default_log_dir()
 ## Default directory where user config is stored
 _CONFIG_DIR = os.path.join(_ROOT_DIR, 'MUI_CONFIG')
 
-## Filenames where experiment result files have been saved
-resultFiles = []
-
 
 ## Load directory information from the configuration.
 def initialize():
