@@ -107,7 +107,6 @@ def login():
     global lastLoginTime
     lastLoginTime = time.time()
 
-    logger.changeFile(logger.generateLogFileName(curLoginName))
     setWindowPositions()
 
     userConfig.setValue('lastLoginDate', str(datetime.date.today()),
