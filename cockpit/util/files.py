@@ -85,6 +85,23 @@ def _default_log_dir():
     return os.path.join(base_dir, _PACKAGE_NAME)
 
 
+def _default_config_dir():
+    if os.name in ("nt", "ce"):
+        base_dir = os.path.expandvars('%localappdata%')
+
+    elif os.name == 'darwin':
+        base_dir = os.path.expanduser('~/Library/Application Support')
+
+    else: # default to freedesktop.org Base Directory Specification
+        ## Log files are not really cache files, but XDG spec says
+        ## "user-specific non-essential data files" and that's the
+        ## nearest thing we have.
+        base_dir = os.getenv('XDG_CONFIG_HOME',
+                             os.path.join(os.environ['HOME'], '.config'))
+
+    return os.path.join(base_dir, _PACKAGE_NAME)
+
+
 if os.name in ('nt', 'ce'): # Windows
     _ROOT_DIR = 'C:\\'
 else: # Everything else including Linux and OSX
@@ -95,7 +112,7 @@ _DATA_DIR = os.path.join(_ROOT_DIR, 'MUI_DATA')
 ## Default directory where logfiles are stored
 _LOGS_DIR = _default_log_dir()
 ## Default directory where user config is stored
-_CONFIG_DIR = os.path.join(_ROOT_DIR, 'MUI_CONFIG')
+_CONFIG_DIR = _default_config_dir()
 
 
 ## Load directory information from the configuration.
@@ -121,7 +138,6 @@ def getDataDir():
 ## Return the directory in which logfiles are stored
 def getLogDir():
     return _LOGS_DIR
-
 
 ## Return the directory in which user config is stored
 def getConfigDir():
