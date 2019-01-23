@@ -164,7 +164,7 @@ def saveWindowPositions():
 
 ## Clear a bunch of settings and make certain everything is stopped. Then
 # invoke login() if reLogin is true.
-def logout(shouldLoginAgain = True):
+def logout():
     try:
         events.publish("user abort")
         events.publish("user logout")
@@ -191,8 +191,6 @@ def logout(shouldLoginAgain = True):
         logger.log.debug(cockpit.gui.loggingWindow.getStdErr())
     else:
         logger.log.debug("  *** MUI logout: Unknown login time.")
-    if shouldLoginAgain:
-        login()
 
 
 ## Create a new user account.

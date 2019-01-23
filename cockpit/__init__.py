@@ -250,7 +250,7 @@ class CockpitApp(wx.App):
     # objects still exist, but they won't by the time we're done.
     def onExit(self):
         import cockpit.util.user
-        cockpit.util.user.logout(shouldLoginAgain = False)
+        cockpit.util.user.logout()
         # Manually clear out any parent-less windows that still exist. This
         # can catch some windows that are spawned by WX and then abandoned,
         # typically because of bugs in the program. If we don't do this, then
