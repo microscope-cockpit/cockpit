@@ -159,12 +159,10 @@ class MicroscopeCamera(camera.CameraDevice):
             self.defaults = DEFAULTS_SENT
 
 
-    def onUserLogin(self, username):
+    def onUserLogin(self):
         # Apply user defaults on login.
         idstr = self.handler.getIdentifier() + '_SETTINGS'
-        defaults = cockpit.util.userConfig.getValue(idstr, isGlobal=False)
-        if defaults is None:
-            defaults = cockpit.util.userConfig.getValue(idstr, isGlobal=True)
+        defaults = cockpit.util.userConfig.getValue(idstr)
         if defaults is None:
             self.defaults = DEFAULTS_NONE
             return

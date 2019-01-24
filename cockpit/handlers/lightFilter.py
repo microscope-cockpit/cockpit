@@ -109,7 +109,7 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
 
 
     ## User logged in; load their settings.
-    def onLogin(self, username):
+    def onLogin(self):
         self.selectPosition(cockpit.util.userConfig.getValue(self.name + '-filterPosition', default = 0))
 
 

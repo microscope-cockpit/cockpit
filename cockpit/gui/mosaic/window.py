@@ -73,7 +73,7 @@ import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
 from cockpit.gui.primitive import Primitive
 import cockpit.interfaces.stageMover
-import cockpit.util.user
+import cockpit.util.files
 import cockpit.util.threads
 import cockpit.util.userConfig
 import math
@@ -526,14 +526,14 @@ class MosaicWindow(wx.Frame, MosaicCommon):
 
     ## User logged in, so we may well have changed size; adjust our zoom to
     # suit.
-    def onLogin(self, *args):
+    def onLogin(self):
         self.centerCanvas()
-        self.scalebar=cockpit.util.userConfig.getValue('mosaicScaleBar', isGlobal = False,
-                                               default= 0)
-        self.overlap=cockpit.util.userConfig.getValue('mosaicTileOverlap', isGlobal=False,
-                                               default = 0)
+        self.scalebar=cockpit.util.userConfig.getValue('mosaicScaleBar',
+                                                       default= 0)
+        self.overlap=cockpit.util.userConfig.getValue('mosaicTileOverlap',
+                                                      default = 0)
         self.drawPrimitives=cockpit.util.userConfig.getValue('mosaicDrawPrimitives',
-                                            isGlobal = False, default = True)
+                                                             default = True)
 
     ## Get updated about new stage position info or step size.
     # This requires redrawing the display, if the axis is the X or Y axes.
@@ -802,7 +802,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                     self.overlap,
                     atMouse=True)
         self.overlap = float(value)
-        cockpit.util.userConfig.setValue('mosaicTileOverlap', self.overlap, isGlobal=False)
+        cockpit.util.userConfig.setValue('mosaicTileOverlap', self.overlap)
 
 
     ## Transfer an image from the active camera (or first camera) to the
@@ -836,7 +836,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         else:
             self.scalebar = 1
         #store current state for future.
-        cockpit.util.userConfig.setValue('mosaicScaleBar',self.scalebar, isGlobal=False)
+        cockpit.util.userConfig.setValue('mosaicScaleBar',self.scalebar)
         self.Refresh()
 
     def toggleDrawPrimitives(self):
@@ -846,8 +846,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         else:
             self.drawPrimitives = True
         #store current state for future.
-        cockpit.util.userConfig.setValue('mosaicDrawPrimitives',self.drawPrimitives,
-                                 isGlobal=False)
+        cockpit.util.userConfig.setValue('mosaicDrawPrimitives',
+                                         self.drawPrimitives)
         self.Refresh()
     ## Save the current stage position as a new site with the specified
     # color (or our currently-selected color if none is provided).
@@ -1020,7 +1020,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def saveSitesToFile(self, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
                 message = "Please select where to save the file.",
-                defaultDir = cockpit.util.user.getUserSaveDir())
+                defaultDir = cockpit.util.files.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             return
         cockpit.interfaces.stageMover.writeSitesToFile(dialog.GetPath())
@@ -1030,7 +1030,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def loadSavedSites(self, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_OPEN, wildcard = '*.txt',
                 message = "Please select the file to load.",
-                defaultDir = cockpit.util.user.getUserSaveDir())
+                defaultDir = cockpit.util.files.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             return
         cockpit.interfaces.stageMover.loadSites(dialog.GetPath())
@@ -1154,7 +1154,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def saveMosaic(self, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
                 message = "Please select where to save the file.",
-                defaultDir = cockpit.util.user.getUserSaveDir())
+                defaultDir = cockpit.util.files.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             return
         self.canvas.saveTiles(dialog.GetPath())

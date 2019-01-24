@@ -51,6 +51,7 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
+import getpass
 import os
 import os.path
 import sys
@@ -132,7 +133,7 @@ def initialize():
 
 
 ## Get the directory in which all users' directories are located
-def getDataDir():
+def _getDataDir():
     return _DATA_DIR
 
 ## Return the directory in which logfiles are stored
@@ -143,12 +144,11 @@ def getLogDir():
 def getConfigDir():
     return _CONFIG_DIR
 
+def getUserSaveDir():
+    return os.path.join(_getDataDir(), getpass.getuser())
 
 def ensureDirectoriesExist():
-    for directory in [getDataDir(), getLogDir(), getConfigDir()]:
+    for directory in [getUserSaveDir(), getLogDir(), getConfigDir()]:
         if not os.path.exists(directory):
             print ("Making",directory)
             os.makedirs(directory)
-            # HACK: ensure there's a dummy user if we just made the data dir.
-            if directory == getDataDir():
-                os.makedirs(os.path.join(directory, 'New user'))

@@ -140,7 +140,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         events.subscribe('user login', self.onLogin)
 
     ## User logged in; load their settings.
-    def onLogin(self, username):
+    def onLogin(self):
         targetPower = cockpit.util.userConfig.getValue(self.name + '-lightPower', default = 0.01)
         try:
             self.setPower(targetPower)
