@@ -304,7 +304,8 @@ class MicroscopeCamera(camera.CameraDevice):
 
 
     def softTrigger(self, name=None):
-        self.proxy.soft_trigger()
+        if self.enabled:
+            self.proxy.soft_trigger()
 
 
     ### UI functions ###
