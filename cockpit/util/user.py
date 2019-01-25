@@ -55,8 +55,6 @@ import cockpit.gui.loggingWindow
 from . import logger
 from . import userConfig
 
-import datetime
-import time
 import traceback
 import wx
 
@@ -64,17 +62,6 @@ from six import iteritems
 
 ## @package user
 # This module contains functions related to who is currently using OMX.
-
-## Tracks the last login time.
-_loginTime = None
-
-
-## Ask the user what their username is, then set a variety of different
-# internal settings and "reset" the program to its base state.
-def login():
-    global _loginTime
-    _loginTime = time.time()
-    userConfig.setValue('loginDate', str(datetime.date.today()))
 
 
 ## Move the windows to where the user wants them to be.
@@ -132,20 +119,7 @@ def logout():
         logger.log.error("Error during logout: %s" % e)
         logger.log.error(traceback.format_exc())
 
-    global _loginTime
-    if _loginTime is not None:
-        # This only doesn't happen if login failed.
-        dt = time.time() - _loginTime
-        hours = dt // 3600
-        minutes = (dt - 60 * hours) // 60
-        seconds = dt - 3600 * hours - 60 * minutes
-
-        timeString = time.strftime("%Y-%m-%d %H:%M:%S")
-        logger.log.debug("  *** MUI logout: at %s after %2dH:%02dM:%02dS",
-                         timeString, hours, minutes, seconds)
-        logger.log.debug("  *** STANDARD OUTPUT FOLLOWS ***  ")
-        logger.log.debug(cockpit.gui.loggingWindow.getStdOut())
-        logger.log.debug("  *** STANDARD ERROR FOLLOWS ***  ")
-        logger.log.debug(cockpit.gui.loggingWindow.getStdErr())
-    else:
-        logger.log.debug("  *** MUI logout: Unknown login time.")
+    logger.log.debug("  *** STANDARD OUTPUT FOLLOWS ***  ")
+    logger.log.debug(cockpit.gui.loggingWindow.getStdOut())
+    logger.log.debug("  *** STANDARD ERROR FOLLOWS ***  ")
+    logger.log.debug(cockpit.gui.loggingWindow.getStdErr())

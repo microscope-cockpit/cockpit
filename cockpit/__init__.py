@@ -212,10 +212,6 @@ class CockpitApp(wx.App):
             events.publish('cockpit initialization complete')
             self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
 
-            ## Not really login.  This only sets the "login" time
-            ## which then is written to the log file.
-            cockpit.util.user.login()
-
             return True
         except Exception as e:
             wx.MessageDialog(None,
@@ -248,8 +244,9 @@ class CockpitApp(wx.App):
     # objects still exist, but they won't by the time we're done.
     def onExit(self):
         import cockpit.util.user
-        ## Not really logout.  Writes the "logout" time to logfile and
-        ## window positions to userConfig.
+
+        ## Writes the window positions to userConfig and stdout and
+        ## stderr to file.
         cockpit.util.user.logout()
 
         # Manually clear out any parent-less windows that still exist. This
