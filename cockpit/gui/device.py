@@ -272,23 +272,42 @@ class EnableButton(wx.ToggleButton):
         self.setState(state)
 
 
+class TupleOfIntsProperty(wx.propgrid.StringProperty):
+    def __init__(self, *args, **kwargs):
+        if 'value' in kwargs:
+            kwargs['value'] = ", ".join([str(v) for v in kwargs['value']])
+        super().__init__(*args, **kwargs)
+
+
+    def SetValue(self, value, **kwargs):
+        value = ", ".join([str(v) for v in value])
+        super().SetValue(value, **kwargs)
+
+
+    def GetValue(self):
+        return tuple([int(v) for v in self.m_value.split(",")])
+
+
 class SettingsEditor(wx.Frame):
     _SETTINGS_TO_PROPTYPES = {'int': wx.propgrid.IntProperty,
                              'float': wx.propgrid.FloatProperty,
                              'bool': wx.propgrid.BoolProperty,
                              'enum': wx.propgrid.EnumProperty,
                              'str': wx.propgrid.StringProperty,
+                             'tuple': TupleOfIntsProperty,
                              str(int): wx.propgrid.IntProperty,
                              str(float): wx.propgrid.FloatProperty,
                              str(bool): wx.propgrid.BoolProperty,
-                             str(str): wx.propgrid.StringProperty, }
+                             str(str): wx.propgrid.StringProperty,
+                             str(tuple): TupleOfIntsProperty}
 
 
     def __init__(self, device, parent=None, handler=None):
         wx.Frame.__init__(self, parent, wx.ID_ANY, style=wx.FRAME_FLOAT_ON_PARENT)
         self.device = device
         self.SetTitle("%s settings" % device.name)
-        self.settings = None
+        self.settings = {}
+        self.current = {}
         self.handler = handler
         #self.handler.addListener(self)
         #self.panel = wx.Panel(self, wx.ID_ANY, style=wx.WANTS_CHARS)
@@ -329,11 +348,7 @@ class SettingsEditor(wx.Frame):
         self.SetMinSize((256, -1))
         #self.SetMaxSize((self.GetMinWidth(), -1))
         events.subscribe("%s settings changed" % self.device, self.updateGrid)
-
-
-    def onEnabledEvent(self, evt):
-        if self.IsShown():
-            self.updateGrid()
+        self.Bind(wx.EVT_SHOW, lambda evt: self.updateGrid())
 
 
     def onClose(self, evt):
@@ -347,25 +362,17 @@ class SettingsEditor(wx.Frame):
         prop = event.GetProperty()
         name = event.GetPropertyName()
         setting = self.settings[name]
-        # Fetch and validate the value.
-        if prop.ClassName == 'wxEnumProperty':
-            index = event.GetPropertyValue()
-            # Look up value as the original type, not as str from the wxProperty.
-            # setting['values'] only contains allowed values, so this also
-            # serves as validation for enums.
-            value = setting['values'][index]
-        elif setting['type'] in (str(int), str(float), 'int', 'float'):
-            value = event.GetPropertyValue()
+        # Fetch and validate the value from the control - using event.GetValue
+        # may return the wrong type for custom properties.
+        value = prop.GetValue()
+
+        if setting['type'] in (str(int), str(float), 'int', 'float'):
             # Bound to min/max.
             lims = setting['values']
-            value = sorted(lims + (value,))[1]
+            value = sorted(tuple(lims) + (value,))[1]
         elif setting['type'] in (str(str), 'str'):
             # Limit string length.
             value = value[0, setting['values']]
-        elif setting['type'] in (str(bool), 'bool'):
-            value = event.GetPropertyValue()
-        else:
-            raise Exception('Unsupported type.')
 
         self.current[name] = value
         if value != self.device.settings[name]:
@@ -385,77 +392,63 @@ class SettingsEditor(wx.Frame):
 
 
     def updateGrid(self):
+        """Update property state and values.
+
+        Note: grid.SetValues does not work for custom property classes -
+        it seems that it calls the C++ SetValue on the base class rather
+        than the python SetValue on the derived class."""
         if not self.IsShown():
             return
         self.Freeze()
         grid = self.grid
         self.settings = OrderedDict(self.device.describe_settings())
-        self.current.update(self.device.settings)
-        # Update all values.
-        # grid.SetValues(current)
-        # Enable/disable
+        if self.current:
+            self.current.update(self.device.settings)
+        else:
+            self.current = self.device.get_all_settings()
+        # Enable/disable controls, and update Choices for enums.
         for prop in grid.Properties:
             prop.SetTextColour(wx.Colour(0, 0, 0))
             name = prop.GetName()
             desc = self.settings[name]
             if desc['type'] in ('enum'):
-                if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
-                    choices = wx.propgrid.PGChoices()
-                    for i, d in enumerate(desc['values']):
-                        choices.Add(str(d), i)
-                else:
-                    choices = wx.propgrid.PGChoices([str(v) for v in desc['values']],
-                                                    range(len(desc['values'])))
+                indices, items = zip(*desc['values'])
+                labels = [str(i) for i in items]
+                choices = wx.propgrid.PGChoices(labels, indices)
                 prop.SetChoices(choices)
-                if self.current[name] in desc['values']:
-                    index = desc['values'].index(self.current[name])
-                    prop.SetValue(index)
-                else:
+                if self.current[name] not in indices:
                     # Indicate a problem with this item.
                     prop.SetTextColour('red')
-            else:
-                value = self.current[name]
-                prop.SetValue(value)
             try:
                 prop.Enable(not self.settings[name]['readonly'])
             except wx._core.PyAssertionError:
                 # Bug in wx in stc.EnsureCaretVisible, could not convert to a long.
                 pass
+            prop.SetValue(self.current[name])
         self.Thaw()
 
 
     def populateGrid(self):
+        """Create the propertgrid controls.
+
+        We just create the controls here - their values will be updated
+        by updateGrid."""
         grid = self.grid
         self.settings = OrderedDict(self.device.describe_settings())
-        self.current = self.device.get_all_settings()
         for key, desc in iteritems(self.settings):
-            value = self.current[key]
-            # For some reason, a TypeError is thrown on creation of prop if value
-            # is a zero-length string.
-            if value == '':
-                value  = ' '
             propType = SettingsEditor._SETTINGS_TO_PROPTYPES.get(desc['type'])
-            if propType is wx.propgrid.EnumProperty:
-                if value in desc['values']:
-                    index = desc['values'].index(value)
-                    prop = wx.propgrid.EnumProperty(label=key, name=key,
-                                                    labels=[str(v) for v in desc['values']],
-                                                    values=range(len(desc['values'])),
-                                                    value=index)
-                else:
-                    prop = wx.propgrid.EnumProperty(label=key, name=key,
-                                                    labels=[str(v) for v in desc['values']],
-                                                    values=range(len(desc['values'])))
-            else:
-                try:
-                    prop = propType(label=key, name=key, value=(value or 0))
-                except OverflowError:
-                    # Int too large.
-                    prop = wx.propgrid.FloatProperty(label=key, name=key, value=str(value or 0))
-                except Exception as e:
-                    sys.stderr.write("populateGrid threw exception for key %s with value %s: %s"
-                                     % (key, value, e.message))
-
+            if propType is wx.propgrid.IntProperty:
+                # Use a float if integer may exceed IntProperty representation.
+                # The representation is dependent on whether or not  wx was compiled
+                # with wxUSE_LONG_LONG defined. I can't find a way to easily figure
+                # this out from python, so we go for the safer limit.
+                if max(desc['values']) > wx.INT32_MAX:
+                    propType = wx.propgrid.FloatProperty
+            try:
+                prop = propType(label=key, name=key)
+            except Exception as e:
+                sys.stderr.write("populateGrid threw exception for key %s with value %s: %s"
+                                 % (key, value, e))
             if desc['readonly']:
                 prop.Enable(False)
             grid.Append(prop)
