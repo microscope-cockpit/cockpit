@@ -87,6 +87,7 @@ class Image:
         # Cast to negatable types
         self.imageMin = float(imageData.min())
         self.imageMax = float(imageData.max())
+        self.textureShape = (0,0)
         self.dx = 0
         self.dy = 0
         self.angle = 0
@@ -100,6 +101,7 @@ class Image:
 
     def bindTexture(self):
         pic_ny, pic_nx = self.imageData.shape
+        self.textureShape = (pic_ny, pic_nx)
 
         if self.imageMin == 0 and self.imageMax == 0:
             # Cast to negatable types
@@ -229,7 +231,9 @@ class Image:
     ## Accept a new array of image data.
     def updateImage(self, imageData):
         self.imageData = imageData
-
+        if self.textureShape != imageData.shape:
+            # Image size has changed.
+            self.bindTexture()
         self.refresh()
 
 
