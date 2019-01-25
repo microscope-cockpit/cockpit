@@ -58,7 +58,7 @@ import cockpit.gui.camera.window
 import cockpit.gui.guiUtils
 import cockpit.gui.mosaic.window
 import cockpit.interfaces.stageMover
-import cockpit.util.user
+
 from distutils import version
 from itertools import chain
 
@@ -119,7 +119,7 @@ def martialWindows(parent):
     menuId = 1
     menu.Append(menuId, "Reset window positions")
     parent.Bind(wx.EVT_MENU,
-                lambda e: cockpit.util.user.setWindowPositions(), id= menuId)
+                lambda e: wx.GetApp().SetWindowPositions(), id= menuId)
     menuId += 1
     #for i, window in enumerate(windows):
     for i, window in enumerate(primaryWindows):

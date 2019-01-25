@@ -314,18 +314,10 @@ class MainWindow(wx.Frame):
         self.joystick = joystick.Joystick(self)
             
         self.SetDropTarget(viewFileDropTarget.ViewFileDropTarget(self))
-        self.Bind(wx.EVT_MOVE, self.onMove)
         self.Bind(wx.EVT_CLOSE, self.onClose)
         # Show the list of windows on right-click.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: keyboard.martialWindows(self))
         events.subscribe('video mode toggle', self.onVideoMode)
-
-
-    ## Save the position of our window. For all other windows, this is handled
-    # by cockpit.util.user.logout, but by the time that function gets called, we've
-    # already been destroyed.
-    def onMove(self, event):
-        cockpit.util.userConfig.setValue('mainWindowPosition', tuple(self.GetPosition()))
 
 
     ## Do any necessary program-shutdown events here instead of in the App's

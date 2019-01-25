@@ -192,7 +192,7 @@ class CockpitApp(wx.App):
                 self.primaryWindows.remove(status)
             status.Destroy()
 
-            wx.CallAfter(cockpit.util.user.setWindowPositions)
+            self.SetWindowPositions()
 
             #now loop over secondary windows open and closeing as needed.
             for w in self.secondaryWindows:
@@ -243,10 +243,10 @@ class CockpitApp(wx.App):
     # Do anything we need to do to shut down cleanly. At this point UI
     # objects still exist, but they won't by the time we're done.
     def onExit(self):
-        import cockpit.util.user
+        self._SaveWindowPositions()
 
-        ## Writes the window positions to userConfig and stdout and
-        ## stderr to file.
+        import cockpit.util.user
+        ## Writes stdout and stderr to file.
         cockpit.util.user.logout()
 
         # Manually clear out any parent-less windows that still exist. This
@@ -284,6 +284,36 @@ class CockpitApp(wx.App):
             for thread in badThreads:
                 cockpit.util.logger.log.error(str(thread.__dict__))
         os._exit(0)
+
+
+    def SetWindowPositions(self):
+        """Place the windows in the position defined in userConfig.
+
+        This should probably be a private method, or at least a method
+        that would take the positions dict as argument.
+        """
+        positions = cockpit.util.userConfig.getValue('WindowPositions',
+                                                     default={})
+        for window in wx.GetTopLevelWindows():
+            if window.Title in positions:
+                window.SetPosition(positions[window.Title])
+
+
+    def _SaveWindowPositions(self):
+        positions = {w.Title : tuple(w.Position)
+                     for w in wx.GetTopLevelWindows()}
+
+        ## XXX: the camera window uses the title to include pixel info
+        ## so fix the title so we can use it as ID later.
+        camera_window_title = None
+        for title in positions.keys():
+            if title.startswith('Camera views '):
+                camera_window_title = title
+                break
+        if camera_window_title is not None:
+            positions['Camera views'] = positions.pop(camera_window_title)
+
+        cockpit.util.userConfig.setValue('WindowPositions', positions)
 
 
 def main():

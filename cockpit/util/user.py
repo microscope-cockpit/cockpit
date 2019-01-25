@@ -53,68 +53,13 @@
 from cockpit import events
 import cockpit.gui.loggingWindow
 from . import logger
-from . import userConfig
 
 import traceback
-import wx
-
-from six import iteritems
-
-## @package user
-# This module contains functions related to who is currently using OMX.
 
 
-## Move the windows to where the user wants them to be.
-def setWindowPositions():
-    # Imports here to fix cyclic dependancy.
-    import cockpit.gui.mainWindow
-    import cockpit.gui.mosaic.window
-    # Maps window titles to their positions.
-    positions = userConfig.getValue('windowPositions', default =
-            userConfig.getValue('defaultWindowPositions', default=None))
-    if positions is not None:
-        for window in wx.GetTopLevelWindows():
-            title = window.GetTitle()
-            if title in positions:
-                window.SetPosition(positions[title])
-            # HACK: the camera window's title changes all the time, since
-            # it includes pixel value information.
-            elif 'Camera views' in title:
-                for key, value in iteritems(positions):
-                    if 'Camera views' in key:
-                        window.SetPosition(value)
-                        break
-    # Special cases: the main window is stored under a different config key.
-    # It flat-out doesn't exist by the time logout() is called, so we *can't*
-    # get its position at that point; instead it's stored every time the
-    # main window is moved.
-    position = userConfig.getValue('mainWindowPosition', default =
-            userConfig.getValue('defaultMainWindowPosition', default=None))
-    if position:
-        cockpit.gui.mainWindow.window.SetPosition(position)
-    # For the mosaic view, we want to set the rect, not the position.
-    rect = userConfig.getValue('mosaicWindowRect', default =
-            userConfig.getValue('defaultMosaicWindowRect', default=None))
-    if rect:
-        cockpit.gui.mosaic.window.window.SetRect(rect)
-
-
-## Record the current window positions. Note that this doesn't get the main
-# window if this is called during logout, since at that point the main window
-# no longer exists. That window's position is stored under a different key.
-def _saveWindowPositions():
-    positions = {w.Title : tuple(w.Position) for w in wx.GetTopLevelWindows()}
-    userConfig.setValue('windowPositions', positions)
-    logger.log.error("Saved positions %s" % positions)
-
-
-## Clear a bunch of settings and make certain everything is stopped. Then
-# invoke login() if reLogin is true.
 def logout():
     try:
         events.publish("user abort")
-
-        _saveWindowPositions()
     except Exception as e:
         logger.log.error("Error during logout: %s" % e)
         logger.log.error(traceback.format_exc())
