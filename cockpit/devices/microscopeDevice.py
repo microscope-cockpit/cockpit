@@ -30,14 +30,11 @@ from cockpit import events
 from . import device
 from cockpit import depot
 import cockpit.gui.device
-import cockpit.gui.guiUtils
-import cockpit.gui.toggleButton
 import cockpit.handlers.deviceHandler
 import cockpit.handlers.filterHandler
 import cockpit.handlers.lightPower
 import cockpit.handlers.lightSource
 import cockpit.util.colors
-import cockpit.util.listener
 import cockpit.util.userConfig
 import cockpit.util.threads
 from cockpit.gui.device import SettingsEditor
@@ -67,6 +64,9 @@ class MicroscopeBase(device.Device):
         self.set_setting = self._proxy.set_setting
         self.describe_settings = self._proxy.describe_settings
 
+    def finalizeInitialization(self):
+        super(MicroscopeBase, self).finalizeInitialization()
+        self._readUserConfig()
 
     def getHandlers(self):
         """Return device handlers. Derived classes may override this."""
@@ -114,8 +114,7 @@ class MicroscopeBase(device.Device):
             self.defaults = DEFAULTS_SENT
 
 
-    def onUserLogin(self):
-        # Apply user defaults on login.
+    def _readUserConfig(self):
         idstr = self.name + '_SETTINGS'
         defaults = cockpit.util.userConfig.getValue(idstr)
         if defaults is None:
@@ -124,12 +123,6 @@ class MicroscopeBase(device.Device):
         self.settings.update(defaults)
         self.defaults = DEFAULTS_PENDING
         self.setAnyDefaults()
-
-
-    def performSubscriptions(self):
-        """Perform subscriptions for this camera."""
-        events.subscribe('user login',
-                self.onUserLogin)
 
 
     def prepareForExperiment(self, name, experiment):

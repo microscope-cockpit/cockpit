@@ -53,7 +53,6 @@
 
 import cockpit.interfaces.stageMover
 import cockpit.util.userConfig
-from cockpit import events
 import wx
 
 ## @package saveTopBottomPanel
@@ -77,12 +76,9 @@ savedBottom = None
 def createSaveTopBottomPanel(parent):
     global topPosControl, zStackHeightLabel, bottomPosControl,savedTop,savedBottom
 
-    ## Current saved top position stored in user config file so we
-    ## need a login event to find them.
-    events.subscribe('user login', onUserLogin)
-
-    savedTop = 3010
-    savedBottom = 3000
+    ## Current saved top position stored in user config file.
+    savedTop = cockpit.util.userConfig.getValue('savedTop', default=3010)
+    savedBottom = cockpit.util.userConfig.getValue('savedBottom', default=3000)
 
     panel = wx.Panel(parent, 8910)
     box = wx.StaticBox(panel, -1, '')
@@ -224,12 +220,3 @@ def updateZStackHeight():
 ## Get the bottom and top of the stack.
 def getBottomAndTop():
     return (savedBottom, savedTop)
-
-
-def onUserLogin():
-    global savedTop, savedBottom
-    savedTop=cockpit.util.userConfig.getValue('savedTop', default=3010)
-    savedBottom=cockpit.util.userConfig.getValue('savedBottom', default=3000)
-    topPosControl.SetValue("%.1f" % savedTop)
-    bottomPosControl.SetValue("%.1f" % savedBottom)
-    updateZStackHeight()

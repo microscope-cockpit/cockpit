@@ -74,9 +74,7 @@ _loginTime = None
 def login():
     global _loginTime
     _loginTime = time.time()
-    setWindowPositions()
     userConfig.setValue('loginDate', str(datetime.date.today()))
-    events.publish('user login')
 
 
 ## Move the windows to where the user wants them to be.
@@ -128,7 +126,6 @@ def _saveWindowPositions():
 def logout():
     try:
         events.publish("user abort")
-        events.publish("user logout")
 
         _saveWindowPositions()
     except Exception as e:

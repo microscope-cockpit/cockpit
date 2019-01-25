@@ -162,7 +162,8 @@ class PhysikInstrumenteM687(stage.StageDevice):
         except:
             print ("No softlimits section setting default limits")
             self.softlimits = ((-67500, 67500), (-42500, 42500))
-        events.subscribe('user logout', self.onLogout)
+
+        events.subscribe('program exit', self.onExit)
         events.subscribe('user abort', self.onAbort)
         events.subscribe('macro stage xy draw', self.onMacroStagePaint)
         #events.subscribe('cockpit initialization complete', self.promptExerciseStage)
@@ -317,7 +318,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
 
 
     ## When the user logs out, switch to open-loop mode.
-    def onLogout(self, *args):
+    def onExit(self):
         # Switch to open loop
         self.sendXYCommand(b'SVO 1 0')
         self.sendXYCommand(b'SVO 2 0')

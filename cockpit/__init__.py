@@ -75,6 +75,7 @@ if (distutils.version.LooseVersion(Pyro4.__version__) >=
 import cockpit.depot
 import cockpit.util.files
 import cockpit.util.logger
+import cockpit.util.user
 
 from cockpit.config import config as cockpit_config
 
@@ -191,7 +192,7 @@ class CockpitApp(wx.App):
                 self.primaryWindows.remove(status)
             status.Destroy()
 
-            wx.CallAfter(self.doInitialLogin)
+            wx.CallAfter(cockpit.util.user.setWindowPositions)
 
             #now loop over secondary windows open and closeing as needed.
             for w in self.secondaryWindows:
@@ -210,6 +211,11 @@ class CockpitApp(wx.App):
             interfaces.makeInitialPublications()
             events.publish('cockpit initialization complete')
             self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
+
+            ## Not really login.  This only sets the "login" time
+            ## which then is written to the log file.
+            cockpit.util.user.login()
+
             return True
         except Exception as e:
             wx.MessageDialog(None,
@@ -222,15 +228,10 @@ class CockpitApp(wx.App):
             cockpit.util.logger.log.error(traceback.format_exc())
             return False
 
-
-    def doInitialLogin(self):
-        cockpit.util.user.login()
-        cockpit.util.logger.log.debug('Login complete')
-
-
     def onActivateApp(self, event):
         if not event.Active:
             return
+
         top = wx.GetApp().GetTopWindow()
         windows = top.GetChildren()
         for w in windows:
@@ -247,7 +248,10 @@ class CockpitApp(wx.App):
     # objects still exist, but they won't by the time we're done.
     def onExit(self):
         import cockpit.util.user
+        ## Not really logout.  Writes the "logout" time to logfile and
+        ## window positions to userConfig.
         cockpit.util.user.logout()
+
         # Manually clear out any parent-less windows that still exist. This
         # can catch some windows that are spawned by WX and then abandoned,
         # typically because of bugs in the program. If we don't do this, then

@@ -98,7 +98,6 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
 
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
-        events.subscribe('user login', self.onLogin)
 
 
     ## Publish global filter position, if relevant.
@@ -107,9 +106,12 @@ class LightFilterHandler(deviceHandler.DeviceHandler):
             events.publish('global filter change', 
                     self.globalIndex, self.curPosition)
 
+    def finalizeInitialization(self):
+        super(LightFilterHandler, self).finalizeInitialization()
+        self._applyUserConfig()
 
-    ## User logged in; load their settings.
-    def onLogin(self):
+
+    def _applyUserConfig(self):
         self.selectPosition(cockpit.util.userConfig.getValue(self.name + '-filterPosition', default = 0))
 
 

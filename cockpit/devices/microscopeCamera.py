@@ -34,7 +34,6 @@ import numpy as np
 from cockpit import events
 import cockpit.gui.device
 import cockpit.gui.guiUtils
-import cockpit.gui.toggleButton
 import cockpit.handlers.camera
 import cockpit.util.listener
 import cockpit.util.threads
@@ -82,6 +81,7 @@ class MicroscopeCamera(camera.CameraDevice):
 
     def finalizeInitialization(self):
         super(MicroscopeCamera, self).finalizeInitialization()
+        self._readUserConfig()
         # Decorate updateSettings. Can't do this from the outset, as camera
         # is initialized before interfaces.imager.
         self.updateSettings = pauseVideo(self.updateSettings)
@@ -134,8 +134,6 @@ class MicroscopeCamera(camera.CameraDevice):
                 self.cleanupAfterExperiment)
         events.subscribe('objective change',
                 self.onObjectiveChange)
-        events.subscribe('user login',
-                self.onUserLogin)
 
 
     def onObjectiveChange(self, name, pixelSize, transform, offset):
@@ -159,8 +157,7 @@ class MicroscopeCamera(camera.CameraDevice):
             self.defaults = DEFAULTS_SENT
 
 
-    def onUserLogin(self):
-        # Apply user defaults on login.
+    def _readUserConfig(self):
         idstr = self.handler.getIdentifier() + '_SETTINGS'
         defaults = cockpit.util.userConfig.getValue(idstr)
         if defaults is None:

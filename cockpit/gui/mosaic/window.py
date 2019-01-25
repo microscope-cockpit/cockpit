@@ -356,7 +356,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         self.camera = None
 
         ## Mosaic tile overlap
-        self.overlap = 0.0
+        self.overlap = cockpit.util.userConfig.getValue('mosaicTileOverlap',
+                                                        default = 0.0)
 
         ## Size of the box to draw at the center of the crosshairs.
         self.crosshairBoxSize = 0
@@ -382,9 +383,11 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         self.scalefont.setFaceSize(18)
 
         #default scale bar size is Zero
-        self.scalebar = 0
+        self.scalebar = cockpit.util.userConfig.getValue('mosaicScaleBar',
+                                                         default= 0)
         #Default to drawing primitives
-        self.drawPrimitives = True
+        self.drawPrimitives = cockpit.util.userConfig.getValue('mosaicDrawPrimitives',
+                                                               default = True)
         ## Maps button names to wx.Button instances.
         self.nameToButton = {}
 
@@ -478,7 +481,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         events.subscribe('soft safety limit', self.onAxisRefresh)
         events.subscribe('objective change', self.onObjectiveChange)
         events.subscribe('user abort', self.onAbort)
-        events.subscribe('user login', self.onLogin)
 
         self.Bind(wx.EVT_SIZE, self.onSize)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
@@ -522,18 +524,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         self.panel.SetSize(size)
         # Subtract off the pixels dedicated to the sidebar.
         self.canvas.SetClientSize((size[0] - SIDEBAR_WIDTH, size[1]))
-
-
-    ## User logged in, so we may well have changed size; adjust our zoom to
-    # suit.
-    def onLogin(self):
-        self.centerCanvas()
-        self.scalebar=cockpit.util.userConfig.getValue('mosaicScaleBar',
-                                                       default= 0)
-        self.overlap=cockpit.util.userConfig.getValue('mosaicTileOverlap',
-                                                      default = 0)
-        self.drawPrimitives=cockpit.util.userConfig.getValue('mosaicDrawPrimitives',
-                                                             default = True)
 
     ## Get updated about new stage position info or step size.
     # This requires redrawing the display, if the axis is the X or Y axes.
