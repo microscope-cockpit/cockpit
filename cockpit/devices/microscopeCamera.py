@@ -76,8 +76,29 @@ class MicroscopeCamera(camera.CameraDevice):
         if 'readout mode' in self.settings:
             self.modes = self.describe_setting('readout mode')['values']
         else:
-            self.modes = None
+            self.modes = []
 
+
+    @property
+    def _modenames(self):
+        # Modes are a descriptive string of the form
+        # [amp-type] [freq] [channel]
+        if not self.modes:
+            return ['default']
+        import re
+        channels = set()
+        chre = re.compile(r' CH([0-9]+)', re.IGNORECASE)
+        ampre = re.compile(r'CONVENTIONAL ', re.IGNORECASE)
+        modes = []
+        for i, m in self.modes:
+            modes.append(ampre.sub('CONV ', m))
+            match = chre.search(m)
+            if match:
+                channels.union(match.groups())
+
+        if len(channels) < 2:
+            modes = [chre.sub('', m) for m in modes]
+        return modes
 
     def finalizeInitialization(self):
         super(MicroscopeCamera, self).finalizeInitialization()
@@ -92,33 +113,6 @@ class MicroscopeCamera(camera.CameraDevice):
             self.proxy.update_settings(settings)
         self.settings.update(self.proxy.get_all_settings())
         events.publish("%s settings changed" % str(self))
-
-
-    def parseMode(self):
-        mode_str = self.settings.get('readout mode', None)
-        if mode_str is None:
-            return '???'
-        elif mode_str == 'default':
-            return mode_str
-        mode_re = r'(^|.*[^a-zA-Z0-9])(EM)|((M|m)ult)'
-        bit_re = r'([0-9]+[- ]?bit)'
-        rate_re = r'([0-9]*\.?[0-9]+ ?[MkG]?Hz).*'
-
-        if re.match(mode_re, mode_str):
-            out_str = 'EM'
-        else:
-            out_str = 'Conv'
-
-        match = re.search(bit_re, mode_str)
-        if match:
-            out_str += '\n%s' % match.group(1)
-
-        match = re.search(rate_re, mode_str)
-        if match:
-            out_str += '\n%s' % match.group(1)
-
-        return out_str
-
 
 
     def cleanupAfterExperiment(self):
@@ -320,11 +314,11 @@ class MicroscopeCamera(camera.CameraDevice):
         sizer = wx.BoxSizer(wx.VERTICAL)
         # Readout mode control
         sizer.Add(wx.StaticText(self.panel, label="Readout mode"))
-        modeButton = wx.Choice(self.panel, choices=self.modes or [], style=wx.CB_SORT)
+        modeButton = wx.Choice(self.panel, choices=self._modenames)
         sizer.Add(modeButton, flag=wx.EXPAND)
         events.subscribe("%s settings changed" % self,
                          lambda: self.updateModeButton(modeButton))
-        modeButton.Bind(wx.EVT_CHOICE, self.setReadoutMode)
+        modeButton.Bind(wx.EVT_CHOICE, lambda evt: self.setReadoutMode(evt.GetSelection()))
         sizer.AddSpacer(4)
         # Gain control
         sizer.Add(wx.StaticText(self.panel, label="Gain"))
@@ -343,8 +337,8 @@ class MicroscopeCamera(camera.CameraDevice):
 
 
     def updateModeButton(self, button):
-        button.Set(['default'] + self.modes)
-        button.SetSelection(button.FindString(self.parseMode()))
+        button.Set(self._modenames)
+        button.SetSelection(self.settings.get('readout mode', 0))
 
 
     def onGainButton(self, evt):
@@ -377,8 +371,11 @@ class MicroscopeCamera(camera.CameraDevice):
 
 
     @pauseVideo
-    def setReadoutMode(self, evt):
-        self.proxy.set_readout_mode(evt.GetString())
+    def setReadoutMode(self, index):
+        if len(self.modes) <= 1:
+            # Only one mode - nothing to do.
+            return
+        self.set_setting('readout mode', self.modes[index][0])
         self.updateSettings()
 
 
