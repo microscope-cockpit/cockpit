@@ -75,7 +75,6 @@ if (distutils.version.LooseVersion(Pyro4.__version__) >=
 import cockpit.depot
 import cockpit.util.files
 import cockpit.util.logger
-import cockpit.util.user
 
 from cockpit.config import config as cockpit_config
 
@@ -118,7 +117,6 @@ class CockpitApp(wx.App):
             import cockpit.gui.shellWindow
             import cockpit.gui.statusLightsWindow
             import cockpit.interfaces
-            import cockpit.util.user
             import cockpit.util.userConfig
 
             updateNum=1
@@ -245,9 +243,14 @@ class CockpitApp(wx.App):
     def onExit(self):
         self._SaveWindowPositions()
 
-        import cockpit.util.user
-        ## Writes stdout and stderr to file.
-        cockpit.util.user.logout()
+        try:
+            events.publish("user abort")
+        except Exception as e:
+            cockpit.util.logger.log.error("Error during logout: %s" % e)
+            cockpit.util.logger.log.error(traceback.format_exc())
+
+        import cockpit.gui.loggingWindow
+        cockpit.gui.loggingWindow.window.WriteToLogger(cockpit.util.logger.log)
 
         # Manually clear out any parent-less windows that still exist. This
         # can catch some windows that are spawned by WX and then abandoned,

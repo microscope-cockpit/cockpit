@@ -43,7 +43,6 @@ import cockpit.gui.mosaic.window as mosaic
 import cockpit.gui.mosaic.canvas
 import cockpit.interfaces.stageMover
 import cockpit.util.colors
-import cockpit.util.user
 import cockpit.util.threads
 import cockpit.util.userConfig
 from cockpit.gui.saveTopBottomPanel import moveZCheckMoverLimits
