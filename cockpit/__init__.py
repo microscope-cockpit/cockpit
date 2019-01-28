@@ -162,8 +162,6 @@ class CockpitApp(wx.App):
             cockpit.gui.shellWindow.makeWindow(frame)
             status.Update(updateNum, " ... statuslights window")
             updateNum+=1
-            #start touchscreen only if enableds.
-            #if(util.userConfig.getValue('touchScreen', default= 0) is 1):
             import cockpit.gui.touchscreen.touchscreen
             cockpit.gui.touchscreen.touchscreen.makeWindow(frame)
             from cockpit.util import intensity
