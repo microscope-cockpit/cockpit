@@ -54,11 +54,6 @@
 import getpass
 import os
 import os.path
-import sys
-
-import numpy
-import wx
-
 import cockpit.depot
 
 ## @package util.files
