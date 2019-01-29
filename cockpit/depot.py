@@ -54,9 +54,10 @@
 # are initialized and registered from here, and if a part of the UI wants to 
 # interact with a specific kind of device, they can find it through the depot.
 
-import ast
+import configparser
 import importlib
 import os
+import sys
 
 from six import string_types, iteritems
 from cockpit.handlers.deviceHandler import DeviceHandler
@@ -78,20 +79,12 @@ POWER_CONTROL = "power control"
 SERVER = "server"
 STAGE_POSITIONER = "stage positioner"
 
-_DEVICE_DIR_FPATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    'devices'
-)
-
 SKIP_CONFIG = ['objectives', 'server']
 
 class DeviceDepot:
-    ## Initialize the Depot. Find all the other modules in the "devices" 
-    # directory and initialize them.
+    ## Initialize the Depot.
     def __init__(self):
         self._configurator = None
-        ## Maps device classes to their module
-        self.classToModule = {}
         ## Maps config section names to device
         self.nameToDevice = {}
         ## Maps devices to their handlers.
@@ -126,7 +119,7 @@ class DeviceDepot:
 
     ## Call the initialize() method for each registered device, then get
     # the device's Handler instances and insert them into our various
-    # containers. Yield the names of the modules holding the Devices as we go.
+    # containers.  Yield the device names as we go.
     def initialize(self, config):
         import cockpit.config
         ## TODO: we will want to remove this print statements when
@@ -136,25 +129,6 @@ class DeviceDepot:
         print("depot is using configs from %s" % cockpit.config._files)
         import cockpit.util.files
         print("logs files are at '%s'" % cockpit.util.files.getLogDir())
-        # Parse device files to map classes to their module.
-        for modfile in os.listdir(_DEVICE_DIR_FPATH):
-            if not modfile.endswith('.py'):
-                continue
-            modname = modfile[0:-3] # Strip .py extension
-            with open(os.path.join(_DEVICE_DIR_FPATH, modfile), 'r') as f:
-                # Extract class definitions from the module
-                try:
-                    classes = [c for c in ast.parse(f.read()).body
-                                    if isinstance(c, ast.ClassDef)]
-                except Exception as e:
-                    raise Exception("Error parsing device module %s.\n%s" % (modname, e))
-
-            for c in classes:
-                if c.name in self.classToModule.keys():
-                    raise Exception('Duplicate class definition for %s in %s and %s' %
-                                    (c.name, self.classToModule[c.name], modname))
-                else:
-                    self.classToModule[c.name] = modname
 
         # Create our server
         from cockpit.devices.server import CockpitServer
@@ -169,20 +143,18 @@ class DeviceDepot:
         for name in config.sections():
             if name in SKIP_CONFIG:
                 continue
-            classname = config.get(name, 'type')
-            modname = self.classToModule.get(classname, None)
-            if not modname:
-                raise Exception("No module found for device with name %s." % name)
             try:
-                mod = importlib.import_module('cockpit.devices.' + modname)
+                classname = config.get(name, 'type')
+            except configparser.NoOptionError:
+                raise RuntimeError("Missing 'type' key for device '%s'" % name)
+
+            cls = _class_name_to_type(classname)
+            device_config = dict(config.items(name))
+            try:
+                device = cls(name, device_config)
             except Exception as e:
-                print("Importing %s failed with %s" % (modname, e))
-            else:
-                cls = getattr(mod, classname)
-                try:
-                    self.nameToDevice[name] = cls(name, dict(config.items(name)))
-                except Exception as e:
-                    raise Exception("In device %s" % name, e)
+                raise RuntimeError("Failed to construct device '%s'" % name, e)
+            self.nameToDevice[name] = device
 
         # Initialize devices in order of dependence
         # Convert to list - python3 dict_values has no pop method.
@@ -452,3 +424,23 @@ def getSortedHandlers():
 #     newDevice.initFromOldDevice(device, handlers)
 
 
+def _class_name_to_type(class_full_name):
+    """Get type from the class fully-qualified name.
+
+    Raises:
+        ModuleNotFound: if there is no module
+        AttributeError: if the class is not present on module
+    """
+    if '.' in class_full_name:
+        module_name, class_name = class_full_name.rsplit('.', 1)
+    else:
+        ## If the fully qualified name does not have a dot, then it is
+        ## a builtin type.
+        class_name = class_full_name
+        if sys.version_info < (3,):
+            module_name = '__builtin__'
+        else:
+            module_name = 'builtins'
+
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name)
