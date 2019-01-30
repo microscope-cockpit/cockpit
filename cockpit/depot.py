@@ -310,11 +310,6 @@ def loadConfig():
 
 
 ## Simple passthrough.
-def getNumModules():
-    return deviceDepot.getNumModules()
-
-
-## Simple passthrough.
 def initialize(config):
     for device in deviceDepot.initialize(config):
         yield device
@@ -403,25 +398,6 @@ def getHandler(nameOrDevice, handlerType):
 ## Sort handlers in order of abstraction
 def getSortedHandlers():
     h = getAllHandlers()
-
-## Get the Device instance associated with the given module.
-#def getDevice(module):
-#    return deviceDepot.moduleToDevice[module]
-
-
-## Debugging function: reload the specified module to pick up any changes to 
-# the code. This requires us to cleanly shut down the associated Device and 
-# then re-create it without disturbing the associated Handlers (which may be
-# referred to in any number of places in the rest of the code). Most Devices
-# won't support this (reflected by the base Device class's shutdown() function
-# raising an exception). 
-# def reloadModule(module):
-#     device = deviceDepot.moduleToDevice[module]
-#     handlers = deviceDepot.deviceToHandlers[device]
-#     device.shutdown()
-#     reload(module)
-#     newDevice = module.__dict__[module.CLASS_NAME]()
-#     newDevice.initFromOldDevice(device, handlers)
 
 
 def _class_name_to_type(class_full_name):
