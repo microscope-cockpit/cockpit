@@ -54,12 +54,13 @@
 # are initialized and registered from here, and if a part of the UI wants to 
 # interact with a specific kind of device, they can find it through the depot.
 
-import configparser
 import importlib
 import os
 import sys
 
 from six import string_types, iteritems
+from six.moves import configparser
+
 from cockpit.handlers.deviceHandler import DeviceHandler
 
 ## Different eligible device handler types. These correspond 1-to-1 to
