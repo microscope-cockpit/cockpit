@@ -395,11 +395,6 @@ def getHandler(nameOrDevice, handlerType):
         return list(handlers)
 
 
-## Sort handlers in order of abstraction
-def getSortedHandlers():
-    h = getAllHandlers()
-
-
 def _class_name_to_type(class_full_name):
     """Get type from the class fully-qualified name.
 
