@@ -68,10 +68,11 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
     # - setObjective(name, objectiveName): Set the current objective to the
     #   named one. This is an optional callback; if not provided, nothing is
     #   done.
-    def __init__(self, name, groupName, nameToPixelSize, nameToTransform, nameToOffset, nameToColour, nameToLensID, curObjective,
+    def __init__(self, name, groupName, nameToNA, nameToPixelSize, nameToTransform, nameToOffset, nameToColour, nameToLensID, curObjective,
             callbacks = {}):
         deviceHandler.DeviceHandler.__init__(self, name, groupName, 
                 False, {}, depot.OBJECTIVE)
+        self.nameToNA = nameToNA
         self.nameToPixelSize = nameToPixelSize
         self.nameToTransform = nameToTransform
         self.nameToOffset = nameToOffset
@@ -146,6 +147,10 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
     def getPixelSize(self):
         return self.nameToPixelSize[self.curObjective]
 		
+    ## Get the current pixel size.
+    def getNA(self):
+        return self.nameToNA[self.curObjective]
+
     ## Get the current offset.
     def getOffset(self):
         return self.nameToOffset[self.curObjective]
