@@ -58,13 +58,14 @@
 from . import device
 import cockpit.handlers.objective
 import re
+NA_PAT =  r"(?P<na>\d*[.]?\d*)"
 PIXEL_PAT =  r"(?P<pixel_size>\d*[.]?\d*)"
 LENSID_PAT = r"(?P<lensID>\d*)"
 TRANSFORM_PAT = r"(?P<transform>\(\s*\d*\s*,\s*\d*\s*,\s*\d*\s*\))"
 OFFSET_PAT = r"(?P<offset>\(\s*[-]?\d*\s*,\s*[-]?\d*\s*,\s*[-]?\d*\s*\))?"
 COLOUR_PAT = r"(?P<colour>\(\s*[-]?\d*\s*,\s*[-]?\d*\s*,\s*[-]?\d*\s*\))?"
 
-CONFIG_PAT = PIXEL_PAT + r"(\s*(,|;)\s*)?" + LENSID_PAT + r"(\s*(,|;)\s*)?" + TRANSFORM_PAT + r"(\s*(,|;)\s*)?" + OFFSET_PAT+ r"(\s*(,|;)\s*)?" + COLOUR_PAT
+CONFIG_PAT = NA_PAT + r"(\s*(,|;)\s*)?" + PIXEL_PAT + r"(\s*(,|;)\s*)?" + LENSID_PAT + r"(\s*(,|;)\s*)?" + TRANSFORM_PAT + r"(\s*(,|;)\s*)?" + OFFSET_PAT+ r"(\s*(,|;)\s*)?" + COLOUR_PAT
 
 ## Maps objective names to the pixel sizes for those objectives. This is the 
 # amount of sample viewed by the pixel, not the physical size of the 
@@ -87,6 +88,7 @@ class ObjectiveDevice(device.Device):
 
     def getHandlers(self):
         pixel_sizes = {}
+        nas = {}
         transforms = {}
         offsets = {}
         lensIDs = {}
@@ -94,6 +96,7 @@ class ObjectiveDevice(device.Device):
         if not self.config:
             # No objectives section in config
             pixel_sizes = DUMMY_OBJECTIVE_PIXEL_SIZES
+            nas = {obj: 0 for obj in pixel_sizes.keys()}
             transforms = {obj: (0,0,0) for obj in pixel_sizes.keys()}
             offsets = {obj: (0,0,0) for obj in pixel_sizes.keys()}
             lensIDs = {obj: 0 for obj in pixel_sizes.keys()}
@@ -106,17 +109,20 @@ class ObjectiveDevice(device.Device):
                     # Could not parse config entry.
                     raise Exception('Bad config: objectives.')
                     # No transform tuple
-                else:    
+                else:
+                    nastr =  parsed.groupdict()['na']
                     pstr = parsed.groupdict()['pixel_size']
                     lstr = parsed.groupdict()['lensID']
                     tstr = parsed.groupdict()['transform']
                     ostr =  parsed.groupdict()['offset']
                     cstr =  parsed.groupdict()['colour']
+                    na = float(nastr)
                     pixel_size = float(pstr)
                     lensID = int(lstr) if lstr else 0
                     transform = eval(tstr) if tstr else (0,0,0)
                     offset = eval(ostr) if ostr else (0,0,0)
                     colour = eval(cstr) if cstr else (1,0,0)
+                nas.update({obj: na})
                 pixel_sizes.update({obj: pixel_size})
                 lensIDs.update({obj: lensID})
                 transforms.update({obj: transform})
@@ -127,6 +133,7 @@ class ObjectiveDevice(device.Device):
 
         return [cockpit.handlers.objective.ObjectiveHandler("objective",
                                                     "miscellaneous",
+                                                    nas,
                                                     pixel_sizes,
                                                     transforms,
                                                     offsets,
