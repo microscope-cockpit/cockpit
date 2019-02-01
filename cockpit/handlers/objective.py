@@ -147,7 +147,7 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
     def getPixelSize(self):
         return self.nameToPixelSize[self.curObjective]
 		
-    ## Get the current pixel size.
+    ## Get the current objective NA
     def getNA(self):
         return self.nameToNA[self.curObjective]
 
