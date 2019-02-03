@@ -77,9 +77,7 @@ import cockpit.util.threads
 from six import iteritems
 
 from cockpit.config import config, LIGHTS, CAMERAS, AOUTS
-CLASS_NAME = 'NIcRIO'
 COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2, 'SI angle': -1}
-CONFIG_NAME = 'nicrio9068'
 FPGA_IDLE_STATE = 3
 FPGA_ABORTED_STATE = 4
 FPGA_UPDATE_RATE = .1 # At which rate is the FPGA sending update status signals

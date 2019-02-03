@@ -59,8 +59,6 @@ from . import device
 from cockpit import events
 import cockpit.handlers.imager
 
-CLASS_NAME = 'DummyImagerDevice'
-
 
 class DummyImagerDevice(device.Device):
     def __init__(self):

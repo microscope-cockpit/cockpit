@@ -56,7 +56,6 @@ from . import stage
 from cockpit import events
 import cockpit.handlers.stagePositioner
 
-CLASS_NAME = 'DummyMoverDevice'
 
 class DummyMover(stage.StageDevice):
     def __init__(self, name="dummy XY stage", config={}):
