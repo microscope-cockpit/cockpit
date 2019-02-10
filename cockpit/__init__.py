@@ -72,14 +72,27 @@ if (distutils.version.LooseVersion(Pyro4.__version__) >=
     Pyro4.config.SERIALIZER = 'pickle'
     Pyro4.config.REQUIRE_EXPOSE = False
 
+import cockpit.config
 import cockpit.depot
 import cockpit.util.files
 import cockpit.util.logger
 
-from cockpit.config import config as cockpit_config
-
 
 class CockpitApp(wx.App):
+    """
+    Args:
+        config (:class:`cockpit.config.CockpitConfig`):
+    """
+    def __init__(self, config):
+        ## OnInit() will make use of config, and wx.App.__init__()
+        ## calls OnInit().  So we need to assign this before super().
+        self._config = config
+        super(CockpitApp, self).__init__(redirect=False)
+
+    @property
+    def Config(self):
+        return self._config
+
     def OnInit(self):
         try:
             # Allow subsequent actions to abort startup by publishing
@@ -98,7 +111,9 @@ class CockpitApp(wx.App):
             from cockpit import util
             from cockpit import depot
 
-            numDevices = len(cockpit_config.sections()) + 1 # + 1 is for dummy devs.
+            depot_config = self.Config.depot_config
+            depot.initialize(depot_config)
+            numDevices = len(depot_config.sections()) + 1 # + 1 is for dummy devs.
             numNonDevices = 15
             status = wx.ProgressDialog(parent = None,
                     title = "Initializing OMX Cockpit",
@@ -122,14 +137,14 @@ class CockpitApp(wx.App):
             updateNum=1
             status.Update(updateNum, "Initializing config...")
             updateNum+=1
-            cockpit.util.userConfig.initialize()
+            cockpit.util.userConfig.initialize(self.Config)
 
             status.Update(updateNum, "Initializing devices...")
             updateNum+=1
-            for i, device in enumerate(depot.initialize(cockpit_config)):
+            for i, device in enumerate(depot.initialize(depot_config)):
                 status.Update(updateNum, "Initializing devices...\n%s" % device)
                 updateNum+=1
-            #depot.initialize(cockpit_config)
+            #depot.initialize(depot_config)
             status.Update(updateNum, "Initializing device interfaces...")
             updateNum+=1
             cockpit.interfaces.initialize()
@@ -261,7 +276,7 @@ class CockpitApp(wx.App):
 
         # Call any deviec onExit code to, for example, close shutters and
         # switch of lasers.
-        for dev in depot.getAllDevices():
+        for dev in cockpit.depot.getAllDevices():
             try:
                 dev.onExit()
             except:
@@ -325,14 +340,14 @@ def main():
     if wx.Platform == '__WXGTK__' and 'GDK_BACKEND' not in os.environ:
         os.environ['GDK_BACKEND'] = 'x11'
 
-    ## We need these first to ensure that we can log failures during
-    ## startup.
-    cockpit.depot.loadConfig()
-    cockpit.util.files.initialize()
-    cockpit.util.files.ensureDirectoriesExist()
-    cockpit.util.logger.makeLogger()
+    ## TODO: have this in a try, and show a window (would probably
+    ## need to be different wx.App), with the error if it fails.
+    config = cockpit.config.CockpitConfig(sys.argv)
+    cockpit.util.logger.makeLogger(config['log'])
+    cockpit.util.files.initialize(config)
 
-    CockpitApp(redirect = False).MainLoop()
+    app = CockpitApp(config=config)
+    app.MainLoop()
 
 
 if __name__ == '__main__':

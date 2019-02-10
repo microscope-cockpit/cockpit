@@ -54,19 +54,16 @@
 # are initialized and registered from here, and if a part of the UI wants to 
 # interact with a specific kind of device, they can find it through the depot.
 
-import importlib
+import configparser
 import os
-import sys
 
 from six import string_types, iteritems
-from six.moves import configparser
 
 from cockpit.handlers.deviceHandler import DeviceHandler
 
 ## Different eligible device handler types. These correspond 1-to-1 to
 # subclasses of the DeviceHandler class.
 CAMERA = "camera"
-CONFIGURATOR = "configurator"
 DRAWER = "drawer"
 EXECUTOR = "experiment executor"
 GENERIC_DEVICE = "generic device"
@@ -85,7 +82,6 @@ SKIP_CONFIG = ['objectives', 'server']
 class DeviceDepot:
     ## Initialize the Depot.
     def __init__(self):
-        self._configurator = None
         ## Maps config section names to device
         self.nameToDevice = {}
         ## Maps devices to their handlers.
@@ -103,36 +99,21 @@ class DeviceDepot:
         ## Maps group name to handlers.
         self.groupNameToHandlers = {}
 
-    ## HACK: load any Configurator device that may be stored in a
-    # "configurator.py" module. This is needed because config must be loaded
-    # before any other Device, so that logfiles can be stored properly.
-    def loadConfig(self):
-        if self._configurator:
-            return
-        try:
-            from cockpit.devices.configurator import Configurator
-        except ModuleNotFoundError:
-            pass
-        else:
-            self._configurator = Configurator()
-            self.initDevice(self._configurator)
-
 
     ## Call the initialize() method for each registered device, then get
     # the device's Handler instances and insert them into our various
     # containers.  Yield the device names as we go.
     def initialize(self, config):
-        import cockpit.config
         ## TODO: we will want to remove this print statements when
         ## we're done refactoring the location of the log and config
         ## files (issue #320)
         print("Cockpit is running from %s" % os.path.split(os.path.abspath(__file__))[0])
-        print("depot is using configs from %s" % cockpit.config._files)
-        import cockpit.util.files
-        print("logs files are at '%s'" % cockpit.util.files.getLogDir())
 
         # Create our server
         from cockpit.devices.server import CockpitServer
+
+        ## TODO remove special case by having fallback empty section?
+        ## Or fallback to the defaults in the class?
         if config.has_section('server'):
             sconf = dict(config.items('server'))
         else:
@@ -145,11 +126,10 @@ class DeviceDepot:
             if name in SKIP_CONFIG:
                 continue
             try:
-                classname = config.get(name, 'type')
+                cls = config.gettype(name, 'type')
             except configparser.NoOptionError:
                 raise RuntimeError("Missing 'type' key for device '%s'" % name)
 
-            cls = _class_name_to_type(classname)
             device_config = dict(config.items(name))
             try:
                 device = cls(name, device_config)
@@ -301,17 +281,14 @@ class DeviceDepot:
 
 
 
-## Global singleton
-deviceDepot = DeviceDepot()
-
-
-## Simple passthrough
-def loadConfig():
-    deviceDepot.loadConfig()
+## XXX: Global singleton
+deviceDepot = None
 
 
 ## Simple passthrough.
 def initialize(config):
+    global deviceDepot
+    deviceDepot = DeviceDepot()
     for device in deviceDepot.initialize(config):
         yield device
 
@@ -394,25 +371,3 @@ def getHandler(nameOrDevice, handlerType):
         return handlers.pop()
     else:
         return list(handlers)
-
-
-def _class_name_to_type(class_full_name):
-    """Get type from the class fully-qualified name.
-
-    Raises:
-        ModuleNotFound: if there is no module
-        AttributeError: if the class is not present on module
-    """
-    if '.' in class_full_name:
-        module_name, class_name = class_full_name.rsplit('.', 1)
-    else:
-        ## If the fully qualified name does not have a dot, then it is
-        ## a builtin type.
-        class_name = class_full_name
-        if sys.version_info < (3,):
-            module_name = '__builtin__'
-        else:
-            module_name = 'builtins'
-
-    module = importlib.import_module(module_name)
-    return getattr(module, class_name)

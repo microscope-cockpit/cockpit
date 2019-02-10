@@ -23,7 +23,6 @@ import os
 import os.path
 import pprint
 
-from . import files
 from . import logger
 
 ## @package userConfig
@@ -33,6 +32,7 @@ from . import logger
 
 ## In-memory version of the config; program singleton.
 _config = {}
+_config_path = ''
 
 
 ## Open the config file and unserialize its contents.
@@ -53,23 +53,18 @@ def _loadConfig(fpath):
 
 ## Serialize the current config state for the specified user
 # to the appropriate config file.
-def _writeConfig(config):
+def _writeConfig(config, fpath):
     ## Use pprint instead of pickle to write the config files so that
     ## their contents are readable.
     printer = pprint.PrettyPrinter()
     if not printer.isreadable(config):
         raise RuntimeError('user config file has non-writable data')
 
-    config_fpath = _getConfigPath()
-    if not os.path.exists(os.path.dirname(config_fpath)):
+    if not os.path.exists(os.path.dirname(fpath)):
         os.makedirs(os.path.basedir(config_fpath))
 
-    with open(config_fpath, 'w') as fh:
+    with open(fpath, 'w') as fh:
         fh.write(printer.pformat(config))
-
-
-def _getConfigPath():
-    return os.path.join(files.getConfigDir(), 'config.py')
 
 
 ## Retrieve the config value referenced by key.
@@ -78,11 +73,12 @@ def _getConfigPath():
 # default value to config), then write config back to the file.
 def getValue(key, default=None):
     global _config
+    global _config_path
     try:
         result = _config[key]
     except KeyError:
         _config[key] = default
-        _writeConfig(_config)
+        _writeConfig(_config, _config_path)
         result = default
     return result
 
@@ -90,10 +86,14 @@ def getValue(key, default=None):
 # in getValue.
 def setValue(key, value):
     global _config
+    global _config_path
     _config[key] = value
-    _writeConfig(_config)
+    _writeConfig(_config, _config_path)
 
 
-def initialize():
+def initialize(cockpit_config):
     global _config
-    _config = _loadConfig(_getConfigPath())
+    global _config_path
+    _config_path = os.path.join(cockpit_config['global'].get('config-dir'),
+                                'config.py')
+    _config = _loadConfig(_config_path)
