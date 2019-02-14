@@ -59,8 +59,6 @@ class DummyLights(device.Device):
         device.Device.__init__(self, name, config)
         ## Maps lightsource names to their exposure times.
         self.nameToExposureTime = dict()
-        # Set priority to Inf to indicate that this is a dummy device.
-        self.priority = float('inf')        
         self.deviceType = 'light source'
 
 
