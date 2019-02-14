@@ -466,9 +466,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         #check that we have a camera and light source
         cams=0
         lights=0
-        for camera in depot.getHandlersOfType(depot.CAMERA):
-            if camera.getIsEnabled():
-                cams=cams+1
+        cams = len(depot.getActiveCameras())
         for light in depot.getHandlersOfType(depot.LIGHT_TOGGLE):
             if light.getIsEnabled():
                 lights=lights+1
