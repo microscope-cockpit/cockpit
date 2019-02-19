@@ -436,10 +436,11 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def drawCrosshair(self):
         glColor3f(0, 255, 255)
         glBegin(GL_LINES)
-        glVertex2f(0, HISTOGRAM_HEIGHT + 0.5 * (self.h - HISTOGRAM_HEIGHT) )
-        glVertex2f(self.w, HISTOGRAM_HEIGHT + 0.5 * (self.h - HISTOGRAM_HEIGHT) )
-        glVertex2f(0.5 * self.w, HISTOGRAM_HEIGHT)
-        glVertex2f(0.5 * self.w, self.h)
+        glVertex2f(0, HISTOGRAM_HEIGHT + 0.5 * (self.imageShape[0]))
+        glVertex2f(self.imageShape[1], HISTOGRAM_HEIGHT +
+                   0.5 * (self.imageShape[0]))
+        glVertex2f(0.5 * self.imageShape[1], HISTOGRAM_HEIGHT)
+        glVertex2f(0.5 * self.imageShape[1], self.imageShape[0]+HISTOGRAM_HEIGHT)
         glEnd()
 
 
