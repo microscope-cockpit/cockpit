@@ -454,7 +454,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 glDisable(GL_TEXTURE_2D)
                 glTranslatef(0, -HISTOGRAM_HEIGHT, 0)
                 if self.showCrosshair:
-                    glTranslatef(0, -HISTOGRAM_HEIGHT, 0)
                     self.drawCrosshair()
                 if self.showAligCentroid:
                     self.drawCentroidCross(y_cent=self.y_alig_cent, x_cent=self.x_alig_cent,
