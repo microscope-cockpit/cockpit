@@ -584,7 +584,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 defaultValues = [self.tiles[0][0].imageMin, self.tiles[0][0].imageMax])
         values = [float(v) for v in values]
         # Convert from pixel intensity values to [0, 1] scale values.
-        divisor = float(self.imageMax - self.imageMin)
+        divisor = max(float(self.imageMax - self.imageMin), 1.0)
         self.blackPoint = (values[0] - self.imageMin) / divisor
         self.whitePoint = (values[1] - self.imageMin) / divisor
         self.changeHistScale(shouldRefresh = True)
