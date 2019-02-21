@@ -653,8 +653,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         zoom = operator(zoom, float(clientSize[1]) / self.imageShape[1])
         # Pan so that the lower-left corner of the image is in the lower-left
         # corner of our view area. Store so we can zoom on field centre
-        self.offsetX=(clientSize[0] - self.imageShape[1]) /2
-        self.offsetY=(clientSize[1] - self.imageShape[0]) / 2
+        self.offsetX=(clientSize[0] - self.imageShape[1]) / 2.0
+        self.offsetY=(clientSize[1] - self.imageShape[0]) / 2.0
         self.panX = self.offsetX
         self.panY = self.offsetY
         self.zoom = zoom
