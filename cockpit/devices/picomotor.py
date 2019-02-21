@@ -135,7 +135,8 @@ class PicoMotorDevice(device.Device):
         ## Cached copy of the stage's position. Initialized to an impossible
         # value; this will be modified in initialize.
         self.xyPositionCache = [10 ** 100, 10 ** 100,7500]
-        events.subscribe('user logout', self.onLogout)
+
+        events.subscribe('program exit', self.onExit)
         events.subscribe('user abort', self.onAbort)
 
 
@@ -321,7 +322,7 @@ class PicoMotorDevice(device.Device):
 
 
     ## When the user logs out close the network connection.
-    def onLogout(self, *args):
+    def onExit(self):
         self.xyConnection.close()
 
 

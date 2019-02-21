@@ -90,7 +90,7 @@ class LinkamStage(stage.StageDevice):
             logger.log.warning('Could not parse limits from config: using defaults.')
             print ("No softlimits section setting default limits")
             self.softlimits = DEFAULT_LIMITS
-        events.subscribe('user logout', self.onLogout)
+
         events.subscribe('user abort', self.onAbort)
         #store and recall condensor LED status.
         events.subscribe('save exposure settings', self.onSaveSettings)
@@ -192,11 +192,6 @@ class LinkamStage(stage.StageDevice):
         self.remote.homeMotors()
         self.sendPositionUpdates()
 
-
-    def onLogout(self, *args):
-        """Cleanup on user logout."""
-        pass
-        
 
     def onAbort(self, *args):
         """Actions to do in the event of an abort."""

@@ -14,11 +14,6 @@ available.
 
 Other modules:
 
-adminWindow.py: Handles some basic administrative tasks, including setting the 
-  default window positions for new users, and creating new user directories. 
-  This window must be created from the commandline:
-  import cockpit.gui.adminWindow; cockpit.gui.adminWindow.makeWindow()
-  
 fileViewerWindow.py: Displays MRC files; this code is invoked when an MRC file
   is dragged onto the main window. 
   

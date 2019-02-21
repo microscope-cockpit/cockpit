@@ -44,8 +44,6 @@ Sample config entry:
 from . import shutter
 import telnetlib
 
-CLASS_NAME = 'StanfordShutterDevice'
-CONFIG_NAME = 'sr470'
 
 class StanfordShutter(shutter.ShutterDevice):
     def __init__(self, name, config={}):

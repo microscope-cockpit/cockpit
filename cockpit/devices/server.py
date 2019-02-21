@@ -59,9 +59,6 @@ import cockpit.handlers.server
 import cockpit.util.logger
 import cockpit.util.threads
 
-CLASS_NAME = 'CockpitServer'
-
-
 
 ## This Device represents the cockpit itself, and is mostly used to
 # allow other computers to send information to the cockpit program.
