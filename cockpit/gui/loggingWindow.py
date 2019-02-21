@@ -113,21 +113,19 @@ class LoggingWindow(wx.Frame):
                 cockpit.util.logger.log.error(filter(lambda c: ord(c) < 128, self.textCache))
             self.textCache = ''
 
+    def WriteToLogger(self, logger):
+        """Write the content of the windows to a logger.
+        """
+        logger.debug("  *** STANDARD OUTPUT FOLLOWS ***")
+        logger.debug(self.stdOut.GetValue())
+        logger.debug("  *** STANDARD ERROR FOLLOWS ***")
+        logger.debug(self.stdErr.GetValue())
 
 
 ## Global singleton
 window = None
 
-
 def makeWindow(parent):
     global window
     window = LoggingWindow(parent)
     window.Show()
-
-## Retrieve the contents of the stdout control.
-def getStdOut():
-    return window.stdOut.GetValue()
-
-## Retrieve the contents of the stderr control.
-def getStdErr():
-    return window.stdErr.GetValue()

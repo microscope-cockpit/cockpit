@@ -447,9 +447,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             if (posDelta[axis]**2 > .001 ):
                     limits = cockpit.interfaces.stageMover.getIndividualHardLimits(axis)
                     currentpos = allPositions[currentHandlerIndex][axis]
-                    if  ((currentpos == None ) or  # no handler on this axis.
-                          (currentpos + posDelta[axis]<(limits[currentHandlerIndex][0])) or # off bottom
-                          (currentpos + posDelta[axis]>(limits[currentHandlerIndex][1]))): #off top
+                    if ((currentpos + posDelta[axis]<(limits[currentHandlerIndex][0])) # off bottom
+                        or (currentpos + posDelta[axis]>(limits[currentHandlerIndex][1]))): #off top
                         currentHandlerIndex -= 1 # go to a bigger handler index
                     if currentHandlerIndex<0:
                         return False

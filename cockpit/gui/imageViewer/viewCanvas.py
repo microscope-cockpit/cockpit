@@ -144,6 +144,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         ## Pan translation factor
         self.panX = 0
         self.panY = 0
+        self.offsetX = 0
+        self.offsetY = 0
 
         ## What kind of dragging we're doing.
         self.dragMode = DRAG_NONE
@@ -400,7 +402,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 glTranslatef(-self.imageShape[1] / 2.0, -self.imageShape[0] / 2.0, 0)
 
                 # Apply pan
-                glTranslatef(self.panX, self.panY, 0)
+                glTranslatef(self.panX/self.zoom, self.panY/self.zoom, 0)
 
                 glEnable(GL_TEXTURE_2D)
 
@@ -436,10 +438,11 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def drawCrosshair(self):
         glColor3f(0, 255, 255)
         glBegin(GL_LINES)
-        glVertex2f(0, HISTOGRAM_HEIGHT + 0.5 * (self.h - HISTOGRAM_HEIGHT) )
-        glVertex2f(self.w, HISTOGRAM_HEIGHT + 0.5 * (self.h - HISTOGRAM_HEIGHT) )
-        glVertex2f(0.5 * self.w, HISTOGRAM_HEIGHT)
-        glVertex2f(0.5 * self.w, self.h)
+        glVertex2f(0, HISTOGRAM_HEIGHT + 0.5 * (self.imageShape[0]))
+        glVertex2f(self.imageShape[1], HISTOGRAM_HEIGHT +
+                   0.5 * (self.imageShape[0]))
+        glVertex2f(0.5 * self.imageShape[1], HISTOGRAM_HEIGHT)
+        glVertex2f(0.5 * self.imageShape[1], self.imageShape[0]+HISTOGRAM_HEIGHT)
         glEnd()
 
 
@@ -616,9 +619,15 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
     ## Modify our overall zoom by the provided factor.
     def modZoom(self, factor):
+        oldX=(self.panX-self.offsetX)/self.zoom
+        oldY=(self.panY-self.offsetY)/self.zoom
         self.zoom += factor
+        if self.zoom <0.001 :
+            self.zoom=0.001
+        #modify pan variables to keep same position in centre of image.
+        self.panX=(oldX*self.zoom+self.offsetX)
+        self.panY=(oldY*self.zoom+self.offsetY)
         self.Refresh(0)
-
 
     ## Modify our panning amount by the provided factor.
     def modPan(self, dx, dy):
@@ -643,8 +652,10 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         operator = (min, max)[shouldFillView]
         zoom = operator(zoom, float(clientSize[1]) / self.imageShape[1])
         # Pan so that the lower-left corner of the image is in the lower-left
-        # corner of our view area.
-        self.panX = (clientSize[0] - self.imageShape[1]) / zoom / 2
-        self.panY = (clientSize[1] - self.imageShape[0]) / zoom / 2
+        # corner of our view area. Store so we can zoom on field centre
+        self.offsetX=(clientSize[0] - self.imageShape[1]) / 2.0
+        self.offsetY=(clientSize[1] - self.imageShape[0]) / 2.0
+        self.panX = self.offsetX
+        self.panY = self.offsetY
         self.zoom = zoom
         self.Refresh(0)

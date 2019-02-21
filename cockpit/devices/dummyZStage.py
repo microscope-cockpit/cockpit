@@ -57,7 +57,6 @@ from . import device
 from cockpit import events
 import cockpit.handlers.stagePositioner
 
-CLASS_NAME = 'DummyZStage'
 
 class DummyZStage(device.Device):
     def __init__(self, name='dummy Z stage', config={}):
