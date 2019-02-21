@@ -582,7 +582,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 parent = self, title = "Set histogram scale parameters",
                 prompts = ["Blackpoint", "Whitepoint"],
                 defaultValues = [self.tiles[0][0].imageMin, self.tiles[0][0].imageMax])
-        values = map(float, values)
+        values = [float(v) for v in values]
         # Convert from pixel intensity values to [0, 1] scale values.
         divisor = float(self.imageMax - self.imageMin)
         self.blackPoint = (values[0] - self.imageMin) / divisor
