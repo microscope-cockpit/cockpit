@@ -17,7 +17,7 @@ from itertools import groupby
 import cockpit.gui.device
 import cockpit.gui.toggleButton
 import Pyro4
-import Tkinter as tk
+import tkinter as tk
 from PIL import Image, ImageTk
 import cockpit.util.userConfig as Config
 import cockpit.handlers.executor
