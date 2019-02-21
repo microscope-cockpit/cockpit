@@ -76,7 +76,7 @@ import cockpit.depot
 import cockpit.util.files
 import cockpit.util.logger
 
-from cockpit.config import config
+from cockpit.config import config as cockpit_config
 
 
 class CockpitApp(wx.App):
@@ -98,7 +98,7 @@ class CockpitApp(wx.App):
             from cockpit import util
             from cockpit import depot
 
-            numDevices = len(config.sections()) + 1 # + 1 is for dummy devs.
+            numDevices = len(cockpit_config.sections()) + 1 # + 1 is for dummy devs.
             numNonDevices = 15
             status = wx.ProgressDialog(parent = None,
                     title = "Initializing OMX Cockpit",
@@ -117,7 +117,6 @@ class CockpitApp(wx.App):
             import cockpit.gui.shellWindow
             import cockpit.gui.statusLightsWindow
             import cockpit.interfaces
-            import cockpit.util.user
             import cockpit.util.userConfig
 
             updateNum=1
@@ -127,10 +126,10 @@ class CockpitApp(wx.App):
 
             status.Update(updateNum, "Initializing devices...")
             updateNum+=1
-            for i, device in enumerate(depot.initialize(config)):
+            for i, device in enumerate(depot.initialize(cockpit_config)):
                 status.Update(updateNum, "Initializing devices...\n%s" % device)
                 updateNum+=1
-            #depot.initialize(config)
+            #depot.initialize(cockpit_config)
             status.Update(updateNum, "Initializing device interfaces...")
             updateNum+=1
             cockpit.interfaces.initialize()
@@ -163,9 +162,6 @@ class CockpitApp(wx.App):
             cockpit.gui.shellWindow.makeWindow(frame)
             status.Update(updateNum, " ... statuslights window")
             updateNum+=1
-            #start touchscreen only if enableds.
-            #if(util.userConfig.getValue('touchScreen',
-            #                            isGlobal = True, default= 0) is 1):
             import cockpit.gui.touchscreen.touchscreen
             cockpit.gui.touchscreen.touchscreen.makeWindow(frame)
             from cockpit.util import intensity
@@ -180,7 +176,6 @@ class CockpitApp(wx.App):
                 title=w.GetTitle()
                 windowstate=cockpit.util.userConfig.getValue(
                                                 'windowState'+title,
-                                                isGlobal = False,
                                                 default= 0)
                 #if they were hidden then return them to hidden
                 if (windowstate is 0):
@@ -193,7 +188,7 @@ class CockpitApp(wx.App):
                 self.primaryWindows.remove(status)
             status.Destroy()
 
-            wx.CallAfter(self.doInitialLogin)
+            self.SetWindowPositions()
 
             #now loop over secondary windows open and closeing as needed.
             for w in self.secondaryWindows:
@@ -201,7 +196,6 @@ class CockpitApp(wx.App):
                 title=w.GetTitle()
                 windowstate=cockpit.util.userConfig.getValue(
                                                 'windowState'+title,
-                                                isGlobal = False,
                                                 default= 0)
                 #if they were hidden then return them to hidden
                 if (windowstate is 0):
@@ -213,6 +207,7 @@ class CockpitApp(wx.App):
             interfaces.makeInitialPublications()
             events.publish('cockpit initialization complete')
             self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
+
             return True
         except Exception as e:
             wx.MessageDialog(None,
@@ -225,15 +220,10 @@ class CockpitApp(wx.App):
             cockpit.util.logger.log.error(traceback.format_exc())
             return False
 
-
-    def doInitialLogin(self):
-        cockpit.util.user.login()
-        cockpit.util.logger.log.debug("Login complete as %s" % util.user.getUsername())
-
-
     def onActivateApp(self, event):
         if not event.Active:
             return
+
         top = wx.GetApp().GetTopWindow()
         windows = top.GetChildren()
         for w in windows:
@@ -249,8 +239,17 @@ class CockpitApp(wx.App):
     # Do anything we need to do to shut down cleanly. At this point UI
     # objects still exist, but they won't by the time we're done.
     def onExit(self):
-        import cockpit.util.user
-        cockpit.util.user.logout(shouldLoginAgain = False)
+        self._SaveWindowPositions()
+
+        try:
+            events.publish("user abort")
+        except Exception as e:
+            cockpit.util.logger.log.error("Error during logout: %s" % e)
+            cockpit.util.logger.log.error(traceback.format_exc())
+
+        import cockpit.gui.loggingWindow
+        cockpit.gui.loggingWindow.window.WriteToLogger(cockpit.util.logger.log)
+
         # Manually clear out any parent-less windows that still exist. This
         # can catch some windows that are spawned by WX and then abandoned,
         # typically because of bugs in the program. If we don't do this, then
@@ -286,6 +285,36 @@ class CockpitApp(wx.App):
             for thread in badThreads:
                 cockpit.util.logger.log.error(str(thread.__dict__))
         os._exit(0)
+
+
+    def SetWindowPositions(self):
+        """Place the windows in the position defined in userConfig.
+
+        This should probably be a private method, or at least a method
+        that would take the positions dict as argument.
+        """
+        positions = cockpit.util.userConfig.getValue('WindowPositions',
+                                                     default={})
+        for window in wx.GetTopLevelWindows():
+            if window.Title in positions:
+                window.SetPosition(positions[window.Title])
+
+
+    def _SaveWindowPositions(self):
+        positions = {w.Title : tuple(w.Position)
+                     for w in wx.GetTopLevelWindows()}
+
+        ## XXX: the camera window uses the title to include pixel info
+        ## so fix the title so we can use it as ID later.
+        camera_window_title = None
+        for title in positions.keys():
+            if title.startswith('Camera views '):
+                camera_window_title = title
+                break
+        if camera_window_title is not None:
+            positions['Camera views'] = positions.pop(camera_window_title)
+
+        cockpit.util.userConfig.setValue('WindowPositions', positions)
 
 
 def main():

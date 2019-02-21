@@ -280,6 +280,9 @@ def changeStepSize(direction):
 # device.
 def recenterFineMotion():
     for axis, handlers in iteritems(mover.axisToHandlers):
+        if len(set(handlers)) < 2:
+            continue # Only makes sense if one has at least two stages
+
         totalDelta = 0
         for handler in handlers[1:]:
             # Assume that the fine-motion devices want to be in the center

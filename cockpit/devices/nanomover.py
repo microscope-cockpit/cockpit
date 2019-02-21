@@ -131,8 +131,7 @@ class Nanomover(stage.StageDevice):
     # last exercised, and prompt the user if it's been more than a week.
     def promptExerciseStage(self):
         lastExerciseTimestamp = cockpit.util.userConfig.getValue(
-                'NanomoverLastExerciseTimestamp',
-                isGlobal = True, default = 0)
+                'NanomoverLastExerciseTimestamp', default = 0)
         curTime = time.time()
         delay = curTime - lastExerciseTimestamp
         daysPassed = delay / float(24 * 60 * 60)
@@ -157,9 +156,9 @@ class Nanomover(stage.StageDevice):
             cockpit.interfaces.stageMover.goToXY(self.middleXY, shouldBlock = True)
             cockpit.interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
             print ("Exercising complete. Thank you!")
-            
+
             cockpit.util.userConfig.setValue('NanomoverLastExerciseTimestamp',
-                    time.time(), isGlobal = True)
+                                             time.time())
 
 
 

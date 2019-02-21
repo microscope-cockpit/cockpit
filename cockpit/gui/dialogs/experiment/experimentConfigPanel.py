@@ -58,7 +58,7 @@ import cockpit.gui.saveTopBottomPanel
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
 import cockpit.util.userConfig
-import cockpit.util.user
+import cockpit.util.files
 
 import collections
 import decimal
@@ -371,7 +371,7 @@ class ExperimentConfigPanel(wx.Panel):
         # Get the filepath to save settings to.
         dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
                 message = 'Please select where to save the experiment.',
-                defaultDir = cockpit.util.user.getUserSaveDir())
+                defaultDir = cockpit.util.files.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
             return
@@ -391,7 +391,7 @@ class ExperimentConfigPanel(wx.Panel):
     def onLoadExperiment(self, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_OPEN, wildcard = '*.txt',
                 message = 'Please select the experiment file to load.',
-                defaultDir = cockpit.util.user.getUserSaveDir())
+                defaultDir = cockpit.util.files.getUserSaveDir())
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
             return
@@ -496,7 +496,7 @@ class ExperimentConfigPanel(wx.Panel):
             zHeight = 1e-6
             sliceHeight = 1e-6
 
-        savePath = os.path.join(cockpit.util.user.getUserSaveDir(),
+        savePath = os.path.join(cockpit.util.files.getUserSaveDir(),
                 self.filename.GetValue())
         params = {
                 'numReps': guiUtils.tryParseNum(self.numReps),

@@ -54,11 +54,13 @@
 # are initialized and registered from here, and if a part of the UI wants to 
 # interact with a specific kind of device, they can find it through the depot.
 
-import ast
 import importlib
 import os
+import sys
 
 from six import string_types, iteritems
+from six.moves import configparser
+
 from cockpit.handlers.deviceHandler import DeviceHandler
 
 ## Different eligible device handler types. These correspond 1-to-1 to
@@ -78,20 +80,12 @@ POWER_CONTROL = "power control"
 SERVER = "server"
 STAGE_POSITIONER = "stage positioner"
 
-_DEVICE_DIR_FPATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    'devices'
-)
-
 SKIP_CONFIG = ['objectives', 'server']
 
 class DeviceDepot:
-    ## Initialize the Depot. Find all the other modules in the "devices" 
-    # directory and initialize them.
+    ## Initialize the Depot.
     def __init__(self):
         self._configurator = None
-        ## Maps device classes to their module
-        self.classToModule = {}
         ## Maps config section names to device
         self.nameToDevice = {}
         ## Maps devices to their handlers.
@@ -126,31 +120,16 @@ class DeviceDepot:
 
     ## Call the initialize() method for each registered device, then get
     # the device's Handler instances and insert them into our various
-    # containers. Yield the names of the modules holding the Devices as we go.
+    # containers.  Yield the device names as we go.
     def initialize(self, config):
-        import inspect
+        import cockpit.config
+        ## TODO: we will want to remove this print statements when
+        ## we're done refactoring the location of the log and config
+        ## files (issue #320)
         print("Cockpit is running from %s" % os.path.split(os.path.abspath(__file__))[0])
-        print("depot is using config from %s" %
-          os.path.split(os.path.abspath(inspect.getfile(config.__class__)))[0])
-        # Parse device files to map classes to their module.
-        for modfile in os.listdir(_DEVICE_DIR_FPATH):
-            if not modfile.endswith('.py'):
-                continue
-            modname = modfile[0:-3] # Strip .py extension
-            with open(os.path.join(_DEVICE_DIR_FPATH, modfile), 'r') as f:
-                # Extract class definitions from the module
-                try:
-                    classes = [c for c in ast.parse(f.read()).body
-                                    if isinstance(c, ast.ClassDef)]
-                except Exception as e:
-                    raise Exception("Error parsing device module %s.\n%s" % (modname, e))
-
-            for c in classes:
-                if c.name in self.classToModule.keys():
-                    raise Exception('Duplicate class definition for %s in %s and %s' %
-                                    (c.name, self.classToModule[c.name], modname))
-                else:
-                    self.classToModule[c.name] = modname
+        print("depot is using configs from %s" % cockpit.config._files)
+        import cockpit.util.files
+        print("logs files are at '%s'" % cockpit.util.files.getLogDir())
 
         # Create our server
         from cockpit.devices.server import CockpitServer
@@ -165,20 +144,18 @@ class DeviceDepot:
         for name in config.sections():
             if name in SKIP_CONFIG:
                 continue
-            classname = config.get(name, 'type')
-            modname = self.classToModule.get(classname, None)
-            if not modname:
-                raise Exception("No module found for device with name %s." % name)
             try:
-                mod = importlib.import_module('cockpit.devices.' + modname)
+                classname = config.get(name, 'type')
+            except configparser.NoOptionError:
+                raise RuntimeError("Missing 'type' key for device '%s'" % name)
+
+            cls = _class_name_to_type(classname)
+            device_config = dict(config.items(name))
+            try:
+                device = cls(name, device_config)
             except Exception as e:
-                print("Importing %s failed with %s" % (modname, e))
-            else:
-                cls = getattr(mod, classname)
-                try:
-                    self.nameToDevice[name] = cls(name, dict(config.items(name)))
-                except Exception as e:
-                    raise Exception("In device %s" % name, e)
+                raise RuntimeError("Failed to construct device '%s'" % name, e)
+            self.nameToDevice[name] = device
 
         # Initialize devices in order of dependence
         # Convert to list - python3 dict_values has no pop method.
@@ -334,11 +311,6 @@ def loadConfig():
 
 
 ## Simple passthrough.
-def getNumModules():
-    return deviceDepot.getNumModules()
-
-
-## Simple passthrough.
 def initialize(config):
     for device in deviceDepot.initialize(config):
         yield device
@@ -424,27 +396,23 @@ def getHandler(nameOrDevice, handlerType):
         return list(handlers)
 
 
-## Sort handlers in order of abstraction
-def getSortedHandlers():
-    h = getAllHandlers()
+def _class_name_to_type(class_full_name):
+    """Get type from the class fully-qualified name.
 
-## Get the Device instance associated with the given module.
-#def getDevice(module):
-#    return deviceDepot.moduleToDevice[module]
+    Raises:
+        ModuleNotFound: if there is no module
+        AttributeError: if the class is not present on module
+    """
+    if '.' in class_full_name:
+        module_name, class_name = class_full_name.rsplit('.', 1)
+    else:
+        ## If the fully qualified name does not have a dot, then it is
+        ## a builtin type.
+        class_name = class_full_name
+        if sys.version_info < (3,):
+            module_name = '__builtin__'
+        else:
+            module_name = 'builtins'
 
-
-## Debugging function: reload the specified module to pick up any changes to 
-# the code. This requires us to cleanly shut down the associated Device and 
-# then re-create it without disturbing the associated Handlers (which may be
-# referred to in any number of places in the rest of the code). Most Devices
-# won't support this (reflected by the base Device class's shutdown() function
-# raising an exception). 
-# def reloadModule(module):
-#     device = deviceDepot.moduleToDevice[module]
-#     handlers = deviceDepot.deviceToHandlers[device]
-#     device.shutdown()
-#     reload(module)
-#     newDevice = module.__dict__[module.CLASS_NAME]()
-#     newDevice.initFromOldDevice(device, handlers)
-
-
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name)

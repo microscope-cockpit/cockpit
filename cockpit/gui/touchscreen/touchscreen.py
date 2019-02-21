@@ -43,7 +43,6 @@ import cockpit.gui.mosaic.window as mosaic
 import cockpit.gui.mosaic.canvas
 import cockpit.interfaces.stageMover
 import cockpit.util.colors
-import cockpit.util.user
 import cockpit.util.threads
 import cockpit.util.userConfig
 from cockpit.gui.saveTopBottomPanel import moveZCheckMoverLimits
@@ -118,9 +117,12 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         self.scalefont.setFaceSize(18)
 
         #default scale bar size is Zero
-        self.scalebar = 0
+        self.scalebar = cockpit.util.userConfig.getValue('mosaicScaleBar',
+                                                         default=0)
         #Default to drawing primitives
-        self.drawPrimitives = True
+        self.drawPrimitives = cockpit.util.userConfig.getValue('mosaicDrawPrimitives',
+                                                               default = True)
+
         ##define text strings to change status strings.
         self.sampleStateText=None
         ## Maps button names to wx.Button instances.
@@ -407,7 +409,6 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         events.subscribe('stage step index', self.stageIndexChange)
         events.subscribe('soft safety limit', self.onAxisRefresh)
         events.subscribe('objective change', self.onObjectiveChange)
-        events.subscribe('user login', self.onLogin)
         events.subscribe('mosaic start', self.mosaicStart)
         events.subscribe('mosaic stop', self.mosaicStop)
         events.subscribe('mosaic update', self.mosaicUpdate)
@@ -581,16 +582,6 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         csize = self.GetClientSize()
         self.panel.SetClientSize((csize[0], csize[1]))
 
-
-
-    ## User logged in, so we may well have changed size; adjust our zoom to
-    # suit.
-    def onLogin(self, *args):
-        self.centerCanvas()
-        self.scalebar=cockpit.util.userConfig.getValue('mosaicScaleBar', isGlobal = False,
-                                               default= 0)
-        self.drawPrimitives=cockpit.util.userConfig.getValue('mosaicDrawPrimitives',
-                                            isGlobal = False, default = True)
     ##Called when the stage handler index is chnaged. All we need
     #to do is update the display
     def stageIndexChange(self, *args):
@@ -719,7 +710,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         else:
             self.scalebar = 1
         #store current state for future.
-        cockpit.util.userConfig.setValue('mosaicScaleBar',self.scalebar, isGlobal=False)
+        cockpit.util.userConfig.setValue('mosaicScaleBar',self.scalebar)
         self.Refresh()
 
     def toggleDrawPrimitives(self):
@@ -729,8 +720,8 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         else:
             self.drawPrimitives = True
         #store current state for future.
-        cockpit.util.userConfig.setValue('mosaicDrawPrimitives',self.drawPrimitives,
-                                 isGlobal=False)
+        cockpit.util.userConfig.setValue('mosaicDrawPrimitives',
+                                         self.drawPrimitives)
         self.Refresh()
 
 

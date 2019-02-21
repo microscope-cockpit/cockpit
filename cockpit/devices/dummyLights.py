@@ -53,9 +53,6 @@
 from . import device
 import cockpit.handlers.lightSource
 
-CLASS_NAME = 'DummyLightsDevice'
-
-
 
 class DummyLights(device.Device):
     def __init__(self, name="dummy lights", config={}):

@@ -55,22 +55,14 @@
 
 import cockpit.devices.device
 import cockpit.handlers.configuratorHandler
-import cockpit.util.files
-
-import os.path
 
 class Configurator(cockpit.devices.device.Device):
     def getHandlers(self):
-        root = self.config.get('root', cockpit.util.files.ROOT_DIR)
-
         # Default values.
         configdict = {
                 'slidealtitude': 7370,
                 'slideTouchdownAltitude': 7900,
                 'dishaltitude': 5750,
-                'dataDirectory': os.path.join(root, 'AA_MUI_DATA'),
-                'logDirectory': os.path.join(root, 'AA_MUI_LOGS'),
-                'configDirectory': os.path.join(root, 'AA_MUI_CONFIG'),
         }
 
         # Update the configdict with values from config module.

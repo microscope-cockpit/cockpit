@@ -162,7 +162,8 @@ class PhysikInstrumenteM687(stage.StageDevice):
         except:
             print ("No softlimits section setting default limits")
             self.softlimits = ((-67500, 67500), (-42500, 42500))
-        events.subscribe('user logout', self.onLogout)
+
+        events.subscribe('program exit', self.onExit)
         events.subscribe('user abort', self.onAbort)
         events.subscribe('macro stage xy draw', self.onMacroStagePaint)
         #events.subscribe('cockpit initialization complete', self.promptExerciseStage)
@@ -183,8 +184,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
     # last exercised, and prompt the user if it's been more than a week.
     def promptExerciseStage(self):
         lastExerciseTimestamp = cockpit.util.userConfig.getValue(
-                'PIM687LastExerciseTimestamp',
-                isGlobal = True, default = 0)
+                'PIM687LastExerciseTimestamp', default = 0)
         curTime = time.time()
         delay = curTime - lastExerciseTimestamp
         daysPassed = delay / float(24 * 60 * 60)
@@ -209,9 +209,9 @@ class PhysikInstrumenteM687(stage.StageDevice):
             cockpit.interfaces.stageMover.goToXY((0, 0), shouldBlock = True)
             cockpit.interfaces.stageMover.goToXY(initialPos, shouldBlock = True)
             print ("Exercising complete. Thank you!")
-            
+
             cockpit.util.userConfig.setValue('PIM687LastExerciseTimestamp',
-                    time.time(), isGlobal = True)
+                                             time.time())
 
 
     ## Send a command to the XY stage controller, read the response, check
@@ -318,7 +318,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
 
 
     ## When the user logs out, switch to open-loop mode.
-    def onLogout(self, *args):
+    def onExit(self):
         # Switch to open loop
         self.sendXYCommand(b'SVO 1 0')
         self.sendXYCommand(b'SVO 2 0')

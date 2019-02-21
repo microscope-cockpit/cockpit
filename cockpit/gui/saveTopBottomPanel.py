@@ -53,7 +53,6 @@
 
 import cockpit.interfaces.stageMover
 import cockpit.util.userConfig
-from cockpit import events
 import wx
 
 ## @package saveTopBottomPanel
@@ -77,12 +76,9 @@ savedBottom = None
 def createSaveTopBottomPanel(parent):
     global topPosControl, zStackHeightLabel, bottomPosControl,savedTop,savedBottom
 
-    ## Current saved top position stored in user config file so we
-    ## need a login event to find them.
-    events.subscribe('user login', onUserLogin)
-
-    savedTop = 3010
-    savedBottom = 3000
+    ## Current saved top position stored in user config file.
+    savedTop = cockpit.util.userConfig.getValue('savedTop', default=3010)
+    savedBottom = cockpit.util.userConfig.getValue('savedBottom', default=3000)
 
     panel = wx.Panel(parent, 8910)
     box = wx.StaticBox(panel, -1, '')
@@ -150,7 +146,7 @@ def OnTB_saveTop(ev):
     savedTop = cockpit.interfaces.stageMover.getPosition()[2]
     topPosControl.SetValue("%.1f" % savedTop)
     updateZStackHeight()
-    cockpit.util.userConfig.setValue('savedTop',savedTop, isGlobal=False)
+    cockpit.util.userConfig.setValue('savedTop', savedTop)
 
 ## Event for handling users clicking on the "save bottom" button. Set 
 # savedBottom.
@@ -159,7 +155,7 @@ def OnTB_saveBottom(ev):
     savedBottom = cockpit.interfaces.stageMover.getPosition()[2]
     bottomPosControl.SetValue("%.1f" % savedBottom)
     updateZStackHeight()
-    cockpit.util.userConfig.setValue('savedBottom',savedBottom, isGlobal=False)
+    cockpit.util.userConfig.setValue('savedBottom', savedBottom)
 
 ## Event for handling users clicking on the "go to top" button. Use the 
 # nanomover (and, optionally, also the stage piezo) to move to the target
@@ -224,14 +220,3 @@ def updateZStackHeight():
 ## Get the bottom and top of the stack.
 def getBottomAndTop():
     return (savedBottom, savedTop)
-
-
-def onUserLogin(userName):
-    global savedTop, savedBottom    
-    savedTop=cockpit.util.userConfig.getValue('savedTop', isGlobal = False,
-                                      default= 3010)
-    savedBottom=cockpit.util.userConfig.getValue('savedBottom', isGlobal =
-                                         False, default = 3000)
-    topPosControl.SetValue("%.1f" % savedTop)
-    bottomPosControl.SetValue("%.1f" % savedBottom)
-    updateZStackHeight()
