@@ -102,9 +102,7 @@ class ViewPanel(wx.Panel):
         self.canvas = None
 
         self.disable()
-        # We need to respond to this event after the cameras do, since we
-        # need them to have gotten their new names.
-        events.subscribe("filter change", self.onFilterChange, priority = 1000)
+        events.subscribe("filter change", self.onFilterChange)
 
 
     ## User interacted with our current image; on double-clicks we center
