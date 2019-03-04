@@ -74,6 +74,8 @@ if (distutils.version.LooseVersion(Pyro4.__version__) >=
 
 import cockpit.config
 import cockpit.depot
+import cockpit.interfaces.imager
+import cockpit.interfaces.stageMover
 import cockpit.util.files
 import cockpit.util.logger
 
@@ -131,7 +133,6 @@ class CockpitApp(wx.App):
             import cockpit.gui.mosaic.window
             import cockpit.gui.shellWindow
             import cockpit.gui.statusLightsWindow
-            import cockpit.interfaces
             import cockpit.util.userConfig
 
             updateNum=1
@@ -147,7 +148,8 @@ class CockpitApp(wx.App):
             #depot.initialize(depot_config)
             status.Update(updateNum, "Initializing device interfaces...")
             updateNum+=1
-            cockpit.interfaces.initialize()
+            cockpit.interfaces.imager.initialize()
+            cockpit.interfaces.stageMover.initialize()
 
             status.Update(updateNum, "Initializing user interface...")
             updateNum+=1
@@ -219,7 +221,9 @@ class CockpitApp(wx.App):
 
 
             depot.makeInitialPublications()
-            interfaces.makeInitialPublications()
+            cockpit.interfaces.imager.makeInitialPublications()
+            cockpit.interfaces.stageMover.makeInitialPublications()
+
             events.publish('cockpit initialization complete')
             self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
 
