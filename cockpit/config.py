@@ -156,7 +156,7 @@ def _default_cockpit_config():
 #            'depot-files' : '',
         },
         'log' : {
-            'level' : 'debug', # XXX: certainly, debug should not be the default
+            'level' : 'error',
             'dir' : _default_log_dir(),
             'filename-template' : '%%Y%%m%%d_%%a-%%H%%M.log',
         },
