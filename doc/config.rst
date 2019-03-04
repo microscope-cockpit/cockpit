@@ -120,6 +120,9 @@ options are available:
   line, no other depot files will be read, not even those mentioned on
   config files.
 
+``--debug``
+  Set the logging level to debug.
+
 .. _cockpit_config_precedence:
 
 Precedence of option values

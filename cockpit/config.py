@@ -90,6 +90,9 @@ class CockpitConfig(configparser.ConfigParser):
                 depot_files.extend(default_user_depot_config_files())
             self._set_depot_files(depot_files)
 
+        if options.debug:
+            self.set('log', 'level', 'debug')
+
     def _set_depot_files(self, depot_files):
         self.set('global', 'depot-files', '\n'.join(depot_files))
 
@@ -199,6 +202,9 @@ def _parse_cmd_line_options(options):
                         action='append',
                         metavar='DEPOT-CONFIG-PATH',
                         help='File path for depot device configuration')
+
+    parser.add_argument('--debug', dest='debug', action='store_true',
+                        help="Enable debug logging level")
 
     parsed_options = parser.parse_args(options)
 

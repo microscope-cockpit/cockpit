@@ -518,5 +518,16 @@ class TestDepotConfig(unittest.TestCase):
         self.assertIn('Bar', depot)
         self.assertEqual(depot['Bar'].get('from'), 'config-file')
 
+
+class TestCommandLineOptions(unittest.TestCase):
+    def test_debug(self):
+        ## Also get the default to make sure this test is not passing
+        ## just because something else is making debug the default.
+        config_default = call_cockpit('--no-config-files')
+        config_debug = call_cockpit('--no-config-files', '--debug')
+        self.assertEqual(config_debug['log']['level'], 'debug')
+        self.assertNotEqual(config_default['log']['level'], 'debug')
+
+
 if __name__ == '__main__':
     unittest.main()
