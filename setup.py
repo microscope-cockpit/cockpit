@@ -17,9 +17,11 @@ import setuptools.command.sdist
 extra_requires = []
 if sys.version_info < (3,2):
     extra_requires += ['futures'] # for concurrent.futures
+if sys.version_info < (3,4):
+    extra_requires += ['enum34']
 if sys.version_info < (3,5):
     ## This package provides a Python 3.5 compatible version for the
-    ## configparser.  This is more than the just the capitalization of
+    ## configparser.  This is more than just the capitalization of
     ## ConfigParser.
     extra_requires += ['configparser']
 
