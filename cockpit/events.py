@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -18,46 +19,24 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-## Copyright 2013, The Regents of University of California
-##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions
-## are met:
-##
-## 1. Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-##
-## 2. Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in
-##   the documentation and/or other materials provided with the
-##   distribution.
-##
-## 3. Neither the name of the copyright holder nor the names of its
-##   contributors may be used to endorse or promote products derived
-##   from this software without specific prior written permission.
-##
-## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-## "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-## LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-## FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-## COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-## INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-## BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-## LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-## CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-## LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-## POSSIBILITY OF SUCH DAMAGE.
-
-
-from itertools import chain
+import collections
 import sys
 import threading
 import traceback
+import typing
 
-## This module handles the event-passing system between the UI and the 
-# devices. Objects may publish events, subscribe to them, and unsubscribe from
-# them.
+"""Cockpit events module is a topic based publish-subscriber system.
+
+This module is meant as a event passing middleware between the UI,
+using `wx.Event`s, and the individual devices and handlers which are
+independent on wxPython.
+
+In addition to the `Publisher` class, there is a singleton `Publisher`
+instance used throughout the Cockpit program.  The module functions
+`publish`, `subscribe`, and `unsubscribe` are pass-through functions
+to this singleton.
+
+"""
 
 ## Define common event strings here. This way, they're here for reference,
 # and can be used elsewhere to avoid errors due to typos.
@@ -78,94 +57,110 @@ NEW_IMAGE = 'new image %s' # must be suffixed with image source
 SETTINGS_CHANGED = 'settings changed %s' # must be suffixed with device/handler name
 EXECUTOR_DONE = 'executor done %s' # must be sufficed with device/handler name
 VIDEO_MODE_TOGGLE = 'video mode toggle'
-## TODO - make changes throughout to use the string variables defined above.
 
-## Maps event types to lists of callers for when those events occur.
-eventToSubscriberMap = {} # type: Dict[str, Sequence[Callable[..., None]]]
 
-## As eventToSubscriberMap, except that these subscribers only care about the
-# next event (i.e. they unsubscribe as soon as the event happens once).
-eventToOneShotSubscribers = {}
+_Subscriber = typing.Callable[..., None]
 
-## Lock around the above two dicts.
-subscriberLock = threading.Lock()
 
-## Pass the given event to all subscribers.
-def publish(eventType, *args, **kwargs):
-    for subscribeFunc in eventToSubscriberMap.get(eventType, []):
+class Publisher:
+    def __init__(self) -> None:
+        # type: typing.Dict[str, typing.List[_Subscriber]]
+        self._subscriptions = collections.defaultdict(list)
+        self._lock = threading.Lock()
+
+    def subscribe(self, event: str, func: _Subscriber) -> None:
+        """Subscribe callable to specified event.
+
+        Args:
+            event: event type/name (global constants in this module.)
+            func: function to be called when the named event happens.
+        """
+        with self._lock:
+            self._subscriptions[event].append(func)
+
+    def unsubscribe(self, event: str, func: _Subscriber) -> None:
+        """Unsubscribe callable to specified event."""
+        with self._lock:
+            try:
+                self._subscriptions[event].remove(func)
+            except ValueError:
+                pass # ignore func not in list error
+
+    def publish(self, event: str, *args, **kwargs):
+        """Call all functions subscribed to specific event with given arguments.
+        """
+        for func in self._subscriptions[event]:
+            try:
+                func(*args, **kwargs)
+            except:
+                sys.stderr.write('Error in subscribed callable %s.%s().  %s'
+                                 % (func.__module__, func.__name__,
+                                    traceback.format_exc()))
+
+
+class OneShotPublisher(Publisher):
+    """Publisher that automatically unsubscribes after a publication.
+
+    Like `Publisher`, except that the subscribers only care about the
+    next event (i.e. they unsubscribe as soon as the event happens
+    once).
+
+    """
+    def publish(self, event: str, *args, **kwargs) -> None:
         try:
-            subscribeFunc(*args, **kwargs)
-        except:
-            sys.stderr.write('Error in subscribed func %s.%s().  %s'
-                             % (subscribeFunc.__module__,
-                                subscribeFunc.__name__,
-                                traceback.format_exc()))
+            super().publish(event, *args, **kwargs)
+        finally:
+            # _subscriptions is a defaultdict but pop will still raise
+            # if key is missing, so we need None as pop's default.
+            self._subscriptions.pop(event, None)
+
+    def clear(self) -> None:
+        with self._lock:
+            for subscriptions in self._subscriptions.values():
+                for subscription in subscriptions:
+                    if hasattr(subscription, '__abort__'):
+                        subscription.__abort__()
+            self._subscriptions.clear()
 
 
-    while True:
-        try:
-            with subscriberLock:
-                subscribeFunc = eventToOneShotSubscribers[eventType].pop()
-        except:
-            # eventType not in eventToOneShotSubscibers or list is empty.
-            break
-        try:
-            subscribeFunc(*args, **kwargs)
-        except:
-            print('Error in subscribed func %s in %s' % (subscribeFunc.__name__,
-                                                         subscribeFunc.__module__))
+# Global singletons
+_publisher = Publisher()
+_one_shot_publisher = OneShotPublisher()
 
+def subscribe(event: str, func: _Subscriber) -> None:
+    return _publisher.subscribe(event, func)
 
+def unsubscribe(event: str, func: _Subscriber) -> None:
+    return _publisher.unsubscribe(event, func)
 
-## Add a new function to the list of those to call when the event occurs.
-def subscribe(eventType, func):
-    with subscriberLock:
-        if eventType not in eventToSubscriberMap:
-            eventToSubscriberMap[eventType] = []
-        eventToSubscriberMap[eventType].append(func)
+def publish(event: str, *args, **kwargs) -> None:
+    _publisher.publish(event, *args, **kwargs)
+    _one_shot_publisher.publish(event, *args, **kwargs)
 
+def oneShotSubscribe(event: str, func: _Subscriber):
+    return _one_shot_publisher.subscribe(event, func)
 
-## Add a new function to do a one-shot subscription.
-def oneShotSubscribe(eventType, func):
-    with subscriberLock:
-        if eventType not in eventToOneShotSubscribers:
-            eventToOneShotSubscribers[eventType] = []
-        eventToOneShotSubscribers[eventType].append(func)
+def clearOneShotSubscribers() -> None:
+    return _one_shot_publisher.clear()
 
-
-## Remove a function from the list of subscribers.
-def unsubscribe(eventType, func):
-    with subscriberLock:
-        curSubscribers = eventToSubscriberMap.get(eventType, [])
-        for i, subscriberFunc in enumerate(curSubscribers):
-            if func == subscriberFunc:
-                del curSubscribers[i]
-                return
-
-
-## Clear one-shot subscribers on abort. Usually, these were subscribed
+# Clear one-shot subscribers on abort.  Usually, these were subscribed
 # by executeAndWaitFor, which leaves the calling thread waiting for a
-# lock to be released. On an abort, that event may never happen.
-def clearOneShotSubscribers():
-    global eventToOneShotSubscribers
-    with subscriberLock:
-        for subscriber in chain(*eventToOneShotSubscribers.values()):
-            if hasattr(subscriber, '__abort__'):
-                subscriber.__abort__()
-        eventToOneShotSubscribers = {}
-
-subscribe(USER_ABORT, clearOneShotSubscribers)
+# lock to be released.  On an abort, that event may never happen.
+_publisher.subscribe(USER_ABORT, _one_shot_publisher.clear)
 
 
 ## Call the specified function with the provided arguments, and then wait for
 # the named event to occur.
-def executeAndWaitFor(eventType, func, *args, **kwargs):
+def executeAndWaitFor(eventType: str, func: _Subscriber, *args, **kwargs):
     return executeAndWaitForOrTimeout(eventType, func, None, *args, **kwargs)
 
 
 ## Call the specified function with the provided arguments, and then wait for
 # either the named event to occur or the timeout to expire.
-def executeAndWaitForOrTimeout(eventType, func, timeout, *args, **kwargs):
+def executeAndWaitForOrTimeout(eventType: str, func: _Subscriber,
+                               timeout: float,*args, **kwargs):
+    global _one_shot_publisher
+
     # Timeout implemented with a condition.
     newCondition = threading.Condition(threading.Lock())
     # Mutable flag to show whether or not releaser called.
@@ -188,13 +183,11 @@ def executeAndWaitForOrTimeout(eventType, func, timeout, *args, **kwargs):
     # Add a method to notify condition in the event of an abort event.
     releaser.__abort__ = aborter
 
-    oneShotSubscribe(eventType, releaser)
+    _one_shot_publisher.subscribe(eventType, releaser)
     try:
         func(*args, **kwargs)
     except:
-        with subscriberLock:
-            subscribers = eventToOneShotSubscribers[eventType]
-            subscribers.remove(releaser)
+        _one_shot_publisher.unsubscribe(eventType, releaser)
         raise
 
     # If event has not already happened, wait for notification or timeout.
@@ -209,11 +202,4 @@ def executeAndWaitForOrTimeout(eventType, func, timeout, *args, **kwargs):
         return result
     else:
         ## Timeout expired
-        # Unsubscribe to keep subscription tables tidy.
-        with subscriberLock:
-            curSubscribers = eventToOneShotSubscribers.get(eventType, [])
-            for i, subscriberFunc in enumerate(curSubscribers):
-                if func == subscriberFunc:
-                    del curSubscribers[i]
-        # Raise an exception to indicate timeout.
-        raise Exception('Event timeout: %s, %s' % (eventType, func))
+        _one_shot_publisher.unsubscribe(eventType, releaser)

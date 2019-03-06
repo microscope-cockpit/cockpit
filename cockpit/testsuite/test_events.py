@@ -25,32 +25,42 @@ import unittest.mock
 
 import cockpit.events
 
+
 class TestEvents(unittest.TestCase):
     def setUp(self):
-        # Ideally, we would have a Publisher class and we would use a
-        # new instance.  However, cockpit.events does not work like
-        # that yet (see issue #461) so we need to patch the module to
-        # get it it indo a clean state and revert it back at the end.
-        # And we can't decorate the class with patch because then the
-        # patching happens after setUp and before the test case, which
-        # so clears the subscription we do on setUp.  That is why we
-        # patch manually here on setUp.
+        # While we do have classes for Publisher and OneShotPublisher,
+        # Cockpit makes use of a singleton of each.  To avoid missing
+        # issues in those, we patch the module to get it into a clean
+        # state before each test.
+        #
+        # We can't decorate the class with the patches because then
+        # the patching happens between setUp and the individual test
+        # code, which would clear the subscription we do on setUp.
+        # That is why we patch manually here on setUp.
         self.patches = [
-            unittest.mock.patch.dict(cockpit.events.eventToSubscriberMap,
-                                     clear=True),
-            unittest.mock.patch.dict(cockpit.events.eventToOneShotSubscribers,
-                                     clear=True)
+            unittest.mock.patch('cockpit.events._publisher',
+                                new_callable=cockpit.events.Publisher),
+            unittest.mock.patch('cockpit.events._one_shot_publisher',
+                                new_callable=cockpit.events.OneShotPublisher),
         ]
         for patch in self.patches:
             patch.start()
 
+        # Clearing the singleton OneShotPublisher is something that
+        # the Cockpit singleton does.  Because we just patched it, we
+        # need to do this ourselves.  This does mean that if the
+        # subcription on the singleton is ever broken, this tests
+        # won't catch that issue.
+        cockpit.events.subscribe(cockpit.events.USER_ABORT,
+                                 cockpit.events._one_shot_publisher.clear)
+
+        self.subscriber = unittest.mock.Mock()
         self.event_name = 'test events'
 
 
 class TestSubscriptions(TestEvents):
     def setUp(self):
         super().setUp()
-        self.subscriber = unittest.mock.Mock()
         cockpit.events.subscribe(self.event_name, self.subscriber)
 
     def test_not_called(self):
@@ -92,16 +102,6 @@ class TestSubscriptions(TestEvents):
 class TestOneShotSubscriptions(TestEvents):
     def setUp(self):
         super().setUp()
-        # A side effect of having to patch the events module to get it
-        # "clean" is that we lose the subscription that cleans the one
-        # shot subscribers, so we need to put it back.  It's a bit
-        # redundant to test it was there before, but we hope we can
-        # remove it soon by having the events functions in a class
-        # (see issue #461).
-        cockpit.events.subscribe(cockpit.events.USER_ABORT,
-                                 cockpit.events.clearOneShotSubscribers)
-
-        self.subscriber = unittest.mock.Mock()
         cockpit.events.oneShotSubscribe(self.event_name, self.subscriber)
 
     def test_called_only_once(self):
@@ -120,10 +120,9 @@ class TestOneShotSubscriptions(TestEvents):
 class TestExecuteAndWait(TestEvents):
     def setUp(self):
         super().setUp()
-        cockpit.events.subscribe(cockpit.events.USER_ABORT,
-                                 cockpit.events.clearOneShotSubscribers)
+        cockpit.events.subscribe(self.event_name, self.subscriber)
 
-    def mock_publisher(self, event_name):
+    def mock_emitter(self, event_name):
         def side_effect(*args, **kwargs):
             # ignore args and kwargs
             cockpit.events.publish(event_name)
@@ -131,33 +130,27 @@ class TestExecuteAndWait(TestEvents):
 
     def test_wait_for_event(self):
         """Waiting for specified event"""
-        # A mock subscriber to test that the event went caused by the
-        # function provided, went to other subscribers and not only to
-        # the wait releaser.
-        self.subscriber = unittest.mock.Mock()
-        cockpit.events.subscribe(self.event_name, self.subscriber)
-
         args = [1, 2]
         kwargs = {'foo': 'bar'}
-        publisher = self.mock_publisher(self.event_name)
-        cockpit.events.executeAndWaitFor(self.event_name, publisher,
+        emitter = self.mock_emitter(self.event_name)
+        cockpit.events.executeAndWaitFor(self.event_name, emitter,
                                          *args, **kwargs)
+        emitter.assert_called_once_with(*args, **kwargs)
 
-        publisher.assert_called_once_with(*args, **kwargs)
+        # We check the mock subscriber to test that the publication
+        # caused by the emitter, went to other subscribers and not
+        # only to the executeAndWaitFor releaser.
         self.subscriber.assert_called_once_with()
 
     def test_abort_wait_for_event(self):
         """User abort event stops waiting for an event"""
-        # Another mock subscriber to test that the waited event did
-        # not happen and the release was caused by the abort event.
-        self.subscriber = unittest.mock.Mock()
-        cockpit.events.subscribe(self.event_name, self.subscriber)
+        emitter = self.mock_emitter(cockpit.events.USER_ABORT)
+        cockpit.events.executeAndWaitFor(self.event_name, emitter)
+        emitter.assert_called_once_with()
 
-        publisher = self.mock_publisher(cockpit.events.USER_ABORT)
-        cockpit.events.executeAndWaitFor(self.event_name, publisher)
-
+        # We check the mock subscriber to test the event was not
+        # published and the release was caused by the abort event.
         self.subscriber.assert_not_called()
-        publisher.assert_called_once_with()
 
 
 if __name__ == '__main__':
