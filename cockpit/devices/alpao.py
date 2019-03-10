@@ -17,7 +17,7 @@ from itertools import groupby
 import cockpit.gui.device
 import cockpit.gui.toggleButton
 import Pyro4
-import tkinter as tk
+import Tkinter as tk
 from PIL import Image, ImageTk
 import cockpit.util.userConfig as Config
 import cockpit.handlers.executor
@@ -71,13 +71,13 @@ class Alpao(device.Device):
 
         #Load values from config
         try:
-            self.parameters = Config.getValue('alpao_circleParams', isGlobal=True)
+            self.parameters = Config.getValue('alpao_circleParams')
             self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                      self.parameters[2])
         except:
             pass
         try:
-            self.controlMatrix = Config.getValue('alpao_controlMatrix', isGlobal=True)
+            self.controlMatrix = Config.getValue('alpao_controlMatrix')
             self.proxy.set_controlMatrix(self.controlMatrix)
         except:
             pass
@@ -268,7 +268,7 @@ class Alpao(device.Device):
         if len(self.remote_focus_LUT) != 0:
             np.savetxt('C:\\cockpit\\nick\\cockpit\\remote_focus_LUT.txt',
                        np.asanyarray(self.remote_focus_LUT))
-            Config.setValue('alpao_remote_focus_LUT', self.remote_focus_LUT, isGlobal=True)
+            Config.setValue('alpao_remote_focus_LUT', self.remote_focus_LUT)
 
     ### UI functions ###
     def makeUI(self, parent):
@@ -425,7 +425,7 @@ class Alpao(device.Device):
     def deactivateSelectCircle(self):
         # Read in the parameters needed for the phase mask
         try:
-            self.parameters = np.asarray(Config.getValue('alpao_circleParams', isGlobal = True))
+            self.parameters = np.asarray(Config.getValue('alpao_circleParams'))
         except IOError:
             print("Error: Masking parameters do not exist. Please select circle.")
             return
@@ -437,7 +437,7 @@ class Alpao(device.Device):
             self.proxy.get_roi()
         except Exception as e:
             try:
-                self.parameters = Config.getValue('alpao_circleParams', isGlobal=True)
+                self.parameters = Config.getValue('alpao_circleParams')
                 self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                             self.parameters[2])
             except:
@@ -453,15 +453,15 @@ class Alpao(device.Device):
                 raise e
 
         controlMatrix, sys_flat = self.proxy.calibrate(numPokeSteps = 5)
-        Config.setValue('alpao_controlMatrix', np.ndarray.tolist(controlMatrix), isGlobal=True)
-        Config.setValue('alpao_sys_flat', np.ndarray.tolist(sys_flat), isGlobal=True)
+        Config.setValue('alpao_controlMatrix', np.ndarray.tolist(controlMatrix))
+        Config.setValue('alpao_sys_flat', np.ndarray.tolist(sys_flat))
 
     def onCharacterise(self):
         try:
             self.proxy.get_roi()
         except Exception as e:
             try:
-                self.parameters = Config.getValue('alpao_circleParams', isGlobal=True)
+                self.parameters = Config.getValue('alpao_circleParams')
                 self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                              self.parameters[2])
             except:
@@ -480,7 +480,7 @@ class Alpao(device.Device):
             self.proxy.get_controlMatrix()
         except Exception as e:
             try:
-                self.controlMatrix = Config.getValue('alpao_controlMatrix', isGlobal=True)
+                self.controlMatrix = Config.getValue('alpao_controlMatrix')
                 self.proxy.set_controlMatrix(self.controlMatrix)
             except:
                 raise e
@@ -495,7 +495,7 @@ class Alpao(device.Device):
             self.proxy.get_roi()
         except Exception as e:
             try:
-                param = np.asarray(Config.getValue('alpao_circleParams', isGlobal=True))
+                param = np.asarray(Config.getValue('alpao_circleParams'))
                 self.proxy.set_roi(y0 = param[0], x0 = param[1],
                                              radius = param[2])
             except:
@@ -534,7 +534,7 @@ class Alpao(device.Device):
             self.proxy.get_roi()
         except Exception as e:
             try:
-                self.parameters = Config.getValue('alpao_circleParams', isGlobal=True)
+                self.parameters = Config.getValue('alpao_circleParams')
                 self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                              self.parameters[2])
             except:
@@ -553,15 +553,15 @@ class Alpao(device.Device):
             self.proxy.get_controlMatrix()
         except Exception as e:
             try:
-                self.controlMatrix = Config.getValue('alpao_controlMatrix', isGlobal=True)
+                self.controlMatrix = Config.getValue('alpao_controlMatrix')
                 self.proxy.set_controlMatrix(self.controlMatrix)
             except:
                 raise e
         flat_values = self.proxy.flatten_phase(iterations=10)
-        Config.setValue('alpao_flat_values', np.ndarray.tolist(flat_values), isGlobal=True)
+        Config.setValue('alpao_flat_values', np.ndarray.tolist(flat_values))
 
     def onApplySysFlat(self):
-        sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat', isGlobal=True))
+        sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat'))
         self.proxy.send(sys_flat_values)
 
     def showDebugWindow(self):
@@ -584,29 +584,34 @@ class Alpao(device.Device):
         print("Performing sensorless AO setup")
         # Note: Default is to correct Primary and Secondary Spherical aberration and both
         # orientations of coma, astigmatism and trefoil
+        print("Checking for control matrix")
         try:
             self.proxy.get_controlMatrix()
         except Exception as e:
             try:
-                self.controlMatrix = Config.getValue('alpao_controlMatrix', isGlobal=True)
+                self.controlMatrix = Config.getValue('alpao_controlMatrix')
                 self.proxy.set_controlMatrix(self.controlMatrix)
             except:
                 raise e
 
+        print("Setting Zernike modes")
         if np.any(nollZernike) == None:
             self.nollZernike = np.array([5, 6, 7, 8, 9, 10, 11, 22])
         else:
             self.nollZernike = nollZernike
 
+        print("Subscribing to camera events")
         #Subscribe to camera events
         events.subscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
 
+        print("Initialising Fourier ring mask")
         #Initialise Fourier ring mask
         self.objectives = cockpit.depot.getHandlersOfType(cockpit.depot.OBJECTIVE)[0]
         self.pixelSize = self.objectives.getPixelSize()
         self.proxy.set_sensorless_ring_mask(size = self.curCamera.getImageSize(), pixel_size = self.pixelSize * 10 ** -6)
 
         #Initialise the Zernike modes to apply
+        print("Initialising the Zernike modes to apply")
         z_steps = np.linspace(-1.25,1.25,6)
         self.zernike_applied = np.zeros((z_steps.shape[0]*self.nollZernike.shape[0],self.no_actuators))
         for noll_ind in self.nollZernike:
@@ -614,8 +619,10 @@ class Alpao(device.Device):
             self.zernike_applied[ind * z_steps.shape[0]:(ind + 1) * z_steps.shape[0], noll_ind - 1] = z_steps
 
         #Initialise stack to store correction iumages
+        print("Initialising stack to store correction iumages")
         self.correction_stack = []
 
+        print("Applying the first Zernike mode")
         # Apply the first Zernike mode
         self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :])
 
@@ -753,7 +760,7 @@ class Canvas(tk.Canvas):
             self.centre[0] = (event.x - self.offset[0]) * self.ratio
             self.centre[1] = (event.y - self.offset[1]) * self.ratio
             self.radius = ((event.x+1 - event.x+1 + 1) * self.ratio)/2
-            Config.setValue('alpao_circleParams', (self.centre[1], self.centre[0], self.radius), isGlobal=True)
+            Config.setValue('alpao_circleParams', (self.centre[1], self.centre[0], self.radius))
 
     def circle_resize(self, event):
         if self.circle is None:
@@ -770,7 +777,7 @@ class Canvas(tk.Canvas):
         self.scale(self.circle, unscaledCentre[0], unscaledCentre[1], scale, scale)
         self.p_click= (event.x, event.y)
         self.radius = ((self.bbox(self.circle)[2] - self.bbox(self.circle)[0]) * self.ratio)/2
-        Config.setValue('alpao_circleParams', (self.centre[1], self.centre[0], self.radius), isGlobal=True)
+        Config.setValue('alpao_circleParams', (self.centre[1], self.centre[0], self.radius))
 
     def circle_drag(self, event):
         if self.circle is None:
@@ -786,7 +793,7 @@ class Canvas(tk.Canvas):
         unscaledCentre = ((bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2)
         self.centre[0] = (unscaledCentre[0] - self.offset[0]) * self.ratio
         self.centre[1] = (unscaledCentre[1] - self.offset[1]) * self.ratio
-        Config.setValue('alpao_circleParams', (self.centre[1], self.centre[0], self.radius), isGlobal=True)
+        Config.setValue('alpao_circleParams', (self.centre[1], self.centre[0], self.radius))
         self.update()
 
 class View(tk.Frame):
