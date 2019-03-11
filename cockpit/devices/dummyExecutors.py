@@ -26,7 +26,6 @@ import cockpit.handlers.executor
 
 import time
 
-CLASS_NAME = 'ExperimentExecutorDevice'
 
 class DummyExecutor(device.Device):
     def __init__(self, name, config):

@@ -58,6 +58,7 @@
 from . import device
 import cockpit.handlers.objective
 import re
+
 PIXEL_PAT =  r"(?P<pixel_size>\d*[.]?\d*)"
 LENSID_PAT = r"(?P<lensID>\d*)"
 TRANSFORM_PAT = r"(?P<transform>\(\s*\d*\s*,\s*\d*\s*,\s*\d*\s*\))"
@@ -76,9 +77,6 @@ DUMMY_OBJECTIVE_PIXEL_SIZES = {
         "100xOil": .08,
         "150xTIRF": .06,
 }
-
-
-CLASS_NAME = 'ObjectiveDevice'
 
 class ObjectiveDevice(device.Device):
     def __init__(self, name='objectives', config={}):

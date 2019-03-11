@@ -137,10 +137,14 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
 
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
-        events.subscribe('user login', self.onLogin)
 
-    ## User logged in; load their settings.
-    def onLogin(self, username):
+
+    def finalizeInitialization(self):
+        super(LightPowerHandler, self).finalizeInitialization()
+        self._applyUserConfig()
+
+
+    def _applyUserConfig(self):
         targetPower = cockpit.util.userConfig.getValue(self.name + '-lightPower', default = 0.01)
         try:
             self.setPower(targetPower)

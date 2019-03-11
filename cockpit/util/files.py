@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2019 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -50,11 +51,9 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import numpy
+import getpass
 import os
-import sys
-import wx
-
+import os.path
 import cockpit.depot
 
 ## @package util.files
@@ -63,63 +62,88 @@ import cockpit.depot
 # a Configurator handler is available then its values for dataDirectory,
 # logDirectory, and configDirectory will be used instead.
 
-## Default root directory for program output
-ROOT_DIR = 'C:' + os.path.sep
+_PACKAGE_NAME = 'cockpit'
+
+def _default_log_dir():
+    if os.name in ("nt", "ce"):
+        base_dir = os.path.expandvars('%localappdata%')
+
+    elif os.name == 'darwin':
+        base_dir = os.path.expanduser('~/Library/Logs')
+
+    else: # default to freedesktop.org Base Directory Specification
+        ## Log files are not really cache files, but XDG spec says
+        ## "user-specific non-essential data files" and that's the
+        ## nearest thing we have.
+        base_dir = os.getenv('XDG_CACHE_HOME',
+                             os.path.join(os.environ['HOME'], '.cache'))
+
+    return os.path.join(base_dir, _PACKAGE_NAME)
+
+
+def _default_config_dir():
+    if os.name in ("nt", "ce"):
+        base_dir = os.path.expandvars('%localappdata%')
+
+    elif os.name == 'darwin':
+        base_dir = os.path.expanduser('~/Library/Application Support')
+
+    else: # default to freedesktop.org Base Directory Specification
+        ## Log files are not really cache files, but XDG spec says
+        ## "user-specific non-essential data files" and that's the
+        ## nearest thing we have.
+        base_dir = os.getenv('XDG_CONFIG_HOME',
+                             os.path.join(os.environ['HOME'], '.config'))
+
+    return os.path.join(base_dir, _PACKAGE_NAME)
+
+
+if os.name in ('nt', 'ce'): # Windows
+    _ROOT_DIR = 'C:\\'
+else: # Everything else including Linux and OSX
+    _ROOT_DIR = os.path.expanduser('~')
+
 ## Default directory where user data is stored
-DATA_DIR = 'MUI_DATA'
+_DATA_DIR = os.path.join(_ROOT_DIR, 'MUI_DATA')
 ## Default directory where logfiles are stored
-LOGS_DIR = 'MUI_LOGS'
+_LOGS_DIR = _default_log_dir()
 ## Default directory where user config is stored
-CONFIG_DIR = 'MUI_CONFIG'
-
-if 'darwin' in sys.platform:
-    # OSX case.
-    ROOT_DIR = os.path.expanduser('~')
-elif 'win' not in sys.platform:
-    # Linux case
-    # \todo Is this the correct way to test for a Linux platform?
-    ROOT_DIR = os.path.expanduser('~')
-
-## Filenames where experiment result files have been saved
-resultFiles = []
+_CONFIG_DIR = _default_config_dir()
 
 
 ## Load directory information from the configuration.
 def initialize():
-    global DATA_DIR
-    global LOGS_DIR
-    global CONFIG_DIR
+    global _DATA_DIR
+    global _LOGS_DIR
+    global _CONFIG_DIR
     configurators = cockpit.depot.getHandlersOfType(cockpit.depot.CONFIGURATOR)
     if configurators:
         for config in configurators:
-            if config.getValue('dataDirectory'):
-                DATA_DIR = config.getValue('dataDirectory')
-            if config.getValue('logDirectory'):
-                LOGS_DIR = config.getValue('logDirectory')
-            if config.getValue('configDirectory'):
-                CONFIG_DIR = config.getValue('configDirectory')
-                
+            if config.has('dataDirectory'):
+                _DATA_DIR = config.getValue('dataDirectory')
+            if config.has('logDirectory'):
+                _LOGS_DIR = config.getValue('logDirectory')
+            if config.has('configDirectory'):
+                _CONFIG_DIR = config.getValue('configDirectory')
+
 
 ## Get the directory in which all users' directories are located
-def getDataDir():
-    return DATA_DIR
-
+def _getDataDir():
+    return _DATA_DIR
 
 ## Return the directory in which logfiles are stored
 def getLogDir():
-    return LOGS_DIR
-
+    return _LOGS_DIR
 
 ## Return the directory in which user config is stored
 def getConfigDir():
-    return CONFIG_DIR
+    return _CONFIG_DIR
 
+def getUserSaveDir():
+    return os.path.join(_getDataDir(), getpass.getuser())
 
 def ensureDirectoriesExist():
-    for directory in [getDataDir(), getLogDir(), getConfigDir()]:
+    for directory in [getUserSaveDir(), getLogDir(), getConfigDir()]:
         if not os.path.exists(directory):
             print ("Making",directory)
             os.makedirs(directory)
-            # HACK: ensure there's a dummy user if we just made the data dir.
-            if directory == getDataDir():
-                os.makedirs(os.path.join(directory, 'New user'))
