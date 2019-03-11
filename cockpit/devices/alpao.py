@@ -1,9 +1,9 @@
-#Cockpit Device file for Alpao AO device.
-#Copyright Ian Dobbie, 2017
-#released under the GPL 3+
+# Cockpit Device file for Alpao AO device.
+# Copyright Ian Dobbie, 2017
+# released under the GPL 3+
 #
-#This file provides the cockpit end of the driver for the Alpao deformable
-#mirror as currently mounted on DeepSIM in Oxford
+# This file provides the cockpit end of the driver for the Alpao deformable
+# mirror as currently mounted on DeepSIM in Oxford
 
 from collections import OrderedDict
 import cockpit.devices
@@ -17,7 +17,7 @@ from itertools import groupby
 import cockpit.gui.device
 import cockpit.gui.toggleButton
 import Pyro4
-import Tkinter as tk
+import tkinter as tk
 from PIL import Image, ImageTk
 import cockpit.util.userConfig as Config
 import cockpit.handlers.executor
@@ -26,54 +26,55 @@ import time
 import numpy as np
 import scipy.stats as stats
 
-#the AO device subclasses Device to provide compatibility with microscope.
+# the AO device subclasses Device to provide compatibility with microscope.
 class Alpao(device.Device):
     def __init__(self, name, config={}):
         device.Device.__init__(self, name, config)
         self.proxy = None
-        self.sendImage=False
+        self.sendImage = False
         self.curCamera = None
 
-        self.buttonName='Alpao'
+        self.buttonName = 'Alpao'
 
         ## Connect to the remote program
+
     def initialize(self):
         self.proxy = Pyro4.Proxy(self.uri)
-        #self.proxy.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
+        # self.proxy.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
         self.no_actuators = self.proxy.get_n_actuators()
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
 
-        #Excercise the DM to remove residual static and then set to 0 position
+        # Excercise the DM to remove residual static and then set to 0 position
         for ii in range(20):
-            self.proxy.send((np.zeros(self.no_actuators)+(ii%2)))
+            self.proxy.send((np.zeros(self.no_actuators) + (ii % 2)))
             time.sleep(0.01)
         self.proxy.reset()
 
-        #Create accurate look up table for certain Z positions
-        ##LUT dict has key of Z positions
+        # Create accurate look up table for certain Z positions
+        # LUT dict has key of Z positions
         try:
             LUT_array = np.loadtxt("C:\\cockpit\\nick\\cockpit\\remote_focus_LUT.txt")
             self.LUT = {}
-            for ii in (LUT_array[:,0])[:]:
-                self.LUT[ii] = LUT_array[np.where(LUT_array == ii)[0][0],1:]
+            for ii in (LUT_array[:, 0])[:]:
+                self.LUT[ii] = LUT_array[np.where(LUT_array == ii)[0][0], 1:]
         except:
             self.LUT = None
 
-        ##slopes and intercepts are used for extrapolating values not
-        ##found in the LUT dict
+        # Slopes and intercepts are used for extrapolating values not
+        # found in the LUT dict
         if self.LUT is not None:
             self.actuator_slopes, self.actuator_intercepts = \
                 self.remote_ac_fits(LUT_array, self.no_actuators)
 
-        #Initiate a table for calibrating the look up table
+        # Initiate a table for calibrating the look up table
         self.remote_focus_LUT = []
 
-        #Load values from config
+        # Load values from config
         try:
             self.parameters = Config.getValue('alpao_circleParams')
             self.proxy.set_roi(self.parameters[0], self.parameters[1],
-                                     self.parameters[2])
+                               self.parameters[2])
         except:
             pass
         try:
@@ -84,7 +85,7 @@ class Alpao(device.Device):
 
         # subscribe to enable camera event to get access the new image queue
         events.subscribe('camera enable',
-                        lambda c, isOn: self.enablecamera(c, isOn))
+                         lambda c, isOn: self.enablecamera(c, isOn))
 
     def takeImage(self):
         cockpit.interfaces.imager.takeImage()
@@ -93,23 +94,23 @@ class Alpao(device.Device):
         self.curCamera = camera
         # Subscribe to new image events only after canvas is prepared.
 
-    def remote_ac_fits(self,LUT_array, no_actuators):
-        #For Z positions which have not been calibrated, approximate with
-        #a regression of known positions.
+    def remote_ac_fits(self, LUT_array, no_actuators):
+        # For Z positions which have not been calibrated, approximate with
+        # a regression of known positions.
 
         actuator_slopes = np.zeros(no_actuators)
         actuator_intercepts = np.zeros(no_actuators)
 
-        pos = np.sort(LUT_array[:,0])[:]
-        ac_array = np.zeros((np.shape(LUT_array)[0],no_actuators))
+        pos = np.sort(LUT_array[:, 0])[:]
+        ac_array = np.zeros((np.shape(LUT_array)[0], no_actuators))
 
         count = 0
         for jj in pos:
-            ac_array[count,:] = LUT_array[np.where(LUT_array == jj)[0][0],1:]
+            ac_array[count, :] = LUT_array[np.where(LUT_array == jj)[0][0], 1:]
             count += 1
 
         for kk in range(no_actuators):
-            s, i, r, p, se = stats.linregress(pos, ac_array[:,kk])
+            s, i, r, p, se = stats.linregress(pos, ac_array[:, kk])
             actuator_slopes[kk] = s
             actuator_intercepts[kk] = i
         return actuator_slopes, actuator_intercepts
@@ -126,18 +127,18 @@ class Alpao(device.Device):
 
         # Remove consecutive duplicates and position resets.
         reducedParams = [p[0] for p in groupby(patternParams)
-                             if type(p[0]) is float]
+                         if type(p[0]) is float]
         # Find the repeating unit in the sequence.
         sequenceLength = len(reducedParams)
         for length in range(2, len(reducedParams) // 2):
-            if reducedParams[0:length] == reducedParams[length:2*length]:
+            if reducedParams[0:length] == reducedParams[length:2 * length]:
                 sequenceLength = length
                 break
         sequence = reducedParams[0:sequenceLength]
 
-        #Calculate DM positions
+        # Calculate DM positions
         ac_positions = np.outer(reducedParams, self.actuator_slopes.T) \
-                                        + self.actuator_intercepts
+                       + self.actuator_intercepts
         ## Queue patterns on DM.
         if np.all(ac_positions.shape) != 0:
             self.proxy.queue_patterns(ac_positions)
@@ -158,7 +159,7 @@ class Alpao(device.Device):
             # Remove original event.
             if type(action) is tuple:
                 # Don't remove event for tuple.
-                ## This is the type for remote focus calibration experiment
+                # This is the type for remote focus calibration experiment
                 pass
             else:
                 table[i] = None
@@ -283,7 +284,7 @@ class Alpao(device.Device):
 
         selectCircleButton = cockpit.gui.toggleButton.ToggleButton(
             label='Select ROI',
-        #Button to calibrate the DM
+            # Button to calibrate the DM
             activateAction=self.onSelectCircle,
             deactivateAction=self.deactivateSelectCircle,
             activeLabel='Selecting ROI',
@@ -294,7 +295,7 @@ class Alpao(device.Device):
 
         calibrateButton = cockpit.gui.toggleButton.ToggleButton(
             label='Calibrate',
-        #Button to calibrate the DM
+            # Button to calibrate the DM
             parent=self.panel,
             size=cockpit.gui.device.DEFAULT_SIZE)
         calibrateButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.onCalibrate())
@@ -302,7 +303,7 @@ class Alpao(device.Device):
 
         characteriseButton = cockpit.gui.toggleButton.ToggleButton(
             label='Characterise',
-        #Button to calibrate the DM
+            # Button to calibrate the DM
             parent=self.panel,
             size=cockpit.gui.device.DEFAULT_SIZE)
         characteriseButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.onCharacterise())
@@ -317,7 +318,7 @@ class Alpao(device.Device):
             label='Reset DM',
             parent=self.panel,
             size=cockpit.gui.device.DEFAULT_SIZE)
-        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt:self.proxy.reset())
+        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.proxy.reset())
         self.elements['resetButton'] = resetButton
 
         # Step the focal plane up one step
@@ -360,19 +361,19 @@ class Alpao(device.Device):
         return self.panel
 
     def getPiezoPos(self):
-        return(cockpit.interfaces.stageMover.getAllPositions()[1][2])
+        return (cockpit.interfaces.stageMover.getAllPositions()[1][2])
 
     def movePiezoRelative(self, distance):
-        current=self.getPiezoPos()
-        currentpos=self.movePiezoAbsolute(current+distance)
+        current = self.getPiezoPos()
+        currentpos = self.movePiezoAbsolute(current + distance)
         return currentpos
 
     def movePiezoAbsolute(self, position):
-#        originalHandlerIndex= cockpit.interfaces.stageMover.mover.curHandlerIndex
-#        interfaces.cockpit.stageMover.mover.curHandlerIndex=1
-        handler=cockpit.interfaces.stageMover.mover.axisToHandlers[2][1]
+        #        originalHandlerIndex= cockpit.interfaces.stageMover.mover.curHandlerIndex
+        #        interfaces.cockpit.stageMover.mover.curHandlerIndex=1
+        handler = cockpit.interfaces.stageMover.mover.axisToHandlers[2][1]
         handler.moveAbsolute(position)
-#        cockpit.interfaces.stageMover.mover.curHandlerIndex=originalHandlerIndex
+        #        cockpit.interfaces.stageMover.mover.curHandlerIndex=originalHandlerIndex
         return (self.getPiezoPos())
 
     def bin_ndarray(self, ndarray, new_shape, operation='sum'):
@@ -417,7 +418,7 @@ class Alpao(device.Device):
         else:
             print("Detecting nothing but background noise")
 
-    def createCanvas(self,temp):
+    def createCanvas(self, temp):
         app = App(image_np=temp)
         app.master.title('Select a circle')
         app.mainloop()
@@ -430,7 +431,7 @@ class Alpao(device.Device):
             print("Error: Masking parameters do not exist. Please select circle.")
             return
         self.proxy.set_roi(self.parameters[0], self.parameters[1],
-                                         self.parameters[2])
+                           self.parameters[2])
 
     def onCalibrate(self):
         try:
@@ -439,7 +440,7 @@ class Alpao(device.Device):
             try:
                 self.parameters = Config.getValue('alpao_circleParams')
                 self.proxy.set_roi(self.parameters[0], self.parameters[1],
-                                            self.parameters[2])
+                                   self.parameters[2])
             except:
                 raise e
 
@@ -452,7 +453,7 @@ class Alpao(device.Device):
             except:
                 raise e
 
-        controlMatrix, sys_flat = self.proxy.calibrate(numPokeSteps = 5)
+        controlMatrix, sys_flat = self.proxy.calibrate(numPokeSteps=5)
         Config.setValue('alpao_controlMatrix', np.ndarray.tolist(controlMatrix))
         Config.setValue('alpao_sys_flat', np.ndarray.tolist(sys_flat))
 
@@ -463,7 +464,7 @@ class Alpao(device.Device):
             try:
                 self.parameters = Config.getValue('alpao_circleParams')
                 self.proxy.set_roi(self.parameters[0], self.parameters[1],
-                                             self.parameters[2])
+                                   self.parameters[2])
             except:
                 raise e
 
@@ -496,8 +497,8 @@ class Alpao(device.Device):
         except Exception as e:
             try:
                 param = np.asarray(Config.getValue('alpao_circleParams'))
-                self.proxy.set_roi(y0 = param[0], x0 = param[1],
-                                             radius = param[2])
+                self.proxy.set_roi(y0=param[0], x0=param[1],
+                                   radius=param[2])
             except:
                 raise e
 
@@ -516,17 +517,17 @@ class Alpao(device.Device):
         np.save('C:\\cockpit\\nick\\cockpit\\interferogram_ft', interferogram_ft)
         np.save('C:\\cockpit\\nick\\cockpit\\unwrapped_phase', unwrapped_phase)
         original_dim = int(np.shape(unwrapped_phase)[0])
-        resize_dim = original_dim/2
+        resize_dim = original_dim / 2
         while original_dim % resize_dim is not 0:
             resize_dim -= 1
         unwrapped_phase_resize = self.bin_ndarray(unwrapped_phase, new_shape=
-                                    (resize_dim, resize_dim), operation='mean')
-        cycle_diff = abs(np.max(unwrapped_phase) - np.min(unwrapped_phase))/(2.0*np.pi)
-        rms_phase = np.sqrt(np.mean(unwrapped_phase**2))
+        (resize_dim, resize_dim), operation='mean')
+        cycle_diff = abs(np.max(unwrapped_phase) - np.min(unwrapped_phase)) / (2.0 * np.pi)
+        rms_phase = np.sqrt(np.mean(unwrapped_phase ** 2))
         app = View(image_np=unwrapped_phase_resize)
         app.master.title('Unwrapped interferogram. '
                          'Cycle difference = %f, RMS phase = %f'
-                         %(cycle_diff, rms_phase))
+                         % (cycle_diff, rms_phase))
         app.mainloop()
 
     def onFlatten(self):
@@ -536,7 +537,7 @@ class Alpao(device.Device):
             try:
                 self.parameters = Config.getValue('alpao_circleParams')
                 self.proxy.set_roi(self.parameters[0], self.parameters[1],
-                                             self.parameters[2])
+                                   self.parameters[2])
             except:
                 raise e
 
@@ -580,7 +581,7 @@ class Alpao(device.Device):
 
     ### Sensorless AO functions ###
 
-    def correctSensorlessSetup(self,nollZernike = None):
+    def correctSensorlessSetup(self, nollZernike=None):
         print("Performing sensorless AO setup")
         # Note: Default is to correct Primary and Secondary Spherical aberration and both
         # orientations of coma, astigmatism and trefoil
@@ -599,24 +600,27 @@ class Alpao(device.Device):
             self.nollZernike = np.array([4, 11, 22, 5, 6, 7, 8, 9, 10])
         else:
             self.nollZernike = nollZernike
+        self.actuator_offset = None
+        self.sensorless_correct_coef = np.zeros(self.no_actuators)
 
         print("Subscribing to camera events")
-        #Subscribe to camera events
+        # Subscribe to camera events
         events.subscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
 
-        #Get pixel size
+        # Get pixel size
         self.objectives = cockpit.depot.getHandlersOfType(cockpit.depot.OBJECTIVE)[0]
         self.pixelSize = self.objectives.getPixelSize()
 
-        #Initialise the Zernike modes to apply
+        # Initialise the Zernike modes to apply
         print("Initialising the Zernike modes to apply")
-        z_steps = np.linspace(-2.5,2.5,10)
-        self.zernike_applied = np.zeros((z_steps.shape[0]*self.nollZernike.shape[0],self.no_actuators))
+        self.z_steps = np.linspace(-1.5, 1.5, 6)
+        self.zernike_applied = np.zeros((self.z_steps.shape[0] * self.nollZernike.shape[0], self.no_actuators))
         for noll_ind in self.nollZernike:
             ind = np.where(self.nollZernike == noll_ind)[0][0]
-            self.zernike_applied[ind * z_steps.shape[0]:(ind + 1) * z_steps.shape[0], noll_ind - 1] = z_steps
+            self.zernike_applied[ind * self.z_steps.shape[0]:(ind + 1) * self.z_steps.shape[0],
+            noll_ind - 1] = self.z_steps
 
-        #Initialise stack to store correction iumages
+        # Initialise stack to store correction iumages
         print("Initialising stack to store correction iumages")
         self.correction_stack = []
 
@@ -629,43 +633,70 @@ class Alpao(device.Device):
 
     def correctSensorlessImage(self, image, timestamp):
         if len(self.correction_stack) < self.zernike_applied.shape[0]:
-            print("Correction image %i/%i" %(len(self.correction_stack)+1,self.zernike_applied.shape[0]))
-            #Store image for current applied phase
+            print("Correction image %i/%i" % (len(self.correction_stack) + 1, self.zernike_applied.shape[0]))
+            # Store image for current applied phase
             self.correction_stack.append(np.ndarray.tolist(image))
             wx.CallAfter(self.correctSensorlessProcessing)
         else:
             print("Error in unsubscribing to camera events. Trying again")
             events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
 
-
     def correctSensorlessProcessing(self):
         print("Processing sensorless image")
         if len(self.correction_stack) < self.zernike_applied.shape[0]:
-            #Advance counter by 1 and apply next phase
-            self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :])
+            if len(self.correction_stack) % len(self.nollZernike) == 0:
+                # Find aberration amplitudes and correct
+                numMes = len(self.z_steps)
+                ind = int(len(self.correction_stack) / len(self.nollZernike))
+                current_stack = self.correction_stack[(ind - 1) * numMes:ind * numMes, :, :]
+                amp_to_correct, ac_pos_correcting = self.proxy.correct_sensorless_single_mode(image_stack=current_stack,
+                                                                                              zernike_applied=self.z_steps,
+                                                                                              nollIndex=
+                                                                                              self.nollZernike[ind - 1],
+                                                                                              offset=self.actuator_offset)
+                self.actuator_offset = ac_pos_correcting
+                self.sensorless_correct_coef[self.nollZernike[ind - 1] - 1] = amp_to_correct
 
-            #Take image, but ensure it's called after the phase is applied
-            wx.CallAfter(self.takeImage)
+                # Advance counter by 1 and apply next phase
+                self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :])
+
+                # Take image, but ensure it's called after the phase is applied
+                wx.CallAfter(self.takeImage)
+            else:
+                # Advance counter by 1 and apply next phase
+                self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :])
+
+                # Take image, but ensure it's called after the phase is applied
+                wx.CallAfter(self.takeImage)
         else:
-            #Once all images have been obtained, unsubscribe
+            # Once all images have been obtained, unsubscribe
             events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
 
-            #Save full stack of images used
+            # Save full stack of images used
             self.correction_stack = np.asarray(self.correction_stack)
             np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_correction_stack", self.correction_stack)
             np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_zernike_applied", self.zernike_applied)
             np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_nollZernike", self.nollZernike)
 
-            #Find aberration amplitudes and correct
-            sensorless_correct_coef, ac_pos_sensorless = self.proxy.correct_sensorless_all_modes(self.correction_stack,
-                                                                              self.zernike_applied, self.nollZernike,
-                                                                              self.pixelSize * 10 ** -6)
-            print("Aberrations measured: ", sensorless_correct_coef)
-            print("Actuator positions applied: ", ac_pos_sensorless)
-            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_correct_coef", sensorless_correct_coef)
-            np.save("C:\\cockpit\\nick\\cockpit\\ac_pos_sensorless", ac_pos_sensorless)
+            # Find aberration amplitudes and correct
+            numMes = len(self.z_steps)
+            ind = int(len(self.correction_stack) / len(self.nollZernike))
+            current_stack = self.correction_stack[(ind - 1) * numMes:ind * numMes, :, :]
+            amp_to_correct, ac_pos_correcting = self.proxy.correct_sensorless_single_mode(image_stack=current_stack,
+                                                                                          zernike_applied=self.z_steps,
+                                                                                          nollIndex=self.nollZernike[
+                                                                                              ind - 1],
+                                                                                          offset=self.actuator_offset)
+            self.actuator_offset = ac_pos_correcting
+            self.sensorless_correct_coef[self.nollZernike[ind - 1] - 1] = amp_to_correct
 
-## This debugging window lets each digital lineout of the DSP be manipulated
+            print("Aberrations measured: ", self.sensorless_correct_coef)
+            print("Actuator positions applied: ", self.actuator_offset)
+            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_correct_coef", self.sensorless_correct_coef)
+            np.save("C:\\cockpit\\nick\\cockpit\\ac_pos_sensorless", self.actuator_offset)
+
+
+# This debugging window lets each digital lineout of the DSP be manipulated
 # individually.
 class alpaoOutputWindow(wx.Frame):
     def __init__(self, AoDevice, parent, *args, **kwargs):
@@ -675,19 +706,18 @@ class alpaoOutputWindow(wx.Frame):
         self.SetTitle("Alpao AO device control")
         # Contains all widgets.
         self.panel = wx.Panel(self)
-        font=wx.Font(12,wx.FONTFAMILY_DEFAULT,wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
+        font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
         mainSizer = wx.BoxSizer(wx.VERTICAL)
         allPositions = cockpit.interfaces.stageMover.getAllPositions()
         self.piezoPos = allPositions[1][2]
-        textSizer=wx.BoxSizer(wx.VERTICAL)
-        self.piezoText=wx.StaticText(self.panel,-1,str(self.piezoPos),
-                style=wx.ALIGN_CENTER)
+        textSizer = wx.BoxSizer(wx.VERTICAL)
+        self.piezoText = wx.StaticText(self.panel, -1, str(self.piezoPos),
+                                       style=wx.ALIGN_CENTER)
         self.piezoText.SetFont(font)
-        textSizer.Add(self.piezoText, 0, wx.EXPAND|wx.ALL,border=5)
-        mainSizer.Add(textSizer, 0,  wx.EXPAND|wx.ALL,border=5)
+        textSizer.Add(self.piezoText, 0, wx.EXPAND | wx.ALL, border=5)
+        mainSizer.Add(textSizer, 0, wx.EXPAND | wx.ALL, border=5)
         self.panel.SetSizerAndFit(mainSizer)
         events.subscribe('stage position', self.onMove)
-
 
     def onMove(self, axis, *args):
         if axis != 2:
@@ -697,7 +727,7 @@ class alpaoOutputWindow(wx.Frame):
             str(cockpit.interfaces.stageMover.getAllPositions()[1][2]))
 
 ##This is a window for selecting the ROI for interferometry
-#!/usr/bin/python
+# !/usr/bin/python
 # -*- coding: utf-8
 #
 # Copyright 2017 Mick Phillips (mick.phillips@gmail.com)
@@ -729,8 +759,8 @@ class App(tk.Frame):
         self.canvas = Canvas(self, width=600, height=600)
         self.array = np.asarray(self.image_np)
         self.convert = Image.fromarray(self.array)
-        self.image = ImageTk.PhotoImage(image = self.convert)
-        self.canvas.create_image(self.offset[0], self.offset[1], anchor = tk.NW, image = self.image)
+        self.image = ImageTk.PhotoImage(image=self.convert)
+        self.canvas.create_image(self.offset[0], self.offset[1], anchor=tk.NW, image=self.image)
         self.canvas.pack()
 
 class Canvas(tk.Canvas):
@@ -744,7 +774,7 @@ class Canvas(tk.Canvas):
         self.circle = None
         self.p_click = None
         self.bbox_click = None
-        self.centre = [0,0]
+        self.centre = [0, 0]
         self.radius = 0
         self.ratio = 4
         self.offset = [45, 50]
@@ -755,10 +785,10 @@ class Canvas(tk.Canvas):
 
     def on_click(self, event):
         if self.circle == None:
-            self.circle = self.create_oval((event.x-1, event.y-1, event.x+1, event.y+1))
+            self.circle = self.create_oval((event.x - 1, event.y - 1, event.x + 1, event.y + 1))
             self.centre[0] = (event.x - self.offset[0]) * self.ratio
             self.centre[1] = (event.y - self.offset[1]) * self.ratio
-            self.radius = ((event.x+1 - event.x+1 + 1) * self.ratio)/2
+            self.radius = ((event.x + 1 - event.x + 1 + 1) * self.ratio) / 2
             Config.setValue('alpao_circleParams', (self.centre[1], self.centre[0], self.radius))
 
     def circle_resize(self, event):
@@ -769,13 +799,13 @@ class Canvas(tk.Canvas):
             self.bbox_click = self.bbox(self.circle)
             return
         bbox = self.bbox(self.circle)
-        unscaledCentre = ((bbox[2] + bbox[0])/2, (bbox[3] + bbox[1])/2)
-        r0 = ((self.p_click[0] - unscaledCentre[0])**2 + (self.p_click[1] - unscaledCentre[1])**2)**0.5
-        r1 = ((event.x - unscaledCentre[0])**2 + (event.y - unscaledCentre[1])**2)**0.5
+        unscaledCentre = ((bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2)
+        r0 = ((self.p_click[0] - unscaledCentre[0]) ** 2 + (self.p_click[1] - unscaledCentre[1]) ** 2) ** 0.5
+        r1 = ((event.x - unscaledCentre[0]) ** 2 + (event.y - unscaledCentre[1]) ** 2) ** 0.5
         scale = r1 / r0
         self.scale(self.circle, unscaledCentre[0], unscaledCentre[1], scale, scale)
-        self.p_click= (event.x, event.y)
-        self.radius = ((self.bbox(self.circle)[2] - self.bbox(self.circle)[0]) * self.ratio)/2
+        self.p_click = (event.x, event.y)
+        self.radius = ((self.bbox(self.circle)[2] - self.bbox(self.circle)[0]) * self.ratio) / 2
         Config.setValue('alpao_circleParams', (self.centre[1], self.centre[0], self.radius))
 
     def circle_drag(self, event):
@@ -807,9 +837,9 @@ class View(tk.Frame):
     def create_widgets(self):
         self.canvas = tk.Canvas(self, width=700, height=700)
         self.array = np.asarray(self.image_np)
-        self.array_norm = (self.image_np/np.max(self.image_np))*255.0
+        self.array_norm = (self.image_np / np.max(self.image_np)) * 255.0
         self.convert = Image.fromarray(self.array)
         self.convert_flip = self.convert.transpose(Image.FLIP_TOP_BOTTOM)
-        self.image = ImageTk.PhotoImage(image = self.convert_flip)
-        self.canvas.create_image(self.offset[0], self.offset[1], anchor = tk.NW, image = self.image)
+        self.image = ImageTk.PhotoImage(image=self.convert_flip)
+        self.canvas.create_image(self.offset[0], self.offset[1], anchor=tk.NW, image=self.image)
         self.canvas.pack()
