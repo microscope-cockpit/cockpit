@@ -17,7 +17,7 @@ from itertools import groupby
 import cockpit.gui.device
 import cockpit.gui.toggleButton
 import Pyro4
-import tkinter as tk
+import Tkinter as tk
 from PIL import Image, ImageTk
 import cockpit.util.userConfig as Config
 import cockpit.handlers.executor
@@ -562,8 +562,8 @@ class Alpao(device.Device):
         Config.setValue('alpao_flat_values', np.ndarray.tolist(flat_values))
 
     def onApplySysFlat(self):
-        sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat'))
-        self.proxy.send(sys_flat_values)
+        self.sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat'))
+        self.proxy.send(self.sys_flat_values)
 
     def showDebugWindow(self):
         # Ensure only a single instance of the window.
@@ -597,10 +597,16 @@ class Alpao(device.Device):
 
         print("Setting Zernike modes")
         if np.any(nollZernike) == None:
-            self.nollZernike = np.array([4, 11, 22, 5, 6, 7, 8, 9, 10])
+            self.nollZernike = np.array([11, 5, 6, 7, 8, 9, 10,])
         else:
             self.nollZernike = nollZernike
-        self.actuator_offset = None
+
+        try:
+            self.actuator_offset = self.sys_flat_values
+        except:
+            self.sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat'))
+            self.actuator_offset = self.sys_flat_values
+
         self.sensorless_correct_coef = np.zeros(self.no_actuators)
 
         print("Subscribing to camera events")
@@ -613,11 +619,12 @@ class Alpao(device.Device):
 
         # Initialise the Zernike modes to apply
         print("Initialising the Zernike modes to apply")
-        self.z_steps = np.linspace(-1.5, 1.5, 6)
+        self.z_steps = np.linspace(-2, 2, 8)
+        self.numMes = len(self.z_steps)
         self.zernike_applied = np.zeros((self.z_steps.shape[0] * self.nollZernike.shape[0], self.no_actuators))
         for noll_ind in self.nollZernike:
             ind = np.where(self.nollZernike == noll_ind)[0][0]
-            self.zernike_applied[ind * self.z_steps.shape[0]:(ind + 1) * self.z_steps.shape[0],
+            self.zernike_applied[ind * self.numMes:(ind + 1) * self.numMes,
             noll_ind - 1] = self.z_steps
 
         # Initialise stack to store correction iumages
@@ -626,7 +633,7 @@ class Alpao(device.Device):
 
         print("Applying the first Zernike mode")
         # Apply the first Zernike mode
-        self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :])
+        self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :], offset=self.actuator_offset)
 
         # Take image. This will trigger the iterative sensorless AO correction
         wx.CallAfter(self.takeImage)
@@ -644,27 +651,28 @@ class Alpao(device.Device):
     def correctSensorlessProcessing(self):
         print("Processing sensorless image")
         if len(self.correction_stack) < self.zernike_applied.shape[0]:
-            if len(self.correction_stack) % len(self.nollZernike) == 0:
+            if len(self.correction_stack) % self.numMes == 0:
                 # Find aberration amplitudes and correct
-                numMes = len(self.z_steps)
-                ind = int(len(self.correction_stack) / len(self.nollZernike))
-                current_stack = self.correction_stack[(ind - 1) * numMes:ind * numMes, :, :]
+                ind = int(len(self.correction_stack) / self.numMes)
+                current_stack = np.asarray(self.correction_stack)[(ind - 1) * self.numMes:ind * self.numMes,:,:]
                 amp_to_correct, ac_pos_correcting = self.proxy.correct_sensorless_single_mode(image_stack=current_stack,
                                                                                               zernike_applied=self.z_steps,
                                                                                               nollIndex=
                                                                                               self.nollZernike[ind - 1],
                                                                                               offset=self.actuator_offset)
                 self.actuator_offset = ac_pos_correcting
-                self.sensorless_correct_coef[self.nollZernike[ind - 1] - 1] = amp_to_correct
+                self.sensorless_correct_coef[self.nollZernike[ind - 1] - 1] += amp_to_correct
+                print("Aberrations measured: ", self.sensorless_correct_coef)
+                print("Actuator positions applied: ", self.actuator_offset)
 
                 # Advance counter by 1 and apply next phase
-                self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :])
+                self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :],offset=self.actuator_offset)
 
                 # Take image, but ensure it's called after the phase is applied
                 wx.CallAfter(self.takeImage)
             else:
                 # Advance counter by 1 and apply next phase
-                self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :])
+                self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :],offset=self.actuator_offset)
 
                 # Take image, but ensure it's called after the phase is applied
                 wx.CallAfter(self.takeImage)
@@ -679,21 +687,22 @@ class Alpao(device.Device):
             np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_nollZernike", self.nollZernike)
 
             # Find aberration amplitudes and correct
-            numMes = len(self.z_steps)
-            ind = int(len(self.correction_stack) / len(self.nollZernike))
-            current_stack = self.correction_stack[(ind - 1) * numMes:ind * numMes, :, :]
+            ind = int(len(self.correction_stack) / self.numMes)
+            current_stack = self.correction_stack[(ind - 1) * self.numMes:ind * self.numMes, :, :]
             amp_to_correct, ac_pos_correcting = self.proxy.correct_sensorless_single_mode(image_stack=current_stack,
                                                                                           zernike_applied=self.z_steps,
                                                                                           nollIndex=self.nollZernike[
                                                                                               ind - 1],
                                                                                           offset=self.actuator_offset)
             self.actuator_offset = ac_pos_correcting
-            self.sensorless_correct_coef[self.nollZernike[ind - 1] - 1] = amp_to_correct
+            self.sensorless_correct_coef[self.nollZernike[ind - 1] - 1] += amp_to_correct
 
             print("Aberrations measured: ", self.sensorless_correct_coef)
             print("Actuator positions applied: ", self.actuator_offset)
             np.save("C:\\cockpit\\nick\\cockpit\\sensorless_correct_coef", self.sensorless_correct_coef)
             np.save("C:\\cockpit\\nick\\cockpit\\ac_pos_sensorless", self.actuator_offset)
+
+            self.proxy.send(self.actuator_offset)
 
 
 # This debugging window lets each digital lineout of the DSP be manipulated
