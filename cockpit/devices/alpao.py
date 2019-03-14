@@ -597,7 +597,7 @@ class Alpao(device.Device):
 
         print("Setting Zernike modes")
         if np.any(nollZernike) == None:
-            self.nollZernike = np.array([11, 5, 6, 7, 8, 9, 10,])
+            self.nollZernike = np.array([11, 22, 5, 6, 7, 8, 9, 10, 11, 22])
         else:
             self.nollZernike = nollZernike
 
@@ -619,7 +619,7 @@ class Alpao(device.Device):
 
         # Initialise the Zernike modes to apply
         print("Initialising the Zernike modes to apply")
-        self.z_steps = np.linspace(-2, 2, 8)
+        self.z_steps = np.linspace(-2,2,8)
         self.numMes = len(self.z_steps)
         self.zernike_applied = np.zeros((self.z_steps.shape[0] * self.nollZernike.shape[0], self.no_actuators))
         for noll_ind in self.nollZernike:
