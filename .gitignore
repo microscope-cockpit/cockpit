@@ -10,4 +10,4 @@
 /cockpit.egg-info
 /build
 /dist
-
+cockpit/config/dome.conf
