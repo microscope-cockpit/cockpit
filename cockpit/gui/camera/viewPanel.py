@@ -191,7 +191,7 @@ class ViewPanel(wx.Panel):
         # NB the 512 here is the largest texture size our graphics card can
         # gracefully handle.
         self.canvas = cockpit.gui.imageViewer.viewCanvas.ViewCanvas(self.canvasPanel,
-                512, size = (VIEW_WIDTH, VIEW_HEIGHT),
+                256, size = (VIEW_WIDTH, VIEW_HEIGHT),
                 mouseHandler = self.onMouse)
         self.canvas.SetSize((VIEW_WIDTH, VIEW_HEIGHT))
         self.canvas.resetView()
