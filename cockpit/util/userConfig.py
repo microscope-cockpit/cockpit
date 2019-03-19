@@ -60,8 +60,9 @@ def _writeConfig(config, fpath):
     if not printer.isreadable(config):
         raise RuntimeError('user config file has non-writable data')
 
-    if not os.path.exists(os.path.dirname(fpath)):
-        os.makedirs(os.path.basedir(config_fpath))
+    dirname = os.path.dirname(fpath)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
 
     with open(fpath, 'w') as fh:
         fh.write(printer.pformat(config))
