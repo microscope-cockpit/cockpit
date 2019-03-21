@@ -20,7 +20,6 @@
 
 import wx
 from cockpit import depot, events
-from cockpit.handlers.deviceHandler import STATES
 from cockpit.util.colors import wavelengthToColor
 from cockpit.gui.device import EnableButton
 from cockpit.gui import safeControls
