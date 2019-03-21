@@ -128,9 +128,6 @@ class Image(BaseGL):
     range to prevent loss of detail due to quantisation when rendering low dynamic
     range images.
     """
-
-    # Maximum texture edge size - should determine from gl implementation.
-    _maxTexEdge = 512
     # Vertex shader glsl source
     _VS = """
     #version 130
@@ -161,6 +158,8 @@ class Image(BaseGL):
     """
 
     def __init__(self):
+        # Maximum texture edge size
+        self._maxTexEdge = glGetInteger(GL_MAX_TEXTURE_SIZE)
         # Textures used to display this image.
         self._textures = []
         # New data flag
