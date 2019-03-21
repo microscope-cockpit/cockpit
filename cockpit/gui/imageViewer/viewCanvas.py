@@ -395,7 +395,7 @@ class Histogram(BaseGL):
 class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Instantiate.
     #TODO: remove tileSize?
-    def __init__(self, parent, tileSize, mouseHandler = None, *args, **kwargs):
+    def __init__(self, parent, tileSize, *args, **kwargs):
         wx.glcanvas.GLCanvas.__init__(self, parent, *args, **kwargs)
 
         ## Parent, so we can adjust its size when we receive an image.
@@ -410,9 +410,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
         ## Should we show a crosshair (used for alignment)?
         self.showCrosshair = False
-
-        ## Optional additional mouse handler function.
-        self.mouseHandler = mouseHandler
 
         ## Queue of incoming images that we need to either display or discard.
         self.imageQueue = queue.Queue()
@@ -647,12 +644,13 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def onMouse(self, event):
         if self.imageShape is None:
             return
-        if self.mouseHandler is not None:
-            self.mouseHandler(event)
         self.curMouseX, self.curMouseY = event.GetPosition()
         self.updateMouseInfo(self.curMouseX, self.curMouseY)
-
-        if event.LeftDown():
+        if event.LeftDClick():
+            # Explicitly skip EVT_LEFT_DCLICK for parent to handle.
+            event.ResumePropagation(2)
+            event.Skip()
+        elif event.LeftDown():
             # Started dragging
             self.mouseDragX, self.mouseDragY = self.curMouseX, self.curMouseY
             blackPointX = 0.5 * (1+self.histogram.data2gl(self.histogram.lthresh)) * self.w
@@ -724,6 +722,25 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.showCrosshair = not(self.showCrosshair)
 
 
+    ## Convert window co-ordinates to gl co-ordinates.
+    def canvasToGl(self, x, y):
+        glx = (-1 + 2 *x / self.w - self.panX * self.zoom) / self.zoom
+        gly = -(-1 + 2 * y / (self.h - HISTOGRAM_HEIGHT) + self.panY * self.zoom) / self.zoom
+        return (glx, gly)
+
+
+    ## Convert gl co-ordinates to indices into the data.
+    def glToIndices(self, glx, gly):
+        datax = (1 + glx) * self.imageShape[1] // 2
+        datay = (1 + gly) * self.imageShape[0] // 2
+        return (datax, datay)
+
+
+    ## Convert window co-ordinates to indices into the data.
+    def canvasToIndices(self, x, y):
+        return self.glToIndices(*self.canvasToGl(x, y))
+
+
     ## Display information on the pixel under the mouse at the given
     # position.
     def updateMouseInfo(self, x, y):
@@ -732,12 +749,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             return
         # First we have to convert from screen coordinates to data
         # coordinates.
+        coords = numpy.array(self.canvasToIndices(x, y))
         shape = numpy.array(self.imageShape)
-        glx = (-1 + 2 *x / self.w - self.panX * self.zoom) / self.zoom
-        gly = -(-1 + 2 * y / (self.h - HISTOGRAM_HEIGHT) + self.panY * self.zoom) / self.zoom
-        datax = (1 + glx) * shape[1] // 2
-        datay = (1 + gly) * shape[0] // 2
-        coords = numpy.array([datay, datax])
         if numpy.all(coords < shape) and numpy.all(coords >= 0):
             value = self.imageData[int(coords[0]),int(coords[1])]
             events.publish("image pixel info", coords[::-1], value)
