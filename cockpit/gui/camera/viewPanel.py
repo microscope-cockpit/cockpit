@@ -108,7 +108,6 @@ class ViewPanel(wx.Panel):
         events.subscribe("filter change", self.onFilterChange)
         self.Bind(wx.EVT_LEFT_DCLICK, self.onMouse)
 
-
     ## User interacted with our current image.
     # On double-click, we move the stage to centre the feature under the mouse.
     def onMouse(self, event):
@@ -118,7 +117,7 @@ class ViewPanel(wx.Panel):
             x, y = event.GetPosition()
             pixelSize = depot.getHandlersOfType(depot.OBJECTIVE)[0].getPixelSize()
             x0, y0 = self.canvas.glToIndices(0, 0)
-            dx, dy = self.canvas.canvasToIndices(x, y)
+            dy, dx = self.canvas.canvasToIndices(x, y)
             dx -= x0
             dy -= y0
             dx *= pixelSize

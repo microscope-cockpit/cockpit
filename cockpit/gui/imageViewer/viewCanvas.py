@@ -726,10 +726,11 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
 
     ## Convert gl co-ordinates to indices into the data.
+    # Note: pass in x,y, but returns row-major datay, datax
     def glToIndices(self, glx, gly):
         datax = (1 + glx) * self.imageShape[1] // 2
         datay = (1 + gly) * self.imageShape[0] // 2
-        return (datax, datay)
+        return (datay, datax)
 
 
     ## Convert window co-ordinates to indices into the data.
@@ -745,10 +746,10 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             return
         # First we have to convert from screen coordinates to data
         # coordinates.
-        coords = numpy.array(self.canvasToIndices(x, y))
-        shape = numpy.array(self.imageShape)
-        if numpy.all(coords < shape) and numpy.all(coords >= 0):
-            value = self.imageData[int(coords[1]),int(coords[0])]
+        coords = numpy.array(self.canvasToIndices(x, y), dtype=np.uint)
+        shape = numpy.array(self.imageShape, dtype=np.uint)
+        if (coords < shape).all() and (coords >= 0).all():
+            value = self.imageData[coords[0], coords[1]]
             events.publish("image pixel info", coords[::-1], value)
 
 
