@@ -394,8 +394,7 @@ class Histogram(BaseGL):
 # and tiling them together.
 class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Instantiate.
-    #TODO: remove tileSize?
-    def __init__(self, parent, tileSize, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs):
         wx.glcanvas.GLCanvas.__init__(self, parent, *args, **kwargs)
 
         ## Parent, so we can adjust its size when we receive an image.
