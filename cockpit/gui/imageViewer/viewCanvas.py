@@ -138,7 +138,7 @@ class Image(BaseGL):
 
     void main() {
         gl_TexCoord[0] = gl_MultiTexCoord0;
-        gl_Position = vec4(zoom * (vXY + pan), 1, 1);
+        gl_Position = vec4(zoom * (vXY + pan), 1., 1.);
     }
     """
     # Fragment shader glsl source
@@ -150,10 +150,8 @@ class Image(BaseGL):
 
     void main()
     {
-        vec4 grey = (offset + texture2D(tex, gl_TexCoord[0].st)) / scale;
-        gl_FragColor = vec4(1, grey.g < 1, 1, 1) * vec4(grey.r > 0, 1, 1, 1) * grey;
-        
-        
+        vec4 lum = clamp(offset + texture2D(tex, gl_TexCoord[0].st) / scale, 0., 1.);
+        gl_FragColor = vec4(0., 0., lum.g == 0, 1.) + vec4(1., lum.g < 1., 1., 1.) * lum;
     }
     """
 
@@ -181,7 +179,7 @@ class Image(BaseGL):
 
     @property
     def offset(self):
-        return -(self.vmin + self.dmin) / (self.dptp)
+        return - (self.vmin - self.dmin) / (self.dptp * self.scale)
 
     def __del__(self):
         """Clean up textures."""
@@ -750,7 +748,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         coords = numpy.array(self.canvasToIndices(x, y))
         shape = numpy.array(self.imageShape)
         if numpy.all(coords < shape) and numpy.all(coords >= 0):
-            value = self.imageData[int(coords[0]),int(coords[1])]
+            value = self.imageData[int(coords[1]),int(coords[0])]
             events.publish("image pixel info", coords[::-1], value)
 
 
