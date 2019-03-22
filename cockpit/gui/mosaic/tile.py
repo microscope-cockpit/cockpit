@@ -104,6 +104,8 @@ class Tile:
         ## OpenGL texture ID
         self.texture = glGenTextures(1)
         self.scaleHistogram(histogramScale[0], histogramScale[1])
+        # Indicate refresh required after scaling histogram.
+        self.shouldRefresh = False
         if not shouldDelayAllocation:
             self.bindTexture()
             self.refresh()
@@ -214,6 +216,9 @@ class Tile:
     def render(self, viewBox):
         if not self.intersectsBox(viewBox):
             return
+        if self.shouldRefresh:
+            self.refresh()
+            self.shouldRefresh = False
         
         glColor3f(1, 1, 1)
 
@@ -252,6 +257,7 @@ class Tile:
         ## Used to scale the brightness of the overall tile, like the
         # histogram controls used for the camera views.
         self.histogramScale = (minVal, maxVal)
+        self.shouldRefresh = True
 
 
     ## Return the (xSize, ySize) tuple of a single pixel of texture data in GL
