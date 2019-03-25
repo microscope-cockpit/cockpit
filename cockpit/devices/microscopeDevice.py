@@ -256,6 +256,7 @@ class MicroscopeLaser(MicroscopeBase):
         # Query the remote to update max power on handler.
         ph = self.handlers[0] # powerhandler
         ph.setMaxPower(self._proxy.get_max_power_mw())
+        ph.powerSetPoint = self._proxy.get_set_power_mw()
         # Set lightHandler to enabled if light source is on.
         lh = self.handlers[-1]
         lh.state = int(self._proxy.get_is_on())

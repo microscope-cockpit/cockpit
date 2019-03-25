@@ -69,6 +69,7 @@ class LightPanel(wx.Panel):
                                              minValue = lightPower.minPower,
                                              maxValue = lightPower.maxPower,
                                              fetch_current=lightPower.getPower)
+            powCtrl.SetValue(lightPower.powerSetPoint)
             lightPower.addWatch('powerSetPoint', powCtrl.SetValue)
             powCtrl.Bind(safeControls.EVT_SAFE_CONTROL_COMMIT,
                          lambda evt: lightPower.setPower(evt.Value))
@@ -80,6 +81,7 @@ class LightPanel(wx.Panel):
                            flag=wx.ALIGN_CENTER_HORIZONTAL)
             for f in lightFilters:
                 self.Sizer.Add(f.makeSelector(self), flag=wx.EXPAND)
+
 
     def SetFocus(self):
         # Sets focus to the main button to avoid accidental data entry
