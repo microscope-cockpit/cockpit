@@ -71,7 +71,7 @@ import cockpit.util.threads
 class LightPowerHandler(deviceHandler.DeviceHandler):
     ## callbacks should fill in the following functions:
     # - setPower(value): Set power level.
-    # - getPower(value): Get current power level.
+    # - getPower(): Get current output power level.
     # \param minPower Minimum output power in milliwatts.
     # \param maxPower Maximum output power in milliwatts.
     # \param curPower Initial output power.
@@ -99,7 +99,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
                         queries[light] = executor.submit(getPower)
                     elif queries[light].done():
                         light.lastPower = queries[light].result()
-                        light.updateDisplay()
                         queries[light] = executor.submit(getPower)
 
 
@@ -207,42 +206,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
                 parent, "Select a power in milliwatts between 0 and %s:" % self.maxPower,
                 "Power (%s):" % self.units, self.powerSetPoint)
         self.setPower(float(value))
-
-
-    ## Update our laser power display.
-    @cockpit.util.threads.callInMainThread
-    def updateDisplay(self, *args, **kwargs):
-        # Show current power on the text display, if it exists.
-        if self.powerSetPoint and self.lastPower:
-            matched = 0.95*self.powerSetPoint < self.lastPower < 1.05*self.powerSetPoint
-        else:
-            matched = False
-
-        label = ''
-
-        if self.powerSetPoint is None:
-            label += "SET: ???%s\n" % (self.units)
-        else:
-            label += "SET: %.1f%s\n" % (self.powerSetPoint, self.units)
-
-        if self.lastPower is None:
-            label += "OUT: ???%s" % (self.units)
-        else:
-            label += "OUT: %.1f%s" % (self.lastPower, self.units)
-
-        # Update the power label, if it exists.
-        if self.powerText:
-            self.powerText.SetLabel(label)
-            if matched:
-                self.powerText.SetBackgroundColour('#99FF99')
-            else:
-                self.powerText.SetBackgroundColour('#FF7777')
-
-        # Enable or disable the powerToggle button, if it exists.
-        if self.powerToggle:
-            self.powerToggle.Enable(self.maxPower and self.isEnabled)
-
-        events.publish('laser power update', self)
 
 
     ## Simple getter.
