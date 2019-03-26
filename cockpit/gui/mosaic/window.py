@@ -1073,10 +1073,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     # \param text String template to use for entries in the menu.
     # \param action Function to call with the selected camera as a parameter.
     def showCameraMenu(self, text, action):
-        cameras = []
-        for camera in depot.getHandlersOfType(depot.CAMERA):
-            if camera.getIsEnabled():
-                cameras.append(camera)
+        cameras = depot.getActiveCameras()
         if len(cameras) == 1:
             action(cameras[0])
         else:

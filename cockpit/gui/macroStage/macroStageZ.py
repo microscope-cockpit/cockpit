@@ -57,7 +57,6 @@ from OpenGL.GL import *
 import traceback
 import wx
 
-from cockpit import depot
 from cockpit import events
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
@@ -355,11 +354,11 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             glLineWidth(HEIGHT_LINE_WIDTH)
 
             # Draw spikes for the histogram peaks.
-            configurator = depot.getHandlersOfType(depot.CONFIGURATOR)[0]
+            config = wx.GetApp().Config
             spikeHeight = self.stageExtent * .02
             spikeLength = self.stageExtent * .2
-            for altitude in [configurator.getValue('slidealtitude'), 
-                    configurator.getValue('dishaltitude')]:
+            for altitude in (config['stage'].getfloat('slideAltitude'),
+                             config['stage'].getfloat('dishAltitude')):
                 glColor3f(0, 0, 0)
                 glBegin(GL_POLYGON)
                 self.scaledVertex(scaleX, altitude - spikeHeight / 2)

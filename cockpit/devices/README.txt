@@ -5,9 +5,6 @@ replace them piecemeal with actual hardware control.
 
 camera.py: Generates test patterns.
 
-configurator.py: Basic configuration; dumps all data in the user's home 
-  directory.
-  
 device.py: Standard copy of the Device class module.
 
 drawer.py: Pretend "drawer" that makes up wavelengths for the "cameras" it 

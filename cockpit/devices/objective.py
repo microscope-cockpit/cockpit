@@ -81,7 +81,6 @@ DUMMY_OBJECTIVE_PIXEL_SIZES = {
 class ObjectiveDevice(device.Device):
     def __init__(self, name='objectives', config={}):
         device.Device.__init__(self, name, config)
-        # Set priority to Inf to indicate that this is a dummy device.
 
     def getHandlers(self):
         pixel_sizes = {}

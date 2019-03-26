@@ -466,9 +466,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         #check that we have a camera and light source
         cams=0
         lights=0
-        for camera in depot.getHandlersOfType(depot.CAMERA):
-            if camera.getIsEnabled():
-                cams=cams+1
+        cams = len(depot.getActiveCameras())
         for light in depot.getHandlersOfType(depot.LIGHT_TOGGLE):
             if light.getIsEnabled():
                 lights=lights+1
@@ -784,13 +782,11 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
     ##Function to load/unload objective
     def loadUnload(self):
         #toggle to load or unload the sample
-        configurator = depot.getHandlersOfType(depot.CONFIGURATOR)[0]
-        currentZ=cockpit.interfaces.stageMover.getPosition()[2]
+        config = wx.GetApp().config
+        loadPosition = config['stage'].getfloat('loadPosition')
+        unloadPosition = config['stage'].getfloat('unloadPosition')
 
-        if not configurator.has('loadPosition', 'unloadPosition'):
-            raise Exception("Missing loadPosition and/or unloadPositions in config.")
-        loadPosition=configurator.getValue('loadPosition')
-        unloadPosition=configurator.getValue('unloadPosition')
+        currentZ=cockpit.interfaces.stageMover.getPosition()[2]
         if (currentZ < loadPosition):
             #move with the smalled possible mover
             moveZCheckMoverLimits(loadPosition)

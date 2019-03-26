@@ -51,7 +51,6 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from cockpit import depot
 import cockpit.gui.dialogs.safetyMinDialog
 import cockpit.gui.keyboard
 import cockpit.gui.saveTopBottomPanel
@@ -152,7 +151,7 @@ class MacroStageWindow(wx.Frame):
         sizer.Add(button)
         
         button = wx.Button(self, -1, "Touch down")
-        touchdownAltitude = depot.getHandlersOfType(depot.CONFIGURATOR)[0].getValue('slideTouchdownAltitude')
+        touchdownAltitude = wx.GetApp().Config['stage'].getfloat('slideTouchdownAltitude')
         button.SetToolTip(wx.ToolTip(u"Bring the stage down to %d\u03bcm" % touchdownAltitude))
         button.Bind(wx.EVT_BUTTON, 
                 lambda event: cockpit.interfaces.stageMover.goToZ(touchdownAltitude))
