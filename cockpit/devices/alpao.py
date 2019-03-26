@@ -601,11 +601,12 @@ class Alpao(device.Device):
         else:
             self.nollZernike = nollZernike
 
-        try:
-            self.actuator_offset = self.sys_flat_values
-        except:
-            self.sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat'))
-            self.actuator_offset = self.sys_flat_values
+        #try:
+        #    self.actuator_offset = self.sys_flat_values
+        #except:
+        #    self.sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat'))
+        #    self.actuator_offset = self.sys_flat_values
+        self.actuator_offset = None
 
         self.sensorless_correct_coef = np.zeros(self.no_actuators)
 
@@ -619,16 +620,16 @@ class Alpao(device.Device):
 
         # Initialise the Zernike modes to apply
         print("Initialising the Zernike modes to apply")
-        self.numMes = 8
+        self.numMes = 9
         num_it = 2
-        self.z_steps = np.linspace(-3,3,self.numMes)
+        self.z_steps = np.linspace(-1.5,1.5,self.numMes)
 
         for ii in range(num_it):
             it_zernike_applied = np.zeros((self.numMes * self.nollZernike.shape[0], self.no_actuators))
             for noll_ind in self.nollZernike:
                 ind = np.where(self.nollZernike == noll_ind)[0][0]
                 it_zernike_applied[ind * self.numMes:(ind + 1) * self.numMes,
-                noll_ind - 1] = self.z_steps/(2**ii)
+                noll_ind - 1] = self.z_steps
             if ii == 0:
                 self.zernike_applied = it_zernike_applied
             else:
@@ -661,15 +662,15 @@ class Alpao(device.Device):
             if len(self.correction_stack) % self.numMes == 0:
                 # Find aberration amplitudes and correct
                 ind = int(len(self.correction_stack) / self.numMes)
-                nollInd = np.where(self.zernike_applied[len(self.correction_stack) - 1, :] != 0)[0][0]
+                nollInd = np.where(self.zernike_applied[len(self.correction_stack) - 1, :] != 0)[0][0] + 1
+                print("Current Noll index being corrected: %i" %nollInd)
                 current_stack = np.asarray(self.correction_stack)[(ind - 1) * self.numMes:ind * self.numMes,:,:]
                 amp_to_correct, ac_pos_correcting = self.proxy.correct_sensorless_single_mode(image_stack=current_stack,
                                                                                               zernike_applied=self.z_steps,
-                                                                                              nollIndex=
-                                                                                              self.nollZernike[nollInd],
+                                                                                              nollIndex=nollInd,
                                                                                               offset=self.actuator_offset)
                 self.actuator_offset = ac_pos_correcting
-                self.sensorless_correct_coef[self.nollZernike[ind - 1] - 1] += amp_to_correct
+                self.sensorless_correct_coef[nollInd-1] += amp_to_correct
                 print("Aberrations measured: ", self.sensorless_correct_coef)
                 print("Actuator positions applied: ", self.actuator_offset)
 
@@ -696,22 +697,33 @@ class Alpao(device.Device):
 
             # Find aberration amplitudes and correct
             ind = int(len(self.correction_stack) / self.numMes)
-            nollInd = np.where(self.zernike_applied[len(self.correction_stack) - 1, :] != 0)[0][0]
+            nollInd = np.where(self.zernike_applied[len(self.correction_stack) - 1, :] != 0)[0][0] + 1
+            print("Current Noll index being corrected: %i" % nollInd)
             current_stack = np.asarray(self.correction_stack)[(ind - 1) * self.numMes:ind * self.numMes, :, :]
             amp_to_correct, ac_pos_correcting = self.proxy.correct_sensorless_single_mode(image_stack=current_stack,
                                                                                           zernike_applied=self.z_steps,
-                                                                                          nollIndex=
-                                                                                          self.nollZernike[nollInd],
+                                                                                          nollIndex=nollInd,
                                                                                           offset=self.actuator_offset)
             self.actuator_offset = ac_pos_correcting
-            self.sensorless_correct_coef[self.nollZernike[ind - 1] - 1] += amp_to_correct
-
+            self.sensorless_correct_coef[nollInd - 1] += amp_to_correct
             print("Aberrations measured: ", self.sensorless_correct_coef)
             print("Actuator positions applied: ", self.actuator_offset)
             np.save("C:\\cockpit\\nick\\cockpit\\sensorless_correct_coef", self.sensorless_correct_coef)
             np.save("C:\\cockpit\\nick\\cockpit\\ac_pos_sensorless", self.actuator_offset)
 
+            log_file = open("C:\\cockpit\\nick\\cockpit\\sensorless_AO_logger.txt", "a+")
+            log_file.write("Time stamp: %i:%i:%i %i/%i/%i\n" %(time.gmtime()[3],time.gmtime()[4],time.gmtime()[5],time.gmtime()[2],time.gmtime()[1],time.gmtime()[0]))
+            log_file.write("Aberrations measured: ")
+            log_file.write(str(self.sensorless_correct_coef))
+            log_file.write("\n")
+            log_file.write("Actuator positions applied: ")
+            log_file.write(str(self.actuator_offset))
+            log_file.write("\n")
+            log_file.close()
+
+            print("Actuator positions applied: ", self.actuator_offset)
             self.proxy.send(self.actuator_offset)
+            wx.CallAfter(self.takeImage)
 
 
 # This debugging window lets each digital lineout of the DSP be manipulated
