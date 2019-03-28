@@ -122,7 +122,8 @@ class DepotConfig(configparser.ConfigParser):
 
     """
     def __init__(self, filepaths):
-        super(DepotConfig, self).__init__(converters=_type_converters)
+        super(DepotConfig, self).__init__(converters=_type_converters,
+                                          interpolation=None)
         self.files = [] # type: List[str]
         self.read(filepaths)
 

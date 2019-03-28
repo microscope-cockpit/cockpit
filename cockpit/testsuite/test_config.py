@@ -534,6 +534,21 @@ class TestDepotConfig(unittest.TestCase):
         self.assertEqual(depot.files, [existing_file.path])
         self.assertNotIn(missing_file, depot.files)
 
+    def test_interpolation_only_once(self):
+        """Files in depot config do not go through multiple interpolations.
+
+        Because we manually add config sections from multiple
+        ConfigParser instances, we need to be careful to not go
+        through two interpolation steps.
+        """
+        conf_file = TempConfigFile('[filters]\n'
+                                   'filters:\n'
+                                   '  0, ND 1%%\n'
+                                   '  1, ND 10%%\n')
+        depot = cockpit.config.DepotConfig(conf_file.path)
+        self.assertEqual(depot['filters'].get('filters'),
+                         '\n0, ND 1%\n1, ND 10%')
+
 
 class TestCommandLineOptions(unittest.TestCase):
     def test_debug(self):
