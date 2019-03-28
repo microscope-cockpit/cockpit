@@ -518,6 +518,22 @@ class TestDepotConfig(unittest.TestCase):
         self.assertIn('Bar', depot)
         self.assertEqual(depot['Bar'].get('from'), 'config-file')
 
+    def test_read_files(self):
+        """Keeps information what files were actually read.
+
+        With so many methods to control what files get read, we need
+        to keep in memory which files were actually read.  And this is
+        those that were actually read, not those that we tried to
+        read.
+        """
+        existing_file = TempConfigFile()
+        with tempfile.TemporaryDirectory() as existing_dir:
+            missing_file = os.path.join(existing_dir, 'missing.conf')
+            depot = cockpit.config.DepotConfig([existing_file.path,
+                                                missing_file])
+        self.assertEqual(depot.files, [existing_file.path])
+        self.assertNotIn(missing_file, depot.files)
+
 
 class TestCommandLineOptions(unittest.TestCase):
     def test_debug(self):

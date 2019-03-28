@@ -123,6 +123,7 @@ class DepotConfig(configparser.ConfigParser):
     """
     def __init__(self, filepaths):
         super(DepotConfig, self).__init__(converters=_type_converters)
+        self.files = [] # type: List[str]
         self.read(filepaths)
 
     def read(self, filenames, encoding=None):
@@ -142,6 +143,7 @@ class DepotConfig(configparser.ConfigParser):
         for filename in filenames:
             file_config = configparser.ConfigParser()
             if file_config.read(filename):
+                self.files.append(filename)
                 for new_section in file_config.sections():
                     self.add_section(new_section)
                     for k, v in file_config[new_section].items():
