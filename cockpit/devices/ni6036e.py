@@ -78,9 +78,6 @@ class NI6036e(device.Device):
         self.makeOutputWindow = makeOutputWindow
         self.buttonName='ni6036e'
 
-        # We want to delay initialization until after the power buttons system
-        # is active.
-        self.priority = 50
         ## Pyro4.Proxy for the "NI" portion of the program (mirror flips and
         # a few utility functions).
         self.niConnection = None

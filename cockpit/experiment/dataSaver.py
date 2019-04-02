@@ -113,12 +113,6 @@ class DataSaver:
         # The default of a googol megabytes ought to be enough to avoid
         # splitting files if no cap is specified. :)
         self.maxFilesize = 10**100
-        config = depot.getHandlersOfType(depot.CONFIGURATOR)[0]
-        try:
-            self.maxFilesize = config.getValue('maxFilesizeMegabytes')
-        except KeyError:
-            # No max filesize specified; leave it as-is.
-            pass
 
         global uniqueID
         ## Unique ID for our instance

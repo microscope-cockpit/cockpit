@@ -1,6 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+## Copyright (C) 2019 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
+##
+## This file is part of Cockpit.
+##
+## Cockpit is free software: you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
+##
+## Cockpit is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
+
 ## Copyright 2013, The Regents of University of California
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -33,9 +50,9 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import cockpit.util.files
-
+import enum
 import logging
+import os
 import os.path
 import time
 
@@ -46,19 +63,40 @@ import time
 ## Logger instance
 log = None
 
-def makeLogger():
+
+class Level(enum.Enum):
+    critical = logging.CRITICAL
+    error = logging.ERROR
+    warning = logging.WARNING
+    info = logging.INFO
+    debug = logging.DEBUG
+
+
+def makeLogger(config):
     """Create the logger and instantiate the ``log`` singleton.
+
+    Args:
+        logging_config (``configparser.SectionProxy``): the config
+            section for the logger.
     """
+
+    log_dir = config.getpath('dir')
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    filename = time.strftime(config.get('filename-template'))
+    filepath = os.path.join(log_dir, filename)
+
+    level = Level[config.get('level')].value
+
     global log
     log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
-
-    filename = 'MUI_' +  time.strftime("%Y%m%d_%a-%H%M") + '.log'
-    filepath = os.path.join(cockpit.util.files.getLogDir(), filename)
+    log.setLevel(level)
 
     log_handler = logging.FileHandler(filepath, mode = "a")
-    formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(module)10s:%(lineno)4d  %(message)s')
+    formatter = logging.Formatter('%(asctime)s %(levelname)-8s'
+                                  + ' %(module)10s:%(lineno)4d'
+                                  + '  %(message)s')
     log_handler.setFormatter(formatter)
-    log_handler.setLevel(logging.DEBUG)
-
+    log_handler.setLevel(level)
     log.addHandler(log_handler)
