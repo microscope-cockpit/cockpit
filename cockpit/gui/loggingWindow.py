@@ -91,7 +91,8 @@ class LoggingWindow(wx.Frame):
 
         self.auiManager.AddPane(self.stdErr, wx.aui.AuiPaneInfo().Caption("Standard error").CloseButton(False).Top().MinSize((-1, 194)))
         self.auiManager.AddPane(self.stdOut, wx.aui.AuiPaneInfo().Caption("Standard out").CloseButton(False).Center().MinSize((-1, 194)))
-
+        self.stdOut.write('Device configuration read from: %s\n'
+                          % wx.GetApp().Config.depot_config.files)
         self.auiManager.Update()
 
         self.SetSize((600, 460))

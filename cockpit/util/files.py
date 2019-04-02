@@ -54,78 +54,23 @@
 import getpass
 import os
 import os.path
-import cockpit.depot
 
 ## @package util.files
-# This module contains file-related functions and constants. By default,
-# files are stored in C: (obviously only valid for Windows computers); if
-# a Configurator handler is available then its values for dataDirectory,
-# logDirectory, and configDirectory will be used instead.
+# This module contains file-related functions and constants.
 
-_PACKAGE_NAME = 'cockpit'
-
-def _default_log_dir():
-    if os.name in ("nt", "ce"):
-        base_dir = os.path.expandvars('%localappdata%')
-
-    elif os.name == 'darwin':
-        base_dir = os.path.expanduser('~/Library/Logs')
-
-    else: # default to freedesktop.org Base Directory Specification
-        ## Log files are not really cache files, but XDG spec says
-        ## "user-specific non-essential data files" and that's the
-        ## nearest thing we have.
-        base_dir = os.getenv('XDG_CACHE_HOME',
-                             os.path.join(os.environ['HOME'], '.cache'))
-
-    return os.path.join(base_dir, _PACKAGE_NAME)
-
-
-def _default_config_dir():
-    if os.name in ("nt", "ce"):
-        base_dir = os.path.expandvars('%localappdata%')
-
-    elif os.name == 'darwin':
-        base_dir = os.path.expanduser('~/Library/Application Support')
-
-    else: # default to freedesktop.org Base Directory Specification
-        ## Log files are not really cache files, but XDG spec says
-        ## "user-specific non-essential data files" and that's the
-        ## nearest thing we have.
-        base_dir = os.getenv('XDG_CONFIG_HOME',
-                             os.path.join(os.environ['HOME'], '.config'))
-
-    return os.path.join(base_dir, _PACKAGE_NAME)
-
-
-if os.name in ('nt', 'ce'): # Windows
-    _ROOT_DIR = 'C:\\'
-else: # Everything else including Linux and OSX
-    _ROOT_DIR = os.path.expanduser('~')
-
-## Default directory where user data is stored
-_DATA_DIR = os.path.join(_ROOT_DIR, 'MUI_DATA')
-## Default directory where logfiles are stored
-_LOGS_DIR = _default_log_dir()
-## Default directory where user config is stored
-_CONFIG_DIR = _default_config_dir()
-
+## Default directories, set after initialize().
+## TODO: remove this as we move more stuff out of this module and
+## making use of cockpit.config
+_DATA_DIR = None
+_LOGS_DIR = None
 
 ## Load directory information from the configuration.
-def initialize():
+def initialize(config):
     global _DATA_DIR
     global _LOGS_DIR
-    global _CONFIG_DIR
-    configurators = cockpit.depot.getHandlersOfType(cockpit.depot.CONFIGURATOR)
-    if configurators:
-        for config in configurators:
-            if config.has('dataDirectory'):
-                _DATA_DIR = config.getValue('dataDirectory')
-            if config.has('logDirectory'):
-                _LOGS_DIR = config.getValue('logDirectory')
-            if config.has('configDirectory'):
-                _CONFIG_DIR = config.getValue('configDirectory')
-
+    _DATA_DIR = config.getpath('global', 'data-dir')
+    _LOGS_DIR = config.getpath('log', 'dir')
+    _ensureDirectoriesExist()
 
 ## Get the directory in which all users' directories are located
 def _getDataDir():
@@ -135,15 +80,11 @@ def _getDataDir():
 def getLogDir():
     return _LOGS_DIR
 
-## Return the directory in which user config is stored
-def getConfigDir():
-    return _CONFIG_DIR
-
 def getUserSaveDir():
     return os.path.join(_getDataDir(), getpass.getuser())
 
-def ensureDirectoriesExist():
-    for directory in [getUserSaveDir(), getLogDir(), getConfigDir()]:
+def _ensureDirectoriesExist():
+    for directory in [getUserSaveDir()]:
         if not os.path.exists(directory):
             print ("Making",directory)
             os.makedirs(directory)

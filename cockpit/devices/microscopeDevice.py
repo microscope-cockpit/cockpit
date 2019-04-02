@@ -43,9 +43,6 @@ import re
 # Pseudo-enum to track whether device defaults in place.
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
 
-# Device types.
-(UGENERIC, USWITCHABLE, UDATA, UCAMERA, ULASER, UFILTER) = range(6)
-
 class MicroscopeBase(device.Device):
     """A class to communicate with the UniversalDevice interface."""
     def __init__(self, name, config):
@@ -311,13 +308,3 @@ class MicroscopeFilter(MicroscopeBase):
 
     def getFilters(self):
         return self.filters
-
-
-# Type maps.
-ENUM_TO_CLASS = {
-    UGENERIC: MicroscopeGenericDevice,
-    USWITCHABLE: MicroscopeSwitchableDevice,
-    UDATA: None,
-    UCAMERA: None,
-    ULASER: None,
-    UFILTER: MicroscopeFilter,}
