@@ -23,12 +23,9 @@
 from . import device
 from cockpit.util import valueLogger
 from cockpit import events
-import cockpit.gui.toggleButton
 import collections
 import Pyro4
 import wx
-import threading
-import time
 import cockpit.gui.device
 
 ## TODO: Clean up code.
@@ -172,11 +169,8 @@ class piOutputWindow(wx.Frame):
 
         # Set up the digital lineout buttons.
         for i in range(len(piDIO.lines)) :
-            button = cockpit.gui.toggleButton.ToggleButton(
-                    parent = panel, label = str(piDIO.lines[i]),
-                    activateAction = self.toggle,
-                    deactivateAction = self.toggle,
-                    size = (140, 80))
+            button = wx.ToggleButton(panel, wx.ID_ANY, str(piDIO.lines[i]))
+            button.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: self.toggle())
             buttonSizer.Add(button, 1, wx.EXPAND)
             self.buttonToLine[button] = i
         mainSizer.Add(buttonSizer)
