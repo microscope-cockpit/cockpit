@@ -478,11 +478,9 @@ class OptionButtons(wx.Panel):
             labelctrl = Label(parent=self, label=label)
             s.Add(labelctrl)
 
-        self.mainButton = Button(label='...',
-                                 parent=self,
-                                 size=self.size)
-        self.mainButton.Bind(wx.EVT_LEFT_UP, self.showButtons)
-        s.Add(self.mainButton)
+        self.mainButton = wx.Button(self, wx.ID_ANY, '...')
+        self.mainButton.Bind(wx.EVT_BUTTON, self.showButtons)
+        s.Add(self.mainButton, 1, wx.EXPAND)
         self.SetSizerAndFit(s)
 
         self.subframe = wx.Frame(self, style=wx.FRAME_TOOL_WINDOW | wx.BORDER_NONE)
@@ -503,10 +501,10 @@ class OptionButtons(wx.Panel):
 
     def activateOneButton(self, button):
         # Activate one button in the set.
-        button.SetBackgroundColour((128,255,128))
+        button.SetValue(True)
         for other in self.buttons:
             if other != button:
-                other.SetBackgroundColour((128,128,128))
+                other.SetValue(False)
 
 
     def setOption(self, optionName):
@@ -523,8 +521,8 @@ class OptionButtons(wx.Panel):
         self.buttons=[]
         self.subframe.Sizer.Clear()
         for label, callback in options:
-            b = Button(label=label, parent=self.subframe, size=self.size)
-            b.Bind(wx.EVT_LEFT_UP, lambda evt, b=b, c=callback: self.onButton(b, c))
+            b = wx.ToggleButton(self.subframe, wx.ID_ANY, label)
+            b.Bind(wx.EVT_TOGGLEBUTTON, lambda evt, b=b, c=callback: self.onButton(b, c))
             self.subframe.Sizer.Add(b)
             self.buttons.append(b)
         self.subframe.Fit()
