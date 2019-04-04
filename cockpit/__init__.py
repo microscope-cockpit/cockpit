@@ -228,12 +228,7 @@ class CockpitApp(wx.App):
 
             return True
         except Exception as e:
-            wx.MessageDialog(None,
-                    "An error occurred during initialization:\n\n" +
-                    ("%s\n\n" % e) +
-                    "A full code traceback follows:\n\n" +
-                    traceback.format_exc() +
-                    "\nThere may be more details in the logs.").ShowModal()
+            cockpit.gui.ExceptionBox(caption='Failed to initialise cockpit')
             cockpit.util.logger.log.error("Initialization failed: %s" % e)
             cockpit.util.logger.log.error(traceback.format_exc())
             return False

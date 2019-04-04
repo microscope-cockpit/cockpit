@@ -18,12 +18,14 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+import traceback
+
 import pkg_resources
-
-import cockpit.events
-
 import wx
 import wx.lib.newevent
+
+import cockpit.events
 
 
 ## The resource_name argument for resource_filename is not a
@@ -94,3 +96,56 @@ class EvtEmitter(wx.EvtHandler):
     def Destroy(self):
         self._Unsubscribe()
         return super(EventHandler, self).Destroy()
+
+
+def ExceptionBox(caption="", parent=None):
+    """Show python exception in a modal dialog.
+
+    Creates a modal dialog without any option other than dismising the
+    exception information.  The exception traceback is displayed in a
+    monospaced font and its text can be copied into the clipboard.
+
+    This only works during the handling of an exception since it is
+    not possible to retrieve the traceback after the handling.
+
+    Args:
+        caption (str): the dialog title.
+        parent (wx.Window): parent window.
+    """
+    current_exception = sys.exc_info()[1]
+    if current_exception is None:
+        raise RuntimeError('Not handling an exception')
+
+    ## wx.MessageDialog looks better than plain wx.Dialog but we want
+    ## to include the traceback without line-wrapping and to be able
+    ## to copy its text.  We can't easily reimplement wx.MessageDialog
+    ## with this extras because wx.MessageDialog is not a simple
+    ## subclass of wx.Dialog, it uses native widgets for simpler
+    ## dialogs, such as gtk_message_dialog_new.
+
+    dialog = wx.Dialog(parent, title=caption, name="exception-dialog")
+    message = wx.StaticText(dialog, label=str(current_exception))
+    pane_ctrl = wx.CollapsiblePane(dialog, label="Details")
+    pane = pane_ctrl.Pane
+    details = wx.TextCtrl(pane_ctrl.Pane, value=traceback.format_exc(),
+                          style=(wx.TE_MULTILINE|wx.TE_READONLY))
+
+    ## 'w.Font.Family = f' does not work because it 'w.Font' returns a
+    ## copy of the font.  We need to modify that copy and assign back.
+    details_font = details.Font
+    details_font.Family = wx.FONTFAMILY_TELETYPE
+    details.Font = details_font
+
+    sizer_flags = wx.SizerFlags().Expand().Border()
+    sizer = wx.BoxSizer(wx.VERTICAL)
+    sizer.Add(message, sizer_flags)
+
+    pane_ctrl.Pane.Sizer = wx.BoxSizer(wx.VERTICAL)
+    pane_ctrl.Pane.Sizer.Add(details, sizer_flags)
+
+    sizer.Add(pane_ctrl, sizer_flags)
+    sizer.Add(dialog.CreateSeparatedButtonSizer(wx.OK), sizer_flags)
+
+    dialog.SetSizerAndFit(sizer)
+    dialog.Centre()
+    dialog.ShowModal()
