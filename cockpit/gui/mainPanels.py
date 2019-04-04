@@ -221,6 +221,11 @@ class FilterControls(wx.Panel):
         self.Sizer.Add(subpanel, 1, wx.EXPAND)
         subpanel.Sizer = wx.WrapSizer(orient=wx.VERTICAL)
 
-        for i, f in enumerate(depot.getHandlersOfType(depot.LIGHT_FILTER)):
+        filters = depot.getHandlersOfType(depot.LIGHT_FILTER)
+        if not filters:
+            self.Hide()
+            return
+
+        for i, f in enumerate(filters):
             subpanel.Sizer.Add(f.makeUI(subpanel), 0,
                                wx.EXPAND | wx.RIGHT | wx.BOTTOM, 8)
