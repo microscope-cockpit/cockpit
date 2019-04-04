@@ -60,9 +60,7 @@ from numbers import Number
 import operator
 import time
 from cockpit import util
-import cockpit.gui
 import wx
-import decimal
 from six import string_types
 from six.moves import reduce
 
@@ -493,12 +491,9 @@ class ExecutorDebugWindow(wx.Frame):
                     label = '\n'.join(clients)
                 else:
                     label = str(line)
-                button = cockpit.gui.toggleButton.ToggleButton(
-                    parent=panel, label=label,
-                    activateAction=lambda line=line: handler.setDigital(line, True),
-                    deactivateAction=lambda line=line: handler.setDigital(line, False),
-                    size=(140, 80)
-                )
+                button = wx.ToggleButton(panel, wx.ID_ANY, label)
+                button.Bind(wx.EVT_TOGGLEBUTTON,
+                            lambda evt, line=line: handler.setDigital(line, evt.EventObject.Value))
                 buttonSizer.Add(button, 1, wx.EXPAND)
             mainSizer.Add(buttonSizer)
 
