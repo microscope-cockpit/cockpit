@@ -111,15 +111,13 @@ class RaspberryPi(device.Device):
         label = cockpit.gui.device.Label(parent, -1, "Excitation path:")
         sizer.Add(label)
         for mode in self.excitation:
-            button = cockpit.gui.toggleButton.ToggleButton( 
-                    textSize = 12, label = mode,
-                    parent = parent)
+            button = wx.ToggleButton(parent, wx.ID_ANY, mode)
             # Respond to clicks on the button.
-            button.Bind(wx.EVT_LEFT_DOWN, lambda event, mode = mode: self.setExMode(mode))
-            sizer.Add(button)
+            button.Bind(wx.EVT_TOGGLEBUTTON, lambda event, mode = mode: self.setExMode(mode))
+            sizer.Add(button, 1, wx.EXPAND)
             self.lightPathButtons.append(button)
             if mode == self.curExMode:
-                button.activate()
+                button.SetValue(True)
         rowSizer.Add(sizer)
         return rowSizer
 
@@ -129,7 +127,7 @@ class RaspberryPi(device.Device):
         for mirrorIndex, isUp in self.modeToFlips[mode]:
             self.flipDownUp(mirrorIndex, isUp)
         for button in self.lightPathButtons:
-            button.setActive(button.GetLabel() == mode)
+            button.SetValue(button.GetLabel() == mode)
         self.curExMode = mode
 
 
@@ -137,7 +135,7 @@ class RaspberryPi(device.Device):
         for mirrorIndex, isUp in self.modeToFlips[mode]:
             self.flipDownUp(mirrorIndex, isUp)
         for button in self.detPathButtons:
-            button.setActive(button.GetLabel() == mode)
+            button.SetValue(button.GetLabel() == mode)
         self.curDetMode = mode
 
 
