@@ -89,7 +89,6 @@ ROW_SPACER = 12
 COL_SPACER = 8
 
 
-
 class MainWindow(wx.Frame):
     ## Construct the Window. We're only responsible for setting up the 
     # user interface; we assume that the devices have already been initialized.
@@ -119,48 +118,35 @@ class MainWindow(wx.Frame):
 
         # A row of buttons for various actions we know we can take.
         buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
-        abortButton = toggleButton.ToggleButton(textSize = 16,
-                label = "\nABORT", size = (120, 80), parent = topPanel,
-                inactiveColor = wx.RED)
-        abortButton.Bind(wx.EVT_LEFT_DOWN,
-                lambda event: events.publish('user abort'))
-        buttonSizer.Add(abortButton)
-        experimentButton = toggleButton.ToggleButton(textSize = 12, 
-                label = "Single-site\nExperiment", size = (120, 80), 
-                parent = topPanel)
-        experimentButton.Bind(wx.EVT_LEFT_DOWN,
-                lambda event: singleSiteExperiment.showDialog(self))
-        buttonSizer.Add(experimentButton)
-        experimentButton = toggleButton.ToggleButton(textSize = 12, 
-                label = "Multi-site\nExperiment", size = (120, 80),
-                parent = topPanel)
-        experimentButton.Bind(wx.EVT_LEFT_DOWN,
-                lambda event: multiSiteExperiment.showDialog(self))
-        buttonSizer.Add(experimentButton)
-        viewFileButton = toggleButton.ToggleButton(textSize = 12,
-                label = "View last\nfile", size = (120, 80),
-                parent = topPanel)
-        viewFileButton.Bind(wx.EVT_LEFT_DOWN,
-                self.onViewLastFile)
-        buttonSizer.Add(viewFileButton)
-        self.videoButton = toggleButton.ToggleButton(textSize = 12,
-                label = "Video mode", size = (120, 80), parent = topPanel)
-        self.videoButton.Bind(wx.EVT_LEFT_DOWN,
-                lambda event: cockpit.interfaces.imager.videoMode())
-        buttonSizer.Add(self.videoButton)
-        self.pathButton =  OptionButtons(parent= topPanel,size=(120, 80))
-        
-        self.pathButton.setOptions (map(lambda name: (name,
-                                                       lambda n=name:
-                                                       self.setPath(n)),
-                                         self.pathList))
-        self.pathButton.mainButton.SetLabel(text='Path')
-        buttonSizer.Add(self.pathButton)
-        snapButton = toggleButton.ToggleButton(textSize = 12,
-                label = "Snap",
-                size = (120, 80), parent = topPanel)
-        snapButton.Bind(wx.EVT_LEFT_DOWN, self.OnSnapButton)
-        buttonSizer.Add(snapButton)
+        # Abort button
+        abortButton = wx.Button(topPanel, wx.ID_ANY, "")
+        abortButton.SetLabelMarkup("<span foreground='red'><big><b>ABORT</b></big></span>")
+        abortButton.Bind(wx.EVT_BUTTON, lambda event: events.publish('user abort'))
+        buttonSizer.Add(abortButton, 1, wx.EXPAND)
+        # Experiment & review buttons
+        for lbl, fn in ( ("Single-site\nexperiment", lambda evt: singleSiteExperiment.showDialog(self) ),
+                         ("Multi-site\nexperiment", lambda evt: multiSiteExperiment.showDialog(self) ),
+                         ("View last\n file", self.onViewLastFile) ):
+            btn = wx.Button(topPanel, wx.ID_ANY, lbl)
+            btn.Bind(wx.EVT_BUTTON, fn)
+            buttonSizer.Add(btn, 1, wx.EXPAND)
+        # Video mode button
+        videoButton = wx.ToggleButton(topPanel, wx.ID_ANY, "Video\nmode")
+        videoButton.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: cockpit.interfaces.imager.videoMode())
+        events.subscribe(cockpit.events.VIDEO_MODE_TOGGLE, lambda state: videoButton.SetValue(state))
+        buttonSizer.Add(videoButton, 1, wx.EXPAND)
+
+        self.pathButton = OptionButtons(topPanel)
+        self.pathButton.mainButton.SetLabel("Light\npath")
+        self.pathButton.setOptions(map(lambda name: (name,
+                                                     lambda n=name:
+                                                     self.setPath(n)),
+                                       self.pathList))
+        buttonSizer.Add(self.pathButton, 1, wx.EXPAND)
+        # Snap image button
+        snapButton = wx.Button(topPanel, wx.ID_ANY, "Snap\nimage")
+        snapButton.Bind(wx.EVT_BUTTON, lambda evt: cockpit.interfaces.imager.imager.takeImage())
+        buttonSizer.Add(snapButton, 1, wx.EXPAND)
 
         topSizer.Add(buttonSizer)
         topSizer.AddSpacer(ROW_SPACER)
@@ -241,7 +227,6 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.onClose)
         # Show the list of windows on right-click.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: keyboard.martialWindows(self))
-        events.subscribe('video mode toggle', self.onVideoMode)
 
 
     ## Do any necessary program-shutdown events here instead of in the App's
@@ -250,20 +235,6 @@ class MainWindow(wx.Frame):
     def onClose(self, event):
         events.publish('program exit')
         event.Skip()
-
-    def OnSnapButton(self, evt):
-        imager = cockpit.interfaces.imager.imager
-        if len(imager.activeCameras):
-            imager.takeImage()
-        else:
-            message = ('There are no active cameras to take an image.'
-                       ' Turn one of the camera "on" first.')
-            wx.MessageBox(message, caption='No cameras active', parent=self)
-
-
-    ## Video mode has been turned on/off; update our button background.
-    def onVideoMode(self, isEnabled):
-        self.videoButton.setActive(isEnabled)
 
 
     ## User clicked the "view last file" button; open the last experiment's

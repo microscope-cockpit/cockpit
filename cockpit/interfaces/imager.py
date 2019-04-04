@@ -53,6 +53,7 @@
 from cockpit import depot
 from cockpit import events
 import cockpit.util.threads
+import wx
 
 import time
 import traceback
@@ -110,8 +111,6 @@ class Imager:
         events.subscribe(events.CAMERA_ENABLE, lambda *args: self.updateExposureTime())
 
 
-
-
     ## Update exposure times on cameras.
     @pauseVideo
     def updateExposureTime(self, source=None):
@@ -140,6 +139,10 @@ class Imager:
         from cockpit.experiment import experiment
         if experiment.isRunning():
             print("Skipping takeImage because an experiment is running.")
+            return
+        elif len(self.activeCameras) == 0:
+            message = ('There are no cameras enabled.')
+            wx.MessageBox(message, caption='No cameras active')
             return
         if shouldStopVideo:
             self.stopVideo()
