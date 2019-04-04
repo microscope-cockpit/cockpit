@@ -518,6 +518,37 @@ class TestDepotConfig(unittest.TestCase):
         self.assertIn('Bar', depot)
         self.assertEqual(depot['Bar'].get('from'), 'config-file')
 
+    def test_read_files(self):
+        """Keeps information what files were actually read.
+
+        With so many methods to control what files get read, we need
+        to keep in memory which files were actually read.  And this is
+        those that were actually read, not those that we tried to
+        read.
+        """
+        existing_file = TempConfigFile()
+        with tempfile.TemporaryDirectory() as existing_dir:
+            missing_file = os.path.join(existing_dir, 'missing.conf')
+            depot = cockpit.config.DepotConfig([existing_file.path,
+                                                missing_file])
+        self.assertEqual(depot.files, [existing_file.path])
+        self.assertNotIn(missing_file, depot.files)
+
+    def test_interpolation_only_once(self):
+        """Files in depot config do not go through multiple interpolations.
+
+        Because we manually add config sections from multiple
+        ConfigParser instances, we need to be careful to not go
+        through two interpolation steps.
+        """
+        conf_file = TempConfigFile('[filters]\n'
+                                   'filters:\n'
+                                   '  0, ND 1%%\n'
+                                   '  1, ND 10%%\n')
+        depot = cockpit.config.DepotConfig(conf_file.path)
+        self.assertEqual(depot['filters'].get('filters'),
+                         '\n0, ND 1%\n1, ND 10%')
+
 
 class TestCommandLineOptions(unittest.TestCase):
     def test_debug(self):

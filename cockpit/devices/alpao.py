@@ -89,7 +89,7 @@ class Alpao(device.Device):
                          lambda c, isOn: self.enablecamera(c, isOn))
 
     def takeImage(self):
-        cockpit.interfaces.imager.takeImage()
+        cockpit.interfaces.imager.takeImage(shouldBlock=True)
 
     def enablecamera(self, camera, isOn):
         self.curCamera = camera
