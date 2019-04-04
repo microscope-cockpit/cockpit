@@ -163,15 +163,15 @@ class Imager:
     def videoMode(self):
         if not self.activeCameras:
             # No cameras, no video mode.
-            events.publish('video mode toggle', False)
+            events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
             return
         if self.amInVideoMode:
             # Just cancel the current video mode.
-            events.publish('video mode toggle', False)
+            events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
             self.stopVideo()
             return
 
-        events.publish('video mode toggle', True)
+        events.publish(cockpit.events.VIDEO_MODE_TOGGLE, True)
         self.shouldStopVideoMode = False
         self.amInVideoMode = True
         while not self.shouldStopVideoMode:
@@ -185,11 +185,11 @@ class Imager:
                         shouldBlock = True, shouldStopVideo = False)
             except Exception as e:
                 print ("Video mode failed:", e)
-                events.publish('video mode toggle', False)
+                events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
                 traceback.print_exc()
                 break
         self.amInVideoMode = False
-        events.publish('video mode toggle', False)
+        events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
         # Our thread could be blocked waiting for an image.
         # Clear one shot new image subscribers to make sure it
         # is unblocked.
