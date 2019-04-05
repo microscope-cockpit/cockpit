@@ -214,25 +214,6 @@ class LightHandler(deviceHandler.DeviceHandler):
         return self.state == deviceHandler.STATES.constant
 
 
-    ## Make a menu to let the user select the exposure time.
-    def makeMenu(self, parent):
-        menu = wx.Menu()
-        for i, value in enumerate(EXPOSURE_TIMES):
-            menu.Append(i + 1, str(value))
-            parent.Bind(wx.EVT_MENU,  lambda event, value = value: self.setExposureTime(value), id= i + 1)
-        menu.Append(len(EXPOSURE_TIMES) + 1, '...')
-        parent.Bind(wx.EVT_MENU,  lambda event: self.setCustomExposureTime(parent), id= len(EXPOSURE_TIMES) + 1)
-        cockpit.gui.guiUtils.placeMenuAtMouse(parent, menu)
-
-
-    ## Pop up a dialog to let the user input a custom exposure time.
-    def setCustomExposureTime(self, parent):
-        value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-                parent, "Input an exposure time:",
-                "Exposure time (ms):", self.getExposureTime())
-        self.setExposureTime(float(value))
-
-
     ## Set a new exposure time, in milliseconds.
     @reset_cache
     def setExposureTime(self, value, outermost=True):
