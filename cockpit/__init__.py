@@ -178,8 +178,8 @@ class CockpitApp(wx.App):
             cockpit.gui.shellWindow.makeWindow(frame)
             status.Update(updateNum, " ... statuslights window")
             updateNum+=1
-            import cockpit.gui.touchscreen.touchscreen
-            cockpit.gui.touchscreen.touchscreen.makeWindow(frame)
+            import cockpit.gui.touchscreen
+            cockpit.gui.touchscreen.makeWindow(frame)
             from cockpit.util import intensity
             intensity.makeWindow(frame)
             # All secondary windows created.
