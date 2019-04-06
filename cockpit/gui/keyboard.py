@@ -136,7 +136,7 @@ def martialWindows(parent):
                         if w not in (primaryWindows + secondaryWindows)]
     # windows = wx.GetTopLevelWindows()
     menu = wx.Menu()
-    menuId = 1
+    menuId = 1000
     menu.Append(menuId, "Reset window positions")
     parent.Bind(wx.EVT_MENU,
                 lambda e: wx.GetApp().SetWindowPositions(), id= menuId)
