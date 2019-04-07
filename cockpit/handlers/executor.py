@@ -475,16 +475,19 @@ class AnalogDigitalExecutorHandler(AnalogMixin, DigitalMixin, ExecutorHandler):
 class ExecutorDebugWindow(wx.Frame):
     def __init__(self, handler, parent, *args, **kwargs):
         title = handler.name + " Executor control lines"
+        kwargs['style'] = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.CLIP_CHILDREN
         wx.Frame.__init__(self, parent, title=title, *args, **kwargs)
         panel = wx.Panel(self)
         mainSizer = wx.BoxSizer(wx.VERTICAL)
-        buttonSizer = wx.GridSizer(2, 8, 1, 1)
 
         ## Maps buttons to their lines.
         self.buttonToLine = {}
 
         if handler._dlines is not None:
             # Digital controls
+            ncols = 8
+            nrows = (handler._dlines + ncols - 1) // ncols
+            buttonSizer = wx.GridSizer(nrows, ncols, 1, 1)
             for line in range(handler._dlines):
                 clients = [k.name for k,v in handler.digitalClients.items() if v==line]
                 if clients:
