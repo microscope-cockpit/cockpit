@@ -48,7 +48,7 @@ import cockpit.handlers.executor
 import time
 import cockpit.util
 
-class LastParameters(object):
+class _LastParameters():
     """A class to keep a record of last SIM parmeters using async calls."""
     def __init__(self, slm):
         self.slm = slm
@@ -100,7 +100,7 @@ class BoulderSLM(device.Device):
         self.wasPowered = None
         self.slmTimeout = 10
         self.slmRetryLimit = 3
-        self.last = LastParameters(self)
+        self.last = _LastParameters(self)
 
 
     def initialize(self):
