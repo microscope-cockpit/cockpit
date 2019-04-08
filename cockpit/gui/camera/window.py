@@ -74,7 +74,7 @@ class CamerasWindow(wx.Frame):
 
         # Make a 2xN grid of camera canvases, with menus above for selecting
         # which camera to use in that location.
-        self.sizer = wx.FlexGridSizer(round(self.numCameras//2 + .5), 2, 5, 5)
+        self.sizer = wx.FlexGridSizer(2, 5, 5)
         ## List of ViewPanels we contain.
         self.views = []
         for i in range(self.numCameras):
