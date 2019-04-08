@@ -219,7 +219,7 @@ BMPS = {STATES.enabling: BMP_WAIT,
 
 class EnableButton(wx.ToggleButton):
     def __init__(self, parent, deviceHandler):
-        super().__init__(parent, -1, deviceHandler.name)
+        super().__init__(parent, wx.ID_ANY, deviceHandler.name)
         self.device = deviceHandler
         # Devices should update bitmap on startup, but reserve bitmap
         # space for those that do not yet do so.
@@ -346,7 +346,6 @@ class SettingsEditor(wx.Frame):
         sizer.Add(buttonSizer, 0, wx.ALIGN_CENTER, 0, 0)
         self.SetSizerAndFit(sizer)
         self.SetMinSize((256, -1))
-        #self.SetMaxSize((self.GetMinWidth(), -1))
         events.subscribe("%s settings changed" % self.device, self.updateGrid)
         self.Bind(wx.EVT_SHOW, lambda evt: self.updateGrid())
 
