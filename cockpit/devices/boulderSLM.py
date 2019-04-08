@@ -131,15 +131,9 @@ class BoulderSLM(device.Device):
 
 
     def setEnabled(self, state):
+        """Enable or disable the SLM."""
         if state:
-            """Enable the SLM.
-            Often, after calling connection.run(), the SLM pattern and the image
-            index reported are not synchronised until a few triggers have been
-            sent, so we need to compensate for this. We do the best we can,
-            but any other trigger-device activity during this call can mean that
-            we miss the target frame by +/- 1.
-            """
-            # Target position
+            # Enable.
             if self.last.params == self.connection.get_sim_sequence():
                 # Hardware and software sequences match
                 targetPosition = self.getCurrentPosition()
@@ -147,7 +141,11 @@ class BoulderSLM(device.Device):
                 targetPosition = 0
             # Enable the hardware.
             self.connection.run()
-            # Send a few triggers to clear synch. errors.
+            # Often, after calling connection.run(), the SLM pattern and the image
+            # index reported are not synchronised until a few triggers have been
+            # sent, so we need to compensate for this. We do the best we can,
+            # but any other trigger-device activity during this call can mean that
+            # we miss the target frame by +/- 1.
             for i in range(3):
                 self.handler.triggerNow()
                 time.sleep(0.01)
@@ -158,7 +156,7 @@ class BoulderSLM(device.Device):
                 self.handler.triggerNow()
                 time.sleep(0.01)
         else:
-            """Disable the SLM"""
+            # Disable the SLM.
             self.connection.stop()
 
 
