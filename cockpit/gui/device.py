@@ -32,11 +32,11 @@ import wx
 import wx.propgrid
 import cockpit.gui.guiUtils
 from cockpit.handlers.deviceHandler import STATES
-from .toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 import cockpit.util.userConfig
 import cockpit.util.threads
 from cockpit import events
-from distutils import version
+from cockpit.events import DEVICE_STATUS
+from cockpit.gui import EvtEmitter, EVT_COCKPIT
 
 from six import iteritems
 
@@ -197,25 +197,21 @@ class Menu(wx.Menu):
         cockpit.gui.guiUtils.placeMenuAtMouse(event.GetEventObject(), self)
 
 
+_BMP_SIZE=(16,16)
 
-from cockpit.events import DEVICE_STATUS
-from cockpit.gui import EvtEmitter, EVT_COCKPIT
-
-BMP_SIZE=(16,16)
-
-BMP_OFF = wx.Bitmap.FromRGBA(*BMP_SIZE, red=0, green=32, blue=0,
+_BMP_OFF = wx.Bitmap.FromRGBA(*_BMP_SIZE, red=0, green=32, blue=0,
                              alpha=wx.ALPHA_OPAQUE)
-BMP_ON = wx.Bitmap.FromRGBA(*BMP_SIZE, red=0, green=255, blue=0,
+_BMP_ON = wx.Bitmap.FromRGBA(*_BMP_SIZE, red=0, green=255, blue=0,
                              alpha=wx.ALPHA_OPAQUE)
-BMP_WAIT = wx.Bitmap.FromRGBA(*BMP_SIZE, red=255, green=165, blue=0,
+_BMP_WAIT = wx.Bitmap.FromRGBA(*_BMP_SIZE, red=255, green=165, blue=0,
                               alpha=wx.ALPHA_OPAQUE)
-BMP_ERR = wx.Bitmap.FromRGBA(*BMP_SIZE, red=255, green=0, blue=0,
+_BMP_ERR = wx.Bitmap.FromRGBA(*_BMP_SIZE, red=255, green=0, blue=0,
                              alpha=wx.ALPHA_OPAQUE)
 
-BMPS = {STATES.enabling: BMP_WAIT,
-        STATES.enabled: BMP_ON,
-        STATES.disabled: BMP_OFF,
-        STATES.error: BMP_ERR}
+_BMPS = {STATES.enabling: _BMP_WAIT,
+        STATES.enabled: _BMP_ON,
+        STATES.disabled: _BMP_OFF,
+        STATES.error: _BMP_ERR}
 
 class EnableButton(wx.ToggleButton):
     def __init__(self, parent, deviceHandler):
@@ -223,7 +219,7 @@ class EnableButton(wx.ToggleButton):
         self.device = deviceHandler
         # Devices should update bitmap on startup, but reserve bitmap
         # space for those that do not yet do so.
-        self.SetBitmap(BMP_OFF, wx.RIGHT)
+        self.SetBitmap(_BMP_OFF, wx.RIGHT)
         listener = EvtEmitter(self, DEVICE_STATUS)
         listener.Bind(EVT_COCKPIT, self.onStatusEvent)
         self.Bind(wx.EVT_TOGGLEBUTTON, deviceHandler.toggleState)
@@ -244,11 +240,11 @@ class EnableButton(wx.ToggleButton):
         if self.state == state:
             return
         # GTK only needs SetBitmap, but MSW needs *all* bitmaps updating.
-        self.SetBitmap(BMPS[state], wx.RIGHT)
-        self.SetBitmapCurrent(BMPS[state])
-        self.SetBitmapFocus(BMPS[state])
-        self.SetBitmapPressed(BMPS[state])
-        self.SetBitmapDisabled(BMPS[state])
+        self.SetBitmap(_BMPS[state], wx.RIGHT)
+        self.SetBitmapCurrent(_BMPS[state])
+        self.SetBitmapFocus(_BMPS[state])
+        self.SetBitmapPressed(_BMPS[state])
+        self.SetBitmapDisabled(_BMPS[state])
         self.state = state
         if state == STATES.enabling:
             self.Disable()
