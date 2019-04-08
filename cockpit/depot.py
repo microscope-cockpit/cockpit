@@ -156,9 +156,9 @@ class DeviceDepot:
             if any([other not in done for other in depends]):
                 devices.append(d)
                 continue
+            yield d.name
             self.initDevice(d)
             done.append(d.name)
-            yield d.name
 
         # Add dummy devices as required.
         dummies = []
