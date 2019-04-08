@@ -126,7 +126,7 @@ class MainWindow(wx.Frame):
         # Experiment & review buttons
         for lbl, fn in ( ("Single-site\nexperiment", lambda evt: singleSiteExperiment.showDialog(self) ),
                          ("Multi-site\nexperiment", lambda evt: multiSiteExperiment.showDialog(self) ),
-                         ("View last\n file", self.onViewLastFile) ):
+                         ("View last\nfile", self.onViewLastFile) ):
             btn = wx.Button(topPanel, wx.ID_ANY, lbl)
             btn.Bind(wx.EVT_BUTTON, fn)
             buttonSizer.Add(btn, 1, wx.EXPAND)
@@ -147,7 +147,10 @@ class MainWindow(wx.Frame):
         snapButton = wx.Button(topPanel, wx.ID_ANY, "Snap\nimage")
         snapButton.Bind(wx.EVT_BUTTON, lambda evt: cockpit.interfaces.imager.imager.takeImage())
         buttonSizer.Add(snapButton, 1, wx.EXPAND)
-
+        # Increase font size in top row buttons.
+        bfont = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT).Larger()
+        for w in [child.GetWindow() for child in buttonSizer.Children]:
+            w.SetFont(bfont)
         topSizer.Add(buttonSizer)
         topSizer.AddSpacer(ROW_SPACER)
 
