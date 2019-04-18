@@ -54,7 +54,7 @@ class StageDevice(device.Device):
         if self.primitives is None:
             # Primitives not yet read from config.
             self.primitives = []
-            specs = self.config.get('primitives', None)
+            specs = self.config.get('primitives', '')
             for s in specs.split('\n'):
                 if s:
                     self.primitives.append(s)
