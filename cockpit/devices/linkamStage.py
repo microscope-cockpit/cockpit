@@ -56,7 +56,7 @@ class LinkamStage(stage.StageDevice):
     def __init__(self, name, config={}):
         super(LinkamStage, self).__init__(name, config)
         ## Connection to the XY stage controller (serial.Serial instance).
-        self.remote = None
+        self._proxy = Pyro4.Proxy(config.get('uri'))
         ## Lock around sending commands to the XY stage controller.
         self.xyLock = threading.Lock()
         ## Cached copy of the stage's position.
@@ -71,11 +71,13 @@ class LinkamStage(stage.StageDevice):
         self.sendingPositionUpdates = False
         ## Status dict updated by remote.
         self.status = {}
+        ## Condensor level when on, in percent.
+        self._condensor_level = 100
         ## Flag to show UI has been built.
         self.hasUI = False
         ## Log values to file.
         ## Keys for status items that should be logged
-        self.logger = valueLogger.ValueLogger(name, keys=['dewarT', 'chamberT', 'bridgeT'])
+        self.logger = valueLogger.ValueLogger(name, keys=['t_dewar', 't_chamber', 't_bridge', 't_base'])
         try :
             limitString = config.get('softlimits', '')
             parsed = re.search(LIMITS_PAT, limitString)
@@ -137,7 +139,7 @@ class LinkamStage(stage.StageDevice):
         while True:
             time.sleep(1)
             try:
-                status = self.remote.getStatus()
+                status = self._proxy.get_status()
             except Pyro4.errors.ConnectionClosedError:
                 # Some dumb Pyro bug.
                 continue
@@ -152,7 +154,7 @@ class LinkamStage(stage.StageDevice):
             self.updateUI()
             #update fill timer status light
             timeSinceFill = self.status.get('timeSinceMainFill')
-            if (timeSinceFill is not None):			
+            if (timeSinceFill is not None):
                 if( timeSinceFill > (0.9*self.lastFillCycle)):
                     self.timerbackground = (190, 0, 0)
                 if( timeSinceFill < self.lastFillTimer ):
@@ -177,20 +179,9 @@ class LinkamStage(stage.StageDevice):
                 lastTime = tNow
 
 
-
-
     def initialize(self):
         """Initialize the device."""
-        uri = "PYRO:%s@%s:%d" % ('linkam', self.ipAddress, self.port)
-        self.remote = Pyro4.Proxy(uri)
-        # self.remote.connect()
         self.getPosition(shouldUseCache = False)
-        
-
-    def homeMotors(self):
-        """Home the motors."""
-        self.remote.homeMotors()
-        self.sendPositionUpdates()
 
 
     def onAbort(self, *args):
@@ -224,34 +215,22 @@ class LinkamStage(stage.StageDevice):
     def makeUI(self, parent):
         """Make cockpit user interface elements."""
         ## A list of value displays for temperatures.
-        tempDisplays = ['bridge', 'chamber', 'dewar']
+        tempDisplays = ['bridge', 'chamber', 'dewar', 'base']
         # Panel, sizer and a device label.
         self.panel = wx.Panel(parent)
         self.panel.SetDoubleBuffered(True)
         panel = self.panel
         sizer = wx.BoxSizer(wx.VERTICAL)
-        label = cockpit.gui.device.Label(parent=panel,
-                                label='Cryostage')
-        sizer.Add(label)
         self.elements = {}
-        lightButton = cockpit.gui.toggleButton.ToggleButton(
-                parent=panel,
-                label='chamber light',
-                size=cockpit.gui.device.DEFAULT_SIZE,
-                activateAction=self.toggleChamberLight,
-                deactivateAction=self.toggleChamberLight,
-                isBold=False)
-        self.elements['light'] = lightButton
-        sizer.Add(lightButton)
-        condensorButton = cockpit.gui.toggleButton.ToggleButton(
-                parent=panel,
-                label='condensor LED',
-                size=cockpit.gui.device.DEFAULT_SIZE,
-                activateAction=self.condensorOn,
-                deactivateAction=self.condensorOff,
-                isBold=False)
-        self.elements['condensor'] = condensorButton
-        sizer.Add(condensorButton)
+        lightButton = wx.ToggleButton(panel, wx.ID_ANY, "light")
+        lightButton.Bind(wx.EVT_TOGGLEBUTTON,
+                         lambda evt: self._proxy.set_light(evt.EventObject.Value))
+
+        sizer.Add(lightButton, flag=wx.EXPAND)
+        condensorButton = wx.ToggleButton(panel, wx.ID_ANY, "condensor")
+        condensorButton.Bind(wx.EVT_TOGGLEBUTTON,
+                             lambda evt: self._proxy.set_condensor_level(evt.EventObject.Value))
+        sizer.Add(condensorButton, flag=wx.EXPAND)
         ## Generate the value displays.
         for d in tempDisplays:
             self.elements[d] = cockpit.gui.device.ValueDisplay(
@@ -268,12 +247,9 @@ class LinkamStage(stage.StageDevice):
 
     def menuCallback(self, index, item):
         p = r'(?P<speed>[0-9]*)./s'
-        if item.lower() == 'home stage':
-            self.homeMotors()
-            return
-        elif re.match(p, item):
+        if re.match(p, item):
             speed = int(re.match(p, item).groupdict()['speed'])
-            self.remote.setMotorSpeed(speed)
+            #self._proxy.setMotorSpeed(speed)
         else:
             return
 
@@ -291,7 +267,7 @@ class LinkamStage(stage.StageDevice):
             return
         with self.xyLock:
             # moveToXY(x, y), where None indicates no change.
-            self.remote.moveToXY(*newPos)
+            self._proxy.move_to(*newPos)
         self.motionTargets[axis] = pos
         self.sendPositionUpdates()
 
@@ -331,7 +307,7 @@ class LinkamStage(stage.StageDevice):
                 events.publish('stage mover',
                                '%d linkam mover' % axis, 
                                axis, value)
-            moving = self.remote.isMoving()
+            moving = self._proxy.is_moving()
 
         for axis in (0, 1):
             events.publish('stage stopped', '%d linkam mover' % axis)
@@ -356,7 +332,7 @@ class LinkamStage(stage.StageDevice):
             failCount = 0
             while not success:
                 try:
-                    position = self.remote.getPosition()
+                    position = self._proxy.get_position()
                     success = True
                 except Pyro4.errors.ConnectionClosedError:
                     if failCount < 5:
@@ -365,7 +341,7 @@ class LinkamStage(stage.StageDevice):
                         raise
                 except:
                     raise
-            self.positionCache = position
+            self.positionCache = (position['X'], position['Y'])
         if axis is None:
             return self.positionCache
         else:
@@ -377,16 +353,19 @@ class LinkamStage(stage.StageDevice):
         pass
 
 
-    def toggleChamberLight(self):
-        self.remote.toggleChamberLight()
+    def setLight(self, state):
+        self._proxy.set_light(state)
 
 
-    def condensorOff(self):
-        self.remote.setCondensorLedLevel(0)
-
-
-    def condensorOn(self):
-        self.remote.setCondensorLedLevel(1)
+    def setCondensor(self, state):
+        if state is False:
+            pc = 0
+        elif state is True:
+            pc = self._condensor_level
+        else:
+            self._condensor_level = float(state)
+            pc = self._condensor_level
+        self._proxy.set_condensor_level(pc)
 
 
     def updateUI(self):
@@ -395,9 +374,8 @@ class LinkamStage(stage.StageDevice):
             # UI not built yet
             return
         status = self.status
-        self.elements['bridge'].update(self.status.get('bridgeT'))
-        self.elements['chamber'].update(self.status.get('chamberT'))
-        self.elements['dewar'].update(self.status.get('dewarT'))
+        for t in ('bridge', 'chamber', 'dewar', 'base'):
+            self.elements[t].update(self.status.get('t_' + t))
         ## The stage SDK allows us to toggle the light, but not know
         # its state.
         # self.elements['light'].setActive(not self.status.get('light'))
