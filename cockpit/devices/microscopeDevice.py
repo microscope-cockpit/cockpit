@@ -82,10 +82,17 @@ class MicroscopeBase(device.Device):
             # editor needs the describe/get/set settings functions from the
             # proxy, but it also needs to be able to invalidate the cache
             # on the handler. The handler should probably expose the
-            # settings interface. UniversalCamera is starting to look
-            # more and more like an interface translation.
+            # settings interface.
             self.setAnyDefaults()
-            self.settings_editor = SettingsEditor(self, handler=self.handlers[0])
+            import collections.abc
+            if self.handlers and isinstance(self.handlers, collections.abc.Sequence):
+                h = self.handlers[0]
+            elif self.handlers:
+                h = self.handlers
+            else:
+                h = None
+            parent = evt.EventObject.Parent
+            self.settings_editor = SettingsEditor(self, parent, handler=h)
             self.settings_editor.Show()
         self.settings_editor.SetPosition(wx.GetMousePosition())
         self.settings_editor.Raise()

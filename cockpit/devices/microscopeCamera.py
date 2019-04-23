@@ -38,8 +38,7 @@ import cockpit.handlers.camera
 import cockpit.util.listener
 import cockpit.util.threads
 import cockpit.util.userConfig
-import re
-from cockpit.gui.device import SettingsEditor
+from cockpit.devices.microscopeDevice import MicroscopeBase
 from cockpit.interfaces.imager import pauseVideo
 
 # The following must be defined as in handlers/camera.py
@@ -47,7 +46,7 @@ from cockpit.interfaces.imager import pauseVideo
 # Pseudo-enum to track whether device defaults in place.
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
 
-class MicroscopeCamera(camera.CameraDevice):
+class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
     """A class to control remote python microscope cameras."""
     def __init__(self, name, cam_config):
         # camConfig is a dict with containing configuration parameters.
@@ -379,11 +378,3 @@ class MicroscopeCamera(camera.CameraDevice):
         self.set_setting('readout mode', self.modes[index][0])
         self.updateSettings()
 
-
-    def showSettings(self, evt):
-        click_pos = wx.GetMousePosition()
-        if not self.settings_editor:
-            self.settings_editor = SettingsEditor(self, parent=self.panel, handler=self.handler)
-            self.settings_editor.Show()
-        self.settings_editor.SetPosition(click_pos)
-        self.settings_editor.Raise()
