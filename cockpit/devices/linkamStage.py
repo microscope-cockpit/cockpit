@@ -35,6 +35,7 @@ Config uses following parameters:
 from cockpit import events
 import cockpit.gui.guiUtils
 import cockpit.gui.device
+from cockpit.devices.microscopeDevice import MicroscopeBase
 import cockpit.gui.toggleButton
 import cockpit.handlers.stagePositioner
 import Pyro4
@@ -52,7 +53,7 @@ LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d
 DEFAULT_LIMITS = ((0, 0), (11000, 3000))
 LOGGING_PERIOD = 30
 
-class LinkamStage(stage.StageDevice):
+class LinkamStage(MicroscopeBase, stage.StageDevice):
     def __init__(self, name, config={}):
         super(LinkamStage, self).__init__(name, config)
         ## Connection to the XY stage controller (serial.Serial instance).
@@ -71,11 +72,6 @@ class LinkamStage(stage.StageDevice):
         self.sendingPositionUpdates = False
         ## Status dict updated by remote.
         self.status = {}
-        ## Condensor level when on, in percent.
-        self._condensor_level = 100
-        ## Flag to show UI has been built.
-        self.hasUI = False
-        ## Log values to file.
         ## Keys for status items that should be logged
         self.logger = valueLogger.ValueLogger(name, keys=['t_dewar', 't_chamber', 't_bridge', 't_base'])
         try :
@@ -99,20 +95,14 @@ class LinkamStage(stage.StageDevice):
         events.subscribe('load exposure settings', self.onLoadSettings)
 
 
-
     ## Save our settings in the provided dict.
     def onSaveSettings(self, settings):
-         #hack as no way to read state at the momnent. Need to FIX.
-         settings[self.name] = {'condensor': 0 }
+        pass
 
     ## Load our settings from the provided dict.
     def onLoadSettings(self, settings):
-        if self.name in settings:
-            #Only chnbage settings if needed.
-            if settings[self.name]['condensor']:
-                self.condensorOn()
-            else:
-                self.condensorOff()
+        pass
+
 
     def finalizeInitialization(self):
         """Finalize device initialization."""
@@ -182,6 +172,7 @@ class LinkamStage(stage.StageDevice):
     def initialize(self):
         """Initialize the device."""
         self.getPosition(shouldUseCache = False)
+        self.updateSettings()
 
 
     def onAbort(self, *args):
@@ -217,7 +208,7 @@ class LinkamStage(stage.StageDevice):
         ## A list of value displays for temperatures.
         tempDisplays = ['bridge', 'chamber', 'dewar', 'base']
         # Panel, sizer and a device label.
-        self.panel = wx.Panel(parent)
+        self.panel = wx.Panel(parent, style=wx.BORDER_RAISED)
         self.panel.SetDoubleBuffered(True)
         panel = self.panel
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -229,7 +220,7 @@ class LinkamStage(stage.StageDevice):
         sizer.Add(lightButton, flag=wx.EXPAND)
         condensorButton = wx.ToggleButton(panel, wx.ID_ANY, "condensor")
         condensorButton.Bind(wx.EVT_TOGGLEBUTTON,
-                             lambda evt: self._proxy.set_condensor_level(evt.EventObject.Value))
+                             lambda evt: self._proxy.set_condensor(evt.EventObject.Value))
         sizer.Add(condensorButton, flag=wx.EXPAND)
         ## Generate the value displays.
         for d in tempDisplays:
@@ -237,21 +228,15 @@ class LinkamStage(stage.StageDevice):
                     parent=panel, label=d, value=0.0, 
                     unitStr=u'°C')
             sizer.Add(self.elements[d])
-        panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
 
+        # Settings button
+        adv_button = wx.Button(parent=self.panel, label='settings')
+        adv_button.Bind(wx.EVT_LEFT_UP, self.showSettings)
+        sizer.Add(adv_button, flag=wx.EXPAND)
         ## Set the panel sizer and return.
         panel.SetSizerAndFit(sizer)
         self.hasUI = True
         return panel
-
-
-    def menuCallback(self, index, item):
-        p = r'(?P<speed>[0-9]*)./s'
-        if re.match(p, item):
-            speed = int(re.match(p, item).groupdict()['speed'])
-            #self._proxy.setMotorSpeed(speed)
-        else:
-            return
 
 
     def moveAbsolute(self, axis, pos):
@@ -277,15 +262,6 @@ class LinkamStage(stage.StageDevice):
         if delta:
             curPos = self.positionCache[axis]
             self.moveAbsolute(axis, curPos + delta)
-
-
-    def onRightMouse(self, event):
-        items = ['Home stage', '',
-                 'Motor speed', u'100µ/s', u'200µ/s', u'300µ/s',
-                 u'400µ/s', u'500µ/s', '', 'Cancel']
-        menu = cockpit.gui.device.Menu(items, self.menuCallback)
-        menu.Enable(2, False)
-        menu.show(event)
 
 
     @cockpit.util.threads.callInNewThread
@@ -355,17 +331,6 @@ class LinkamStage(stage.StageDevice):
 
     def setLight(self, state):
         self._proxy.set_light(state)
-
-
-    def setCondensor(self, state):
-        if state is False:
-            pc = 0
-        elif state is True:
-            pc = self._condensor_level
-        else:
-            self._condensor_level = float(state)
-            pc = self._condensor_level
-        self._proxy.set_condensor_level(pc)
 
 
     def updateUI(self):
