@@ -378,6 +378,8 @@ class SettingsEditor(wx.Frame):
 
 
     def onSave(self, event):
+        if self.handler is None:
+            return
         settings = self.grid.GetPropertyValues()
         for name, value in iteritems(settings):
             if self.settings[name]['type'] == 'enum':
