@@ -41,7 +41,7 @@ class Alpao(device.Device):
 
     def initialize(self):
         self.proxy = Pyro4.Proxy(self.uri)
-        # self.proxy.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
+        self.proxy.set_trigger(cp_ttype="RISING_EDGE",cp_tmode="ONCE")
         self.no_actuators = self.proxy.get_n_actuators()
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
@@ -89,7 +89,7 @@ class Alpao(device.Device):
                          lambda c, isOn: self.enablecamera(c, isOn))
 
     def takeImage(self):
-        cockpit.interfaces.imager.takeImage(shouldBlock=True)
+        cockpit.interfaces.imager.takeImage()
 
     def enablecamera(self, camera, isOn):
         self.curCamera = camera
