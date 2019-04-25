@@ -45,6 +45,7 @@ import cockpit.util.logger as logger
 import cockpit.util.threads
 from cockpit.util import valueLogger
 
+import datetime
 import time
 import wx
 import re # to get regular expression parsing for config file
@@ -53,7 +54,75 @@ LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d
 DEFAULT_LIMITS = ((0, 0), (11000, 3000))
 LOGGING_PERIOD = 30
 
+class RefillTimerPanel(wx.Panel):
+    def __init__(self, *args, **kwargs):
+        label_text = kwargs.pop('label', '')
+        kwargs['style'] = kwargs.get('style', 0) | wx.BORDER_SIMPLE
+        super().__init__(*args, **kwargs)
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        label = wx.StaticText(self, wx.ID_ANY, label=label_text, style=wx.ALIGN_CENTRE_HORIZONTAL)
+        # Create controls using label=self.format to set correct width.
+        self.filling = wx.StaticText(self, wx.ID_ANY, label=self.format(None),
+                                     style=wx.ALIGN_CENTRE_HORIZONTAL | wx.ST_NO_AUTORESIZE)
+        self.previous = wx.StaticText(self, wx.ID_ANY, label=self.format(None),
+                                      style=wx.ST_NO_AUTORESIZE)
+        self.current = wx.StaticText(self, wx.ID_ANY, label=self.format(None),
+                                     style= wx.ST_NO_AUTORESIZE)
+        font = wx.SystemSettings.GetFont(wx.SYS_OEM_FIXED_FONT)
+        [o.SetFont(font) for o in (self.filling, self.previous, self.current)]
+        [self.Sizer.Add(o, flag=wx.ALL | wx.EXPAND, border=2) \
+           for o in (label, self.previous, self.current, self.filling)]
+        self.Fit()
+
+    def format(self, dt, prefix=""):
+        prefix = '{:3.3} '.format(prefix)
+        if dt is None:
+            return prefix + "--:--:--"
+        elif isinstance(dt, datetime.timedelta):
+            dt = dt.total_seconds()
+        mm, ss = divmod(dt, 60)
+        hh, mm = divmod(mm, 60)
+        return prefix + ("%.2d:%.2d:%.2d" % (hh, mm, ss))
+
+    def doUpdate(self, refill):
+        # Default colours for current timer display. May be modified before
+        # being set at the end of this call.
+        bg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW)
+        fg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT)
+        if refill is None:
+            self.previous.SetLabel(self.format(None, 'dt'))
+            self.current.SetLabel(self.format(None, 't+'))
+        else:
+            # Refill indicator
+            if refill.get('refilling', False):
+                self.filling.SetLabel("REFILLING")
+            else:
+                self.filling.SetLabel(" ")
+            # Counters
+            t_last = refill.get('last') # May be None
+            prev = refill.get('between_last').total_seconds() # Always datetime.timedelta
+            self.previous.SetLabel(self.format(prev, 'dt'))
+            if t_last is None:
+                self.current.SetLabel(self.format(None, 't+'))
+            else:
+                t = (datetime.datetime.now() - t_last).total_seconds()
+                self.current.SetLabel(self.format(t, 't+'))
+                if prev > 0:
+                    if (prev - t) <= 60:
+                        # 1 minute left
+                        bg = wx.Colour("red")
+                        fg = wx.Colour("white")
+                    elif (prev - t) < 300:
+                        # 5 minutes left
+                        bg = wx.Colour("yellow")
+                        fg = wx.Colour("black")
+        self.current.SetBackgroundColour(bg)
+        self.current.SetForegroundColour(fg)
+
+
 class LinkamStage(MicroscopeBase, stage.StageDevice):
+    _temperature_names = ('bridge', 'dewar', 'chamber', 'base')
+    _refill_names = ('sample', 'external')
     def __init__(self, name, config={}):
         super(LinkamStage, self).__init__(name, config)
         ## Connection to the XY stage controller (serial.Serial instance).
@@ -73,7 +142,7 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
         ## Status dict updated by remote.
         self.status = {}
         ## Keys for status items that should be logged
-        self.logger = valueLogger.ValueLogger(name, keys=['t_dewar', 't_chamber', 't_bridge', 't_base'])
+        self.logger = valueLogger.ValueLogger(name, keys=list(map('t_'.__add__, self._temperature_names)))
         try :
             limitString = config.get('softlimits', '')
             parsed = re.search(LIMITS_PAT, limitString)
@@ -206,35 +275,42 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
     def makeUI(self, parent):
         """Make cockpit user interface elements."""
         ## A list of value displays for temperatures.
-        tempDisplays = ['bridge', 'chamber', 'dewar', 'base']
         # Panel, sizer and a device label.
+        print(self.status)
         self.panel = wx.Panel(parent, style=wx.BORDER_RAISED)
         self.panel.SetDoubleBuffered(True)
         panel = self.panel
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        panel.Sizer = wx.BoxSizer(wx.HORIZONTAL)
+        left_sizer = wx.BoxSizer(wx.VERTICAL)
+        right_sizer = wx.BoxSizer(wx.VERTICAL)
+        panel.Sizer.Add(left_sizer)
+        panel.Sizer.Add(right_sizer)
+
         self.elements = {}
         lightButton = wx.ToggleButton(panel, wx.ID_ANY, "light")
         lightButton.Bind(wx.EVT_TOGGLEBUTTON,
                          lambda evt: self._proxy.set_light(evt.EventObject.Value))
-
-        sizer.Add(lightButton, flag=wx.EXPAND)
+        self.elements['light'] = lightButton
+        left_sizer.Add(lightButton, flag=wx.EXPAND)
         condensorButton = wx.ToggleButton(panel, wx.ID_ANY, "condensor")
         condensorButton.Bind(wx.EVT_TOGGLEBUTTON,
                              lambda evt: self._proxy.set_condensor(evt.EventObject.Value))
-        sizer.Add(condensorButton, flag=wx.EXPAND)
+        left_sizer.Add(condensorButton, flag=wx.EXPAND)
         ## Generate the value displays.
-        for d in tempDisplays:
+        for d in self._temperature_names:
             self.elements[d] = cockpit.gui.device.ValueDisplay(
                     parent=panel, label=d, value=0.0, 
-                    unitStr=u'°C')
-            sizer.Add(self.elements[d])
-
+                    formatStr="%.1f", unitStr=u'°C')
+            left_sizer.Add(self.elements[d])
         # Settings button
         adv_button = wx.Button(parent=self.panel, label='settings')
         adv_button.Bind(wx.EVT_LEFT_UP, self.showSettings)
-        sizer.Add(adv_button, flag=wx.EXPAND)
-        ## Set the panel sizer and return.
-        panel.SetSizerAndFit(sizer)
+        left_sizer.Add(adv_button, flag=wx.EXPAND)
+        # Refill timers
+        for r in self._refill_names:
+            self.elements[r] = RefillTimerPanel(panel, wx.ID_ANY, label=r)
+            right_sizer.Add(self.elements[r], flag=wx.LEFT | wx.RIGHT | wx.BOTTOM, border=4)
+        panel.Fit()
         self.hasUI = True
         return panel
 
@@ -335,17 +411,18 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
 
     def updateUI(self):
         """Update user interface elements."""
-        if not self.hasUI:
-            # UI not built yet
-            return
         status = self.status
-        for t in ('bridge', 'chamber', 'dewar', 'base'):
+        # Temperatures
+        for t in self._temperature_names:
             self.elements[t].update(self.status.get('t_' + t))
-        ## The stage SDK allows us to toggle the light, but not know
-        # its state.
-        # self.elements['light'].setActive(not self.status.get('light'))
-        valuesValid = status.get('connected', False)
-        if valuesValid:
+        self.elements['light'].SetValue(status.get('light', False))
+        # Refills
+        lines = []
+        now = datetime.datetime.now()
+        for r in self._refill_names:
+            refill = status['refills'].get(r, None)
+            self.elements[r].doUpdate(refill)
+        if status.get('connected', False):
             self.panel.Enable()
         else:
             self.panel.Disable()
