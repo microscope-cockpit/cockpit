@@ -120,7 +120,9 @@ class DataSource:
 
 
     def read_data(self):
-        """Read complete data from source file."""
+        """Read complete data from source file.
+
+        Returns number of rows read."""
         if self._fh is not None and not self._fh.closed:
             self._fh.close()
         headers = self.get_headers()
@@ -136,12 +138,13 @@ class DataSource:
         except:
             self._xdata = None
             self._ydata = None
-            return
+            return 0
         if self._ydata.ndim == 1:
             self._ydata = self._ydata.reshape((1, -1))
         if self._xdata.size and self._ydata.size:
             self._fh = open(self.path)
             self._fh.seek(0, os.SEEK_END)
+        return len(self._ydata)
 
 
     def fetch_new_data(self):
@@ -182,6 +185,9 @@ class CSVPlotter(wx.Frame):
         self.item_to_trace = {}
         self.trace_to_item = {}
         self.trace_to_data = {}
+        self.node_to_colour = {}
+        self.node_to_axis = {}
+        self.empty_root_nodes = []
         self._watch_timer = wx.Timer(self)
 
         self._makeUI()
@@ -325,6 +331,18 @@ class CSVPlotter(wx.Frame):
                 if s != src:
                     continue
                 t.set_data(src.xdata, src.ydata[col_num])
+
+        for node in self.empty_root_nodes:
+            # Check for new data for nodes which had insufficient data before.
+            src = self.tree.GetItemData(node)
+            if src.read_data() > 2:
+                # There is new data. Update appearance of this and child nodes.
+                self.empty_root_nodes.remove(node)
+                self.tree.SetItemTextColour(node, wx.SystemSettings.GetColour(wx.SYS_COLOUR_LISTBOXTEXT))
+                child = self.tree.GetFirstChild(node)[0]
+                while wx.TreeItemId.IsOk(child):
+                    self.tree.SetItemTextColour(child, wx.SystemSettings.GetColour(wx.SYS_COLOUR_LISTBOXTEXT))
+                    child = self.tree.GetNextSibling(child)
         self.redraw()
 
 
@@ -371,6 +389,7 @@ class CSVPlotter(wx.Frame):
         self.item_to_trace[node] = new_trace
         self.trace_to_item[new_trace] = node
         self.trace_to_data[new_trace] = (src, col_num)
+        self.node_to_axis[node] = new_axis
         self.set_node_image(node)
 
 
@@ -429,7 +448,7 @@ class CSVPlotter(wx.Frame):
             except:
                 error_nodes.update([node, self.tree.GetItemParent(node)])
                 continue
-            if xlen <= 2:
+            if xlen < 2:
                 empty_nodes.update([node, self.tree.GetItemParent(node)])
                 continue
             if src.ydata is None or all(np.isnan(src.ydata[col_num])):
@@ -437,7 +456,14 @@ class CSVPlotter(wx.Frame):
                 continue
             try:
                 label = src.label + ": " + headers[col_num+1]
-                trace = self.axis.plot(src.xdata, src.ydata[col_num])[0]
+                # Plot a trace, recalling the colour and axis used previously,
+                # or storing defaults if this node has not been plotted before.
+                axis = self.node_to_axis.get(node, self.axis)
+                trace = axis.plot(src.xdata, src.ydata[col_num])[0]
+                if node in self.node_to_colour:
+                    trace.set_c(self.node_to_colour[node])
+                else:
+                    self.node_to_colour[node] = trace.get_c()
             except:
                 error_nodes.update([node, self.tree.GetItemParent(node)])
                 continue
@@ -451,6 +477,9 @@ class CSVPlotter(wx.Frame):
             self.tree.SetItemTextColour(node, 'grey')
             self.tree.SetItemImage(node, 0)
             self.tree.SelectItem(node, False)
+            # Store empty top-level nodes to poll for new data.
+            if f_top(node):
+                self.empty_root_nodes.append(node)
         for node in error_nodes:
             self.tree.SetItemTextColour(node, 'red')
             self.tree.SetItemImage(node, 0)
