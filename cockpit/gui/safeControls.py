@@ -458,6 +458,7 @@ class SetPointGauge(SafeControl, wx.Window):
         self.Bind(wx.EVT_LEFT_DCLICK, self.OnLDClick)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnDrag)
         self.AcceptsFocusFromKeyboard = lambda: False
+        self.SetDoubleBuffered(True)
 
     @property
     def Value(self):
