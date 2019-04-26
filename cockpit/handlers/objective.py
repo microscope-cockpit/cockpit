@@ -126,13 +126,13 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
         events.publish("objective change", newName, 
                 pixelSize=self.nameToPixelSize[newName], 
                 transform=self.nameToTransform[newName],
-                offset=self.nameToOffset[newName])				
+                offset=self.nameToOffset[newName])
 
 
     ## Get the current pixel size.
     def getPixelSize(self):
         return self.nameToPixelSize[self.curObjective]
-		
+
     ## Get the current offset.
     def getOffset(self):
         return self.nameToOffset[self.curObjective]
