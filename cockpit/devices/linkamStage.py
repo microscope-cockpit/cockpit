@@ -25,12 +25,16 @@ Cockpit-side module for Linkam stages. Tested with CMS196.
 
 Config uses following parameters:
   type:         LinkamStage
-  ipAddress:    address of pyLinkam remote
-  port:         port that remote is listening on
-  primitives:   list of _c_ircles and _r_ectangles to draw on MacroStageXY 
-                view, defining one per line as
-                    c x0 y0 radius
-                    r x0 y0 width height
+  uri:          uri of pyLinkam remote
+  either
+    primitives:   list of _c_ircles and _r_ectangles to draw on MacroStageXY
+                    view, defining one per line as
+                        c x0 y0 radius
+                        r x0 y0 width height
+  or
+    xoffset:      x-offset of stage centre
+    yoffset:      y-offset of stage centre
+
 """
 from cockpit import events
 import cockpit.gui.guiUtils
@@ -50,12 +54,13 @@ import time
 import wx
 import re # to get regular expression parsing for config file
 
-LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
 DEFAULT_LIMITS = ((0, 0), (11000, 3000))
 LOGGING_PERIOD = 30
 
 class RefillTimerPanel(wx.Panel):
     def __init__(self, *args, **kwargs):
+        self._refillFunc = None
+
         label_text = kwargs.pop('label', '')
         kwargs['style'] = kwargs.get('style', 0) | wx.BORDER_SIMPLE
         super().__init__(*args, **kwargs)
@@ -72,7 +77,19 @@ class RefillTimerPanel(wx.Panel):
         [o.SetFont(font) for o in (self.filling, self.previous, self.current)]
         [self.Sizer.Add(o, flag=wx.ALL | wx.EXPAND, border=2) \
            for o in (label, self.previous, self.current, self.filling)]
-        self.Fit()
+        self.Bind(wx.EVT_CONTEXT_MENU, self.onContextMenu)
+        self.ToolTip = wx.ToolTip("dt: last cycle time.\nt+: time since last refill\nRight click to refill.")
+        [c.Unbind(wx.EVT_MOTION) for c in self.Children]
+
+    def setRefillFunc(self, f):
+        self._refillFunc = f
+
+    def onContextMenu(self, evt):
+        menu = wx.Menu()
+        menu.Append(1, "Start refill")
+        self.Bind(wx.EVT_MENU, lambda e: self._refillFunc(), id=1)
+        cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
+
 
     def format(self, dt, prefix=""):
         prefix = '{:3.3} '.format(prefix)
@@ -93,11 +110,6 @@ class RefillTimerPanel(wx.Panel):
             self.previous.SetLabel(self.format(None, 'dt'))
             self.current.SetLabel(self.format(None, 't+'))
         else:
-            # Refill indicator
-            if refill.get('refilling', False):
-                self.filling.SetLabel("REFILLING")
-            else:
-                self.filling.SetLabel(" ")
             # Counters
             t_last = refill.get('last') # May be None
             prev = refill.get('between_last').total_seconds() # Always datetime.timedelta
@@ -116,13 +128,28 @@ class RefillTimerPanel(wx.Panel):
                         # 5 minutes left
                         bg = wx.Colour("yellow")
                         fg = wx.Colour("black")
-        self.current.SetBackgroundColour(bg)
-        self.current.SetForegroundColour(fg)
+            # Refill indicator
+            if refill.get('refilling', False):
+                self.filling.SetLabel("REFILLING")
+                bg = wx.Colour("red")
+                fg = wx.Colour("white")
+            else:
+                self.filling.SetLabel(" ")
+        if bg != self.GetBackgroundColour():
+            self.SetBackgroundColour(bg)
+            for c in self.GetChildren():
+                c.SetForegroundColour(fg)
+            self.Refresh()
 
 
 class LinkamStage(MicroscopeBase, stage.StageDevice):
     _temperature_names = ('bridge', 'dewar', 'chamber', 'base')
     _refill_names = ('sample', 'external')
+    _config_types = {
+        'xoffset': float, # stage centre X offset
+        'yoffset': float, # stage centre Y offset
+    }
+
     def __init__(self, name, config={}):
         super(LinkamStage, self).__init__(name, config)
         ## Connection to the XY stage controller (serial.Serial instance).
@@ -143,20 +170,22 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
         self.status = {}
         ## Keys for status items that should be logged
         self.logger = valueLogger.ValueLogger(name, keys=list(map('t_'.__add__, self._temperature_names)))
-        try :
-            limitString = config.get('softlimits', '')
-            parsed = re.search(LIMITS_PAT, limitString)
-            if not parsed:
-                # Could not parse config entry.
-                raise Exception('Bad config: Linkam Limits.')
-                # No transform tuple
-            else:
-                lstr = parsed.groupdict()['limits']
-                self.softlimits=eval(lstr)
+        try:
+            xlim = self._proxy.get_value_limits('MotorSetPointX')
+            ylim = self._proxy.get_value_limits('MotorSetPointY')
         except:
-            logger.log.warning('Could not parse limits from config: using defaults.')
-            print ("No softlimits section setting default limits")
-            self.softlimits = DEFAULT_LIMITS
+            xlim, ylim = zip(*DEFAULT_LIMITS)
+        self.hardlimits = tuple(zip(xlim, ylim))
+        self.softlimits = self.hardlimits
+        if not self.getPrimitives():
+            xoff = self.config.get('xoffset', 0)
+            yoff = self.config.get('yoffset', 0)
+            xmid = xoff + (xlim[0] + xlim[1]) / 2
+            ymid = yoff + (ylim[0] + ylim[1]) / 2
+            radius = 1500
+            centres = [-4000, 0, 4000]
+            self.primitives = ['c %f %f %f' % (xmid+dx, ymid, radius) for dx in centres]
+
 
         events.subscribe('user abort', self.onAbort)
         #store and recall condensor LED status.
@@ -186,12 +215,6 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
         server. This caused frequent Pyro timeout errors when cockpit
         was busy doing other things.
         """
-        #create a fill timer
-        from operator import eq
-        events.publish('new status light','Fill Timer','')
-        self.lastFillCycle = 0
-        self.lastFillTimer = 0
-        self.timerbackground = (170, 170, 170)
         lastTemps = [None]
         lastTime = 0
 
@@ -203,39 +226,20 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
                 # Some dumb Pyro bug.
                 continue
 
-            if not status.get('connected', False):
-                keys = set(status.keys()).difference(set(['connected']))
-                self.status.update(map(lambda k: (k, None), keys))
-                self.status['connected'] = False
-            else:
+            if status.get('connected', False):
                 self.status.update(status)
-            self.sendPositionUpdates()
+                self.sendPositionUpdates()
+                tNow = time.time()
+                if tNow - lastTime > LOGGING_PERIOD:
+                    newTemps = [status.get(k) for k in self.logger.keys]
+                    from operator import eq
+                    if not all(map(eq, newTemps, lastTemps)):
+                        self.logger.log(newTemps)
+                        lastTemps = newTemps
+                    lastTime = tNow
+            else:
+                self.status['connected'] = False
             self.updateUI()
-            #update fill timer status light
-            timeSinceFill = self.status.get('timeSinceMainFill')
-            if (timeSinceFill is not None):
-                if( timeSinceFill > (0.9*self.lastFillCycle)):
-                    self.timerbackground = (190, 0, 0)
-                if( timeSinceFill < self.lastFillTimer ):
-                    #refilled so need to reset cycle time and background
-                    self.lastFillCycle = self.lastFillTimer
-                    self.timerbackground = (170, 170, 170)
-                events.publish('update status light','Fill Timer',
-                                'Fill Timer\n%2d:%02d/%2d:%02d' %(
-                                int(timeSinceFill/60.0),
-                                timeSinceFill%60.0,
-                                int(self.lastFillCycle/60.0),
-                                self.lastFillCycle%60.0),
-                                self.timerbackground)
-                self.lastFillTimer = timeSinceFill
-
-            tNow = time.time()
-            if tNow - lastTime > LOGGING_PERIOD:
-                newTemps = [status.get(k) for k in self.logger.keys]
-                if not all(map(eq, newTemps, lastTemps)):
-                    self.logger.log(newTemps)
-                    lastTemps = newTemps
-                lastTime = tNow
 
 
     def initialize(self):
@@ -265,8 +269,8 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
                     axis,
                     [1, 2, 5, 10, 50, 100, 200], # step sizes
                     3, # initial step size index,
-                    (minPos, maxPos), # soft limits
-                    (minPos, maxPos) # hard limits
+                    (minPos, maxPos), # hard limits
+                    (minPos, maxPos) # soft limits
                     )
                 )
         return result
@@ -276,7 +280,6 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
         """Make cockpit user interface elements."""
         ## A list of value displays for temperatures.
         # Panel, sizer and a device label.
-        print(self.status)
         self.panel = wx.Panel(parent, style=wx.BORDER_RAISED)
         self.panel.SetDoubleBuffered(True)
         panel = self.panel
@@ -310,6 +313,10 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
         for r in self._refill_names:
             self.elements[r] = RefillTimerPanel(panel, wx.ID_ANY, label=r)
             right_sizer.Add(self.elements[r], flag=wx.LEFT | wx.RIGHT | wx.BOTTOM, border=4)
+            if r == 'sample':
+                self.elements[r].setRefillFunc(self._proxy.refill_chamber)
+            elif r == 'external':
+                self.elements[r].setRefillFunc(self._proxy.refill_dewar)
         panel.Fit()
         self.hasUI = True
         return panel
