@@ -74,7 +74,6 @@ setuptools.setup(
         'scipy',
         'wxPython',
         'Pyro4',
-        'Pillow', # temporary until wxPython 4.0.4 release (issue #319)
         'pyserial',
         'PyOpenGL',
         'six',
