@@ -129,7 +129,7 @@ class Tile:
         if imgType not in dtypeToGlTypeMap:
             raise ValueError("Unsupported data mode %s" % str(imgType))
         glTexImage2D(GL_TEXTURE_2D,0,  GL_RGB, tex_nx,tex_ny, 0, 
-                     GL_LUMINANCE, dtypeToGlTypeMap[imgType], None)    
+                     GL_LUMINANCE, dtypeToGlTypeMap[imgType], None)
 
 
     def refresh(self):
@@ -182,7 +182,7 @@ class Tile:
         if imgType not in dtypeToGlTypeMap:
             raise ValueError("Unsupported data mode %s" % str(imgType))
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, pic_nx, pic_ny,  
-                     GL_LUMINANCE, dtypeToGlTypeMap[imgType], imgString)  
+                     GL_LUMINANCE, dtypeToGlTypeMap[imgType], imgString)
 
 
     ## Free up memory we were using.

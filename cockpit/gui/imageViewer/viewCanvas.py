@@ -86,8 +86,8 @@ HISTOGRAM_HEIGHT = 40
 class BaseGL():
     # Default vertex shader glsl source
     _VS = """
-    #version 130
-    in vec2 vXY;
+    #version 120
+    attribute vec2 vXY;
     void main() {
         gl_Position = vec4(vXY, 1, 1);
         gl_FrontColor = gl_Color;
@@ -130,8 +130,8 @@ class Image(BaseGL):
     """
     # Vertex shader glsl source
     _VS = """
-    #version 130
-    in vec2 vXY;
+    #version 120
+    attribute vec2 vXY;
     uniform float zoom;
     uniform float angle;
     uniform vec2 pan;
@@ -143,7 +143,7 @@ class Image(BaseGL):
     """
     # Fragment shader glsl source
     _FS = """
-    #version 130
+    #version 120
     uniform sampler2D tex;
     uniform float scale;
     uniform float offset;
@@ -151,7 +151,7 @@ class Image(BaseGL):
     void main()
     {
         vec4 lum = clamp(offset + texture2D(tex, gl_TexCoord[0].st) / scale, 0., 1.);
-        gl_FragColor = vec4(0., 0., lum.g == 0, 1.) + vec4(1., lum.g < 1., 1., 1.) * lum;
+        gl_FragColor = vec4(0., 0., lum.r == 0, 1.) + vec4(1., lum.r < 1., 1., 1.) * lum.r;
     }
     """
 
@@ -249,10 +249,10 @@ class Image(BaseGL):
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, tx, ty, 0,
-                         GL_LUMINANCE, GL_FLOAT, None)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, tx, ty, 0,
+                         GL_RED, GL_FLOAT, None)
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, subdata.shape[1], subdata.shape[0],
-                            GL_LUMINANCE, GL_FLOAT, subdata)
+                            GL_RED, GL_FLOAT, subdata)
         self._update = False
 
     def draw(self, pan=(0,0), zoom=1):
