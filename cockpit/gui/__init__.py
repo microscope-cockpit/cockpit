@@ -23,6 +23,7 @@ import pkg_resources
 import cockpit.events
 
 import wx
+import wx.lib.newevent
 
 
 ## The resource_name argument for resource_filename is not a
@@ -40,16 +41,9 @@ BITMAPS_PATH = pkg_resources.resource_filename(
 )
 
 
-## XXX: Still unsure about this design.  There's a single event type
-## for all cockpit.events which means we can't easily pass the data
-## from those events.  But having a new wx event for each of them
-## seems overkill and cause more duplication.
-EVT_COCKPIT = wx.PyEventBinder(wx.NewEventType())
-
-class CockpitEvent(wx.PyEvent):
-    def __init__(self):
-        super(CockpitEvent, self).__init__()
-        self.SetEventType(EVT_COCKPIT.typeId)
+## A single event type for all cockpit.events. The origian cockpit
+## event data is passed back as CockpitEvent.EventData.
+CockpitEvent, EVT_COCKPIT = wx.lib.newevent.NewEvent()
 
 
 class EvtEmitter(wx.EvtHandler):
@@ -88,7 +82,7 @@ class EvtEmitter(wx.EvtHandler):
         parent.Bind(wx.EVT_WINDOW_DESTROY, self._OnParentDestroy)
 
     def _EmitCockpitEvent(self, *args, **kwargs):
-        self.AddPendingEvent(CockpitEvent())
+        self.AddPendingEvent(CockpitEvent(EventData=args))
 
     def _Unsubscribe(self):
         cockpit.events.unsubscribe(self._cockpit_event_type,

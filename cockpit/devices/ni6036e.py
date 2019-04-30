@@ -335,7 +335,7 @@ class niOutputWindow(wx.Frame):
     ## One of our buttons was clicked; update the DSP's output.
     def toggle(self):
         output = 0
-        for button, line in iteritems(self.buttonToLine):
+        for button, line in self.buttonToLine.items():
             if button.getIsActive():
                 self.nicard.niConnection.flipDownUp(line, 1)
             else:

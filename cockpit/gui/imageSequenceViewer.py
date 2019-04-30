@@ -88,10 +88,8 @@ class ImageSequenceViewer(wx.Frame):
                 sliderSizer.Add(self.makeSlider(i, label))
         sizer.Add(sliderSizer)
 
-        self.canvas = cockpit.gui.imageViewer.viewCanvas.ViewCanvas(
-                self.panel, 512,
-                size = (self.images.shape[-1], self.images.shape[-2] + 40)
-        )
+        self.canvas = cockpit.gui.imageViewer.viewCanvas.ViewCanvas(self.panel,
+                size = (self.images.shape[-1], self.images.shape[-2] + 40) )
         sizer.Add(self.canvas)
         self.panel.SetSizerAndFit(sizer)
         temp = wx.BoxSizer(wx.VERTICAL)

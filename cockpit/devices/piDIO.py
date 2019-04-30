@@ -23,12 +23,9 @@
 from . import device
 from cockpit.util import valueLogger
 from cockpit import events
-import cockpit.gui.toggleButton
 import collections
 import Pyro4
 import wx
-import threading
-import time
 import cockpit.gui.device
 
 ## TODO: Clean up code.
@@ -111,15 +108,13 @@ class RaspberryPi(device.Device):
         label = cockpit.gui.device.Label(parent, -1, "Excitation path:")
         sizer.Add(label)
         for mode in self.excitation:
-            button = cockpit.gui.toggleButton.ToggleButton( 
-                    textSize = 12, label = mode,
-                    parent = parent)
+            button = wx.ToggleButton(parent, wx.ID_ANY, mode)
             # Respond to clicks on the button.
-            button.Bind(wx.EVT_LEFT_DOWN, lambda event, mode = mode: self.setExMode(mode))
-            sizer.Add(button)
+            button.Bind(wx.EVT_TOGGLEBUTTON, lambda event, mode = mode: self.setExMode(mode))
+            sizer.Add(button, 1, wx.EXPAND)
             self.lightPathButtons.append(button)
             if mode == self.curExMode:
-                button.activate()
+                button.SetValue(True)
         rowSizer.Add(sizer)
         return rowSizer
 
@@ -129,7 +124,7 @@ class RaspberryPi(device.Device):
         for mirrorIndex, isUp in self.modeToFlips[mode]:
             self.flipDownUp(mirrorIndex, isUp)
         for button in self.lightPathButtons:
-            button.setActive(button.GetLabel() == mode)
+            button.SetValue(button.GetLabel() == mode)
         self.curExMode = mode
 
 
@@ -137,7 +132,7 @@ class RaspberryPi(device.Device):
         for mirrorIndex, isUp in self.modeToFlips[mode]:
             self.flipDownUp(mirrorIndex, isUp)
         for button in self.detPathButtons:
-            button.setActive(button.GetLabel() == mode)
+            button.SetValue(button.GetLabel() == mode)
         self.curDetMode = mode
 
 
@@ -174,11 +169,8 @@ class piOutputWindow(wx.Frame):
 
         # Set up the digital lineout buttons.
         for i in range(len(piDIO.lines)) :
-            button = cockpit.gui.toggleButton.ToggleButton(
-                    parent = panel, label = str(piDIO.lines[i]),
-                    activateAction = self.toggle,
-                    deactivateAction = self.toggle,
-                    size = (140, 80))
+            button = wx.ToggleButton(panel, wx.ID_ANY, str(piDIO.lines[i]))
+            button.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: self.toggle())
             buttonSizer.Add(button, 1, wx.EXPAND)
             self.buttonToLine[button] = i
         mainSizer.Add(buttonSizer)

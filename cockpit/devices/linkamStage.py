@@ -25,16 +25,21 @@ Cockpit-side module for Linkam stages. Tested with CMS196.
 
 Config uses following parameters:
   type:         LinkamStage
-  ipAddress:    address of pyLinkam remote
-  port:         port that remote is listening on
-  primitives:   list of _c_ircles and _r_ectangles to draw on MacroStageXY 
-                view, defining one per line as
-                    c x0 y0 radius
-                    r x0 y0 width height
+  uri:          uri of pyLinkam remote
+  either
+    primitives:   list of _c_ircles and _r_ectangles to draw on MacroStageXY
+                    view, defining one per line as
+                        c x0 y0 radius
+                        r x0 y0 width height
+  or
+    xoffset:      x-offset of stage centre
+    yoffset:      y-offset of stage centre
+
 """
 from cockpit import events
 import cockpit.gui.guiUtils
 import cockpit.gui.device
+from cockpit.devices.microscopeDevice import MicroscopeBase
 import cockpit.gui.toggleButton
 import cockpit.handlers.stagePositioner
 import Pyro4
@@ -44,19 +49,111 @@ import cockpit.util.logger as logger
 import cockpit.util.threads
 from cockpit.util import valueLogger
 
+import datetime
 import time
 import wx
 import re # to get regular expression parsing for config file
 
-LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
 DEFAULT_LIMITS = ((0, 0), (11000, 3000))
 LOGGING_PERIOD = 30
 
-class LinkamStage(stage.StageDevice):
+class RefillTimerPanel(wx.Panel):
+    def __init__(self, *args, **kwargs):
+        self._refillFunc = None
+
+        label_text = kwargs.pop('label', '')
+        kwargs['style'] = kwargs.get('style', 0) | wx.BORDER_SIMPLE
+        super().__init__(*args, **kwargs)
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        label = wx.StaticText(self, wx.ID_ANY, label=label_text, style=wx.ALIGN_CENTRE_HORIZONTAL)
+        # Create controls using label=self.format to set correct width.
+        self.filling = wx.StaticText(self, wx.ID_ANY, label=self.format(None),
+                                     style=wx.ALIGN_CENTRE_HORIZONTAL | wx.ST_NO_AUTORESIZE)
+        self.previous = wx.StaticText(self, wx.ID_ANY, label=self.format(None),
+                                      style=wx.ST_NO_AUTORESIZE)
+        self.current = wx.StaticText(self, wx.ID_ANY, label=self.format(None),
+                                     style= wx.ST_NO_AUTORESIZE)
+        font = wx.SystemSettings.GetFont(wx.SYS_OEM_FIXED_FONT)
+        [o.SetFont(font) for o in (self.filling, self.previous, self.current)]
+        [self.Sizer.Add(o, flag=wx.ALL | wx.EXPAND, border=2) \
+           for o in (label, self.previous, self.current, self.filling)]
+        self.Bind(wx.EVT_CONTEXT_MENU, self.onContextMenu)
+        self.ToolTip = wx.ToolTip("dt: last cycle time.\nt+: time since last refill\nRight click to refill.")
+        [c.Unbind(wx.EVT_MOTION) for c in self.Children]
+
+    def setRefillFunc(self, f):
+        self._refillFunc = f
+
+    def onContextMenu(self, evt):
+        menu = wx.Menu()
+        menu.Append(1, "Start refill")
+        self.Bind(wx.EVT_MENU, lambda e: self._refillFunc(), id=1)
+        cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
+
+
+    def format(self, dt, prefix=""):
+        prefix = '{:3.3} '.format(prefix)
+        if dt is None:
+            return prefix + "--:--:--"
+        elif isinstance(dt, datetime.timedelta):
+            dt = dt.total_seconds()
+        mm, ss = divmod(dt, 60)
+        hh, mm = divmod(mm, 60)
+        return prefix + ("%.2d:%.2d:%.2d" % (hh, mm, ss))
+
+    def doUpdate(self, refill):
+        # Default colours for current timer display. May be modified before
+        # being set at the end of this call.
+        bg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW)
+        fg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT)
+        if refill is None:
+            self.previous.SetLabel(self.format(None, 'dt'))
+            self.current.SetLabel(self.format(None, 't+'))
+        else:
+            # Counters
+            t_last = refill.get('last') # May be None
+            prev = refill.get('between_last').total_seconds() # Always datetime.timedelta
+            self.previous.SetLabel(self.format(prev, 'dt'))
+            if t_last is None:
+                self.current.SetLabel(self.format(None, 't+'))
+            else:
+                t = (datetime.datetime.now() - t_last).total_seconds()
+                self.current.SetLabel(self.format(t, 't+'))
+                if prev > 0:
+                    if (prev - t) <= 60:
+                        # 1 minute left
+                        bg = wx.Colour("red")
+                        fg = wx.Colour("white")
+                    elif (prev - t) < 300:
+                        # 5 minutes left
+                        bg = wx.Colour("yellow")
+                        fg = wx.Colour("black")
+            # Refill indicator
+            if refill.get('refilling', False):
+                self.filling.SetLabel("REFILLING")
+                bg = wx.Colour("red")
+                fg = wx.Colour("white")
+            else:
+                self.filling.SetLabel(" ")
+        if bg != self.GetBackgroundColour():
+            self.SetBackgroundColour(bg)
+            for c in self.GetChildren():
+                c.SetForegroundColour(fg)
+            self.Refresh()
+
+
+class LinkamStage(MicroscopeBase, stage.StageDevice):
+    _temperature_names = ('bridge', 'dewar', 'chamber', 'base')
+    _refill_names = ('sample', 'external')
+    _config_types = {
+        'xoffset': float, # stage centre X offset
+        'yoffset': float, # stage centre Y offset
+    }
+
     def __init__(self, name, config={}):
         super(LinkamStage, self).__init__(name, config)
         ## Connection to the XY stage controller (serial.Serial instance).
-        self.remote = None
+        self._proxy = Pyro4.Proxy(config.get('uri'))
         ## Lock around sending commands to the XY stage controller.
         self.xyLock = threading.Lock()
         ## Cached copy of the stage's position.
@@ -71,25 +168,24 @@ class LinkamStage(stage.StageDevice):
         self.sendingPositionUpdates = False
         ## Status dict updated by remote.
         self.status = {}
-        ## Flag to show UI has been built.
-        self.hasUI = False
-        ## Log values to file.
         ## Keys for status items that should be logged
-        self.logger = valueLogger.ValueLogger(name, keys=['dewarT', 'chamberT', 'bridgeT'])
-        try :
-            limitString = config.get('softlimits', '')
-            parsed = re.search(LIMITS_PAT, limitString)
-            if not parsed:
-                # Could not parse config entry.
-                raise Exception('Bad config: Linkam Limits.')
-                # No transform tuple
-            else:
-                lstr = parsed.groupdict()['limits']
-                self.softlimits=eval(lstr)
+        self.logger = valueLogger.ValueLogger(name, keys=list(map('t_'.__add__, self._temperature_names)))
+        try:
+            xlim = self._proxy.get_value_limits('MotorSetPointX')
+            ylim = self._proxy.get_value_limits('MotorSetPointY')
         except:
-            logger.log.warning('Could not parse limits from config: using defaults.')
-            print ("No softlimits section setting default limits")
-            self.softlimits = DEFAULT_LIMITS
+            xlim, ylim = zip(*DEFAULT_LIMITS)
+        self.hardlimits = tuple(zip(xlim, ylim))
+        self.softlimits = self.hardlimits
+        if not self.getPrimitives():
+            xoff = self.config.get('xoffset', 0)
+            yoff = self.config.get('yoffset', 0)
+            xmid = xoff + (xlim[0] + xlim[1]) / 2
+            ymid = yoff + (ylim[0] + ylim[1]) / 2
+            radius = 1500
+            centres = [-4000, 0, 4000]
+            self.primitives = ['c %f %f %f' % (xmid+dx, ymid, radius) for dx in centres]
+
 
         events.subscribe('user abort', self.onAbort)
         #store and recall condensor LED status.
@@ -97,20 +193,14 @@ class LinkamStage(stage.StageDevice):
         events.subscribe('load exposure settings', self.onLoadSettings)
 
 
-
     ## Save our settings in the provided dict.
     def onSaveSettings(self, settings):
-         #hack as no way to read state at the momnent. Need to FIX.
-         settings[self.name] = {'condensor': 0 }
+        pass
 
     ## Load our settings from the provided dict.
     def onLoadSettings(self, settings):
-        if self.name in settings:
-            #Only chnbage settings if needed.
-            if settings[self.name]['condensor']:
-                self.condensorOn()
-            else:
-                self.condensorOff()
+        pass
+
 
     def finalizeInitialization(self):
         """Finalize device initialization."""
@@ -125,72 +215,37 @@ class LinkamStage(stage.StageDevice):
         server. This caused frequent Pyro timeout errors when cockpit
         was busy doing other things.
         """
-        #create a fill timer
-        from operator import eq
-        events.publish('new status light','Fill Timer','')
-        self.lastFillCycle = 0
-        self.lastFillTimer = 0
-        self.timerbackground = (170, 170, 170)
         lastTemps = [None]
         lastTime = 0
 
         while True:
             time.sleep(1)
             try:
-                status = self.remote.getStatus()
+                status = self._proxy.get_status()
             except Pyro4.errors.ConnectionClosedError:
                 # Some dumb Pyro bug.
                 continue
 
-            if not status.get('connected', False):
-                keys = set(status.keys()).difference(set(['connected']))
-                self.status.update(map(lambda k: (k, None), keys))
-                self.status['connected'] = False
-            else:
+            if status.get('connected', False):
                 self.status.update(status)
-            self.sendPositionUpdates()
+                self.sendPositionUpdates()
+                tNow = time.time()
+                if tNow - lastTime > LOGGING_PERIOD:
+                    newTemps = [status.get(k) for k in self.logger.keys]
+                    from operator import eq
+                    if not all(map(eq, newTemps, lastTemps)):
+                        self.logger.log(newTemps)
+                        lastTemps = newTemps
+                    lastTime = tNow
+            else:
+                self.status['connected'] = False
             self.updateUI()
-            #update fill timer status light
-            timeSinceFill = self.status.get('timeSinceMainFill')
-            if (timeSinceFill is not None):			
-                if( timeSinceFill > (0.9*self.lastFillCycle)):
-                    self.timerbackground = (190, 0, 0)
-                if( timeSinceFill < self.lastFillTimer ):
-                    #refilled so need to reset cycle time and background
-                    self.lastFillCycle = self.lastFillTimer
-                    self.timerbackground = (170, 170, 170)
-                events.publish('update status light','Fill Timer',
-                                'Fill Timer\n%2d:%02d/%2d:%02d' %(
-                                int(timeSinceFill/60.0),
-                                timeSinceFill%60.0,
-                                int(self.lastFillCycle/60.0),
-                                self.lastFillCycle%60.0),
-                                self.timerbackground)
-                self.lastFillTimer = timeSinceFill
-
-            tNow = time.time()
-            if tNow - lastTime > LOGGING_PERIOD:
-                newTemps = [status.get(k) for k in self.logger.keys]
-                if not all(map(eq, newTemps, lastTemps)):
-                    self.logger.log(newTemps)
-                    lastTemps = newTemps
-                lastTime = tNow
-
-
 
 
     def initialize(self):
         """Initialize the device."""
-        uri = "PYRO:%s@%s:%d" % ('linkam', self.ipAddress, self.port)
-        self.remote = Pyro4.Proxy(uri)
-        # self.remote.connect()
         self.getPosition(shouldUseCache = False)
-        
-
-    def homeMotors(self):
-        """Home the motors."""
-        self.remote.homeMotors()
-        self.sendPositionUpdates()
+        self.updateSettings()
 
 
     def onAbort(self, *args):
@@ -214,8 +269,8 @@ class LinkamStage(stage.StageDevice):
                     axis,
                     [1, 2, 5, 10, 50, 100, 200], # step sizes
                     3, # initial step size index,
-                    (minPos, maxPos), # soft limits
-                    (minPos, maxPos) # hard limits
+                    (minPos, maxPos), # hard limits
+                    (minPos, maxPos) # soft limits
                     )
                 )
         return result
@@ -224,58 +279,47 @@ class LinkamStage(stage.StageDevice):
     def makeUI(self, parent):
         """Make cockpit user interface elements."""
         ## A list of value displays for temperatures.
-        tempDisplays = ['bridge', 'chamber', 'dewar']
         # Panel, sizer and a device label.
-        self.panel = wx.Panel(parent)
+        self.panel = wx.Panel(parent, style=wx.BORDER_RAISED)
         self.panel.SetDoubleBuffered(True)
         panel = self.panel
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        label = cockpit.gui.device.Label(parent=panel,
-                                label='Cryostage')
-        sizer.Add(label)
+        panel.Sizer = wx.BoxSizer(wx.HORIZONTAL)
+        left_sizer = wx.BoxSizer(wx.VERTICAL)
+        right_sizer = wx.BoxSizer(wx.VERTICAL)
+        panel.Sizer.Add(left_sizer)
+        panel.Sizer.Add(right_sizer)
+
         self.elements = {}
-        lightButton = cockpit.gui.toggleButton.ToggleButton(
-                parent=panel,
-                label='chamber light',
-                size=cockpit.gui.device.DEFAULT_SIZE,
-                activateAction=self.toggleChamberLight,
-                deactivateAction=self.toggleChamberLight,
-                isBold=False)
+        lightButton = wx.ToggleButton(panel, wx.ID_ANY, "light")
+        lightButton.Bind(wx.EVT_TOGGLEBUTTON,
+                         lambda evt: self._proxy.set_light(evt.EventObject.Value))
         self.elements['light'] = lightButton
-        sizer.Add(lightButton)
-        condensorButton = cockpit.gui.toggleButton.ToggleButton(
-                parent=panel,
-                label='condensor LED',
-                size=cockpit.gui.device.DEFAULT_SIZE,
-                activateAction=self.condensorOn,
-                deactivateAction=self.condensorOff,
-                isBold=False)
-        self.elements['condensor'] = condensorButton
-        sizer.Add(condensorButton)
+        left_sizer.Add(lightButton, flag=wx.EXPAND)
+        condensorButton = wx.ToggleButton(panel, wx.ID_ANY, "condensor")
+        condensorButton.Bind(wx.EVT_TOGGLEBUTTON,
+                             lambda evt: self._proxy.set_condensor(evt.EventObject.Value))
+        left_sizer.Add(condensorButton, flag=wx.EXPAND)
         ## Generate the value displays.
-        for d in tempDisplays:
+        for d in self._temperature_names:
             self.elements[d] = cockpit.gui.device.ValueDisplay(
                     parent=panel, label=d, value=0.0, 
-                    unitStr=u'°C')
-            sizer.Add(self.elements[d])
-        panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
-
-        ## Set the panel sizer and return.
-        panel.SetSizerAndFit(sizer)
+                    formatStr="%.1f", unitStr=u'°C')
+            left_sizer.Add(self.elements[d])
+        # Settings button
+        adv_button = wx.Button(parent=self.panel, label='settings')
+        adv_button.Bind(wx.EVT_LEFT_UP, self.showSettings)
+        left_sizer.Add(adv_button, flag=wx.EXPAND)
+        # Refill timers
+        for r in self._refill_names:
+            self.elements[r] = RefillTimerPanel(panel, wx.ID_ANY, label=r)
+            right_sizer.Add(self.elements[r], flag=wx.LEFT | wx.RIGHT | wx.BOTTOM, border=4)
+            if r == 'sample':
+                self.elements[r].setRefillFunc(self._proxy.refill_chamber)
+            elif r == 'external':
+                self.elements[r].setRefillFunc(self._proxy.refill_dewar)
+        panel.Fit()
         self.hasUI = True
         return panel
-
-
-    def menuCallback(self, index, item):
-        p = r'(?P<speed>[0-9]*)./s'
-        if item.lower() == 'home stage':
-            self.homeMotors()
-            return
-        elif re.match(p, item):
-            speed = int(re.match(p, item).groupdict()['speed'])
-            self.remote.setMotorSpeed(speed)
-        else:
-            return
 
 
     def moveAbsolute(self, axis, pos):
@@ -291,7 +335,7 @@ class LinkamStage(stage.StageDevice):
             return
         with self.xyLock:
             # moveToXY(x, y), where None indicates no change.
-            self.remote.moveToXY(*newPos)
+            self._proxy.move_to(*newPos)
         self.motionTargets[axis] = pos
         self.sendPositionUpdates()
 
@@ -301,15 +345,6 @@ class LinkamStage(stage.StageDevice):
         if delta:
             curPos = self.positionCache[axis]
             self.moveAbsolute(axis, curPos + delta)
-
-
-    def onRightMouse(self, event):
-        items = ['Home stage', '',
-                 'Motor speed', u'100µ/s', u'200µ/s', u'300µ/s',
-                 u'400µ/s', u'500µ/s', '', 'Cancel']
-        menu = cockpit.gui.device.Menu(items, self.menuCallback)
-        menu.Enable(2, False)
-        menu.show(event)
 
 
     @cockpit.util.threads.callInNewThread
@@ -331,7 +366,7 @@ class LinkamStage(stage.StageDevice):
                 events.publish('stage mover',
                                '%d linkam mover' % axis, 
                                axis, value)
-            moving = self.remote.isMoving()
+            moving = self._proxy.is_moving()
 
         for axis in (0, 1):
             events.publish('stage stopped', '%d linkam mover' % axis)
@@ -356,7 +391,7 @@ class LinkamStage(stage.StageDevice):
             failCount = 0
             while not success:
                 try:
-                    position = self.remote.getPosition()
+                    position = self._proxy.get_position()
                     success = True
                 except Pyro4.errors.ConnectionClosedError:
                     if failCount < 5:
@@ -365,7 +400,7 @@ class LinkamStage(stage.StageDevice):
                         raise
                 except:
                     raise
-            self.positionCache = position
+            self.positionCache = (position['X'], position['Y'])
         if axis is None:
             return self.positionCache
         else:
@@ -377,32 +412,24 @@ class LinkamStage(stage.StageDevice):
         pass
 
 
-    def toggleChamberLight(self):
-        self.remote.toggleChamberLight()
-
-
-    def condensorOff(self):
-        self.remote.setCondensorLedLevel(0)
-
-
-    def condensorOn(self):
-        self.remote.setCondensorLedLevel(1)
+    def setLight(self, state):
+        self._proxy.set_light(state)
 
 
     def updateUI(self):
         """Update user interface elements."""
-        if not self.hasUI:
-            # UI not built yet
-            return
         status = self.status
-        self.elements['bridge'].update(self.status.get('bridgeT'))
-        self.elements['chamber'].update(self.status.get('chamberT'))
-        self.elements['dewar'].update(self.status.get('dewarT'))
-        ## The stage SDK allows us to toggle the light, but not know
-        # its state.
-        # self.elements['light'].setActive(not self.status.get('light'))
-        valuesValid = status.get('connected', False)
-        if valuesValid:
+        # Temperatures
+        for t in self._temperature_names:
+            self.elements[t].update(self.status.get('t_' + t))
+        self.elements['light'].SetValue(status.get('light', False))
+        # Refills
+        lines = []
+        now = datetime.datetime.now()
+        for r in self._refill_names:
+            refill = status['refills'].get(r, None)
+            self.elements[r].doUpdate(refill)
+        if status.get('connected', False):
             self.panel.Enable()
         else:
             self.panel.Disable()

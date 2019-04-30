@@ -62,7 +62,6 @@ import scipy
 import time
 import wx
 
-from six import iteritems
 
 # An instance of this class is created if no real cameras are found by depot.
 IMAGE_SIZES = ['512x512','256x512']
@@ -181,7 +180,7 @@ class DummyCamera(device.Device):
     # propagate it to the rest of the cockpit.
     # \param camera For experiments, we only trigger one camera at a time. 
     def onDummyImage(self, camera = None):
-        for name, isReady in iteritems(self.nameToIsReady):
+        for name, isReady in self.nameToIsReady.items():
             if not isReady or (camera and name != camera.name):
                 # Camera is not enabled, or is the wrong camera.
                 continue

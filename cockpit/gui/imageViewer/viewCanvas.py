@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2018-19 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
 ## Copyright (C) 2018 David Pinto <david.pinto@bioch.ox.ac.uk>
 ## Copyright (C) 2019 Nicholas Hall <nicholas.hall@dtc.ox.ac.uk>
@@ -56,13 +56,18 @@
 from cockpit import events
 import cockpit.gui
 import cockpit.gui.guiUtils
-from . import image
 import cockpit.util.threads
+
+
+from wx.glcanvas import GLCanvas
+from collections.abc import Iterable
+
 
 from cockpit.util import ftgl
 import numpy
 from OpenGL.GL import *
-from six.moves import queue
+import numpy as np
+import queue
 import threading
 import traceback
 import wx
@@ -74,8 +79,6 @@ from scipy.ndimage.measurements import center_of_mass
 ## @package cockpit.gui.imageViewer.viewCanvas
 # This module provides a canvas for displaying camera images.
 
-## Maximum number of bins for the histogram
-MAX_BINS = 128
 ## Display height of the histogram, in pixels
 HISTOGRAM_HEIGHT = 40
 
@@ -83,17 +86,322 @@ HISTOGRAM_HEIGHT = 40
 (DRAG_NONE, DRAG_CANVAS, DRAG_BLACKPOINT, DRAG_WHITEPOINT) = range(4)
 
 
+class BaseGL():
+    # Default vertex shader glsl source
+    _VS = """
+    #version 130
+    in vec2 vXY;
+    void main() {
+        gl_Position = vec4(vXY, 1, 1);
+        gl_FrontColor = gl_Color;
+    }
+    """
+    _FS = None
+
+    @staticmethod
+    def _compile_shader(shaderType, source):
+        """Compile a glsl shader stage."""
+        shader = glCreateShader(shaderType)
+        glShaderSource(shader, source)
+        glCompileShader(shader)
+        result = glGetShaderiv(shader, GL_COMPILE_STATUS)
+        if not(result):
+            raise RuntimeError(glGetShaderInfoLog(shader))
+        return shader
+
+    def getShader(self):
+        """Compile and link shader."""
+        if not hasattr(self, '_shader'):
+            self._shader = glCreateProgram()
+            vs = self._compile_shader(GL_VERTEX_SHADER, self._VS)
+            glAttachShader(self._shader, vs)
+            if self._FS is not None:
+                fs = self._compile_shader(GL_FRAGMENT_SHADER, self._FS)
+                glAttachShader(self._shader, fs)
+            glBindAttribLocation (self._shader, 0, "vXY")
+            glLinkProgram(self._shader)
+        return self._shader
+
+
+class Image(BaseGL):
+    """ An class for rendering grayscale images from image data.
+
+    GL textures are generated once. GL stores textures as floats with a range of
+    0 to 1. We use the data.min and data.max of the incoming data to fill this
+    range to prevent loss of detail due to quantisation when rendering low dynamic
+    range images.
+    """
+    # Vertex shader glsl source
+    _VS = """
+    #version 130
+    in vec2 vXY;
+    uniform float zoom;
+    uniform float angle;
+    uniform vec2 pan;
+
+    void main() {
+        gl_TexCoord[0] = gl_MultiTexCoord0;
+        gl_Position = vec4(zoom * (vXY + pan), 1., 1.);
+    }
+    """
+    # Fragment shader glsl source
+    _FS = """
+    #version 130
+    uniform sampler2D tex;
+    uniform float scale;
+    uniform float offset;
+
+    void main()
+    {
+        vec4 lum = clamp(offset + texture2D(tex, gl_TexCoord[0].st) / scale, 0., 1.);
+        gl_FragColor = vec4(0., 0., lum.g == 0, 1.) + vec4(1., lum.g < 1., 1., 1.) * lum;
+    }
+    """
+
+    def __init__(self):
+        # Maximum texture edge size
+        self._maxTexEdge = glGetInteger(GL_MAX_TEXTURE_SIZE)
+        # Textures used to display this image.
+        self._textures = []
+        # New data flag
+        self._update = False
+        # Geometry as number of textures along each axis.
+        self.shape = (0, 0)
+        # Data
+        self._data = None
+        # Minimum and maximum data value - used for setting greyscale range.
+        self.dptp = 1
+        self.dmin = 0
+        # Grayscale clipping points
+        self.vmax = 1
+        self.vmin = 0
+
+    @property
+    def scale(self):
+        return (self.vmax - self.vmin) / (self.dptp)
+
+    @property
+    def offset(self):
+        return - (self.vmin - self.dmin) / (self.dptp * self.scale)
+
+    def __del__(self):
+        """Clean up textures."""
+        try:
+            # On exit, textures may have already been cleaned up.
+            glDeleteTextures(len(self._textures), self._textures)
+        except:
+            pass
+
+    def autoscale(self):
+        """Fit grayscale to range covered by data."""
+        self.vmin = float(self._data.min())
+        self.vmax = float(self._data.max())
+
+    def getDisplayRange(self):
+        return (self.vmin, self.vmax)
+
+    def setDisplayRange(self, vmin, vmax):
+        """Set offset and scaling given clip points."""
+        self.vmin = float(vmin)
+        self.vmax = float(vmax)
+
+    def setData(self, data):
+        self._data = data
+        self._update = True
+
+    def _createTextures(self):
+        """Convert data to textures.
+
+        Needs GL context to be set prior to call, and should only
+        be called in the main thread."""
+        if self._data is None:
+            return
+        data = self._data
+        glPixelStorei(GL_UNPACK_SWAP_BYTES, False)
+        # Ensure the right number of textures available.
+        nx = int(np.ceil(data.shape[1] / self._maxTexEdge))
+        ny = int(np.ceil(data.shape[0] / self._maxTexEdge))
+        self.shape = (nx, ny)
+        ntex = nx * ny
+        if ntex > len(self._textures):
+            textures = glGenTextures(ntex - len(self._textures))
+            if isinstance(textures, Iterable):
+                self._textures.extend(textures)
+            else:
+                self._textures.append(textures)
+        elif ntex < len(self._textures):
+            glDeleteTextures(len(self._textures) - ntex)
+        if ntex == 1:
+            # Data will fit into a single texture.
+            # Do we need to round these up to a power of 2?
+            ty, tx = data.shape
+        else:
+            # Need to use multiple textures to store data.
+            tx = ty = self._maxTexEdge
+        self.dptp = data.ptp()
+        self.dmin = data.min()
+        if self.dptp < 1e-6:
+            self.dptp = 1
+        for i, tex in enumerate(self._textures):
+            xoff = tx * (i % nx)
+            yoff = ty * (i // nx)
+            subdata = (data[yoff:min(data.shape[0], yoff+ty),
+                           xoff:min(data.shape[1], xoff+tx)].astype(np.float32) - self.dmin) / self.dptp
+            glBindTexture(GL_TEXTURE_2D, tex)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, tx, ty, 0,
+                         GL_LUMINANCE, GL_FLOAT, None)
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, subdata.shape[1], subdata.shape[0],
+                            GL_LUMINANCE, GL_FLOAT, subdata)
+        self._update = False
+
+    def draw(self, pan=(0,0), zoom=1):
+        """Render the textures. Caller must set context prior to call."""
+        if self._data is None:
+            return
+        elif self._update:
+            self._createTextures()
+        shader = self.getShader()
+        glUseProgram(shader)
+        nx, ny = self.shape
+        dx = 2 / nx
+        dy = 2 / ny
+        xcorr = ycorr = 0
+        zoomcorr = 1
+        if len(self._textures) > 1:
+            tx = ty = self._maxTexEdge
+            # xy & zoom correction for incompletely-filled textures at upper & right edges.
+            xcorr = ((tx - self._data.shape[1]) % tx) / (nx * tx)
+            ycorr = ((ty - self._data.shape[0]) % ty) / (ny * ty)
+            zoomcorr = self._data.shape[1] / (nx * tx)
+            zoomcorr = max(zoomcorr, self._data.shape[0] / (ny * ty))
+            zoom = zoom / zoomcorr
+            pan = (zoomcorr * pan[0] + xcorr, zoomcorr * pan[1] + ycorr )
+        # Update shader parameters
+        glUniform2f(glGetUniformLocation(shader, "pan"), pan[0], pan[1])
+        glUniform1i(glGetUniformLocation(shader, "tex"), 0)
+        glUniform1f(glGetUniformLocation(shader, "scale"), self.scale)
+        glUniform1f(glGetUniformLocation(shader, "offset"), self.offset)
+        glUniform1f(glGetUniformLocation(shader, "zoom"), zoom)
+        # Render
+        glEnable(GL_TEXTURE_2D)
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+        # nested loops are still quicker than itertools.product
+        for j in range(ny):
+            # i and j are indices that determine left and bottom quad co-ords.
+            # ii and jj determine upper quad co-ords, and may be fractional for
+            # quads at the top or right of the image.
+            if j > 0 and j == ny - 1:
+                jj = self._data.shape[0] / self._maxTexEdge
+            else:
+                jj = j+1
+            for i in range(nx):
+                if i > 0 and i == nx - 1:
+                    ii = self._data.shape[1] / self._maxTexEdge
+                else:
+                    ii = i+1
+                glVertexPointerf( [(-1 + i*dx, -1 + j*dy),
+                                   (-1 + ii*dx, -1 + j*dy),
+                                   (-1 + ii*dx, -1 + jj*dy),
+                                   (-1 + i*dx, -1 + jj*dy)] )
+                glTexCoordPointer(2, GL_FLOAT, 0,
+                                  [(0, 0), (ii%1 or 1, 0), (ii%1 or 1, jj%1 or 1), (0, jj%1 or 1)])
+                glBindTexture(GL_TEXTURE_2D, self._textures[j*nx + i])
+                glDrawArrays(GL_QUADS, 0, 4)
+        glDisable(GL_TEXTURE_2D)
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY)
+        glUseProgram(0)
+
+
+class Histogram(BaseGL):
+    def __init__(self):
+        self.bins = None
+        self.counts = None
+        self.lbound = None
+        self.ubound = None
+        self.lthresh = None
+        self.uthresh = None
+
+
+    def data2gl(self, val):
+        return -1 + 2 * (val - self.lbound) / (self.ubound - self.lbound)
+
+    def gl2data(self, x):
+        return self.lbound + (self.ubound - self.lbound) * (x + 1) / 2
+
+    def setData(self, data):
+        # Calculate histogram.
+        # Use shifted average histogram to avoid binning artefacts.
+        # generate set of m histograms
+        #   each has class width h
+        #   start points 0, h/m, 2h/m, ..., (m-1)h/m
+        # 1 < m < 64
+        # sum to average
+        if self.lbound is None:
+            self.lbound = data.min()
+        if self.ubound is None:
+            self.ubound = data.max()
+        if self.lthresh is None:
+            self.lthresh = self.lbound
+        if self.uthresh is None:
+            self.uthresh = self.ubound
+        nbins = 64
+        m = 4
+        self.bins = np.linspace(data.min(), data.max(), nbins)
+        self.counts = np.zeros(nbins)
+        h = self.bins[1] - self.bins[0]
+        for i in range(m):
+            these = np.bincount(np.digitize(data.flat, self.bins + i*h/m, right=True), minlength=nbins)
+            self.counts += these[0:nbins]
+
+    def draw(self):
+        if self.counts is None:
+            return
+        binw = self.bins[1] - self.bins[0]
+        self.lbound = min(self.bins.min()-binw, self.lthresh-binw)
+        self.ubound = max(self.bins.max()+binw, self.uthresh+binw)
+        w = self.ubound - self.lbound
+        glUseProgram(self.getShader())
+        v = []
+        for (x, y) in zip(self.bins, self.counts):
+            x0 = self.data2gl(x)
+            x1 = self.data2gl(x + binw)
+            h = -1 + 2 * y / self.counts.max()
+            v.extend( [(x0, -1), (x0, h), (x1, h), (x1, -1)] )
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glVertexPointerf(v)
+        glColor(.8, .8, .8, 1)
+        glDrawArrays(GL_QUADS, 0, len(v))
+        glColor(1, 0, 0, 1)
+        xl = self.data2gl(self.lthresh)
+        xu = self.data2gl(self.uthresh)
+        dx = 0.05
+        glLineWidth(2)
+        glVertexPointerf([(xl+dx, -1), (xl, -1), (xl, 1), (xl+dx, 1)])
+        glDrawArrays(GL_LINE_STRIP, 0, 4)
+        glVertexPointerf([(xu-dx, -1), (xu, -1), (xu, 1), (xu-dx, 1)])
+        glDrawArrays(GL_LINE_STRIP, 0, 4)
+        glUseProgram(0)
+
+
 ## This class handles displaying multi-channel 2D images.
 # Most of the actual drawing logic is handled in the image.Image class.
 # It can handle arbitrarily-sized images, by cutting them up into parcels
-# and tiling them together. 
+# and tiling them together.
 class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Instantiate.
-    def __init__(self, parent, tileSize, mouseHandler = None, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs):
         wx.glcanvas.GLCanvas.__init__(self, parent, *args, **kwargs)
 
         ## Parent, so we can adjust its size when we receive an image.
         self.parent = parent
+
+        self.image = Image()
+        self.histogram = Histogram()
 
         ## We set this to false if there's an error, to prevent OpenGL
         # error spew.
@@ -105,19 +413,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.showCurCentroid = False
         self.aligCentroidCalculated = False
 
-        ## Edge length of one tile.
-        self.tileSize = tileSize
-
-        ## Shape of our tile grid. Changes when setImage is called.
-        self.tileShape = None
-
-        ## 2D array of Image instances. Created when setImage is called
-        # with a new image shape.
-        self.tiles = []
-
-        ## Optional additional mouse handler function.
-        self.mouseHandler = mouseHandler
-
         ## Queue of incoming images that we need to either display or discard.
         self.imageQueue = queue.Queue()
         ## Current image we're working with.
@@ -126,8 +421,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.drawEvent = threading.Event()
         # This spawns a new thread.
         self.processImages()
-        ## Min/max values in our image
-        self.imageMin = self.imageMax = 0
         ## Percentile scaling of min/max based on our histogram.
         self.blackPoint, self.whitePoint = 0.0, 1.0
 
@@ -135,13 +428,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         # scale.
         self.imageShape = None
 
-        ## Whether or not we need to call our images' refresh() methods
-        # next time onPaint runs.
-        self.shouldRefresh = True
-
         ## Overall scaling factor, separate from the above.
         self.zoom = 1.0
-
         ## Current mouse position
         self.curMouseX = self.curMouseY = None
 
@@ -151,8 +439,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         ## Pan translation factor
         self.panX = 0
         self.panY = 0
-        self.offsetX = 0
-        self.offsetY = 0
 
         ## What kind of dragging we're doing.
         self.dragMode = DRAG_NONE
@@ -176,6 +462,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         # if unhandled. Bind it to None to prevent the main window
         # context menu being displayed after our own.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
+        self.painting = False
 
         self.y_alig_cent = None
         self.x_alig_cent = None
@@ -191,8 +478,22 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         if any(map(operator.or_, map(operator.gt, p, s), map(operator.lt, p, (0,0)))):
             return
         rotation = event.GetWheelRotation()
-        if rotation:
-            self.modZoom(rotation / 1000.0)
+        if not rotation:
+            return
+        factor = rotation / 1000.
+        x, y = event.GetLogicalPosition(wx.ClientDC(self))
+        w, h = self.GetClientSize()
+        h -= HISTOGRAM_HEIGHT
+        glx = -(2 * (x / w) - 1) / self.zoom
+        gly = (2 * (y / h) - 1) / self.zoom
+        newZoom = self.zoom * (1 + factor)
+        if newZoom < 0.001:
+            factor = -1 + 0.001 / self.zoom
+            newZoom = 0.001
+        self.zoom = newZoom
+        self.panX += factor * glx
+        self.panY += factor * gly
+        self.Refresh()
 
 
     def InitGL(self):
@@ -214,14 +515,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 break
         self.imageData = None
         self.imageShape = None
-        self.imageMin = None
-        self.imageMax = None
-        if self.tileShape is not None:
-            for i in range(self.tileShape[0]):
-                for j in range(self.tileShape[1]):
-                    self.tiles[i][j].wipe()
-        self.tiles = []
-        self.tileShape = None
         if shouldDestroy:
             self.shouldDraw = False
             self.Destroy()
@@ -253,145 +546,25 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             # display with the image.
             shouldResetView = self.imageShape != newImage.shape
             self.imageShape = newImage.shape
-
-            self.imageMin = newImage.min()
-            self.imageMax = newImage.max()
-            self.recalculateHistogram(newImage)
-            if self.showAligCentroid:
-                if self.aligCentroidCalculated:
-                    pass
-                else:
-                    self.calcCurCentroid(newImage)
-                    self.x_alig_cent = self.x_cur_cent
-                    self.y_alig_cent = self.y_cur_cent
-                    self.aligCentroidCalculated = True
-            if self.showCurCentroid:
-                self.calcCurCentroid(newImage)
-            self.setTiles(newImage)
+            self.histogram.setData(newImage)
+            self.image.setData(newImage)
             if shouldResetView:
                 self.resetView()
             if isFirstImage:
-                wx.CallAfter(self.resetPixelScale)
+                self.image.autoscale()
+            self.Refresh()
             # Wait for the image to be drawn before we do anything more.
             self.drawEvent.wait()
             self.drawEvent.clear()
 
-
-    ## Update our tiles, if necessary, because a new image has arrived.
-    @cockpit.util.threads.callInMainThread
-    def setTiles(self, imageData):
-        if not self.shouldDraw:
-            return
-        try:
-            self.SetCurrent(self.context)
-            # Whether or not self.tiles is currently valid.
-            haveSetTiles = True
-            # Calculate the tile layout we'll need, and see if it matches
-            # the current layout. If it doesn't, then we need to create
-            # a new set of tiles.
-            width = int(numpy.ceil(float(imageData.shape[0]) / self.tileSize))
-            height = int(numpy.ceil(float(imageData.shape[1]) / self.tileSize))
-            if self.tileShape != (width, height):
-                if self.tileShape is not None:
-                    # Destroy old tiles to free up texture memory
-                    for i in range(self.tileShape[0]):
-                        for j in range(self.tileShape[1]):
-                            self.tiles[i][j].wipe()
-                self.tiles = []
-                self.tileShape = (width, height)
-                haveSetTiles = False
-                
-            for i in range(self.tileShape[0]):
-                if not haveSetTiles:
-                    self.tiles.append([])
-                xMin = i * self.tileSize
-                xMax = min((i + 1) * self.tileSize, self.imageShape[0])
-                for j in range(self.tileShape[1]):
-                    yMin = j * self.tileSize
-                    yMax = min((j + 1) * self.tileSize, self.imageShape[1])
-                    subData = imageData[xMin : xMax, yMin : yMax]
-                    if not haveSetTiles:
-                        self.tiles[i].append(image.Image(subData))
-                    else:
-                        self.tiles[i][j].updateImage(subData)
-
-            if not haveSetTiles:
-                self.changeHistScale(False)
-        except Exception as e:
-            print ("Failed to set new image:",e)
-            import traceback
-            traceback.print_exc()
-
-        self.Refresh()
-
-
-    ## Recalculate our histogram of pixel brightnesses.
-    # There's a problem with our approach in that there may be "spikes"
-    # in the histogram (buckets with 2x the size of their neighbors); this
-    # is caused by some buckets claiming more ints than other buckets.
-    # We may want to investigate this custom histogram code sometime:
-    # https://github.com/kif/pyFAI/blob/master/src/histogram.pyx
-    # It is claimed to be ~5x faster than Numpy's implementation.
-    def recalculateHistogram(self, imageData):
-        # Need a 1D array of integers for numpy.bincount
-        temp = imageData.reshape(numpy.product(imageData.shape)).astype(numpy.int32)
-        dataRange = temp.max() - temp.min()
-        numBins = min(dataRange, MAX_BINS)
-        self.binSizes = numpy.bincount(
-            ((temp-temp.min()) * numBins / dataRange).astype(numpy.int32))
-
-    def calcCurCentroid(self, imageData):
-        thresh = threshold_otsu(imageData)
-        binaryIm = imageData > thresh
-        imageOtsu = imageData * binaryIm
-
-        y_cent, x_cent = center_of_mass(imageOtsu[10:-10, 10:-10])
-        self.y_cur_cent = (y_cent + 10)
-        self.x_cur_cent = (x_cent + 10)
-
-        if self.y_alig_cent == None or self.x_alig_cent == None:
-            pass
-        else:
-            self.diff_y = self.y_cur_cent - self.y_alig_cent
-            self.diff_x = self.x_cur_cent - self.x_alig_cent
-            totaldist=(self.diff_y**2+self.diff_x**2)**0.5
-
-    ## Reset our blackpoint/whitepoint based on the image data.
-    def resetPixelScale(self):
-        self.blackPoint = 0.0
-        self.whitePoint = 1.0
-        self.changeHistScale()
-
-
-    ## Propagate changes to the histogram scaling to our tiles.
-    def changeHistScale(self, shouldRefresh = True):
-        newMin = self.blackPoint * (self.imageMax - self.imageMin) + self.imageMin
-        newMax = self.whitePoint * (self.imageMax - self.imageMin) + self.imageMin
-        if newMin is None or newMax is None:
-            # No image; can't do anything.
-            return
-        for i in range(self.tileShape[0]):
-            for j in range(self.tileShape[1]):
-                self.tiles[i][j].setMinMax(newMin, newMax)
-        self.shouldRefresh = True
-
-        if shouldRefresh:
-            self.Refresh(False)
-
-
     ## Return the blackpoint and whitepoint (i.e. the pixel values which
     # are displayed as black and white, respectively).
     def getScaling(self):
-        if self.imageData is None or len(self.tiles) == 0:
+        if self.imageData is None:
             # No image to operate on yet.
             return (None, None)
-        # Used to query image data for imageMin and imageMax, but could this
-        # occasionally hit an indexing error on the first image when images
-        # were arriving fast. Just do the simple arithmetic here.
-        #return (self.tiles[0][0].imageMin, self.tiles[0][0].imageMax)
-        imageRange = (self.imageMax - self.imageMin)
-        return (self.blackPoint * imageRange + self.imageMin,
-                self.whitePoint * imageRange + self.imageMin)
+        else:
+            return self.image.getDisplayRange()
 
 
     ## As above, but the values used to calculate them instead of the
@@ -400,11 +573,13 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         return (self.blackPoint, self.whitePoint)
 
 
-    @cockpit.util.threads.callInMainThread
+    #@cockpit.util.threads.callInMainThread
     def onPaint(self, event):
         if not self.shouldDraw:
             return
+
         try:
+            # Unused, but wx requires we create an instance of PaintDC.
             dc = wx.PaintDC(self)
         except:
             return
@@ -412,161 +587,57 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         if not self.haveInitedGL:
             self.InitGL()
 
+        if self.painting:
+            print("Concurrent - returning")
+            return
+
         try:
+            self.painting = True
             self.SetCurrent(self.context)
+            glClear(GL_COLOR_BUFFER_BIT)
+            glViewport(0, HISTOGRAM_HEIGHT, self.w, self.h - HISTOGRAM_HEIGHT)
+            self.image.draw(pan=(self.panX, self.panY), zoom=self.zoom)
+            if self.showCrosshair:
+                self.drawCrosshair()
+
+
+            glViewport(0, 0, self.w, HISTOGRAM_HEIGHT//2)
+            self.histogram.draw()
+            glColor(0, 1, 0, 1)
 
             glViewport(0, 0, self.w, self.h)
             glMatrixMode (GL_PROJECTION)
+            glPushMatrix()
             glLoadIdentity ()
             glOrtho (0, self.w, 0, self.h, 1., -1.)
-            glMatrixMode (GL_MODELVIEW)
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+            glTranslatef(0, HISTOGRAM_HEIGHT/2+2, 0)
+            try:
+                self.font.render('%d [%-10d %10d] %d' %
+                                 (self.image.dmin, self.histogram.lthresh,
+                                  self.histogram.uthresh, self.image.dmin+self.image.dptp))
+            except:
+                pass
+            glPopMatrix()
 
-            if self.tiles:
-                glPushMatrix()
-                glLoadIdentity()
-                glTranslatef(0, HISTOGRAM_HEIGHT, 0)
+            #self.drawHistogram()
 
-                if self.shouldRefresh:
-                    for i in range(self.tileShape[0]):
-                        for j in range(self.tileShape[1]):
-                            self.tiles[i][j].refresh()
-                self.shouldRefresh = False
-
-                # Apply zoom
-                glTranslatef(self.imageShape[1] / 2.0, self.imageShape[0] / 2.0, 0)
-                glScalef(self.zoom, self.zoom, 1)
-                glTranslatef(-self.imageShape[1] / 2.0, -self.imageShape[0] / 2.0, 0)
-
-                # Apply pan
-                glTranslatef(self.panX/self.zoom, self.panY/self.zoom, 0)
-
-                glEnable(GL_TEXTURE_2D)
-
-                # Draw the actual tiles.
-                for i in range(self.tileShape[0]):
-                    for j in range(self.tileShape[1]):
-                        glPushMatrix()
-                        glTranslatef(j * self.tileSize, i * self.tileSize, 0)
-                        self.tiles[i][j].render()
-                        glPopMatrix()
-
-                glDisable(GL_TEXTURE_2D)
-                glTranslatef(0, -HISTOGRAM_HEIGHT, 0)
-                if self.showCrosshair:
-                    self.drawCrosshair()
-                if self.showAligCentroid:
-                    self.drawCentroidCross(y_cent=self.y_alig_cent, x_cent=self.x_alig_cent,
-                                           colour=(0, 255, 255))
-                if self.showCurCentroid:
-                    self.drawCentroidCross(y_cent=self.y_cur_cent, x_cent=self.x_cur_cent,
-                                           colour=(255, 0, 255))
-                glPopMatrix()
-
-                self.drawHistogram()
-
-
-            glFlush()
+            #glFlush()
             self.SwapBuffers()
             self.drawEvent.set()
         except Exception as e:
             print ("Error drawing view canvas:",e)
             traceback.print_stack()
-            self.shouldDraw = False
+            #self.shouldDraw = False
+        finally:
+            self.painting = False
 
 
     @cockpit.util.threads.callInMainThread
     def drawCrosshair(self, ):
         glColor3f(0, 255, 255)
-        glBegin(GL_LINES)
-        glVertex2f(0, HISTOGRAM_HEIGHT + 0.5 * (self.imageShape[0]))
-        glVertex2f(self.imageShape[1], HISTOGRAM_HEIGHT +
-                   0.5 * (self.imageShape[0]))
-        glVertex2f(0.5 * self.imageShape[1], HISTOGRAM_HEIGHT)
-        glVertex2f(0.5 * self.imageShape[1], self.imageShape[0]+HISTOGRAM_HEIGHT)
-        glEnd()
-
-    @cockpit.util.threads.callInMainThread
-    def drawCentroidCross(self, y_cent, x_cent, colour):
-        if x_cent == None or y_cent == None:
-            return
-        glColor3f(colour[0], colour[1], colour[2])
-        glBegin(GL_LINES)
-        glVertex2f(x_cent - 50, HISTOGRAM_HEIGHT + y_cent)
-        glVertex2f(x_cent + 50, HISTOGRAM_HEIGHT + y_cent)
-        glVertex2f(x_cent, HISTOGRAM_HEIGHT + y_cent - 50)
-        glVertex2f(x_cent, HISTOGRAM_HEIGHT + y_cent + 50)
-        glEnd()
-
-    ## Draw the histogram of our data.
-    @cockpit.util.threads.callInMainThread
-    def drawHistogram(self):
-        # White box over all
-        glColor3f(255, 255, 255)
-        glBegin(GL_QUADS)
-        glVertex2f(0, 0)
-        glVertex2f(self.w, 0)
-        glVertex2f(self.w, HISTOGRAM_HEIGHT)
-        glVertex2f(0, HISTOGRAM_HEIGHT)
-        glEnd()
-
-        # The actual histogram
-        glBegin(GL_QUADS)
-        glColor3f(0, 0, 0)
-        binWidth = self.w / float(len(self.binSizes))
-        maxVal = max(self.binSizes)
-        for i, size in enumerate(self.binSizes):
-            # Only draw if there's something there; otherwise we get the
-            # occasional 1-pixel line.
-            if size:
-                xOff = i * binWidth
-                # Subtract some pixels off the histogram height to leave room
-                # for the text.
-                height = size / float(maxVal) * (HISTOGRAM_HEIGHT - 15)
-                glVertex2f(xOff, 0)
-                glVertex2f(xOff + binWidth, 0)
-                glVertex2f(xOff + binWidth, height)
-                glVertex2f(xOff, height)
-        glEnd()
-
-        # Draw marks for the black and white points
-        glColor3f(255, 0, 0)
-
-        # The horizontal position of the marks are based on our
-        # black and white points, and are positioned independent
-        # of the current image data.
-        for val, sign in [(self.blackPoint, 1), (self.whitePoint, -1)]:
-            # Offset by 1 pixel to ensure we stay in-bounds even with min/max values
-            xOff = val * self.w + sign
-            glBegin(GL_LINE_STRIP)
-            glVertex2f(xOff + sign * 15, 2)
-            glVertex2f(xOff, 2)
-            glVertex2f(xOff, HISTOGRAM_HEIGHT - 2)
-            glVertex2f(xOff + sign * 15, HISTOGRAM_HEIGHT - 2)
-            glEnd()
-
-        # Draw explanatory text
-        glColor3f(0, 0, 255)
-        glPushMatrix()
-        glTranslatef(25, 25, 0)
-        # Left-align the data min by padding with spaces.
-        minVal = str(self.imageMin)
-        minVal += ' ' * (10 - len(minVal))
-        if self.showCurCentroid:
-            if self.diff_y == None or self.diff_x == None:
-                self.font.render('%d [%s %10d] %d' %
-                                 (self.tiles[0][0].imageMin, self.imageMin,
-                                  self.imageMax, self.tiles[0][0].imageMax))
-            else:
-                self.font.render('%d [%s %10d] %d       X dist = %f, Y dist = %f' %
-                                 (self.tiles[0][0].imageMin, self.imageMin,
-                                  self.imageMax, self.tiles[0][0].imageMax,
-                                  self.diff_x, self.diff_y))
-        else:
-            self.font.render('%d [%s %10d] %d' %
-                             (self.tiles[0][0].imageMin, self.imageMin,
-                              self.imageMax, self.tiles[0][0].imageMax))
-        glPopMatrix()
+        glVertexPointerf([(-1, self.zoom*self.panY), (1, self.zoom*self.panY),
+                          (self.zoom*self.panX, -1), (self.zoom*self.panX, 1)])
+        glDrawArrays(GL_LINES, 0, 4)
 
     ## Update the size of the canvas by scaling it.
     def setSize(self, size):
@@ -575,16 +646,19 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.Refresh(0)
 
     def onMouse(self, event):
-        if self.mouseHandler is not None:
-            self.mouseHandler(event)
+        if self.imageShape is None:
+            return
         self.curMouseX, self.curMouseY = event.GetPosition()
         self.updateMouseInfo(self.curMouseX, self.curMouseY)
-
-        if event.LeftDown():
+        if event.LeftDClick():
+            # Explicitly skip EVT_LEFT_DCLICK for parent to handle.
+            event.ResumePropagation(2)
+            event.Skip()
+        elif event.LeftDown():
             # Started dragging
             self.mouseDragX, self.mouseDragY = self.curMouseX, self.curMouseY
-            blackPointX = self.blackPoint * self.w
-            whitePointX = self.whitePoint * self.w
+            blackPointX = 0.5 * (1+self.histogram.data2gl(self.histogram.lthresh)) * self.w
+            whitePointX = 0.5 * (1+self.histogram.data2gl(self.histogram.uthresh)) * self.w
             # Set drag mode based on current window position
             if self.h - self.curMouseY >= HISTOGRAM_HEIGHT * 2:
                 self.dragMode = DRAG_CANVAS
@@ -597,25 +671,25 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             if self.dragMode == DRAG_CANVAS:
                 # Pan view about.
                 # Window coordinates are upside-down compared to what the
-                # user expects...
+                # user expects.
                 self.modPan(self.curMouseX - self.mouseDragX,
                             self.mouseDragY - self.curMouseY)
-            elif self.dragMode == DRAG_BLACKPOINT:
-                # Move blackpoint.
-                self.blackPoint += float(self.curMouseX - self.mouseDragX) / self.w
-            elif self.dragMode == DRAG_WHITEPOINT:
-                # Move whitepoint.
-                self.whitePoint += float(self.curMouseX - self.mouseDragX) / self.w
-            if self.dragMode in [DRAG_BLACKPOINT, DRAG_WHITEPOINT]:
-                self.changeHistScale()
-                
+            elif self.dragMode in [DRAG_BLACKPOINT, DRAG_WHITEPOINT]:
+                glx = -1 + 2 * self.curMouseX / self.w
+                threshold = self.histogram.gl2data(glx)
+                if self.dragMode == DRAG_BLACKPOINT:
+                    self.histogram.lthresh = threshold
+                    self.image.vmin = threshold
+                else:
+                    self.histogram.uthresh = threshold
+                    self.image.vmax = threshold
             self.mouseDragX = self.curMouseX
             self.mouseDragY = self.curMouseY
         elif event.RightDown():
             # Show a menu.
             menu = wx.Menu()
             for label, action in self.getMenuActions():
-                id = wx.NewId()
+                id = wx.NewIdRef()
                 menu.Append(id, label)
                 self.Bind(wx.EVT_MENU,  lambda event, action = action: action(), id= id)
             cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
@@ -632,7 +706,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Generate a list of (label, action) tuples to use for generating menus.
     def getMenuActions(self):
         return [('Reset view', self.resetView),
-                ('Fill viewer', lambda: self.resetView(True)),
                 ('Set histogram parameters', self.onSetHistogram),
                 ('Toggle alignment crosshair', self.toggleCrosshair),
                 ('Toggle show aligment centroid', self.toggleAligCentroid),
@@ -641,15 +714,13 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Let the user specify the blackpoint and whitepoint for image scaling.
     def onSetHistogram(self, event = None):
         values = cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
-                parent = self, title = "Set histogram scale parameters",
-                prompts = ["Blackpoint", "Whitepoint"],
-                defaultValues = [self.tiles[0][0].imageMin, self.tiles[0][0].imageMax])
+            parent = self, title = "Set histogram scale parameters",
+            prompts = ["Blackpoint", "Whitepoint"],
+            defaultValues = [self.histogram.lthresh, self.histogram.uthresh])
         values = [float(v) for v in values]
-        # Convert from pixel intensity values to [0, 1] scale values.
-        divisor = max(float(self.imageMax - self.imageMin), 1.0)
-        self.blackPoint = (values[0] - self.imageMin) / divisor
-        self.whitePoint = (values[1] - self.imageMin) / divisor
-        self.changeHistScale(shouldRefresh = True)
+        self.image.vmin = self.histogram.lthresh = values[0]
+        self.image.vmax = self.histogram.uthresh = values[1]
+        self.Refresh()
 
 
     def toggleCrosshair(self, event=None):
@@ -662,68 +733,59 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def toggleCurCentroid(self, event=None):
         self.showCurCentroid = not (self.showCurCentroid)
 
+    ## Convert window co-ordinates to gl co-ordinates.
+    def canvasToGl(self, x, y):
+        glx = (-1 + 2 *x / self.w - self.panX * self.zoom) / self.zoom
+        gly = -(-1 + 2 * y / (self.h - HISTOGRAM_HEIGHT) + self.panY * self.zoom) / self.zoom
+        return (glx, gly)
+
+
+    ## Convert gl co-ordinates to indices into the data.
+    # Note: pass in x,y, but returns row-major datay, datax
+    def glToIndices(self, glx, gly):
+        datax = (1 + glx) * self.imageShape[1] // 2
+        datay = (1 + gly) * self.imageShape[0] // 2
+        return (datay, datax)
+
+
+    ## Convert window co-ordinates to indices into the data.
+    def canvasToIndices(self, x, y):
+        return self.glToIndices(*self.canvasToGl(x, y))
+
+
     ## Display information on the pixel under the mouse at the given
     # position.
     def updateMouseInfo(self, x, y):
         if self.imageData is None or self.imageShape is None:
             # Not ready to get mouse info yet.
             return
-        # First we have to convert from screen coordinates to texture
+        # First we have to convert from screen coordinates to data
         # coordinates.
-        coords = numpy.array([y, x])
-        # Get from overall screen coords to image display screen coords.
-        coords[0] = self.GetClientSize()[1] - coords[0] - HISTOGRAM_HEIGHT
-        # Apply zoom
-        shape = numpy.array(self.imageShape)
-        coords = coords - ( shape / 2.0)
-        coords /= self.zoom
-        coords = coords + (shape / 2.0)
-        # Apply pan
-        coords -= [self.panY, self.panX]
-        if numpy.all(coords < shape) and numpy.all(coords >= 0):
-            value = self.imageData[int(coords[0]),int(coords[1])]
+        coords = numpy.array(self.canvasToIndices(x, y), dtype=np.uint)
+        shape = numpy.array(self.imageShape, dtype=np.uint)
+        if (coords < shape).all() and (coords >= 0).all():
+            value = self.imageData[coords[0], coords[1]]
             events.publish("image pixel info", coords[::-1], value)
-        
 
-    ## Modify our overall zoom by the provided factor.
-    def modZoom(self, factor):
-        oldX=(self.panX-self.offsetX)/self.zoom
-        oldY=(self.panY-self.offsetY)/self.zoom
-        self.zoom += factor
-        if self.zoom <0.001 :
-            self.zoom=0.001
-        #modify pan variables to keep same position in centre of image.
-        self.panX=(oldX*self.zoom+self.offsetX)
-        self.panY=(oldY*self.zoom+self.offsetY)
-        self.Refresh(0)
 
     ## Modify our panning amount by the provided factor.
     def modPan(self, dx, dy):
-        self.panX += dx
-        self.panY += dy
+        self.panX += 2 * dx / (self.w * self.zoom)
+        self.panY += 2 * dy / (self.h * self.zoom)
         self.Refresh(0)
 
 
     ## Reset our view mods.
-    # \param shouldFillView If True, then scale the image so that the entire
-    #        view area is filled, even if that results in offscreen pixels
-    #        (because the image aspect ratio is not the viewer aspect ratio).
-    #        If False, scale the image so it all fits into the viewer, even if
-    #        this results in parts of the viewer having no image data.
-    def resetView(self, shouldFillView = False):
+    def resetView(self):
         if self.imageShape is None:
             # No image to work with.
             return
-        clientSize = list(self.GetClientSize())
-        clientSize[1] -= HISTOGRAM_HEIGHT
-        zoom = float(clientSize[0]) / self.imageShape[0]
-        operator = (min, max)[shouldFillView]
-        zoom = operator(zoom, float(clientSize[1]) / self.imageShape[1])
-        # Pan so that the lower-left corner of the image is in the lower-left
-        # corner of our view area. Store so we can zoom on field centre
-        self.offsetX=(clientSize[0] - self.imageShape[1]) / 2.0
-        self.offsetY=(clientSize[1] - self.imageShape[0]) / 2.0
-        self.panX = self.offsetX
-        self.panY = self.offsetY
-        self.zoom = zoom
+        self.panX = 0
+        self.panY = 0
+        self.zoom = 1.0
         self.Refresh(0)
+
+    def resetPixelScale(self):
+        self.image.autoscale()
+        self.histogram.lthresh, self.histogram.uthresh = self.image.getDisplayRange()
+        self.Refresh()

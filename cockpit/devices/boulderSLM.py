@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2018-19 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
@@ -44,11 +44,44 @@ import wx
 
 from cockpit import events
 import cockpit.gui.device
-import cockpit.gui.guiUtils
-import cockpit.gui.toggleButton
 import cockpit.handlers.executor
 import time
 import cockpit.util
+
+class _LastParameters():
+    """A class to keep a record of last SIM parmeters using async calls."""
+    def __init__(self, slm):
+        self.slm = slm
+        self._params = None
+        self._result = None
+        from threading import Lock
+        self._lock = Lock()
+
+    @property
+    def params(self):
+        """Return the last recorded SIM parameters."""
+        if self._result and self._result.ready:
+            # Updated parameters are available.
+            with self._lock:
+                try:
+                    self._params = self._result.value
+                except:
+                    pass
+                finally:
+                    self._result = None
+        return self._params
+
+    @params.setter
+    def params(self, value):
+        """Set recorded parameters explicitly."""
+        with self._lock:
+            self._result = None
+            self._params = value
+
+    def update(self):
+        """Dispatch async call to update record from hardware."""
+        if self.slm.asproxy:
+            self._result = self.slm.asproxy.get_sim_sequence()
 
 
 class BoulderSLM(device.Device):
@@ -63,14 +96,11 @@ class BoulderSLM(device.Device):
             return
         self.connection = None
         self.asproxy = None
-        self.executor = None
-        self.order = None
         self.position = None
         self.wasPowered = None
-        self.settlingTime = decimal.Decimal('10.')
         self.slmTimeout = 10
         self.slmRetryLimit = 3
-        self.lastParms = None
+        self.last = _LastParameters(self)
 
 
     def initialize(self):
@@ -91,48 +121,43 @@ class BoulderSLM(device.Device):
         # A mapping of context-menu entries to functions.
         # Define in tuples - easier to read and reorder.
         menuTuples = (('Generate SIM sequence', self.testSIMSequence),
-                      ('SIM diff. angle', self.setDiffractionAngle),
-                      ('Set delay after trigger', self.handler.setMovementTimeUI),)
+                      ('SIM diff. angle', self.setDiffractionAngle),)
         # Store as ordered dict for easy item->func lookup.
         self.menuItems = OrderedDict(menuTuples)
 
 
-    def disable(self):
-        self.connection.stop()
-        if self.elements.get('triggerButton'):
-            self.elements['triggerButton'].Disable()
+    def getIsEnabled(self):
+        return self.connection.get_is_enabled()
 
 
-    def enable(self):
-        """Enable the SLM.
-
-        Often, after calling connection.run(), the SLM pattern and the image
-        index reported are not synchronised until a few triggers have been
-        sent, so we need to compensate for this. We do the best we can,
-        but any other trigger-device activity during this call can mean that
-        we miss the target frame by +/- 1.
-        """
-        # Target position
-        if self.lastParms == self.connection.get_sim_sequence():
-            # Hardware and software sequences match
-            targetPosition = self.position
+    def setEnabled(self, state):
+        """Enable or disable the SLM."""
+        if state:
+            # Enable.
+            if self.last.params == self.connection.get_sim_sequence():
+                # Hardware and software sequences match
+                targetPosition = self.getCurrentPosition()
+            else:
+                targetPosition = 0
+            # Enable the hardware.
+            self.connection.run()
+            # Often, after calling connection.run(), the SLM pattern and the image
+            # index reported are not synchronised until a few triggers have been
+            # sent, so we need to compensate for this. We do the best we can,
+            # but any other trigger-device activity during this call can mean that
+            # we miss the target frame by +/- 1.
+            for i in range(3):
+                self.handler.triggerNow()
+                time.sleep(0.01)
+            # Cycle to the target position.
+            pos = self.getCurrentPosition()
+            delta = (targetPosition - pos) + (targetPosition < pos) * len(self.last.params)
+            for i in range(delta):
+                self.handler.triggerNow()
+                time.sleep(0.01)
         else:
-            targetPosition = 0
-        # Enable the hardware.
-        self.connection.run()
-        # Send a few triggers to clear synch. errors.
-        for i in range(3):
-            self.handler.triggerNow()
-            time.sleep(0.01)
-        # Cycle to the target position.
-        pos = self.getCurrentPosition()
-        delta = (targetPosition - pos) + (targetPosition < pos) * len(self.lastParms)
-        for i in range(delta):
-            self.handler.triggerNow()
-            time.sleep(0.01)
-        # Update the display.
-        if self.elements.get('triggerButton'):
-            self.elements['triggerButton'].Enable()
+            # Disable the SLM.
+            self.connection.stop()
 
 
     def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
@@ -200,7 +225,6 @@ class BoulderSLM(device.Device):
 
             # How long will the triggers take?
             # Time between triggers must be > table.toggleTime.
-            dt = self.settlingTime + 2 * numTriggers * table.toggleTime
             ## Shift later table entries to allow for triggers and settling.
             table.shiftActionsBack(time, dt)
             for trig in range(numTriggers):
@@ -218,18 +242,18 @@ class BoulderSLM(device.Device):
         # Wait until SLM has finished generating and loading patterns.
         self.wait(asyncResult, "SLM is generating pattern sequence.")
         # Store the parameters used to generate the sequence.
-        self.lastParms = sequence
+        self.last.params = sequence
         self.connection.run()
         # Fire several triggers to ensure that the sequence is loaded.
         for i in range(12):
             self.handler.triggerNow()
             time.sleep(0.01)
         # Ensure that we're at position 0.
-        self.position = self.getCurrentPosition()
-        while self.position != 0:
+        position = self.getCurrentPosition()
+        while position != 0:
             self.handler.triggerNow()
             time.sleep(0.01)
-            self.position = self.getCurrentPosition()
+            position = self.getCurrentPosition()
 
 
     def getCurrentPosition(self):
@@ -245,7 +269,9 @@ class BoulderSLM(device.Device):
             "slm", "slm group", True,
             {'examineActions': self.examineActions,
              'getMovementTime': lambda *args: dt,
-             'executeTable': self.executeTable})
+             'executeTable': self.executeTable,
+             'setEnabled': self.setEnabled,
+             'getIsEnabled': self.getIsEnabled})
         self.handler.delegateTo(trigsource, trigline, 0, dt)
         result.append(self.handler)
         return result
@@ -253,49 +279,32 @@ class BoulderSLM(device.Device):
 
     ### UI functions ###
     def makeUI(self, parent):
-        self.panel = wx.Panel(parent)
-        self.panel.SetDoubleBuffered(True)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        label = cockpit.gui.device.Label(
-                parent=self.panel, label='SLM')
-        sizer.Add(label)
-        rowSizer = wx.BoxSizer(wx.VERTICAL)
-        self.elements = OrderedDict()
-        powerButton = cockpit.gui.toggleButton.ToggleButton(
-                label='OFF',
-                activateAction = self.enable,
-                deactivateAction = self.disable,
-                activeLabel = 'ON',
-                inactiveLabel = 'OFF',
-                parent=self.panel,
-                size=cockpit.gui.device.DEFAULT_SIZE)
-        self.elements['powerButton'] = powerButton
-        # Add a trigger button if we can trigger the SLM on demand.
-        triggerButton = cockpit.gui.toggleButton.ToggleButton(
-                label='step',
-                parent=self.panel,
-                size=cockpit.gui.device.DEFAULT_SIZE)
-        triggerButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.handler.triggerNow())
-        self.elements['triggerButton'] = triggerButton
-        triggerButton.Disable()
+        panel = wx.Panel(parent, style=wx.BORDER_RAISED)
+        panel.SetDoubleBuffered(True)
+        panel.Sizer = wx.BoxSizer(wx.VERTICAL)
+        powerButton = cockpit.gui.device.EnableButton(panel, self.handler)
+        panel.Sizer.Add(powerButton, 0, wx.EXPAND)
+        triggerButton = wx.Button(panel, label="step")
+        triggerButton.Bind(wx.EVT_BUTTON, lambda evt: self.handler.triggerNow())
+        panel.Sizer.Add(triggerButton, 0, wx.EXPAND)
         # Add a position display.
-        posDisplay = cockpit.gui.device.MultilineDisplay(parent=self.panel, numLines=3)
+        posDisplay = cockpit.gui.device.MultilineDisplay(parent=panel, numLines=3)
         posDisplay.Bind(wx.EVT_TIMER,
                         lambda event: self.updatePositionDisplay(event))
+        panel.Sizer.Add(posDisplay)
         # Set up a timer to update value displays.
         self.updateTimer = wx.Timer(posDisplay)
         self.updateTimer.Start(1000)
-        self.elements['posDisplay'] = posDisplay
-
+        self.display = posDisplay
         # Changed my mind. SIM diffraction angle is an advanced parameter,
         # so it now lives in a right-click menu rather than on a button.
-        self.panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
-        for e in self.elements.values():
-            rowSizer.Add(e)
-        sizer.Add(rowSizer)
-        self.panel.SetSizerAndFit(sizer)
+        panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
         self.hasUI = True
-        return self.panel
+        # Controls other than powerButton only enabled when SLM is enabled.
+        triggerButton.Disable()
+        posDisplay.Disable()
+        powerButton.manageStateOf((triggerButton, posDisplay))
+        return panel
 
 
     def updatePositionDisplay(self, event):
@@ -308,53 +317,25 @@ class BoulderSLM(device.Device):
         display = event.GetEventObject()
         if not hasattr(display, 'SetLabel'):
             display = display.GetOwner()
+        self.position = self.getCurrentPosition()
         try:
-            parms = self.lastParms[self.position]
+            parms = self.last.params[self.position]
         except (IndexError, TypeError):
             # SLM parms updated since last position fetched, or lastParms is None.
+            self.last.update()
             parms = None
         if parms:
             display.SetLabel(baseStr % parms)
-        # This is a UI function so runs in the main thread. Comms errors
-        # will hang the main thread, unless they are caught and handled.
-        # Should refactor this to use the same buttons that the cameras use,
-        # but that will involve changes elsewhere, such as being able to
-        # pass callbacks to DelegateTriggerHandler.
-        try:
-            isPowered = self.connection.get_is_enabled()
-        except:
-            # comms error
-            isPowered = False
-        self.elements['powerButton'].updateState(isPowered)
-        if isPowered:
-            self.elements['triggerButton'].Enable()
-        else:
-            self.elements['triggerButton'].Disable()
-        # Dispatch a call in new thread to fetch new values for next time
-        self.updatePosition()
-
-
-    @cockpit.util.threads.callInNewThread
-    def updatePosition(self):
-        if not self.lastParms:
-            self.lastParms = self.connection.get_sim_sequence()
-        self.position = self.getCurrentPosition()
 
 
     def onPrepareForExperiment(self, *args):
         self.position = self.getCurrentPosition()
-        if 'powerButton' in self.elements:
-            self.wasPowered = self.elements['powerButton'].isActive
+        self.wasPowered = self.getIsEnabled()
 
 
     def cleanupAfterExperiment(self, *args):
-        powerButton = self.elements['powerButton']
         if not self.wasPowered:
-            # SLM was not active prior to experiment.
-            if 'powerButton' in self.elements:
-                self.elements['powerButton'].deactivate()
-            else:
-                self.disable()
+            self.setEnabled(False)
 
 
     def performSubscriptions(self):
@@ -393,7 +374,7 @@ class BoulderSLM(device.Device):
 
     def testSIMSequence(self):
         inputs = cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
-                self.panel,
+                None,
                 'Generate a SIM sequence',
                 ['wavelength',
                  'total angles',
@@ -414,7 +395,7 @@ class BoulderSLM(device.Device):
         ## Tell the SLM to prepare the pattern sequence.
         asyncResult = self.asproxy.set_sim_sequence(params)
         self.wait(asyncResult, "SLM is generating pattern sequence.")
-        self.lastParms = params
+        self.last.update()
 
 
     def setDiffractionAngle(self):
@@ -422,12 +403,12 @@ class BoulderSLM(device.Device):
             theta = self.connection.get_sim_diffraction_angle()
         except:
             raise Exception('Could not communicate with SLM service.')
-        newTheta = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-                self.panel,
+        newTheta = float(cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
+                None,
                 'Set SIM diffraction angle',
                 ('Adjust diffraction angle to\nput spots at edge of pupil.\n'
                  u'Current angle is %.2f°.' % theta ),
                 theta,
-                atMouse=True)
+                atMouse=True))
         self.connection.set_sim_diffraction_angle(newTheta)
 

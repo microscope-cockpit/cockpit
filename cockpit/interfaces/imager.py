@@ -53,6 +53,7 @@
 from cockpit import depot
 from cockpit import events
 import cockpit.util.threads
+import wx
 
 import time
 import traceback
@@ -90,11 +91,11 @@ class Imager:
         self.imageHandlers = depot.getHandlersOfType(depot.IMAGER)
         ## Set of active cameras, so we can check their framerates.
         self.activeCameras = set()
-        events.subscribe('camera enable',
+        events.subscribe(events.CAMERA_ENABLE,
                 lambda c, isOn: self.toggle(self.activeCameras, c, isOn))
         ## Set of active light sources, so we can check their exposure times.
         self.activeLights = set()
-        events.subscribe('light source enable',
+        events.subscribe(events.LIGHT_SOURCE_ENABLE,
                 lambda l, isOn: self.toggle(self.activeLights, l, isOn))
         ## Time of last call to takeImage(), so we can avoid calling it
         # faster than the time it takes to actually collect another image.
@@ -106,10 +107,8 @@ class Imager:
         events.subscribe('user abort', self.stopVideo)
         # Update exposure times on certain events.
         events.subscribe('light exposure update', self.updateExposureTime)
-        events.subscribe('light source enable', lambda *args: self.updateExposureTime())
-        events.subscribe('camera enable', lambda *args: self.updateExposureTime())
-
-
+        events.subscribe(events.LIGHT_SOURCE_ENABLE, lambda *args: self.updateExposureTime())
+        events.subscribe(events.CAMERA_ENABLE, lambda *args: self.updateExposureTime())
 
 
     ## Update exposure times on cameras.
@@ -141,6 +140,10 @@ class Imager:
         if experiment.isRunning():
             print("Skipping takeImage because an experiment is running.")
             return
+        elif len(self.activeCameras) == 0:
+            message = ('There are no cameras enabled.')
+            wx.MessageBox(message, caption='No cameras active')
+            return
         if shouldStopVideo:
             self.stopVideo()
         waitTime = self.getNextImageTime() - time.time()
@@ -163,15 +166,15 @@ class Imager:
     def videoMode(self):
         if not self.activeCameras:
             # No cameras, no video mode.
-            events.publish('video mode toggle', False)
+            events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
             return
         if self.amInVideoMode:
             # Just cancel the current video mode.
-            events.publish('video mode toggle', False)
+            events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
             self.stopVideo()
             return
 
-        events.publish('video mode toggle', True)
+        events.publish(cockpit.events.VIDEO_MODE_TOGGLE, True)
         self.shouldStopVideoMode = False
         self.amInVideoMode = True
         while not self.shouldStopVideoMode:
@@ -185,11 +188,11 @@ class Imager:
                         shouldBlock = True, shouldStopVideo = False)
             except Exception as e:
                 print ("Video mode failed:", e)
-                events.publish('video mode toggle', False)
+                events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
                 traceback.print_exc()
                 break
         self.amInVideoMode = False
-        events.publish('video mode toggle', False)
+        events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
         # Our thread could be blocked waiting for an image.
         # Clear one shot new image subscribers to make sure it
         # is unblocked.

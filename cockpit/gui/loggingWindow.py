@@ -80,6 +80,9 @@ class LoggingWindow(wx.Frame):
         ## Cached text, awaiting addition to the logs. If we just log everything
         # as it comes in, then we get tons of newlines we don't want.
         self.textCache = ''
+        # Need a lock on the cache to prevent segfaults due to concurrent access.
+        import threading
+        self.cacheLock = threading.Lock()
 
         # HACK: enforce that writing to these controls only happens in the
         # main thread.
@@ -100,19 +103,19 @@ class LoggingWindow(wx.Frame):
 
     ## Send text to one of our output boxes, and also log that text.
     def write(self, target, *args):
-        #wx.CallAfter(target.AppendText, *args)
-        target.AppendText(*args)
-        self.textCache += ' '.join(map(str, args))
-        if '\n' in self.textCache:
-            # Ended a line; send the text to the logs, minus any trailing
-            # whitespace (since the logs add their own trailing newline.
-            # We strip any unicode with filter to prevent a cascade of
-            # ---Logging Error--- messages.
-            if target is self.stdOut:
-                cockpit.util.logger.log.debug(filter(lambda c: ord(c) < 128, self.textCache))
-            else:
-                cockpit.util.logger.log.error(filter(lambda c: ord(c) < 128, self.textCache))
-            self.textCache = ''
+        wx.CallAfter(target.AppendText, *args)
+        with self.cacheLock:
+            self.textCache += ' '.join(map(str, args))
+            if '\n' in self.textCache:
+                # Ended a line; send the text to the logs, minus any trailing
+                # whitespace (since the logs add their own trailing newline.
+                # We strip any unicode with filter to prevent a cascade of
+                # ---Logging Error--- messages.
+                if target is self.stdOut:
+                    cockpit.util.logger.log.debug(''.join(filter(lambda c: ord(c) < 128, self.textCache)))
+                else:
+                    cockpit.util.logger.log.error(''.join(filter(lambda c: ord(c) < 128, self.textCache)))
+                self.textCache = ''
 
     def WriteToLogger(self, logger):
         """Write the content of the windows to a logger.

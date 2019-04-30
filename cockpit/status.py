@@ -30,8 +30,6 @@ import re
 import socket
 import sys
 
-from six import iteritems
-
 import cockpit.config
 
 
@@ -108,7 +106,7 @@ for s in config.sections():
 
 
 # Iterate over the mappings to query host and port status.
-for device, host in iteritems(deviceToHost):
+for device, host in deviceToHost.items():
     port = deviceToPort[device]
     if host not in hostsUp.keys():
         hostsUp[host] = 'up' if ping(host) else 'down'

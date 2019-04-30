@@ -63,7 +63,6 @@ import numpy
 import scipy.ndimage
 import wx
 
-from six import iteritems
 
 ## Maps dimensional axes to their labels.
 DIMENSION_LABELS = ['Wavelength', 'Time', 'Z', 'Y', 'X']
@@ -221,7 +220,7 @@ class DataDoc:
             dialog.Destroy()
             # Slice through data per our axes parameter.
             slice = [Ellipsis] * 4
-            for axis, position in iteritems(axes):
+            for axis, position in axes.items():
                 if axis != 1:
                     slice[axis - 1] = position
                     return data[slice]

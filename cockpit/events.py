@@ -62,12 +62,14 @@ import traceback
 
 ## Define common event strings here. This way, they're here for reference,
 # and can be used elsewhere to avoid errors due to typos.
+DEVICE_STATUS = 'device status'
 EXPERIMENT_EXECUTION = 'experiment execution'
 EXPERIMENT_COMPLETE = 'experiment complete'
 UPDATE_STATUS_LIGHT = 'update status light'
 PREPARE_FOR_EXPERIMENT = 'prepare for experiment'
 CLEANUP_AFTER_EXPERIMENT = 'cleanup after experiment'
 LIGHT_SOURCE_ENABLE = 'light source enable'
+CAMERA_ENABLE = 'camera enable'
 STAGE_POSITION = 'stage position'
 STAGE_MOVER = 'stage mover'
 STAGE_STOPPED = 'stage stopped'
@@ -76,6 +78,7 @@ MOSAIC_UPDATE = 'mosaic update'
 NEW_IMAGE = 'new image %s' # must be suffixed with image source
 SETTINGS_CHANGED = 'settings changed %s' # must be suffixed with device/handler name
 EXECUTOR_DONE = 'executor done %s' # must be sufficed with device/handler name
+VIDEO_MODE_TOGGLE = 'video mode toggle'
 ## TODO - make changes throughout to use the string variables defined above.
 
 ## Maps event types to lists of callers for when those events occur.

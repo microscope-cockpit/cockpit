@@ -60,11 +60,9 @@ from numbers import Number
 import operator
 import time
 from cockpit import util
-import cockpit.gui
 import wx
-import decimal
-from six import string_types
-from six.moves import reduce
+import functools
+
 
 ## This handler is responsible for executing portions of experiments.
 class ExecutorHandler(deviceHandler.DeviceHandler):
@@ -319,7 +317,7 @@ class DigitalMixin(object):
         # TODO: currently uses bulb exposure; should support other modes.
         if ltpairs:
             # Start by all active cameras and lights.
-            state = camlines | reduce(operator.ior, list(zip(*ltpairs))[0])
+            state = camlines | functools.reduce(operator.ior, list(zip(*ltpairs))[0])
             seq = [(0, state)]
             # Switch off each light as its exposure time expires.
             for  lline, ltime in ltpairs:
@@ -349,7 +347,7 @@ class DigitalMixin(object):
     @util.threads.callInNewThread
     def softSequence(self, seq):
         # Mask of the bits that we toggle
-        mask = reduce(operator.ior, list(zip(*seq))[1])
+        mask = functools.reduce(operator.ior, list(zip(*seq))[1])
         entryState = self.readDigital()
         t_last = 0
         for t, state in seq:
@@ -477,28 +475,28 @@ class AnalogDigitalExecutorHandler(AnalogMixin, DigitalMixin, ExecutorHandler):
 class ExecutorDebugWindow(wx.Frame):
     def __init__(self, handler, parent, *args, **kwargs):
         title = handler.name + " Executor control lines"
+        kwargs['style'] = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.CLIP_CHILDREN
         wx.Frame.__init__(self, parent, title=title, *args, **kwargs)
         panel = wx.Panel(self)
         mainSizer = wx.BoxSizer(wx.VERTICAL)
-        buttonSizer = wx.GridSizer(2, 8, 1, 1)
 
         ## Maps buttons to their lines.
         self.buttonToLine = {}
 
         if handler._dlines is not None:
             # Digital controls
+            ncols = 8
+            nrows = (handler._dlines + ncols - 1) // ncols
+            buttonSizer = wx.GridSizer(nrows, ncols, 1, 1)
             for line in range(handler._dlines):
                 clients = [k.name for k,v in handler.digitalClients.items() if v==line]
                 if clients:
                     label = '\n'.join(clients)
                 else:
                     label = str(line)
-                button = cockpit.gui.toggleButton.ToggleButton(
-                    parent=panel, label=label,
-                    activateAction=lambda line=line: handler.setDigital(line, True),
-                    deactivateAction=lambda line=line: handler.setDigital(line, False),
-                    size=(140, 80)
-                )
+                button = wx.ToggleButton(panel, wx.ID_ANY, label)
+                button.Bind(wx.EVT_TOGGLEBUTTON,
+                            lambda evt, line=line: handler.setDigital(line, evt.EventObject.Value))
                 buttonSizer.Add(button, 1, wx.EXPAND)
             mainSizer.Add(buttonSizer)
 
@@ -582,7 +580,7 @@ class DelegateTrigger(SimpleExecutor):
 
     ## Delegate trigger actions to some trigSource
     def delegateTo(self, trigSource, trigLine, trigTime=0, responseTime=0):
-        if isinstance(trigSource, string_types):
+        if isinstance(trigSource, str):
             trigSource = depot.getHandler(trigSource, depot.EXECUTOR)
         self._trigger = trigSource.registerDigital(self, trigLine)
         self.triggerNow = self._trigger.triggerNow
@@ -597,18 +595,3 @@ class DelegateTrigger(SimpleExecutor):
         table.addAction(time, self._trigger, True)
         table.addAction(time + dt, self._trigger, False)
         return time + dt, self._responseTime
-
-
-    def setMovementTimeUI(self):
-        ## Display a dialog box to fetch a new value for _movementTime.
-        if self._movementTime is None:
-            # Ignored - using a method to determine movement time.
-            return
-        newdt = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-                None,
-                'Set settling time after trigger',
-                ('Sets the settling time after a trigger event.\n'
-                 u'Current dt is %.2fms.' % self._movementTime ),
-                self._movementTime,
-                atMouse=True)
-        self._movementTime = float(newdt)

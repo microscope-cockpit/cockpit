@@ -65,7 +65,7 @@ import cockpit.util.datadoc
 import cockpit.util.logger
 import cockpit.util.threads
 import itertools
-from six.moves import queue
+import queue
 import time
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
@@ -374,7 +374,6 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
 
             glFlush()
             self.SwapBuffers()
-            events.publish('mosaic canvas paint')
         except Exception as e:
             print ("Error rendering the canvas:",e)
             traceback.print_exc()

@@ -74,7 +74,7 @@ class CamerasWindow(wx.Frame):
 
         # Make a 2xN grid of camera canvases, with menus above for selecting
         # which camera to use in that location.
-        self.sizer = wx.FlexGridSizer(round(self.numCameras//2 + .5), 2, 5, 5)
+        self.sizer = wx.FlexGridSizer(2, 5, 5)
         ## List of ViewPanels we contain.
         self.views = []
         for i in range(self.numCameras):
@@ -83,7 +83,7 @@ class CamerasWindow(wx.Frame):
 
         self.SetPosition((675, 280))
 
-        events.subscribe("camera enable", self.onCameraEnableEvent)
+        events.subscribe(events.CAMERA_ENABLE, self.onCameraEnableEvent)
         events.subscribe("image pixel info", self.onImagePixelInfo)
         cockpit.gui.keyboard.setKeyboardHandlers(self)
 
