@@ -61,8 +61,8 @@ import operator
 import time
 from cockpit import util
 import wx
-from six import string_types
-from six.moves import reduce
+import functools
+
 
 ## This handler is responsible for executing portions of experiments.
 class ExecutorHandler(deviceHandler.DeviceHandler):
@@ -317,7 +317,7 @@ class DigitalMixin(object):
         # TODO: currently uses bulb exposure; should support other modes.
         if ltpairs:
             # Start by all active cameras and lights.
-            state = camlines | reduce(operator.ior, list(zip(*ltpairs))[0])
+            state = camlines | functools.reduce(operator.ior, list(zip(*ltpairs))[0])
             seq = [(0, state)]
             # Switch off each light as its exposure time expires.
             for  lline, ltime in ltpairs:
@@ -347,7 +347,7 @@ class DigitalMixin(object):
     @util.threads.callInNewThread
     def softSequence(self, seq):
         # Mask of the bits that we toggle
-        mask = reduce(operator.ior, list(zip(*seq))[1])
+        mask = functools.reduce(operator.ior, list(zip(*seq))[1])
         entryState = self.readDigital()
         t_last = 0
         for t, state in seq:
@@ -580,7 +580,7 @@ class DelegateTrigger(SimpleExecutor):
 
     ## Delegate trigger actions to some trigSource
     def delegateTo(self, trigSource, trigLine, trigTime=0, responseTime=0):
-        if isinstance(trigSource, string_types):
+        if isinstance(trigSource, str):
             trigSource = depot.getHandler(trigSource, depot.EXECUTOR)
         self._trigger = trigSource.registerDigital(self, trigLine)
         self.triggerNow = self._trigger.triggerNow

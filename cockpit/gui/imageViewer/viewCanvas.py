@@ -66,7 +66,7 @@ from cockpit.util import ftgl
 import numpy
 from OpenGL.GL import *
 import numpy as np
-from six.moves import queue
+import queue
 import threading
 import traceback
 import wx

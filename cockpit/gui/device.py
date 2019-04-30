@@ -38,7 +38,6 @@ from cockpit import events
 from cockpit.events import DEVICE_STATUS
 from cockpit.gui import EvtEmitter, EVT_COCKPIT
 
-from six import iteritems
 
 ## @package cockpit.gui.device
 # Defines classes for common controls used by cockpit devices.
@@ -381,7 +380,7 @@ class SettingsEditor(wx.Frame):
         if self.handler is None:
             return
         settings = self.grid.GetPropertyValues()
-        for name, value in iteritems(settings):
+        for name, value in settings.items():
             if self.settings[name]['type'] == 'enum':
                 settings[name] = self.settings[name]['values'][value]
         cockpit.util.userConfig.setValue(self.handler.getIdentifier() + '_SETTINGS',
@@ -432,7 +431,7 @@ class SettingsEditor(wx.Frame):
         by updateGrid."""
         grid = self.grid
         self.settings = OrderedDict(self.device.describe_settings())
-        for key, desc in iteritems(self.settings):
+        for key, desc in self.settings.items():
             propType = SettingsEditor._SETTINGS_TO_PROPTYPES.get(desc['type'])
             if propType is wx.propgrid.IntProperty:
                 # Use a float if integer may exceed IntProperty representation.

@@ -77,8 +77,6 @@ from cockpit.gui.device import OptionButtons
 from cockpit.gui import mainPanels
 
 
-from six import iteritems
-
 ## Window singleton
 window = None
 
@@ -373,7 +371,7 @@ class MainWindow(wx.Frame):
     def onLightSelect(self, event = None):
         selectionIndices = self.lightList.GetSelections()
         items = self.lightList.GetItems()
-        for light, panel in iteritems(self.lightToPanel):
+        for light, panel in self.lightToPanel.items():
             panel.Show(items.index(light.name) in selectionIndices)
         # Fix display. We need to redisplay ourselves as well in case the
         # newly-displayed lights are extending off the edge of the window.

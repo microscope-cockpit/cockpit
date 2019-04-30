@@ -52,8 +52,6 @@
 
 import threading
 
-from six.moves import filter
-
 from cockpit import events
 import cockpit.util.threads
 import sys

@@ -74,7 +74,6 @@ import threading
 import time
 import wx
 
-from six import iteritems
 
 ## Provided so the UI knows what to call this experiment.
 EXPERIMENT_NAME = 'Response map correction file'
@@ -126,11 +125,11 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
         self.prepareHandlers()
 
         self.cameraToReadoutTime = dict([(c, c.getTimeBetweenExposures(isExact = True)) for c in self.cameras])
-        for camera, readTime in iteritems(self.cameraToReadoutTime):
+        for camera, readTime in self.cameraToReadoutTime.items():
             if type(readTime) is not decimal.Decimal:
                 raise RuntimeError("Camera %s did not provide an exact (decimal.Decimal) readout time" % camera.name)
 
-        for camera, func in iteritems(self.camToFunc):
+        for camera, func in self.camToFunc.items():
             events.subscribe('new image %s' % camera.name, func)
         for exposureTime in self.exposureTimes:
             if self.shouldAbort:
@@ -170,7 +169,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
             self.processImages(exposureTime)
             progress.Destroy()
 
-        for camera, func in iteritems(self.camToFunc):
+        for camera, func in self.camToFunc.items():
             events.unsubscribe('new image %s' % camera.name, func)
 
         self.save()
@@ -421,7 +420,7 @@ class ExperimentUI(wx.Panel):
 
     ## Generate a dict of our settings.
     def getSettingsDict(self):
-        return dict([(key, c.GetValue()) for key, c in iteritems(self.responseArgs)])
+        return {(key, c.GetValue()) for key, c in self.responseArgs.items()}
 
 
     ## Save the current experiment settings to config.
