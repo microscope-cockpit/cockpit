@@ -18,7 +18,6 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-import errno
 import os
 import os.path
 import pprint
@@ -41,10 +40,8 @@ def _loadConfig(fpath):
     try:
         with open(fpath, 'r') as fh:
             config = eval(fh.read())
-    except IOError as e:
-        ## Python2 does not have FileNotFoundError, hence this
-        if e.errno == errno.ENOENT:
-            pass
+    except FileNotFoundError:
+        config = {}
     except SyntaxError as e:
         logger.log.error("invalid or corrupted user config file '%s': %s",
                          fpath, str(e))
