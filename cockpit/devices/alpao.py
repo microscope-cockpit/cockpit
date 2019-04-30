@@ -428,9 +428,12 @@ class Alpao(device.Device):
         # Read in the parameters needed for the phase mask
         try:
             self.parameters = np.asarray(Config.getValue('alpao_circleParams'))
-        except IOError:
-            print("Error: Masking parameters do not exist. Please select circle.")
-            return
+        except Exception as e:
+            if e is IOError:
+                print("Error: Masking parameters do not exist. Please select circle.")
+                return
+            else:
+                print(e)
         self.proxy.set_roi(self.parameters[0], self.parameters[1],
                            self.parameters[2])
 
@@ -519,7 +522,7 @@ class Alpao(device.Device):
         np.save('C:\\cockpit\\nick\\cockpit\\unwrapped_phase', unwrapped_phase)
         original_dim = int(np.shape(unwrapped_phase)[0])
         resize_dim = original_dim / 2
-        while original_dim % resize_dim is not 0:
+        while original_dim % resize_dim != 0:
             resize_dim -= 1
         unwrapped_phase_resize = self.bin_ndarray(unwrapped_phase, new_shape=
         (resize_dim, resize_dim), operation='mean')
