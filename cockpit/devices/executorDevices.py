@@ -78,7 +78,6 @@
 #  uri: PYRO:pyroDSP@somehost:8001
 
 
-
 import Pyro4
 import time
 
@@ -306,7 +305,7 @@ class LegacyDSP(ExecutorDevice):
         # These offsets are encoded as unsigned integers, so at profile
         # intialization, each analogue channel must be at or below the lowest
         # value it needs to reach in the profile.
-        lowestAnalogs = [min(channel) for channel in zip(*zip(*zip(*actions)[1])[1])]
+        lowestAnalogs = list(np.amin([x[1][1] for x in actions], axis=1))
         for line, lowest in enumerate(lowestAnalogs):
             if lowest < self._lastAnalogs[line]:
                 self._lastAnalogs[line] = lowest
@@ -362,8 +361,8 @@ class LegacyDSP(ExecutorDevice):
 
 
         # Create a description dict. Will be byte-packed by server-side code.
-        maxticks = reduce(max, chain(zip(*digitals)[0],
-                                     *[(zip(*a) or [[None]])[0] for a in analogs]))
+        maxticks = max(chain([d[0] for d in digitals],
+                             [a[0] for a in chain.from_iterable(analogs)]))
         description = {}
         description['count'] = maxticks
         description['clock'] = 1000. / float(self.tickrate)
