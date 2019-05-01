@@ -187,15 +187,9 @@ class ExecutorDevice(device.Device):
     # startIndex and proceeding up to but not through stopIndex.
     def executeTable(self, name, table, startIndex, stopIndex, numReps, 
             repDuration):
-        # Take time and arguments (i.e. omit handler) from table to generate actions.
-        t0 = float(table[startIndex][0])
-        actions = [(float(row[0])-t0,) + tuple(row[2:]) for row in table[startIndex:stopIndex]]
-        # If there are repeats, add an extra action to wait until repDuration expired.
-        if repDuration is not None:
-            repDuration = float(repDuration)
-            if actions[-1][0] < repDuration:
-                # Repeat the last event at t0 + repDuration
-                actions.append( (t0+repDuration,) + tuple(actions[-1][1:]) )
+
+        actions = actions_from_table(table, startIndex, stopIndex, repDuration)
+
         events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
                 'Waiting for\nDSP to finish', (255, 255, 0))
         self.connection.PrepareActions(actions, numReps)
@@ -207,7 +201,6 @@ class ExecutorDevice(device.Device):
         ## Debugging function: set the digital output for the DSP.
     def setDigital(self, value):
         self.connection.WriteDigital(value)
-
 
 
 class LegacyDSP(ExecutorDevice):
@@ -297,8 +290,8 @@ class LegacyDSP(ExecutorDevice):
         #  - separate analogue and digital events into different lists;
         #  - generate a structure that describes the profile.
 
-        # Start time
-        t0 = float(table[startIndex][0])
+        actions = actions_from_table(table, startIndex, stopIndex, repDuration)
+
         # Profiles
         analogs = [ [], [], [], [] ] # A list of lists (one per channel) of tuples (ticks, (analog values))
         digitals = [] # A list of tuples (ticks, digital state)
@@ -307,13 +300,6 @@ class LegacyDSP(ExecutorDevice):
         # resolution
         tLastA = None
 
-        actions = [(float(row[0])-t0,) + tuple(row[2:]) for row in table[startIndex:stopIndex]]
-        # If there are repeats, add an extra action to wait until repDuration expired.
-        if repDuration is not None:
-            repDuration = float(repDuration)
-            if actions[-1][0] < repDuration:
-                # Repeat the last event at t0 + repDuration
-                actions.append( (t0+repDuration,) + tuple(actions[-1][1:]) )
 
         # The DSP executes an analogue movement profile, which is defined using
         # offsets relative to a baseline at the time the profile was initialized.
@@ -392,3 +378,20 @@ class LegacyDSP(ExecutorDevice):
         self.connection.InitProfile(numReps)
         events.executeAndWaitFor(events.EXECUTOR_DONE % self.name, self.connection.trigCollect)
         events.publish(events.EXPERIMENT_EXECUTION)
+
+
+def actions_from_table(table, startIndex, stopIndex, repDuration):
+    ## Take time and arguments (i.e. omit handler) from table to
+    ## generate actions.
+    t0 = float(table[startIndex][0])
+    actions = [(float(row[0])-t0,) + tuple(row[2:])
+               for row in table[startIndex:stopIndex]]
+
+    ## If there are repeats, add an extra action to wait until
+    ## repDuration expired.
+    if repDuration is not None:
+        repDuration = float(repDuration)
+        if actions[-1][0] < repDuration:
+            ## Repeat the last event at t0 + repDuration
+            actions.append((t0+repDuration,) + tuple(actions[-1][1:]))
+    return actions
