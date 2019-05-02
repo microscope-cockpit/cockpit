@@ -43,7 +43,10 @@ class Filter(object):
                 self.value = None
         else:
             self.label = args[0]
-            self.value = args[1]
+            if len(args) > 1:
+                self.value = args[1]
+            else:
+                self.value = None
 
             
     def __repr__(self):
