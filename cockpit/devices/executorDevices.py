@@ -350,7 +350,7 @@ class LegacyDSP(ExecutorDevice):
 
         # Update records of last positions.
         self._lastDigital = digitals[-1][1]
-        self._lastAnalogs = map(lambda x, y: x - (y[-1:][1:] or 0), self._lastAnalogs, analogs)
+        self._lastAnalogs = list(map(lambda x, y: x - (y[-1:][1:] or 0), self._lastAnalogs, analogs))
 
         events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
                        'Waiting for\nDSP to finish', (255, 255, 0))
