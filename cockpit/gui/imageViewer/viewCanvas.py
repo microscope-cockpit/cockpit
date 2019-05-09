@@ -400,6 +400,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.image = Image()
         self.histogram = Histogram()
 
+        # Canvas geometry - will be set by InitGL, or setSize.
+        self.w, self.h = None, None
+
         ## We set this to false if there's an error, to prevent OpenGL
         # error spew.
         self.shouldDraw = True
@@ -741,11 +744,13 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Display information on the pixel under the mouse at the given
     # position.
     def updateMouseInfo(self, x, y):
-        if self.imageData is None or self.imageShape is None:
-            # Not ready to get mouse info yet.
+        # Test that all required values have been populated. Use any(...),
+        # because ```if None in [...]:``` will throw an exception when an
+        # element in the list is an array with more than one element.
+        if any(req is None for req in [self.imageData, self.imageShape,
+                                       self.w, self.h]):
             return
-        # First we have to convert from screen coordinates to data
-        # coordinates.
+        # First we have to convert from screen- to data-coordinates.
         coords = numpy.array(self.canvasToIndices(x, y), dtype=np.uint)
         shape = numpy.array(self.imageShape, dtype=np.uint)
         if (coords < shape).all() and (coords >= 0).all():
