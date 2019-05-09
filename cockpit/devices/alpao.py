@@ -47,8 +47,8 @@ class Alpao(device.Device):
         self.actuator_intercepts = np.zeros(self.no_actuators)
 
         # Excercise the DM to remove residual static and then set to 0 position
-        for ii in range(20):
-            self.proxy.send((np.zeros(self.no_actuators) + (ii % 2)))
+        for ii in range(50):
+            self.proxy.send(np.random.rand(self.no_actuators))
             time.sleep(0.01)
         self.proxy.reset()
 
@@ -78,6 +78,7 @@ class Alpao(device.Device):
                                self.parameters[2])
         except:
             pass
+
         try:
             self.controlMatrix = Config.getValue('alpao_controlMatrix')
             self.proxy.set_controlMatrix(self.controlMatrix)
@@ -294,20 +295,13 @@ class Alpao(device.Device):
             size=cockpit.gui.device.DEFAULT_SIZE)
         self.elements['selectCircleButton'] = selectCircleButton
 
-        calibrateButton = cockpit.gui.toggleButton.ToggleButton(
-            label='Calibrate',
-            # Button to calibrate the DM
-            parent=self.panel,
-            size=cockpit.gui.device.DEFAULT_SIZE)
-        calibrateButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.onCalibrate())
+        # Button to calibrate the DM
+        calibrateButton = wx.Button(self.panel, label='Calibrate')
+        calibrateButton.Bind(wx.EVT_BUTTON, lambda evt: self.onCalibrate())
         self.elements['calibrateButton'] = calibrateButton
 
-        characteriseButton = cockpit.gui.toggleButton.ToggleButton(
-            label='Characterise',
-            # Button to calibrate the DM
-            parent=self.panel,
-            size=cockpit.gui.device.DEFAULT_SIZE)
-        characteriseButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.onCharacterise())
+        characteriseButton = wx.Button(self.panel, label='Characterise')
+        characteriseButton.Bind(wx.EVT_BUTTON, lambda evt: self.onCharacterise())
         self.elements['characteriseButton'] = characteriseButton
 
         label_use = cockpit.gui.device.Label(
@@ -315,48 +309,33 @@ class Alpao(device.Device):
         self.elements['label_use'] = label_use
 
         # Reset the DM actuators
-        resetButton = cockpit.cockpit.gui.toggleButton.ToggleButton(
-            label='Reset DM',
-            parent=self.panel,
-            size=cockpit.gui.device.DEFAULT_SIZE)
-        resetButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.proxy.reset())
+        resetButton = wx.Button(self.panel, label='Reset DM')
+        resetButton.Bind(wx.EVT_BUTTON, lambda evt: self.proxy.reset())
         self.elements['resetButton'] = resetButton
 
         # Step the focal plane up one step
-        applySysFlat = cockpit.gui.toggleButton.ToggleButton(
-            label='System Flat',
-            parent=self.panel,
-            size=cockpit.gui.device.DEFAULT_SIZE)
-        applySysFlat.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.onApplySysFlat())
-        self.elements['applySysFlat'] = applySysFlat
+        #applySysFlat = wx.Button(self.panel, label='System Flat')
+        #applySysFlat.Bind(wx.EVT_BUTTON, lambda evt: self.onApplySysFlat())
+        #self.elements['applySysFlat'] = applySysFlat
 
         # Visualise current interferometric phase
-        visPhaseButton = cockpit.gui.toggleButton.ToggleButton(
-            label='Visualise Phase',
-            parent=self.panel,
-            size=cockpit.gui.device.DEFAULT_SIZE)
-        visPhaseButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.onVisualisePhase())
+        visPhaseButton = wx.Button(self.panel, label='Visualise Phase')
+        visPhaseButton.Bind(wx.EVT_BUTTON, lambda evt: self.onVisualisePhase())
         self.elements['visPhaseButton'] = visPhaseButton
 
         # Button to flatten the wavefront
-        flattenButton = cockpit.gui.toggleButton.ToggleButton(
-            label='Flatten',
-            parent=self.panel,
-            size=cockpit.gui.device.DEFAULT_SIZE)
-        flattenButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.onFlatten())
-        self.elements['flattenButton'] = flattenButton
+        #flattenButton = wx.Button(self.panel, label='Flatten')
+        #flattenButton.Bind(wx.EVT_BUTTON, lambda evt: self.onFlatten())
+        #self.elements['flattenButton'] = flattenButton
 
         # Button to perform sensorless correction
-        sensorlessAOButton = cockpit.gui.toggleButton.ToggleButton(
-            label='Sensorless AO',
-            parent=self.panel,
-            size=cockpit.gui.device.DEFAULT_SIZE)
-        sensorlessAOButton.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.correctSensorlessSetup())
+        sensorlessAOButton = wx.Button(self.panel, label='Sensorless AO')
+        sensorlessAOButton.Bind(wx.EVT_BUTTON, lambda evt: self.correctSensorlessSetup())
         self.elements['Sensorless AO'] = sensorlessAOButton
 
         for e in self.elements.values():
-            rowSizer.Add(e)
-        sizer.Add(rowSizer)
+            rowSizer.Add(e, 0, wx.EXPAND)
+        sizer.Add(rowSizer, 0, wx.EXPAND)
         self.panel.SetSizerAndFit(sizer)
         self.hasUI = True
         return self.panel
@@ -521,7 +500,7 @@ class Alpao(device.Device):
         np.save('C:\\cockpit\\nick\\cockpit\\interferogram_ft', interferogram_ft)
         np.save('C:\\cockpit\\nick\\cockpit\\unwrapped_phase', unwrapped_phase)
         original_dim = int(np.shape(unwrapped_phase)[0])
-        resize_dim = original_dim / 2
+        resize_dim = int(original_dim / 3)
         while original_dim % resize_dim != 0:
             resize_dim -= 1
         unwrapped_phase_resize = self.bin_ndarray(unwrapped_phase, new_shape=
@@ -695,9 +674,15 @@ class Alpao(device.Device):
 
             # Save full stack of images used
             self.correction_stack = np.asarray(self.correction_stack)
-            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_correction_stack", self.correction_stack)
-            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_zernike_applied", self.zernike_applied)
-            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_nollZernike", self.nollZernike)
+            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_correction_stack_%i%i%i_%i%i"
+                    %(time.gmtime()[2], time.gmtime()[1], time.gmtime()[0], time.gmtime()[3],
+                      time.gmtime()[4]), self.correction_stack)
+            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_zernike_applied_%i%i%i_%i%i"
+                    %(time.gmtime()[2], time.gmtime()[1], time.gmtime()[0], time.gmtime()[3],
+                      time.gmtime()[4]), self.zernike_applied)
+            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_nollZernike_%i%i%i_%i%i"
+                    %(time.gmtime()[2], time.gmtime()[1], time.gmtime()[0], time.gmtime()[3],
+                      time.gmtime()[4]), self.nollZernike)
 
             # Find aberration amplitudes and correct
             ind = int(len(self.correction_stack) / self.numMes)
@@ -712,8 +697,12 @@ class Alpao(device.Device):
             self.sensorless_correct_coef[nollInd - 1] += amp_to_correct
             print("Aberrations measured: ", self.sensorless_correct_coef)
             print("Actuator positions applied: ", self.actuator_offset)
-            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_correct_coef", self.sensorless_correct_coef)
-            np.save("C:\\cockpit\\nick\\cockpit\\ac_pos_sensorless", self.actuator_offset)
+            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_correct_coef_%i%i%i_%i%i"
+                    %(time.gmtime()[2], time.gmtime()[1], time.gmtime()[0], time.gmtime()[3],
+                      time.gmtime()[4]), self.sensorless_correct_coef)
+            np.save("C:\\cockpit\\nick\\cockpit\\ac_pos_sensorless_%i%i%i_%i%i"
+                    %(time.gmtime()[2], time.gmtime()[1], time.gmtime()[0], time.gmtime()[3],
+                      time.gmtime()[4]), self.actuator_offset)
 
             log_file = open("C:\\cockpit\\nick\\cockpit\\sensorless_AO_logger.txt", "a+")
             log_file.write("Time stamp: %i:%i:%i %i/%i/%i\n" %(time.gmtime()[3],time.gmtime()[4],time.gmtime()[5],time.gmtime()[2],time.gmtime()[1],time.gmtime()[0]))
