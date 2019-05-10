@@ -226,15 +226,7 @@ class DeviceHandler(object):
 
 
     ## Add a watch on a device parameter.
-    def addWatch(self, attrOrName, callback):
-        if isinstance(attrOrName, str):
-            name = attrOrName
-        else:
-            # may have been passed an attribute rather than its name
-            try:
-                name = next(filter(lambda x: attrOrName is x[1], self.__dict__.items()))[0]
-            except:
-                raise Exception("Could not find passed attribute on %s." % self)
+    def addWatch(self, name, callback):
         if name not in self._watches:
             self._watches[name] = set()
         self._watches[name].add(callback)
