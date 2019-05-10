@@ -419,6 +419,10 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
     def updateUI(self):
         """Update user interface elements."""
         status = self.status
+        if not status.get('connected', False):
+            self.panel.Disable()
+            return
+        self.panel.Enable()
         # Temperatures
         for t in self._temperature_names:
             self.elements[t].update(self.status.get('t_' + t))
@@ -426,13 +430,10 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
         # Refills
         lines = []
         now = datetime.datetime.now()
+
         for r in self._refill_names:
             refill = status['refills'].get(r, None)
             self.elements[r].doUpdate(refill)
-        if status.get('connected', False):
-            self.panel.Enable()
-        else:
-            self.panel.Disable()
 
 
     def makeInitialPublications(self):

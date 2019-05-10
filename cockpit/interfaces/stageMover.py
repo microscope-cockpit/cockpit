@@ -334,7 +334,7 @@ def goToSite(uniqueID, shouldBlock = False):
     site = mover.idToSite[uniqueID]
     objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
     objOffset = objective.getOffset()
-    offsetPosition=site.position[:]
+    offsetPosition=list(site.position)
     for i in range(len(offsetPosition)):
         offsetPosition[i]=offsetPosition[i]+objOffset[i]
     goTo(offsetPosition, shouldBlock)
