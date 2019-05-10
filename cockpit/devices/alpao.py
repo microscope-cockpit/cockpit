@@ -286,7 +286,7 @@ class Alpao(device.Device):
 
         # Button to calibrate the DM
         selectCircleButton = wx.ToggleButton(self.panel, label='Select ROI')
-        selectCircleButton.Bind(wx.EVT_BUTTON, lambda evt: self.onSelectCircle())
+        selectCircleButton.Bind(wx.EVT_TOGGLEBUTTON, self.onSelectCircle)
         self.elements['selectCircleButton'] = selectCircleButton
 
         # Button to calibrate the DM
@@ -389,7 +389,7 @@ class Alpao(device.Device):
             ndarray = op(-1 * (i + 1))
         return ndarray
 
-    def onSelectCircle(self, event):
+    def onSelectCircle(self,event):
         state = event.GetEventObject().GetValue()
 
         if state == True:
