@@ -307,10 +307,10 @@ class Alpao(device.Device):
         resetButton.Bind(wx.EVT_BUTTON, lambda evt: self.proxy.reset())
         self.elements['resetButton'] = resetButton
 
-        # Step the focal plane up one step
-        #applySysFlat = wx.Button(self.panel, label='System Flat')
-        #applySysFlat.Bind(wx.EVT_BUTTON, lambda evt: self.onApplySysFlat())
-        #self.elements['applySysFlat'] = applySysFlat
+        # Apply the actuator values correcting the system aberrations
+        applySysFlat = wx.Button(self.panel, label='System Flat')
+        applySysFlat.Bind(wx.EVT_BUTTON, lambda evt: self.onApplySysFlat())
+        self.elements['applySysFlat'] = applySysFlat
 
         # Visualise current interferometric phase
         visPhaseButton = wx.Button(self.panel, label='Visualise Phase')
