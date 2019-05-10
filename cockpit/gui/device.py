@@ -210,7 +210,8 @@ _BMP_ERR = wx.Bitmap.FromRGBA(*_BMP_SIZE, red=255, green=0, blue=0,
 _BMPS = {STATES.enabling: _BMP_WAIT,
         STATES.enabled: _BMP_ON,
         STATES.disabled: _BMP_OFF,
-        STATES.error: _BMP_ERR}
+        STATES.error: _BMP_ERR,
+        None: _BMP_ERR}
 
 class EnableButton(wx.ToggleButton):
     def __init__(self, parent, deviceHandler):
