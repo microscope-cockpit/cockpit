@@ -125,9 +125,7 @@ def ExceptionBox(caption="", parent=None):
 
     dialog = wx.Dialog(parent, title=caption, name="exception-dialog")
     message = wx.StaticText(dialog, label=str(current_exception))
-    pane_ctrl = wx.CollapsiblePane(dialog, label="Details")
-    pane = pane_ctrl.Pane
-    details = wx.TextCtrl(pane_ctrl.Pane, value=traceback.format_exc(),
+    details = wx.TextCtrl(dialog, value=traceback.format_exc(),
                           style=(wx.TE_MULTILINE|wx.TE_READONLY))
 
     ## 'w.Font.Family = f' does not work because it 'w.Font' returns a
@@ -139,11 +137,7 @@ def ExceptionBox(caption="", parent=None):
     sizer_flags = wx.SizerFlags().Expand().Border()
     sizer = wx.BoxSizer(wx.VERTICAL)
     sizer.Add(message, sizer_flags)
-
-    pane_ctrl.Pane.Sizer = wx.BoxSizer(wx.VERTICAL)
-    pane_ctrl.Pane.Sizer.Add(details, sizer_flags)
-
-    sizer.Add(pane_ctrl, sizer_flags)
+    sizer.Add(details, sizer_flags)
     sizer.Add(dialog.CreateSeparatedButtonSizer(wx.OK), sizer_flags)
 
     dialog.SetSizerAndFit(sizer)
