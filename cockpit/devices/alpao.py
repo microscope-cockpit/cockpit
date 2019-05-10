@@ -328,6 +328,11 @@ class Alpao(device.Device):
         #flattenButton.Bind(wx.EVT_BUTTON, lambda evt: self.onFlatten())
         #self.elements['flattenButton'] = flattenButton
 
+        # Apply last actuator values
+        applyLastPatternButton = wx.Button(self.panel, label='Apply last pattern')
+        applyLastPatternButton.Bind(wx.EVT_BUTTON, lambda evt: self.onApplyLastPattern())
+        self.elements['applyLastPatternButton'] = applyLastPatternButton
+		
         # Button to perform sensorless correction
         sensorlessAOButton = wx.Button(self.panel, label='Sensorless AO')
         sensorlessAOButton.Bind(wx.EVT_BUTTON, lambda evt: self.correctSensorlessSetup())
@@ -548,6 +553,10 @@ class Alpao(device.Device):
         self.sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat'))
         self.proxy.send(self.sys_flat_values)
 
+    def onApplyLastPattern(self):
+        last_ac = self.proxy.get_last_actuator_values()
+        self.proxy.send(last_ac)
+ 
     def showDebugWindow(self):
         # Ensure only a single instance of the window.
         global _windowInstance
@@ -624,17 +633,22 @@ class Alpao(device.Device):
 
         print("Applying the first Zernike mode")
         # Apply the first Zernike mode
+        print(self.zernike_applied[len(self.correction_stack), :])
         self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :], offset=self.actuator_offset)
 
         # Take image. This will trigger the iterative sensorless AO correction
-        wx.CallAfter(self.takeImage)
+        #wx.CallAfter(self.takeImage)
+        time.sleep(0.1)
+        self.takeImage()
 
     def correctSensorlessImage(self, image, timestamp):
         if len(self.correction_stack) < self.zernike_applied.shape[0]:
             print("Correction image %i/%i" % (len(self.correction_stack) + 1, self.zernike_applied.shape[0]))
             # Store image for current applied phase
             self.correction_stack.append(np.ndarray.tolist(image))
-            wx.CallAfter(self.correctSensorlessProcessing)
+            #wx.CallAfter(self.correctSensorlessProcessing)
+            time.sleep(0.1)
+            self.correctSensorlessProcessing()
         else:
             print("Error in unsubscribing to camera events. Trying again")
             events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
@@ -667,7 +681,9 @@ class Alpao(device.Device):
                 self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :],offset=self.actuator_offset)
 
                 # Take image, but ensure it's called after the phase is applied
-                wx.CallAfter(self.takeImage)
+                #wx.CallAfter(self.takeImage)
+                time.sleep(0.1)
+                self.takeImage()
         else:
             # Once all images have been obtained, unsubscribe
             events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
@@ -716,7 +732,9 @@ class Alpao(device.Device):
 
             print("Actuator positions applied: ", self.actuator_offset)
             self.proxy.send(self.actuator_offset)
-            wx.CallAfter(self.takeImage)
+            #wx.CallAfter(self.takeImage)
+            time.sleep(0.1)
+            self.takeImage()
 
 
 # This debugging window lets each digital lineout of the DSP be manipulated
