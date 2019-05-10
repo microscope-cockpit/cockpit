@@ -110,12 +110,9 @@ class LightHandler(deviceHandler.DeviceHandler):
                 callbacks, depot.LIGHT_TOGGLE)
         self.wavelength = float(wavelength or 0)
         self.defaultExposureTime = exposureTime
+        self.exposureTime = exposureTime
         # Current enabled state
         self.state = deviceHandler.STATES.disabled
-        ## A text widget describing our exposure time and providing a
-        # menu for changing it.
-        # TODO - separate handler from ui; exposureTime is a widget, not a parameter.
-        self.exposureTime = None
         # Set up trigger handling.
         if trigHandler and trigLine:
             h = trigHandler.registerDigital(self, trigLine)
@@ -129,12 +126,16 @@ class LightHandler(deviceHandler.DeviceHandler):
 
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
-        events.subscribe('light exposure update', self.setLabel)
         # Most lasers use bulb-type triggering. Ensure they're not left on after
         # an abort event.
         if trigHandler and trigLine:
             onAbort = lambda *args: trigHandler.setDigital(trigLine, False)
             events.subscribe('user abort', onAbort)
+
+
+    def makeInitialPublications(self):
+        # Send state event to set initial state of any controls.
+        events.publish(events.DEVICE_STATUS, self, self.state)
 
 
     ## Save our settings in the provided dict.
@@ -192,44 +193,6 @@ class LightHandler(deviceHandler.DeviceHandler):
     def getIsEnabled(self):
         return self.state == deviceHandler.STATES.enabled
 
-
-    ## Make the UI for our light: a toggle button for whether or not to use
-    # us, and a widget for setting the exposure time.
-    def makeUI(self, parent):
-        # Sequester to our own panel so that we don't propagate menu
-        # events with possibly-redundant IDs to the parent.
-        panel = wx.Panel(parent)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        # Split the name across multiple lines.
-        label = ['']
-        name = self.name.strip()
-        for i, word in enumerate(name.split(' ')):
-            if len(label[-1] + word) > 10 and i > 0:
-                label.append('')
-            label[-1] += word + ' '
-        label = "\n".join(label)
-        button = cockpit.gui.device.EnableButton(parent=panel,
-                                                  leftAction=self.toggleState,
-                                                  rightAction=self.setExposing,
-                                                  prefix=label)
-        button.SetLabel(deviceHandler.STATES.toStr(self.state))
-        sizer.Add(button)
-        self.addListener(button)
-        helpText = "Left-click to enable for taking images."
-        if 'setExposing' in self.callbacks:
-            # Light source can also be just turned on and left on.
-            helpText += "\nRight-click to leave on indefinitely."
-        button.SetToolTip(wx.ToolTip(helpText))
-        self.exposureTime = cockpit.gui.toggleButton.ToggleButton(
-                label = '', parent = panel, size = BUTTON_SIZE)
-        self.exposureTime.Bind(wx.EVT_LEFT_DOWN,
-                lambda event: self.makeMenu(panel))
-        sizer.Add(self.exposureTime)
-        panel.SetSizerAndFit(sizer)
-        self.setLabel()
-        return panel
-
-
     ## Set the light source to continuous exposure, if we have that option.
     @cockpit.util.threads.callInNewThread
     def setExposing(self, args):
@@ -251,38 +214,6 @@ class LightHandler(deviceHandler.DeviceHandler):
         return self.state == deviceHandler.STATES.constant
 
 
-    ## Make a menu to let the user select the exposure time.
-    def makeMenu(self, parent):
-        menu = wx.Menu()
-        for i, value in enumerate(EXPOSURE_TIMES):
-            menu.Append(i + 1, str(value))
-            parent.Bind(wx.EVT_MENU,  lambda event, value = value: self.setExposureTime(value), id= i + 1)
-        menu.Append(len(EXPOSURE_TIMES) + 1, '...')
-        parent.Bind(wx.EVT_MENU,  lambda event: self.setCustomExposureTime(parent), id= len(EXPOSURE_TIMES) + 1)
-        cockpit.gui.guiUtils.placeMenuAtMouse(parent, menu)
-
-
-    ## Pop up a dialog to let the user input a custom exposure time.
-    def setCustomExposureTime(self, parent):
-        value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-                parent, "Input an exposure time:",
-                "Exposure time (ms):", self.getExposureTime())
-        self.setExposureTime(float(value))
-
-
-    ## Update the label we show for our exposure time.
-    def setLabel(self, source=None):
-        if source is not None and source != self:
-            return
-        value = self.getExposureTime()
-        if int(value) == value:
-            label = '%dms' % value
-        else:
-            # Show some decimal points.
-            label = '%.3fms' % value
-        self.exposureTime.SetLabel(label)
-
-
     ## Set a new exposure time, in milliseconds.
     @reset_cache
     def setExposureTime(self, value, outermost=True):
@@ -295,6 +226,7 @@ class LightHandler(deviceHandler.DeviceHandler):
         events.publish('light exposure update', self)
         # Update exposure times for lights that share the same shutter.
         s = self.__class__.__lightToShutter.get(self, None)
+        self.exposureTime = value
         if s and outermost:
             if hasattr(s, 'setExposureTime'):
                 s.setExposureTime(value)

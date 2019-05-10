@@ -67,8 +67,6 @@ import threading
 import time
 import wx
 
-from six import iteritems
-
 
 ## Purely for debugging purposes, a copy of the last Experiment that was
 # executed.
@@ -207,7 +205,7 @@ class Experiment:
 
         self.cameraToReadoutTime = {c: c.getTimeBetweenExposures(isExact = True)
                                     for c in self.cameras}
-        for camera, readTime in iteritems(self.cameraToReadoutTime):
+        for camera, readTime in self.cameraToReadoutTime.items():
             if type(readTime) is not decimal.Decimal:
                 raise RuntimeError("Camera %s did not provide an exact (decimal.Decimal) readout time"
                                    % camera.name)
@@ -472,7 +470,7 @@ class Experiment:
             if substring:
                 titles.append(substring)
 
-        for deviceType, handlers in iteritems(typeToHandlers):
+        for deviceType, handlers in typeToHandlers.items():
             handlers = sorted(handlers, key = lambda a: a.name)
             entries = []
             for handler in handlers:

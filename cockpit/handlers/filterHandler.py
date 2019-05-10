@@ -43,7 +43,10 @@ class Filter(object):
                 self.value = None
         else:
             self.label = args[0]
-            self.value = args[1]
+            if len(args) > 1:
+                self.value = args[1]
+            else:
+                self.value = None
 
             
     def __repr__(self):
@@ -63,12 +66,16 @@ class FilterHandler(deviceHandler.DeviceHandler):
                                              depot.LIGHT_FILTER)
         self.cameras = cameras or []
         self.lights = lights or []
+        self.lastFilter = None
 
         #subscribe to save and load setting calls to enabvle saving and
         #loading of configurations.
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
 
+    @property
+    def filters(self):
+        return self.callbacks['getFilters']()
 
     ## Save our settings in the provided dict.
     def onSaveSettings(self, settings):
@@ -79,19 +86,23 @@ class FilterHandler(deviceHandler.DeviceHandler):
         if self.name in settings:
             self.setFilter(settings[self.name])
 
-        
 
     ### UI functions ####
+    def makeSelector(self, parent):
+        ctrl = wx.Choice(parent)
+        ctrl.Set(list(map(str, self.filters)))
+        ctrl.Bind(wx.EVT_CHOICE, lambda evt: self.setFilter(self.filters[evt.Selection]))
+        self.addWatch(self.lastFilter, lambda f: ctrl.SetSelection(ctrl.FindString(str(f))))
+        ctrl.SetSelection(ctrl.FindString(str(self.lastFilter)))
+        return ctrl
+
+
     def makeUI(self, parent):
-        from cockpit.gui.device import OptionButtons
-        self.buttons = OptionButtons(parent, label=self.name)
-        # options: [(label, action), ...]
-        options = map(lambda f: (str(f),
-                                 lambda flt=f: self.setFilter(flt)),
-                      self.callbacks['getFilters']())
-        self.buttons.setOptions(options)
-        self.updateAfterMove()
-        return self.buttons
+        panel = wx.Panel(parent)
+        panel.Sizer = wx.BoxSizer(wx.VERTICAL)
+        panel.Sizer.Add(wx.StaticText(panel, label=self.name))
+        panel.Sizer.Add(self.makeSelector(panel), flag=wx.EXPAND)
+        return panel
 
 
     def setFilter(self, filter):
@@ -109,13 +120,16 @@ class FilterHandler(deviceHandler.DeviceHandler):
     def updateAfterMove(self, *args):
         # Accept *args so that can be called directly as a Pyro callback
         # or an event handler.
-        f = self.currentFilter()
-        self.buttons.setOption(str(f))
+        self.lastFilter = self.currentFilter()
         # Emission filters
         for camera in self.cameras:
             h = depot.getHandler(camera, depot.CAMERA)
             if h is not None:
-                h.updateFilter(f.label, f.value)
+                h.updateFilter(self.lastFilter.label, self.lastFilter.value)
         # Excitation filters
         for h in self.lights:
             pass
+
+
+    def finalizeInitialization(self):
+        self.updateAfterMove()

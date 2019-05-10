@@ -34,7 +34,6 @@ Sample config entry:
 
 """
 
-import six
 
 from . import device
 from cockpit import events
@@ -48,22 +47,22 @@ LIMITS_PAT = r"(?P<limits>\(?\s*[-]?\d*\s*,\s*[-]?\d*\s*\)?)"
 
 ## Characters used by the SoloistCP controller.
 # CommandTerminatingCharacter
-CTC = six.int2byte(10)
+CTC = bytes((10,))
 # CommandSuccessCharacter
-CSC = six.int2byte(37)
+CSC = bytes((37,))
 # CommandInvalidCharacter
-CIC = six.int2byte(33)
+CIC = bytes((33,))
 # CommandFaultCharacter
-CFC = six.int2byte(35)
+CFC = bytes((35,))
 # CommandTimeOutCharacter
-CTOC = six.int2byte(36)
+CTOC = bytes((36,))
 # Map character to meaning
 RESPONSE_CHARS = {
     CSC: b'command success',
     CIC: b'command invalid',
     CFC: b'command caused fault',
     CTOC: b'command timeout',
-    }
+}
 
 
 class AerotechZStage(device.Device):
@@ -124,7 +123,7 @@ class AerotechZStage(device.Device):
         response = self.socket.recv(256)
         # Response status character:
         response_char = response[0:1]
-        if response_char == six.int2byte(255):
+        if response_char == bytes((255,)):
             # stray character
             response_char = response[1:2]
             response_data = response[2:]
