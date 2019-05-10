@@ -284,15 +284,9 @@ class Alpao(device.Device):
         rowSizer = wx.BoxSizer(wx.VERTICAL)
         self.elements = OrderedDict()
 
-        selectCircleButton = cockpit.gui.toggleButton.ToggleButton(
-            label='Select ROI',
-            # Button to calibrate the DM
-            activateAction=self.onSelectCircle,
-            deactivateAction=self.deactivateSelectCircle,
-            activeLabel='Selecting ROI',
-            inactiveLabel='Select ROI',
-            parent=self.panel,
-            size=cockpit.gui.device.DEFAULT_SIZE)
+        # Button to calibrate the DM
+        selectCircleButton = wx.ToggleButton(self.panel, label='Select ROI')
+        selectCircleButton.Bind(wx.EVT_BUTTON, lambda evt: self.onSelectCircle())
         self.elements['selectCircleButton'] = selectCircleButton
 
         # Button to calibrate the DM
@@ -390,7 +384,15 @@ class Alpao(device.Device):
             ndarray = op(-1 * (i + 1))
         return ndarray
 
-    def onSelectCircle(self):
+    def onSelectCircle(self, event):
+        state = event.GetEventObject().GetValue()
+
+        if state == True:
+            self.activateSelectCircle()
+        else:
+            self.deactivateSelectCircle()
+
+    def activateSelectCircle(self):
         image_raw = self.proxy.acquire_raw()
         if np.max(image_raw) > 10:
             temp = self.bin_ndarray(image_raw, new_shape=(512, 512), operation='mean')
