@@ -22,6 +22,7 @@ import tkinter as tk
 from PIL import Image, ImageTk
 import cockpit.util.userConfig as Config
 import cockpit.handlers.executor
+from cockpit import depot
 import time
 
 import numpy as np
@@ -566,7 +567,36 @@ class Alpao(device.Device):
 
     ### Sensorless AO functions ###
 
-    def correctSensorlessSetup(self, nollZernike=None):
+    ## Display a menu to the user letting them choose which camera
+    # to use to perform sensorless AO. Of course, if only one camera is
+    # available, then we just perform sensorless AO.
+    def displaySensorlessAOMenu(self):
+        # If we're already perform sensorless AO, stop it instead.
+        # if self.shouldContinue.is_set():
+        #    self.shouldContinue.clear()
+        #    return
+
+        self.showCameraMenu("Perform sensorless AO with %s camera",
+                            self.correctSensorlessSetup)
+
+    ## Generate a menu where the user can select a camera to use to perform
+    # some action.
+    # \param text String template to use for entries in the menu.
+    # \param action Function to call with the selected camera as a parameter.
+    def showCameraMenu(self, text, action):
+        cameras = depot.getActiveCameras()
+        if len(cameras) == 1:
+            action(cameras[0])
+        else:
+            menu = wx.Menu()
+            for i, camera in enumerate(cameras):
+                menu.Append(i + 1, text % camera.descriptiveName)
+                self.panel.Bind(wx.EVT_MENU,
+                                lambda event, camera=camera: action(camera),
+                                id=i + 1)
+            cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+
+    def correctSensorlessSetup(self, camera, nollZernike=None):
         print("Performing sensorless AO setup")
         # Note: Default is to correct Primary and Secondary Spherical aberration and both
         # orientations of coma, astigmatism and trefoil
@@ -597,7 +627,8 @@ class Alpao(device.Device):
 
         print("Subscribing to camera events")
         # Subscribe to camera events
-        events.subscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
+        self.camera = camera
+        events.subscribe("new image %s" % self.camera.name, self.correctSensorlessImage)
 
         # Get pixel size
         self.objectives = cockpit.depot.getHandlersOfType(cockpit.depot.OBJECTIVE)[0]
@@ -672,7 +703,7 @@ class Alpao(device.Device):
                 wx.CallAfter(self.takeImage)
         else:
             # Once all images have been obtained, unsubscribe
-            events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
+            events.unsubscribe("new image %s" % self.camera.name, self.correctSensorlessImage)
 
             # Save full stack of images used
             self.correction_stack = np.asarray(self.correction_stack)
