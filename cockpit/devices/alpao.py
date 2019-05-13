@@ -639,18 +639,14 @@ class Alpao(device.Device):
         self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :], offset=self.actuator_offset)
 
         # Take image. This will trigger the iterative sensorless AO correction
-        #wx.CallAfter(self.takeImage)
-        time.sleep(0.1)
-        self.takeImage()
+        wx.CallAfter(self.takeImage)
 
     def correctSensorlessImage(self, image, timestamp):
         if len(self.correction_stack) < self.zernike_applied.shape[0]:
             print("Correction image %i/%i" % (len(self.correction_stack) + 1, self.zernike_applied.shape[0]))
             # Store image for current applied phase
             self.correction_stack.append(np.ndarray.tolist(image))
-            #wx.CallAfter(self.correctSensorlessProcessing)
-            time.sleep(0.1)
-            self.correctSensorlessProcessing()
+            wx.CallAfter(self.correctSensorlessProcessing)
         else:
             print("Error in unsubscribing to camera events. Trying again")
             events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
@@ -683,11 +679,11 @@ class Alpao(device.Device):
                 self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :],offset=self.actuator_offset)
 
                 # Take image, but ensure it's called after the phase is applied
-                #wx.CallAfter(self.takeImage)
                 time.sleep(0.1)
-                self.takeImage()
+                wx.CallAfter(self.takeImage)
         else:
             # Once all images have been obtained, unsubscribe
+            print("Unsubscribing to camera %s events" % self.curCamera.name)
             events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
 
             # Save full stack of images used
@@ -734,9 +730,7 @@ class Alpao(device.Device):
 
             print("Actuator positions applied: ", self.actuator_offset)
             self.proxy.send(self.actuator_offset)
-            #wx.CallAfter(self.takeImage)
-            time.sleep(0.1)
-            self.takeImage()
+            wx.CallAfter(self.takeImage)
 
 
 # This debugging window lets each digital lineout of the DSP be manipulated
