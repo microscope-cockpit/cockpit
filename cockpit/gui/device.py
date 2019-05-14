@@ -421,7 +421,11 @@ class SettingsEditor(wx.Frame):
             except wx._core.PyAssertionError:
                 # Bug in wx in stc.EnsureCaretVisible, could not convert to a long.
                 pass
-            prop.SetValue(self.current[name])
+            try:
+                prop.SetValue(self.current[name])
+                prop.SetTextColour('black')
+            except:
+                prop.SetTextColour('red')
         self.Thaw()
 
 
