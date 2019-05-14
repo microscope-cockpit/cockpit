@@ -330,7 +330,7 @@ class Alpao(device.Device):
 		
         # Button to perform sensorless correction
         sensorlessAOButton = wx.Button(self.panel, label='Sensorless AO')
-        sensorlessAOButton.Bind(wx.EVT_BUTTON, lambda evt: self.correctSensorlessSetup())
+        sensorlessAOButton.Bind(wx.EVT_BUTTON, lambda evt: self.displaySensorlessAOMenu())
         self.elements['Sensorless AO'] = sensorlessAOButton
 
         for e in self.elements.values():
@@ -680,7 +680,7 @@ class Alpao(device.Device):
             wx.CallAfter(self.correctSensorlessProcessing)
         else:
             print("Error in unsubscribing to camera events. Trying again")
-            events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
+            events.unsubscribe("new image %s" % self.camera.name, self.correctSensorlessImage)
 
     def correctSensorlessProcessing(self):
         print("Processing sensorless image")
@@ -714,8 +714,8 @@ class Alpao(device.Device):
                 wx.CallAfter(self.takeImage)
         else:
             # Once all images have been obtained, unsubscribe
-            print("Unsubscribing to camera %s events" % self.curCamera.name)
-            events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
+            print("Unsubscribing to camera %s events" % self.camera.name)
+            events.unsubscribe("new image %s" % self.camera.name, self.correctSensorlessImage)
 
             # Save full stack of images used
             self.correction_stack = np.asarray(self.correction_stack)
