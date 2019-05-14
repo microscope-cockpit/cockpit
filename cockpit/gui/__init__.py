@@ -134,11 +134,11 @@ def ExceptionBox(caption="", parent=None):
     details_font.Family = wx.FONTFAMILY_TELETYPE
     details.Font = details_font
 
-    sizer_flags = wx.SizerFlags().Expand().Border()
     sizer = wx.BoxSizer(wx.VERTICAL)
-    sizer.Add(message, sizer_flags)
-    sizer.Add(details, sizer_flags)
-    sizer.Add(dialog.CreateSeparatedButtonSizer(wx.OK), sizer_flags)
+    sizer.Add(message, wx.SizerFlags(0).Expand().Border())
+    sizer.Add(details, wx.SizerFlags(1).Expand().Border())
+    sizer.Add(dialog.CreateSeparatedButtonSizer(wx.OK),
+              wx.SizerFlags(0).Expand().Border())
 
     dialog.SetSizerAndFit(sizer)
     dialog.Centre()
