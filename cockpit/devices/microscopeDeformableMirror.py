@@ -287,7 +287,7 @@ class Alpao(device.Device):
 
         # Button to calibrate the DM
         selectCircleButton = wx.ToggleButton(self.panel, label='Select ROI')
-        selectCircleButton.Bind(wx.EVT_BUTTON, lambda evt: self.onSelectCircle())
+        selectCircleButton.Bind(wx.EVT_TOGGLEBUTTON, self.onSelectCircle)
         self.elements['selectCircleButton'] = selectCircleButton
 
         # Button to calibrate the DM
@@ -323,6 +323,11 @@ class Alpao(device.Device):
         #flattenButton.Bind(wx.EVT_BUTTON, lambda evt: self.onFlatten())
         #self.elements['flattenButton'] = flattenButton
 
+        # Apply last actuator values
+        applyLastPatternButton = wx.Button(self.panel, label='Apply last pattern')
+        applyLastPatternButton.Bind(wx.EVT_BUTTON, lambda evt: self.onApplyLastPattern())
+        self.elements['applyLastPatternButton'] = applyLastPatternButton
+		
         # Button to perform sensorless correction
         sensorlessAOButton = wx.Button(self.panel, label='Sensorless AO')
         sensorlessAOButton.Bind(wx.EVT_BUTTON, lambda evt: self.correctSensorlessSetup())
@@ -385,7 +390,7 @@ class Alpao(device.Device):
             ndarray = op(-1 * (i + 1))
         return ndarray
 
-    def onSelectCircle(self, event):
+    def onSelectCircle(self,event):
         state = event.GetEventObject().GetValue()
 
         if state == True:
@@ -551,6 +556,10 @@ class Alpao(device.Device):
         self.sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat'))
         self.proxy.send(self.sys_flat_values)
 
+    def onApplyLastPattern(self):
+        last_ac = self.proxy.get_last_actuator_values()
+        self.proxy.send(last_ac)
+ 
     def showDebugWindow(self):
         # Ensure only a single instance of the window.
         global _windowInstance
@@ -657,6 +666,7 @@ class Alpao(device.Device):
 
         print("Applying the first Zernike mode")
         # Apply the first Zernike mode
+        print(self.zernike_applied[len(self.correction_stack), :])
         self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :], offset=self.actuator_offset)
 
         # Take image. This will trigger the iterative sensorless AO correction
@@ -700,10 +710,12 @@ class Alpao(device.Device):
                 self.proxy.set_phase(self.zernike_applied[len(self.correction_stack), :],offset=self.actuator_offset)
 
                 # Take image, but ensure it's called after the phase is applied
+                time.sleep(0.1)
                 wx.CallAfter(self.takeImage)
         else:
             # Once all images have been obtained, unsubscribe
-            events.unsubscribe("new image %s" % self.camera.name, self.correctSensorlessImage)
+            print("Unsubscribing to camera %s events" % self.curCamera.name)
+            events.unsubscribe("new image %s" % self.curCamera.name, self.correctSensorlessImage)
 
             # Save full stack of images used
             self.correction_stack = np.asarray(self.correction_stack)
