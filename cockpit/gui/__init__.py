@@ -126,7 +126,7 @@ def ExceptionBox(caption="", parent=None):
     dialog = wx.Dialog(parent, title=caption, name="exception-dialog")
     message = wx.StaticText(dialog, label=str(current_exception))
     details = wx.TextCtrl(dialog, value=traceback.format_exc(),
-                          style=(wx.TE_MULTILINE|wx.TE_READONLY))
+                          style=(wx.TE_MULTILINE|wx.TE_DONTWRAP|wx.TE_READONLY))
 
     ## 'w.Font.Family = f' does not work because it 'w.Font' returns a
     ## copy of the font.  We need to modify that copy and assign back.
@@ -139,6 +139,11 @@ def ExceptionBox(caption="", parent=None):
     sizer.Add(details, wx.SizerFlags(1).Expand().Border())
     sizer.Add(dialog.CreateSeparatedButtonSizer(wx.OK),
               wx.SizerFlags(0).Expand().Border())
+
+    ## The default width of a TextCtrl does not take into account its
+    ## actual content.  We need to manually set its size (issue #497)
+    details_text_size = details.GetTextExtent(details.Value)
+    details.SetInitialSize(details.GetSizeFromTextSize(details_text_size))
 
     dialog.SetSizerAndFit(sizer)
     dialog.Centre()
