@@ -190,7 +190,9 @@ class DeviceHandler(object):
     # anything that cares. At this point, all device handlers should be 
     # initialized.
     def makeInitialPublications(self):
-        pass
+        getIsEnabled = getattr(self, 'getIsEnabled', None) or self.callbacks.get('getIsEnabled', None)
+        if getIsEnabled:
+            events.publish(events.DEVICE_STATUS, self, getIsEnabled())
 
 
     ## Do any final initaliaziton actions, now that all devices are set up,
