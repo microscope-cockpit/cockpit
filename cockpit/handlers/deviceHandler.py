@@ -76,14 +76,16 @@ class STATES():
     enabled = 1
     enabling = 2
     constant = 3
+    busy = 4
 
     @staticmethod
     def toStr(value):
         return {-1:'ERROR',
                  0:'OFF',
                  1:'ON',
-                 2:'BUSY...',
-                 3:'ALWAYS ON',}.get(value, '')
+                 2:'ENABLING...',
+                 3:'ALWAYS ON',
+                 4:'BUSY'}.get(value, '')
 
 
 class DeviceHandler(object):
