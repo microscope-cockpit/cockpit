@@ -37,8 +37,9 @@ class ClaritySlideHandler(FilterHandler):
         # to the filters panel.
         self.deviceType = depot.GENERIC_DEVICE
 
-    def makeUI(self, parent):
-        # The Clarity device draws the UI, so return None from this handler.
+    def makeUI(self, *args):
+        # return None to prevent the slide controls being placed in their
+        # own panel - the Clarity device draws the UI for this handler.
         return None
 
 
@@ -55,18 +56,22 @@ class Clarity(microscopeDevice.MicroscopeFilter):
             status = {}
         else:
             if status.get('on'):
-                state = STATES.enabled
-                filter = status.get('filter')
-                slide = status.get('slide')
-                busy = any(t == (None, 'moving') for t in [filter, slide])
+                if status.get('busy'):
+                    state = STATES.busy
+                else:
+                    state = STATES.enabled
             else:
                 state = STATES.disabled
         for h in self.handlers:
-            if busy:
-                events.publish(events.DEVICE_STATUS, h, STATES.busy)
-            else:
-                events.publish(events.DEVICE_STATUS, h, state)
+            events.publish(events.DEVICE_STATUS, h, state)
+            if status is not {}:
+                self.buttons['door'].SetValue(status.get('door open'))
+                self.buttons['calib'].SetValue(status.get('calibration'))
+            if state == STATES.enabled:
+                self.buttons['calib'].Enable()
                 h.updateAfterMove()
+            else:
+                self.buttons['calib'].Disable()
 
     def setEnabled(self, state):
         if state:
@@ -97,6 +102,12 @@ class Clarity(microscopeDevice.MicroscopeFilter):
     def get_slides_as_filters(self):
         return [Filter(k, v) for k, v in self._proxy.get_slides().items()]
 
+
+    def onCheckbox(self, evt):
+        if evt.EventObject == self.buttons['calib']:
+            self._proxy.set_calibration(evt.EventObject.Value)
+
+
     def makeUI(self, parent):
         panel = wx.Panel(parent, style=wx.BORDER_RAISED)
         panel.Sizer = wx.BoxSizer(wx.VERTICAL)
@@ -104,10 +115,25 @@ class Clarity(microscopeDevice.MicroscopeFilter):
         powerhandler = next(h for h in self.handlers if isinstance(h, ClaritySlideHandler))
         ctrl = cockpit.gui.device.EnableButton(panel, powerhandler)
         panel.Sizer.Add(ctrl, flag=wx.EXPAND)
-        # selector controls
-        for h in self.handlers:
-            panel.Sizer.AddSpacer(8)
-            panel.Sizer.Add(h.makeSelector(panel), flag=wx.EXPAND)
+        # slide selector
+        panel.Sizer.Add(wx.StaticText(panel, label='sectioning'))
+        panel.Sizer.Add(powerhandler.makeSelector(panel), flag=wx.EXPAND)
+        # filter selector
+        panel.Sizer.Add(wx.StaticText(panel, label='filter'))
+        filterhandler = next(h for h in self.handlers if h is not powerhandler)
+        panel.Sizer.Add(filterhandler.makeSelector(panel), flag=wx.EXPAND)
+        # Additional buttons
+        self.buttons = {}
+        # calibration mode selector
+        cb = wx.CheckBox(panel, wx.ID_ANY, "calibration")
+        cb.Bind(wx.EVT_CHECKBOX, self.onCheckbox)
+        self.buttons['calib'] = cb
+        panel.Sizer.Add(cb)
+        # door status indicator
+        cb = wx.CheckBox(panel, wx.ID_ANY, "door open")
+        cb.Disable()
+        self.buttons['door'] = cb
+        panel.Sizer.Add(cb)
         # Start a timer to report connection errors.
         self._timer = wx.Timer(panel)
         self._timer.Start(1000)
