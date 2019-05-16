@@ -263,11 +263,14 @@ class Image(BaseGL):
             self._createTextures()
         shader = self.getShader()
         glUseProgram(shader)
+        # Vertical and horizontal modifiers for non-square images.
+        hlim = self._data.shape[1] / max(self._data.shape)
+        vlim = self._data.shape[0] / max(self._data.shape)
+        # Number of x and y textures.
         nx, ny = self.shape
-        dx = 2 / nx
-        dy = 2 / ny
-        xcorr = ycorr = 0
-        zoomcorr = 1
+        # Quad dimensions for one texture.
+        dx = 2 * hlim / nx
+        dy = 2 * vlim / ny
         if len(self._textures) > 1:
             tx = ty = self._maxTexEdge
             # xy & zoom correction for incompletely-filled textures at upper & right edges.
@@ -301,10 +304,10 @@ class Image(BaseGL):
                     ii = self._data.shape[1] / self._maxTexEdge
                 else:
                     ii = i+1
-                glVertexPointerf( [(-1 + i*dx, -1 + j*dy),
-                                   (-1 + ii*dx, -1 + j*dy),
-                                   (-1 + ii*dx, -1 + jj*dy),
-                                   (-1 + i*dx, -1 + jj*dy)] )
+                glVertexPointerf( [(-hlim + i*dx, -vlim + j*dy),
+                                   (-hlim + ii*dx, -vlim + j*dy),
+                                   (-hlim + ii*dx, -vlim + jj*dy),
+                                   (-hlim + i*dx, -vlim + jj*dy)] )
                 glTexCoordPointer(2, GL_FLOAT, 0,
                                   [(0, 0), (ii%1 or 1, 0), (ii%1 or 1, jj%1 or 1), (0, jj%1 or 1)])
                 glBindTexture(GL_TEXTURE_2D, self._textures[j*nx + i])
