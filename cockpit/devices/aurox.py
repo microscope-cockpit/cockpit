@@ -67,11 +67,8 @@ class Clarity(microscopeDevice.MicroscopeFilter):
             if status is not {}:
                 self.buttons['door'].SetValue(status.get('door open'))
                 self.buttons['calib'].SetValue(status.get('calibration'))
-            if state == STATES.enabled:
-                self.buttons['calib'].Enable()
+            if state not in  [STATES.error, STATES.busy]:
                 h.updateAfterMove()
-            else:
-                self.buttons['calib'].Disable()
 
     def setEnabled(self, state):
         if state:
@@ -102,27 +99,43 @@ class Clarity(microscopeDevice.MicroscopeFilter):
     def get_slides_as_filters(self):
         return [Filter(k, v) for k, v in self._proxy.get_slides().items()]
 
-
     def onCheckbox(self, evt):
         if evt.EventObject == self.buttons['calib']:
             self._proxy.set_calibration(evt.EventObject.Value)
 
-
     def makeUI(self, parent):
-        panel = wx.Panel(parent, style=wx.BORDER_RAISED)
+        """Draw the Clarity's UI"""
+        # Use an outer panel and a subpanel, so that the power button
+        # can en/disable all other controls by managing the state of the
+        # subpanel.
+        # One minor issue is that the power button doesn't en/disable the
+        # Clarity's filter control on the Filters panel, but resolving that
+        # is not straightforward. If that control is used to select a filter
+        # when the Clarity is not enabled, it will not change the filter, and
+        # will redisplay its original state within 1 second.
+        outer = wx.Panel(parent, style=wx.BORDER_RAISED)
+        outer.Sizer = wx.BoxSizer(wx.VERTICAL)
+        panel = wx.Panel(outer)
         panel.Sizer = wx.BoxSizer(wx.VERTICAL)
         # power button
         powerhandler = next(h for h in self.handlers if isinstance(h, ClaritySlideHandler))
-        ctrl = cockpit.gui.device.EnableButton(panel, powerhandler)
-        panel.Sizer.Add(ctrl, flag=wx.EXPAND)
+        enable = cockpit.gui.device.EnableButton(outer, powerhandler)
+        enable.SetLabel("enable")
+        outer.Sizer.Add(enable, flag=wx.EXPAND)
+        enable.manageStateOf(panel)
+        # Subpanel
+        outer.Sizer.Add(panel)
         # slide selector
+        panel.Sizer.AddSpacer(4)
         panel.Sizer.Add(wx.StaticText(panel, label='sectioning'))
         panel.Sizer.Add(powerhandler.makeSelector(panel), flag=wx.EXPAND)
         # filter selector
+        panel.Sizer.AddSpacer(4)
         panel.Sizer.Add(wx.StaticText(panel, label='filter'))
         filterhandler = next(h for h in self.handlers if h is not powerhandler)
         panel.Sizer.Add(filterhandler.makeSelector(panel), flag=wx.EXPAND)
         # Additional buttons
+        panel.Sizer.AddSpacer(4)
         self.buttons = {}
         # calibration mode selector
         cb = wx.CheckBox(panel, wx.ID_ANY, "calibration")
@@ -139,4 +152,4 @@ class Clarity(microscopeDevice.MicroscopeFilter):
         self._timer.Start(1000)
         panel.Bind(wx.EVT_TIMER, self.checkStatus, self._timer)
         panel.Fit()
-        return panel
+        return outer
