@@ -342,12 +342,12 @@ class SettingsEditor(wx.Frame):
         sizer.Add(buttonSizer, 0, wx.ALIGN_CENTER, 0, 0)
         self.SetSizerAndFit(sizer)
         self.SetMinSize((256, -1))
-        events.subscribe("%s settings changed" % self.device, self.updateGrid)
+        events.subscribe(events.SETTINGS_CHANGED % self.device, self.updateGrid)
         self.Bind(wx.EVT_SHOW, lambda evt: self.updateGrid())
 
 
     def onClose(self, evt):
-        events.unsubscribe("%s settings changed" % self.device, self.updateGrid)
+        events.unsubscribe(events.SETTINGS_CHANGED % self.device, self.updateGrid)
         if evt.GetId() == wx.ID_OK:
             self.device.updateSettings(self.current)
         self.Close()

@@ -111,7 +111,12 @@ class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
         if settings is not None:
             self.proxy.update_settings(settings)
         self.settings.update(self.proxy.get_all_settings())
-        events.publish("%s settings changed" % str(self))
+        events.publish(events.SETTINGS_CHANGED % str(self))
+
+
+    def _setTransform(self, tr):
+        self.proxy.set_transform(tr)
+        self.updateSettings()
 
 
     def cleanupAfterExperiment(self):
@@ -132,10 +137,7 @@ class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
 
 
     def onObjectiveChange(self, name, pixelSize, transform, offset):
-        self.updateSettings({'pathTransform': transform})
-        # Apply the change now if the camera is enabled.
-        if self.enabled:
-            self.proxy.update_settings(self.settings)
+        self.updateTransform(transform)
 
 
     def setAnyDefaults(self):
@@ -210,7 +212,6 @@ class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
             # Nothing to do.
             return
         self.setAnyDefaults()
-        self.updateSettings()
         # Use async call to allow hardware time to respond.
         # Pyro4.async API changed - now modifies original rather than returning
         # a copy. This workaround from Pyro4 maintainer.
@@ -222,6 +223,7 @@ class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
         self.enabled = True
         self.handler.exposureMode = self.proxy.get_trigger_type()
         self.listener.connect()
+        self.updateSettings()
         return self.enabled
 
 
@@ -316,7 +318,7 @@ class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
         sizer.Add(wx.StaticText(self.panel, label="Readout mode"))
         modeButton = wx.Choice(self.panel, choices=self._modenames)
         sizer.Add(modeButton, flag=wx.EXPAND)
-        events.subscribe("%s settings changed" % self,
+        events.subscribe(events.SETTINGS_CHANGED % self,
                          lambda: self.updateModeButton(modeButton))
         modeButton.Bind(wx.EVT_CHOICE, lambda evt: self.setReadoutMode(evt.GetSelection()))
         sizer.AddSpacer(4)
@@ -325,7 +327,7 @@ class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
         gainButton = wx.Button(self.panel)
         gainButton.Bind(wx.EVT_LEFT_UP, self.onGainButton)
         sizer.Add(gainButton, flag=wx.EXPAND)
-        events.subscribe("%s settings changed" % self,
+        events.subscribe(events.SETTINGS_CHANGED % self,
                          lambda: gainButton.SetLabel("%s" % self.settings.get('gain', None)))
         sizer.AddSpacer(4)
         # Settings button
