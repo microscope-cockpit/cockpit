@@ -244,8 +244,9 @@ class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
 
     def getImageSize(self, name):
         """Read the image size from the camera."""
-        rect = self.proxy.get_roi()
-        return rect[-2:]
+        roi = self.proxy.get_roi()  # left, bottom, right, top
+        binning = self.proxy.get_binning()
+        return (roi.width//binning.h, roi.height//binning.v)
 
 
     def getImageSizes(self, name):
