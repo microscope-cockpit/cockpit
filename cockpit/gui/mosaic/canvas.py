@@ -156,10 +156,13 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # but this should require only up to three times the tilesize added to
         # the upper limit, not four.
         # Four works, though.
-        xMin += min(0, xOffLim[0])
+        # Arrays run [0,0] .. [ncols, nrows]; GL runs (-1,-1) .. (1,1). Since
+        # making adjustments to render [0,0] at (-1,1), we now add two megatiles
+        # at each y limit, rather than 4 at one edge.
+        xMin += min(0, xOffLim[0]) - tile.megaTileMicronSize
         xMax += max(0, xOffLim[1]) + tile.megaTileMicronSize
-        yMin += min(0, yOffLim[0])
-        yMax += max(0, yOffLim[1]) + 4 * tile.megaTileMicronSize
+        yMin += min(0, yOffLim[0]) - 2*tile.megaTileMicronSize
+        yMax += max(0, yOffLim[1]) + 2*tile.megaTileMicronSize
         for x in range(xMin, xMax, tile.megaTileMicronSize):
             for y in range(yMin, yMax, tile.megaTileMicronSize):
                 self.megaTiles.append(tile.MegaTile((-x, y)))

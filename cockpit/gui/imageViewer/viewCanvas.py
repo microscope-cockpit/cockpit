@@ -304,10 +304,13 @@ class Image(BaseGL):
                     ii = self._data.shape[1] / self._maxTexEdge
                 else:
                     ii = i+1
-                glVertexPointerf( [(-hlim + i*dx, -vlim + j*dy),
-                                   (-hlim + ii*dx, -vlim + j*dy),
+                # Arrays used to create textures have top left at [0,0].
+                # GL co-ords run *bottom* left to top right, so need to invert
+                # vertical co-ords.
+                glVertexPointerf( [(-hlim + i*dx, -vlim + jj*dy),
                                    (-hlim + ii*dx, -vlim + jj*dy),
-                                   (-hlim + i*dx, -vlim + jj*dy)] )
+                                   (-hlim + ii*dx, -vlim + j*dy),
+                                   (-hlim + i*dx, -vlim + j*dy)] )
                 glTexCoordPointer(2, GL_FLOAT, 0,
                                   [(0, 0), (ii%1 or 1, 0), (ii%1 or 1, jj%1 or 1), (0, jj%1 or 1)])
                 glBindTexture(GL_TEXTURE_2D, self._textures[j*nx + i])
