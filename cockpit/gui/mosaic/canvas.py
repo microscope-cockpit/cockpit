@@ -54,13 +54,12 @@
 
 import numpy
 from OpenGL.GL import *
-import time
 import traceback
 import wx.glcanvas
 
 from cockpit import depot
 from cockpit import events
-from . import tile
+from .tile import Tile, MegaTile
 import cockpit.util.datadoc
 import cockpit.util.logger
 import cockpit.util.threads
@@ -159,13 +158,14 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # Arrays run [0,0] .. [ncols, nrows]; GL runs (-1,-1) .. (1,1). Since
         # making adjustments to render [0,0] at (-1,1), we now add two megatiles
         # at each y limit, rather than 4 at one edge.
-        xMin += min(0, xOffLim[0]) - tile.megaTileMicronSize
-        xMax += max(0, xOffLim[1]) + tile.megaTileMicronSize
-        yMin += min(0, yOffLim[0]) - 2*tile.megaTileMicronSize
-        yMax += max(0, yOffLim[1]) + 2*tile.megaTileMicronSize
-        for x in range(xMin, xMax, tile.megaTileMicronSize):
-            for y in range(yMin, yMax, tile.megaTileMicronSize):
-                self.megaTiles.append(tile.MegaTile((-x, y)))
+        MegaTile.setPixelSize(glGetInteger(GL_MAX_TEXTURE_SIZE))
+        xMin += min(0, xOffLim[0]) - MegaTile.micronSize
+        xMax += max(0, xOffLim[1]) + MegaTile.micronSize
+        yMin += min(0, yOffLim[0]) - 2*MegaTile.micronSize
+        yMax += max(0, yOffLim[1]) + 2*MegaTile.micronSize
+        for x in range(xMin, xMax, MegaTile.micronSize):
+            for y in range(yMin, yMax, MegaTile.micronSize):
+                self.megaTiles.append(MegaTile((-x, y)))
         self.haveInitedGL = True
 
 
@@ -294,7 +294,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.SetCurrent(self.context)
         while not self.pendingImages.empty() and (time.time()-t < 0.05):
             data, pos, size, scalings, layer = self.pendingImages.get()
-            newTiles.append(tile.Tile(data, pos, size, scalings, layer))
+            newTiles.append(Tile(data, pos, size, scalings, layer))
         self.tiles.extend(newTiles)
         for megaTile in self.megaTiles:
             megaTile.prerenderTiles(newTiles, self)
