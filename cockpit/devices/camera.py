@@ -58,7 +58,7 @@ from . import device
 def Transform(tstr=None):
     """Desribes a simple transform: (flip LR, flip UD, rotate 90)"""
     if tstr:
-        return tuple([bool(t) for t in tstr.strip('()').split(',')])
+        return tuple([bool(int(t)) for t in tstr.strip('()').split(',')])
     else:
         return (False, False, False)
 
