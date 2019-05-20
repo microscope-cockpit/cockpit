@@ -232,13 +232,13 @@ class Tile:
 
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glBegin(GL_QUADS)
-        glTexCoord2f(0, 0)
-        glVertex2f(x, y)        
-        glTexCoord2f(picTexRatio_x, 0)
-        glVertex2f(x + self.size[0], y)
-        glTexCoord2f(picTexRatio_x, picTexRatio_y)
-        glVertex2f(x + self.size[0], y + self.size[1])
         glTexCoord2f(0, picTexRatio_y)
+        glVertex2f(x, y)
+        glTexCoord2f(picTexRatio_x, picTexRatio_y)
+        glVertex2f(x + self.size[0], y)
+        glTexCoord2f(picTexRatio_x, 0)
+        glVertex2f(x + self.size[0], y + self.size[1])
+        glTexCoord2f(0, 0)
         glVertex2f(x, y + self.size[1])
         glEnd()
 
@@ -346,7 +346,7 @@ class MegaTile(Tile):
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
             glOrtho(0, megaTilePixelSize * megaTileScaleFactor,
-                    0, megaTilePixelSize * megaTileScaleFactor,
+                    megaTilePixelSize * megaTileScaleFactor, 0,
                     1, 0)
             glTranslatef(-self.pos[0], -self.pos[1], 0)
             glMatrixMode(GL_MODELVIEW)
