@@ -158,7 +158,16 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # Arrays run [0,0] .. [ncols, nrows]; GL runs (-1,-1) .. (1,1). Since
         # making adjustments to render [0,0] at (-1,1), we now add two megatiles
         # at each y limit, rather than 4 at one edge.
-        MegaTile.setPixelSize(glGetInteger(GL_MAX_TEXTURE_SIZE))
+        vendor = glGetString(GL_VENDOR)
+        tsize = glGetInteger(GL_MAX_TEXTURE_SIZE)
+        if vendor.startswith(b'Intel'):
+            # If we use the full texture size, it seems it's too large
+            # for manipulation in a framebuffer on Macs with Intel chipsets.
+            # GL_MAX_FRAMEBUFFER_WIDTH and _HEIGHT are not available, so we
+            # just use a quarter of the max texture size, which has been found
+            # to work intests on 2017-ish MacbookPro.
+            tsize //= 4
+        MegaTile.setPixelSize(tsize)
         xMin += min(0, xOffLim[0]) - MegaTile.micronSize
         xMax += max(0, xOffLim[1]) + MegaTile.micronSize
         yMin += min(0, yOffLim[0]) - 2*MegaTile.micronSize
