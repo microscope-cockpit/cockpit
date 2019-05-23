@@ -57,8 +57,6 @@
 import configparser
 import os
 
-from six import string_types, iteritems
-
 from cockpit.handlers.deviceHandler import DeviceHandler
 
 ## Different eligible device handler types. These correspond 1-to-1 to
@@ -156,9 +154,9 @@ class DeviceDepot:
             if any([other not in done for other in depends]):
                 devices.append(d)
                 continue
+            yield d.name
             self.initDevice(d)
             done.append(d.name)
-            yield d.name
 
         # Add dummy devices as required.
         dummies = []
@@ -273,7 +271,7 @@ class DeviceDepot:
                 axisToMovers[mover.axis] = []
             axisToMovers[mover.axis].append(mover)
 
-        for axis, handlers in iteritems(axisToMovers):
+        for axis, handlers in axisToMovers.items():
             handlers.sort(reverse = True,
                     key = lambda a: a.getHardLimits()[1] - a.getHardLimits()[0]
             )
@@ -357,7 +355,7 @@ def getHandler(nameOrDevice, handlerType):
     if isinstance(nameOrDevice, DeviceHandler):
         if nameOrDevice.deviceType == handlerType:
             return nameOrDevice
-    if isinstance(nameOrDevice, string_types):
+    if isinstance(nameOrDevice, str):
         dev = getDeviceWithName(nameOrDevice)
     else:
         dev = nameOrDevice

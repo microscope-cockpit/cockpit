@@ -59,8 +59,6 @@ import numpy
 import threading
 from collections import namedtuple
 
-from six import iteritems
-
 
 ## Stage movement threshold (previously a hard-coded value).
 # There can be problems when this doesn't match a corresponding threshold
@@ -270,7 +268,7 @@ def changeMover():
 
 ## Change the step size for the current handlers.
 def changeStepSize(direction):
-    for axis, handlers in iteritems(mover.axisToHandlers):
+    for axis, handlers in mover.axisToHandlers.items():
         handlers[mover.curHandlerIndex].changeStepSize(direction)
         events.publish("stage step size", axis,
                        handlers[mover.curHandlerIndex].getStepSize())
@@ -279,7 +277,7 @@ def changeStepSize(direction):
 ## Recenter the fine-motion devices by adjusting the large-scale motion
 # device.
 def recenterFineMotion():
-    for axis, handlers in iteritems(mover.axisToHandlers):
+    for axis, handlers in mover.axisToHandlers.items():
         if len(set(handlers)) < 2:
             continue # Only makes sense if one has at least two stages
 
@@ -326,7 +324,7 @@ def moveRelative(offset, shouldBlock = False):
 
 ## Wait for any stage motion to cease.
 def waitForStop(timeout = 5):
-    for name, event in iteritems(mover.nameToStoppedEvent):
+    for name, event in mover.nameToStoppedEvent.items():
         if not event.wait(timeout):
             raise RuntimeError("Timed out waiting for %s to stop" % name)
 
@@ -336,7 +334,7 @@ def goToSite(uniqueID, shouldBlock = False):
     site = mover.idToSite[uniqueID]
     objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
     objOffset = objective.getOffset()
-    offsetPosition=site.position[:]
+    offsetPosition=list(site.position)
     for i in range(len(offsetPosition)):
         offsetPosition[i]=offsetPosition[i]+objOffset[i]
     goTo(offsetPosition, shouldBlock)
@@ -395,7 +393,7 @@ def canReachSite(siteId):
 ## Record sites to a file.
 def writeSitesToFile(filename):
     with open(filename, 'w') as handle:
-        for id, site in iteritems(mover.idToSite):
+        for id, site in mover.idToSite.items():
             handle.write(site.serialize() + '\n')
 
 
@@ -411,7 +409,7 @@ def loadSites(filename):
 # positions.
 def getPosition():
     result = 3 * [0]
-    for axis, handlers in iteritems(mover.axisToHandlers):
+    for axis, handlers in mover.axisToHandlers.items():
         for handler in set(handlers):
             result[axis] += handler.getPosition()
     return result
@@ -444,7 +442,7 @@ def getAllPositions():
 # then return None for that axis.
 def getCurStepSizes():
     result = [None] * len(mover.axisToHandlers)
-    for axis, handlers in iteritems(mover.axisToHandlers):
+    for axis, handlers in mover.axisToHandlers.items():
         result[axis] = handlers[mover.curHandlerIndex].getStepSize()
     return tuple(result)
 

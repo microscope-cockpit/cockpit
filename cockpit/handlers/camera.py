@@ -199,7 +199,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
         # Subscribe / unsubscribe to the prepare-for-experiment event.
         func = [events.unsubscribe, events.subscribe][shouldEnable]
         func('prepare for experiment', self.prepareForExperiment)
-        events.publish('camera enable', self, self.isEnabled)
+        events.publish(events.CAMERA_ENABLE, self, self.isEnabled)
 
 
     ## Return self.isEnabled.
@@ -267,24 +267,3 @@ class CameraHandler(deviceHandler.DeviceHandler):
     ## Simple getter.
     def getExposureMode(self):
         return self.exposureMode
-
-
-    def makeUI(self, parent):
-        import cockpit.gui.device
-        self.panel = wx.Panel(parent)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        # Remove the word 'camera' to shorten labels.
-        name = self.name.replace('camera', '').replace('  ', ' ')
-        label = cockpit.gui.device.Label(
-            parent=self.panel, label=name)
-        button = cockpit.gui.device.EnableButton(label='Off', parent=self.panel, leftAction=self.toggleState)
-        self.addListener(button)
-        sizer.Add(label)
-        sizer.Add(button)
-        if self.callbacks.get('makeUI', None):
-            sizer.Add(self.callbacks['makeUI'](self.panel))
-
-        self.panel.SetSizerAndFit(sizer)
-
-        self.hasUI = True
-        return self.panel

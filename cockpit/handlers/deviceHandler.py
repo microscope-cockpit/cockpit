@@ -52,9 +52,7 @@
 
 import threading
 
-from six.moves import filter
-
-import cockpit.events
+from cockpit import events
 import cockpit.util.threads
 import sys
 
@@ -66,15 +64,10 @@ import sys
 # implement its getHandlers() method so that it returns a list of
 # DeviceHandlers. 
 #
-# The device handler now supports multiple UI controls to en/disable those
-# devices that support this behaviour.
-# To add a toggle control anywhere in the UI:
-#  * Create a control with the method onEnabledEvent(enabled) that updates
-#    the control appearance depending on the device state. The function should
-#    import STATES and respond accordingly to each case.
-#  * Register the control with handler(addListener) so it receives
-#    device state updates.
-#  * Bind the control to handler(toggleState) so it can control device state.
+# The device handler now supports multiple UI controls by allowing them
+# to watch for device parameter changes: each control should use addWatch
+# to register a callback that takes the new value as its only argument:
+#    addWatch(parameterName, callback)
 
 ## Device states
 class STATES():
@@ -141,7 +134,10 @@ class DeviceHandler(object):
 
     def __init__(self, name, groupName,
                  isEligibleForExperiments, callbacks, deviceType):
-        self._state = None
+        # Set up dict for attribute-change listeners.
+        super().__init__()
+        self._watches = {}
+        self.state = None
         self.__cache = {}
         self.name = name
         self.groupName = groupName
@@ -149,9 +145,23 @@ class DeviceHandler(object):
         self.isEligibleForExperiments = isEligibleForExperiments
         self.deviceType = deviceType
         # A set of controls that listen for device events.
-        self.listeners = None
         self.enableLock = threading.Lock()
         self.clear_cache = self.__cache.clear
+
+
+    def __setattr__(self, key, value):
+        object.__setattr__(self, key, value)
+        if not hasattr(self, '_watches'):
+            return
+        if key not in self._watches:
+            return
+        for cb in self._watches[key]:
+            try:
+                cb(value)
+            except:
+                # Should maybe clean up failing watch callbacks.
+                pass
+
 
 
     # Define __lt__ to make handlers sortable.
@@ -215,48 +225,25 @@ class DeviceHandler(object):
         return "<%s named %s in group %s>" % (self.deviceType, self.name, self.groupName)
 
 
-    ## Add a listener to our set of listeners.
-    def addListener(self, listener):
-        # If this is our first listener, subscribe this handler to enable event.
-        if self.listeners is None:
-            self.listeners = set()
-            cockpit.events.subscribe(self.deviceType + ' enable',
-                                     self.notifyListeners)
-        self.listeners.add(listener)
-
-
-    ## Notify listeners that our device's state has changed.
-    def notifyListeners(self, source, *args, **kwargs):
-        if not self.listeners:
-            return
-        if source is not self:
-            return
-        if args[0] is True:
-            self._state = STATES.enabled
-        elif args[0] is False:
-            self._state = STATES.disabled
+    ## Add a watch on a device parameter.
+    def addWatch(self, attrOrName, callback):
+        if isinstance(attrOrName, str):
+            name = attrOrName
         else:
-            self._state = args[0]
-        # Update our set of listeners to remove those that are no longer valid.
-        # (e.g. UI elements that have been destroyed)
-        self.listeners.difference_update(
-            [thing for thing in filter(lambda x: not(x), self.listeners)])
-        # Notify valid listeners.
-        for thing in self.listeners:
+            # may have been passed an attribute rather than its name
             try:
-                thing.onEnabledEvent(self._state)
-            except Exception as e:
-                # A UI element may have been destroyed since we updated the list.
-                # Warn of the problem, but continue to update other listeners.
-                sys.stderr.write(("Exception in %s.notifyListeners() " +
-                                  "when notifying listener %s of state " +
-                                  "change.\n\t%s\n") % (self, thing, e))
+                name = next(filter(lambda x: attrOrName is x[1], self.__dict__.items()))[0]
+            except:
+                raise Exception("Could not find passed attribute on %s." % self)
+        if name not in self._watches:
+            self._watches[name] = set()
+        self._watches[name].add(callback)
 
 
     ## A function that any control can call to toggle enabled/disabled state.
     @cockpit.util.threads.callInNewThread
     def toggleState(self, *args, **kwargs):
-        if self._state == STATES.enabling:
+        if self.state == STATES.enabling:
             # Already processing a previous toggle request.
             return
         if not all([hasattr(self, 'setEnabled'), hasattr(self, 'getIsEnabled')]):
@@ -264,15 +251,15 @@ class DeviceHandler(object):
         # Do nothing if lock locked as en/disable already in progress.
         if not self.enableLock.acquire(False):
             return
-
-        self.notifyListeners(self, STATES.enabling)
+        events.publish(events.DEVICE_STATUS, self, STATES.enabling)
         try:
             self.setEnabled(not(self.getIsEnabled()))
         except Exception as e:
-            self.notifyListeners(self, STATES.error)
+            events.publish(events.DEVICE_STATUS, self, STATES.error)
             raise Exception('Problem encountered en/disabling %s:\n%s' % (self.name, e))
         finally:
             self.enableLock.release()
+        events.publish(events.DEVICE_STATUS, self, self.getIsEnabled())
 
     ## Add a toggle event to the action table.
     # Return time of last action, and response time before ready after trigger.

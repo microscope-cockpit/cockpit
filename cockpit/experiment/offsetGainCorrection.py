@@ -66,7 +66,6 @@ import threading
 import time
 import wx
 
-from six import iteritems
 
 ## Provided so the UI knows what to call this experiment.
 EXPERIMENT_NAME = 'Offset/gain correction file'
@@ -142,13 +141,13 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
         self.prepareHandlers()
 
         self.cameraToReadoutTime = dict([(c, c.getTimeBetweenExposures(isExact = True)) for c in self.cameras])
-        for camera, readTime in iteritems(self.cameraToReadoutTime):
+        for camera, readTime in self.cameraToReadoutTime.items():
             if type(readTime) is not decimal.Decimal:
                 raise RuntimeError("Camera %s did not provide an exact (decimal.Decimal) readout time" % camera.name)
 
         # Start out with no-exposure-time images to get a measured offset.
         multiplier = 0
-        for camera, func in iteritems(self.camToFunc):
+        for camera, func in self.camToFunc.items():
             events.subscribe('new image %s' % camera.name, func)
         activeCameras = set(self.cameras)
         for i in range(self.numCollections):
@@ -188,7 +187,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
             activeCameras = self.processImages(multiplier)
             print ("Came out with active cams",activeCameras)
 
-        for camera, func in iteritems(self.camToFunc):
+        for camera, func in self.camToFunc.items():
             events.unsubscribe('new image %s' % camera.name, func)
 
         if self.shouldAbort:
@@ -261,7 +260,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
     # image.
     def processImages(self, multiplier):
         activeCameras = set()
-        for camera, imageData in iteritems(self.camToImages):
+        for camera, imageData in self.camToImages.items():
             images = imageData[:self.camToNumImagesReceived[camera]]
             if self.shouldPreserveIntermediaryFiles:
                 # Save the raw data.
@@ -378,7 +377,7 @@ class ExperimentUI(wx.Panel):
 
     ## Generate a dict of our settings.
     def getSettingsDict(self):
-        return dict([(key, c.GetValue()) for key, c in iteritems(self.correctionArgs)])
+        return {(key, c.GetValue()) for key, c in self.correctionArgs.items()}
 
 
     ## Save the current experiment settings to config.
@@ -388,4 +387,3 @@ class ExperimentUI(wx.Panel):
         cockpit.util.userConfig.setValue(
                 self.configKey + 'offsetGainExperimentSettings',
                 settings)
-

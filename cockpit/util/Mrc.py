@@ -58,7 +58,7 @@ __author__  = "Sebastian Haase <haase@msg.ucsf.edu>"
 
 
 import numpy as N
-from six import exec_
+
 
 def bindFile(fn, writable=0):
     """open existing Mrc file
@@ -365,7 +365,7 @@ def save(a, fn, ifExists='ask', zAxisOrder=None,
         loc = { 'hdr' : m.hdr }
         loc.update(fr.f_locals)
         glo = fr.f_globals
-        exec_ (hdrEval, loc, glo)
+        exec(hdrEval, loc, glo)
     m.writeHeader()
     m.writeStack(a)
     m.close()

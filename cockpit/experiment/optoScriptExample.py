@@ -60,7 +60,6 @@ import threading
 import time
 import wx
 
-from six import iteritems
 
 ## Provided so the UI knows what to call this experiment.
 EXPERIMENT_NAME = 'Example opto script'
@@ -87,11 +86,11 @@ class OptoExperiment(zStack.ZStackExperiment):
     def __init__(self, lightToSequence, lightToIsOnDuringAcquisition, **kwargs):
         # Convert from light source names to light handlers.
         self.lightToSequence = {}
-        for name, sequence in iteritems(lightToSequence):
+        for name, sequence in lightToSequence.items():
             handler = depot.getHandlerWithName(name)
             self.lightToSequence[handler] = sequence
         self.lightToIsOnDuringAcquisition = {}
-        for name, isOn in iteritems(lightToIsOnDuringAcquisition):
+        for name, isOn in lightToIsOnDuringAcquisition.items():
             handler = depot.getHandlerWithName(name)
             self.lightToIsOnDuringAcquisition[handler] = isOn
         # Call the ZStackExperiment constructor with all of our remaining
@@ -116,7 +115,7 @@ class OptoExperiment(zStack.ZStackExperiment):
             # in-depth examination of self.lightToSequence to determine when
             # to turn on each light.
             threads = []
-            for light, sequence in iteritems(self.lightToSequence):
+            for light, sequence in self.lightToSequence.items():
                 newThread = threading.Thread(target = self.shineLight,
                         args = [light, sequence])
                 newThread.start()
@@ -129,7 +128,7 @@ class OptoExperiment(zStack.ZStackExperiment):
             # images.
             # Turn on all lights that want to be left on during acquisition.
             activatedLights = []
-            for light, shouldBeOn in iteritems(self.lightToIsOnDuringAcquisition):
+            for light, shouldBeOn in self.lightToIsOnDuringAcquisition.items():
                 if shouldBeOn:
                     light.setExposing(True)
                     activatedLights.append(light)

@@ -32,13 +32,12 @@ import wx
 import wx.propgrid
 import cockpit.gui.guiUtils
 from cockpit.handlers.deviceHandler import STATES
-from .toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 import cockpit.util.userConfig
 import cockpit.util.threads
 from cockpit import events
-from distutils import version
+from cockpit.events import DEVICE_STATUS
+from cockpit.gui import EvtEmitter, EVT_COCKPIT
 
-from six import iteritems
 
 ## @package cockpit.gui.device
 # Defines classes for common controls used by cockpit devices.
@@ -197,41 +196,91 @@ class Menu(wx.Menu):
         cockpit.gui.guiUtils.placeMenuAtMouse(event.GetEventObject(), self)
 
 
-class EnableButton(Button):
-    """A button to enable/disable devices."""
-    def __init__(self, *args, **kwargs):
-        self.prefix = kwargs.pop('prefix', None)
-        if 'size' not in kwargs:
-            kwargs['size'] = [TALL_SIZE, DEFAULT_SIZE][self.prefix is None]
-        super(EnableButton, self).__init__(*args, **kwargs)
-        # Button has no label, so call onEnabledEvent to update.
-        wx.CallAfter(lambda: self.onEnabledEvent(STATES.disabled))
+_BMP_SIZE=(16,16)
+
+_BMP_OFF = wx.Bitmap.FromRGBA(*_BMP_SIZE, red=0, green=32, blue=0,
+                             alpha=wx.ALPHA_OPAQUE)
+_BMP_ON = wx.Bitmap.FromRGBA(*_BMP_SIZE, red=0, green=255, blue=0,
+                             alpha=wx.ALPHA_OPAQUE)
+_BMP_WAIT = wx.Bitmap.FromRGBA(*_BMP_SIZE, red=255, green=165, blue=0,
+                              alpha=wx.ALPHA_OPAQUE)
+_BMP_ERR = wx.Bitmap.FromRGBA(*_BMP_SIZE, red=255, green=0, blue=0,
+                             alpha=wx.ALPHA_OPAQUE)
+
+_BMPS = {STATES.enabling: _BMP_WAIT,
+        STATES.enabled: _BMP_ON,
+        STATES.disabled: _BMP_OFF,
+        STATES.error: _BMP_ERR}
+
+class EnableButton(wx.ToggleButton):
+    def __init__(self, parent, deviceHandler):
+        super().__init__(parent, wx.ID_ANY, deviceHandler.name)
+        self.device = deviceHandler
+        # Devices should update bitmap on startup, but reserve bitmap
+        # space for those that do not yet do so.
+        self.SetBitmap(_BMP_OFF, wx.RIGHT)
+        listener = EvtEmitter(self, DEVICE_STATUS)
+        listener.Bind(EVT_COCKPIT, self.onStatusEvent)
+        self.Bind(wx.EVT_TOGGLEBUTTON, deviceHandler.toggleState)
+        self.state = None
+        self.others = [] # A list of controls that should be en/disabled accordingly.
+
+
+    def manageStateOf(self, others):
+        try:
+            self.others.extend(others)
+        except:
+            # others is not iterable
+            self.others.append(others)
 
 
     @cockpit.util.threads.callInMainThread
-    def onEnabledEvent(self, state):
-        # Update button responsiveness
-        if state is STATES.enabling:
+    def setState(self, state):
+        if self.state == state:
+            return
+        # GTK only needs SetBitmap, but MSW needs *all* bitmaps updating.
+        self.SetBitmap(_BMPS[state], wx.RIGHT)
+        self.SetBitmapCurrent(_BMPS[state])
+        self.SetBitmapFocus(_BMPS[state])
+        self.SetBitmapPressed(_BMPS[state])
+        self.SetBitmapDisabled(_BMPS[state])
+        self.state = state
+        if state == STATES.enabling:
             self.Disable()
-            self.SetEvtHandlerEnabled(False)
         else:
-            self.Enable(True)
-            self.SetEvtHandlerEnabled(True)
+            self.Enable()
+        if state == STATES.enabled:
+            for o in self.others: o.Enable()
+        else:
+            for o in self.others: o.Disable()
+        # Ensure button is in pressed state if device is enabled, because
+        # other controls or events may cause a state change.
+        self.SetValue(state == STATES.enabled)
+        # Enabling/disabling control sets focus to None. Set it to parent so keypresses still handled.
+        wx.CallAfter(self.Parent.SetFocus)
 
-        # Update colour
-        colour = {STATES.enabled: ACTIVE_COLOR,
-                  STATES.disabled: INACTIVE_COLOR,
-                  STATES.enabling: (127, 127, 127),
-                  STATES.constant: (255, 255, 0),
-                  STATES.error: (255, 0, 0)}[state]
-        self.SetBackgroundColour(colour)
 
-        # Update label
-        label = STATES.toStr(state)
-        if self.prefix is not None:
-            label = '\n'.join((self.prefix, label))
-        self.SetLabel(label)
-        self.Refresh()
+    def onStatusEvent(self, evt):
+        device, state = evt.EventData
+        if device != self.device:
+            return
+        self.setState(state)
+
+
+class TupleOfIntsProperty(wx.propgrid.StringProperty):
+    def __init__(self, *args, **kwargs):
+        if 'value' in kwargs:
+            kwargs['value'] = ", ".join([str(v) for v in kwargs['value']])
+        super().__init__(*args, **kwargs)
+
+
+    def SetValue(self, value, **kwargs):
+        value = ", ".join([str(v) for v in value])
+        super().SetValue(value, **kwargs)
+
+
+    def GetValue(self):
+        return tuple([int(v) for v in self.m_value.split(",")])
 
 
 class SettingsEditor(wx.Frame):
@@ -240,19 +289,22 @@ class SettingsEditor(wx.Frame):
                              'bool': wx.propgrid.BoolProperty,
                              'enum': wx.propgrid.EnumProperty,
                              'str': wx.propgrid.StringProperty,
+                             'tuple': TupleOfIntsProperty,
                              str(int): wx.propgrid.IntProperty,
                              str(float): wx.propgrid.FloatProperty,
                              str(bool): wx.propgrid.BoolProperty,
-                             str(str): wx.propgrid.StringProperty, }
+                             str(str): wx.propgrid.StringProperty,
+                             str(tuple): TupleOfIntsProperty}
 
 
-    def __init__(self, device, handler=None):
-        wx.Frame.__init__(self, None, wx.ID_ANY, style=wx.DEFAULT_FRAME_STYLE & ~wx.CLOSE_BOX)
+    def __init__(self, device, parent=None, handler=None):
+        wx.Frame.__init__(self, parent, wx.ID_ANY, style=wx.FRAME_FLOAT_ON_PARENT)
         self.device = device
-        self.SetTitle("Settings for %s." % device.name)
-        self.settings = None
+        self.SetTitle("%s settings" % device.name)
+        self.settings = {}
+        self.current = {}
         self.handler = handler
-        self.handler.addListener(self)
+        #self.handler.addListener(self)
         #self.panel = wx.Panel(self, wx.ID_ANY, style=wx.WANTS_CHARS)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -289,13 +341,8 @@ class SettingsEditor(wx.Frame):
         sizer.Add(buttonSizer, 0, wx.ALIGN_CENTER, 0, 0)
         self.SetSizerAndFit(sizer)
         self.SetMinSize((256, -1))
-        #self.SetMaxSize((self.GetMinWidth(), -1))
         events.subscribe("%s settings changed" % self.device, self.updateGrid)
-
-
-    def onEnabledEvent(self, evt):
-        if self.IsShown():
-            self.updateGrid()
+        self.Bind(wx.EVT_SHOW, lambda evt: self.updateGrid())
 
 
     def onClose(self, evt):
@@ -309,25 +356,17 @@ class SettingsEditor(wx.Frame):
         prop = event.GetProperty()
         name = event.GetPropertyName()
         setting = self.settings[name]
-        # Fetch and validate the value.
-        if prop.ClassName == 'wxEnumProperty':
-            index = event.GetPropertyValue()
-            # Look up value as the original type, not as str from the wxProperty.
-            # setting['values'] only contains allowed values, so this also
-            # serves as validation for enums.
-            value = setting['values'][index]
-        elif setting['type'] in (str(int), str(float), 'int', 'float'):
-            value = event.GetPropertyValue()
+        # Fetch and validate the value from the control - using event.GetValue
+        # may return the wrong type for custom properties.
+        value = prop.GetValue()
+
+        if setting['type'] in (str(int), str(float), 'int', 'float'):
             # Bound to min/max.
             lims = setting['values']
-            value = sorted(lims + (value,))[1]
+            value = sorted(tuple(lims) + (value,))[1]
         elif setting['type'] in (str(str), 'str'):
             # Limit string length.
             value = value[0, setting['values']]
-        elif setting['type'] in (str(bool), 'bool'):
-            value = event.GetPropertyValue()
-        else:
-            raise Exception('Unsupported type.')
 
         self.current[name] = value
         if value != self.device.settings[name]:
@@ -338,8 +377,10 @@ class SettingsEditor(wx.Frame):
 
 
     def onSave(self, event):
+        if self.handler is None:
+            return
         settings = self.grid.GetPropertyValues()
-        for name, value in iteritems(settings):
+        for name, value in settings.items():
             if self.settings[name]['type'] == 'enum':
                 settings[name] = self.settings[name]['values'][value]
         cockpit.util.userConfig.setValue(self.handler.getIdentifier() + '_SETTINGS',
@@ -347,77 +388,65 @@ class SettingsEditor(wx.Frame):
 
 
     def updateGrid(self):
+        """Update property state and values.
+
+        Note: grid.SetValues does not work for custom property classes -
+        it seems that it calls the C++ SetValue on the base class rather
+        than the python SetValue on the derived class."""
         if not self.IsShown():
             return
         self.Freeze()
         grid = self.grid
         self.settings = OrderedDict(self.device.describe_settings())
-        self.current.update(self.device.settings)
-        # Update all values.
-        # grid.SetValues(current)
-        # Enable/disable
+        if self.current:
+            self.current.update(self.device.settings)
+        else:
+            self.current = self.device.get_all_settings()
+        # Enable/disable controls, and update Choices for enums.
         for prop in grid.Properties:
             prop.SetTextColour(wx.Colour(0, 0, 0))
             name = prop.GetName()
             desc = self.settings[name]
             if desc['type'] in ('enum'):
-                if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
-                    choices = wx.propgrid.PGChoices()
-                    for i, d in enumerate(desc['values']):
-                        choices.Add(str(d), i)
-                else:
-                    choices = wx.propgrid.PGChoices([str(v) for v in desc['values']],
-                                                    range(len(desc['values'])))
+                indices, items = zip(*desc['values'])
+                labels = [str(i) for i in items]
+                choices = wx.propgrid.PGChoices(labels, indices)
                 prop.SetChoices(choices)
-                if self.current[name] in desc['values']:
-                    index = desc['values'].index(self.current[name])
-                    prop.SetValue(index)
-                else:
+                if self.current[name] not in indices:
                     # Indicate a problem with this item.
                     prop.SetTextColour('red')
-            else:
-                value = self.current[name]
-                prop.SetValue(value)
             try:
                 prop.Enable(not self.settings[name]['readonly'])
             except wx._core.PyAssertionError:
                 # Bug in wx in stc.EnsureCaretVisible, could not convert to a long.
                 pass
+            prop.SetValue(self.current[name])
         self.Thaw()
 
 
     def populateGrid(self):
+        """Create the propertgrid controls.
+
+        We just create the controls here - their values will be updated
+        by updateGrid."""
         grid = self.grid
         self.settings = OrderedDict(self.device.describe_settings())
-        self.current = self.device.get_all_settings()
-        for key, desc in iteritems(self.settings):
-            value = self.current[key]
-            # For some reason, a TypeError is thrown on creation of prop if value
-            # is a zero-length string.
-            if value == '':
-                value  = ' '
+        for key, desc in self.settings.items():
             propType = SettingsEditor._SETTINGS_TO_PROPTYPES.get(desc['type'])
-            if propType is wx.propgrid.EnumProperty:
-                if value in desc['values']:
-                    index = desc['values'].index(value)
-                    prop = wx.propgrid.EnumProperty(label=key, name=key,
-                                                    labels=[str(v) for v in desc['values']],
-                                                    values=range(len(desc['values'])),
-                                                    value=index)
-                else:
-                    prop = wx.propgrid.EnumProperty(label=key, name=key,
-                                                    labels=[str(v) for v in desc['values']],
-                                                    values=range(len(desc['values'])))
-            else:
-                try:
-                    prop = propType(label=key, name=key, value=(value or 0))
-                except OverflowError:
-                    # Int too large.
-                    prop = wx.propgrid.FloatProperty(label=key, name=key, value=str(value or 0))
-                except Exception as e:
-                    sys.stderr.write("populateGrid threw exception for key %s with value %s: %s"
-                                     % (key, value, e.message))
-
+            if propType is wx.propgrid.IntProperty:
+                # Use a float if integer may exceed IntProperty representation.
+                # The representation is dependent on whether or not  wx was compiled
+                # with wxUSE_LONG_LONG defined. I can't find a way to easily figure
+                # this out from python, so we go for the safer limit.
+                # Read-only ints may have a desc['values'] of (None, None), so avoid
+                # the max() comparison in that case.
+                if None in desc['values'] or max(desc['values']) > wx.INT32_MAX:
+                    propType = wx.propgrid.FloatProperty
+            try:
+                prop = propType(label=key, name=key)
+            except Exception as e:
+                sys.stderr.write("populateGrid threw exception for key %s with value %s: %s"
+                                 % (key, value, e))
             if desc['readonly']:
                 prop.Enable(False)
             grid.Append(prop)
@@ -447,11 +476,9 @@ class OptionButtons(wx.Panel):
             labelctrl = Label(parent=self, label=label)
             s.Add(labelctrl)
 
-        self.mainButton = Button(label='...',
-                                 parent=self,
-                                 size=self.size)
-        self.mainButton.Bind(wx.EVT_LEFT_UP, self.showButtons)
-        s.Add(self.mainButton)
+        self.mainButton = wx.Button(self, wx.ID_ANY, '...')
+        self.mainButton.Bind(wx.EVT_BUTTON, self.showButtons)
+        s.Add(self.mainButton, 1, wx.EXPAND)
         self.SetSizerAndFit(s)
 
         self.subframe = wx.Frame(self, style=wx.FRAME_TOOL_WINDOW | wx.BORDER_NONE)
@@ -472,10 +499,10 @@ class OptionButtons(wx.Panel):
 
     def activateOneButton(self, button):
         # Activate one button in the set.
-        button.SetBackgroundColour((128,255,128))
+        button.SetValue(True)
         for other in self.buttons:
             if other != button:
-                other.SetBackgroundColour((128,128,128))
+                other.SetValue(False)
 
 
     def setOption(self, optionName):
@@ -492,8 +519,8 @@ class OptionButtons(wx.Panel):
         self.buttons=[]
         self.subframe.Sizer.Clear()
         for label, callback in options:
-            b = Button(label=label, parent=self.subframe, size=self.size)
-            b.Bind(wx.EVT_LEFT_UP, lambda evt, b=b, c=callback: self.onButton(b, c))
+            b = wx.ToggleButton(self.subframe, wx.ID_ANY, label)
+            b.Bind(wx.EVT_TOGGLEBUTTON, lambda evt, b=b, c=callback: self.onButton(b, c))
             self.subframe.Sizer.Add(b)
             self.buttons.append(b)
         self.subframe.Fit()
