@@ -36,10 +36,12 @@ import cockpit.gui.device
 import cockpit.gui.guiUtils
 import cockpit.handlers.camera
 import cockpit.util.listener
+import cockpit.util.logger
 import cockpit.util.threads
 import cockpit.util.userConfig
 from cockpit.devices.microscopeDevice import MicroscopeBase
 from cockpit.interfaces.imager import pauseVideo
+from microscope.devices import ROI, Binning
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFT) = range(4)
@@ -245,7 +247,13 @@ class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
     def getImageSize(self, name):
         """Read the image size from the camera."""
         roi = self.proxy.get_roi()  # left, bottom, right, top
+        if not isinstance(roi, ROI):
+            cockpit.util.logger.log.warning("%s returned tuple not ROI()" % self.name)
+            roi = ROI(roi)
         binning = self.proxy.get_binning()
+        if not isinstance(binning, Binning):
+            cockpit.util.logger.log.warning("%s returned tuple not Binning()" % self.name)
+            binning = Binning(binning)
         return (roi.width//binning.h, roi.height//binning.v)
 
 
