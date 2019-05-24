@@ -183,7 +183,7 @@ class piOutputWindow(wx.Frame):
     def toggle(self):
         output = 0
         for button, line in self.buttonToLine.items():
-            if button.getIsActive():
+            if button.GetValue():
                 self.pi.RPiConnection.flipDownUp(line, 1)
             else:
                 self.pi.RPiConnection.flipDownUp(line, 0)
