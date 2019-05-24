@@ -66,6 +66,7 @@ import cockpit.util.threads
 import itertools
 import queue
 import time
+import numpy as np
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1
@@ -172,8 +173,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         xMax += max(0, xOffLim[1]) + MegaTile.micronSize
         yMin += min(0, yOffLim[0]) - 2*MegaTile.micronSize
         yMax += max(0, yOffLim[1]) + 2*MegaTile.micronSize
-        for x in range(xMin, xMax, MegaTile.micronSize):
-            for y in range(yMin, yMax, MegaTile.micronSize):
+        for x in np.arange(xMin, xMax, MegaTile.micronSize):
+            for y in np.arange(yMin, yMax, MegaTile.micronSize):
                 self.megaTiles.append(MegaTile((-x, y)))
         self.haveInitedGL = True
 
