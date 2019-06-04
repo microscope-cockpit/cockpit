@@ -4,6 +4,7 @@
 ## Copyright (C) 2018-19 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
 ## Copyright (C) 2018 David Pinto <david.pinto@bioch.ox.ac.uk>
+## Copyright (C) 2019 Nicholas Hall <nicholas.hall@dtc.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -72,6 +73,8 @@ import traceback
 import wx
 import wx.glcanvas
 import operator
+from skimage.filters import threshold_otsu
+from scipy.ndimage.measurements import center_of_mass
 
 ## @package cockpit.gui.imageViewer.viewCanvas
 # This module provides a canvas for displaying camera images.
@@ -263,14 +266,11 @@ class Image(BaseGL):
             self._createTextures()
         shader = self.getShader()
         glUseProgram(shader)
-        # Vertical and horizontal modifiers for non-square images.
-        hlim = self._data.shape[1] / max(self._data.shape)
-        vlim = self._data.shape[0] / max(self._data.shape)
-        # Number of x and y textures.
         nx, ny = self.shape
-        # Quad dimensions for one texture.
-        dx = 2 * hlim / nx
-        dy = 2 * vlim / ny
+        dx = 2 / nx
+        dy = 2 / ny
+        xcorr = ycorr = 0
+        zoomcorr = 1
         if len(self._textures) > 1:
             tx = ty = self._maxTexEdge
             # xy & zoom correction for incompletely-filled textures at upper & right edges.
@@ -304,13 +304,10 @@ class Image(BaseGL):
                     ii = self._data.shape[1] / self._maxTexEdge
                 else:
                     ii = i+1
-                # Arrays used to create textures have top left at [0,0].
-                # GL co-ords run *bottom* left to top right, so need to invert
-                # vertical co-ords.
-                glVertexPointerf( [(-hlim + i*dx, -vlim + jj*dy),
-                                   (-hlim + ii*dx, -vlim + jj*dy),
-                                   (-hlim + ii*dx, -vlim + j*dy),
-                                   (-hlim + i*dx, -vlim + j*dy)] )
+                glVertexPointerf( [(-1 + i*dx, -1 + j*dy),
+                                   (-1 + ii*dx, -1 + j*dy),
+                                   (-1 + ii*dx, -1 + jj*dy),
+                                   (-1 + i*dx, -1 + jj*dy)] )
                 glTexCoordPointer(2, GL_FLOAT, 0,
                                   [(0, 0), (ii%1 or 1, 0), (ii%1 or 1, jj%1 or 1), (0, jj%1 or 1)])
                 glBindTexture(GL_TEXTURE_2D, self._textures[j*nx + i])
@@ -373,7 +370,10 @@ class Histogram(BaseGL):
         for (x, y) in zip(self.bins, self.counts):
             x0 = self.data2gl(x)
             x1 = self.data2gl(x + binw)
-            h = -1 + 2 * y / self.counts.max()
+            if self.counts.max() == 0:
+                h = -1 + 2 * y
+            else:
+                h = -1 + 2 * y / self.counts.max()
             v.extend( [(x0, -1), (x0, h), (x1, h), (x1, -1)] )
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointerf(v)
@@ -415,6 +415,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
         ## Should we show a crosshair (used for alignment)?
         self.showCrosshair = False
+        self.showAligCentroid = False
+        self.showCurCentroid = False
+        self.aligCentroidCalculated = False
 
         ## Queue of incoming images that we need to either display or discard.
         self.imageQueue = queue.Queue()
@@ -467,7 +470,12 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         self.painting = False
 
-
+        self.y_alig_cent = None
+        self.x_alig_cent = None
+        self.y_cur_cent = None
+        self.x_cur_cent = None
+        self.diff_y = None
+        self.diff_x = None
 
     def onMouseWheel(self, event):
         # Only respond if event originated within window.
@@ -545,6 +553,16 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             shouldResetView = self.imageShape != newImage.shape
             self.imageShape = newImage.shape
             self.histogram.setData(newImage)
+            if self.showAligCentroid:
+                if self.aligCentroidCalculated:
+                    pass
+                else:
+                    self.calcCurCentroid(newImage)
+                    self.x_alig_cent = self.x_cur_cent
+                    self.y_alig_cent = self.y_cur_cent
+                    self.aligCentroidCalculated = True
+            if self.showCurCentroid:
+                self.calcCurCentroid(newImage)
             self.image.setData(newImage)
             if shouldResetView:
                 self.resetView()
@@ -554,7 +572,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             # Wait for the image to be drawn before we do anything more.
             self.drawEvent.wait()
             self.drawEvent.clear()
-
 
     ## Return the blackpoint and whitepoint (i.e. the pixel values which
     # are displayed as black and white, respectively).
@@ -598,6 +615,12 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.image.draw(pan=(self.panX, self.panY), zoom=self.zoom)
             if self.showCrosshair:
                 self.drawCrosshair()
+            if self.showAligCentroid:
+                self.drawCentroidCross(y_cent=self.y_alig_cent, x_cent=self.x_alig_cent,
+                                       colour=(0, 255, 255))
+            if self.showCurCentroid:
+                self.drawCentroidCross(y_cent=self.y_cur_cent, x_cent=self.x_cur_cent,
+                                       colour=(255, 0, 255))
 
 
             glViewport(0, 0, self.w, HISTOGRAM_HEIGHT//2)
@@ -632,19 +655,28 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
 
     @cockpit.util.threads.callInMainThread
-    def drawCrosshair(self):
+    def drawCrosshair(self, ):
         glColor3f(0, 255, 255)
         glVertexPointerf([(-1, self.zoom*self.panY), (1, self.zoom*self.panY),
                           (self.zoom*self.panX, -1), (self.zoom*self.panX, 1)])
         glDrawArrays(GL_LINES, 0, 4)
 
+    @cockpit.util.threads.callInMainThread
+    def drawCentroidCross(self, y_cent, x_cent, colour):
+        if x_cent == None or y_cent == None:
+            return
+        glColor3f(colour[0], colour[1], colour[2])
+        glVertexPointerf([((x_cent - 0.1 + (self.zoom*self.panX)), y_cent + (self.zoom*self.panY)),
+                          ((x_cent + 0.1 + (self.zoom*self.panX)), y_cent + (self.zoom*self.panY)),
+                          (x_cent + (self.zoom*self.panX), (y_cent - 0.1 + (self.zoom*self.panY))),
+                          (x_cent + (self.zoom*self.panX), (y_cent + 0.1 + (self.zoom*self.panY)))])
+        glDrawArrays(GL_LINES, 0, 4)
 
     ## Update the size of the canvas by scaling it.
     def setSize(self, size):
         if self.imageData is not None:
             self.w, self.h = size
         self.Refresh(0)
-
 
     def onMouse(self, event):
         if self.imageShape is None:
@@ -708,8 +740,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def getMenuActions(self):
         return [('Reset view', self.resetView),
                 ('Set histogram parameters', self.onSetHistogram),
-                ('Toggle alignment crosshair', self.toggleCrosshair)]
-
+                ('Toggle alignment crosshair', self.toggleCrosshair),
+                ('Toggle show aligment centroid', self.toggleAligCentroid),
+                ('Toggle show current centroid', self.toggleCurCentroid)]
 
     ## Let the user specify the blackpoint and whitepoint for image scaling.
     def onSetHistogram(self, event = None):
@@ -726,6 +759,39 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def toggleCrosshair(self, event=None):
         self.showCrosshair = not(self.showCrosshair)
 
+    def toggleAligCentroid(self, event=None):
+        self.aligCentroidCalculated = False
+        self.showAligCentroid = not(self.showAligCentroid)
+
+    def toggleCurCentroid(self, event=None):
+        self.showCurCentroid = not(self.showCurCentroid)
+
+    def calcCurCentroid(self, imageData):
+        """
+            Returns:
+                tuple with coordinates for centre ordered by dimension,
+                i.e. (y, x)
+            """
+        try:
+            thresh = threshold_otsu(imageData)
+        except ValueError:
+            ## Happens for example if all pixels in the image have the
+            ## same value.  Return the middle of the image.
+            return [l / 2 for l in imageData.shape]
+
+        masked = imageData.copy()
+        masked[masked < thresh] = 0
+        y_pos, x_pos = center_of_mass(masked)
+
+        self.y_cur_cent = (y_pos - (imageData.shape[0]/2))/(imageData.shape[0]/2)
+        self.x_cur_cent = (x_pos - (imageData.shape[1]/2))/(imageData.shape[1]/2)
+
+        if self.y_alig_cent == None or self.x_alig_cent == None:
+            pass
+        else:
+            self.diff_y = self.y_cur_cent - self.y_alig_cent
+            self.diff_x = self.x_cur_cent - self.x_alig_cent
+            totaldist = (self.diff_y ** 2 + self.diff_x ** 2) ** 0.5
 
     ## Convert window co-ordinates to gl co-ordinates.
     def canvasToGl(self, x, y):
