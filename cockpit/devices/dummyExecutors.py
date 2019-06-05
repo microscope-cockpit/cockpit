@@ -45,8 +45,7 @@ class DummyExecutor(device.Device):
         pass
 
     ## Execute the table of experiment actions.
-    def executeTable(self, name, table, startIndex, stopIndex, numReps,
-            repDuration):
+    def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
         # time this executor starts
         tStart = time.time()
         if startIndex > 0:
