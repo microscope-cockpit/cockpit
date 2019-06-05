@@ -55,22 +55,37 @@
 
 from . import device
 
-
 def Transform(tstr=None):
+    """Desribes a simple transform: (flip LR, flip UD, rotate 90)"""
     if tstr:
-        return tuple([int(t) for t in tstr.strip('()').split(',')])
+        return tuple([bool(int(t)) for t in tstr.strip('()').split(',')])
     else:
-        return (0, 0, 0)
+        return (False, False, False)
 
 ## CameraDevice subclasses Device with some additions appropriate
 # to any camera.
 class CameraDevice(device.Device):
     def __init__(self, name, config):
         super(CameraDevice, self).__init__(name, config)
-        self.settings = {}
-        self.settings['baseTransform'] = Transform(config.get('transform', None))
-        self.settings['pathTransfom'] = (0, 0, 0)
+        # baseTransform depends on camera orientation and is constant.
+        self.baseTransform = Transform(config.get('transform', None))
 
+    def updateTransform(self, pathTransform):
+        """Apply a new pathTransform"""
+        # pathTransform may change with changes in imaging path
+        base = self.baseTransform
+        # Flips cancel each other out. Rotations combine to flip both axes.
+        lr = base[0] ^ pathTransform[0]
+        ud = base[1] ^ pathTransform[1]
+        rot = base[2] ^ pathTransform[2]
+        if pathTransform[2] and base[2]:
+            lr = not lr
+            ud = not ud
+        self._setTransform((lr, ud, rot))
+
+    def _setTransform(self, transform):
+        # Sublcasses should override this if transforms are done on the device.
+        self._transform = transform
 
     def finalizeInitialization(self):
         # Set fixed filter if defined in config

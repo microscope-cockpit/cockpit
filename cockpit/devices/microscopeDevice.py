@@ -102,7 +102,7 @@ class MicroscopeBase(device.Device):
         if settings is not None:
             self._proxy.update_settings(settings)
         self.settings.update(self._proxy.get_all_settings())
-        events.publish("%s settings changed" % str(self))
+        events.publish(events.SETTINGS_CHANGED % str(self))
 
 
     def setAnyDefaults(self):

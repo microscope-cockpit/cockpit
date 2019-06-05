@@ -54,19 +54,19 @@
 
 import numpy
 from OpenGL.GL import *
-import time
 import traceback
 import wx.glcanvas
 
 from cockpit import depot
 from cockpit import events
-from . import tile
+from .tile import Tile, MegaTile
 import cockpit.util.datadoc
 import cockpit.util.logger
 import cockpit.util.threads
 import itertools
 import queue
 import time
+import numpy as np
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1
@@ -157,13 +157,26 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # but this should require only up to three times the tilesize added to
         # the upper limit, not four.
         # Four works, though.
-        xMin += min(0, xOffLim[0])
-        xMax += max(0, xOffLim[1]) + tile.megaTileMicronSize
-        yMin += min(0, yOffLim[0])
-        yMax += max(0, yOffLim[1]) + 4 * tile.megaTileMicronSize
-        for x in range(xMin, xMax, tile.megaTileMicronSize):
-            for y in range(yMin, yMax, tile.megaTileMicronSize):
-                self.megaTiles.append(tile.MegaTile((-x, y)))
+        # Arrays run [0,0] .. [ncols, nrows]; GL runs (-1,-1) .. (1,1). Since
+        # making adjustments to render [0,0] at (-1,1), we now add two megatiles
+        # at each y limit, rather than 4 at one edge.
+        vendor = glGetString(GL_VENDOR)
+        tsize = glGetInteger(GL_MAX_TEXTURE_SIZE)
+        if vendor.startswith(b'Intel'):
+            # If we use the full texture size, it seems it's too large
+            # for manipulation in a framebuffer on Macs with Intel chipsets.
+            # GL_MAX_FRAMEBUFFER_WIDTH and _HEIGHT are not available, so we
+            # just use a quarter of the max texture size, which has been found
+            # to work intests on 2017-ish MacbookPro.
+            tsize //= 4
+        MegaTile.setPixelSize(tsize)
+        xMin += min(0, xOffLim[0]) - MegaTile.micronSize
+        xMax += max(0, xOffLim[1]) + MegaTile.micronSize
+        yMin += min(0, yOffLim[0]) - 2*MegaTile.micronSize
+        yMax += max(0, yOffLim[1]) + 2*MegaTile.micronSize
+        for x in np.arange(xMin, xMax, MegaTile.micronSize):
+            for y in np.arange(yMin, yMax, MegaTile.micronSize):
+                self.megaTiles.append(MegaTile((-x, y)))
         self.haveInitedGL = True
 
 
@@ -292,7 +305,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.SetCurrent(self.context)
         while not self.pendingImages.empty() and (time.time()-t < 0.05):
             data, pos, size, scalings, layer = self.pendingImages.get()
-            newTiles.append(tile.Tile(data, pos, size, scalings, layer))
+            newTiles.append(Tile(data, pos, size, scalings, layer))
         self.tiles.extend(newTiles)
         for megaTile in self.megaTiles:
             megaTile.prerenderTiles(newTiles, self)

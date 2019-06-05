@@ -232,13 +232,13 @@ class Tile:
 
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glBegin(GL_QUADS)
-        glTexCoord2f(0, 0)
-        glVertex2f(x, y)        
-        glTexCoord2f(picTexRatio_x, 0)
-        glVertex2f(x + self.size[0], y)
-        glTexCoord2f(picTexRatio_x, picTexRatio_y)
-        glVertex2f(x + self.size[0], y + self.size[1])
         glTexCoord2f(0, picTexRatio_y)
+        glVertex2f(x, y)
+        glTexCoord2f(picTexRatio_x, picTexRatio_y)
+        glVertex2f(x + self.size[0], y)
+        glTexCoord2f(picTexRatio_x, 0)
+        glVertex2f(x + self.size[0], y + self.size[1])
+        glTexCoord2f(0, 0)
         glVertex2f(x, y + self.size[1])
         glEnd()
 
@@ -266,17 +266,6 @@ class Tile:
         return (self.size[0] / self.textureData.shape[0], 
                 self.size[1] / self.textureData.shape[1])
 
-
-
-## Length in pixels of one edge of a MegaTile's texture.
-megaTilePixelSize = 512
-## Length in microns of one edge of a MegaTile's texture.
-megaTileMicronSize = 500
-## Scaling factor to apply when prerendering to a MegaTile, so that
-# pixels line up properly at both render levels.
-megaTileScaleFactor = megaTileMicronSize / float(megaTilePixelSize)
-## Global numpy array of ones, used to initialize the MegaTile textures.
-megaTileData = numpy.ones((megaTilePixelSize, megaTilePixelSize), dtype = numpy.float32)
 ## Framebuffer to use when prerendering. Set to None initially since
 # we have to wait for OpenGL to get set up in our window before we can
 # use it.
@@ -292,6 +281,13 @@ def clearFramebuffer():
 # at a reduced level of detail, which allows us to keep the program
 # responsive even when thousands of tiles are in view.
 class MegaTile(Tile):
+    ## Length in pixels of one edge of a MegaTile's texture.
+    pixelSize = None
+    ## Length in microns of one edge of a MegaTile's texture.
+    micronSize = None
+    ## An array of ones, used to initialize the MegaTile textures.
+    _emptyTileData = None
+
     ## Instantiate the megatile. The main difference here is that
     # megatiles don't allocated any video memory until they have
     # something to display; since the majority of the mosaic is
@@ -300,8 +296,8 @@ class MegaTile(Tile):
     # At this time, if megaTileFramebuffer has not been created
     # yet, create it.
     def __init__(self, pos):
-        Tile.__init__(self, megaTileData, pos,
-                 (megaTileMicronSize, megaTileMicronSize),
+        Tile.__init__(self, self._emptyTileData, pos,
+                 (self.micronSize, self.micronSize),
                  (0, 1), 'megatiles',
                  shouldDelayAllocation = True)
         ## Counts the number of tiles we've rendered to ourselves.
@@ -313,6 +309,13 @@ class MegaTile(Tile):
         if megaTileFramebuffer is None:
             megaTileFramebuffer = glGenFramebuffers(1)
 
+    @classmethod
+    def setPixelSize(cls, edge):
+        if cls.pixelSize is not None:
+            raise Exception("MegaTile class already initialised.")
+        cls.pixelSize = edge
+        cls.micronSize = edge * 1
+        cls._emptyTileData = numpy.ones( (edge, edge), dtype=numpy.float32)
 
     ## Go through the provided list of Tiles, find the ones that overlap
     # our area, and prerender them to our texture
@@ -321,8 +324,8 @@ class MegaTile(Tile):
             return
         minX = self.pos[0]
         minY = self.pos[1]
-        maxX = self.pos[0] + megaTileMicronSize
-        maxY = self.pos[1] + megaTileMicronSize
+        maxX = self.pos[0] + self.micronSize
+        maxY = self.pos[1] + self.micronSize
         viewBox = ((minX, minY), (maxX, maxY))
         newTiles = []
         for tile in tiles:
@@ -342,12 +345,10 @@ class MegaTile(Tile):
             
             glPushMatrix()
             glLoadIdentity()
-            glViewport(0, 0, megaTilePixelSize, megaTilePixelSize)
+            glViewport(0, 0, self.pixelSize, self.pixelSize)
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
-            glOrtho(0, megaTilePixelSize * megaTileScaleFactor,
-                    0, megaTilePixelSize * megaTileScaleFactor,
-                    1, 0)
+            glOrtho(0, self.micronSize, self.micronSize, 0, 1, 0)
             glTranslatef(-self.pos[0], -self.pos[1], 0)
             glMatrixMode(GL_MODELVIEW)
 

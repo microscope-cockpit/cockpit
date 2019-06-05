@@ -76,14 +76,16 @@ class STATES():
     enabled = 1
     enabling = 2
     constant = 3
+    busy = 4
 
     @staticmethod
     def toStr(value):
         return {-1:'ERROR',
                  0:'OFF',
                  1:'ON',
-                 2:'BUSY...',
-                 3:'ALWAYS ON',}.get(value, '')
+                 2:'ENABLING...',
+                 3:'ALWAYS ON',
+                 4:'BUSY'}.get(value, '')
 
 
 class DeviceHandler(object):
@@ -188,7 +190,9 @@ class DeviceHandler(object):
     # anything that cares. At this point, all device handlers should be 
     # initialized.
     def makeInitialPublications(self):
-        pass
+        getIsEnabled = getattr(self, 'getIsEnabled', None) or self.callbacks.get('getIsEnabled', None)
+        if getIsEnabled:
+            events.publish(events.DEVICE_STATUS, self, getIsEnabled())
 
 
     ## Do any final initaliaziton actions, now that all devices are set up,
@@ -226,15 +230,7 @@ class DeviceHandler(object):
 
 
     ## Add a watch on a device parameter.
-    def addWatch(self, attrOrName, callback):
-        if isinstance(attrOrName, str):
-            name = attrOrName
-        else:
-            # may have been passed an attribute rather than its name
-            try:
-                name = next(filter(lambda x: attrOrName is x[1], self.__dict__.items()))[0]
-            except:
-                raise Exception("Could not find passed attribute on %s." % self)
+    def addWatch(self, name, callback):
         if name not in self._watches:
             self._watches[name] = set()
         self._watches[name].add(callback)
@@ -246,20 +242,23 @@ class DeviceHandler(object):
         if self.state == STATES.enabling:
             # Already processing a previous toggle request.
             return
-        if not all([hasattr(self, 'setEnabled'), hasattr(self, 'getIsEnabled')]):
+        getIsEnabled = getattr(self, 'getIsEnabled', None) or self.callbacks.get('getIsEnabled', None)
+        setEnabled = getattr(self, 'setEnabled', None) or self.callbacks.get('setEnabled', None)
+        if not all([getIsEnabled, setEnabled]):
             raise Exception('toggleState dependencies not implemented for %s.' % self.name)
+
         # Do nothing if lock locked as en/disable already in progress.
         if not self.enableLock.acquire(False):
             return
         events.publish(events.DEVICE_STATUS, self, STATES.enabling)
         try:
-            self.setEnabled(not(self.getIsEnabled()))
+            setEnabled(not(getIsEnabled()))
         except Exception as e:
             events.publish(events.DEVICE_STATUS, self, STATES.error)
             raise Exception('Problem encountered en/disabling %s:\n%s' % (self.name, e))
         finally:
             self.enableLock.release()
-        events.publish(events.DEVICE_STATUS, self, self.getIsEnabled())
+        events.publish(events.DEVICE_STATUS, self, getIsEnabled())
 
     ## Add a toggle event to the action table.
     # Return time of last action, and response time before ready after trigger.

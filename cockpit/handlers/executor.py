@@ -203,8 +203,8 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
         events.publish('update status light', 'device waiting',
                        'Waiting for\n%s to finish' % self.name, (255, 255, 0))
 
-        return self.callbacks['executeTable'](self.name, actions, 0,
-                len(actions), numReps, repDuration)
+        return self.callbacks['executeTable'](actions, 0, len(actions), numReps,
+                                              repDuration)
 
     ## Debugging function: display ExecutorOutputWindow.
     def showDebugWindow(self):

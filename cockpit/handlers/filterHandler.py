@@ -92,7 +92,7 @@ class FilterHandler(deviceHandler.DeviceHandler):
         ctrl = wx.Choice(parent)
         ctrl.Set(list(map(str, self.filters)))
         ctrl.Bind(wx.EVT_CHOICE, lambda evt: self.setFilter(self.filters[evt.Selection]))
-        self.addWatch(self.lastFilter, lambda f: ctrl.SetSelection(ctrl.FindString(str(f))))
+        self.addWatch('lastFilter', lambda f: ctrl.SetSelection(ctrl.FindString(str(f))))
         ctrl.SetSelection(ctrl.FindString(str(self.lastFilter)))
         return ctrl
 

@@ -208,9 +208,11 @@ _BMP_ERR = wx.Bitmap.FromRGBA(*_BMP_SIZE, red=255, green=0, blue=0,
                              alpha=wx.ALPHA_OPAQUE)
 
 _BMPS = {STATES.enabling: _BMP_WAIT,
-        STATES.enabled: _BMP_ON,
-        STATES.disabled: _BMP_OFF,
-        STATES.error: _BMP_ERR}
+         STATES.busy: _BMP_WAIT,
+         STATES.enabled: _BMP_ON,
+         STATES.disabled: _BMP_OFF,
+         STATES.error: _BMP_ERR,
+         None: _BMP_ERR}
 
 class EnableButton(wx.ToggleButton):
     def __init__(self, parent, deviceHandler):
@@ -341,12 +343,12 @@ class SettingsEditor(wx.Frame):
         sizer.Add(buttonSizer, 0, wx.ALIGN_CENTER, 0, 0)
         self.SetSizerAndFit(sizer)
         self.SetMinSize((256, -1))
-        events.subscribe("%s settings changed" % self.device, self.updateGrid)
+        events.subscribe(events.SETTINGS_CHANGED % self.device, self.updateGrid)
         self.Bind(wx.EVT_SHOW, lambda evt: self.updateGrid())
 
 
     def onClose(self, evt):
-        events.unsubscribe("%s settings changed" % self.device, self.updateGrid)
+        events.unsubscribe(events.SETTINGS_CHANGED % self.device, self.updateGrid)
         if evt.GetId() == wx.ID_OK:
             self.device.updateSettings(self.current)
         self.Close()
@@ -420,7 +422,11 @@ class SettingsEditor(wx.Frame):
             except wx._core.PyAssertionError:
                 # Bug in wx in stc.EnsureCaretVisible, could not convert to a long.
                 pass
-            prop.SetValue(self.current[name])
+            try:
+                prop.SetValue(self.current[name])
+                prop.SetTextColour('black')
+            except:
+                prop.SetTextColour('red')
         self.Thaw()
 
 
