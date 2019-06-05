@@ -266,14 +266,11 @@ class Image(BaseGL):
             self._createTextures()
         shader = self.getShader()
         glUseProgram(shader)
-        # Vertical and horizontal modifiers for non-square images.
-        hlim = self._data.shape[1] / max(self._data.shape)
-        vlim = self._data.shape[0] / max(self._data.shape)
-        # Number of x and y textures.
         nx, ny = self.shape
-        # Quad dimensions for one texture.
-        dx = 2 * hlim / nx
-        dy = 2 * vlim / ny
+        dx = 2 / nx
+        dy = 2 / ny
+        xcorr = ycorr = 0
+        zoomcorr = 1
         if len(self._textures) > 1:
             tx = ty = self._maxTexEdge
             # xy & zoom correction for incompletely-filled textures at upper & right edges.
@@ -307,13 +304,10 @@ class Image(BaseGL):
                     ii = self._data.shape[1] / self._maxTexEdge
                 else:
                     ii = i+1
-                # Arrays used to create textures have top left at [0,0].
-                # GL co-ords run *bottom* left to top right, so need to invert
-                # vertical co-ords.
-                glVertexPointerf( [(-hlim + i*dx, -vlim + jj*dy),
-                                   (-hlim + ii*dx, -vlim + jj*dy),
-                                   (-hlim + ii*dx, -vlim + j*dy),
-                                   (-hlim + i*dx, -vlim + j*dy)] )
+                glVertexPointerf( [(-1 + i*dx, -1 + j*dy),
+                                   (-1 + ii*dx, -1 + j*dy),
+                                   (-1 + ii*dx, -1 + jj*dy),
+                                   (-1 + i*dx, -1 + jj*dy)] )
                 glTexCoordPointer(2, GL_FLOAT, 0,
                                   [(0, 0), (ii%1 or 1, 0), (ii%1 or 1, jj%1 or 1), (0, jj%1 or 1)])
                 glBindTexture(GL_TEXTURE_2D, self._textures[j*nx + i])
@@ -639,12 +633,21 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             glLoadIdentity ()
             glOrtho (0, self.w, 0, self.h, 1., -1.)
             glTranslatef(0, HISTOGRAM_HEIGHT/2+2, 0)
-            try:
-                self.font.render('%d [%-10d %10d] %d' %
-                                 (self.image.dmin, self.histogram.lthresh,
-                                  self.histogram.uthresh, self.image.dmin+self.image.dptp))
-            except:
-                pass
+            if self.showCurCentroid:
+                try:
+                    self.font.render('%d [%-10d %10d] %d    X diff = %.5f, Y diff = %.5f' %
+                                     (self.image.dmin, self.histogram.lthresh,
+                                      self.histogram.uthresh, self.image.dmin + self.image.dptp,
+                                      self.diff_x, self.diff_y))
+                except:
+                    pass
+            else:
+                try:
+                    self.font.render('%d [%-10d %10d] %d' %
+                                     (self.image.dmin, self.histogram.lthresh,
+                                      self.histogram.uthresh, self.image.dmin + self.image.dptp))
+                except:
+                    pass
             glPopMatrix()
 
             #self.drawHistogram()
