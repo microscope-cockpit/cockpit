@@ -474,8 +474,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.x_alig_cent = None
         self.y_cur_cent = None
         self.x_cur_cent = None
-        self.diff_y = None
-        self.diff_x = None
+        self.diff_y = 0
+        self.diff_x = 0
 
     def onMouseWheel(self, event):
         # Only respond if event originated within window.
@@ -617,10 +617,10 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 self.drawCrosshair()
             if self.showAligCentroid:
                 self.drawCentroidCross(y_cent=self.y_alig_cent, x_cent=self.x_alig_cent,
-                                       colour=(0, 255, 255))
+                                       colour=(255, 0, 0))
             if self.showCurCentroid:
                 self.drawCentroidCross(y_cent=self.y_cur_cent, x_cent=self.x_cur_cent,
-                                       colour=(255, 0, 255))
+                                       colour=(0, 255, 0))
 
 
             glViewport(0, 0, self.w, HISTOGRAM_HEIGHT//2)
@@ -633,21 +633,13 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             glLoadIdentity ()
             glOrtho (0, self.w, 0, self.h, 1., -1.)
             glTranslatef(0, HISTOGRAM_HEIGHT/2+2, 0)
-            if self.showCurCentroid:
-                try:
-                    self.font.render('%d [%-10d %10d] %d    X diff = %.5f, Y diff = %.5f' %
-                                     (self.image.dmin, self.histogram.lthresh,
-                                      self.histogram.uthresh, self.image.dmin + self.image.dptp,
-                                      self.diff_x, self.diff_y))
-                except:
-                    pass
-            else:
-                try:
-                    self.font.render('%d [%-10d %10d] %d' %
-                                     (self.image.dmin, self.histogram.lthresh,
-                                      self.histogram.uthresh, self.image.dmin + self.image.dptp))
-                except:
-                    pass
+            try:
+                self.font.render('%d [%-10d %10d] %d    X diff = %.5f, Y diff = %.5f' %
+                                (self.image.dmin, self.histogram.lthresh,
+                                self.histogram.uthresh, self.image.dmin + self.image.dptp,
+                                self.diff_x, self.diff_y))
+            except:
+                pass
             glPopMatrix()
 
             #self.drawHistogram()
