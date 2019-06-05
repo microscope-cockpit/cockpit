@@ -711,7 +711,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                 if not self.shouldRestart and target is not None:
                     self.goTo(target, True)
 
-
             if self.shouldRestart:
                 # Start a new spiral about current stage position.
                 stepper = self.mosaicStepper()
@@ -1314,10 +1313,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
 
     ## Handle the user clicking the abort button.
     def onAbort(self, *args):
-        if self.amGeneratingMosaic:
-            self.shouldContinue.clear()
-        events.publish('mosaic stop')
-        self.nameToButton['Run mosaic'].SetLabel('Run mosaic')
+        self.shouldContinue.clear()
         # Stop deleting tiles, while we're at it.
         self.onDeleteTiles(shouldForceStop = True)
 

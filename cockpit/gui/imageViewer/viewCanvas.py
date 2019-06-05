@@ -4,6 +4,7 @@
 ## Copyright (C) 2018-19 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
 ## Copyright (C) 2018 David Pinto <david.pinto@bioch.ox.ac.uk>
+## Copyright (C) 2019 Nicholas Hall <nicholas.hall@dtc.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -414,6 +415,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
         ## Should we show a crosshair (used for alignment)?
         self.showCrosshair = False
+        self.showAligCentroid = False
+        self.showCurCentroid = False
+        self.aligCentroidCalculated = False
 
         ## Queue of incoming images that we need to either display or discard.
         self.imageQueue = queue.Queue()
@@ -466,7 +470,12 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         self.painting = False
 
-
+        self.y_alig_cent = None
+        self.x_alig_cent = None
+        self.y_cur_cent = None
+        self.x_cur_cent = None
+        self.diff_y = None
+        self.diff_x = None
 
     def onMouseWheel(self, event):
         # Only respond if event originated within window.
@@ -564,7 +573,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.drawEvent.wait()
             self.drawEvent.clear()
 
-
     ## Return the blackpoint and whitepoint (i.e. the pixel values which
     # are displayed as black and white, respectively).
     def getScaling(self):
@@ -647,7 +655,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
 
     @cockpit.util.threads.callInMainThread
-    def drawCrosshair(self):
+    def drawCrosshair(self, ):
         glColor3f(0, 255, 255)
         glVertexPointerf([(-1, self.zoom*self.panY), (1, self.zoom*self.panY),
                           (self.zoom*self.panX, -1), (self.zoom*self.panX, 1)])
@@ -669,7 +677,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         if self.imageData is not None:
             self.w, self.h = size
         self.Refresh(0)
-
 
     def onMouse(self, event):
         if self.imageShape is None:
@@ -733,8 +740,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def getMenuActions(self):
         return [('Reset view', self.resetView),
                 ('Set histogram parameters', self.onSetHistogram),
-                ('Toggle alignment crosshair', self.toggleCrosshair)]
-
+                ('Toggle alignment crosshair', self.toggleCrosshair),
+                ('Toggle show aligment centroid', self.toggleAligCentroid),
+                ('Toggle show current centroid', self.toggleCurCentroid)]
 
     ## Let the user specify the blackpoint and whitepoint for image scaling.
     def onSetHistogram(self, event = None):

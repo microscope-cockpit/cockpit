@@ -126,7 +126,7 @@ def ExceptionBox(caption="", parent=None):
     dialog = wx.Dialog(parent, title=caption, name="exception-dialog")
     message = wx.StaticText(dialog, label=str(current_exception))
     details = wx.TextCtrl(dialog, value=traceback.format_exc(),
-                          style=(wx.TE_MULTILINE|wx.TE_READONLY))
+                          style=(wx.TE_MULTILINE|wx.TE_DONTWRAP|wx.TE_READONLY))
 
     ## 'w.Font.Family = f' does not work because it 'w.Font' returns a
     ## copy of the font.  We need to modify that copy and assign back.
@@ -134,11 +134,25 @@ def ExceptionBox(caption="", parent=None):
     details_font.Family = wx.FONTFAMILY_TELETYPE
     details.Font = details_font
 
-    sizer_flags = wx.SizerFlags().Expand().Border()
     sizer = wx.BoxSizer(wx.VERTICAL)
-    sizer.Add(message, sizer_flags)
-    sizer.Add(details, sizer_flags)
-    sizer.Add(dialog.CreateSeparatedButtonSizer(wx.OK), sizer_flags)
+    sizer.Add(message, wx.SizerFlags(0).Expand().Border())
+    sizer.Add(details, wx.SizerFlags(1).Expand().Border())
+    sizer.Add(dialog.CreateSeparatedButtonSizer(wx.OK),
+              wx.SizerFlags(0).Expand().Border())
+
+    ## The default width of a TextCtrl does not take into account its
+    ## actual content.  We need to manually set its size (issue #497)
+    if wx.Platform != '__WXMSW__':
+        details_text_size = details.GetTextExtent(details.Value)
+    else:
+        ## On Windows, GetTextExtent ignores newlines so we need to
+        ## manually compute the text extent.
+        traceback_lines = details.Value.splitlines()
+        longest_line = max(traceback_lines, key=len)
+        one_line_size = details.GetTextExtent(longest_line)
+        details_text_size = wx.Size(one_line_size[0],
+                                    one_line_size[1] * len(traceback_lines))
+    details.SetInitialSize(details.GetSizeFromTextSize(details_text_size))
 
     dialog.SetSizerAndFit(sizer)
     dialog.Centre()
