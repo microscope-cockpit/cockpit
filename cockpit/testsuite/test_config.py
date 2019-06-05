@@ -159,9 +159,9 @@ class TestGetType(TestConfigConverters):
         self.assertTypes('decimal.Decimal', decimal.Decimal)
 
     def test_cockpit_device_type(self):
-        import cockpit.devices.dummyLights
-        self.assertTypes('cockpit.devices.dummyLights.DummyLights',
-                          cockpit.devices.dummyLights.DummyLights)
+        import cockpit.devices.light
+        self.assertTypes('cockpit.devices.light.SimpleLight',
+                          cockpit.devices.light.SimpleLight)
 
 
 class TestGetPath(TestConfigConverters):
