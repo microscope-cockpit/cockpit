@@ -184,8 +184,7 @@ class ExecutorDevice(device.Device):
 
     ## Actually execute the events in an experiment ActionTable, starting at
     # startIndex and proceeding up to but not through stopIndex.
-    def executeTable(self, name, table, startIndex, stopIndex, numReps, 
-            repDuration):
+    def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
 
         actions = actions_from_table(table, startIndex, stopIndex, repDuration)
 
@@ -279,8 +278,7 @@ class LegacyDSP(ExecutorDevice):
 
     ## Actually execute the events in an experiment ActionTable, starting at
     # startIndex and proceeding up to but not through stopIndex.
-    def executeTable(self, name, table, startIndex, stopIndex, numReps,
-            repDuration):
+    def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
         # Take time and arguments (i.e. omit handler) from table to generate actions.
         # For the UCSF m6x DSP device, we also need to:
         #  - make the analogue values offsets from the current position;

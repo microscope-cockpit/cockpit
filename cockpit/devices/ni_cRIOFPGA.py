@@ -536,7 +536,7 @@ class NIcRIO(device.Device):
             count += 1
         return count
 
-    def executeTable(self, name, table, startIndex, stopIndex, numReps, repDuration):
+    def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
         '''
         Actually execute the events in an experiment ActionTable, starting at
         startIndex and proceeding up to but not through stopIndex.
