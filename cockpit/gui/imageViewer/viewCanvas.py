@@ -633,12 +633,21 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             glLoadIdentity ()
             glOrtho (0, self.w, 0, self.h, 1., -1.)
             glTranslatef(0, HISTOGRAM_HEIGHT/2+2, 0)
-            try:
-                self.font.render('%d [%-10d %10d] %d' %
-                                 (self.image.dmin, self.histogram.lthresh,
-                                  self.histogram.uthresh, self.image.dmin+self.image.dptp))
-            except:
-                pass
+            if self.showCurCentroid:
+                try:
+                    self.font.render('%d [%-10d %10d] %d    X diff = %.5f, Y diff = %.5f' %
+                                     (self.image.dmin, self.histogram.lthresh,
+                                      self.histogram.uthresh, self.image.dmin + self.image.dptp,
+                                      self.diff_x, self.diff_y))
+                except:
+                    pass
+            else:
+                try:
+                    self.font.render('%d [%-10d %10d] %d' %
+                                     (self.image.dmin, self.histogram.lthresh,
+                                      self.histogram.uthresh, self.image.dmin + self.image.dptp))
+                except:
+                    pass
             glPopMatrix()
 
             #self.drawHistogram()
