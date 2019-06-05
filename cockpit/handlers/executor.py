@@ -183,7 +183,7 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
             if tPrev is not None and t == tPrev:
                 if h not in hPrev:
                     # Update last action to merge actions at same timepoint.
-                    actions[-1] = (t, self, (dstate, astate[:]))
+                    actions[-1] = (t, (dstate, astate[:]))
                     # Add handler and args to list for next check.
                     hPrev.append(h)
                     argsPrev.append(args)
@@ -195,7 +195,7 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
                     raise Exception("Simultaneous actions with same hander, %s." % h)
             else:
                 # Append new action.
-                actions.append((t, self, (dstate, astate[:])))
+                actions.append((t, (dstate, astate[:])))
                 # Reinitialise hPrev and argsPrev for next check.
                 hPrev, argsPrev = [h], [args]
                 tPrev = t

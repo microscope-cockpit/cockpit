@@ -163,7 +163,7 @@ class BoulderSLM(device.Device):
     def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
         # Found a table entry with a simple index. Trigger until that index
         # is reached.
-        for t, h, args in table[startIndex:stopIndex]:
+        for t, args in table[startIndex:stopIndex]:
             events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
                            'SLM moving to\nindex %d' % args,
                            (255, 255, 0))
