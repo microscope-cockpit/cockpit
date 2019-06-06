@@ -150,15 +150,17 @@ class BoulderSLM(device.Device):
                 self.handler.triggerNow()
                 time.sleep(0.01)
             # Cycle to the target position.
-            pos = self.getCurrentPosition()
-            delta = (targetPosition - pos) + (targetPosition < pos) * len(self.last.params)
-            for i in range(delta):
-                self.handler.triggerNow()
-                time.sleep(0.01)
+            self.cycleToPosition(targetPosition)
         else:
             # Disable the SLM.
             self.connection.stop()
 
+    def cycleToPosition(self, targetPosition):
+        pos = self.getCurrentPosition()
+        delta = (targetPosition - pos) + (targetPosition < pos) * len(self.last.params)
+        for i in range(delta):
+            self.handler.triggerNow()
+            time.sleep(0.01)
 
     def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
         # Found a table entry with a simple index. Trigger until that index
@@ -167,9 +169,7 @@ class BoulderSLM(device.Device):
             events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
                            'SLM moving to\nindex %d' % args,
                            (255, 255, 0))
-            while (self.getCurrentPosition() != args):
-                self.handler.triggerNow()
-
+            self.cycleToPosition(args)
 
     def examineActions(self, table):
         # Extract pattern parameters from the table.
@@ -249,11 +249,8 @@ class BoulderSLM(device.Device):
             self.handler.triggerNow()
             time.sleep(0.01)
         # Ensure that we're at position 0.
-        position = self.getCurrentPosition()
-        while position != 0:
-            self.handler.triggerNow()
-            time.sleep(0.01)
-            position = self.getCurrentPosition()
+        self.cycleToPosition(0)
+        self.position = self.getCurrentPosition()
 
 
     def getCurrentPosition(self):
