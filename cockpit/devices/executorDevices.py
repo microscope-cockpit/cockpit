@@ -381,7 +381,7 @@ def actions_from_table(table, startIndex, stopIndex, repDuration):
     ## Take time and arguments (i.e. omit handler) from table to
     ## generate actions.
     t0 = float(table[startIndex][0])
-    actions = [(float(row[0])-t0,) + tuple(row[2:])
+    actions = [(float(row[0])-t0,) + tuple(row[1:])
                for row in table[startIndex:stopIndex]]
 
     ## If there are repeats, add an extra action to wait until
