@@ -1,11 +1,12 @@
-# Cockpit Device file for Alpao AO device.
+# Cockpit Device file for Deformable Mirror AO device.
 # Copyright Ian Dobbie, 2017
 # Copyright Nick Hall, 2018
 # released under the GPL 3+
 #
-# This file provides the cockpit end of the driver for the Alpao deformable
+# This file provides the cockpit end of the driver for a deformable
 # mirror as currently mounted on DeepSIM in Oxford
 
+import os
 from collections import OrderedDict
 import cockpit.devices
 from cockpit.devices import device
@@ -22,6 +23,7 @@ import tkinter as tk
 from PIL import Image, ImageTk
 import cockpit.util.userConfig as Config
 import cockpit.handlers.executor
+from cockpit.devices.microscopeDevice import MicroscopeBase
 from cockpit import depot
 import time
 
@@ -29,14 +31,14 @@ import numpy as np
 import scipy.stats as stats
 
 # the AO device subclasses Device to provide compatibility with microscope.
-class Alpao(device.Device):
-    def __init__(self, name, config={}):
-        device.Device.__init__(self, name, config)
+class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
+    def __init__(self, name, dm_config={}):
+        super(self.__class__, self).__init__(name, dm_config)
         self.proxy = None
         self.sendImage = False
         self.curCamera = None
 
-        self.buttonName = 'Alpao'
+        self.buttonName = 'Deformable Mirror'
 
         ## Connect to the remote program
 
@@ -56,7 +58,8 @@ class Alpao(device.Device):
         # Create accurate look up table for certain Z positions
         # LUT dict has key of Z positions
         try:
-            LUT_array = np.loadtxt("C:\\cockpit\\nick\\cockpit\\remote_focus_LUT.txt")
+            file_path = os.path.join(os.path.expandvars('%LocalAppData%'), 'cockpit', 'remote_focus_LUT.txt')
+            LUT_array = np.loadtxt(file_path)
             self.LUT = {}
             for ii in (LUT_array[:, 0])[:]:
                 self.LUT[ii] = LUT_array[np.where(LUT_array == ii)[0][0], 1:]
@@ -74,14 +77,14 @@ class Alpao(device.Device):
 
         # Load values from config
         try:
-            self.parameters = Config.getValue('alpao_circleParams')
+            self.parameters = Config.getValue('dm_circleParams')
             self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                self.parameters[2])
         except:
             pass
 
         try:
-            self.controlMatrix = Config.getValue('alpao_controlMatrix')
+            self.controlMatrix = Config.getValue('dm_controlMatrix')
             self.proxy.set_controlMatrix(self.controlMatrix)
         except:
             pass
@@ -270,9 +273,9 @@ class Alpao(device.Device):
                     raise Exception("Argument Error: Argument type %s not understood." % str(type(args)))
 
         if len(self.remote_focus_LUT) != 0:
-            np.savetxt('C:\\cockpit\\nick\\cockpit\\remote_focus_LUT.txt',
-                       np.asanyarray(self.remote_focus_LUT))
-            Config.setValue('alpao_remote_focus_LUT', self.remote_focus_LUT)
+            file_path = os.path.join(os.path.expandvars('%LocalAppData%'),'cockpit','remote_focus_LUT.txt')
+            np.savetxt(file_path, np.asanyarray(self.remote_focus_LUT))
+            Config.setValue('dm_remote_focus_LUT', self.remote_focus_LUT)
 
     ### UI functions ###
     def makeUI(self, parent):
@@ -414,7 +417,7 @@ class Alpao(device.Device):
     def deactivateSelectCircle(self):
         # Read in the parameters needed for the phase mask
         try:
-            self.parameters = np.asarray(Config.getValue('alpao_circleParams'))
+            self.parameters = np.asarray(Config.getValue('dm_circleParams'))
         except Exception as e:
             if e is IOError:
                 print("Error: Masking parameters do not exist. Please select circle.")
@@ -429,7 +432,7 @@ class Alpao(device.Device):
             self.proxy.get_roi()
         except Exception as e:
             try:
-                self.parameters = Config.getValue('alpao_circleParams')
+                self.parameters = Config.getValue('dm_circleParams')
                 self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                    self.parameters[2])
             except:
@@ -445,15 +448,15 @@ class Alpao(device.Device):
                 raise e
 
         controlMatrix, sys_flat = self.proxy.calibrate(numPokeSteps=5)
-        Config.setValue('alpao_controlMatrix', np.ndarray.tolist(controlMatrix))
-        Config.setValue('alpao_sys_flat', np.ndarray.tolist(sys_flat))
+        Config.setValue('dm_controlMatrix', np.ndarray.tolist(controlMatrix))
+        Config.setValue('dm_sys_flat', np.ndarray.tolist(sys_flat))
 
     def onCharacterise(self):
         try:
             self.proxy.get_roi()
         except Exception as e:
             try:
-                self.parameters = Config.getValue('alpao_circleParams')
+                self.parameters = Config.getValue('dm_circleParams')
                 self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                    self.parameters[2])
             except:
@@ -472,12 +475,14 @@ class Alpao(device.Device):
             self.proxy.get_controlMatrix()
         except Exception as e:
             try:
-                self.controlMatrix = Config.getValue('alpao_controlMatrix')
+                self.controlMatrix = Config.getValue('dm_controlMatrix')
                 self.proxy.set_controlMatrix(self.controlMatrix)
             except:
                 raise e
         assay = self.proxy.assess_character()
-        np.save('C:\\cockpit\\nick\\cockpit\\characterisation_assay', assay)
+        file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                 'cockpit', 'characterisation_assay')
+        np.save(file_path, assay)
         app = View(image_np=assay)
         app.master.title('Characterisation')
         app.mainloop()
@@ -487,7 +492,7 @@ class Alpao(device.Device):
             self.proxy.get_roi()
         except Exception as e:
             try:
-                param = np.asarray(Config.getValue('alpao_circleParams'))
+                param = np.asarray(Config.getValue('dm_circleParams'))
                 self.proxy.set_roi(y0=param[0], x0=param[1],
                                    radius=param[2])
             except:
@@ -503,10 +508,16 @@ class Alpao(device.Device):
                 raise e
 
         interferogram, unwrapped_phase = self.proxy.acquire_unwrapped_phase()
-        np.save('C:\\cockpit\\nick\\cockpit\\interferogram', interferogram)
+        interferogram_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                               'cockpit', 'interferogram')
+        np.save(interferogram_file_path, interferogram)
         interferogram_ft = np.fft.fftshift(np.fft.fft2(interferogram))
-        np.save('C:\\cockpit\\nick\\cockpit\\interferogram_ft', interferogram_ft)
-        np.save('C:\\cockpit\\nick\\cockpit\\unwrapped_phase', unwrapped_phase)
+        interferogram_ft_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                               'cockpit', 'interferogram_ft')
+        np.save(interferogram_ft_file_path, interferogram_ft)
+        unwrapped_phase_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                               'cockpit', 'unwrapped_phase')
+        np.save(unwrapped_phase_file_path, unwrapped_phase)
         original_dim = int(np.shape(unwrapped_phase)[0])
         resize_dim = int(original_dim / 3)
         while original_dim % resize_dim != 0:
@@ -526,7 +537,7 @@ class Alpao(device.Device):
             self.proxy.get_roi()
         except Exception as e:
             try:
-                self.parameters = Config.getValue('alpao_circleParams')
+                self.parameters = Config.getValue('dm_circleParams')
                 self.proxy.set_roi(self.parameters[0], self.parameters[1],
                                    self.parameters[2])
             except:
@@ -545,15 +556,15 @@ class Alpao(device.Device):
             self.proxy.get_controlMatrix()
         except Exception as e:
             try:
-                self.controlMatrix = Config.getValue('alpao_controlMatrix')
+                self.controlMatrix = Config.getValue('dm_controlMatrix')
                 self.proxy.set_controlMatrix(self.controlMatrix)
             except:
                 raise e
         flat_values = self.proxy.flatten_phase(iterations=10)
-        Config.setValue('alpao_flat_values', np.ndarray.tolist(flat_values))
+        Config.setValue('dm_flat_values', np.ndarray.tolist(flat_values))
 
     def onApplySysFlat(self):
-        self.sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat'))
+        self.sys_flat_values = np.asarray(Config.getValue('dm_sys_flat'))
         self.proxy.send(self.sys_flat_values)
 
     def onApplyLastPattern(self):
@@ -572,7 +583,7 @@ class Alpao(device.Device):
                 pass
         # If we get this far, we need to create a new window.
         global _deviceInstance
-        alpaoOutputWindow(self, parent=wx.GetApp().GetTopWindow()).Show()
+        dmOutputWindow(self, parent=wx.GetApp().GetTopWindow()).Show()
 
     ### Sensorless AO functions ###
 
@@ -614,7 +625,7 @@ class Alpao(device.Device):
             self.proxy.get_controlMatrix()
         except Exception as e:
             try:
-                self.controlMatrix = Config.getValue('alpao_controlMatrix')
+                self.controlMatrix = Config.getValue('dm_controlMatrix')
                 self.proxy.set_controlMatrix(self.controlMatrix)
             except:
                 raise e
@@ -628,7 +639,7 @@ class Alpao(device.Device):
         #try:
         #    self.actuator_offset = self.sys_flat_values
         #except:
-        #    self.sys_flat_values = np.asarray(Config.getValue('alpao_sys_flat'))
+        #    self.sys_flat_values = np.asarray(Config.getValue('dm_sys_flat'))
         #    self.actuator_offset = self.sys_flat_values
         self.actuator_offset = None
 
@@ -719,15 +730,24 @@ class Alpao(device.Device):
 
             # Save full stack of images used
             self.correction_stack = np.asarray(self.correction_stack)
-            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_correction_stack_%i%i%i_%i%i"
-                    %(time.gmtime()[2], time.gmtime()[1], time.gmtime()[0], time.gmtime()[3],
-                      time.gmtime()[4]), self.correction_stack)
-            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_zernike_applied_%i%i%i_%i%i"
-                    %(time.gmtime()[2], time.gmtime()[1], time.gmtime()[0], time.gmtime()[3],
-                      time.gmtime()[4]), self.zernike_applied)
-            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_AO_nollZernike_%i%i%i_%i%i"
-                    %(time.gmtime()[2], time.gmtime()[1], time.gmtime()[0], time.gmtime()[3],
-                      time.gmtime()[4]), self.nollZernike)
+            correction_stack_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                    'cockpit',
+                                    'sensorless_AO_correction_stack_%i%i%i_%i%i'
+                                    %(time.gmtime()[2], time.gmtime()[1], time.gmtime()[0],
+                                      time.gmtime()[3], time.gmtime()[4]))
+            np.save(correction_stack_file_path, self.correction_stack)
+            zernike_applied_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                    'cockpit',
+                                    'sensorless_AO_zernike_applied_%i%i%i_%i%i'
+                                    % (time.gmtime()[2], time.gmtime()[1], time.gmtime()[0],
+                                    time.gmtime()[3], time.gmtime()[4]))
+            np.save(zernike_applied_file_path, self.zernike_applied)
+            nollZernike_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                        'cockpit',
+                                        'sensorless_AO_nollZernike_%i%i%i_%i%i'
+                                        % (time.gmtime()[2], time.gmtime()[1], time.gmtime()[0],
+                                        time.gmtime()[3], time.gmtime()[4]))
+            np.save(nollZernike_file_path, self.nollZernike)
 
             # Find aberration amplitudes and correct
             ind = int(len(self.correction_stack) / self.numMes)
@@ -742,14 +762,23 @@ class Alpao(device.Device):
             self.sensorless_correct_coef[nollInd - 1] += amp_to_correct
             print("Aberrations measured: ", self.sensorless_correct_coef)
             print("Actuator positions applied: ", self.actuator_offset)
-            np.save("C:\\cockpit\\nick\\cockpit\\sensorless_correct_coef_%i%i%i_%i%i"
-                    %(time.gmtime()[2], time.gmtime()[1], time.gmtime()[0], time.gmtime()[3],
-                      time.gmtime()[4]), self.sensorless_correct_coef)
-            np.save("C:\\cockpit\\nick\\cockpit\\ac_pos_sensorless_%i%i%i_%i%i"
-                    %(time.gmtime()[2], time.gmtime()[1], time.gmtime()[0], time.gmtime()[3],
-                      time.gmtime()[4]), self.actuator_offset)
+            sensorless_correct_coef_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                    'cockpit',
+                                    'sensorless_correct_coef_%i%i%i_%i%i'
+                                    % (time.gmtime()[2], time.gmtime()[1], time.gmtime()[0],
+                                    time.gmtime()[3], time.gmtime()[4]))
+            np.save(sensorless_correct_coef_file_path, self.sensorless_correct_coef)
+            ac_pos_sensorless_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                            'cockpit',
+                                            'ac_pos_sensorless_%i%i%i_%i%i'
+                                            % (time.gmtime()[2], time.gmtime()[1], time.gmtime()[0],
+                                            time.gmtime()[3], time.gmtime()[4]))
+            np.save(ac_pos_sensorless_file_path, self.actuator_offset)
 
-            log_file = open("C:\\cockpit\\nick\\cockpit\\sensorless_AO_logger.txt", "a+")
+            log_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                        'cockpit',
+                                        'sensorless_AO_logger.txt')
+            log_file = open(log_file_path, "a+")
             log_file.write("Time stamp: %i:%i:%i %i/%i/%i\n" %(time.gmtime()[3],time.gmtime()[4],time.gmtime()[5],time.gmtime()[2],time.gmtime()[1],time.gmtime()[0]))
             log_file.write("Aberrations measured: ")
             log_file.write(str(self.sensorless_correct_coef))
@@ -766,12 +795,12 @@ class Alpao(device.Device):
 
 # This debugging window lets each digital lineout of the DSP be manipulated
 # individually.
-class alpaoOutputWindow(wx.Frame):
+class dmOutputWindow(wx.Frame):
     def __init__(self, AoDevice, parent, *args, **kwargs):
         wx.Frame.__init__(self, parent, *args, **kwargs)
-        ## alpao Device instance.
-        self.alpao = AoDevice
-        self.SetTitle("Alpao AO device control")
+        ## dm Device instance.
+        self.dm = AoDevice
+        self.SetTitle("Deformable Mirror AO device control")
         # Contains all widgets.
         self.panel = wx.Panel(self)
         font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
@@ -857,7 +886,7 @@ class Canvas(tk.Canvas):
             self.centre[0] = (event.x - self.offset[0]) * self.ratio
             self.centre[1] = (event.y - self.offset[1]) * self.ratio
             self.radius = ((event.x + 1 - event.x + 1 + 1) * self.ratio) / 2
-            Config.setValue('alpao_circleParams', (self.centre[1], self.centre[0], self.radius))
+            Config.setValue('dm_circleParams', (self.centre[1], self.centre[0], self.radius))
 
     def circle_resize(self, event):
         if self.circle is None:
@@ -874,7 +903,7 @@ class Canvas(tk.Canvas):
         self.scale(self.circle, unscaledCentre[0], unscaledCentre[1], scale, scale)
         self.p_click = (event.x, event.y)
         self.radius = ((self.bbox(self.circle)[2] - self.bbox(self.circle)[0]) * self.ratio) / 2
-        Config.setValue('alpao_circleParams', (self.centre[1], self.centre[0], self.radius))
+        Config.setValue('dm_circleParams', (self.centre[1], self.centre[0], self.radius))
 
     def circle_drag(self, event):
         if self.circle is None:
@@ -890,7 +919,7 @@ class Canvas(tk.Canvas):
         unscaledCentre = ((bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2)
         self.centre[0] = (unscaledCentre[0] - self.offset[0]) * self.ratio
         self.centre[1] = (unscaledCentre[1] - self.offset[1]) * self.ratio
-        Config.setValue('alpao_circleParams', (self.centre[1], self.centre[0], self.radius))
+        Config.setValue('dm_circleParams', (self.centre[1], self.centre[0], self.radius))
         self.update()
 
 class View(tk.Frame):
