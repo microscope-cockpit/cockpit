@@ -11,26 +11,7 @@ Installation
 More detail instructions on Windows install Jan 2016
 -------------------------------------------------
 
-<<<<<<< HEAD
 1. Install python.
-=======
-1. Install winpython version 2.7 (current version is
-WinPython-64bit-2.7.10.3). I installed it into c:\
-
-2.  Edit the path to include the python directory and the python/scripts
-dir. right click on my computer, select propeties:Advanced and click
-on the Enviroment variables as the bottom right hand corener. Select
-new, PATH and set it to
-%PATH%;C:\WinPython-64bit-2.7.10.3\python-2.7.10.amd64;C:\WinPython-64bit-2.7.10.3\python-2.7.10.amd64\Scripts
-Assuming the directories defined above.
-
-
-3. Grab pyFTGL from micronadmin:/cockpitdependencies
-copy the libaries in the build directory into
-C:\WinPython-64bit-2.7.10.3\python-2.7.10.amd64\Lib (Note: For Windows10
-copy the libaries in the build directory into
-C:\WinPython-64bit-2.7.10.3\python-2.7.10.amd64)
->>>>>>> Added Windows10 FTGL documentation fix
 
 
 2. Ensure the python and python/scripts folders are on the system path. 
