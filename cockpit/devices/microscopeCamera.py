@@ -45,7 +45,7 @@ from microscope.devices import ROI, Binning
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFT) = range(4)
-# Pseudo-enum to track whether device defaults in place.
+# Peudo-enum to track whether device defaults in place.
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
 
 class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
@@ -274,7 +274,10 @@ class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
         This is the time that must pass after stopping one exposure
         before another can be started, in milliseconds."""
         # Camera uses time in s; cockpit uses ms.
+        #Note cycle time is exposure+Readout!
         t = self.proxy.get_cycle_time() * 1000.0
+        exp = self.proxy.get_exposure_time() * 1000.0
+        t = t - exp
         if isExact:
             result = decimal.Decimal(t)
         else:
