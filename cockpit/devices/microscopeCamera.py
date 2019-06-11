@@ -45,7 +45,7 @@ from microscope.devices import ROI, Binning
 
 # The following must be defined as in handlers/camera.py
 (TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFT) = range(4)
-# Peudo-enum to track whether device defaults in place.
+# Pseudo-enum to track whether device defaults in place.
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
 
 class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
