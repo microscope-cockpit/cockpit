@@ -20,92 +20,68 @@
 
 import numpy as np
 import wx
+from wx.lib.floatcanvas.FloatCanvas import FloatCanvas
 
 ## Default viewer dimensions.
-(VIEW_WIDTH, VIEW_HEIGHT) = (512, 512)
+VIEW_WIDTH, VIEW_HEIGHT = (512, 512)
 
 class ROISelect(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, -1, 'ROI selector')
-
-        self.panel = wx.Panel(self)
-        self.PhotoMaxSize = 512
-        img_np = np.random.randint(0, 255, (VIEW_HEIGHT, VIEW_WIDTH))
-        self.img = wx.Image(VIEW_HEIGHT, VIEW_WIDTH, img_np)
-
-        # Current mouse position
-        self.curMouseX = self.curMouseY = None
-        self.roi_x = self.roi_y = self.roi_radius = None
-
-        self.Bind(wx.EVT_PAINT, self.onPaint)
-        self.createWidgets()
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        self.img = wx.Image(VIEW_HEIGHT, VIEW_WIDTH, np.random.randint(0, 255, VIEW_HEIGHT*VIEW_WIDTH))
+        # What, if anything, is being dragged.
+        self._dragging = None
+        # Canvas
+        self.canvas = FloatCanvas(self, size=self.img.GetSize())
+        self.canvas.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
+        self.bitmap = self.canvas.AddBitmap(self.img, (0,0), Position='cc')
+        self.circle = self.canvas.AddCircle((0,0), 128, LineColor='cyan')
+        self.Sizer.Add(self.canvas)
+        # Save button
+        saveBtn = wx.Button(self, label='Save ROI')
+        saveBtn.Bind(wx.EVT_BUTTON, self.onSave)
+        self.Sizer.Add(saveBtn)
+        self.Fit()
         self.Show()
 
-    def createWidgets(self):
-        instructions = 'Select the region of interest'
-        self.mainSizer = wx.BoxSizer(wx.VERTICAL)
-
-        instructLbl = wx.StaticText(self.panel, label=instructions)
-        self.mainSizer.Add(instructLbl, 0, wx.ALL, 5)
-
-        self.imageCtrl = wx.StaticBitmap(self.panel, wx.ID_ANY,
-                                         wx.Bitmap(self.img))
-        self.imageCtrl.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
-        self.imageCtrl.Bind(wx.EVT_PAINT, self.drawCircle)
-        self.mainSizer.Add(self.imageCtrl, 0, wx.ALL, 5)
-
-        saveBtn = wx.Button(self.panel, label='Save ROI')
-        saveBtn.Bind(wx.EVT_BUTTON, self.onSave)
-        self.mainSizer.Add(saveBtn, 0, wx.ALL, 5)
-
-        self.panel.SetSizer(self.mainSizer)
-        self.mainSizer.Fit(self)
-
-        self.panel.Layout()
+    @property
+    def roi(self):
+        """Convert circle parameters to ROI x, y and radius"""
+        roi_x, roi_y = self.canvas.WorldToPixel(self.circle.XY)
+        roi_r = max(self.circle.WH)
+        return (roi_x, roi_y, roi_r)
 
     def onSave(self, event):
-        print("Save ROI button pressed. Current ROI: (%i, %i, %i)" %(
-            self.roi_x,
-            self.roi_y,
-            self.roi_radius
-        ))
+        print("Save ROI button pressed. Current ROI: (%i, %i, %i)" % self.roi)
 
     def onMouse(self, event):
-        self.curMouseX, self.curMouseY = event.GetPosition()
+        pos = event.GetPosition()
         if event.LeftDClick():
-            self.roi_x = self.curMouseX
-            self.roi_y = self.curMouseY
-            print("Current mouse position (click): X = %i Y = %i" %(self.curMouseX, self.curMouseY))
-        elif event.LeftIsDown():
-            try:
-                self.roi_radius = np.sqrt((abs(self.roi_x - self.curMouseX))**2
-                                      + (abs(self.roi_y - self.curMouseY))**2)
-                print("Current mouse position (dragging): X = %i Y = %i" % (self.curMouseX, self.curMouseY))
-            except:
-                print("No ROI centre selected")
-        elif event.RightIsDown():
-            self.roi_x = self.curMouseX
-            self.roi_y = self.curMouseY
-            print("Current mouse position (right): X = %i Y = %i" % (self.curMouseX, self.curMouseY))
-        else:
-            return
-
-    def onPaint(self, event):
-        print("In onPaint")
-        dc = wx.PaintDC(self)
-
-    def drawCircle(self, event):
-        print("In drawCirle")
-        if self.imageCtrl:
-            dc = wx.PaintDC(self.imageCtrl)
-
-            dc.DrawBitmap(wx.Bitmap(self.img), 0, 0)
-
-            if self.roi_radius is not None:
-                dc.SetBrush(wx.Brush('red'))
-                dc.DrawCircle(self.roi_x, self.roi_y, self.roi_radius)
-        else:
-            print("imageCtrl doesn't exists")
+            # Set circle centre
+            self.circle.SetPoint(self.canvas.PixelToWorld(pos))
+        elif event.Dragging():
+            # Drag circle centre or radius
+            x, y, r = self.roi
+            drag_r = np.sqrt((x - pos[0]) ** 2 + (y - pos[1]) ** 2)
+            if self._dragging is None:
+                # determine what to drag
+                if drag_r < 0.5 * r:
+                    # closer to center
+                    self._dragging = 'xy'
+                else:
+                    # closer to edge
+                    self._dragging = 'r'
+            elif self._dragging is 'r':
+                # Drag circle radius
+                self.circle.SetDiameter(2*drag_r)
+            elif self._dragging is 'xy':
+                # Drag circle centre
+                self.circle.SetPoint(self.canvas.PixelToWorld(pos))
+        if not event.Dragging():
+            # Stop dragging
+            self._dragging = None
+        self.canvas.Draw(Force=True)
 
 
 if __name__ == '__main__':
