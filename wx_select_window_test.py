@@ -25,6 +25,8 @@ from wx.lib.floatcanvas.FloatCanvas import FloatCanvas
 ## Default viewer dimensions.
 VIEW_WIDTH, VIEW_HEIGHT = (512, 512)
 
+MIN_RADIUS = 8
+
 class ROISelect(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, -1, 'ROI selector')
@@ -36,7 +38,7 @@ class ROISelect(wx.Frame):
         self.canvas = FloatCanvas(self, size=self.img.GetSize())
         self.canvas.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
         self.bitmap = self.canvas.AddBitmap(self.img, (0,0), Position='cc')
-        self.circle = self.canvas.AddCircle((0,0), 128, LineColor='cyan')
+        self.circle = self.canvas.AddCircle((0,0), 128, LineColor='cyan', LineWidth=2)
         self.Sizer.Add(self.canvas)
         # Save button
         saveBtn = wx.Button(self, label='Save ROI')
@@ -55,14 +57,34 @@ class ROISelect(wx.Frame):
     def onSave(self, event):
         print("Save ROI button pressed. Current ROI: (%i, %i, %i)" % self.roi)
 
+    def moveCircle(self, pos, r):
+        """Set position and radius of circle with bounds checks."""
+        x, y = pos
+        _x, _y, _r = self.roi
+        xmax, ymax = self.img.GetSize()
+        if r == _r:
+            x_bounded = min(max(r, x), xmax - r)
+            y_bounded = min(max(r, y), ymax - r)
+            r_bounded = r
+        else:
+            r_bounded = max(MIN_RADIUS, min(xmax - x, x, ymax - y, y, r))
+            x_bounded = min(max(r_bounded, x), xmax - r_bounded)
+            y_bounded = min(max(r_bounded, y), ymax - r_bounded)
+        self.circle.SetPoint(self.canvas.PixelToWorld( (x_bounded, y_bounded) ))
+        self.circle.SetDiameter(2 * r_bounded)
+        if any( (x_bounded != x, y_bounded != y, r_bounded != r) ):
+            self.circle.SetColor('magenta')
+        else:
+            self.circle.SetColor('cyan')
+
     def onMouse(self, event):
         pos = event.GetPosition()
+        x, y, r = self.roi
         if event.LeftDClick():
             # Set circle centre
-            self.circle.SetPoint(self.canvas.PixelToWorld(pos))
+            self.moveCircle(pos, r)
         elif event.Dragging():
             # Drag circle centre or radius
-            x, y, r = self.roi
             drag_r = np.sqrt((x - pos[0]) ** 2 + (y - pos[1]) ** 2)
             if self._dragging is None:
                 # determine what to drag
@@ -74,13 +96,16 @@ class ROISelect(wx.Frame):
                     self._dragging = 'r'
             elif self._dragging is 'r':
                 # Drag circle radius
-                self.circle.SetDiameter(2*drag_r)
+                self.moveCircle((x, y), drag_r)
             elif self._dragging is 'xy':
                 # Drag circle centre
-                self.circle.SetPoint(self.canvas.PixelToWorld(pos))
+                self.moveCircle(pos, r)
+
         if not event.Dragging():
             # Stop dragging
             self._dragging = None
+            self.circle.SetColor('cyan')
+
         self.canvas.Draw(Force=True)
 
 
