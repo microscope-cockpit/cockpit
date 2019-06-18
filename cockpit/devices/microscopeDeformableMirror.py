@@ -26,6 +26,7 @@ import cockpit.handlers.executor
 from cockpit.devices.microscopeDevice import MicroscopeBase
 from cockpit import depot
 import time
+import cockpit.util.selectCircROI as selectCircle
 
 import numpy as np
 import scipy.stats as stats
@@ -289,8 +290,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         self.elements = OrderedDict()
 
         # Button to calibrate the DM
-        selectCircleButton = wx.ToggleButton(self.panel, label='Select ROI')
-        selectCircleButton.Bind(wx.EVT_TOGGLEBUTTON, self.onSelectCircle)
+        selectCircleButton = wx.Button(self.panel, label='Select ROI')
+        selectCircleButton.Bind(wx.EVT_BUTTON, self.onSelectCircle)
         self.elements['selectCircleButton'] = selectCircleButton
 
         # Button to calibrate the DM
@@ -394,14 +395,6 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         return ndarray
 
     def onSelectCircle(self,event):
-        state = event.GetEventObject().GetValue()
-
-        if state == True:
-            self.activateSelectCircle()
-        else:
-            self.deactivateSelectCircle()
-
-    def activateSelectCircle(self):
         image_raw = self.proxy.acquire_raw()
         if np.max(image_raw) > 10:
             temp = self.bin_ndarray(image_raw, new_shape=(512, 512), operation='mean')
@@ -410,22 +403,9 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             print("Detecting nothing but background noise")
 
     def createCanvas(self, temp):
-        app = App(image_np=temp)
-        app.master.title('Select a circle')
-        app.mainloop()
-
-    def deactivateSelectCircle(self):
-        # Read in the parameters needed for the phase mask
-        try:
-            self.parameters = np.asarray(Config.getValue('dm_circleParams'))
-        except Exception as e:
-            if e is IOError:
-                print("Error: Masking parameters do not exist. Please select circle.")
-                return
-            else:
-                print(e)
-        self.proxy.set_roi(self.parameters[0], self.parameters[1],
-                           self.parameters[2])
+        app = wx.App()
+        frame = selectCircle.ROISelect(input_image = temp)
+        app.MainLoop()
 
     def onCalibrate(self):
         try:
