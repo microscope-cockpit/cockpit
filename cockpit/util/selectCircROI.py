@@ -23,17 +23,26 @@ import numpy as np
 import wx
 from wx.lib.floatcanvas.FloatCanvas import FloatCanvas
 import cockpit.util.userConfig as Config
+import matplotlib.pyplot as plt
 
 ## Default viewer dimensions.
 VIEW_WIDTH, VIEW_HEIGHT = (512, 512)
 
 MIN_RADIUS = 8
 
+def normalise(array, scaling = 1):
+    minimum = np.min(array)
+    maximum = np.max(array)
+    norm_array = ((array-minimum)/(maximum-minimum))*scaling
+    return norm_array
+
 class ROISelect(wx.Frame):
     def __init__(self, input_image):
         wx.Frame.__init__(self, None, -1, 'ROI selector')
+        image_norm = normalise(input_image,scaling=255)
+        image_norm_rgb = np.stack((image_norm,)*3,axis=-1)
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        self.img = wx.Image(VIEW_HEIGHT, VIEW_WIDTH, input_image)
+        self.img = wx.Image(VIEW_HEIGHT, VIEW_WIDTH, image_norm_rgb.astype('uint8'))
         # What, if anything, is being dragged.
         self._dragging = None
         # Canvas
