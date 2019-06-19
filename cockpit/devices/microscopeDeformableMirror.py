@@ -27,7 +27,7 @@ from cockpit.devices.microscopeDevice import MicroscopeBase
 from cockpit import depot
 import time
 import cockpit.util.selectCircROI as selectCircle
-
+import cockpit.util.phaseViewer as phaseViewer
 import numpy as np
 import scipy.stats as stats
 
@@ -491,26 +491,29 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         interferogram_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
                                                'cockpit', 'interferogram')
         np.save(interferogram_file_path, interferogram)
+
         interferogram_ft = np.fft.fftshift(np.fft.fft2(interferogram))
         interferogram_ft_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
                                                'cockpit', 'interferogram_ft')
         np.save(interferogram_ft_file_path, interferogram_ft)
+
         unwrapped_phase_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
                                                'cockpit', 'unwrapped_phase')
         np.save(unwrapped_phase_file_path, unwrapped_phase)
+
         original_dim = int(np.shape(unwrapped_phase)[0])
         resize_dim = int(original_dim / 3)
         while original_dim % resize_dim != 0:
             resize_dim -= 1
         unwrapped_phase_resize = self.bin_ndarray(unwrapped_phase, new_shape=
         (resize_dim, resize_dim), operation='mean')
-        cycle_diff = abs(np.max(unwrapped_phase) - np.min(unwrapped_phase)) / (2.0 * np.pi)
-        rms_phase = np.sqrt(np.mean(unwrapped_phase ** 2))
-        app = View(image_np=unwrapped_phase_resize)
-        app.master.title('Unwrapped interferogram. '
-                         'Cycle difference = %f, RMS phase = %f'
-                         % (cycle_diff, rms_phase))
-        app.mainloop()
+        power_spectrum = np.log(abs(interferogram_ft))
+        power_spectrum_resize = self.bin_ndarray(power_spectrum, new_shape=
+        (resize_dim, resize_dim), operation='mean')
+
+        app = wx.App()
+        frame = phaseViewer.viewPhase(unwrapped_phase_resize,power_spectrum_resize)
+        app.MainLoop()
 
     def onFlatten(self):
         try:
