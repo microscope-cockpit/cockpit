@@ -120,10 +120,3 @@ class ROISelect(wx.Frame):
             self.circle.SetColor('cyan')
 
         self.canvas.Draw(Force=True)
-
-
-if __name__ == '__main__':
-    app = wx.App()
-    input_image = np.random.randint(0, 255, (VIEW_HEIGHT,VIEW_WIDTH))
-    frame = ROISelect(input_image)
-    app.MainLoop()
