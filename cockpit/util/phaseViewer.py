@@ -100,6 +100,11 @@ if __name__ == '__main__':
     power_spectrum = np.log(abs(interferogram_ft))
     unwrapped_phase = np.load(file_path_up)
 
+    image = np.zeros((interferogram_ft.shape[0],interferogram_ft.shape[1]))
+    image[:int(interferogram_ft.shape[0]/2),:] = 1
+    image_ft = image[::-1]
+
     app = wx.App()
-    frame = viewPhase(unwrapped_phase,power_spectrum)
+    frame = viewPhase(image,image_ft)
+    #frame = viewPhase(unwrapped_phase, power_spectrum)
     app.MainLoop()
