@@ -42,11 +42,12 @@ class viewPhase(wx.Frame):
         wx.Frame.__init__(self, None, -1, 'Visualising phase. '
                                           'Peak difference: %.05f, RMS difference: %.05f'
                           %(cycle_diff,rms_phase))
-        image_norm = normalise(input_image,scaling=255)
-        image_norm_rgb = np.stack((image_norm,)*3,axis=-1)
+        # Use np.require to ensure data is C_CONTIGUOUS.
+        image_norm = np.require(normalise(input_image,scaling=255), requirements='C')
+        image_norm_rgb = np.stack((image_norm.astype('uint8'),)*3,axis=-1)
 
-        image_ft_norm = normalise(image_ft, scaling=255)
-        image_ft_norm_rgb = np.stack((image_ft_norm,) * 3, axis=-1)
+        image_ft_norm = np.require(normalise(image_ft, scaling=255), requirements='C')
+        image_ft_norm_rgb = np.stack((image_ft_norm.astype('uint8'),) * 3, axis=-1)
 
         print(type(image_norm_rgb[0,0,0]),
               np.min(image_norm_rgb),
@@ -60,15 +61,17 @@ class viewPhase(wx.Frame):
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.img = wx.Image(image_norm_rgb.shape[0],
                             image_norm_rgb.shape[1],
-                            image_norm_rgb.astype('uint8'))
+                            image_norm_rgb)
         self.img_ft = wx.Image(image_ft_norm_rgb.shape[0],
                                image_ft_norm_rgb.shape[1],
-                               image_ft_norm_rgb.astype('uint8'))
-        # Canvas
+                               image_ft_norm_rgb)
+        # # Canvas
         self.canvas = FloatCanvas(self, size=self.img.GetSize())
-        self.bitmap = self.canvas.AddBitmap(self.img, (0,0), Position='cc')
+        self.bitmaps = {'r': self.canvas.AddBitmap(self.img, (0,0), Position='cc'),
+                        'f': self.canvas.AddBitmap(self.img_ft, (0,0), Position='cc')}
+        self.bitmaps['f'].Hide()
         #Set flag of current image type
-        self.img_type = "Real"
+        self.showing_fourier = False
         self.Sizer.Add(self.canvas)
         # Save button
         saveBtn = wx.Button(self, label='Real/Fourier Transform switch')
@@ -78,15 +81,13 @@ class viewPhase(wx.Frame):
         self.Show()
 
     def onSwitch(self, event):
-        if self.img_type == "Real":
-            self.bitmap = self.canvas.AddBitmap(self.img_ft, (0, 0), Position='cc')
-            self.img_type = "Fourier"
-        elif self.img_type == "Fourier":
-            self.bitmap = self.canvas.AddBitmap(self.img, (0, 0), Position='cc')
-            self.img_type = "Real"
+        if self.showing_fourier:
+            self.bitmaps['r'].Show()
+            self.bitmaps['f'].Hide()
         else:
-            pass
-
+            self.bitmaps['f'].Show()
+            self.bitmaps['r'].Hide()
+        self.showing_fourier = not self.showing_fourier
         self.canvas.Draw(Force=True)
 
 
@@ -97,7 +98,7 @@ if __name__ == '__main__':
     file_path_i_ft = os.path.join(os.path.expandvars('%LocalAppData%'), 'cockpit', 'interferogram_ft.npy')
     file_path_up = os.path.join(os.path.expandvars('%LocalAppData%'), 'cockpit', 'unwrapped_phase.npy')
     interferogram_ft = np.load(file_path_i_ft)
-    power_spectrum = np.log(abs(interferogram_ft))
+    power_spectrum = np.log(np.abs(interferogram_ft))
     unwrapped_phase = np.load(file_path_up)
 
     image = np.zeros((interferogram_ft.shape[0],interferogram_ft.shape[1]))
@@ -105,6 +106,6 @@ if __name__ == '__main__':
     image_ft = image[::-1]
 
     app = wx.App()
-    frame = viewPhase(image,image_ft)
-    #frame = viewPhase(unwrapped_phase, power_spectrum)
+    #frame = viewPhase(image,image_ft)
+    frame = viewPhase(unwrapped_phase, power_spectrum)
     app.MainLoop()
