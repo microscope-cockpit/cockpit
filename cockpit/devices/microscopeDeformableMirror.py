@@ -396,8 +396,18 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
     def onSelectCircle(self,event):
         image_raw = self.proxy.acquire_raw()
         if np.max(image_raw) > 10:
-        #    temp = self.bin_ndarray(image_raw, new_shape=(512, 512), operation='mean')
-            self.createCanvas(image_raw)
+            original_dim = int(np.shape(image_raw)[0])
+            resize_dim = 512
+
+            while original_dim % resize_dim is not 0:
+                resize_dim -= 1
+
+            if resize_dim < original_dim / resize_dim:
+                resize_dim = int(np.round(original_dim / resize_dim))
+
+            scale_factor = original_dim/resize_dim
+            temp = self.bin_ndarray(image_raw, new_shape=(resize_dim, resize_dim), operation='mean')
+            self.createCanvas(temp,scale_factor)
         else:
             print("Detecting nothing but background noise")
 
