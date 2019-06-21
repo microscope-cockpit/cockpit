@@ -396,8 +396,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
     def onSelectCircle(self,event):
         image_raw = self.proxy.acquire_raw()
         if np.max(image_raw) > 10:
-            temp = self.bin_ndarray(image_raw, new_shape=(512, 512), operation='mean')
-            self.createCanvas(temp)
+        #    temp = self.bin_ndarray(image_raw, new_shape=(512, 512), operation='mean')
+            self.createCanvas(image_raw)
         else:
             print("Detecting nothing but background noise")
 
@@ -408,6 +408,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         app.MainLoop()
 
     def onCalibrate(self):
+        self.parameters = Config.getValue('dm_circleParams')
+        self.proxy.set_roi(self.parameters[0], self.parameters[1],
+                           self.parameters[2])
+
         try:
             self.proxy.get_roi()
         except Exception as e:
@@ -432,6 +436,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         Config.setValue('dm_sys_flat', np.ndarray.tolist(sys_flat))
 
     def onCharacterise(self):
+        self.parameters = Config.getValue('dm_circleParams')
+        self.proxy.set_roi(self.parameters[0], self.parameters[1],
+                           self.parameters[2])
+
         try:
             self.proxy.get_roi()
         except Exception as e:
@@ -464,11 +472,16 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                                  'cockpit', 'characterisation_assay')
         np.save(file_path, assay)
 
+        # Show characterisation assay, excluding piston
         app = wx.App()
-        frame = charAssayViewer.viewCharAssay(assay)
+        frame = charAssayViewer.viewCharAssay(assay[1:,1:])
         app.MainLoop()
 
     def onVisualisePhase(self):
+        self.parameters = Config.getValue('dm_circleParams')
+        self.proxy.set_roi(self.parameters[0], self.parameters[1],
+                           self.parameters[2])
+
         try:
             self.proxy.get_roi()
         except Exception as e:
@@ -502,24 +515,18 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                                                'cockpit', 'unwrapped_phase')
         np.save(unwrapped_phase_file_path, unwrapped_phase)
 
-        original_dim = int(np.shape(unwrapped_phase)[0])
-        resize_dim = int(original_dim / 3)
-        while original_dim % resize_dim != 0:
-            resize_dim -= 1
-        unwrapped_phase_resize = self.bin_ndarray(unwrapped_phase, new_shape=
-        (resize_dim, resize_dim), operation='mean')
-        unwrapped_phase_resize = np.require(unwrapped_phase_resize, requirements='C')
-
-        power_spectrum = np.log(abs(interferogram_ft))
-        power_spectrum_resize = self.bin_ndarray(power_spectrum, new_shape=
-        (resize_dim, resize_dim), operation='mean')
-        power_spectrum_resize = np.require(power_spectrum_resize, requirements='C')
+        unwrapped_phase = np.require(unwrapped_phase, requirements='C')
+        power_spectrum = np.require(np.log(abs(interferogram_ft)), requirements='C')
 
         app = wx.App()
-        frame = phaseViewer.viewPhase(unwrapped_phase_resize,power_spectrum_resize)
+        frame = phaseViewer.viewPhase(unwrapped_phase, power_spectrum)
         app.MainLoop()
 
     def onFlatten(self):
+        self.parameters = Config.getValue('dm_circleParams')
+        self.proxy.set_roi(self.parameters[0], self.parameters[1],
+                           self.parameters[2])
+
         try:
             self.proxy.get_roi()
         except Exception as e:
