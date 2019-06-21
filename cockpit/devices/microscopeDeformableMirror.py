@@ -19,8 +19,6 @@ from itertools import groupby
 import cockpit.gui.device
 import cockpit.gui.toggleButton
 import Pyro4
-import tkinter as tk
-from PIL import Image, ImageTk
 import cockpit.util.userConfig as Config
 import cockpit.handlers.executor
 from cockpit.devices.microscopeDevice import MicroscopeBase
@@ -465,7 +463,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
                                  'cockpit', 'characterisation_assay')
         np.save(file_path, assay)
-        
+
         app = wx.App()
         frame = charAssayViewer.viewCharAssay(assay)
         app.MainLoop()
@@ -811,121 +809,3 @@ class dmOutputWindow(wx.Frame):
             return
         self.piezoText.SetLabel(
             str(cockpit.interfaces.stageMover.getAllPositions()[1][2]))
-
-##This is a window for selecting the ROI for interferometry
-# !/usr/bin/python
-# -*- coding: utf-8
-#
-# Copyright 2017 Mick Phillips (mick.phillips@gmail.com)
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Display a window that allows the user to select a circular area."""
-
-class App(tk.Frame):
-    def __init__(self, image_np, master=None):
-        tk.Frame.__init__(self, master)
-        self.pack()
-        self.ratio = 1
-        self.offset = [45, 50]
-        self.image_np = image_np
-        self.create_widgets()
-
-    def create_widgets(self):
-        self.canvas = Canvas(self, width=600, height=600)
-        self.array = np.asarray(self.image_np)
-        self.convert = Image.fromarray(self.array)
-        self.image = ImageTk.PhotoImage(image=self.convert)
-        self.canvas.create_image(self.offset[0], self.offset[1], anchor=tk.NW, image=self.image)
-        self.canvas.pack()
-
-class Canvas(tk.Canvas):
-    def __init__(self, *args, **kwargs):
-        tk.Canvas.__init__(self, *args, **kwargs)
-        self.bind("<Button-1>", self.on_click)
-        self.bind("<Button-3>", self.on_click)
-        self.bind("<B1-Motion>", self.circle_resize)
-        self.bind("<B3-Motion>", self.circle_drag)
-        self.bind("<ButtonRelease>", self.on_release)
-        self.circle = None
-        self.p_click = None
-        self.bbox_click = None
-        self.centre = [0, 0]
-        self.radius = 0
-        self.ratio = 4
-        self.offset = [45, 50]
-
-    def on_release(self, event):
-        self.p_click = None
-        self.bbox_click = None
-
-    def on_click(self, event):
-        if self.circle == None:
-            self.circle = self.create_oval((event.x - 1, event.y - 1, event.x + 1, event.y + 1))
-            self.centre[0] = (event.x - self.offset[0]) * self.ratio
-            self.centre[1] = (event.y - self.offset[1]) * self.ratio
-            self.radius = ((event.x + 1 - event.x + 1 + 1) * self.ratio) / 2
-            Config.setValue('dm_circleParams', (self.centre[1], self.centre[0], self.radius))
-
-    def circle_resize(self, event):
-        if self.circle is None:
-            return
-        if self.p_click is None:
-            self.p_click = (event.x, event.y)
-            self.bbox_click = self.bbox(self.circle)
-            return
-        bbox = self.bbox(self.circle)
-        unscaledCentre = ((bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2)
-        r0 = ((self.p_click[0] - unscaledCentre[0]) ** 2 + (self.p_click[1] - unscaledCentre[1]) ** 2) ** 0.5
-        r1 = ((event.x - unscaledCentre[0]) ** 2 + (event.y - unscaledCentre[1]) ** 2) ** 0.5
-        scale = r1 / r0
-        self.scale(self.circle, unscaledCentre[0], unscaledCentre[1], scale, scale)
-        self.p_click = (event.x, event.y)
-        self.radius = ((self.bbox(self.circle)[2] - self.bbox(self.circle)[0]) * self.ratio) / 2
-        Config.setValue('dm_circleParams', (self.centre[1], self.centre[0], self.radius))
-
-    def circle_drag(self, event):
-        if self.circle is None:
-            return
-        if self.p_click is None:
-            self.p_click = (event.x, event.y)
-            return
-        self.move(self.circle,
-                  event.x - self.p_click[0],
-                  event.y - self.p_click[1])
-        self.p_click = (event.x, event.y)
-        bbox = self.bbox(self.circle)
-        unscaledCentre = ((bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2)
-        self.centre[0] = (unscaledCentre[0] - self.offset[0]) * self.ratio
-        self.centre[1] = (unscaledCentre[1] - self.offset[1]) * self.ratio
-        Config.setValue('dm_circleParams', (self.centre[1], self.centre[0], self.radius))
-        self.update()
-
-class View(tk.Frame):
-    def __init__(self, image_np, master=None):
-        tk.Frame.__init__(self, master)
-        self.pack()
-        self.ratio = 1
-        self.offset = [25, 25]
-        self.image_np = image_np
-        self.create_widgets()
-
-    def create_widgets(self):
-        self.canvas = tk.Canvas(self, width=700, height=700)
-        self.array = np.asarray(self.image_np)
-        self.array_norm = (self.image_np / np.max(self.image_np)) * 255.0
-        self.convert = Image.fromarray(self.array)
-        self.convert_flip = self.convert.transpose(Image.FLIP_TOP_BOTTOM)
-        self.image = ImageTk.PhotoImage(image=self.convert_flip)
-        self.canvas.create_image(self.offset[0], self.offset[1], anchor=tk.NW, image=self.image)
-        self.canvas.pack()
