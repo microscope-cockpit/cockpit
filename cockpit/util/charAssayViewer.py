@@ -51,22 +51,3 @@ class viewCharAssay(wx.Frame):
     def doPlotting(self, image):
         self.axes1.imshow(image)
         self.axes2.plot(np.diag(image))
-
-
-
-if __name__ == '__main__':
-    import os
-    image = np.zeros((69,69))
-    for ii in range(69):
-        image[ii,ii] = 1
-    image = image + np.random.random((69,69))
-
-    file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                             'cockpit', 'characterisation_assay.npy')
-    char_assay = np.load(file_path)
-
-
-    app = wx.App()
-    #frame = viewCharAssay(image)
-    frame = viewCharAssay(char_assay[:, :])
-    app.MainLoop()
