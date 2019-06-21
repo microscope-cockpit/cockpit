@@ -26,7 +26,7 @@ import cockpit.util.userConfig as Config
 import matplotlib.pyplot as plt
 
 ## Default viewer dimensions.
-VIEW_WIDTH, VIEW_HEIGHT = (512, 512)
+DEF_VIEW_WIDTH, DEF_VIEW_HEIGHT = (512, 512)
 
 def normalise(array, scaling = 1):
     minimum = np.min(array)
@@ -39,6 +39,9 @@ class viewPhase(wx.Frame):
         cycle_diff = abs(np.max(input_image) - np.min(input_image)) / (2.0 * np.pi)
         rms_phase = np.sqrt(np.mean(input_image ** 2))
 
+        VIEW_HEIGHT = max(DEF_VIEW_HEIGHT, input_image.shape[0], image_ft.shape[0])
+        VIEW_WIDTH = max(DEF_VIEW_WIDTH, input_image.shape[1], image_ft.shape[1])
+
         wx.Frame.__init__(self, None, -1, 'Visualising phase. '
                                           'Peak difference: %.05f, RMS difference: %.05f'
                           %(cycle_diff,rms_phase))
@@ -49,21 +52,12 @@ class viewPhase(wx.Frame):
         image_ft_norm = np.require(normalise(image_ft, scaling=255), requirements='C')
         image_ft_norm_rgb = np.stack((image_ft_norm.astype('uint8'),) * 3, axis=-1)
 
-        print(type(image_norm_rgb[0,0,0]),
-              np.min(image_norm_rgb),
-              np.max(image_norm_rgb),
-              np.shape(image_norm_rgb))
-        print(type(image_ft_norm_rgb[0,0,0]),
-              np.min(image_ft_norm_rgb),
-              np.max(image_ft_norm_rgb),
-              np.shape(image_ft_norm_rgb))
-
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        self.img = wx.Image(image_norm_rgb.shape[0],
-                            image_norm_rgb.shape[1],
+        self.img = wx.Image(VIEW_HEIGHT,
+                            VIEW_WIDTH,
                             image_norm_rgb)
-        self.img_ft = wx.Image(image_ft_norm_rgb.shape[0],
-                               image_ft_norm_rgb.shape[1],
+        self.img_ft = wx.Image(VIEW_HEIGHT,
+                               VIEW_WIDTH,
                                image_ft_norm_rgb)
         # # Canvas
         self.canvas = FloatCanvas(self, size=self.img.GetSize())
@@ -93,19 +87,10 @@ class viewPhase(wx.Frame):
 
 
 if __name__ == '__main__':
-    import os
-    import matplotlib.pyplot as plt
-    file_path_i_ft = os.path.join(os.path.expandvars('%LocalAppData%'), 'cockpit', 'interferogram_ft.npy')
-    file_path_up = os.path.join(os.path.expandvars('%LocalAppData%'), 'cockpit', 'unwrapped_phase.npy')
-    interferogram_ft = np.load(file_path_i_ft)
-    power_spectrum = np.log(np.abs(interferogram_ft))
-    unwrapped_phase = np.load(file_path_up)
-
-    image = np.zeros((interferogram_ft.shape[0],interferogram_ft.shape[1]))
-    image[:int(interferogram_ft.shape[0]/2),:] = 1
+    image = np.zeros((768,600))
+    image[:int(image.shape[0]/2),:] = 1
     image_ft = image[::-1]
 
     app = wx.App()
-    #frame = viewPhase(image,image_ft)
-    frame = viewPhase(unwrapped_phase, power_spectrum)
+    frame = viewPhase(image,image_ft)
     app.MainLoop()
