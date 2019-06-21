@@ -28,6 +28,7 @@ from cockpit import depot
 import time
 import cockpit.util.selectCircROI as selectCircle
 import cockpit.util.phaseViewer as phaseViewer
+import cockpit.util.charAssayViewer as charAssayViewer
 import numpy as np
 import scipy.stats as stats
 
@@ -464,9 +465,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
                                  'cockpit', 'characterisation_assay')
         np.save(file_path, assay)
-        app = View(image_np=assay)
-        app.master.title('Characterisation')
-        app.mainloop()
+        
+        app = wx.App()
+        frame = charAssayViewer.viewCharAssay(assay)
+        app.MainLoop()
 
     def onVisualisePhase(self):
         try:
