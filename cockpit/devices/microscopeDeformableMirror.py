@@ -404,7 +404,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
 
     def createCanvas(self, temp):
         app = wx.App()
-        frame = selectCircle.ROISelect(input_image = temp)
+        temp = np.require(temp, requirements='C')
+        frame = selectCircle.ROISelect(input_image=temp)
         app.MainLoop()
 
     def onCalibrate(self):
@@ -507,9 +508,12 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             resize_dim -= 1
         unwrapped_phase_resize = self.bin_ndarray(unwrapped_phase, new_shape=
         (resize_dim, resize_dim), operation='mean')
+        unwrapped_phase_resize = np.require(unwrapped_phase_resize, requirements='C')
+
         power_spectrum = np.log(abs(interferogram_ft))
         power_spectrum_resize = self.bin_ndarray(power_spectrum, new_shape=
         (resize_dim, resize_dim), operation='mean')
+        power_spectrum_resize = np.require(power_spectrum_resize, requirements='C')
 
         app = wx.App()
         frame = phaseViewer.viewPhase(unwrapped_phase_resize,power_spectrum_resize)
