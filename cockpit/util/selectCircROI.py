@@ -33,7 +33,7 @@ def normalise(array, scaling = 1):
     return norm_array
 
 class ROISelect(wx.Frame):
-    def __init__(self, input_image):
+    def __init__(self, input_image, scale_factor = 1):
         wx.Frame.__init__(self, None, -1, 'ROI selector')
         image_norm = normalise(input_image,scaling=255)
         image_norm_rgb = np.stack((image_norm,)*3,axis=-1)
@@ -51,7 +51,7 @@ class ROISelect(wx.Frame):
         self.Sizer.Add(self.canvas)
         # Save button
         saveBtn = wx.Button(self, label='Save ROI')
-        saveBtn.Bind(wx.EVT_BUTTON, self.onSave)
+        saveBtn.Bind(wx.EVT_BUTTON, lambda evt, sf=scale_factor: self.onSave(event=evt, sf=sf))
         self.Sizer.Add(saveBtn)
         self.Fit()
         self.Show()
@@ -63,8 +63,9 @@ class ROISelect(wx.Frame):
         roi_r = max(self.circle.WH)
         return (roi_x, roi_y, roi_r)
 
-    def onSave(self, event):
-        roi = self.roi
+    def onSave(self, event, sf):
+        roi_unscaled = self.roi
+        roi = roi_unscaled * sf
         Config.setValue('dm_circleParams', (roi[1], roi[0], roi[2]))
         print("Save ROI button pressed. Current ROI: (%i, %i, %i)" % self.roi)
 
