@@ -23,7 +23,6 @@ import numpy as np
 import wx
 from wx.lib.floatcanvas.FloatCanvas import FloatCanvas
 import cockpit.util.userConfig as Config
-import matplotlib.pyplot as plt
 
 ## Default viewer dimensions.
 VIEW_WIDTH, VIEW_HEIGHT = (512, 512)
