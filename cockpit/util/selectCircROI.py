@@ -24,9 +24,6 @@ import wx
 from wx.lib.floatcanvas.FloatCanvas import FloatCanvas
 import cockpit.util.userConfig as Config
 
-## Default viewer dimensions.
-VIEW_WIDTH, VIEW_HEIGHT = (512, 512)
-
 MIN_RADIUS = 8
 
 def normalise(array, scaling = 1):
@@ -41,7 +38,9 @@ class ROISelect(wx.Frame):
         image_norm = normalise(input_image,scaling=255)
         image_norm_rgb = np.stack((image_norm,)*3,axis=-1)
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        self.img = wx.Image(VIEW_HEIGHT, VIEW_WIDTH, image_norm_rgb.astype('uint8'))
+        self.img = wx.Image(image_norm_rgb.shape[0],
+                            image_norm_rgb.shape[1],
+                            image_norm_rgb.astype('uint8'))
         # What, if anything, is being dragged.
         self._dragging = None
         # Canvas
@@ -65,7 +64,7 @@ class ROISelect(wx.Frame):
         return (roi_x, roi_y, roi_r)
 
     def onSave(self, event):
-        roi = self.roi()
+        roi = self.roi
         Config.setValue('dm_circleParams', (roi[1], roi[0], roi[2]))
         print("Save ROI button pressed. Current ROI: (%i, %i, %i)" % self.roi)
 
