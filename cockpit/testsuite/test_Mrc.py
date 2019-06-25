@@ -51,7 +51,7 @@ class TruncatedMrcFiles(unittest.TestCase):
             (150, (10, 10)),
         ]
         for case in test_cases:
-            with self.assertRaisesRegexp(ValueError, 'data too large'):
+            with self.assertRaisesRegex(ValueError, 'data too large'):
                 numel = case[0]
                 shape = case[1]
                 Mrc.adjusted_data_shape(numel, shape)

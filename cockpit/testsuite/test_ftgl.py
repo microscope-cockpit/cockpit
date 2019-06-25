@@ -29,7 +29,7 @@ class TextureFontTestCase(unittest.TestCase):
         self.font = cockpit.util.ftgl.TextureFont(cockpit.gui.FONT_PATH)
 
     def test_missing_font(self):
-        with self.assertRaisesRegexp(RuntimeError, 'failed to create texture'):
+        with self.assertRaisesRegex(RuntimeError, 'failed to create texture'):
             cockpit.util.ftgl.TextureFont('not-a-real-file.ttf')
 
     def test_set_get_size(self):
