@@ -249,11 +249,11 @@ class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
         roi = self.proxy.get_roi()  # left, bottom, right, top
         if not isinstance(roi, ROI):
             cockpit.util.logger.log.warning("%s returned tuple not ROI()" % self.name)
-            roi = ROI(roi)
+            roi = ROI(*roi)
         binning = self.proxy.get_binning()
         if not isinstance(binning, Binning):
             cockpit.util.logger.log.warning("%s returned tuple not Binning()" % self.name)
-            binning = Binning(binning)
+            binning = Binning(*binning)
         return (roi.width//binning.h, roi.height//binning.v)
 
 
