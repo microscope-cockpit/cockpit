@@ -141,20 +141,24 @@ class Image(BaseGL):
         gl_Position = vec4(zoom * (vXY + pan), 1., 1.);
     }
     """
-    # Fragment shader glsl source
+    # Fragment shader glsl source.
     _FS = """
     #version 120
     uniform sampler2D tex;
     uniform float scale;
     uniform float offset;
+    uniform bool show_clip;
 
     void main()
     {
         vec4 lum = clamp(offset + texture2D(tex, gl_TexCoord[0].st) / scale, 0., 1.);
-        gl_FragColor = vec4(0., 0., lum.r == 0, 1.) + vec4(1., lum.r < 1., 1., 1.) * lum.r;
+        if (show_clip) {
+            gl_FragColor = vec4(0., 0., lum.r == 0, 1.) + vec4(1., lum.r < 1., 1., 1.) * lum.r;
+        } else {
+            gl_FragColor = vec4(lum.r, lum.r, lum.r, 1.);
+        }
     }
     """
-
     def __init__(self):
         # Maximum texture edge size
         self._maxTexEdge = glGetInteger(GL_MAX_TEXTURE_SIZE)
@@ -164,6 +168,8 @@ class Image(BaseGL):
         self._update = False
         # Geometry as number of textures along each axis.
         self.shape = (0, 0)
+        ## Should we use colour to indicate range clipping?
+        self.clipHighlight = False
         # Data
         self._data = None
         # Minimum and maximum data value - used for setting greyscale range.
@@ -205,6 +211,9 @@ class Image(BaseGL):
     def setData(self, data):
         self._data = data
         self._update = True
+
+    def toggleClipHighlight(self, event=None):
+        self.clipHighlight = not self.clipHighlight
 
     def _createTextures(self):
         """Convert data to textures.
@@ -286,6 +295,7 @@ class Image(BaseGL):
         glUniform1f(glGetUniformLocation(shader, "scale"), self.scale)
         glUniform1f(glGetUniformLocation(shader, "offset"), self.offset)
         glUniform1f(glGetUniformLocation(shader, "zoom"), zoom)
+        glUniform1i(glGetUniformLocation(shader, "show_clip"), self.clipHighlight)
         # Render
         glEnable(GL_TEXTURE_2D)
         glEnableClientState(GL_VERTEX_ARRAY)
@@ -708,7 +718,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def getMenuActions(self):
         return [('Reset view', self.resetView),
                 ('Set histogram parameters', self.onSetHistogram),
-                ('Toggle alignment crosshair', self.toggleCrosshair)]
+                ('Toggle alignment crosshair', self.toggleCrosshair),
+                ('Toggle clip highlighting', self.image.toggleClipHighlight),]
 
 
     ## Let the user specify the blackpoint and whitepoint for image scaling.
