@@ -62,23 +62,25 @@ from . import stutteredZStack
 from . import sweptShutter
 from . import zStack
 from . import si2d
+from . import SIMFlux2D
 from . import rotatorSweep
+from . import SIMFlux
 
 ## List of registered modules.
-registeredModules = [zStack, sweptShutter,
-            offsetGainCorrection, responseMap, stutteredZStack,
-            optoScriptExample, structuredIllumination,
-                     si2d, rotatorSweep]
+registeredModules = [zStack, sweptShutter, offsetGainCorrection,
+                    responseMap, stutteredZStack, optoScriptExample,
+                    structuredIllumination, SIMFlux, SIMFlux2D,
+                    si2d, rotatorSweep]
 
 
 ## Add another experiment to the registered set.
-def registerModule(module, index = -1):
+def registerModule(module, index=-1):
     global registeredModules
     # HACK: convert -1 to end-of-list.
     if index == -1:
         index = len(registeredModules)
     registeredModules.insert(index, module)
-    
+
 
 ## Retrieve all registered experiments.
 def getExperimentModules():
