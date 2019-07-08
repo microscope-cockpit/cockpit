@@ -411,10 +411,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         else:
             print("Detecting nothing but background noise")
 
-    def createCanvas(self, temp):
+    def createCanvas(self, temp, scale_factor):
         app = wx.App()
         temp = np.require(temp, requirements='C')
-        frame = selectCircle.ROISelect(input_image=temp)
+        frame = selectCircle.ROISelect(input_image=temp, scale_factor=scale_factor)
         app.MainLoop()
 
     def onCalibrate(self):
