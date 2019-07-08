@@ -312,7 +312,12 @@ class MegaTile(Tile):
     @classmethod
     def setPixelSize(cls, edge):
         if cls.pixelSize is not None:
-            raise Exception("MegaTile class already initialised.")
+            # Class is already initialized - nothing to do.
+            # Used to raise an exception here, but both MacroStage and
+            # TouchScreen have MacroStageZ instances that each call this
+            # method, and raising an exception will prevent correct
+            # initialisation of any but the first instance.
+            return
         cls.pixelSize = edge
         cls.micronSize = edge * 1
         cls._emptyTileData = numpy.ones( (edge, edge), dtype=numpy.float32)
