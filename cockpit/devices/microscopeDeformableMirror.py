@@ -321,11 +321,6 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         visPhaseButton.Bind(wx.EVT_BUTTON, lambda evt: self.onVisualisePhase())
         self.elements['visPhaseButton'] = visPhaseButton
 
-        # Button to flatten the wavefront
-        # flattenButton = wx.Button(self.panel, label='Flatten')
-        # flattenButton.Bind(wx.EVT_BUTTON, lambda evt: self.onFlatten())
-        # self.elements['flattenButton'] = flattenButton
-
         # Apply last actuator values
         applyLastPatternButton = wx.Button(self.panel, label='Apply last pattern')
         applyLastPatternButton.Bind(wx.EVT_BUTTON, lambda evt: self.onApplyLastPattern())
@@ -532,41 +527,6 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         frame = phaseViewer.viewPhase(unwrapped_phase, power_spectrum)
         app.MainLoop()
 
-    def onFlatten(self):
-        self.parameters = Config.getValue('dm_circleParams')
-        self.proxy.set_roi(self.parameters[0], self.parameters[1],
-                           self.parameters[2])
-
-        try:
-            self.proxy.get_roi()
-        except Exception as e:
-            try:
-                self.parameters = Config.getValue('dm_circleParams')
-                self.proxy.set_roi(self.parameters[0], self.parameters[1],
-                                   self.parameters[2])
-            except:
-                raise e
-
-        try:
-            self.proxy.get_fourierfilter()
-        except Exception as e:
-            try:
-                test_image = self.proxy.acquire()
-                self.proxy.set_fourierfilter(test_image=test_image)
-            except:
-                raise e
-
-        try:
-            self.proxy.get_controlMatrix()
-        except Exception as e:
-            try:
-                self.controlMatrix = Config.getValue('dm_controlMatrix')
-                self.proxy.set_controlMatrix(self.controlMatrix)
-            except:
-                raise e
-        flat_values = self.proxy.flatten_phase(iterations=10)
-        Config.setValue('dm_flat_values', np.ndarray.tolist(flat_values))
-
     def onApplySysFlat(self):
         self.sys_flat_values = np.asarray(Config.getValue('dm_sys_flat'))
         self.proxy.send(self.sys_flat_values)
@@ -595,11 +555,6 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
     # to use to perform sensorless AO. Of course, if only one camera is
     # available, then we just perform sensorless AO.
     def displaySensorlessAOMenu(self):
-        # If we're already perform sensorless AO, stop it instead.
-        # if self.shouldContinue.is_set():
-        #    self.shouldContinue.clear()
-        #    return
-
         self.showCameraMenu("Perform sensorless AO with %s camera",
                             self.correctSensorlessSetup)
 
@@ -620,7 +575,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                                 id=i + 1)
             cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
-    def correctSensorlessSetup(self, camera, nollZernike=None):
+    def correctSensorlessSetup(self, camera, nollZernike=np.array([11, 22, 5, 6, 7, 8, 9, 10])):
         print("Performing sensorless AO setup")
         # Note: Default is to correct Primary and Secondary Spherical aberration and both
         # orientations of coma, astigmatism and trefoil
@@ -635,16 +590,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                 raise e
 
         print("Setting Zernike modes")
-        if np.any(nollZernike) == None:
-            self.nollZernike = np.array([11, 22, 5, 6, 7, 8, 9, 10])
-        else:
-            self.nollZernike = nollZernike
+        self.nollZernike = nollZernike
 
-        # try:
-        #    self.actuator_offset = self.sys_flat_values
-        # except:
-        #    self.sys_flat_values = np.asarray(Config.getValue('dm_sys_flat'))
-        #    self.actuator_offset = self.sys_flat_values
         self.actuator_offset = None
 
         self.sensorless_correct_coef = np.zeros(self.no_actuators)
