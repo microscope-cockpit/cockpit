@@ -64,7 +64,7 @@ class ROISelect(wx.Frame):
         return (roi_x, roi_y, roi_r)
 
     def onSave(self, event, sf):
-        roi_unscaled = self.roi
+        roi_unscaled = np.asarray(self.roi)
         roi = roi_unscaled * sf
         Config.setValue('dm_circleParams', (roi[1], roi[0], roi[2]))
         print("Save ROI button pressed. Current ROI: (%i, %i, %i)" % self.roi)
