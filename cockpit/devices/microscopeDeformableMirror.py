@@ -643,6 +643,9 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             else:
                 self.zernike_applied = np.concatenate((self.zernike_applied, it_zernike_applied))
 
+        # Put IsoSense pattern on SLM
+        self.proxy.apply_isosense_pattern(wavelength=500*10**-9)
+
         # Initialise stack to store correction iumages
         print("Initialising stack to store correction images")
         self.correction_stack = []
