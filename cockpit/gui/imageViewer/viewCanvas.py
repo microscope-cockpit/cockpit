@@ -185,7 +185,7 @@ class Image(BaseGL):
 
     @property
     def offset(self):
-        return - (self.vmin - self.dmin) / (self.dptp * self.scale)
+        return - (self.vmin - self.dmin) / ((self.dptp * self.scale) or 1)
 
     def __del__(self):
         """Clean up textures."""
@@ -341,10 +341,10 @@ class Histogram(BaseGL):
 
 
     def data2gl(self, val):
-        return -1 + 2 * (val - self.lbound) / (self.ubound - self.lbound)
+        return -1 + 2 * (val - self.lbound) / ((self.ubound - self.lbound) or 1)
 
     def gl2data(self, x):
-        return self.lbound + (self.ubound - self.lbound) * (x + 1) / 2
+        return self.lbound + ((self.ubound - self.lbound) or 1) * (x + 1) / 2
 
     def setData(self, data):
         # Calculate histogram.
