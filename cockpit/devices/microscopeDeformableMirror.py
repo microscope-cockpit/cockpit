@@ -97,15 +97,14 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
     def finalizeInitialization(self):
         # A mapping of context-menu entries to functions.
         # Define in tuples - easier to read and reorder.
-        menuTuples = (('Fourier metric', self.proxy.set_metric('fourier')),
-                      ('Contrast metric', self.proxy.set_metric('contrast')),)
+        menuTuples = (('Fourier metric', 'fourier'),
+                      ('Contrast metric', 'contrast'),)
         # Store as ordered dict for easy item->func lookup.
         self.menuItems = OrderedDict(menuTuples)
 
     ### Context menu and handlers ###
     def menuCallback(self, index, item):
-        func = self.menuItems[item]
-        return func()
+        return self.proxy.set_metric(self.menuItems[item])
 
     def onRightMouse(self, event):
         menu = cockpit.gui.device.Menu(self.menuItems.keys(), self.menuCallback)
@@ -347,6 +346,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         sensorlessAOButton = wx.Button(self.panel, label='Sensorless AO')
         sensorlessAOButton.Bind(wx.EVT_BUTTON, lambda evt: self.displaySensorlessAOMenu())
         self.elements['Sensorless AO'] = sensorlessAOButton
+
+        self.panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
 
         for e in self.elements.values():
             rowSizer.Add(e, 0, wx.EXPAND)
