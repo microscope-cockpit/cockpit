@@ -383,7 +383,7 @@ class Histogram(BaseGL):
         for (x, y) in zip(self.bins, self.counts):
             x0 = self.data2gl(x)
             x1 = self.data2gl(x + binw)
-            h = -1 + 2 * y / self.counts.max()
+            h = -1 + 2 * y / (self.counts.max() or 1)
             v.extend( [(x0, -1), (x0, h), (x1, h), (x1, -1)] )
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointerf(v)
