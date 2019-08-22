@@ -63,7 +63,44 @@ class MicroscopeBase(device.Device):
 
     def finalizeInitialization(self):
         super(MicroscopeBase, self).finalizeInitialization()
+        # Set default settings on remote device. These will be over-
+        # ridden by any defaults in userConfig, later.
+        # Currently, settings are an 'advanced' feature --- the remote
+        # interface relies on us to send it valid data, so we have to
+        # convert our strings to the appropriate type here.
+        ss = self.config.get('settings')
+        if ss:
+            settings = dict([m.groups() for kv in ss.split('\n')
+                             for m in [re.match(r'(.*)\s*[:=]\s*(.*)', kv)] if m])
+        for k,v in settings.items():
+            try:
+                desc = self.describe_setting(k)
+            except:
+                print ("%s ingoring unknown setting '%s'." % (self.name, k))
+                continue
+            if desc['type'] == 'str':
+                pass
+            elif desc['type'] == 'int':
+                v = int(v)
+            elif desc['type'] == 'float':
+                v = float(v)
+            elif desc['type'] == 'bool':
+                v = v.lower() in ['1', 'true']
+            elif desc['type'] == 'tuple':
+                print ("%s ignoring tuple setting '%s' - not yet supported." % (self.name, k))
+                continue
+            elif desc['type'] == 'enum':
+                if v.isdigit():
+                    v = int(v)
+                else:
+                    vmap = dict((k,v) for v,k in desc['values'])
+                    v = vmap.get(v, None)
+                if v is None:
+                    print ("%s ignoring enum setting '%s' with unrecognised value." % (self.name, k))
+                    continue
+            self.set_setting(k, v)
         self._readUserConfig()
+
 
     def getHandlers(self):
         """Return device handlers. Derived classes may override this."""
