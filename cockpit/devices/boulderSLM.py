@@ -106,14 +106,14 @@ def generate_pattern_image(shape, dist, wavelength, NA, pixel_size):
 
     f1x = shape[1]//2
     f1y = shape[0]//2
-    f2x = f1x - np.round(0.5*OTF_outer_radx * dist)
-    f2y = f1y - np.round(0.5 * OTF_outer_rady * dist)
-    f3x = f1x + np.round(0.5*OTF_outer_radx * dist)
-    f3y = f1y + np.round(0.5 * OTF_outer_rady * dist)
-    f4x = f1x - np.round(OTF_outer_radx * dist)
-    f4y = f1y - np.round(OTF_outer_rady * dist)
-    f5x = f1x + np.round(OTF_outer_radx * dist)
-    f5y = f1y + np.round(OTF_outer_rady * dist)
+    f2x = f1x - int(np.round(0.5*OTF_outer_radx * dist))
+    f2y = f1y - int(np.round(0.5 * OTF_outer_rady * dist))
+    f3x = f1x + int(np.round(0.5*OTF_outer_radx * dist))
+    f3y = f1y + int(np.round(0.5 * OTF_outer_rady * dist))
+    f4x = f1x - int(np.round(OTF_outer_radx * dist))
+    f4y = f1y - int(np.round(OTF_outer_rady * dist))
+    f5x = f1x + int(np.round(OTF_outer_radx * dist))
+    f5y = f1y + int(np.round(OTF_outer_rady * dist))
     freq_loc_half = (np.asarray([f2y, f2y, f3y, f3y], dtype="int64"),
                 np.asarray([f2x, f3x, f2x, f3x], dtype="int64"))
     freq_loc_quart = (np.asarray([f1y, f1y, f4y, f5y], dtype="int64"),
@@ -445,7 +445,7 @@ class BoulderSLM(device.Device):
             ['wavelength',
              'back pupil fill fraction'],
              (488, 50))
-        wavelength, fill_frac = [int(i) for i in inputs]
+        wavelength, fill_frac = [float(i) for i in inputs]
         if fill_frac < 0 :
             raise ValueError("Fill fraction must be greater than 0")
         elif fill_frac > 100:
@@ -455,9 +455,9 @@ class BoulderSLM(device.Device):
         ## Tell the SLM to prepare the pattern sequence.
         dist = fill_frac/100
         shape = self.connection.get_shape()
-        patttern = generate_pattern_image(shape=shape, wavelength=wavelength,
+        pattern = generate_pattern_image(shape=shape, wavelength=wavelength*10**-9,
                                           dist=dist, NA=1.1, pixel_size=0.1193 * 10 ** -6)
-        self.connection.set_custom_sequence(wavelength,[patttern,patttern])
+        self.connection.set_custom_sequence(wavelength,[pattern,pattern])
 
     def setDiffractionAngle(self):
         try:
@@ -472,4 +472,3 @@ class BoulderSLM(device.Device):
                 theta,
                 atMouse=True))
         self.connection.set_sim_diffraction_angle(newTheta)
-
