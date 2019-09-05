@@ -560,7 +560,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 self.resetView()
             if isFirstImage:
                 self.image.autoscale()
-            self.Refresh()
+            wx.CallAfter(self.Refresh)
             # Wait for the image to be drawn before we do anything more.
             self.drawEvent.wait()
             self.drawEvent.clear()
