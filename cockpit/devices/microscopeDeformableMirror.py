@@ -98,7 +98,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         # A mapping of context-menu entries to functions.
         # Define in tuples - easier to read and reorder.
         menuTuples = (('Fourier metric', 'fourier'),
-                      ('Contrast metric', 'contrast'),)
+                      ('Contrast metric', 'contrast'),
+                      ('Fourier Power metric', 'fourier_power'),)
         # Store as ordered dict for easy item->func lookup.
         self.menuItems = OrderedDict(menuTuples)
 
