@@ -94,6 +94,23 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         events.subscribe('camera enable',
                          lambda c, isOn: self.enablecamera(c, isOn))
 
+    def finalizeInitialization(self):
+        # A mapping of context-menu entries to functions.
+        # Define in tuples - easier to read and reorder.
+        menuTuples = (('Fourier metric', 'fourier'),
+                      ('Contrast metric', 'contrast'),
+                      ('Fourier Power metric', 'fourier_power'),)
+        # Store as ordered dict for easy item->func lookup.
+        self.menuItems = OrderedDict(menuTuples)
+
+    ### Context menu and handlers ###
+    def menuCallback(self, index, item):
+        return self.proxy.set_metric(self.menuItems[item])
+
+    def onRightMouse(self, event):
+        menu = cockpit.gui.device.Menu(self.menuItems.keys(), self.menuCallback)
+        menu.show(event)
+
     def takeImage(self):
         cockpit.interfaces.imager.takeImage()
 
@@ -330,6 +347,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         sensorlessAOButton = wx.Button(self.panel, label='Sensorless AO')
         sensorlessAOButton.Bind(wx.EVT_BUTTON, lambda evt: self.displaySensorlessAOMenu())
         self.elements['Sensorless AO'] = sensorlessAOButton
+
+        self.panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
 
         for e in self.elements.values():
             rowSizer.Add(e, 0, wx.EXPAND)

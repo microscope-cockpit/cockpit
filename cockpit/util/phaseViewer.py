@@ -24,27 +24,28 @@ import wx
 from wx.lib.floatcanvas.FloatCanvas import FloatCanvas
 
 
-def normalise(array, scaling = 1):
+def normalise(array, scaling=1):
     minimum = np.min(array)
     maximum = np.max(array)
-    norm_array = ((array-minimum)/(maximum-minimum))*scaling
+    norm_array = ((array - minimum) / (maximum - minimum)) * scaling
     return norm_array
+
 
 class viewPhase(wx.Frame):
     def __init__(self, input_image, image_ft):
-        cycle_diff = abs(np.max(input_image) - np.min(input_image)) / (2.0 * np.pi)
         rms_phase = np.sqrt(np.mean(input_image ** 2))
+        strehl_ratio = np.exp(-np.mean((input_image-np.mean(input_image))**2))
         wx.Frame.__init__(self, None, -1, 'Visualising phase. '
-                                          'Peak difference: %.05f, RMS difference: %.05f'
-                          %(cycle_diff,rms_phase))
+                                          'RMS difference: %.05f, Strehl  Ratio: %.05f'
+                          % (rms_phase, strehl_ratio))
         # Use np.require to ensure data is C_CONTIGUOUS.
-        image_norm = np.require(normalise(input_image,scaling=255), requirements='C')
-        image_norm_rgb = np.require(np.stack((image_norm.astype('uint8'),)*3,axis=-1),
+        image_norm = np.require(normalise(input_image, scaling=255), requirements='C')
+        image_norm_rgb = np.require(np.stack((image_norm.astype('uint8'),) * 3, axis=-1),
                                     requirements='C')
 
         image_ft_norm = np.require(normalise(image_ft, scaling=255), requirements='C')
         image_ft_norm_rgb = np.require(np.stack((image_ft_norm.astype('uint8'),) * 3, axis=-1),
-                                    requirements='C')
+                                       requirements='C')
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.img = wx.Image(image_norm_rgb.shape[0],
@@ -55,10 +56,10 @@ class viewPhase(wx.Frame):
                                image_ft_norm_rgb)
         # # Canvas
         self.canvas = FloatCanvas(self, size=self.img.GetSize())
-        self.bitmaps = {'r': self.canvas.AddBitmap(self.img, (0,0), Position='cc'),
-                        'f': self.canvas.AddBitmap(self.img_ft, (0,0), Position='cc')}
+        self.bitmaps = {'r': self.canvas.AddBitmap(self.img, (0, 0), Position='cc'),
+                        'f': self.canvas.AddBitmap(self.img_ft, (0, 0), Position='cc')}
         self.bitmaps['f'].Hide()
-        #Set flag of current image type
+        # Set flag of current image type
         self.showing_fourier = False
         self.Sizer.Add(self.canvas)
         # Save button
@@ -79,12 +80,11 @@ class viewPhase(wx.Frame):
         self.canvas.Draw(Force=True)
 
 
-
 if __name__ == '__main__':
-    image = np.zeros((768,600))
-    image[:int(image.shape[0]/2),:] = 1
+    image = np.zeros((768, 600))
+    image[:int(image.shape[0] / 2), :] = 1
     image_ft = image[::-1]
 
     app = wx.App()
-    frame = viewPhase(image,image_ft)
+    frame = viewPhase(image, image_ft)
     app.MainLoop()
