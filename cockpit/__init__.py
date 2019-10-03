@@ -76,6 +76,7 @@ if (distutils.version.LooseVersion(Pyro4.__version__) >=
 import cockpit.config
 import cockpit.depot
 import cockpit.events
+import cockpit.gui
 import cockpit.gui.loggingWindow
 import cockpit.gui.mainWindow
 import cockpit.interfaces
@@ -318,14 +319,20 @@ def main() -> int:
     if wx.Platform == '__WXGTK__' and 'GDK_BACKEND' not in os.environ:
         os.environ['GDK_BACKEND'] = 'x11'
 
-    # TODO: have this in a try, and show a window (would probably need
-    # to be different wx.App), with the error if it fails (see #439).
-    config = cockpit.config.CockpitConfig(sys.argv)
-    cockpit.util.logger.makeLogger(config['log'])
-    cockpit.util.files.initialize(config)
-
-    app = CockpitApp(config=config)
-    app.MainLoop()
+    try:
+        config = cockpit.config.CockpitConfig(sys.argv)
+        cockpit.util.logger.makeLogger(config['log'])
+        cockpit.util.files.initialize(config)
+    except:
+        app = wx.App()
+        cockpit.gui.ExceptionBox(caption='Failed to initialise cockpit')
+        # We ProcessPendingEvents() instead of entering the MainLoop()
+        # because we won't have more windows created, meaning that the
+        # program would not exit after closing the exception box.
+        app.ProcessPendingEvents()
+    else:
+        app = CockpitApp(config=config)
+        app.MainLoop()
 
     # HACK: manually exit the program if we find threads running.  At
     # this point, any thread running is non-daemonic, i.e., a thread
