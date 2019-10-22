@@ -558,7 +558,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.imageShape = newImage.shape
             self.histogram.setData(newImage)
             if self.showFFT:
-                self.image.setData(np.log(np.fft.fftshift(np.fft.fft2(self.imageData))))
+                self.image.setData(np.log(np.abs(np.fft.fftshift(np.fft.fft2(newImage))) + 1e-16))
             else:
                 self.image.setData(newImage)
             if shouldResetView:
@@ -751,7 +751,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.menuStrFFT = "Enable FFT mode"
         else:
             self.showFFT = True
-            self.image.setData(np.log(np.fft.fftshift(np.fft.fft2(self.imageData))))
+            self.image.setData(np.log(np.abs(np.fft.fftshift(np.fft.fft2(self.imageData))) + 1e-16))
             self.menuStrFFT = "Enable Normal mode"
 
 
