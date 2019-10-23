@@ -3,7 +3,7 @@
 
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
-## Copyright (C) 2018 David Pinto <david.pinto@bioch.ox.ac.uk>
+## Copyright (C) 2019 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -503,20 +503,20 @@ EXPERIMENT_CLASS = SIExperiment
 
 
 ## Generate the UI for special parameters used by this experiment.
-class ExperimentUI(wx.Panel):
-    def __init__(self, parent, configKey):
-        wx.Panel.__init__(self, parent = parent)
+class BaseSIMExperimentUI(wx.Panel):
+    """Base Experiment UI for SIM experiments.
 
-        self.configKey = configKey
+    Subclasses must implement class property `_CONFIG_KEY_SUFFIX`.
+    """
+    def __init__(self, parent, configKey):
+        super().__init__(parent=parent)
+
+        self.configKey = configKey + self._CONFIG_KEY_SUFFIX
         self.allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         self.settings = self.loadSettings()
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.shouldOnlyDoOneAngle = wx.CheckBox(self,
-                label = "Do only one angle")
-        self.shouldOnlyDoOneAngle.SetValue(self.settings['shouldOnlyDoOneAngle'])
-        rowSizer.Add(self.shouldOnlyDoOneAngle, 0, wx.ALL, 5)
 
         text = wx.StaticText(self, -1, "Exposure bleach compensation (%):")
         rowSizer.Add(text, 0, wx.ALL, 5)
@@ -544,8 +544,6 @@ class ExperimentUI(wx.Panel):
         self.saveSettings()
         params['numAngles'] = 3
         params['numPhases'] = 5
-        if self.shouldOnlyDoOneAngle.GetValue():
-            params['numAngles'] = 1
         params['collectionOrder'] = self.siCollectionOrder.GetStringSelection()
         params['angleHandler'] = depot.getHandlerWithName('SI angle')
         params['phaseHandler'] = depot.getHandlerWithName('SI phase')
@@ -562,18 +560,23 @@ class ExperimentUI(wx.Panel):
         params['bleachCompensations'] = compensations
         return params
 
+    def _getDefaultSettings(self):
+        allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
+        default = {
+            'bleachCompensations': ['' for l in self.allLights],
+            'siCollectionOrder': 0,
+        }
+        return default
+
 
     ## Load the saved experiment settings, if any.
     def loadSettings(self):
-        allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         result = cockpit.util.userConfig.getValue(
-                self.configKey + 'SIExperimentSettings',
-                default = {
-                    'bleachCompensations': ['' for l in self.allLights],
-                    'shouldOnlyDoOneAngle': False,
-                    'siCollectionOrder': 0,
-                }
+                self.configKey,
+                default = self._getDefaultSettings()
         )
+
+        allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         if len(result['bleachCompensations']) != len(self.allLights):
             # Number of light sources has changed; invalidate the config.
             result['bleachCompensations'] = ['' for light in self.allLights]
@@ -583,9 +586,8 @@ class ExperimentUI(wx.Panel):
     ## Generate a dict of our settings.
     def getSettingsDict(self):
         return {
-                'bleachCompensations': [c.GetValue() for c in self.bleachCompensations],
-                'shouldOnlyDoOneAngle': self.shouldOnlyDoOneAngle.GetValue(),
-                'siCollectionOrder': self.siCollectionOrder.GetSelection(),
+            'bleachCompensations': [c.GetValue() for c in self.bleachCompensations],
+            'siCollectionOrder': self.siCollectionOrder.GetSelection(),
         }
 
 
@@ -593,6 +595,38 @@ class ExperimentUI(wx.Panel):
     def saveSettings(self, settings = None):
         if settings is None:
             settings = self.getSettingsDict()
-        cockpit.util.userConfig.setValue(
-                self.configKey + 'SIExperimentSettings', settings
-        )
+        cockpit.util.userConfig.setValue(self.configKey, settings)
+
+
+class ExperimentUI(BaseSIMExperimentUI):
+    _CONFIG_KEY_SUFFIX = 'SIExperimentSettings'
+
+    def __init__(self, parent, configKey):
+        super().__init__(parent, configKey)
+
+        self.shouldOnlyDoOneAngle = wx.CheckBox(self, label="Do only one angle")
+        self.shouldOnlyDoOneAngle.SetValue(self.settings['shouldOnlyDoOneAngle'])
+
+        top_row_sizer = self.Sizer.GetItem(0).Sizer
+        top_row_sizer.Prepend(self.shouldOnlyDoOneAngle, 0, wx.ALL, 5)
+        self.Sizer.SetSizeHints(self)
+
+    def augmentParams(self, params):
+        params = super().augmentParams(params)
+        if self.shouldOnlyDoOneAngle.GetValue():
+            params['numAngles'] = 1
+        return params
+
+    def _getDefaultSettings(self):
+        default = super()._getDefaultSettings()
+        default.update({
+            'shouldOnlyDoOneAngle': False,
+        })
+        return default
+
+    def getSettingsDict(self):
+        all_settings = super().getSettingsDict()
+        all_settings.update({
+            'shouldOnlyDoOneAngle': self.shouldOnlyDoOneAngle.GetValue(),
+        })
+        return all_settings

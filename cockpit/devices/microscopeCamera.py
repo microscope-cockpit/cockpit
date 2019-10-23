@@ -28,7 +28,6 @@ import decimal
 import Pyro4
 import wx
 
-from . import camera
 from cockpit import depot
 import numpy as np
 from cockpit import events
@@ -40,6 +39,7 @@ import cockpit.util.logger
 import cockpit.util.threads
 import cockpit.util.userConfig
 from cockpit.devices.microscopeDevice import MicroscopeBase
+from cockpit.devices.camera import CameraDevice
 from cockpit.interfaces.imager import pauseVideo
 from microscope.devices import ROI, Binning
 
@@ -48,11 +48,12 @@ from microscope.devices import ROI, Binning
 # Pseudo-enum to track whether device defaults in place.
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
 
-class MicroscopeCamera(MicroscopeBase, camera.CameraDevice):
+
+class MicroscopeCamera(MicroscopeBase, CameraDevice):
     """A class to control remote python microscope cameras."""
     def __init__(self, name, cam_config):
         # camConfig is a dict with containing configuration parameters.
-        super(self.__class__, self).__init__(name, cam_config)
+        super().__init__(name, cam_config)
         self.handler = None
         self.enabled = False
         self.panel = None

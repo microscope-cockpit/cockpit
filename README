@@ -20,10 +20,3 @@ microscopes.  Its main features are::
 * Cross Platform.  Cockpit can run on Linux, Mac, and Windows.
 
 * Cockpit is free and open source software, released under the GPL.
-
-
-Cockpit is not yet distributed via in PyPI but can easily be installed
-from development sources::
-
-    git clone git@github.com:MicronOxford/cockpit.git
-    python3 setup.py install
