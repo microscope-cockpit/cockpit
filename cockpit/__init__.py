@@ -57,6 +57,7 @@
 # Python on it to start the program. It initializes everything and creates
 # the GUI.
 
+import importlib
 import os
 import sys
 import threading
@@ -74,10 +75,12 @@ if (distutils.version.LooseVersion(Pyro4.__version__) >=
 
 import cockpit.config
 import cockpit.depot
+import cockpit.events
 import cockpit.interfaces.imager
 import cockpit.interfaces.stageMover
 import cockpit.util.files
 import cockpit.util.logger
+import cockpit.util.userConfig
 
 
 class CockpitApp(wx.App):
@@ -99,19 +102,8 @@ class CockpitApp(wx.App):
         try:
             # Allow subsequent actions to abort startup by publishing
             # a "program startup failure" event.
-            from cockpit import events
             events.subscribe('program startup failure', self.onStartupFail)
             events.subscribe('program exit', self.onExit)
-
-            # If I don't import util here, then if initialization fails
-            # due to one of the other imports, Python complains about
-            # local variable 'util' being used before its assignment,
-            # because of the "import util.user" line further down combined
-            # with the fact that we want to use util.logger to log the
-            # initialization failure. So instead we have a useless
-            # import to ensure we can access the already-loaded util.logger.
-            from cockpit import util
-            from cockpit import depot
 
             depot_config = self.Config.depot_config
             depot.initialize(depot_config)
@@ -124,16 +116,9 @@ class CockpitApp(wx.App):
                     maximum = numDevices + numNonDevices)
             status.Show()
 
-            import cockpit.gui.camera.window
-            import cockpit.gui.loggingWindow
             # Do this early so we can see output while initializing.
-            cockpit.gui.loggingWindow.makeWindow(None)
-            import cockpit.gui.macroStage.macroStageWindow
-            import cockpit.gui.mainWindow
-            import cockpit.gui.mosaic.window
-            import cockpit.gui.shellWindow
-            import cockpit.gui.statusLightsWindow
-            import cockpit.util.userConfig
+            from cockpit.gui import loggingWindow
+            loggingWindow.makeWindow(None)
 
             updateNum=1
             status.Update(updateNum, "Initializing config...")
@@ -145,7 +130,6 @@ class CockpitApp(wx.App):
             for i, device in enumerate(depot.initialize(depot_config)):
                 status.Update(updateNum, "Initializing devices...\n%s" % device)
                 updateNum+=1
-            #depot.initialize(depot_config)
             status.Update(updateNum, "Initializing device interfaces...")
             updateNum+=1
             cockpit.interfaces.imager.initialize()
@@ -154,34 +138,32 @@ class CockpitApp(wx.App):
             status.Update(updateNum, "Initializing user interface...")
             updateNum+=1
 
-            frame = cockpit.gui.mainWindow.makeWindow()
-            status.Update(updateNum, " ... camera window")
-            updateNum+=1
+            from cockpit.gui import mainWindow
+            frame = mainWindow.makeWindow()
             self.SetTopWindow(frame)
-            cockpit.gui.camera.window.makeWindow(frame)
-            status.Update(updateNum, " ... mosaic window")
-            updateNum+=1
-            cockpit.gui.mosaic.window.makeWindow(frame)
-            status.Update(updateNum, " ... macrostage window")
-            updateNum+=1
-            cockpit.gui.macroStage.macroStageWindow.makeWindow(frame)
-            updateNum+=1
-            cockpit.gui.statusLightsWindow.makeWindow(frame)
 
+            for subname in ['camera.window',
+                            'mosaic.window',
+                            'macroStage.macroStageWindow',
+                            'statusLightsWindow']:
+                module = importlib.import_module('cockpit.gui.' + subname)
+                status.Update(updateNum, ' ... ' + subname)
+                updateNum+=1
+                module.makeWindow(frame)
             # At this point, we have all the main windows are displayed.
             self.primaryWindows = [w for w in wx.GetTopLevelWindows()]
+
             # Now create secondary windows. These are single instance
             # windows that won't appear in the primary window marshalling
             # list.
             status.Update(updateNum, " ... secondary windows")
             updateNum+=1
-            cockpit.gui.shellWindow.makeWindow(frame)
-            status.Update(updateNum, " ... statuslights window")
-            updateNum+=1
-            import cockpit.gui.touchscreen
-            cockpit.gui.touchscreen.makeWindow(frame)
-            from cockpit.util import intensity
-            intensity.makeWindow(frame)
+            for module_name in ['cockpit.gui.shellWindow',
+                                'cockpit.gui.touchscreen',
+                                'cockpit.util.intensity']:
+                module = importlib.import_module(module_name)
+                module.makeWindow(frame)
+
             # All secondary windows created.
             self.secondaryWindows = [w for w in wx.GetTopLevelWindows() if w not in self.primaryWindows]
 
@@ -219,7 +201,7 @@ class CockpitApp(wx.App):
                     w.Hide()
 
 
-            depot.makeInitialPublications()
+            cockpit.depot.makeInitialPublications()
             cockpit.interfaces.imager.makeInitialPublications()
             cockpit.interfaces.stageMover.makeInitialPublications()
 

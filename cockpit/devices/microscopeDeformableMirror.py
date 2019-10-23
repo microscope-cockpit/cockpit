@@ -99,7 +99,9 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         # Define in tuples - easier to read and reorder.
         menuTuples = (('Fourier metric', 'fourier'),
                       ('Contrast metric', 'contrast'),
-                      ('Fourier Power metric', 'fourier_power'),)
+                      ('Fourier Power metric', 'fourier_power'),
+                      ('Gradient metric', 'gradient'),
+                      ('Second Moment metric', 'second_moment'),)
         # Store as ordered dict for easy item->func lookup.
         self.menuItems = OrderedDict(menuTuples)
 

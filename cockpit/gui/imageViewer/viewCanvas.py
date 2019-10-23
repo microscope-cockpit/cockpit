@@ -185,7 +185,7 @@ class Image(BaseGL):
 
     @property
     def offset(self):
-        return - (self.vmin - self.dmin) / (self.dptp * self.scale)
+        return - (self.vmin - self.dmin) / ((self.dptp * self.scale) or 1)
 
     def __del__(self):
         """Clean up textures."""
@@ -341,10 +341,10 @@ class Histogram(BaseGL):
 
 
     def data2gl(self, val):
-        return -1 + 2 * (val - self.lbound) / (self.ubound - self.lbound)
+        return -1 + 2 * (val - self.lbound) / ((self.ubound - self.lbound) or 1)
 
     def gl2data(self, x):
-        return self.lbound + (self.ubound - self.lbound) * (x + 1) / 2
+        return self.lbound + ((self.ubound - self.lbound) or 1) * (x + 1) / 2
 
     def setData(self, data):
         # Calculate histogram.
@@ -383,7 +383,7 @@ class Histogram(BaseGL):
         for (x, y) in zip(self.bins, self.counts):
             x0 = self.data2gl(x)
             x1 = self.data2gl(x + binw)
-            h = -1 + 2 * y / self.counts.max()
+            h = -1 + 2 * y / (self.counts.max() or 1)
             v.extend( [(x0, -1), (x0, h), (x1, h), (x1, -1)] )
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointerf(v)
@@ -477,7 +477,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         self.painting = False
 
-
+        # Initialise FFT variables
+        self.menuStrFFT = "Enable FFT mode"
+        self.showFFT = False
 
     def onMouseWheel(self, event):
         # Only respond if event originated within window.
@@ -555,12 +557,15 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             shouldResetView = self.imageShape != newImage.shape
             self.imageShape = newImage.shape
             self.histogram.setData(newImage)
-            self.image.setData(newImage)
+            if self.showFFT:
+                self.image.setData(np.log(np.fft.fftshift(np.fft.fft2(self.imageData))))
+            else:
+                self.image.setData(newImage)
             if shouldResetView:
                 self.resetView()
             if isFirstImage:
                 self.image.autoscale()
-            self.Refresh()
+            wx.CallAfter(self.Refresh)
             # Wait for the image to be drawn before we do anything more.
             self.drawEvent.wait()
             self.drawEvent.clear()
@@ -719,6 +724,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         return [('Reset view', self.resetView),
                 ('Set histogram parameters', self.onSetHistogram),
                 ('Toggle alignment crosshair', self.toggleCrosshair),
+                (self.menuStrFFT, self.toggleFFT),
                 ('Toggle clip highlighting', self.image.toggleClipHighlight),]
 
 
@@ -736,6 +742,17 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
     def toggleCrosshair(self, event=None):
         self.showCrosshair = not(self.showCrosshair)
+
+
+    def toggleFFT(self, event=None):
+        if self.showFFT:
+            self.showFFT = False
+            self.image.setData(self.imageData)
+            self.menuStrFFT = "Enable FFT mode"
+        else:
+            self.showFFT = True
+            self.image.setData(np.log(np.fft.fftshift(np.fft.fft2(self.imageData))))
+            self.menuStrFFT = "Enable Normal mode"
 
 
     ## Convert window co-ordinates to gl co-ordinates.
