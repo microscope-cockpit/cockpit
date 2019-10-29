@@ -168,6 +168,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             # just use a quarter of the max texture size, which has been found
             # to work intests on 2017-ish MacbookPro.
             tsize //= 4
+        tsize=min(tsize,16384)
         MegaTile.setPixelSize(tsize)
         xMin += min(0, xOffLim[0]) - MegaTile.micronSize
         xMax += max(0, xOffLim[1]) + MegaTile.micronSize
