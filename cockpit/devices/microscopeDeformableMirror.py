@@ -101,13 +101,28 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                       ('Contrast metric', 'contrast'),
                       ('Fourier Power metric', 'fourier_power'),
                       ('Gradient metric', 'gradient'),
-                      ('Second Moment metric', 'second_moment'),)
+                      ('Second Moment metric', 'second_moment'),
+                      ('Set Sensorless Parameters', self.set_sensorless_param),)
         # Store as ordered dict for easy item->func lookup.
         self.menuItems = OrderedDict(menuTuples)
 
     ### Context menu and handlers ###
     def menuCallback(self, index, item):
-        return self.proxy.set_metric(self.menuItems[item])
+        try:
+            self.menuItems[item]()
+        except TypeError:
+            return self.proxy.set_metric(self.menuItems[item])
+
+    def set_sensorless_param(self):
+        inputs = cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
+                None,
+                'Set the parameters for Sensorless Adaptive Optics routine',
+                ['Aberration range minima',
+                 'Aberration range maxima',
+                 'Number of measurements',
+                 'Number of repeats'],
+                 (-1.5, 1.5, 9, 2))
+        self.z_min, self.z_max, self.numMes, self.num_it = [int(i) for i in inputs]
 
     def onRightMouse(self, event):
         menu = cockpit.gui.device.Menu(self.menuItems.keys(), self.menuCallback)
@@ -629,10 +644,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         # Initialise the Zernike modes to apply
         print("Initialising the Zernike modes to apply")
         self.numMes = 9
-        num_it = 2
-        self.z_steps = np.linspace(-1.5, 1.5, self.numMes)
+        self.num_it = 2
+        self.z_steps = np.linspace(self.z_min, self.z_max, self.numMes)
 
-        for ii in range(num_it):
+        for ii in range(self.num_it):
             it_zernike_applied = np.zeros((self.numMes * self.nollZernike.shape[0], self.no_actuators))
             for noll_ind in self.nollZernike:
                 ind = np.where(self.nollZernike == noll_ind)[0][0]
