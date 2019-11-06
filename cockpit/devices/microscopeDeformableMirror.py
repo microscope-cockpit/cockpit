@@ -50,6 +50,13 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
 
+        # Need intial values for sensorless AO
+        self.numMes = 9
+        self.num_it = 2
+        self.z_max = 1.5
+        self.z_min = -1.5
+        self.nollZernike = np.asarray([11, 22, 5, 6, 7, 8, 9, 10])
+
         # Excercise the DM to remove residual static and then set to 0 position
         for ii in range(50):
             self.proxy.send(np.random.rand(self.no_actuators))
@@ -124,7 +131,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                  'Noll indeces'],
                  (-1.5, 1.5, 9, 2, [11, 22, 5, 6, 7, 8, 9, 10]))
         self.z_min, self.z_max, self.numMes, self.num_it = [i for i in inputs[:-1]]
-        self.nollZernike = np.asarray([z_ind for z_ind in inputs[-1]])
+        self.nollZernike = np.asarray([int(z_ind) for z_ind in inputs[-1][1:-1].split(', ')])
 
 
     def onRightMouse(self, event):
@@ -645,8 +652,6 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
 
         # Initialise the Zernike modes to apply
         print("Initialising the Zernike modes to apply")
-        self.numMes = 9
-        self.num_it = 2
         self.z_steps = np.linspace(self.z_min, self.z_max, self.numMes)
 
         for ii in range(self.num_it):
