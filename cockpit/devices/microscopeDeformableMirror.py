@@ -129,8 +129,12 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                  'Number of measurements',
                  'Number of repeats',
                  'Noll indeces'],
-                 (-1.5, 1.5, 9, 2, [11, 22, 5, 6, 7, 8, 9, 10]))
+                 (self.z_min, self.z_max, self.numMes, self.num_it, self.nollZernike.tolist()))
         self.z_min, self.z_max, self.numMes, self.num_it = [i for i in inputs[:-1]]
+        self.z_min = float(self.z_min)
+        self.z_max = float(self.z_max)
+        self.numMes = int(self.numMes)
+        self.num_it = int(self.num_it)
         self.nollZernike = np.asarray([int(z_ind) for z_ind in inputs[-1][1:-1].split(', ')])
 
 
