@@ -143,12 +143,12 @@ class DeviceDepot:
             # TODO - catch circular dependencies.
             d = devices.pop(0)
             depends = []
-            for dependency in ['triggersource', 'analogsource']:
+            for dependency in ['triggersource', 'analogsource', 'controller']:
                 other = d.config.get(dependency)
                 if other:
                     if other not in self.nameToDevice:
-                        raise Exception("Device %s depends on non-existent device %s." %
-                                        (d, other))
+                        raise Exception("Device %s depends on non-existent device '%s'." %
+                                        (d.name, other))
                     depends.append(other)
 
             if any([other not in done for other in depends]):

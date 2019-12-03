@@ -66,7 +66,18 @@ class MicroscopeBase(device.Device):
     def initialize(self):
         super().initialize()
         # Connect to the proxy.
-        self._proxy = Pyro4.Proxy(self.uri)
+        if 'controller' not in self.config:
+            self._proxy = Pyro4.Proxy(self.uri)
+        else:
+            c = depot.getDeviceWithName(self.config['controller'])
+            c_name = self.config.get('controller.name', None)
+            try:
+                if c_name is not None:
+                    self._proxy = c._proxy.devices[c_name]
+                else:
+                    self._proxy = next(iter(c._proxy.devices.values()))
+            except:
+                raise Exception("%s: device not found on controller '%s'." % (self.name, c.name))
         self.get_all_settings = self._proxy.get_all_settings
         self.get_setting = self._proxy.get_setting
         self.set_setting = self._proxy.set_setting
