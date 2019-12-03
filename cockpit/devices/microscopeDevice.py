@@ -50,15 +50,27 @@ class MicroscopeBase(device.Device):
         self.handlers = []
         self.panel = None
         # Pyro proxy
-        self._proxy = Pyro4.Proxy(config.get('uri'))
+        self._proxy = None
         self.settings = {}
         self.cached_settings={}
         self.settings_editor = None
         self.defaults = DEFAULTS_NONE
         self.enabled = True
+        # Placeholders for methods deferred to proxy.
+        self.get_all_settings = None
+        self.get_setting = None
+        self.set_setting = None
+        self.describe_setting = None
+        self.describe_settings = None
+
+    def initialize(self):
+        super().initialize()
+        # Connect to the proxy.
+        self._proxy = Pyro4.Proxy(self.uri)
         self.get_all_settings = self._proxy.get_all_settings
         self.get_setting = self._proxy.get_setting
         self.set_setting = self._proxy.set_setting
+        self.describe_setting = self._proxy.describe_setting
         self.describe_settings = self._proxy.describe_settings
 
     def finalizeInitialization(self):
