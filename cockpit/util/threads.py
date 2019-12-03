@@ -57,7 +57,7 @@ from sys import version_info
 if version_info[0] >= 3 and version_info[1] >= 4:
     __isMainThread = lambda: threading.current_thread() is threading.main_thread()
 else:
-    __isMainThread = lambda: threading.current_thread().name is 'MainThread'
+    __isMainThread = lambda: threading.current_thread().name == 'MainThread'
 
 def callInMainThread(function):
     def wrappedFunc(*args, **kwargs):
@@ -88,5 +88,3 @@ def locked(func):
         with objectToLock[first]:
             return func(first, *args, **kwargs)
     return wrappedFunc
-
-

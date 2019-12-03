@@ -176,7 +176,7 @@ class CockpitApp(wx.App):
                                                 'windowState'+title,
                                                 default= 0)
                 #if they were hidden then return them to hidden
-                if (windowstate is 0):
+                if windowstate == 0:
                     # Hide the window until it is called up.
                     w.Hide()
 
@@ -196,7 +196,7 @@ class CockpitApp(wx.App):
                                                 'windowState'+title,
                                                 default= 0)
                 #if they were hidden then return them to hidden
-                if (windowstate is 0):
+                if windowstate == 0:
                     # Hide the window until it is called up.
                     w.Hide()
 
