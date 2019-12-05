@@ -196,6 +196,26 @@ class Menu(wx.Menu):
         cockpit.gui.guiUtils.placeMenuAtMouse(event.GetEventObject(), self)
 
 
+class EnumChoice(wx.Choice):
+    """A wx.Choice which coverts between it's own 0-based indexes and enum values."""
+    def __init__(self, *args, **kwargs):
+        self._enumitems = []
+        self._action = None
+        super().__init__(*args, **kwargs)
+
+    def Set(self, items):
+        """Store the enum values in a 0-indexed list for recall later."""
+        self._enumitems = [value for value, desc in items]
+        super().Set([desc for value, desc in items])
+
+    def _onChoice(self, evt):
+        self._action(self._enumitems[evt.Selection])
+
+    def setOnChoice(self, action):
+        self._action = action
+        self.Bind(wx.EVT_CHOICE, self._onChoice)
+
+
 _BMP_SIZE=(16,16)
 
 _BMP_OFF = wx.Bitmap.FromRGBA(*_BMP_SIZE, red=0, green=32, blue=0,
