@@ -71,13 +71,18 @@ class MicroscopeBase(device.Device):
         else:
             c = depot.getDeviceWithName(self.config['controller'])
             c_name = self.config.get('controller.name', None)
-            try:
-                if c_name is not None:
+            if c_name is not None:
+                try:
                     self._proxy = c._proxy.devices[c_name]
-                else:
+                except:
+                    raise Exception("%s: device not found on controller '%s'." % (self.name, c.name))
+            elif len(c._proxy.devices) == 0:
+                raise Exception("%s: no devices found on controller." % self.name)
+            elif len(c._proxy.devices) == 1:
                     self._proxy = next(iter(c._proxy.devices.values()))
-            except:
-                raise Exception("%s: device not found on controller '%s'." % (self.name, c.name))
+            else:
+                 raise Exception("%s: More than one device found on controller, "\
+                                 "so must specify controller.name." % self.name)
         self.get_all_settings = self._proxy.get_all_settings
         self.get_setting = self._proxy.get_setting
         self.set_setting = self._proxy.set_setting
@@ -92,9 +97,10 @@ class MicroscopeBase(device.Device):
         # interface relies on us to send it valid data, so we have to
         # convert our strings to the appropriate type here.
         ss = self.config.get('settings')
+        settings = {}
         if ss:
-            settings = dict([m.groups() for kv in ss.split('\n')
-                             for m in [re.match(r'(.*)\s*[:=]\s*(.*)', kv)] if m])
+            settings.update(([m.groups() for kv in ss.split('\n')
+                             for m in [re.match(r'(.*)\s*[:=]\s*(.*)', kv)] if m]))
         for k,v in settings.items():
             try:
                 desc = self.describe_setting(k)
