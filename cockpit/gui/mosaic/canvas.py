@@ -161,13 +161,15 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # at each y limit, rather than 4 at one edge.
         vendor = glGetString(GL_VENDOR)
         tsize = glGetInteger(GL_MAX_TEXTURE_SIZE)
-        if vendor.startswith(b'Intel'):
-            # If we use the full texture size, it seems it's too large
-            # for manipulation in a framebuffer on Macs with Intel chipsets.
-            # GL_MAX_FRAMEBUFFER_WIDTH and _HEIGHT are not available, so we
-            # just use a quarter of the max texture size, which has been found
-            # to work intests on 2017-ish MacbookPro.
-            tsize //= 4
+        # If we use the full texture size, it seems it's too large for manipul-
+        # ation in a framebuffer:
+        #   * on Macs with Intel chipsets;
+        #   * on some mobile nVidia chipsets.
+        # GL_MAX_FRAMEBUFFER_WIDTH and _HEIGHT are not universally available,
+        # so we just use a quarter of the max texture size or a reasonable
+        # upper bound which has been found to work in tests on 2017-ish
+        # Macbook Pro.
+        tsize = min(tsize // 4, 16384)
         MegaTile.setPixelSize(tsize)
         xMin += min(0, xOffLim[0]) - MegaTile.micronSize
         xMax += max(0, xOffLim[1]) + MegaTile.micronSize
