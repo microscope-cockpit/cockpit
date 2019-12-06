@@ -22,7 +22,7 @@
 import collections
 from cockpit.util import ftgl
 import numpy
-import os
+import os, sys
 import wx
 from wx.lib.agw.shapedbutton import SButton, SBitmapButton,SBitmapToggleButton
 from cockpit.gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
@@ -424,6 +424,19 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
         for item in [self, self.panel, self.canvas]:
             cockpit.gui.keyboard.setKeyboardHandlers(item)
+
+    def Refresh(self, *args, **kwargs):
+        """Refresh, with explicit refresh of glCanvases on Mac.
+
+        Refresh is supposed to be called recursively on child objects,
+        but is not always called for our glCanvases on the Mac. This may
+        be due to the canvases not having any invalid regions, but I see
+        no way to invalidate a region on demand."""
+        super().Refresh(*args, **kwargs)
+        if sys.platform == 'darwin':
+            wx.CallAfter(self.canvas.Refresh)
+            wx.CallAfter(self.macroStageXY.Refresh)
+            wx.CallAfter(self.macroStageZ.Refresh)
 
     ##function ot check if a bitmpa exists or return a generic missing
     ##file bitmap
