@@ -214,10 +214,10 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         asproxy._pyroAsync()
         result = asproxy.enable()
         result.wait(timeout=10)
-        #raise Exception("Problem enabling %s." % self.name)
-        self.enabled = True
-        self.handlers[0].exposureMode = self._proxy.get_trigger_type()
-        self.listener.connect()
+        self.enabled = result.value
+        if self.enabled:
+            self.handlers[0].exposureMode = self._proxy.get_trigger_type()
+            self.listener.connect()
         self.updateSettings()
         return self.enabled
 
