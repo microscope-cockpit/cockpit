@@ -50,20 +50,86 @@ class MicroscopeBase(device.Device):
         self.handlers = []
         self.panel = None
         # Pyro proxy
-        self._proxy = Pyro4.Proxy(config.get('uri'))
+        self._proxy = None
         self.settings = {}
         self.cached_settings={}
         self.settings_editor = None
         self.defaults = DEFAULTS_NONE
         self.enabled = True
+        # Placeholders for methods deferred to proxy.
+        self.get_all_settings = None
+        self.get_setting = None
+        self.set_setting = None
+        self.describe_setting = None
+        self.describe_settings = None
+
+    def initialize(self):
+        super().initialize()
+        # Connect to the proxy.
+        if 'controller' not in self.config:
+            self._proxy = Pyro4.Proxy(self.uri)
+        else:
+            c = depot.getDeviceWithName(self.config['controller'])
+            c_name = self.config.get('controller.name', None)
+            if c_name is not None:
+                try:
+                    self._proxy = c._proxy.devices[c_name]
+                except:
+                    raise Exception("%s: device not found on controller '%s'." % (self.name, c.name))
+            elif len(c._proxy.devices) == 0:
+                raise Exception("%s: no devices found on controller." % self.name)
+            elif len(c._proxy.devices) == 1:
+                    self._proxy = next(iter(c._proxy.devices.values()))
+            else:
+                 raise Exception("%s: More than one device found on controller, "\
+                                 "so must specify controller.name." % self.name)
         self.get_all_settings = self._proxy.get_all_settings
         self.get_setting = self._proxy.get_setting
         self.set_setting = self._proxy.set_setting
+        self.describe_setting = self._proxy.describe_setting
         self.describe_settings = self._proxy.describe_settings
 
     def finalizeInitialization(self):
         super(MicroscopeBase, self).finalizeInitialization()
+        # Set default settings on remote device. These will be over-
+        # ridden by any defaults in userConfig, later.
+        # Currently, settings are an 'advanced' feature --- the remote
+        # interface relies on us to send it valid data, so we have to
+        # convert our strings to the appropriate type here.
+        ss = self.config.get('settings')
+        settings = {}
+        if ss:
+            settings.update(([m.groups() for kv in ss.split('\n')
+                             for m in [re.match(r'(.*)\s*[:=]\s*(.*)', kv)] if m]))
+        for k,v in settings.items():
+            try:
+                desc = self.describe_setting(k)
+            except:
+                print ("%s ingoring unknown setting '%s'." % (self.name, k))
+                continue
+            if desc['type'] == 'str':
+                pass
+            elif desc['type'] == 'int':
+                v = int(v)
+            elif desc['type'] == 'float':
+                v = float(v)
+            elif desc['type'] == 'bool':
+                v = v.lower() in ['1', 'true']
+            elif desc['type'] == 'tuple':
+                print ("%s ignoring tuple setting '%s' - not yet supported." % (self.name, k))
+                continue
+            elif desc['type'] == 'enum':
+                if v.isdigit():
+                    v = int(v)
+                else:
+                    vmap = dict((k,v) for v,k in desc['values'])
+                    v = vmap.get(v, None)
+                if v is None:
+                    print ("%s ignoring enum setting '%s' with unrecognised value." % (self.name, k))
+                    continue
+            self.set_setting(k, v)
         self._readUserConfig()
+
 
     def getHandlers(self):
         """Return device handlers. Derived classes may override this."""

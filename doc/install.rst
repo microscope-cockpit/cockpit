@@ -7,19 +7,7 @@
    no Back-Cover Texts.  A copy of the license is included in the
    section entitled "GNU Free Documentation License".
 
-Cockpit
-#######
+Installation
+************
 
-.. include:: ../README
-
-.. toctree::
-   :maxdepth: 2
-
-   config
-
-Indices and tables
-******************
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. include:: ../INSTALL

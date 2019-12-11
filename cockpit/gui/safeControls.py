@@ -273,7 +273,7 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
             wx.CallAfter(self.ReleaseFocus)
         elif evt.KeyCode in [wx.WXK_NUMPAD_ENTER, wx.WXK_RETURN, wx.WXK_SPACE,
                              wx.WXK_NUMPAD_TAB, wx.WXK_TAB]:
-            if self._laststr is not '':
+            if self._laststr != '':
                 # Commit on return, enter, space or tab
                 self._pending = min(max(self.Value, self._min), self._max)
                 self.Commit()

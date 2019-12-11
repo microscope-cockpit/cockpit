@@ -91,18 +91,18 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.minX, self.maxX = hardLimits[0]
         self.minY, self.maxY = hardLimits[1]
         ## X extent of the stage, in microns.
-        self.stageWidth = self.maxX - self.minX
+        stageWidth = self.maxX - self.minX
         ## Y extent of the stage, in microns.
-        self.stageHeight = self.maxY - self.minY
+        stageHeight = self.maxY - self.minY
         ## Max of X or Y stage extents.
-        self.maxExtent = max(self.stageWidth, self.stageHeight)
+        self.maxExtent = max(stageWidth, stageHeight)
         ## X and Y view extent.
-        if self.stageHeight > self.stageWidth:
-            self.viewExtent = 1.2 * self.stageHeight
-            self.viewDeltaY = self.stageHeight * 0.1
+        if stageHeight > stageWidth:
+            self.viewExtent = 1.2 * stageHeight
+            self.viewDeltaY = stageHeight * 0.1
         else:
-            self.viewExtent = 1.05 * self.stageWidth
-            self.viewDeltaY = self.stageHeight * 0.05
+            self.viewExtent = 1.05 * stageWidth
+            self.viewDeltaY = stageHeight * 0.05
         # Push out the min and max values a bit to give us some room around
         # the stage to work with. In particular we need space below the display
         # to show our legend.
@@ -188,6 +188,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             hardLimits = cockpit.interfaces.stageMover.getHardLimits()[:2]
             # Rearrange limits to (x, y) tuples.
             hardLimits = list(zip(hardLimits[0], hardLimits[1]))
+            stageHeight = abs(hardLimits[1][0] - hardLimits[1][1])
 
             # Set up transform from stage to screen units
             glMatrixMode(GL_MODELVIEW)
@@ -254,7 +255,6 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 glLineWidth(1)
             # Now the coordinates. Only draw them if the soft limits aren't
             # the hard limits, to avoid clutter.
-            hardLimits = cockpit.interfaces.stageMover.getHardLimits()[:2]
             if safeties != hardLimits:
                 for i, (dx, dy) in enumerate([(4000, -700), (2000, 400)]):
                     x = softLimits[i][0]
@@ -330,7 +330,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glColor3f(0, 0, 0)
             glLineWidth(1)
             glBegin(GL_LINES)
-            yOffset = self.minY + 0.9 * (self.viewDeltaY + 0.5 * (self.viewExtent - self.stageHeight))
+            yOffset = self.minY + 0.9 * (self.viewDeltaY + 0.5 * (self.viewExtent - stageHeight))
             glVertex2f(hardLimits[0][0], yOffset)
             glVertex2f(hardLimits[0][1], yOffset)
             # Draw notches in the scale bar every 1mm.

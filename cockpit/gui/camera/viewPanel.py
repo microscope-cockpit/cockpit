@@ -50,12 +50,7 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-import numpy
-import time
-import traceback
 import wx
-
 from cockpit import depot
 from cockpit import events
 import cockpit.util.threads
@@ -140,12 +135,6 @@ class ViewPanel(wx.Panel):
             item = menu.Append(-1, "Disable %s" % self.curCamera.descriptiveName)
             self.Bind(wx.EVT_MENU, lambda event: self.curCamera.toggleState(), item)
             menu.InsertSeparator(1)
-            items = self.canvas.getMenuActions()
-            for label, action in items:
-                item = menu.Append(-1, label)
-                self.Bind(wx.EVT_MENU,
-                        lambda event, action = action: action(), item)
-            menu.InsertSeparator(len(items) + 2)
             for size in self.curCamera.getImageSizes():
                 item = menu.Append(-1, "Set image size to %s" % str(size))
                 self.Bind(wx.EVT_MENU,
@@ -229,7 +218,6 @@ class ViewPanel(wx.Panel):
     ## Get the current pixel data for the view.
     def getPixelData(self):
         return self.canvas.imageData
-
 
     ## Debugging: convert to string.
     def __repr__(self):

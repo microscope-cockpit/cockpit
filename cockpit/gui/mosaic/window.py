@@ -530,7 +530,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def onAxisRefresh(self, axis, *args):
         if axis in [0, 1]:
             # Only care about the X and Y axes.
-            wx.CallAfter(self.Refresh)
+            wx.CallAfter(self.canvas.Refresh)
 
 
     ## User changed the objective in use; resize our crosshair box to suit.

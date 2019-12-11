@@ -94,13 +94,17 @@ from itertools import chain
 
 
 class ExecutorDevice(device.Device):
+    _config_types = {
+        'alines' : int,
+        'dlines' : int,
+    }
+
     def __init__(self, name, config={}):
         device.Device.__init__(self, name, config)
         ## Connection to the remote DSP computer
         self.connection = None
         ## Set of all handlers we control.
         self.handlers = set()
-
 
     ## Connect to the DSP computer.
     @cockpit.util.threads.locked
@@ -149,7 +153,8 @@ class ExecutorDevice(device.Device):
              'getAnalog': self.connection.ReadPosition,
              'setAnalog': self.connection.MoveAbsolute,
              },
-            dlines=16, alines=4)
+            dlines=self.config.get('dlines', 16),
+            alines=self.config.get('alines', 4))
 
         result.append(h)
 

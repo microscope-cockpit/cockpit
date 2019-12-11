@@ -55,12 +55,11 @@
 from cockpit import events
 import cockpit.gui
 import cockpit.gui.guiUtils
+import cockpit.util.datadoc
 import cockpit.util.threads
-
 
 from wx.glcanvas import GLCanvas
 from collections.abc import Iterable
-
 
 from cockpit.util import ftgl
 import numpy
@@ -141,20 +140,24 @@ class Image(BaseGL):
         gl_Position = vec4(zoom * (vXY + pan), 1., 1.);
     }
     """
-    # Fragment shader glsl source
+    # Fragment shader glsl source.
     _FS = """
     #version 120
     uniform sampler2D tex;
     uniform float scale;
     uniform float offset;
+    uniform bool show_clip;
 
     void main()
     {
         vec4 lum = clamp(offset + texture2D(tex, gl_TexCoord[0].st) / scale, 0., 1.);
-        gl_FragColor = vec4(0., 0., lum.r == 0, 1.) + vec4(1., lum.r < 1., 1., 1.) * lum.r;
+        if (show_clip) {
+            gl_FragColor = vec4(0., 0., lum.r == 0, 1.) + vec4(1., lum.r < 1., 1., 1.) * lum.r;
+        } else {
+            gl_FragColor = vec4(lum.r, lum.r, lum.r, 1.);
+        }
     }
     """
-
     def __init__(self):
         # Maximum texture edge size
         self._maxTexEdge = glGetInteger(GL_MAX_TEXTURE_SIZE)
@@ -164,6 +167,8 @@ class Image(BaseGL):
         self._update = False
         # Geometry as number of textures along each axis.
         self.shape = (0, 0)
+        ## Should we use colour to indicate range clipping?
+        self.clipHighlight = False
         # Data
         self._data = None
         # Minimum and maximum data value - used for setting greyscale range.
@@ -179,7 +184,7 @@ class Image(BaseGL):
 
     @property
     def offset(self):
-        return - (self.vmin - self.dmin) / (self.dptp * self.scale)
+        return - (self.vmin - self.dmin) / ((self.dptp * self.scale) or 1)
 
     def __del__(self):
         """Clean up textures."""
@@ -205,6 +210,9 @@ class Image(BaseGL):
     def setData(self, data):
         self._data = data
         self._update = True
+
+    def toggleClipHighlight(self, event=None):
+        self.clipHighlight = not self.clipHighlight
 
     def _createTextures(self):
         """Convert data to textures.
@@ -286,6 +294,7 @@ class Image(BaseGL):
         glUniform1f(glGetUniformLocation(shader, "scale"), self.scale)
         glUniform1f(glGetUniformLocation(shader, "offset"), self.offset)
         glUniform1f(glGetUniformLocation(shader, "zoom"), zoom)
+        glUniform1i(glGetUniformLocation(shader, "show_clip"), self.clipHighlight)
         # Render
         glEnable(GL_TEXTURE_2D)
         glEnableClientState(GL_VERTEX_ARRAY)
@@ -331,10 +340,10 @@ class Histogram(BaseGL):
 
 
     def data2gl(self, val):
-        return -1 + 2 * (val - self.lbound) / (self.ubound - self.lbound)
+        return -1 + 2 * (val - self.lbound) / ((self.ubound - self.lbound) or 1)
 
     def gl2data(self, x):
-        return self.lbound + (self.ubound - self.lbound) * (x + 1) / 2
+        return self.lbound + ((self.ubound - self.lbound) or 1) * (x + 1) / 2
 
     def setData(self, data):
         # Calculate histogram.
@@ -373,7 +382,7 @@ class Histogram(BaseGL):
         for (x, y) in zip(self.bins, self.counts):
             x0 = self.data2gl(x)
             x1 = self.data2gl(x + binw)
-            h = -1 + 2 * y / self.counts.max()
+            h = -1 + 2 * y / (self.counts.max() or 1)
             v.extend( [(x0, -1), (x0, h), (x1, h), (x1, -1)] )
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointerf(v)
@@ -400,11 +409,22 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def __init__(self, parent, *args, **kwargs):
         wx.glcanvas.GLCanvas.__init__(self, parent, *args, **kwargs)
 
-        ## Parent, so we can adjust its size when we receive an image.
-        self.parent = parent
-
         self.image = Image()
         self.histogram = Histogram()
+
+        ## Menu - keep reference to store state of toggle buttons.
+        # Must be created after self.image.
+        self._menu = wx.Menu()
+        for label, action in self.getMenuActions():
+            if not label:
+                self._menu.AppendSeparator()
+                continue
+            id = wx.NewIdRef()
+            if label.lower().startswith("toggle"):
+                self._menu.AppendCheckItem(id, label)
+            else:
+                self._menu.Append(id, label)
+            self.Bind(wx.EVT_MENU, lambda event, action=action: action(), id=id)
 
         # Canvas geometry - will be set by InitGL, or setSize.
         self.w, self.h = None, None
@@ -467,7 +487,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         self.painting = False
 
-
+        # Initialise FFT variables
+        self.showFFT = False
 
     def onMouseWheel(self, event):
         # Only respond if event originated within window.
@@ -545,12 +566,15 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             shouldResetView = self.imageShape != newImage.shape
             self.imageShape = newImage.shape
             self.histogram.setData(newImage)
-            self.image.setData(newImage)
+            if self.showFFT:
+                self.image.setData(np.log(np.abs(np.fft.fftshift(np.fft.fft2(self.imageData))) + 1e-16))
+            else:
+                self.image.setData(newImage)
             if shouldResetView:
                 self.resetView()
             if isFirstImage:
                 self.image.autoscale()
-            self.Refresh()
+            wx.CallAfter(self.Refresh)
             # Wait for the image to be drawn before we do anything more.
             self.drawEvent.wait()
             self.drawEvent.clear()
@@ -687,13 +711,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.mouseDragX = self.curMouseX
             self.mouseDragY = self.curMouseY
         elif event.RightDown():
-            # Show a menu.
-            menu = wx.Menu()
-            for label, action in self.getMenuActions():
-                id = wx.NewIdRef()
-                menu.Append(id, label)
-                self.Bind(wx.EVT_MENU,  lambda event, action = action: action(), id= id)
-            cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
+            cockpit.gui.guiUtils.placeMenuAtMouse(self, self._menu)
         elif event.Entering() and self.TopLevelParent.IsActive():
             self.SetFocus()
         else:
@@ -708,7 +726,13 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def getMenuActions(self):
         return [('Reset view', self.resetView),
                 ('Set histogram parameters', self.onSetHistogram),
-                ('Toggle alignment crosshair', self.toggleCrosshair)]
+                ('Toggle clip highlighting', self.image.toggleClipHighlight),
+                ('', None),
+                ('Toggle alignment crosshair', self.toggleCrosshair),
+                ("Toggle FFT mode", self.toggleFFT),
+                ('', None),
+                ('Save image', self.saveData)
+                ]
 
 
     ## Let the user specify the blackpoint and whitepoint for image scaling.
@@ -725,6 +749,15 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
     def toggleCrosshair(self, event=None):
         self.showCrosshair = not(self.showCrosshair)
+
+
+    def toggleFFT(self, event=None):
+        if self.showFFT:
+            self.showFFT = False
+            self.image.setData(self.imageData)
+        else:
+            self.showFFT = True
+            self.image.setData(np.log(np.abs(np.fft.fftshift(np.fft.fft2(self.imageData))) + 1e-16))
 
 
     ## Convert window co-ordinates to gl co-ordinates.
@@ -785,3 +818,16 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.image.autoscale()
         self.histogram.lthresh, self.histogram.uthresh = self.image.getDisplayRange()
         self.Refresh()
+
+    def saveData(self, evt=None):
+        with wx.FileDialog(self, "Save image", wildcard="DV files (*.dv)|*.dv",
+                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
+            if fileDialog.ShowModal() != wx.ID_OK:
+                return
+            path = fileDialog.GetPath()
+        # TODO: add XYsize and wavelength to saved data. These can be passed as
+        # kwargs, but the way per-camera pixel sizes are handled needs to be
+        # addressed first. See issue #538.
+        if self.Parent.Parent.curCamera is not None:
+            wls = [self.Parent.Parent.curCamera.wavelength,]
+        cockpit.util.datadoc.writeDataAsMrc(self.imageData, path, wavelengths=wls)

@@ -1,0 +1,14 @@
+Cockpit does not yet have a release and is not available on PyPI.  It
+can however, be installed from development sources::
+
+    git clone git@github.com:MicronOxford/cockpit.git
+    cd cockpit
+    python setup.py install
+
+Cockpit `setup.py` script will automatically check and install its
+Python dependencies.  Its main dependencies are microscope, numpy,
+PyOpenGL, Pyro4, and wxPython.
+
+The only non Python dependency is `FTGL
+<https://sourceforge.net/projects/ftgl/>`_ which needs to be installed
+separately.
