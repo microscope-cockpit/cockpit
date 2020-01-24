@@ -489,6 +489,12 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         controlMatrix, sys_flat = self.proxy.calibrate(numPokeSteps=5)
         Config.setValue('dm_controlMatrix', np.ndarray.tolist(controlMatrix))
         Config.setValue('dm_sys_flat', np.ndarray.tolist(sys_flat))
+        contol_matrix_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                               'cockpit', 'control_matrix.txt')
+        sys_flat_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                               'cockpit', 'sys_flat.txt')
+        np.savetxt(contol_matrix_file_path, controlMatrix)
+        np.savetxt(sys_flat_file_path, sys_flat)
 
     def onCharacterise(self):
         self.parameters = Config.getValue('dm_circleParams')
