@@ -31,9 +31,6 @@ import Pyro4
 
 SUPPORTED_CAMERAS = ['flycap2','picam']
 
-# The following must be defined as in handlers/camera.py
-(TRIGGER_AFTER, TRIGGER_BEFORE, TRIGGER_DURATION, TRIGGER_SOFTWARE) = range(4)
-
 
 class SoftCamera(camera.CameraDevice):
     """A class for software-driven cameras."""
@@ -77,7 +74,7 @@ class SoftCamera(camera.CameraDevice):
                     'setImageSize': self.setImageSize,
                     'getSavefileInfo': self.getSavefileInfo,
                     },
-                TRIGGER_SOFTWARE)
+                cockpit.handlers.camera.TRIGGER_SOFT)
         self.handler = result
         return result
 
