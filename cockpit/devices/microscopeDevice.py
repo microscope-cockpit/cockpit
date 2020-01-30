@@ -23,6 +23,24 @@
 
    Supports devices that implement the interface defined in
    microscope.devices
+
+For a direct connection::
+
+    [device]
+    type: cockpit.devices.a_module.SomeClass
+    uri: PYRO:SomeDevice@host.port
+
+For connection via a controller::
+
+    [device]
+    type: cockpit.devices.a_module.SomeClass
+    controller: some_controller
+    controller.name: remote_device    # optional
+
+    [some_controller]
+    type: cockpit.devices.another_module.AnotherClass
+    uri: PYRO:SomeControler@host.port
+
 """
 import Pyro4
 import wx
