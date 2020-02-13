@@ -102,11 +102,12 @@ class CockpitApp(wx.App):
         try:
             # Allow subsequent actions to abort startup by publishing
             # a "program startup failure" event.
-            events.subscribe('program startup failure', self.onStartupFail)
-            events.subscribe('program exit', self.onExit)
+            cockpit.events.subscribe('program startup failure',
+                                     self.onStartupFail)
+            cockpit.events.subscribe('program exit', self.onExit)
 
             depot_config = self.Config.depot_config
-            depot.initialize(depot_config)
+            cockpit.depot.initialize(depot_config)
             numDevices = len(depot_config.sections()) + 1 # + 1 is for dummy devs.
             numNonDevices = 15
             status = wx.ProgressDialog(parent = None,
@@ -127,7 +128,7 @@ class CockpitApp(wx.App):
 
             status.Update(updateNum, "Initializing devices...")
             updateNum+=1
-            for i, device in enumerate(depot.initialize(depot_config)):
+            for i, device in enumerate(cockpit.depot.initialize(depot_config)):
                 status.Update(updateNum, "Initializing devices...\n%s" % device)
                 updateNum+=1
             status.Update(updateNum, "Initializing device interfaces...")
@@ -205,7 +206,7 @@ class CockpitApp(wx.App):
             cockpit.interfaces.imager.makeInitialPublications()
             cockpit.interfaces.stageMover.makeInitialPublications()
 
-            events.publish('cockpit initialization complete')
+            cockpit.events.publish('cockpit initialization complete')
             self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
 
             return True
@@ -254,7 +255,7 @@ class CockpitApp(wx.App):
         self._SaveWindowPositions()
 
         try:
-            events.publish("user abort")
+            cockpit.events.publish("user abort")
         except Exception as e:
             cockpit.util.logger.log.error("Error during logout: %s" % e)
             cockpit.util.logger.log.error(traceback.format_exc())
