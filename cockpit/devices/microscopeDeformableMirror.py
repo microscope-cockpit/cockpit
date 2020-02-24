@@ -50,6 +50,11 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
 
+        # Need initial values for system flat calculations
+        self.sys_flat_num_it = 10
+        self.sysFlatNollZernike = np.linspace(start=4,stop=69,num=66,dtype=int)
+        self.sys_flat_values = None
+
         # Need intial values for sensorless AO
         self.numMes = 9
         self.num_it = 2
@@ -109,6 +114,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                       ('Fourier Power metric', 'fourier_power'),
                       ('Gradient metric', 'gradient'),
                       ('Second Moment metric', 'second_moment'),
+                      ('Set System Flat Calculation Paramterers', self.set_sys_flat_param),
                       ('Set Sensorless Parameters', self.set_sensorless_param),)
         # Store as ordered dict for easy item->func lookup.
         self.menuItems = OrderedDict(menuTuples)
@@ -119,6 +125,18 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             self.menuItems[item]()
         except TypeError:
             return self.proxy.set_metric(self.menuItems[item])
+
+
+    def set_sys_flat_param(self):
+        inputs = cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
+                None,
+                'Set the parameters for Sensorless Adaptive Optics routine',
+                ['Number of iterations',
+                 'System Flat Noll indeces'],
+                 (self.sys_flat_num_it, self.sysFlatNollZernike.tolist()))
+        self.sys_flat_num_it = [i for i in inputs[:-1]]
+        self.sys_flat_num_it = int(self.sys_flat_num_it)
+        self.sysFlatNollZernike = np.asarray([int(z_ind) for z_ind in inputs[-1][1:-1].split(', ')])
 
     def set_sensorless_param(self):
         inputs = cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
@@ -336,10 +354,15 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         rowSizer = wx.BoxSizer(wx.VERTICAL)
         self.elements = OrderedDict()
 
-        # Button to calibrate the DM
+        # Button to select the interferometer ROI
         selectCircleButton = wx.Button(self.panel, label='Select ROI')
         selectCircleButton.Bind(wx.EVT_BUTTON, self.onSelectCircle)
         self.elements['selectCircleButton'] = selectCircleButton
+
+        # Visualise current interferometric phase
+        visPhaseButton = wx.Button(self.panel, label='Visualise Phase')
+        visPhaseButton.Bind(wx.EVT_BUTTON, lambda evt: self.onVisualisePhase())
+        self.elements['visPhaseButton'] = visPhaseButton
 
         # Button to calibrate the DM
         calibrateButton = wx.Button(self.panel, label='Calibrate')
@@ -349,6 +372,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         characteriseButton = wx.Button(self.panel, label='Characterise')
         characteriseButton.Bind(wx.EVT_BUTTON, lambda evt: self.onCharacterise())
         self.elements['characteriseButton'] = characteriseButton
+
+        sysFlatCalcButton = wx.Button(self.panel, label='Calculate System Flat')
+        sysFlatCalcButton.Bind(wx.EVT_BUTTON, lambda evt: self.onSysFlatCalc())
+        self.elements['sysFlatCalcButton'] = sysFlatCalcButton
 
         label_use = cockpit.gui.device.Label(
             parent=self.panel, label='AO use')
@@ -363,11 +390,6 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         applySysFlat = wx.Button(self.panel, label='System Flat')
         applySysFlat.Bind(wx.EVT_BUTTON, lambda evt: self.onApplySysFlat())
         self.elements['applySysFlat'] = applySysFlat
-
-        # Visualise current interferometric phase
-        visPhaseButton = wx.Button(self.panel, label='Visualise Phase')
-        visPhaseButton.Bind(wx.EVT_BUTTON, lambda evt: self.onVisualisePhase())
-        self.elements['visPhaseButton'] = visPhaseButton
 
         # Apply last actuator values
         applyLastPatternButton = wx.Button(self.panel, label='Apply last pattern')
@@ -486,9 +508,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             except:
                 raise e
 
-        controlMatrix, sys_flat = self.proxy.calibrate(numPokeSteps=5)
+        controlMatrix = self.proxy.calibrate(numPokeSteps=5)
         Config.setValue('dm_controlMatrix', np.ndarray.tolist(controlMatrix))
-        Config.setValue('dm_sys_flat', np.ndarray.tolist(sys_flat))
 
     def onCharacterise(self):
         self.parameters = Config.getValue('dm_circleParams')
@@ -527,10 +548,55 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                                  'cockpit', 'characterisation_assay')
         np.save(file_path, assay)
 
+        # The default system corrections should be for the zernike modes we can accurately recreate
+        self.sysFlatNollZernike = np.where(np.diag(assay) > 0.75)[0]
+
         # Show characterisation assay, excluding piston
         app = wx.App()
         frame = charAssayViewer.viewCharAssay(assay[1:, 1:])
         app.MainLoop()
+
+    def onSysFlatCalc(self):
+        self.parameters = Config.getValue('dm_circleParams')
+        self.proxy.set_roi(self.parameters[0], self.parameters[1],
+                           self.parameters[2])
+
+        # Check we have the interferogram ROI
+        try:
+            self.proxy.get_roi()
+        except Exception as e:
+            try:
+                param = np.asarray(Config.getValue('dm_circleParams'))
+                self.proxy.set_roi(y0=param[0], x0=param[1],
+                                   radius=param[2])
+            except:
+                raise e
+
+        # Check we have a Fourier filter
+        try:
+            self.proxy.get_fourierfilter()
+        except:
+            try:
+                test_image = self.proxy.acquire()
+                self.proxy.set_fourierfilter(test_image=test_image)
+            except Exception as e:
+                raise e
+
+        # Check the DM has been calibrated
+        try:
+            self.proxy.get_controlMatrix()
+        except Exception as e:
+            try:
+                self.controlMatrix = Config.getValue('dm_controlMatrix')
+                self.proxy.set_controlMatrix(self.controlMatrix)
+            except:
+                raise e
+
+        z_ignore = np.zeros(self.no_actuators)
+        z_ignore[self.sysFlatNollZernike] = 1
+        self.sys_flat_values = self.proxy.flatten_phase(iterations=self.sys_flat_num_it, z_modes_ignore = z_ignore)
+
+        Config.setValue('dm_sys_flat', np.ndarray.tolist(self.sys_flat_values))
 
     def onVisualisePhase(self):
         self.parameters = Config.getValue('dm_circleParams')
@@ -578,7 +644,9 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         app.MainLoop()
 
     def onApplySysFlat(self):
-        self.sys_flat_values = np.asarray(Config.getValue('dm_sys_flat'))
+        if self.sys_flat_values is None:
+            self.sys_flat_values = np.asarray(Config.getValue('dm_sys_flat'))
+
         self.proxy.send(self.sys_flat_values)
 
     def onApplyLastPattern(self):
