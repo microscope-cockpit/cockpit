@@ -52,7 +52,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
 
         # Need initial values for system flat calculations
         self.sys_flat_num_it = 10
-        self.sysFlatNollZernike = np.linspace(start=4,stop=69,num=66,dtype=int)
+        self.sys_error_thresh = np.inf
+        self.sysFlatNollZernike = np.linspace(start=4,stop=68,num=65,dtype=int)
         self.sys_flat_values = None
 
         # Need intial values for sensorless AO
@@ -132,10 +133,14 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                 None,
                 'Set the parameters for Sensorless Adaptive Optics routine',
                 ['Number of iterations',
+                 'Error threshold',
                  'System Flat Noll indeces'],
-                 (self.sys_flat_num_it, self.sysFlatNollZernike.tolist()))
-        self.sys_flat_num_it = [i for i in inputs[:-1]]
-        self.sys_flat_num_it = int(self.sys_flat_num_it)
+                 (self.sys_flat_num_it, self.sys_error_thresh, self.sysFlatNollZernike.tolist()))
+        self.sys_flat_num_it = int(inputs[0])
+        if inputs[1] == 'inf':
+            self.sys_error_thresh = np.inf
+        else:
+            self.sys_error_thresh = int(inputs[1])
         self.sysFlatNollZernike = np.asarray([int(z_ind) for z_ind in inputs[-1][1:-1].split(', ')])
 
     def set_sensorless_param(self):
@@ -597,7 +602,9 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
 
         z_ignore = np.zeros(self.no_actuators)
         z_ignore[self.sysFlatNollZernike] = 1
-        self.sys_flat_values = self.proxy.flatten_phase(iterations=self.sys_flat_num_it, z_modes_ignore = z_ignore)
+        self.sys_flat_values = self.proxy.flatten_phase(iterations=self.sys_flat_num_it,
+                                                        error_thresh=self.sys_error_thresh,
+                                                        z_modes_ignore = z_ignore)
 
         Config.setValue('dm_sys_flat', np.ndarray.tolist(self.sys_flat_values))
 
