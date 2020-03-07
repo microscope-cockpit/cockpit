@@ -601,7 +601,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                 raise e
 
         z_ignore = np.zeros(self.no_actuators)
-        z_ignore[self.sysFlatNollZernike] = 1
+        z_ignore[self.sysFlatNollZernike-1] = 1
         self.sys_flat_values = self.proxy.flatten_phase(iterations=self.sys_flat_num_it,
                                                         error_thresh=self.sys_error_thresh,
                                                         z_modes_ignore = z_ignore)
