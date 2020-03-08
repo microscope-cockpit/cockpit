@@ -552,12 +552,18 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             except:
                 raise e
         assay = self.proxy.assess_character()
+
+        if np.mean(assay[1:, 1:]) < 0:
+            cm = self.proxy.get_controlMatrix()
+            self.proxy.set_controlMatrix((-1*cm))
+            assay = assay * -1
+            Config.setValue('dm_controlMatrix', cm)
+
         file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
                                  'cockpit', 'characterisation_assay')
         np.save(file_path, assay)
-
         # The default system corrections should be for the zernike modes we can accurately recreate
-        self.sysFlatNollZernike = np.where(np.diag(assay) > 0.75)[0]
+        self.sysFlatNollZernike = (np.where(np.diag(assay) > 0.75)[0]) + 1
 
         # Show characterisation assay, excluding piston
         app = wx.App()
