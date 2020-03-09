@@ -29,6 +29,7 @@ import cockpit.util.phaseViewer as phaseViewer
 import cockpit.util.charAssayViewer as charAssayViewer
 import numpy as np
 import scipy.stats as stats
+import aotools
 
 
 # the AO device subclasses Device to provide compatibility with microscope.
@@ -646,6 +647,11 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                 raise e
 
         interferogram, unwrapped_phase = self.proxy.acquire_unwrapped_phase()
+        z_amps = self.proxy.getzernikemodes(unwrapped_phase, 3)
+        unwrapped_phase_mptt = unwrapped_phase - aotools.phaseFromZernikes(z_amps[0:3],
+                                                                           unwrapped_phase.shape[0])
+        unwrapped_RMS_error = self.proxy.wavefront_rms_error(unwrapped_phase_mptt)
+
         interferogram_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
                                                'cockpit', 'interferogram')
         np.save(interferogram_file_path, interferogram)
@@ -663,7 +669,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         power_spectrum = np.require(np.log(abs(interferogram_ft)), requirements='C')
 
         app = wx.App()
-        frame = phaseViewer.viewPhase(unwrapped_phase, power_spectrum)
+        frame = phaseViewer.viewPhase(unwrapped_phase, power_spectrum, unwrapped_RMS_error)
         app.MainLoop()
 
     def onApplySysFlat(self):
