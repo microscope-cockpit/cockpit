@@ -141,7 +141,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             self.sys_error_thresh = np.inf
         else:
             self.sys_error_thresh = int(inputs[1])
-        self.sysFlatNollZernike = np.asarray([int(z_ind) for z_ind in inputs[-1][1:-1].split(', ')])
+        if inputs[-1][1:-1].split(', ') == ['']:
+            self.sysFlatNollZernike = None
+        else:
+            self.sysFlatNollZernike = np.asarray([int(z_ind) for z_ind in inputs[-1][1:-1].split(', ')])
 
     def set_sensorless_param(self):
         inputs = cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
@@ -607,12 +610,16 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                 raise e
 
         z_ignore = np.zeros(self.no_actuators)
-        z_ignore[self.sysFlatNollZernike-1] = 1
-        self.sys_flat_values = self.proxy.flatten_phase(iterations=self.sys_flat_num_it,
+        if self.sysFlatNollZernike is not None:
+            z_ignore[self.sysFlatNollZernike-1] = 1
+        self.sys_flat_values, best_z_amps_corrected = self.proxy.flatten_phase(
+                                                        iterations=self.sys_flat_num_it,
                                                         error_thresh=self.sys_error_thresh,
                                                         z_modes_ignore = z_ignore)
 
         Config.setValue('dm_sys_flat', np.ndarray.tolist(self.sys_flat_values))
+        print("Zernike modes amplitudes corrected:\n", best_z_amps_corrected)
+        print("System flat actuator values:\n", self.sys_flat_values)
 
     def onVisualisePhase(self):
         self.parameters = Config.getValue('dm_circleParams')
