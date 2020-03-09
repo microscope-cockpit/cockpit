@@ -32,12 +32,9 @@ def normalise(array, scaling=1):
 
 
 class viewPhase(wx.Frame):
-    def __init__(self, input_image, image_ft):
-        rms_phase = np.sqrt(np.mean(input_image ** 2))
-        strehl_ratio = np.exp(-np.mean((input_image-np.mean(input_image))**2))
+    def __init__(self, input_image, image_ft, RMS_error):
         wx.Frame.__init__(self, None, -1, 'Visualising phase. '
-                                          'RMS difference: %.05f, Strehl  Ratio: %.05f'
-                          % (rms_phase, strehl_ratio))
+                                          'RMS difference: %.05f'% (RMS_error))
         # Use np.require to ensure data is C_CONTIGUOUS.
         image_norm = np.require(normalise(input_image, scaling=255), requirements='C')
         image_norm_rgb = np.require(np.stack((image_norm.astype('uint8'),) * 3, axis=-1),
