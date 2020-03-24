@@ -21,6 +21,7 @@
 
 
 import ctypes
+import ctypes.util
 import os
 import sys
 
@@ -28,7 +29,7 @@ from ctypes import POINTER, c_char_p, c_int, c_uint
 
 try:
     if os.name in ('nt', 'ce'):
-        _ftgl = ctypes.WinDLL('ftgl')
+        _ftgl = ctypes.WinDLL(ctypes.util.find_library('ftgl'))
     elif sys.platform == 'darwin':
         _ftgl = ctypes.CDLL('libftgl.dylib')
     else:
