@@ -563,13 +563,14 @@ class StatusUpdateThread(threading.Thread):
 
     ## Push a new text to the status light.
     def updateText(self):
-        statusText = ''
+        statusText = []
         for i, name in enumerate(self.cameraNames):
             curCount = self.imagesReceived[i]
             maxCount = self.totals[i]
-            statusText += '%s: %d/%d\n' % (name, curCount, maxCount)
-        events.publish(events.UPDATE_STATUS_LIGHT, 'image count', statusText,
-                       (255, 255, 0))
+            statusText.append('%s: %d/%d' % (name, curCount, maxCount))
+
+        events.publish(events.UPDATE_STATUS_LIGHT, 'image count',
+                       '\n'.join(statusText), (255, 255, 0))
 
 
     ## Update our image count.
