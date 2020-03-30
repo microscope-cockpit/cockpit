@@ -69,26 +69,19 @@ class StatusLightsWindow(wx.Frame):
         # a ToggleButton instance.
         self.nameToLight = {}
 
-        events.subscribe('new status light', self.onNewLight)
         events.subscribe(events.UPDATE_STATUS_LIGHT, self.onNewStatus)
 
         # Some lights that we know we need.
-        self.onNewLight('image count', '')
-        self.onNewLight('device waiting', '')
+        self.onNewStatus('image count', '')
+        self.onNewStatus('device waiting', '')
         self.Show()
 
 
     ## New light generated; insert it into our panel.
-    # Do nothing if the light already exists.
     @cockpit.util.threads.callInMainThread
-    def onNewLight(self, lightName, text, backgroundColor = None):
-        if lightName in self.nameToLight:
-            return
-        if backgroundColor is None:
-            backgroundColor = (170, 170, 170)
-        light = cockpit.gui.toggleButton.ToggleButton(parent = self.panel,
-                activeColor = backgroundColor, activeLabel = text,
-                size = (170, 100))
+    def _onNewLight(self, lightName):
+        light = cockpit.gui.toggleButton.ToggleButton(parent=self.panel,
+                                                      size=(170, 100))
         # For some reason, using a sizer here causes the lights to be placed
         # on top of each other...so I'm just setting sizes manually. HACK.
         self.nameToLight[lightName] = light
@@ -102,12 +95,14 @@ class StatusLightsWindow(wx.Frame):
     @cockpit.util.threads.callInMainThread
     def onNewStatus(self, lightName, text, backgroundColor = None):
         if lightName not in self.nameToLight:
-            self.onNewLight(lightName, text, backgroundColor)
-        else:
-            self.nameToLight[lightName].SetLabel(text)
-            if backgroundColor is not None:
-                self.nameToLight[lightName].SetBackgroundColour(backgroundColor)
-            self.nameToLight[lightName].Refresh()
+            self._onNewLight(lightName)
+            if backgroundColor is None:
+                backgroundColor = (170, 170, 170)
+
+        self.nameToLight[lightName].SetLabel(text)
+        if backgroundColor is not None:
+            self.nameToLight[lightName].SetBackgroundColour(backgroundColor)
+        self.nameToLight[lightName].Refresh()
 
 
 

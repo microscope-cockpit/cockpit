@@ -150,7 +150,7 @@ class NI6036e(device.Device):
 
     ## Ensure the room light status is shown.
     def makeInitialPublications(self):
-#        events.publish('new status light', 'room light', '')
+#        events.publish(events.UPDATE_STATUS_LIGHT, 'room light', '')
 #        self.receiveLightData('test', not self.lightConnection.connection.getIsLightOn())
         
         pass

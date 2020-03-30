@@ -167,7 +167,8 @@ class Nanomover(stage.StageDevice):
 
 
     def makeInitialPublications(self):
-        events.publish('new status light', 'stage vertical position', '')
+        events.publish(events.UPDATE_STATUS_LIGHT, 'stage vertical position',
+                       '')
         self.publishPosition()
         self.sendXYPositionUpdates()
 
