@@ -167,8 +167,7 @@ class BoulderSLM(device.Device):
         # is reached.
         for t, h, args in table[startIndex:stopIndex]:
             events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
-                           'SLM moving to\nindex %d' % args,
-                           (255, 255, 0))
+                           'SLM moving to index %d' % args)
             self.cycleToPosition(args)
 
     def examineActions(self, table):

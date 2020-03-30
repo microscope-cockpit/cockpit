@@ -194,7 +194,7 @@ class ExecutorDevice(device.Device):
         actions = actions_from_table(table, startIndex, stopIndex, repDuration)
 
         events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
-                'Waiting for\nDSP to finish', (255, 255, 0))
+                       'Waiting for DSP to finish')
         self.connection.PrepareActions(actions, numReps)
         events.executeAndWaitFor(events.EXECUTOR_DONE % self.name, self.connection.RunActions)
         events.publish(events.EXPERIMENT_EXECUTION)
@@ -356,7 +356,7 @@ class LegacyDSP(ExecutorDevice):
         self._lastAnalogs = list(map(lambda x, y: x - (y[-1:][1:] or 0), self._lastAnalogs, analogs))
 
         events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
-                       'Waiting for\nDSP to finish', (255, 255, 0))
+                       'Waiting for DSP to finish')
         # Convert digitals to array of uints.
         digitalsArr = np.array(digitals, dtype=np.uint32).reshape(-1,2)
         # Convert analogs to array of uints.

@@ -39,6 +39,7 @@ import cockpit.gui.dialogs.gridSitesDialog
 import cockpit.gui.dialogs.offsetSitesDialog
 import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
+import cockpit.gui.mainWindow
 import cockpit.gui.mosaic.window as mosaic
 import cockpit.gui.mosaic.canvas
 import cockpit.interfaces.stageMover
@@ -405,6 +406,8 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
 
         sizer.Add(leftSizer,0,wx.EXPAND)
+
+        self.SetStatusBar(cockpit.gui.mainWindow.StatusLights(parent=self))
 
         self.panel.SetSizerAndFit(sizer)
         self.SetRect((0, 0, 1800, 1000))

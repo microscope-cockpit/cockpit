@@ -145,8 +145,7 @@ class CockpitApp(wx.App):
 
             for subname in ['camera.window',
                             'mosaic.window',
-                            'macroStage.macroStageWindow',
-                            'statusLightsWindow']:
+                            'macroStage.macroStageWindow']:
                 module = importlib.import_module('cockpit.gui.' + subname)
                 status.Update(updateNum, ' ... ' + subname)
                 updateNum+=1

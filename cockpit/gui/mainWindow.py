@@ -60,6 +60,8 @@ import json
 import wx
 import os.path
 
+import cockpit.gui
+
 from cockpit import depot
 from .dialogs.experiment import multiSiteExperiment
 from .dialogs.experiment import singleSiteExperiment
@@ -230,6 +232,9 @@ class MainWindow(wx.Frame):
         self.joystick = joystick.Joystick(self)
             
         self.SetDropTarget(viewFileDropTarget.ViewFileDropTarget(self))
+
+        self.SetStatusBar(StatusLights(parent=self))
+
         self.Bind(wx.EVT_CLOSE, self.onClose)
         # Show the list of windows on right-click.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: keyboard.martialWindows(self))
@@ -241,7 +246,6 @@ class MainWindow(wx.Frame):
     def onClose(self, event):
         events.publish('program exit')
         event.Skip()
-
 
     ## User clicked the "view last file" button; open the last experiment's
     # file in an image viewer. A bit tricky when there's multiple files 
@@ -378,6 +382,60 @@ class MainWindow(wx.Frame):
         self.bottomPanel.SetSizerAndFit(self.bottomPanel.GetSizer())
         self.SetSizerAndFit(self.GetSizer())
 
+
+class StatusLights(wx.StatusBar):
+    """A window status bar with the Cockpit status lights.
+
+    The status bar can have any number of status light, each status
+    light being a separate field.  New lights are created on the fly
+    as required by publishing `UPDATE_STATUS_LIGHT` events.  The same
+    event is used to update its text.
+    """
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        # Maps status light names to the light field/pane index.
+        self._nameToField = {} # type: typing.Dict[str, int]
+        self._defaultBackgroundColour = self.GetBackgroundColour()
+        self._notificationColour = wx.YELLOW
+
+        listener = cockpit.gui.EvtEmitter(self, events.UPDATE_STATUS_LIGHT)
+        listener.Bind(cockpit.gui.EVT_COCKPIT, self._OnNewStatus)
+
+        # Some lights that we know we need.
+        events.publish(events.UPDATE_STATUS_LIGHT, 'image count', '')
+        events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting', '')
+
+
+    def _AddNewLight(self, lightName: str) -> None:
+        """Append new status light to the status bar."""
+        new_field_index = self.GetFieldsCount() # type: int
+        if not self._nameToField:
+            # If the map is empty, this is the first light.  However,
+            # a status bar always has at least one field, so use the
+            # existing field if this is the first light.
+            assert new_field_index == 1
+            new_field_index = 0
+        else:
+            self.SetFieldsCount(new_field_index +1)
+        self.SetStatusStyles([wx.SB_SUNKEN]* (new_field_index +1))
+        self._nameToField[lightName] = new_field_index
+
+
+    def _OnNewStatus(self, event: cockpit.gui.CockpitEvent) -> None:
+        """Update text of specified status light."""
+        assert len(event.EventData) == 2
+        lightName = event.EventData[0] # type: str
+        text = event.EventData[1] # type: str
+        if lightName not in self._nameToField:
+            self._AddNewLight(lightName)
+        self.SetStatusText(text, self._nameToField[lightName])
+
+        # This changes the colour of the whole bar, not only the
+        # status (see issue #565).
+        if any([self.GetStatusText(i) for i in range(self.FieldsCount)]):
+            self.SetBackgroundColour(self._notificationColour)
+        else:
+            self.SetBackgroundColour(self._defaultBackgroundColour)
 
 
 ## Create the window.

@@ -417,7 +417,7 @@ class Experiment:
             runThread.join()
         if saveThread is not None and saveThread.isAlive():
             events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
-                           'Waiting for saving to complete', (255, 255, 0))
+                           'Waiting for saving to complete')
             saveThread.join()
         for handler in self.allHandlers:
             handler.cleanupAfterExperiment()
@@ -426,8 +426,7 @@ class Experiment:
             # Restore our initial altitude.
             cockpit.interfaces.stageMover.goToZ(self.initialAltitude, shouldBlock = True)
         events.publish('experiment complete')
-        events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
-                       '', (170, 170, 170))
+        events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting', '')
         # Ensure the saveThread's memory, which includes all the images
         # collected thus far, is garbage collected. Otherwise memory tends
         # to pile up and then the GC has more work to do, which can interfere

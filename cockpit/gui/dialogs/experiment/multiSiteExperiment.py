@@ -482,8 +482,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
                 displaySeconds = (remaining - displayMinutes * 60) // 1
                 events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
                                ('Waiting for %02d:%02d'
-                                % (displayMinutes, displaySeconds)),
-                               (255, 255, 0))
+                                % (displayMinutes, displaySeconds)))
             time.sleep(.25)
             curTime = time.time()
         return True
