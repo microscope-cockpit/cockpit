@@ -70,7 +70,7 @@ class StatusLightsWindow(wx.Frame):
         self.nameToLight = {}
 
         events.subscribe('new status light', self.onNewLight)
-        events.subscribe('update status light', self.onNewStatus)
+        events.subscribe(events.UPDATE_STATUS_LIGHT, self.onNewStatus)
 
         # Some lights that we know we need.
         self.onNewLight('image count', '')

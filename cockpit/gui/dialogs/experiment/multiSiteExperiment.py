@@ -413,7 +413,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
             handlers = depot.getHandlersOfType(depot.POWER_CONTROL)
             for handler in handlers:
                 handler.disable()
-        events.publish('update status light', 'device waiting', '')
+        events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting', '')
 
 
     ## Select the appropriate light sources for this cycle.
@@ -436,8 +436,8 @@ class MultiSiteExperimentDialog(wx.Dialog):
 
     ## Go to the specified site and run our experiment on it.
     def imageSite(self, siteId, cycleNum, experimentStart):
-        events.publish('update status light', 'device waiting',
-                'Waiting for stage motion')
+        events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
+                       'Waiting for stage motion')
         cockpit.interfaces.stageMover.waitForStop()
         cockpit.interfaces.stageMover.goToSite(siteId, shouldBlock = True)
         self.waitFor(float(self.delayBeforeImaging.GetValue()))
@@ -480,9 +480,10 @@ class MultiSiteExperimentDialog(wx.Dialog):
                 # Advanced to a new second; update the status light.
                 displayMinutes = remaining // 60
                 displaySeconds = (remaining - displayMinutes * 60) // 1
-                events.publish('update status light', 'device waiting',
-                        'Waiting for %02d:%02d' % (displayMinutes, displaySeconds),
-                        (255, 255, 0))
+                events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
+                               ('Waiting for %02d:%02d'
+                                % (displayMinutes, displaySeconds)),
+                               (255, 255, 0))
             time.sleep(.25)
             curTime = time.time()
         return True

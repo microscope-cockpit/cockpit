@@ -200,7 +200,7 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
                 hPrev, argsPrev = [h], [args]
                 tPrev = t
 
-        events.publish('update status light', 'device waiting',
+        events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
                        'Waiting for\n%s to finish' % self.name, (255, 255, 0))
 
         return self.callbacks['executeTable'](actions, 0, len(actions), numReps,

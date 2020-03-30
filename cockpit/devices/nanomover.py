@@ -218,8 +218,8 @@ class Nanomover(stage.StageDevice):
         elif self.curPosition[2] < 10000:
             label = 'Stage DOWN'
             color = (255, 0, 0)
-        events.publish('update status light', 'stage vertical position',
-                label, color)
+        events.publish(events.UPDATE_STATUS_LIGHT, 'stage vertical position',
+                       label, color)
 
 
     ## Send updates on the XY stage's position, until it stops moving.
