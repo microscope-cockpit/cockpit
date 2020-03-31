@@ -134,8 +134,10 @@ class CamerasWindow(wx.Frame):
             view.Show()
         for view in inactiveViews:
             self.sizer.Add(view)
-            if view is inactiveViews[0]:
-                view.Show()
+            #if there are no active views then display one empty panel
+            if not activeViews:
+                if view is inactiveViews[0]:
+                    view.Show()
                 # Other inactive views are hidden.
         self.sizer.Layout()
         self.panel.SetSizerAndFit(self.sizer)
