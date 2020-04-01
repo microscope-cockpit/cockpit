@@ -167,8 +167,6 @@ class Nanomover(stage.StageDevice):
 
 
     def makeInitialPublications(self):
-        events.publish(events.UPDATE_STATUS_LIGHT, 'stage vertical position',
-                       '')
         self.publishPosition()
         self.sendXYPositionUpdates()
 
@@ -205,22 +203,11 @@ class Nanomover(stage.StageDevice):
         return result
 
 
-    ## Publish the current stage position, and update the status light that
-    # shows roughly where the stage is vertically.
+    ## Publish the current stage position.
     def publishPosition(self):
         for i in range(3):
             events.publish('stage mover', '%d nanomover' % i, i, 
                     (self.curPosition[i]))
-        label = 'Stage up'
-        color = (170, 170, 170)
-        if 10000 < self.curPosition[2] < 16000:
-            label = 'Stage middle'
-            color = (255, 255, 0)
-        elif self.curPosition[2] < 10000:
-            label = 'Stage DOWN'
-            color = (255, 0, 0)
-        events.publish(events.UPDATE_STATUS_LIGHT, 'stage vertical position',
-                       label, color)
 
 
     ## Send updates on the XY stage's position, until it stops moving.
