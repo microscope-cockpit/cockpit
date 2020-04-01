@@ -50,18 +50,20 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import re
+import time
 
 from . import device
 from . import stage
 from cockpit import events
+
+import cockpit.interfaces
 import cockpit.gui.toggleButton
 import cockpit.handlers.genericPositioner
 import cockpit.handlers.stagePositioner
 import cockpit.util.connection
 import cockpit.util.threads
 import cockpit.util.userConfig
-from cockpit import interfaces
-import time
 
 ## TODO: test with hardware.
 
