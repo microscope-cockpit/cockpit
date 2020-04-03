@@ -76,6 +76,7 @@ if (distutils.version.LooseVersion(Pyro4.__version__) >=
 import cockpit.config
 import cockpit.depot
 import cockpit.events
+import cockpit.gui.loggingWindow
 import cockpit.interfaces.imager
 import cockpit.interfaces.stageMover
 import cockpit.util.files
@@ -118,8 +119,7 @@ class CockpitApp(wx.App):
             status.Show()
 
             # Do this early so we can see output while initializing.
-            from cockpit.gui import loggingWindow
-            loggingWindow.makeWindow(None)
+            cockpit.gui.loggingWindow.makeWindow(None)
 
             updateNum=1
             status.Update(updateNum, "Initializing config...")
@@ -259,7 +259,6 @@ class CockpitApp(wx.App):
             cockpit.util.logger.log.error("Error during logout: %s" % e)
             cockpit.util.logger.log.error(traceback.format_exc())
 
-        import cockpit.gui.loggingWindow
         cockpit.gui.loggingWindow.window.WriteToLogger(cockpit.util.logger.log)
 
         # Manually clear out any parent-less windows that still exist. This
