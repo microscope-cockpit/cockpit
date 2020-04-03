@@ -130,7 +130,7 @@ class LightHandler(deviceHandler.DeviceHandler):
         # an abort event.
         if trigHandler and trigLine:
             onAbort = lambda *args: trigHandler.setDigital(trigLine, False)
-            events.subscribe('user abort', onAbort)
+            events.subscribe(events.USER_ABORT, onAbort)
 
 
     def makeInitialPublications(self):

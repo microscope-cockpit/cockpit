@@ -71,7 +71,7 @@ class DummyZStage(device.Device):
     def initialize(self):
         # At this point we would normally get the true stage position from
         # the actual device, but of course we have no such device.
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         self.active = True
         pass
         

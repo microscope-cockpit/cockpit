@@ -137,7 +137,7 @@ class PicoMotorDevice(device.Device):
         self.xyPositionCache = [10 ** 100, 10 ** 100,7500]
 
         events.subscribe('program exit', self.onExit)
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
 
 
     def initialize(self):

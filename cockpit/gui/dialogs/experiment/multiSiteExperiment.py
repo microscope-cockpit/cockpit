@@ -77,7 +77,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
 
         ## Whether or not we should abort the current experiment.
         self.shouldAbort = False
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         
         ## List of all light handlers.
         self.allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)

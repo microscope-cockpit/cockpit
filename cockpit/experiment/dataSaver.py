@@ -315,7 +315,7 @@ class DataSaver:
             events.subscribe('new image %s' % camera.name, func)
 
             self.minMaxVals.append((float('inf'), float('-inf')))
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         self.statusThread.start()
 
 
@@ -380,7 +380,7 @@ class DataSaver:
         self.statusThread.shouldStop = True
         for i, camera in enumerate(self.cameras):
             events.unsubscribe('new image %s' % camera.name, self.lambdas[i])
-        events.unsubscribe('user abort', self.onAbort)
+        events.unsubscribe(events.USER_ABORT, self.onAbort)
 
 
     ## Receive new data, and add it to the queue.

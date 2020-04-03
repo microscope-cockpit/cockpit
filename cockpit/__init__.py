@@ -254,7 +254,7 @@ class CockpitApp(wx.App):
         self._SaveWindowPositions()
 
         try:
-            cockpit.events.publish("user abort")
+            cockpit.events.publish(cockpit.events.USER_ABORT)
         except Exception as e:
             cockpit.util.logger.log.error("Error during logout: %s" % e)
             cockpit.util.logger.log.error(traceback.format_exc())

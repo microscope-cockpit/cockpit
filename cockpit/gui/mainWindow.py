@@ -121,7 +121,7 @@ class MainWindow(wx.Frame):
         # Abort button
         abortButton = wx.Button(topPanel, wx.ID_ANY, "abort")
         abortButton.SetLabelMarkup("<span foreground='red'><big><b>ABORT</b></big></span>")
-        abortButton.Bind(wx.EVT_BUTTON, lambda event: events.publish('user abort'))
+        abortButton.Bind(wx.EVT_BUTTON, lambda event: events.publish(events.USER_ABORT))
         buttonSizer.Add(abortButton, 1, wx.EXPAND)
         # Experiment & review buttons
         for lbl, fn in ( ("Single-site\nexperiment", lambda evt: singleSiteExperiment.showDialog(self) ),

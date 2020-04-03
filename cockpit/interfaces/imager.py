@@ -74,7 +74,7 @@ def pauseVideo(func):
                 time.sleep(0.05)
                 if time.time() > tstart + 1.:
                     print("Timeout pausing video mode - abort and restart.")
-                    events.publish('user abort')
+                    events.publish(events.USER_ABORT)
                     break
         result = func(*args, **kwargs)
         if wasInVideoMode:
@@ -104,7 +104,7 @@ class Imager:
         self.shouldStopVideoMode = False
         ## Boolean that indicates if we're currently in video mode.
         self.amInVideoMode = False
-        events.subscribe('user abort', self.stopVideo)
+        events.subscribe(events.USER_ABORT, self.stopVideo)
         # Update exposure times on certain events.
         events.subscribe('light exposure update', self.updateExposureTime)
         events.subscribe(events.LIGHT_SOURCE_ENABLE, lambda *args: self.updateExposureTime())

@@ -171,7 +171,7 @@ class Experiment:
 
         ## Whether or not we should stop the experiment at the next opportunity.
         self.shouldAbort = False
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
 
         ## Resultant Z altitude prior to execution, used to restore position.
         self.initialAltitude = None

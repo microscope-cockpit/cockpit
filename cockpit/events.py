@@ -169,7 +169,7 @@ def clearOneShotSubscribers(pattern=None):
                     # list is empty
                     del(eventToOneShotSubscribers[evt])
 
-subscribe('user abort', clearOneShotSubscribers)
+subscribe(USER_ABORT, clearOneShotSubscribers)
 
 
 ## Call the specified function with the provided arguments, and then wait for

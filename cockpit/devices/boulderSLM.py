@@ -335,7 +335,7 @@ class BoulderSLM(device.Device):
 
 
     def performSubscriptions(self):
-        #events.subscribe('user abort', self.onAbort)
+        #events.subscribe(events.USER_ABORT, self.onAbort)
         events.subscribe('prepare for experiment', self.onPrepareForExperiment)
         events.subscribe('cleanup after experiment', self.cleanupAfterExperiment)
 

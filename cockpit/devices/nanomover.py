@@ -111,7 +111,7 @@ class Nanomover(stage.StageDevice):
         # a useful middle position for after a home
         self.middleXY=( (self.safeties[0][1]-self.safeties[0][0])/2.0,
                         (self.safeties[0][1]-self.safeties[0][0])/2.0)
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         events.subscribe('cockpit initialization complete',
                          self.promptExerciseStage)
 
@@ -165,7 +165,7 @@ class Nanomover(stage.StageDevice):
 
 
     def performSubscriptions(self):
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
 
 
     def makeInitialPublications(self):

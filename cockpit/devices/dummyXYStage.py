@@ -67,7 +67,7 @@ class DummyMover(stage.StageDevice):
         super(DummyMover, self).__init__(name, config)
         # List of 2 doubles indicating our X/Y position.
         self.curPosition = [1000, 1000]
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         # Is this device in use?
         self.active = False
         self.deviceType = "stage positioner"
@@ -77,7 +77,7 @@ class DummyMover(stage.StageDevice):
     def initialize(self):
         # At this point we would normally get the true stage position from
         # the actual device, but of course we have no such device.
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         self.active = True
         pass
 

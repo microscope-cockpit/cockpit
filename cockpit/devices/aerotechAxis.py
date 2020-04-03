@@ -83,7 +83,7 @@ class AerotechZStage(device.Device):
             self.softlimits = (-30000,7000)
 
         # Subscribe to abort events.
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         # The cockpit axis does this stage moves along.
         self.axis = int(config.get('axis', 2))
         # Socket used to communicate with controller.

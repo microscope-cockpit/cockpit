@@ -192,7 +192,7 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
             self.primitives = ['c %f %f %f' % (xmid+dx, ymid, radius) for dx in centres]
 
 
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         #store and recall condensor LED status.
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)

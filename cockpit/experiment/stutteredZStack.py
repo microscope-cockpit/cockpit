@@ -76,7 +76,7 @@ class StutteredZStackExperiment(zStack.ZStackExperiment):
         self.sampleRates = sampleRates
         self.shouldAbort = False
 
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
 
 
     ## User aborted.

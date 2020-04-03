@@ -164,7 +164,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
             self.softlimits = ((-67500, 67500), (-42500, 42500))
 
         events.subscribe('program exit', self.onExit)
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         events.subscribe('macro stage xy draw', self.onMacroStagePaint)
         #events.subscribe('cockpit initialization complete', self.promptExerciseStage)
 
