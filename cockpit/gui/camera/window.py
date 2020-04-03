@@ -118,26 +118,20 @@ class CamerasWindow(wx.Frame):
     # window itself is visible but otherwise we keep only the enabled
     # cameras to conserve screen real estate.
     def resetGrid(self):
-        activeViews = []
-        inactiveViews = []
+        viewsToShow = []
         for view in self.views:
             view.Hide()
             if view.getIsEnabled():
-                activeViews.append(view)
-            else:
-                inactiveViews.append(view)
+                viewsToShow.append(view)
+        # If there are no active views then display one empty panel.
+        if not viewsToShow:
+            viewsToShow.append(self.views[0])
 
-        # Remake the sizer, adding all active views to it first.
         self.sizer.Clear()
-        for view in activeViews:
+        for view in viewsToShow:
             self.sizer.Add(view)
-            view.Show()
-        for view in inactiveViews:
-            self.sizer.Add(view)
-            # If there are no active views then display one empty panel.
-            if not activeViews and view is inactiveViews[0]:
-                view.Show()
-                # Other inactive views are hidden.
+        self.sizer.ShowItems(True)
+
         self.sizer.Layout()
         self.panel.SetSizerAndFit(self.sizer)
         self.SetClientSize(self.panel.GetSize())
