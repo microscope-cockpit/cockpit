@@ -113,10 +113,10 @@ class CamerasWindow(wx.Frame):
         self.resetGrid()
 
 
-    ## When cameras are enabled/disabled, we resize the UI to suit. We want
-    # there to always be at least one unused ViewPanel the user can use to 
-    # enable a new camera, but ideally there should be as few as possible, 
-    # to conserve screen real estate.
+    # When cameras are enabled/disabled, we resize the UI to suit. We
+    # want there to always be at least one unused ViewPanel so the
+    # window itself is visible but otherwise we keep only the enabled
+    # cameras to conserve screen real estate.
     def resetGrid(self):
         activeViews = []
         inactiveViews = []
@@ -134,7 +134,8 @@ class CamerasWindow(wx.Frame):
             view.Show()
         for view in inactiveViews:
             self.sizer.Add(view)
-            if view is inactiveViews[0]:
+            # If there are no active views then display one empty panel.
+            if not activeViews and view is inactiveViews[0]:
                 view.Show()
                 # Other inactive views are hidden.
         self.sizer.Layout()
