@@ -102,9 +102,6 @@ class CockpitApp(wx.App):
     def OnInit(self):
         try:
             # Allow subsequent actions to abort startup by publishing
-            # a "program startup failure" event.
-            cockpit.events.subscribe('program startup failure',
-                                     self.onStartupFail)
             cockpit.events.subscribe('program exit', self.onExit)
 
             depot_config = self.Config.depot_config
@@ -241,12 +238,6 @@ class CockpitApp(wx.App):
         # Ensure main window is raised.
         if top is not uppermost:
             top.Raise()
-
-    ## Startup failed; log the failure information and exit.
-    def onStartupFail(self, *args):
-        cockpit.util.logger.log.error("Startup failed: %s" % args)
-        sys.exit()
-
 
     # Do anything we need to do to shut down cleanly. At this point UI
     # objects still exist, but they won't by the time we're done.
