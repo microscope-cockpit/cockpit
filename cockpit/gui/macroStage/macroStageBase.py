@@ -148,7 +148,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.Bind(wx.EVT_PAINT, self.onPaint)
         self.Bind(wx.EVT_SIZE, lambda event: event)
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event) # Do nothing, to avoid flashing
-        events.subscribe("stage position", self.onMotion)
+        events.subscribe(events.STAGE_POSITION, self.onMotion)
         events.subscribe("stage step size", self.onStepSizeChange)
         events.subscribe("stage step index", self.onStepIndexChange)
 

@@ -160,7 +160,7 @@ class ViewPanel(wx.Panel):
         if self.curCamera is not None:
             # Wrap this in a try/catch since it will fail if the initial
             # camera enabling failed.
-            events.unsubscribe("new image %s" % self.curCamera.name, self.onImage)
+            events.unsubscribe(events.NEW_IMAGE % self.curCamera.name, self.onImage)
             self.curCamera = None
         if self.canvas is not None:
             # Destroy the canvas.
@@ -183,7 +183,7 @@ class ViewPanel(wx.Panel):
         self.canvas.resetView()
 
         # Subscribe to new image events only after canvas is prepared.
-        events.subscribe("new image %s" % self.curCamera.name, self.onImage)
+        events.subscribe(events.NEW_IMAGE % self.curCamera.name, self.onImage)
 
     ## React to the drawer changing, by updating our labels and colors.
     @cockpit.util.threads.callInMainThread

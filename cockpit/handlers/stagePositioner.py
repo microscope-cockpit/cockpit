@@ -210,8 +210,8 @@ class PositionerHandler(deviceHandler.DeviceHandler):
             def call(x, arg):
                 f(arg)
                 time.sleep(sum(self.getMovementTime(0, arg)))
-                events.publish('stage mover', self.name, x, self.getPosition())
-                events.publish('stage stopped', self.name)
+                events.publish(events.STAGE_MOVER, self.name, x, self.getPosition())
+                events.publish(events.STAGE_STOPPED, self.name)
             return call
 
         self.callbacks['moveAbsolute'] = wrapMoveFunc(h.moveAbsolute)

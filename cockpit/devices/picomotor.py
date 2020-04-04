@@ -387,10 +387,10 @@ class PicoMotorDevice(device.Device):
             if delta < .3:
                 # No movement since last time; done moving.
                 for axis in [0, 1, 2]:
-                    events.publish('stage stopped', '%d PI mover' % axis)
+                    events.publish(events.STAGE_STOPPED, '%d PI mover' % axis)
                 return
             for axis, val in enumerate([x, y, z]):
-                events.publish('stage mover', '%d PI mover' % axis, axis, val)
+                events.publish(events.STAGE_MOVER, '%d PI mover' % axis, axis, val)
             (prevX, prevY, prevZ)= (x, y, z)
             time.sleep(0.1)
 

@@ -167,7 +167,7 @@ class LightHandler(deviceHandler.DeviceHandler):
                 self.callbacks['setEnabled'](self.name, False)
                 # Update setState since used to set self.state later
                 setState = deviceHandler.STATES.disabled
-                events.publish('light source enable', self, False)
+                events.publish(events.LIGHT_SOURCE_ENABLE, self, False)
             else:
                 # Turn on the light continuously.
                 self.callbacks['setEnabled'](self.name, True)
@@ -177,15 +177,15 @@ class LightHandler(deviceHandler.DeviceHandler):
                 # it being switched off by an exposure, but this event is
                 # used to update controls, so we need to chain it with a
                 # manual update.
-                events.oneShotSubscribe('light source enable',
+                events.oneShotSubscribe(events.LIGHT_SOURCE_ENABLE,
                                         lambda *args: self.notifyListeners(self, setState))
-                events.publish('light source enable', self, False)
+                events.publish(events.LIGHT_SOURCE_ENABLE, self, False)
         elif setState == deviceHandler.STATES.enabled:
             self.callbacks['setEnabled'](self.name, True)
-            events.publish('light source enable', self, True)
+            events.publish(events.LIGHT_SOURCE_ENABLE, self, True)
         else:
             self.callbacks['setEnabled'](self.name, False)
-            events.publish('light source enable', self, False)
+            events.publish(events.LIGHT_SOURCE_ENABLE, self, False)
         self.state = setState
 
 

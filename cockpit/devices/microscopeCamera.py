@@ -123,7 +123,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
 
     def performSubscriptions(self):
         """Perform subscriptions for this camera."""
-        events.subscribe('cleanup after experiment',
+        events.subscribe(events.CLEANUP_AFTER_EXPERIMENT,
                 self.cleanupAfterExperiment)
         events.subscribe('objective change',
                 self.onObjectiveChange)
@@ -285,12 +285,12 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         """This function is called when data is received from the hardware."""
         (image, timestamp) = args
         if not isinstance(image, Exception):
-            events.publish('new image %s' % self.name, image, timestamp)
+            events.publish(events.NEW_IMAGE % self.name, image, timestamp)
         else:
             # Handle the dropped frame by publishing an empty image of the correct
             # size. Use the handler to fetch the size, as this will use a cached value,
             # if available.
-            events.publish('new image %s' % self.name,
+            events.publish(events.NEW_IMAGE % self.name,
                            np.zeros(self.handlers[0].getImageSize(), dtype=np.int16),
                            timestamp)
             raise image

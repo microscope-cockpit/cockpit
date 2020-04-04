@@ -201,7 +201,7 @@ class DummyCamera(device.Device):
             image -= image.min()
             image *= (2 ** 16 / image.max())
             image = image.astype(numpy.uint16)
-            events.publish('new image %s' % name, image, time.time())
+            events.publish(events.NEW_IMAGE % name, image, time.time())
             self.imageCount += 1
 
 

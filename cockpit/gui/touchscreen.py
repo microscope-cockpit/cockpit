@@ -412,14 +412,14 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         self.panel.SetSizerAndFit(sizer)
         self.SetRect((0, 0, 1800, 1000))
 
-        events.subscribe('stage position', self.onAxisRefresh)
+        events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
         events.subscribe('stage step size', self.onAxisRefresh)
         events.subscribe('stage step index', self.stageIndexChange)
         events.subscribe('soft safety limit', self.onAxisRefresh)
         events.subscribe('objective change', self.onObjectiveChange)
         events.subscribe('mosaic start', self.mosaicStart)
         events.subscribe('mosaic stop', self.mosaicStop)
-        events.subscribe('mosaic update', self.mosaicUpdate)
+        events.subscribe(events.MOSAIC_UPDATE, self.mosaicUpdate)
 
 
 
@@ -495,7 +495,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             return
 
         #take the image
-        events.executeAndWaitFor("new image %s" %
+        events.executeAndWaitFor(events.NEW_IMAGE %
                                  (list(cockpit.interfaces.imager.imager.activeCameras)[0].name),
                                  cockpit.interfaces.imager.imager.takeImage,
                                  shouldStopVideo = False)

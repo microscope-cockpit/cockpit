@@ -173,7 +173,7 @@ class AerotechZStage(device.Device):
     ## Publish our current position.
     def makeInitialPublications(self):
         axis = self.axis
-        events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis,
+        events.publish(events.STAGE_MOVER, '%d %s' % (axis, NAME_STRING), axis,
                 self.position)
 
 
@@ -181,7 +181,7 @@ class AerotechZStage(device.Device):
     def onAbort(self):
         self.command(b'ABORT')
         axis = self.axis
-        events.publish('stage stopped', '%d %s' % (axis, NAME_STRING))
+        events.publish(events.STAGE_STOPPED, '%d %s' % (axis, NAME_STRING))
 
 
     ## Move the stage to a given position.
@@ -189,13 +189,13 @@ class AerotechZStage(device.Device):
         self.command(b'ENABLE')
         self.command(b'MOVEABS D %f F %f'
                         % (pos / 1000.0, self.speed))
-        events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
+        events.publish(events.STAGE_MOVER, '%d %s' % (axis, NAME_STRING), axis, self.position)
         # Wait until the move has finished - status bit 2 is InPosition.
         while not int(self.command(b'AXISSTATUS')) & (1 << 2):
             sleep(0.1)
         self.position = self.command(b'CMDPOS').decode()
-        events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
-        events.publish('stage stopped', '%d mover' % axis)
+        events.publish(events.STAGE_MOVER, '%d %s' % (axis, NAME_STRING), axis, self.position)
+        events.publish(events.STAGE_STOPPED, '%d mover' % axis)
         self.command (b'DISABLE')
 
 
@@ -204,13 +204,13 @@ class AerotechZStage(device.Device):
         self.command(b'ENABLE')
         self.command(b'MOVEINC D %f F %f'
                         % (delta / 1000.0, self.speed))
-        events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
+        events.publish(events.STAGE_MOVER, '%d %s' % (axis, NAME_STRING), axis, self.position)
         # Wait until the move has finished - status bit 2 is InPosition.
         while not int(self.command(b'AXISSTATUS')) & (1 << 2):
             sleep(0.1)
         self.position = self.command(b'CMDPOS').decode()
-        events.publish('stage mover', '%d %s' % (axis, NAME_STRING), axis, self.position)
-        events.publish('stage stopped', '%d %s' % (axis, NAME_STRING))
+        events.publish(events.STAGE_MOVER, '%d %s' % (axis, NAME_STRING), axis, self.position)
+        events.publish(events.STAGE_STOPPED, '%d %s' % (axis, NAME_STRING))
         self.command (b'DISABLE')
 
 

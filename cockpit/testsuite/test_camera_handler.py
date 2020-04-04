@@ -71,11 +71,12 @@ class CameraHandlerTestCase(unittest.TestCase):
         camera = cockpit.handlers.camera.CameraHandler(**self.args)
 
         event_handler = unittest.mock.Mock()
-        cockpit.events.subscribe('camera enable', event_handler)
+        cockpit.events.subscribe(cockpit.events.CAMERA_ENABLE, event_handler)
         try:
             camera.setEnabled(True)
         finally:
-            cockpit.events.unsubscribe('camera enable', event_handler)
+            cockpit.events.unsubscribe(cockpit.events.CAMERA_ENABLE,
+                                       event_handler)
 
         event_handler.assert_called_once()
         event_handler.assert_called_with(camera, True)
@@ -86,14 +87,14 @@ class CameraHandlerTestCase(unittest.TestCase):
         camera = cockpit.handlers.camera.CameraHandler(**self.args)
         camera.setEnabled(True)
 
-        mockEvents.subscribe.assert_called_with('prepare for experiment',
+        mockEvents.subscribe.assert_called_with(cockpit.events.PREPARE_FOR_EXPERIMENT,
                                                 camera.prepareForExperiment)
 
     @unittest.mock.patch('cockpit.handlers.camera.events')
     def testSetEnabledSendsCorrectEvent_disable(self, mockEvents):
         camera = cockpit.handlers.camera.CameraHandler(**self.args)
         camera.setEnabled(False)
-        mockEvents.unsubscribe.assert_called_with('prepare for experiment',
+        mockEvents.unsubscribe.assert_called_with(cockpit.events.PREPARE_FOR_EXPERIMENT,
                                                   camera.prepareForExperiment)
 
     def test_enabled_getter(self):

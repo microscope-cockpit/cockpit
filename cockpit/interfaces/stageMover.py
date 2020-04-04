@@ -151,8 +151,8 @@ class StageMover:
         ## Maps handler names to events indicating if those handlers
         # have stopped moving.
         self.nameToStoppedEvent = {}
-        events.subscribe("stage mover", self.onMotion)
-        events.subscribe("stage stopped", self.onStop)
+        events.subscribe(events.STAGE_MOVER, self.onMotion)
+        events.subscribe(events.STAGE_STOPPED, self.onStop)
         ## Device-speficic primitives to draw on the macrostage.
         self.primitives = set()
         for h in depot.getHandlersOfType(depot.STAGE_POSITIONER):
@@ -165,7 +165,7 @@ class StageMover:
     ## Handle one of our devices moving. We just republish an abstracted
     # stage position for that axis.
     def onMotion(self, deviceName, axis, position):
-        events.publish("stage position", axis, getPositionForAxis(axis))
+        events.publish(events.STAGE_POSITION, axis, getPositionForAxis(axis))
 
 
     ## Handle one of our devices stopping motion; this unblocks _goToAxes
@@ -219,7 +219,7 @@ def initialize():
 def makeInitialPublications():
     #for axis in range(3):
     for axis in mover.axisToHandlers.keys():
-        events.publish("stage position", axis, getPositionForAxis(axis))
+        events.publish(events.STAGE_POSITION, axis, getPositionForAxis(axis))
         limits = getSoftLimitsForAxis(axis)
         for isMax in [0, 1]:
             events.publish("soft safety limit", axis, limits[isMax],

@@ -198,7 +198,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
             raise Exception("Problem enabling device with handler %s" % self)
         # Subscribe / unsubscribe to the prepare-for-experiment event.
         func = [events.unsubscribe, events.subscribe][shouldEnable]
-        func('prepare for experiment', self.prepareForExperiment)
+        func(events.PREPARE_FOR_EXPERIMENT, self.prepareForExperiment)
         events.publish(events.CAMERA_ENABLE, self, self.isEnabled)
 
 

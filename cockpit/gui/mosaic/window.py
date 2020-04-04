@@ -476,7 +476,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         self.panel.SetSizerAndFit(sizer)
         self.SetRect((1280, 456, 878, 560))
 
-        events.subscribe('stage position', self.onAxisRefresh)
+        events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
         events.subscribe('stage step size', self.onAxisRefresh)
         events.subscribe('soft safety limit', self.onAxisRefresh)
         events.subscribe('objective change', self.onObjectiveChange)
@@ -672,7 +672,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def onStageMoveWhenPaused(self, axis, position):
         if axis == 2:
             return
-        events.unsubscribe("stage position", self.onStageMoveWhenPaused)
+        events.unsubscribe(events.STAGE_POSITION, self.onStageMoveWhenPaused)
         self.shouldRestart = True
 
 
@@ -697,11 +697,11 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                 events.publish("mosaic stop")
                 wx.CallAfter(self.nameToButton['Run mosaic'].SetLabel, 'Run mosaic')
                 # Detect stage movement so know whether to start new spiral on new position.
-                events.subscribe("stage position", self.onStageMoveWhenPaused)
+                events.subscribe(events.STAGE_POSITION, self.onStageMoveWhenPaused)
                 # Wait for shouldContinue event.
                 self.shouldContinue.wait()
                 # Clear subscription
-                events.unsubscribe("stage position", self.onStageMoveWhenPaused)
+                events.unsubscribe(events.STAGE_POSITION, self.onStageMoveWhenPaused)
                 # Update button label in main thread.
                 wx.CallAfter(self.nameToButton['Run mosaic'].SetLabel, 'Stop mosaic')
                 # Set reconfigure flag: cameras or objective may have changed.
@@ -851,7 +851,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                 cockpit.interfaces.stageMover.Site(position, None, color,
                         size = self.crosshairBoxSize))
         # Publish mosaic update event to update this and other views (e.g. touchscreen).
-        events.publish('mosaic update')
+        events.publish(events.MOSAIC_UPDATE)
 
 
     ## Set the site marker color.
@@ -944,7 +944,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             siteID = int(text.split(':')[0])
             self.selectedSites.add(cockpit.interfaces.stageMover.getSite(siteID))
         # Refresh this and other mosaic views.
-        events.publish('mosaic update')
+        events.publish(events.MOSAIC_UPDATE)
 
 
     ## User double-clicked on a site in the sites box; go to that site.
@@ -1299,7 +1299,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             bestIntensity = None
             for offset in numpy.arange(-1, 1.1, .1):
                 cockpit.interfaces.stageMover.goTo((x, y, z + offset), shouldBlock = True)
-                image, timestamp = events.executeAndWaitFor('new image %s' % camera.name,
+                image, timestamp = events.executeAndWaitFor(events.NEW_IMAGE % camera.name,
                         cockpit.interfaces.imager.takeImage, shouldBlock = True)
                 if bestIntensity is None or image.max() > bestIntensity:
                     bestIntensity = image.max()

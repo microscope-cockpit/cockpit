@@ -456,7 +456,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
                 cycleNum, siteId, self.fileBase.GetValue())
         self.experimentPanel.setFilename(filename)
         start = time.time()
-        events.executeAndWaitFor('experiment complete',
+        events.executeAndWaitFor(events.EXPERIMENT_COMPLETE,
                 self.experimentPanel.runExperiment)
         print ("Imaging took %.2fs" % (time.time() - start))
 

@@ -108,32 +108,32 @@ class DummyMover(stage.StageDevice):
         if not self.active:
             return
         for axis in range(2):
-            events.publish('stage mover', '%d dummy mover' % axis, axis,
+            events.publish(events.STAGE_MOVER, '%d dummy mover' % axis, axis,
                     self.curPosition[axis])
 
 
     ## User clicked the abort button; stop moving.
     def onAbort(self):
         for axis in range(2):
-            events.publish('stage stopped', '%d dummy mover' % axis)
+            events.publish(events.STAGE_STOPPED, '%d dummy mover' % axis)
 
 
     ## Move the stage piezo to a given position.
     def moveAbsolute(self, axis, pos):
         self.curPosition[axis] = pos
         # Dummy movers finish movement immediately.
-        events.publish('stage mover', '%d dummy mover' % axis, axis,
+        events.publish(events.STAGE_MOVER, '%d dummy mover' % axis, axis,
                 self.curPosition[axis])
-        events.publish('stage stopped', '%d dummy mover' % axis)
+        events.publish(events.STAGE_STOPPED, '%d dummy mover' % axis)
 
 
     ## Move the stage piezo by a given delta.
     def moveRelative(self, axis, delta):
         self.curPosition[axis] += delta
         # Dummy movers finish movement immediately.
-        events.publish('stage mover', '%d dummy mover' % axis, axis,
+        events.publish(events.STAGE_MOVER, '%d dummy mover' % axis, axis,
                 self.curPosition[axis])
-        events.publish('stage stopped', '%d dummy mover' % axis)
+        events.publish(events.STAGE_STOPPED, '%d dummy mover' % axis)
 
 
     ## Get the current piezo position.

@@ -130,7 +130,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
                 raise RuntimeError("Camera %s did not provide an exact (decimal.Decimal) readout time" % camera.name)
 
         for camera, func in self.camToFunc.items():
-            events.subscribe('new image %s' % camera.name, func)
+            events.subscribe(events.NEW_IMAGE % camera.name, func)
         for exposureTime in self.exposureTimes:
             if self.shouldAbort:
                 break
@@ -170,7 +170,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
             progress.Destroy()
 
         for camera, func in self.camToFunc.items():
-            events.unsubscribe('new image %s' % camera.name, func)
+            events.unsubscribe(events.NEW_IMAGE % camera.name, func)
 
         self.save()
         self.showResults()

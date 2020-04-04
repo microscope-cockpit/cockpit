@@ -148,7 +148,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
         # Start out with no-exposure-time images to get a measured offset.
         multiplier = 0
         for camera, func in self.camToFunc.items():
-            events.subscribe('new image %s' % camera.name, func)
+            events.subscribe(events.NEW_IMAGE % camera.name, func)
         activeCameras = set(self.cameras)
         for i in range(self.numCollections):
             if not activeCameras or self.shouldAbort:
@@ -188,7 +188,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
             print ("Came out with active cams",activeCameras)
 
         for camera, func in self.camToFunc.items():
-            events.unsubscribe('new image %s' % camera.name, func)
+            events.unsubscribe(events.NEW_IMAGE % camera.name, func)
 
         if self.shouldAbort:
             # Don't bother processing images.

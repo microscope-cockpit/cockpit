@@ -104,8 +104,8 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
             self.getAnalog = self._raiseNoAnalogException
             self.setAnalogClient = self._raiseNoAnalogException
             self.getAnalogClient = self._raiseNoAnalogException
-        events.subscribe('prepare for experiment', self.onPrepareForExperiment)
-        events.subscribe('cleanup after experiment', self.cleanupAfterExperiment)
+        events.subscribe(events.PREPARE_FOR_EXPERIMENT, self.onPrepareForExperiment)
+        events.subscribe(events.CLEANUP_AFTER_EXPERIMENT, self.cleanupAfterExperiment)
 
     def examineActions(self, table):
         return self.callbacks['examineActions'](table)

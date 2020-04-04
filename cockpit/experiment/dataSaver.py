@@ -312,7 +312,7 @@ class DataSaver:
             def func(data, timestamp, camera=camera):
                 return self.onImage(self.cameraToIndex[camera], data, timestamp)
             self.lambdas.append(func)
-            events.subscribe('new image %s' % camera.name, func)
+            events.subscribe(events.NEW_IMAGE % camera.name, func)
 
             self.minMaxVals.append((float('inf'), float('-inf')))
         events.subscribe(events.USER_ABORT, self.onAbort)
@@ -379,7 +379,7 @@ class DataSaver:
     def cleanup(self):
         self.statusThread.shouldStop = True
         for i, camera in enumerate(self.cameras):
-            events.unsubscribe('new image %s' % camera.name, self.lambdas[i])
+            events.unsubscribe(events.NEW_IMAGE % camera.name, self.lambdas[i])
         events.unsubscribe(events.USER_ABORT, self.onAbort)
 
 

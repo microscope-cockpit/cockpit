@@ -57,9 +57,9 @@ class ShutterDevice(device.Device):
 
 
     def performSubscriptions(self):
-            events.subscribe('prepare for experiment',
+            events.subscribe(events.PREPARE_FOR_EXPERIMENT,
                             self.onPrepareForExperiment)
-            events.subscribe('experiment complete',
+            events.subscribe(events.EXPERIMENT_COMPLETE,
                             self.onCleanupAfterExperiment)
             events.subscribe(events.LIGHT_SOURCE_ENABLE, self.onLightSourceEnable)
 

@@ -208,7 +208,7 @@ class Nanomover(stage.StageDevice):
     ## Publish the current stage position.
     def publishPosition(self):
         for i in range(3):
-            events.publish('stage mover', '%d nanomover' % i, i, 
+            events.publish(events.STAGE_MOVER, '%d nanomover' % i, i, 
                     (self.curPosition[i]))
 
 
@@ -222,10 +222,10 @@ class Nanomover(stage.StageDevice):
             if delta < 2:
                 # No movement since last time; done moving.
                 for axis in [0, 1]:
-                    events.publish('stage stopped', '%d nanomover' % axis)
+                    events.publish(events.STAGE_STOPPED, '%d nanomover' % axis)
                 return
             for axis, val in enumerate([x, y]):
-                events.publish('stage mover', '%d nanomover' % axis, 
+                events.publish(events.STAGE_MOVER, '%d nanomover' % axis, 
                                axis, self.axisSignMapper[axis] * val)
             time.sleep(.1)
 
@@ -248,7 +248,7 @@ class Nanomover(stage.StageDevice):
             self.publishPosition()
             if args[-1] == 'allStopped':
                 for i in range(3):
-                    events.publish('stage stopped', '%d nanomover' % i)
+                    events.publish(events.STAGE_STOPPED, '%d nanomover' % i)
 
 
     ## Move a specific axis to a given position.

@@ -302,7 +302,7 @@ class Experiment:
         # Prepare our position.
         cockpit.interfaces.stageMover.goToZ(self.altBottom, shouldBlock = True)
         self.zStart = cockpit.interfaces.stageMover.getAllPositions()[-1][-1]
-        events.publish('prepare for experiment', self)
+        events.publish(events.PREPARE_FOR_EXPERIMENT, self)
         # Prepare cameras.
         for camera in self.cameras:
             # We set the expsoure time here. This needs to be set before
@@ -392,7 +392,7 @@ class Experiment:
                         timeToNext = delay + startTime + float(self.table[curIndex][0]) / 1000. - time.time()
                         time.sleep(max(0,timeToNext))
 
-                    events.executeAndWaitFor('experiment execution',
+                    events.executeAndWaitFor(events.EXPERIMENT_EXECUTION,
                             best.executeTable, self.table, curIndex,
                             curIndex + bestLen, numReps, repDuration)
                     curIndex += bestLen
@@ -421,11 +421,11 @@ class Experiment:
             saveThread.join()
         for handler in self.allHandlers:
             handler.cleanupAfterExperiment()
-        events.publish('cleanup after experiment')
+        events.publish(events.CLEANUP_AFTER_EXPERIMENT)
         if self.initialAltitude is not None:
             # Restore our initial altitude.
             cockpit.interfaces.stageMover.goToZ(self.initialAltitude, shouldBlock = True)
-        events.publish('experiment complete')
+        events.publish(events.EXPERIMENT_COMPLETE)
         events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting', '')
         # Ensure the saveThread's memory, which includes all the images
         # collected thus far, is garbage collected. Otherwise memory tends

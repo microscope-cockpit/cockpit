@@ -445,12 +445,12 @@ class PhysikInstrumenteM687(stage.StageDevice):
             if delta < 5.:
                 # No movement since last time; done moving.
                 for axis in [0, 1]:
-                    events.publish('stage stopped', '%d PI mover' % axis)
+                    events.publish(events.STAGE_STOPPED, '%d PI mover' % axis)
                 with self.xyLock:
                     self.xyMotionTargets = [None, None]
                 return
             for axis, val in enumerate([x, y]):
-                events.publish('stage mover', '%d PI mover' % axis, axis,
+                events.publish(events.STAGE_MOVER, '%d PI mover' % axis, axis,
                         self.axisSignMapper[axis] * val)
             curPosition = (x, y)
             time.sleep(.01)

@@ -126,7 +126,7 @@ class SoftCamera(camera.CameraDevice):
                 image = np.fliplr(image)
             if transform.flip_v:
                 image = np.flipud(image)
-            events.publish('new image %s' % self.name, image, timestamp)
+            events.publish(events.NEW_IMAGE % self.name, image, timestamp)
 
 
     def setExposureTime(self, name, exposureTime):

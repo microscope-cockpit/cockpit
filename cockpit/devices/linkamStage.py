@@ -368,13 +368,13 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
             time.sleep(0.1)
             coords = self.getPosition(shouldUseCache=False)
             for axis, value in enumerate(coords):
-                events.publish('stage mover',
+                events.publish(events.STAGE_MOVER,
                                '%d linkam mover' % axis, 
                                axis, value)
             moving = self._proxy.is_moving()
 
         for axis in (0, 1):
-            events.publish('stage stopped', '%d linkam mover' % axis)
+            events.publish(events.STAGE_STOPPED, '%d linkam mover' % axis)
             self.motionTargets = [None, None]
         self.sendingPositionUpdates = False
         return

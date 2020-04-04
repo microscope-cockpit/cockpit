@@ -183,7 +183,7 @@ class Imager:
             start = time.time()
             try:
                 # HACK: only wait for one camera.
-                events.executeAndWaitFor("new image %s" % (list(self.activeCameras)[0].name),
+                events.executeAndWaitFor(events.NEW_IMAGE % (list(self.activeCameras)[0].name),
                         self.takeImage, 
                         shouldBlock = True, shouldStopVideo = False)
             except Exception as e:
