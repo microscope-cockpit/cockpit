@@ -179,13 +179,13 @@ class DeviceDepot:
             dummies.append(DummyMover())
         # Cameras
         if not getHandlersOfType(CAMERA):
-            from cockpit.devices.dummyCamera import DummyCamera
+            from cockpit.devices.dummies import DummyCamera
             for i in range(1, 5):
                 dummies.append(DummyCamera('dummy camera %d' % i, {}))
         # Dummy imager
         if not getHandlersOfType(IMAGER):
-            from cockpit.devices.imager import DummyImagerDevice
-            dummies.append(DummyImagerDevice())
+            from cockpit.devices.dummies import DummyDSP
+            dummies.append(DummyDSP('imager', {}))
         # Initialise dummies.
         for d in dummies:
             self.nameToDevice[d.name] = d

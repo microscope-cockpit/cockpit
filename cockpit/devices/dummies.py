@@ -24,21 +24,22 @@ import typing
 import Pyro4
 import microscope.testsuite.devices
 
+import cockpit.devices.executorDevices
 import cockpit.devices.microscopeCamera
 
-
-class DummyCamera(cockpit.devices.microscopeCamera.MicroscopeCamera):
-    def __init__(self, name: str, config: typing.Mapping[str, str]):
+class _MicroscopeTestDevice:
+    def __init__(self, test_device_cls, name: str,
+                 config: typing.Mapping[str, str]):
         # Ideally, the Cockpit device class for Microscope devices
         # would simply take a microscope.Device instance (which could
         # be, or not, a Pyro proxy).  However, it really only works
         # with Pyro proxies so we must create a Pyro daemon for it.
         # We also can't use Microscope's device server for this
         # because it wasn't designed to be called from other programs.
-        camera = microscope.testsuite.devices.TestCamera()
-        camera.initialize()
+        test_device = test_device_cls()
+        test_device.initialize()
         pyro_daemon = Pyro4.Daemon()
-        pyro_uri = pyro_daemon.register(camera)
+        pyro_uri = pyro_daemon.register(test_device)
         self._pyro_thread = threading.Thread(target=pyro_daemon.requestLoop)
         self._pyro_thread.start()
 
@@ -47,3 +48,17 @@ class DummyCamera(cockpit.devices.microscopeCamera.MicroscopeCamera):
         config = config.copy()
         config['uri'] = pyro_uri
         super().__init__(name, config)
+
+
+class DummyCamera(_MicroscopeTestDevice,
+                  cockpit.devices.microscopeCamera.MicroscopeCamera):
+    def __init__(self, *args, **kwargs):
+        super().__init__(microscope.testsuite.devices.TestCamera,
+                         *args, **kwargs)
+
+
+class DummyDSP(_MicroscopeTestDevice,
+               cockpit.devices.executorDevices.ExecutorDevice):
+    def __init__(self, *args, **kwargs):
+        super().__init__(microscope.testsuite.devices.DummyDSP,
+                         *args, **kwargs)
