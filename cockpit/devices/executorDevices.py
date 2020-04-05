@@ -85,8 +85,6 @@ from cockpit import depot
 from . import device
 from cockpit import events
 import cockpit.handlers.executor
-import cockpit.handlers.genericHandler
-import cockpit.handlers.genericPositioner
 import cockpit.handlers.imager
 import cockpit.util.threads
 import numpy as np
