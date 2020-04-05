@@ -15,6 +15,7 @@ Cockpit
 .. toctree::
    :maxdepth: 2
 
+   install
    config
 
 Indices and tables
