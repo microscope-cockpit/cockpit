@@ -51,10 +51,10 @@ class SoftCamera(camera.CameraDevice):
 
 
     def performSubscriptions(self):
-        events.subscribe("dummy take image", self.onDummyImage)
+        pass
 
 
-    def onDummyImage(self, camera=None):
+    def softTrigger(self, name=None):
         if self.enabled:
             self.remote.softTrigger()
 
@@ -73,6 +73,7 @@ class SoftCamera(camera.CameraDevice):
                     'getImageSizes': self.getImageSizes,
                     'setImageSize': self.setImageSize,
                     'getSavefileInfo': self.getSavefileInfo,
+                    'softTrigger': self.softTrigger,
                     },
                 cockpit.handlers.camera.TRIGGER_SOFT)
         self.handler = result

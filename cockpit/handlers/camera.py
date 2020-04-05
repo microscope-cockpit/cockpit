@@ -167,15 +167,8 @@ class CameraHandler(deviceHandler.DeviceHandler):
 
     @exposureMode.setter
     def exposureMode(self, triggerType):
-        """Set exposure mode.
-
-        If the device set a softTrigger handler, subscribe to "dummy take image"
-        if exposureMode is TRIGGER_SOFT, otherwise unsubscribe."""
+        """Set exposure mode."""
         self._exposureMode = triggerType
-        softTrigger = self.callbacks.get('softTrigger', None)
-        events.unsubscribe("dummy take image", softTrigger)
-        if softTrigger:
-            events.subscribe("dummy take image", softTrigger)
 
 
     def updateFilter(self, dye, wavelength=None):
