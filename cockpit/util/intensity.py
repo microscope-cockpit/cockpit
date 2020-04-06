@@ -321,7 +321,7 @@ class IntensityProfilerFrame(wx.Frame):
         hbox.Add(self.canvas)
         self.canvas.Bind(wx.EVT_CHAR, self.onKeys)
         # Plot canvas
-        self.plotCanvas = plot.PlotCanvas(self, wx.ID_ANY, pos=(-1,-1))
+        self.plotCanvas = plot.PlotCanvas(self, wx.ID_ANY)
         self.plotCanvas.canvas.Bind(wx.EVT_LEFT_UP, self.onClickPlotCanvas)
         self.plotCanvas.MinSize=(512,512)
         self.plotCanvas.SetSize((512,512))

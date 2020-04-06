@@ -47,7 +47,6 @@ class ShellWindow(wx.Frame):
         wx.Frame.__init__(self, *args, **kwargs)
 
         self.shell = wx.py.shell.Shell(self)
-        self.SetRect((0, 300, 650, 550))
 
         self.SetDropTarget(DropTarget(self))
         self.shell.SetDropTarget(DropTarget(self))

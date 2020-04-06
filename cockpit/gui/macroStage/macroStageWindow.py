@@ -74,9 +74,8 @@ class MacroStageWindow(wx.Frame):
                  title = 'Macro Stage XY' + (' ' * 95) +
                  'Macro Stage Z' + (' ' * 10) +
                  'Experiment Histogram',
-                 id = -1, pos = (1058, 5),
-                 style = wx.CAPTION | wx.FRAME_NO_TASKBAR):
-        wx.Frame.__init__(self, parent, id, title, pos, style = style)
+                 id = -1, style = wx.CAPTION | wx.FRAME_NO_TASKBAR):
+        wx.Frame.__init__(self, parent, id, title, style = style)
 
         # For relative sizing of items. The overall window is
         # (width * 10) by (height * 8) pixels. The ratio of
@@ -171,7 +170,6 @@ window = None
 def makeWindow(parent):
     global window
     window = MacroStageWindow(parent)
-    window.SetPosition((1280, 0))
 
 # Below this point are functions for exposing parts of the
 # MacroStageWindow singleton

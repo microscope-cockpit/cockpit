@@ -410,7 +410,6 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         self.SetStatusBar(cockpit.gui.mainWindow.StatusLights(parent=self))
 
         self.panel.SetSizerAndFit(sizer)
-        self.SetRect((0, 0, 1800, 1000))
 
         events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
         events.subscribe('stage step size', self.onAxisRefresh)

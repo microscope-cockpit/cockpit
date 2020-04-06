@@ -474,7 +474,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                 self.onMouse)
         sizer.Add(self.canvas, 1, wx.EXPAND)
         self.panel.SetSizerAndFit(sizer)
-        self.SetRect((1280, 456, 878, 560))
 
         events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
         events.subscribe('stage step size', self.onAxisRefresh)

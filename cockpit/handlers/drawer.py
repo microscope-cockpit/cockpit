@@ -101,7 +101,6 @@ class DrawerHandler(deviceHandler.DeviceHandler):
             self.buttons.append(button)
         panel.SetSizerAndFit(sizer)
         frame.SetClientSize(panel.GetSize())
-        frame.SetPosition((2400, 65))
         frame.Show()
         cockpit.gui.keyboard.setKeyboardHandlers(frame)
         return None

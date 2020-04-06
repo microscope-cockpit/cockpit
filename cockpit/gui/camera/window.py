@@ -81,8 +81,6 @@ class CamerasWindow(wx.Frame):
             view = viewPanel.ViewPanel(self.panel)
             self.views.append(view)
 
-        self.SetPosition((675, 280))
-
         events.subscribe(events.CAMERA_ENABLE, self.onCameraEnableEvent)
         events.subscribe("image pixel info", self.onImagePixelInfo)
         cockpit.gui.keyboard.setKeyboardHandlers(self)
