@@ -67,7 +67,7 @@ import cockpit.util.logger
 class LoggingWindow(wx.Frame):
     def __init__(self, parent, title = 'Logging panels',
                  style = wx.CAPTION | wx.MAXIMIZE_BOX | wx.FRAME_NO_TASKBAR |
-                         wx.RESIZE_BORDER ):
+                         wx.RESIZE_BORDER |wx.CLOSE_BOX | wx.MINIMIZE_BOX):
         wx.Frame.__init__(self, parent, title = title, style = style)
 
         self.auiManager = wx.aui.AuiManager()
@@ -104,6 +104,9 @@ class LoggingWindow(wx.Frame):
     ## Send text to one of our output boxes, and also log that text.
     def write(self, target, *args):
         wx.CallAfter(target.AppendText, *args)
+        # text output reveles logging window
+        self.Show()
+                        
         with self.cacheLock:
             self.textCache += ' '.join(map(str, args))
             if '\n' in self.textCache:
