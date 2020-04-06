@@ -332,7 +332,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
         self.SetWindowStyle(self.GetWindowStyle() | wx.FRAME_NO_TASKBAR)
-        self.panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         ## Mapping of primitive specifications to Primitives.
@@ -429,11 +428,11 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                  "Allows you to select mosaic tiles and search for isolated " +
                  "beads in them. A site will be placed over each one. This " +
                  "is useful for collecting PSFs.")]:
-            button = self.makeButton(self.panel, *args)
+            button = self.makeButton(self, *args)
             sideSizer.Add(button, 0, wx.EXPAND)
 
         ## Panel for controls dealing with specific sites.
-        self.sitesPanel = wx.Panel(self.panel, style = wx.BORDER_SUNKEN)
+        self.sitesPanel = wx.Panel(self, style = wx.BORDER_SUNKEN)
         sitesSizer = wx.BoxSizer(wx.VERTICAL)
         ## Holds a list of sites.
         self.sitesBox = wx.ListBox(self.sitesPanel,
@@ -468,12 +467,18 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         sideSizer.Add(self.sitesPanel, 1, wx.EXPAND)
         sizer.Add(sideSizer, 0, wx.EXPAND)
 
-        limits = cockpit.interfaces.stageMover.getHardLimits()[:2]
+
         ## MosaicCanvas instance.
-        self.canvas = canvas.MosaicCanvas(self.panel, limits, self.drawOverlay,
-                self.onMouse)
+        limits = cockpit.interfaces.stageMover.getHardLimits()[:2]
+        self.canvas = canvas.MosaicCanvas(self, limits, self.drawOverlay,
+                                          self.onMouse)
         sizer.Add(self.canvas, 1, wx.EXPAND)
-        self.panel.SetSizerAndFit(sizer)
+        self.SetSizerAndFit(sizer)
+
+        # The MosaicCanvas can't figure out its own best size so it
+        # just disappears after Fit.  We suggest its width to be 3/4
+        # of the window width.
+        self.SetClientSize((sideSizer.Size[0] * 4, sideSizer.Size[1]))
 
         events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
         events.subscribe('stage step size', self.onAxisRefresh)
@@ -481,9 +486,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         events.subscribe('objective change', self.onObjectiveChange)
         events.subscribe(events.USER_ABORT, self.onAbort)
 
-        self.Bind(wx.EVT_SIZE, self.onSize)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
-        for item in [self, self.panel, self.canvas, self.sitesPanel]:
+        for item in [self, self.canvas, self.sitesPanel]:
             cockpit.gui.keyboard.setKeyboardHandlers(item)
 
         self.mosaicThread = None
@@ -516,13 +520,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         self.canvas.zoomTo(-curPosition[0]+self.offset[0],
                            curPosition[1]-self.offset[1], scale)
 
-
-    ## Resize our canvas.
-    def onSize(self, event):
-        size = self.GetClientSize()
-        self.panel.SetSize(size)
-        # Subtract off the pixels dedicated to the sidebar.
-        self.canvas.SetClientSize((size[0] - SIDEBAR_WIDTH, size[1]))
 
     ## Get updated about new stage position info or step size.
     # This requires redrawing the display, if the axis is the X or Y axes.
@@ -599,27 +596,27 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             menuId = 1
             for label, color in SITE_COLORS:
                 menu.Append(menuId, "Mark site with %s marker" % label)
-                self.panel.Bind(wx.EVT_MENU,
-                                lambda event, color = color: self.saveSite(color),
-                                id=menuId)
+                self.Bind(wx.EVT_MENU,
+                          lambda event, color = color: self.saveSite(color),
+                          id=menuId)
                 menuId += 1
             menu.AppendSeparator()
             menu.Append(menuId, "Set mosaic tile overlap")
-            self.panel.Bind(wx.EVT_MENU,
-                            lambda event: self.setTileOverlap(),
-                            id=menuId)
+            self.Bind(wx.EVT_MENU,
+                      lambda event: self.setTileOverlap(),
+                      id=menuId)
             menuId += 1
             menu.Append(menuId, "Toggle mosaic scale bar")
-            self.panel.Bind(wx.EVT_MENU,
-                            lambda event: self.togglescalebar(),
-                            id=menuId)
+            self.Bind(wx.EVT_MENU,
+                      lambda event: self.togglescalebar(),
+                      id=menuId)
             menuId += 1
             menu.Append(menuId, "Toggle draw primitives")
-            self.panel.Bind(wx.EVT_MENU,
-                            lambda event: self.toggleDrawPrimitives(),
-                            id=menuId)
+            self.Bind(wx.EVT_MENU,
+                      lambda event: self.toggleDrawPrimitives(),
+                      id=menuId)
 
-            cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+            cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
 
         self.prevMousePos = mousePos
 
@@ -868,10 +865,10 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         menu = wx.Menu()
         for i, (label, color) in enumerate(SITE_COLORS):
             menu.Append(i + 1, "Mark sites in %s" % label)
-            self.panel.Bind(wx.EVT_MENU,
-                            lambda event, color = color: self.setSiteColor(color),
-                            id=i+1)
-        cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+            self.Bind(wx.EVT_MENU,
+                      lambda event, color = color: self.setSiteColor(color),
+                      id=i+1)
+        cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
 
 
     ## Calculate the focal plane of the sample.
@@ -1078,10 +1075,10 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             menu = wx.Menu()
             for i, camera in enumerate(cameras):
                 menu.Append(i + 1, text % camera.descriptiveName)
-                self.panel.Bind(wx.EVT_MENU,
-                                lambda event, camera = camera: action(camera),
-                                id=i+1)
-            cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
+                self.Bind(wx.EVT_MENU,
+                          lambda event, camera = camera: action(camera),
+                          id=i+1)
+            cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
 
 
     ## Set the function to use when the user selects tiles.
