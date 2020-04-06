@@ -115,9 +115,6 @@ class CockpitApp(wx.App):
                     maximum = numDevices + numNonDevices)
             status.Show()
 
-            # Do this early so we can see output while initializing.
-            cockpit.gui.loggingWindow.makeWindow(None)
-
             updateNum=1
             status.Update(updateNum, "Initializing config...")
             updateNum+=1
@@ -155,7 +152,8 @@ class CockpitApp(wx.App):
             # list.
             status.Update(updateNum, " ... secondary windows")
             updateNum+=1
-            for module_name in ['cockpit.gui.shellWindow',
+            for module_name in ['cockpit.gui.loggingWindow',
+                                'cockpit.gui.shellWindow',
                                 'cockpit.gui.touchscreen',
                                 'cockpit.util.intensity']:
                 module = importlib.import_module(module_name)
