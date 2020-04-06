@@ -263,5 +263,5 @@ def martialWindows(parent):
 def showHideShell(parent):
     secondaryWindows = wx.GetApp().secondaryWindows
     for window in secondaryWindows:
-        if (window.GetTitle() == 'Python shell'):
+        if (window.GetTitle() == 'PyShell'):
             window.Show(not window.IsShown())
