@@ -103,6 +103,9 @@ class LoggingWindow(wx.Frame):
     ## Send text to one of our output boxes, and also log that text.
     def write(self, target, *args):
         wx.CallAfter(target.AppendText, *args)
+        # Text output reveals logging window.
+        self.Show()
+
         with self.cacheLock:
             self.textCache += ' '.join(map(str, args))
             if '\n' in self.textCache:
