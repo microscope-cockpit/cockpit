@@ -462,10 +462,10 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                 ]:
             button = self.makeButton(self.sitesPanel, *args,
                     size = (SIDEBAR_WIDTH, -1))
-            sitesSizer.Add(button)
+            sitesSizer.Add(button, 0, wx.EXPAND)
 
         self.sitesPanel.SetSizerAndFit(sitesSizer)
-        sideSizer.Add(self.sitesPanel, 1)
+        sideSizer.Add(self.sitesPanel, 1, wx.EXPAND)
         sizer.Add(sideSizer, 0, wx.EXPAND)
 
         limits = cockpit.interfaces.stageMover.getHardLimits()[:2]
