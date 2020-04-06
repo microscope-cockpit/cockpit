@@ -51,44 +51,37 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 import collections
-from cockpit.util import ftgl
-import numpy
-from OpenGL.GL import *
-import os
-import scipy.ndimage.measurements
+import math
 import threading
-import time
-import wx
 
-from . import canvas
-from cockpit import depot
-from cockpit import events
+import numpy
+import scipy.ndimage.measurements
+import wx
+from OpenGL.GL import *
+
 import cockpit.gui
 import cockpit.gui.camera.window
 import cockpit.gui.dialogs.gridSitesDialog
 import cockpit.gui.dialogs.offsetSitesDialog
 import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
-from cockpit.gui.primitive import Primitive
 import cockpit.interfaces.stageMover
 import cockpit.util.files
-import cockpit.util.threads
 import cockpit.util.userConfig
-import math
+from cockpit import depot
+from cockpit import events
+from cockpit.gui.mosaic import canvas
+from cockpit.gui.primitive import Primitive
+from cockpit.util import ftgl
 
-## Size of the crosshairs indicating the stage position.
-CROSSHAIR_SIZE = 10000
+
 ## Valid colors to use for site markers.
 SITE_COLORS = [('green', (0, 1, 0)), ('red', (1, 0, 0)),
     ('blue', (0, 0, 1)), ('orange', (1, .6, 0))]
 
 ## Timeout for mosaic new image events
 CAMERA_TIMEOUT = 1
-##how good a circle to draw
-CIRCLE_SEGMENTS = 32
-PI = 3.141592654
 
 ## Simple structure for marking potential beads.
 BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])

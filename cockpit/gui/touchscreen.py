@@ -19,53 +19,33 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-import collections
-from cockpit.util import ftgl
+import os.path
+import sys
+
 import numpy
-import os, sys
 import wx
 from wx.lib.agw.shapedbutton import SButton, SBitmapButton,SBitmapToggleButton
-from cockpit.gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
-from cockpit.handlers.deviceHandler import STATES
 
-import cockpit.gui.macroStage.macroStageBase
-from cockpit.gui.macroStage.macroStageXY import MacroStageXY
-from cockpit.gui.macroStage.macroStageZ import MacroStageZ
-from cockpit import depot
-from cockpit import events
 import cockpit.gui
-import cockpit.gui.camera.window
-import cockpit.gui.dialogs.gridSitesDialog
-import cockpit.gui.dialogs.offsetSitesDialog
 import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
 import cockpit.gui.mainWindow
-import cockpit.gui.mosaic.window as mosaic
 import cockpit.gui.mosaic.canvas
+import cockpit.gui.mosaic.window as mosaic
 import cockpit.interfaces.stageMover
 import cockpit.util.colors
-import cockpit.util.threads
 import cockpit.util.userConfig
+from cockpit import depot
+from cockpit import events
+from cockpit.gui.macroStage.macroStageXY import MacroStageXY
+from cockpit.gui.macroStage.macroStageZ import MacroStageZ
 from cockpit.gui.saveTopBottomPanel import moveZCheckMoverLimits
+from cockpit.gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
+from cockpit.handlers.deviceHandler import STATES
+from cockpit.util import ftgl
 
-## Size of the crosshairs indicating the stage position.
-CROSSHAIR_SIZE = 10000
-## Valid colors to use for site markers.
-SITE_COLORS = [('green', (0, 1, 0)), ('red', (1, 0, 0)),
-    ('blue', (0, 0, 1)), ('orange', (1, .6, 0))]
 
-## Width of widgets in the sidebar.
-SIDEBAR_WIDTH = 150
 BACKGROUND_COLOUR = (160,160,160)
-
-## Timeout for mosaic new image events
-CAMERA_TIMEOUT = 5
-##how good a circle to draw
-CIRCLE_SEGMENTS = 32
-PI = 3.141592654
-
-## Simple structure for marking potential beads.
-BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
 
 
 class SetVariable(wx.Window):
@@ -688,7 +668,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             # Display a context menu.
             menu = wx.Menu()
             menuId = 1
-            for label, color in SITE_COLORS:
+            for label, color in mosaic.SITE_COLORS:
                 menu.Append(menuId, "Mark site with %s marker" % label)
                 self.panel.Bind(wx.EVT_MENU,
                                 lambda event, color = color: mosaic.window.saveSite(color), id= menuId)
