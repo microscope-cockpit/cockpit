@@ -334,7 +334,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
                          lambda: gainButton.SetLabel("%s" % self.settings.get('gain', None)))
         sizer.AddSpacer(4)
         # Settings button
-        adv_button = wx.Button(parent=self.panel, label='settings')
+        adv_button = wx.Button(parent=self.panel, label='Settings')
         adv_button.Bind(wx.EVT_LEFT_UP, self.showSettings)
         sizer.Add(adv_button)
         self.panel.SetSizerAndFit(sizer)
