@@ -181,7 +181,7 @@ class DeviceDepot:
         if not getHandlersOfType(CAMERA):
             from cockpit.devices.dummies import DummyCamera
             for i in range(1, 5):
-                dummies.append(DummyCamera('dummy camera %d' % i, {}))
+                dummies.append(DummyCamera('Dummy camera %d' % i, {}))
         # Dummy imager
         if not getHandlersOfType(IMAGER):
             from cockpit.devices.dummies import DummyDSP
@@ -193,7 +193,7 @@ class DeviceDepot:
         # Ambient light source
         from cockpit.handlers.lightSource import LightHandler
         ambient = {'t': 100}
-        h = LightHandler('ambient', 'ambient',
+        h = LightHandler('Ambient', 'ambient',
                          {'setExposureTime': lambda null, t: ambient.__setitem__('t', t),
                           'getExposureTime': lambda null: ambient['t'],
                           'setEnabled': lambda null, state: True,
