@@ -56,13 +56,13 @@ class LightPanel(wx.Panel):
         line.SetBackgroundColour(wavelengthToColor(self.light.wavelength))
         self.Sizer.Add(line, flag=wx.EXPAND)
 
-        self.Sizer.Add(wx.StaticText(self, label='exposure / ms'),
+        self.Sizer.Add(wx.StaticText(self, label='Exposure / ms'),
                        flag=wx.ALIGN_CENTER_HORIZONTAL)
         self.Sizer.Add(expCtrl, flag=wx.EXPAND)
 
         if lightPower is not None:
             self.Sizer.AddSpacer(4)
-            self.Sizer.Add(wx.StaticText(self, label="power / mW"),
+            self.Sizer.Add(wx.StaticText(self, label="Power / mW"),
                            flag=wx.ALIGN_CENTER_HORIZONTAL)
             powCtrl = safeControls.SpinGauge(self,
                                              minValue = lightPower.minPower,
