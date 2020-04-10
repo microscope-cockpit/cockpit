@@ -221,6 +221,8 @@ class MainWindow(wx.Frame):
         ## Panel for holding light sources.
         self.Sizer.Add(mainPanels.LightControlsPanel(self), flag=wx.EXPAND)
 
+        self.SetStatusBar(StatusLights(parent=self))
+
         # Ensure we use our full width if possible.
         size = self.Sizer.GetMinSize()
         if size[0] < MAX_WIDTH:
@@ -233,7 +235,6 @@ class MainWindow(wx.Frame):
             
         self.SetDropTarget(viewFileDropTarget.ViewFileDropTarget(self))
 
-        self.SetStatusBar(StatusLights(parent=self))
 
         self.Bind(wx.EVT_CLOSE, self.onClose)
         # Show the list of windows on right-click.
