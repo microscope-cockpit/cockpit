@@ -26,6 +26,8 @@ import microscope.testsuite.devices
 
 import cockpit.devices.executorDevices
 import cockpit.devices.microscopeCamera
+import cockpit.devices.microscopeDevice
+
 
 class _MicroscopeTestDevice:
     def __init__(self, test_device_cls, name: str,
@@ -61,4 +63,11 @@ class DummyDSP(_MicroscopeTestDevice,
                cockpit.devices.executorDevices.ExecutorDevice):
     def __init__(self, *args, **kwargs):
         super().__init__(microscope.testsuite.devices.DummyDSP,
+                         *args, **kwargs)
+
+
+class DummyLaser(_MicroscopeTestDevice,
+                 cockpit.devices.microscopeDevice.MicroscopeLaser):
+    def __init__(self, *args, **kwargs):
+        super().__init__(microscope.testsuite.devices.TestLaser,
                          *args, **kwargs)
