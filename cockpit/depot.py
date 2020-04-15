@@ -195,15 +195,13 @@ class DeviceDepot:
         for d in dummies:
             self.nameToDevice[d.name] = d
             self.initDevice(d)
+
         # Ambient light source
-        from cockpit.handlers.lightSource import LightHandler
-        ambient = {'t': 100}
-        h = LightHandler('Ambient', 'ambient',
-                         {'setExposureTime': lambda null, t: ambient.__setitem__('t', t),
-                          'getExposureTime': lambda null: ambient['t'],
-                          'setEnabled': lambda null, state: True,
-                          }, 0, 100)
-        self.addHandler(h)
+        from cockpit.devices.light import AmbientLight
+        ambient_light = AmbientLight("Ambient", {})
+        self.nameToDevice[ambient_light.name] = ambient_light
+        self.initDevice(ambient_light)
+
         self.finalizeInitialization()
         yield 'dummy-devices'
 
