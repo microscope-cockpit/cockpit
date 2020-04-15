@@ -186,6 +186,11 @@ class DeviceDepot:
         if not getHandlersOfType(IMAGER):
             from cockpit.devices.dummies import DummyDSP
             dummies.append(DummyDSP('imager', {}))
+        # Dummy laser
+        if not getHandlersOfType(LIGHT_TOGGLE):
+            from cockpit.devices.dummies import DummyLaser
+            for wl in [405, 488, 633]:
+                dummies.append(DummyLaser('Dummy %d' % wl, {'wavelength' : wl}))
         # Initialise dummies.
         for d in dummies:
             self.nameToDevice[d.name] = d
