@@ -111,7 +111,6 @@ class MainWindow(wx.Frame):
 
         # Panel for holding the non-lightsource controls.
         topPanel = wx.Panel(self)
-        topPanel.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
         self.topPanel=topPanel
         topSizer = wx.BoxSizer(wx.VERTICAL)
  
