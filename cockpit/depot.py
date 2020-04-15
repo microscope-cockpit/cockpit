@@ -196,12 +196,6 @@ class DeviceDepot:
             self.nameToDevice[d.name] = d
             self.initDevice(d)
 
-        # Ambient light source
-        from cockpit.devices.light import AmbientLight
-        ambient_light = AmbientLight("Ambient", {})
-        self.nameToDevice[ambient_light.name] = ambient_light
-        self.initDevice(ambient_light)
-
         self.finalizeInitialization()
         yield 'dummy-devices'
 

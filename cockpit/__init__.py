@@ -106,8 +106,7 @@ class CockpitApp(wx.App):
 
             depot_config = self.Config.depot_config
             cockpit.depot.initialize(depot_config)
-            # + 2 is +1 for all dummy devices and +1 for the ambient light
-            numDevices = len(depot_config.sections()) + 2
+            numDevices = len(depot_config.sections()) + 1 # +1 for dummy devices
             numNonDevices = 15
             status = wx.ProgressDialog(parent = None,
                     title = "Initializing OMX Cockpit",
