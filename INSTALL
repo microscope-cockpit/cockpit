@@ -22,7 +22,7 @@ Macos needs git and python3 which are not part of the default
 setup. There are various route to get these two packages but below are
 instructions for how to do this via homebrew.
 
-Install Homebrew from https://brew.sh/ currenly this involves starting
+Install Homebrew from https://brew.sh/ currently this involves starting
 a terminal (/Applications/Utilities/terminal.app) and running the command
 
  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
@@ -35,7 +35,7 @@ then use homebrew to install git and python3 and ftgl
 
  brew install ftgl
 
-Crearte a directory for micrsocpe and cockpit, I used ~/src
+Create a directory for microscope and cockpit, I used ~/src
 
  mkdir ~/src
  cd ~/src
@@ -50,9 +50,9 @@ Setup these packages as a developer
  cd microscope
  python3 setup.py develop
 
-For mne this failed as I didnt have write access to the pythoin libary
+For me this failed as I didn't have write access to the python library
 directory /Library/Python/3.7/site-packages. I had to create this
-directory and chnage its ownership to my userid. As this is a laptop
+directory and change its ownership to my userid. As this is a laptop
 and I am the only user this shouldn't be a problem.
 
  sudo mkdir /Library/Python/3.7
