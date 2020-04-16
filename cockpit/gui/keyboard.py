@@ -131,15 +131,16 @@ def setKeyboardHandlers(window):
 def martialWindows(parent):
     primaryWindows = wx.GetApp().primaryWindows
     secondaryWindows = wx.GetApp().secondaryWindows
-    otherWindows = [w for w in wx.GetTopLevelWindows() 
+    otherWindows = [w for w in wx.GetTopLevelWindows()
                         if w not in (primaryWindows + secondaryWindows)]
     # windows = wx.GetTopLevelWindows()
     menu = wx.Menu()
-    menuId = 1000
-    menu.Append(menuId, "Reset window positions")
+
+    menu_item = menu.Append(wx.ID_ANY, "Reset window positions")
     parent.Bind(wx.EVT_MENU,
-                lambda e: wx.GetApp().SetWindowPositions(), id= menuId)
-    menuId += 1
+                lambda e: wx.GetApp().SetWindowPositions(),
+                menu_item)
+
     #for i, window in enumerate(windows):
     for i, window in enumerate(primaryWindows):
         if not window.GetTitle():
@@ -149,23 +150,21 @@ def martialWindows(parent):
             # rid of them or fix them so they don't cause trouble here.
             continue
         subMenu = wx.Menu()
-        subMenu.Append(menuId, "Raise to top")
+        menu_item = subMenu.Append(wx.ID_ANY, "Raise to top")
         parent.Bind(wx.EVT_MENU,
-                    lambda e, window = window: window.Raise(),id=menuId)
-        menuId += 1
-        subMenu.Append(menuId, "Move to mouse")
+                    lambda e, w=window: w.Raise(),
+                    menu_item)
+        menu_item = subMenu.Append(wx.ID_ANY, "Move to mouse")
         parent.Bind(wx.EVT_MENU,
-                lambda e, window = window: window.SetPosition(wx.GetMousePosition()), id=menuId)
-        menuId += 1
-        subMenu.Append(menuId, "Move to top-left corner")
+                    lambda e, w=window: w.SetPosition(wx.GetMousePosition()),
+                    menu_item)
+        menu_item = subMenu.Append(wx.ID_ANY, "Move to top-left corner")
         parent.Bind(wx.EVT_MENU,
-                lambda e, window = window: window.SetPosition((0, 0)),
-                    id=menuId)
-        menuId += 1
+                    lambda e, w=window: w.SetPosition((0, 0)),
+                    menu_item)
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
         menu.AppendSubMenu(subMenu, str(window.GetTitle())[:50])
-        menuId += 1
 
     menu.AppendSeparator()
     for i, window in enumerate(secondaryWindows):
@@ -184,36 +183,35 @@ def martialWindows(parent):
             else:
                 if w.Show(not w.IsShown()):
                     cockpit.util.userConfig.setValue(config_name, 0)
-        subMenu.Append(menuId, "Show/Hide")
+        menu_item = subMenu.Append(wx.ID_ANY, "Show/Hide")
         parent.Bind(wx.EVT_MENU,
                     show_or_hide,
-                    id=menuId)
-        menuId += 1
-        subMenu.Append(menuId, "Move to mouse")
+                    menu_item)
+
+        menu_item = subMenu.Append(wx.ID_ANY, "Move to mouse")
         parent.Bind(wx.EVT_MENU,
-                lambda e, window = window: window.SetPosition(wx.GetMousePosition()), id=menuId)
-        menuId += 1
+                    lambda e, w=window: w.SetPosition(wx.GetMousePosition()),
+                    menu_item)
+
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
         menu.AppendSubMenu(subMenu, str(window.GetTitle())[:50])
-        menuId += 1
 
     # Add item to launch valueLogViewer.
     from subprocess import Popen
     from sys import platform
     from cockpit.util import valueLogger
     from cockpit.util import csv_plotter
-    menu.Append(menuId, "Launch ValueLogViewer")
+    menu_item = menu.Append(wx.ID_ANY, "Launch ValueLogViewer")
     logs = valueLogger.ValueLogger.getLogFiles()
     if not logs:
-        menu.Enable(menuId, False)
+        menu_item.Enable(False)
     else:
         shell = platform == 'win32'
         args = ['python', csv_plotter.__file__] + logs
         parent.Bind(wx.EVT_MENU,
                     lambda e: Popen(args, shell=shell),
-                    id = menuId)
-    menuId += 1
+                    menu_item)
 
     menu.AppendSeparator()
     for i, window in enumerate(otherWindows):
@@ -226,38 +224,38 @@ def martialWindows(parent):
             # rid of them or fix them so they don't cause trouble here.
             continue
         subMenu = wx.Menu()
-        subMenu.Append(menuId, "Raise to top")
+        menu_item = subMenu.Append(wx.ID_ANY, "Raise to top")
         parent.Bind(wx.EVT_MENU,
-                    lambda e, window = window: window.Raise(), id=menuId)
-        menuId += 1
-        subMenu.Append(menuId, "Move to mouse")
+                    lambda e, window = window: window.Raise(),
+                    menu_item)
+        menu_item = subMenu.Append(wx.ID_ANY, "Move to mouse")
         parent.Bind(wx.EVT_MENU,
-                    lambda e, window = window: window.SetPosition(wx.GetMousePosition()), id=menuId)
-        menuId += 1
-        subMenu.Append(menuId, "Move to top-left corner")
+                    lambda e, w=window: w.SetPosition(wx.GetMousePosition()),
+                    menu_item)
+        menu_item = subMenu.Append(wx.ID_ANY, "Move to top-left corner")
         parent.Bind(wx.EVT_MENU,
-                lambda e, window = window: window.SetPosition((0, 0))
-                    , id=menuId)
-        menuId += 1
+                    lambda e, w=window: w.SetPosition((0, 0)),
+                    menu_item)
+
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
         try:
-            menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
+            menu_item = menu.Append(wx.ID_ANY, str(window.GetTitle())[:50],
+                                    subMenu)
         except TypeError as e:
             # Sometimes, windows created late (e.g. wx InspectionTool) cause
             # a weird error here: menu.Append throws a type error, insisting
             # it needs a String or Unicode type, despite being passed a String
             # or Unicode type.
-            print ("Omitting %s from window - weird wx string/unicode type error." % window.GetTitle())
-        menuId += 1
+            print("Omitting %s from window - weird wx string/unicode type error."
+                   % window.GetTitle())
 
     for d in filter(lambda x: hasattr(x, "showDebugWindow"),
                     chain(depot.getAllHandlers(), depot.getAllDevices())):
-        menu.Append(menuId, 'debug  %s  %s' % (d.__class__.__name__, d.name ))
+        menu_item = menu.Append(wx.ID_ANY, 'debug  %s  %s' % (d.__class__.__name__, d.name))
         parent.Bind(wx.EVT_MENU,
                     lambda e, d=d: d.showDebugWindow(),
-                    id=menuId)
-        menuId += 1
+                    menu_item)
 
     cockpit.gui.guiUtils.placeMenuAtMouse(parent, menu)
 
