@@ -239,6 +239,15 @@ class MainWindow(wx.Frame):
         # Show the list of windows on right-click.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: keyboard.martialWindows(self))
 
+        # Because mainPanels.PanelLabel uses a font larger than the
+        # default, we need to recompute the Frame size at show time.
+        # Workaround for https://trac.wxwidgets.org/ticket/16088
+        if 'gtk3' in wx.PlatformInfo:
+            self.Bind(wx.EVT_SHOW, self.OnShow)
+
+    def OnShow(self, event: wx.ShowEvent) -> None:
+        self.Fit()
+        event.Skip()
 
     ## Do any necessary program-shutdown events here instead of in the App's
     # OnExit, since in that function all of the WX objects have been destroyed
