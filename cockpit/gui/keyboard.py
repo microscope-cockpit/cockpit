@@ -59,7 +59,6 @@ import cockpit.gui.guiUtils
 import cockpit.gui.mosaic.window
 import cockpit.interfaces.stageMover
 
-from distutils import version
 from itertools import chain
 
 def onChar(evt):
@@ -165,10 +164,7 @@ def martialWindows(parent):
         menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
-        if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
-            menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
-        else:
-            menu.AppendSubMenu(subMenu, str(window.GetTitle())[:50])
+        menu.AppendSubMenu(subMenu, str(window.GetTitle())[:50])
         menuId += 1
 
     menu.AppendSeparator()
@@ -194,10 +190,7 @@ def martialWindows(parent):
         menuId += 1
         # Some windows have very long titles (e.g. the Macro Stage View),
         # so just take the first 50 characters.
-        if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
-            menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
-        else:
-            menu.AppendSubMenu(subMenu, str(window.GetTitle())[:50])
+        menu.AppendSubMenu(subMenu, str(window.GetTitle())[:50])
         menuId += 1
 
     # Add item to launch valueLogViewer.
