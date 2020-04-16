@@ -176,13 +176,18 @@ def martialWindows(parent):
             # rid of them or fix them so they don't cause trouble here.
             continue
         subMenu = wx.Menu()
+        def show_or_hide(evt, w=window):
+            config_name = 'windowState'+w.GetTitle()
+            if w.IsIconized():
+                if w.Restore():
+                    cockpit.util.userConfig.setValue(config_name, 1)
+            else:
+                if w.Show(not w.IsShown()):
+                    cockpit.util.userConfig.setValue(config_name, 0)
         subMenu.Append(menuId, "Show/Hide")
         parent.Bind(wx.EVT_MENU,
-                lambda e, window = window: ((window.Restore() and
-                    (cockpit.util.userConfig.setValue('windowState'+window.GetTitle(),
-                                               1)))
-                                                if window.IsIconized() 
-                                                else ((window.Show(not window.IsShown()) ) and (cockpit.util.userConfig.setValue('windowState'+window.GetTitle(),0)))), id=menuId)
+                    show_or_hide,
+                    id=menuId)
         menuId += 1
         subMenu.Append(menuId, "Move to mouse")
         parent.Bind(wx.EVT_MENU,
