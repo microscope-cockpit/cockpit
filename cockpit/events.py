@@ -175,22 +175,7 @@ subscribe(USER_ABORT, clearOneShotSubscribers)
 ## Call the specified function with the provided arguments, and then wait for
 # the named event to occur.
 def executeAndWaitFor(eventType, func, *args, **kwargs):
-    newLock = threading.Lock()
-    newLock.acquire()
-    result = []
-    def releaser(*args):
-        result.extend(args)
-        newLock.release()
-    # Add a method to release the lock in the event of an abort event.
-    releaser.__abort__ = lambda: newLock.release()
-    oneShotSubscribe(eventType, releaser)
-    func(*args, **kwargs)
-    # Note that since newLock is already locked, this will block until it is
-    # released.
-    with newLock:
-        if len(result) == 1:
-            return result[0]
-        return result
+    return executeAndWaitForOrTimeout(eventType, func, None, *args, **kwargs)
 
 
 ## Call the specified function with the provided arguments, and then wait for
