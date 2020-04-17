@@ -55,8 +55,11 @@
 # control the most important hardware elements.
 
 import json
-import wx
 import os.path
+import pkg_resources
+
+import wx
+import wx.adv
 
 import cockpit.gui
 
@@ -216,6 +219,23 @@ class MainWindow(wx.Frame):
         ## Panel for holding light sources.
         self.Sizer.Add(mainPanels.LightControlsPanel(self), flag=wx.EXPAND)
 
+        menu_bar = wx.MenuBar()
+        file_menu = wx.Menu()
+        menu_item = file_menu.Append(wx.ID_EXIT)
+        self.Bind(wx.EVT_MENU, self.OnClose, menu_item)
+        menu_bar.Append(file_menu, '&File')
+
+        help_menu = wx.Menu()
+        menu_item = help_menu.Append(wx.ID_ANY, item='Online repository')
+        self.Bind(wx.EVT_MENU,
+                  lambda evt: wx.LaunchDefaultBrowser('https://github.com/MicronOxford/cockpit/'),
+                  menu_item)
+        menu_item = help_menu.Append(wx.ID_ABOUT)
+        self.Bind(wx.EVT_MENU, self._OnAbout, menu_item)
+        menu_bar.Append(help_menu, '&Help')
+
+        self.SetMenuBar(menu_bar)
+
         self.SetStatusBar(StatusLights(parent=self))
 
         # Ensure we use our full width if possible.
@@ -231,7 +251,7 @@ class MainWindow(wx.Frame):
         self.SetDropTarget(viewFileDropTarget.ViewFileDropTarget(self))
 
 
-        self.Bind(wx.EVT_CLOSE, self.onClose)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
         # Show the list of windows on right-click.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: keyboard.martialWindows(self))
 
@@ -248,9 +268,12 @@ class MainWindow(wx.Frame):
     ## Do any necessary program-shutdown events here instead of in the App's
     # OnExit, since in that function all of the WX objects have been destroyed
     # already.
-    def onClose(self, event):
+    def OnClose(self, event):
         events.publish('program exit')
         event.Skip()
+
+    def _OnAbout(self, event):
+        wx.adv.AboutBox(CockpitAboutInfo(), parent=self)
 
     ## User clicked the "view last file" button; open the last experiment's
     # file in an image viewer. A bit tricky when there's multiple files 
@@ -441,6 +464,65 @@ class StatusLights(wx.StatusBar):
             self.SetBackgroundColour(self._notificationColour)
         else:
             self.SetBackgroundColour(self._defaultBackgroundColour)
+
+
+def CockpitAboutInfo() -> wx.adv.AboutDialogInfo:
+    # TODO: we should be reading all of the stuff here from somewhere
+    # that is shared with setup.py.  Maybe we need our own metadata
+    # class which this function would then convert.
+    info = wx.adv.AboutDialogInfo()
+    info.SetName('Cockpit')
+
+    info.SetVersion(pkg_resources.get_distribution('cockpit').version)
+    info.SetDescription('Hardware agnostic microscope user interface')
+    info.SetCopyright('Copyright © 2020\n'
+                      '\n'
+                      'Cockpit comes with absolutely no warranty.\n'
+                      'See the GNU General Public Licence, version 3 or later,'
+                      ' for details.')
+
+
+    # Authors are sorted alphabetically.
+    for dev_name in ['Chris Weisiger',
+                     'David Miguel Susano Pinto',
+                     'Eric Branlund',
+                     'Ian Dobbie',
+                     'Julio Mateos-Langerak',
+                     'Mick Phillips',
+                     'Nicholas Hall',]:
+        info.AddDeveloper(dev_name)
+
+    # wxWidgets has native and generic implementations for the about
+    # dialog.  However, native implementations other than GTK are
+    # limited on the info they can include.  If website, custom icon
+    # (instead of inherited from the parent), and license are used on
+    # platforms other than GTK the generic dialog is used which we
+    # want to avoid.
+    if wx.Platform == '__WXGTK__':
+        info.SetWebSite('https://www.micron.ox.ac.uk/software/cockpit/')
+
+        # We should not have to set this, it should be set later via
+        # the AboutBox parent icon.  We don't yet have icons working
+        # (issue #388), but remove this when it is.
+        info.SetIcon(wx.Icon(os.path.join(cockpit.gui.BITMAPS_PATH,
+                                          'cockpit-8bit.ico')))
+
+        info.SetLicence('Cockpit is free software: you can redistribute it'
+                        ' and/or modify\nit under the terms of the GNU General'
+                        ' Public License as published by\nthe Free Software'
+                        ' Foundation, either version 3 of the License, or\n(at'
+                        ' your option) any later version\n'
+                        '\n'
+                        'Cockpit is distributed in the hope that it will be'
+                        ' useful,\nbut WITHOUT ANY WARRANTY; without even the'
+                        ' implied warranty of\nMERCHANTABILITY or FITNESS FOR A'
+                        ' PARTICULAR PURPOSE.  See the\nGNU General Public'
+                        ' License for more details.\n'
+                        '\n'
+                        'You should have received a copy of the GNU General'
+                        ' Public License\nalong with Cockpit.  If not, see '
+                        ' <http://www.gnu.org/licenses/>.')
+    return info
 
 
 ## Create the window.
