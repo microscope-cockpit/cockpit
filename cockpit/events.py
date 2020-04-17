@@ -211,6 +211,12 @@ def executeAndWaitForOrTimeout(eventType, func, timeout, *args, **kwargs):
         # Notify condition.
         with newCondition:
             newCondition.notify()
+    def aborter():
+        released[0] = True
+        with newCondition:
+            newCondition.notify()
+    # Add a method to notify condition in the event of an abort event.
+    releaser.__abort__ = aborter
 
     oneShotSubscribe(eventType, releaser)
     func(*args, **kwargs)
