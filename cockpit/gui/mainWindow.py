@@ -54,8 +54,6 @@
 ## This module creates the primary window. This window houses widgets to 
 # control the most important hardware elements.
 
-from __future__ import absolute_import
-
 import json
 import wx
 import os.path
