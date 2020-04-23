@@ -176,14 +176,14 @@ def martialWindows(parent):
             continue
         subMenu = wx.Menu()
         def show_or_hide(evt, w=window):
-            config_name = 'windowState'+w.GetTitle()
+            # The window might be hidden but maybe it's just iconized
+            # (minimized), or maybe it's both.  If it's iconized we
+            # need to restore it first
             if w.IsIconized():
-                if w.Restore():
-                    cockpit.util.userConfig.setValue(config_name, True)
+                w.Restore()
+                w.Show()
             else:
-                to_show = not w.IsShown()
-                w.Show(to_show)
-                cockpit.util.userConfig.setValue(config_name, to_show)
+                w.Show(not w.IsShown())
         menu_item = subMenu.Append(wx.ID_ANY, "Show/Hide")
         parent.Bind(wx.EVT_MENU,
                     show_or_hide,
@@ -265,5 +265,3 @@ def showHideShell(parent):
     for window in secondaryWindows:
         if (window.GetTitle() == 'Python shell'):
             window.Show(not window.IsShown())
-            cockpit.util.userConfig.setValue('windowState'+window.GetTitle()
-                                             ,window.IsShown())

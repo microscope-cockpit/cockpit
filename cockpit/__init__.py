@@ -318,6 +318,10 @@ class CockpitApp(wx.App):
 
         cockpit.util.userConfig.setValue('WindowPositions', positions)
 
+        for window in wx.GetTopLevelWindows():
+            config_name = 'windowState' + window.GetTitle()
+            cockpit.util.userConfig.setValue(config_name, window.IsShown())
+
 
 def main():
     ## wxglcanvas (used in the mosaic windows) does not work with
