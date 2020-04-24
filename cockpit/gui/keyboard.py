@@ -181,8 +181,9 @@ def martialWindows(parent):
                 if w.Restore():
                     cockpit.util.userConfig.setValue(config_name, True)
             else:
-                if w.Show(not w.IsShown()):
-                    cockpit.util.userConfig.setValue(config_name, False)
+                to_show = not w.IsShown()
+                w.Show(to_show)
+                cockpit.util.userConfig.setValue(config_name, to_show)
         menu_item = subMenu.Append(wx.ID_ANY, "Show/Hide")
         parent.Bind(wx.EVT_MENU,
                     show_or_hide,
