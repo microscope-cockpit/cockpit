@@ -167,10 +167,10 @@ class CockpitApp(wx.App):
             for w in self.secondaryWindows:
                 #bind close event to just hide for these windows
                 w.Bind(wx.EVT_CLOSE, lambda event, w=w: w.Hide())
-                config_name = 'windowState' + w.GetTitle()
-                windowstate = cockpit.util.userConfig.getValue(config_name,
-                                                               default=False)
-                w.Show(windowstate)
+                config_name = 'Show Window ' + w.GetTitle()
+                to_show = cockpit.util.userConfig.getValue(config_name,
+                                                           default=False)
+                w.Show(to_show)
 
             # Now that the UI exists, we don't need this any more.
             # Sometimes, status doesn't make it into the list, so test.
@@ -182,10 +182,10 @@ class CockpitApp(wx.App):
 
             #now loop over secondary windows open and closeing as needed.
             for w in self.secondaryWindows:
-                config_name = 'windowState' + w.GetTitle()
-                windowstate = cockpit.util.userConfig.getValue(config_name,
-                                                               default=False)
-                w.Show(windowstate)
+                config_name = 'Show Window ' + w.GetTitle()
+                to_show = cockpit.util.userConfig.getValue(config_name,
+                                                           default=False)
+                w.Show(to_show)
 
             cockpit.depot.makeInitialPublications()
             cockpit.interfaces.imager.makeInitialPublications()
@@ -308,7 +308,7 @@ class CockpitApp(wx.App):
         cockpit.util.userConfig.setValue('WindowPositions', positions)
 
         for window in wx.GetTopLevelWindows():
-            config_name = 'windowState' + window.GetTitle()
+            config_name = 'Show Window ' + window.GetTitle()
             cockpit.util.userConfig.setValue(config_name, window.IsShown())
 
 
