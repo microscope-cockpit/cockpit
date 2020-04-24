@@ -50,17 +50,12 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 import concurrent.futures as futures
-import numpy
 import time
-import wx
 
 from cockpit import depot
 from . import deviceHandler
 from cockpit import events
-import cockpit.gui.guiUtils
-import cockpit.gui.toggleButton
 import cockpit.util.logger
 import cockpit.util.userConfig
 import cockpit.util.threads
@@ -75,7 +70,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     # \param minPower Minimum output power in milliwatts.
     # \param maxPower Maximum output power in milliwatts.
     # \param curPower Initial output power.
-    # \param color Color to use in the UI to represent this light source.
     # \param isEnabled True iff the handler can be interacted with.
     # \param units Units to use to describe the power; defaults to "mW".
 
@@ -102,9 +96,8 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
                         queries[light] = executor.submit(getPower)
 
 
-    def __init__(self, name, groupName, callbacks, wavelength,
-            minPower, maxPower, curPower, color, isEnabled = True,
-            units = 'mW'):
+    def __init__(self, name, groupName, callbacks, wavelength, minPower,
+                 maxPower, curPower, isEnabled=True, units='mW'):
         # Validation:
         required = set(['getPower', 'setPower'])
         missing = required.difference(callbacks)
@@ -123,16 +116,8 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         self.maxPower = maxPower
         self.lastPower = curPower
         self.powerSetPoint = None
-        self.color = color
         self.isEnabled = isEnabled
         self.units = units
-        ## ToggleButton for selecting the current power level.
-        self.powerToggle = None
-        ## wx.StaticText describing the current power level.
-        self.powerText = None
-
-        # The number of levels in the power menu.
-        self.numPowerLevels = 20
 
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
@@ -169,8 +154,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     ## Toggle accessibility of the handler.
     def setEnabled(self, isEnabled):
         self.isEnabled = isEnabled
-        self.powerToggle.Enable(self.isEnabled)
-        self.powerText.Enable(isEnabled)
 
 
     ## Return True iff we're currently enabled (i.e. GUI is active).
@@ -198,14 +181,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         self.callbacks['setPower'](power)
         self.powerSetPoint = power
         cockpit.util.userConfig.setValue(self.name + '-lightPower', power)
-
-
-    ## Select an arbitrary power output.
-    def setPowerArbitrary(self, parent):
-        value = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-                parent, "Select a power in milliwatts between 0 and %s:" % self.maxPower,
-                "Power (%s):" % self.units, self.powerSetPoint)
-        self.setPower(float(value))
 
 
     ## Simple getter.

@@ -298,11 +298,6 @@ class MicroscopeLaser(MicroscopeBase):
             self._proxy.disable()
 
     def getHandlers(self):
-        wl = self.config.get('wavelength', None)
-        if wl:
-            col = cockpit.util.colors.wavelengthToColor(wl, 0.8)
-        else:
-            col = '0xaaaaaa'
         """Return device handlers. Derived classes may override this."""
         # Querying remote for maxPower can cause delays, so set to None
         # and update later.
@@ -313,9 +308,8 @@ class MicroscopeLaser(MicroscopeBase):
                 'setPower': cockpit.util.threads.callInNewThread(self._proxy.set_power_mw),
                 'getPower': self._proxy.get_power_mw, # Synchronous - can hang threads.
             },
-            wl,# wavelength,
+            self.config.get('wavelength', None),
             0, None, 20, #minPower, maxPower, curPower,
-            col, #colour
             isEnabled=True))
         trigsource = self.config.get('triggersource', None)
         trigline = self.config.get('triggerline', None)

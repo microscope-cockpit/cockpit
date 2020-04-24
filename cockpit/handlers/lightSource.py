@@ -50,26 +50,12 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-import wx
-
 from cockpit import depot
 from . import deviceHandler
 from cockpit import events
 
-import cockpit.gui.dialogs.getNumberDialog
-import cockpit.gui.guiUtils
-import cockpit.gui.toggleButton
 import cockpit.util.threads
 
-## List of exposure times to allow the user to set.
-EXPOSURE_TIMES = [1, 5] + list(range(10, 100, 10)) + list(range(100, 1100, 100))
-
-## Color to use for light sources that are in continuous exposure mode.
-CONTINUOUS_COLOR = (255, 170, 0)
-
-## Size of the button we make in the UI.
-BUTTON_SIZE = (120, 40)
 
 ## This handler is for lightsource toggle buttons and exposure time settings,
 # to control if a given illumination source is currently active (and for how
@@ -207,13 +193,6 @@ class LightHandler(deviceHandler.DeviceHandler):
         finally:
             self.enableLock.release()
 
-
-    ## Return True iff we are in continuous-exposure mode. We use the color
-    # of our button as the indicator for that state.
-    def getIsExposingContinuously(self):
-        return self.state == deviceHandler.STATES.constant
-
-
     ## Set a new exposure time, in milliseconds.
     @reset_cache
     def setExposureTime(self, value, outermost=True):
@@ -249,4 +228,3 @@ class LightHandler(deviceHandler.DeviceHandler):
     ## Let them know what wavelength we are.
     def getSavefileInfo(self):
         return str(self.wavelength)
-
