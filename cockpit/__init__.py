@@ -171,9 +171,9 @@ class CockpitApp(wx.App):
                 title=w.GetTitle()
                 windowstate=cockpit.util.userConfig.getValue(
                                                 'windowState'+title,
-                                                default= 0)
+                                                default=False)
                 #if they were hidden then return them to hidden
-                if windowstate == 0:
+                if not windowstate:
                     # Hide the window until it is called up.
                     w.Hide()
 
@@ -191,9 +191,9 @@ class CockpitApp(wx.App):
                 title=w.GetTitle()
                 windowstate=cockpit.util.userConfig.getValue(
                                                 'windowState'+title,
-                                                default= 0)
+                                                default=False)
                 #if they were hidden then return them to hidden
-                if windowstate == 0:
+                if not windowstate:
                     # Hide the window until it is called up.
                     w.Hide()
 
