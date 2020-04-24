@@ -51,9 +51,6 @@ class ShellWindow(wx.Frame):
         self.SetDropTarget(DropTarget(self))
         self.shell.SetDropTarget(DropTarget(self))
 
-        self.Show()
-
-
 
 ## Allow users to drag MRC files onto this window to bind them to a variable.
 class DropTarget(wx.FileDropTarget):

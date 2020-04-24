@@ -937,14 +937,7 @@ def makeWindow(parent):
                                  style = wx.CAPTION| wx.RESIZE_BORDER |
                                  wx.MINIMIZE_BOX | wx.CLOSE_BOX)
     TSwindow.SetSize((1500,1000))
-    # TODO - determine if we need to Show the touchscreen or not.
-    # TODO - if the touchscreen is shown, ensure it is shown *on screen* ...
-    # otherwise, it suddenly appears when raised on re-activating the app.
-    #TSwindow.Show()
-    #TSwindow.centerCanvas()
-
 
 ## Transfer a camera image to the mosaic.
 def transferCameraImage():
     mosaic.transferCameraImage()
-

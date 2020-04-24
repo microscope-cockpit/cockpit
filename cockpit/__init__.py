@@ -167,15 +167,10 @@ class CockpitApp(wx.App):
             for w in self.secondaryWindows:
                 #bind close event to just hide for these windows
                 w.Bind(wx.EVT_CLOSE, lambda event, w=w: w.Hide())
-                # get saved state of secondary windows.
-                title=w.GetTitle()
-                windowstate=cockpit.util.userConfig.getValue(
-                                                'windowState'+title,
-                                                default=False)
-                #if they were hidden then return them to hidden
-                if not windowstate:
-                    # Hide the window until it is called up.
-                    w.Hide()
+                config_name = 'windowState' + w.GetTitle()
+                windowstate = cockpit.util.userConfig.getValue(config_name,
+                                                               default=False)
+                w.Show(windowstate)
 
             # Now that the UI exists, we don't need this any more.
             # Sometimes, status doesn't make it into the list, so test.
@@ -187,16 +182,10 @@ class CockpitApp(wx.App):
 
             #now loop over secondary windows open and closeing as needed.
             for w in self.secondaryWindows:
-                # get saved state of secondary windows.
-                title=w.GetTitle()
-                windowstate=cockpit.util.userConfig.getValue(
-                                                'windowState'+title,
-                                                default=False)
-                #if they were hidden then return them to hidden
-                if not windowstate:
-                    # Hide the window until it is called up.
-                    w.Hide()
-
+                config_name = 'windowState' + w.GetTitle()
+                windowstate = cockpit.util.userConfig.getValue(config_name,
+                                                               default=False)
+                w.Show(windowstate)
 
             cockpit.depot.makeInitialPublications()
             cockpit.interfaces.imager.makeInitialPublications()
