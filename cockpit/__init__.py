@@ -165,8 +165,9 @@ class CockpitApp(wx.App):
             self.secondaryWindows = [w for w in wx.GetTopLevelWindows() if w not in self.primaryWindows]
 
             for w in self.secondaryWindows:
-                #bind close event to just hide for these windows
+                # Bind close event to just hide for these windows.
                 w.Bind(wx.EVT_CLOSE, lambda event, w=w: w.Hide())
+                # Show/Hide secondary windows as needed.
                 config_name = 'Show Window ' + w.GetTitle()
                 to_show = cockpit.util.userConfig.getValue(config_name,
                                                            default=False)
@@ -179,13 +180,6 @@ class CockpitApp(wx.App):
             status.Destroy()
 
             self.SetWindowPositions()
-
-            #now loop over secondary windows open and closeing as needed.
-            for w in self.secondaryWindows:
-                config_name = 'Show Window ' + w.GetTitle()
-                to_show = cockpit.util.userConfig.getValue(config_name,
-                                                           default=False)
-                w.Show(to_show)
 
             cockpit.depot.makeInitialPublications()
             cockpit.interfaces.imager.makeInitialPublications()
