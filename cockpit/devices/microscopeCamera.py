@@ -175,8 +175,6 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
                  'prepareForExperiment': self.prepareForExperiment,
                  'getExposureTime': self.getExposureTime,
                  'setExposureTime': self.setExposureTime,
-                 'getImageSizes': self.getImageSizes,
-                 'setImageSize': self.setImageSize,
                  'getSavefileInfo': self.getSavefileInfo,
                  'makeUI': self.makeUI,
                  'softTrigger': self.softTrigger},
@@ -248,11 +246,6 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         return (roi.width//binning.h, roi.height//binning.v)
 
 
-    def getImageSizes(self, name):
-        """Return a list of available image sizes."""
-        return []
-
-
     def getSavefileInfo(self, name):
         """Return an info string describing the measurement."""
         #return "%s: %s image" % (name, self.imageSize)
@@ -300,11 +293,6 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         """Set the exposure time."""
         # Camera uses times in s; cockpit uses ms.
         self._proxy.set_exposure_time(exposureTime / 1000.0)
-
-
-    def setImageSize(self, name, imageSize):
-        pass
-
 
 
     def softTrigger(self, name=None):

@@ -83,10 +83,6 @@ class CameraHandler(deviceHandler.DeviceHandler):
     # - getExposureTime(name, isExact): Returns the time in milliseconds that
     #   the camera is set to expose for when triggered. If isExact is set,
     #   returns a decimal.Decimal instance.
-    # - getImageSizes(name): Return a list of strings describing the available
-    #   image sizes for this camera.
-    # - setImageSize(name, size): Set the image size for this camera to one
-    #   of the values returned by getImageSizes().
     # - prepareForExperiment(name, experiment): Get the camera ready for an
     #   experiment.
     # - Optional: getMinExposureTime(name): returns the minimum exposure time
@@ -237,18 +233,6 @@ class CameraHandler(deviceHandler.DeviceHandler):
     @cached
     def getExposureTime(self, isExact = False):
         return self.callbacks['getExposureTime'](self.name, isExact)
-
-
-    ## Get a list of strings describing the available image sizes (in pixels).
-    def getImageSizes(self):
-        return self.callbacks['getImageSizes'](self.name)
-
-
-    ## Set the image size to one of the options returned by getImageSizes.
-    @reset_cache
-    def setImageSize(self, size):
-        return self.callbacks['setImageSize'](self.name, size)
-
 
     ## Do any necessary preparation for the camera to participate in an 
     # experiment.

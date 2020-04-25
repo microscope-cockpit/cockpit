@@ -134,12 +134,6 @@ class ViewPanel(wx.Panel):
         if self.curCamera is not None:
             item = menu.Append(-1, "Disable %s" % self.curCamera.descriptiveName)
             self.Bind(wx.EVT_MENU, lambda event: self.curCamera.toggleState(), item)
-            menu.InsertSeparator(1)
-            for size in self.curCamera.getImageSizes():
-                item = menu.Append(-1, "Set image size to %s" % str(size))
-                self.Bind(wx.EVT_MENU,
-                        lambda event, size = size: self.curCamera.setImageSize(size),
-                        item)                
         else:
             # Get all inactive cameras.
             cameras = depot.getHandlersOfType(depot.CAMERA)
