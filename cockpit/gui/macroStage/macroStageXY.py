@@ -87,38 +87,12 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         ## Primitive objects - a map of specification to object.
         self.primitives = {}
 
-        hardLimits = cockpit.interfaces.stageMover.getHardLimits()
-        self.minX, self.maxX = hardLimits[0]
-        self.minY, self.maxY = hardLimits[1]
-        ## X extent of the stage, in microns.
-        stageWidth = self.maxX - self.minX
-        ## Y extent of the stage, in microns.
-        stageHeight = self.maxY - self.minY
-        ## Max of X or Y stage extents.
-        self.maxExtent = max(stageWidth, stageHeight)
-        ## X and Y view extent.
-        if stageHeight > stageWidth:
-            self.viewExtent = 1.2 * stageHeight
-            self.viewDeltaY = stageHeight * 0.1
-        else:
-            self.viewExtent = 1.05 * stageWidth
-            self.viewDeltaY = stageHeight * 0.05
-        # Push out the min and max values a bit to give us some room around
-        # the stage to work with. In particular we need space below the display
-        # to show our legend.
-        self.centreX = ((self.maxX - self.minX) / 2) + self.minX
-        self.centreY = ((self.maxY - self.minY) / 2) + self.minY
-        self.minX = self.centreX - self.viewExtent / 2
-        self.maxX = self.centreX + self.viewExtent / 2
-        self.minY = self.centreY - self.viewExtent / 2 - self.viewDeltaY
-        self.maxY = self.centreY + self.viewExtent / 2 - self.viewDeltaY
-
-        ## Amount of vertical space, in stage coordinates, to allot to one
-        # line of text.
-        self.textLineHeight = self.viewExtent * .05
         ## Size of text to draw. I confess I don't really understand how this
         # corresponds to anything, but it seems to work out.
-        self.textSize = .004
+        self.textSize = .005
+        self.textLineHeight = 1500
+
+        self.calculateMeasures()
 
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
         self.Bind(wx.EVT_LEFT_UP, self.OnLeftClick)
@@ -134,6 +108,38 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 "Right click for gotoXYZ and double-click to toggle displaying of mosaic " +
                 "tiles."))
 
+    ## Dynamically calculate the various measures used for drawing
+    def calculateMeasures(self):
+        # All measures are defined in the local (stage) space,
+        # which has micrometers as units
+        width, height = self.GetClientSize()
+        hardLimits = cockpit.interfaces.stageMover.getHardLimits()
+
+        # Initialise the view area to the area of the stage's hard limits
+        self.minX, self.maxX = hardLimits[0]
+        self.minY, self.maxY = hardLimits[1]
+
+        # Add margins for good measure and ensure they cover at least the largest objective offsets
+        _maxOffsetX = max([abs(offsets[0]) for offsets in self.listOffsets])
+        _maxOffsetY = max([abs(offsets[1]) for offsets in self.listOffsets])
+        self.minX -= max(_maxOffsetX, 1000)
+        self.maxX += max(_maxOffsetX, 1000)
+        self.minY -= max(_maxOffsetY, 10000)
+        self.maxY += max(_maxOffsetY, 1500)
+
+        # Correct the view area to preserve the aspect ratio of the hard limits
+        aratio_viewport = width / height
+        aratio_viewarea = (self.maxX - self.minX) / (self.maxY - self.minY)
+        if aratio_viewport >= aratio_viewarea:
+            # The viewport is wider than what's required => expose more horizontal scene space
+            extra_space = ((aratio_viewport - aratio_viewarea) / aratio_viewarea) * (self.maxX - self.minX)
+            self.minX -= extra_space / 2
+            self.maxX += extra_space / 2
+        else:
+            # The viewport is taller than what's required => expose more vertical scene space
+            extra_space = ((aratio_viewarea - aratio_viewport) / aratio_viewport) * (self.maxY - self.minY)
+            self.minY -= extra_space / 2
+            self.maxY += extra_space / 2
 
     ## Safety limits have changed, which means we need to force a refresh.
     # \todo Redrawing everything just to tackle the safety limits is a bit
@@ -144,8 +150,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             wx.CallAfter(self.Refresh)
 
 
-    def modelView(self):
-        ## Transform from stage co-ordinates to screen.
+    def projectionMatrix(self):
+        ## Transform from stage co-ordinates to normalized device coordinates (NDC)
         dx = self.maxX - self.minX
         dy = self.maxY - self.minY
         # Column-major ordering
@@ -179,6 +185,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
             glViewport(0, 0, width, height)
 
+            self.calculateMeasures()
+
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             squareOffsets = [(0, 0), (0, 1), (1, 1), (1, 0)]
@@ -188,11 +196,11 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             hardLimits = cockpit.interfaces.stageMover.getHardLimits()[:2]
             # Rearrange limits to (x, y) tuples.
             hardLimits = list(zip(hardLimits[0], hardLimits[1]))
-            stageHeight = abs(hardLimits[1][0] - hardLimits[1][1])
+            maxStageExtent = max(hardLimits[1][0] - hardLimits[0][0], hardLimits[1][1] - hardLimits[0][1])
 
             # Set up transform from stage to screen units
-            glMatrixMode(GL_MODELVIEW)
-            glLoadMatrixf(self.modelView())
+            glMatrixMode(GL_PROJECTION)
+            glLoadMatrixf(self.projectionMatrix())
 
             #Loop over objective offsets to draw limist in multiple colours.
             for obj in self.listObj:
@@ -217,8 +225,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 # corners, and coordinates. If we're currently setting safeties,
                 # then the second corner is the current mouse position.
                 safeties = cockpit.interfaces.stageMover.getSoftLimits()[:2]
-                x1, x2 = safeties[0]
-                y1, y2 = safeties[1]
+                safeties = list(zip(safeties[0], safeties[1]))
+                x1, y1 = safeties[0]
+                x2, y2 = safeties[1]
                 if self.firstSafetyMousePos is not None:
                     x1, y1 = self.firstSafetyMousePos
                     x2, y2 = self.lastMousePos
@@ -243,10 +252,10 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 glColor3f(0, 0, 0)
                 glBegin(GL_LINES)
                 for (vx, vy), (dx, dy) in [
-                        (softLimits[0], (self.maxExtent * .1, 0)),
-                        (softLimits[0], (0, self.maxExtent * .1)),
-                        (softLimits[1], (-self.maxExtent * .1, 0)),
-                        (softLimits[1], (0, -self.maxExtent * .1))]:
+                        (softLimits[0], (maxStageExtent * .1, 0)),
+                        (softLimits[0], (0, maxStageExtent * .1)),
+                        (softLimits[1], (-maxStageExtent * .1, 0)),
+                        (softLimits[1], (0, -maxStageExtent * .1))]:
                     secondVertex = [vx + dx, vy + dy]
                     glVertex2f(vx-offset[0], vy+offset[1])
                     glVertex2f(secondVertex[0]-offset[0],
@@ -256,11 +265,12 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             # Now the coordinates. Only draw them if the soft limits aren't
             # the hard limits, to avoid clutter.
             if safeties != hardLimits:
-                for i, (dx, dy) in enumerate([(4000, -700), (2000, 400)]):
+                for i, (dx, dy) in enumerate([(400, -1000), (0, 800)]):
                     x = softLimits[i][0]
                     y = softLimits[i][1]
-                    self.drawTextAt((x + dx, y + dy),
-                                    "(%d, %d)" % (x, y), size = self.textSize * .75)
+                    label = "({:d}, {:d})".format(x, y)
+                    self.drawTextAt((x + dx*len(label), y + dy),
+                                    label, size=self.textSize * .75)
 
             glDisable(GL_LINE_STIPPLE)
 
@@ -285,14 +295,12 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glLineWidth(2)
             # Draw stage position
             motorPos = self.curStagePosition[:2]
-            squareSize = self.maxExtent * .025
+            squareSize = maxStageExtent * 0.025
             glColor3f(*colour)
             glBegin(GL_LINE_LOOP)
             for (x, y) in squareOffsets:
-                glVertex2f(motorPos[0]-offset[0] +
-                                  squareSize * x - squareSize / 2,
-                                  motorPos[1]+offset[1] +
-                                  squareSize * y - squareSize / 2)
+                glVertex2f(motorPos[0] - offset[0] + squareSize * x - squareSize / 2,
+                           motorPos[1] + offset[1] + squareSize * y - squareSize / 2)
             glEnd()
 
             # Draw motion crosshairs
@@ -302,10 +310,10 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 if stepSize is None:
                     # No step control along this axis.
                     continue
-                offset = [0, 0]
-                offset[i] = stepSize
-                glVertex2f(motorPos[0] - offset[0], motorPos[1] - offset[1])
-                glVertex2f(motorPos[0] + offset[0], motorPos[1] + offset[1])
+                hairLengths = [0, 0]
+                hairLengths[i] = stepSize
+                glVertex2f(motorPos[0] - offset[0] - hairLengths[0], motorPos[1] + offset[1] - hairLengths[1])
+                glVertex2f(motorPos[0] - offset[0] + hairLengths[0], motorPos[1] + offset[1] + hairLengths[1])
             glEnd()
 
             # Draw direction of motion
@@ -314,30 +322,22 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             if sum(numpy.fabs(delta)) > macroStageBase.MIN_DELTA_TO_DISPLAY:
                 self.drawArrow((motorPos[0]- self.offset[0],
                                 motorPos[1]+self.offset[1]), delta, (0, 0, 1),
-                        arrowSize = self.maxExtent * .1,
-                        arrowHeadSize = self.maxExtent * .025)
+                        arrowSize = maxStageExtent * .1,
+                        arrowHeadSize = maxStageExtent * .025)
                 glLineWidth(1)
-
-            # The crosshairs don't always draw large enough to show,
-            # so ensure that at least one pixel in the middle
-            # gets drawn.
-            glBegin(GL_POINTS)
-            glVertex2f(motorPos[0]-self.offset[0],
-                              motorPos[1]+self.offset[1])
-            glEnd()
 
             # Draw scale bar
             glColor3f(0, 0, 0)
             glLineWidth(1)
             glBegin(GL_LINES)
-            yOffset = self.minY + 0.9 * (self.viewDeltaY + 0.5 * (self.viewExtent - stageHeight))
+            yOffset = hardLimits[0][1] - 3000
             glVertex2f(hardLimits[0][0], yOffset)
-            glVertex2f(hardLimits[0][1], yOffset)
+            glVertex2f(hardLimits[1][0], yOffset)
             # Draw notches in the scale bar every 1mm.
-            for scaleX in range(int(hardLimits[0][0]), int(hardLimits[0][1]) + 1000, 1000):
-                width = self.viewExtent * .015
+            for scaleX in range(int(hardLimits[0][0]), int(hardLimits[1][0]) + 1000, 1000):
+                width = (hardLimits[1][1] - hardLimits[0][1]) * .04
                 if scaleX % 5000 == 0:
-                    width = self.viewExtent * .025
+                    width = width * 3
                 y1 = yOffset - width / 2
                 y2 = yOffset + width / 2
                 glVertex2f(scaleX, y1)
@@ -347,8 +347,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
             # Draw stage coordinates. Use a different color for the mover
             # currently under keypad control.
-            coordsLoc = (self.maxX - self.viewExtent * .05,
-                    self.minY + self.viewExtent * .1)
+            coordsLoc = (hardLimits[1][0], hardLimits[0][1] - 6000)
             allPositions = cockpit.interfaces.stageMover.getAllPositions()
             curControl = cockpit.interfaces.stageMover.getCurHandlerIndex()
             for axis in [0, 1]:
@@ -359,7 +358,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 self.drawStagePosition(['X:', 'Y:'][axis],
                         positions, curControl, step,
                         (coordsLoc[0], coordsLoc[1] - axis * self.textLineHeight),
-                        self.viewExtent * .25, self.viewExtent * .05,
+                        7000, 1500,
                         self.textSize)
 
             events.publish('macro stage xy draw', self)
