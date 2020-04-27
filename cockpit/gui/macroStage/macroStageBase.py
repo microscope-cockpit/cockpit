@@ -250,13 +250,27 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
     def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
         width, height = self.GetClientSize()
         aspect = float(height) / width
+        if aspect >= 1.0:
+            # tall
+            scale_w = 1.0
+            scale_h = 1.0 / aspect
+        else:
+            # wide
+            scale_w = 1.0 * aspect
+            scale_h = 1.0
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         glLoadIdentity()
         loc = self.scaledVertex(loc[0], loc[1], True)
         glTranslatef(loc[0], loc[1], 0)
-        glScalef(size * aspect, size, size)
+        glScalef(size * scale_w, size * scale_h, 1.0)
         glColor3fv(color)
         self.font.render(text)
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
         glPopMatrix()
 
 
