@@ -40,7 +40,6 @@ from cockpit import events
 import cockpit.gui.guiUtils
 import cockpit.gui.device
 from cockpit.devices.microscopeDevice import MicroscopeBase
-import cockpit.gui.toggleButton
 import cockpit.handlers.stagePositioner
 import Pyro4
 from . import stage

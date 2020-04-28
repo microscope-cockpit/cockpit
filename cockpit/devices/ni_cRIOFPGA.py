@@ -53,7 +53,6 @@ from itertools import chain
 from functools import reduce
 
 from cockpit import depot, events
-import cockpit.gui.toggleButton
 import cockpit.handlers.executor
 import cockpit.handlers.imager
 import cockpit.handlers.lightSource

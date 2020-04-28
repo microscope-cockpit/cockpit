@@ -69,7 +69,6 @@ from . import fileViewerWindow
 import cockpit.interfaces.imager
 from . import joystick
 from . import keyboard
-from . import toggleButton
 import cockpit.util.files
 import cockpit.util.userConfig
 from . import viewFileDropTarget

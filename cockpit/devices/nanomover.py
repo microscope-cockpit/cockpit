@@ -58,7 +58,6 @@ from . import stage
 from cockpit import events
 
 import cockpit.interfaces
-import cockpit.gui.toggleButton
 import cockpit.handlers.genericPositioner
 import cockpit.handlers.stagePositioner
 import cockpit.util.connection
