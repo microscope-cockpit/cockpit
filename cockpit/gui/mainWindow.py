@@ -145,9 +145,8 @@ class MainWindow(wx.Frame):
         snapButton.Bind(wx.EVT_BUTTON, lambda evt: cockpit.interfaces.imager.imager.takeImage())
         buttonSizer.Add(snapButton, 1, wx.EXPAND)
         # Increase font size in top row buttons.
-        bfont = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT).Larger()
         for w in [child.GetWindow() for child in buttonSizer.Children]:
-            w.SetFont(bfont)
+            w.SetFont(w.GetFont().Larger())
         topSizer.Add(buttonSizer)
         topSizer.AddSpacer(ROW_SPACER)
 
