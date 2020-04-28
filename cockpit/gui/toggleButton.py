@@ -189,12 +189,3 @@ class ToggleButton(wx.StaticText):
 
     def toggle(self):
         self.setActive(not self.isActive)
-
-
-## Enable the specified control, and disable all controls in the given list
-# that are not that control.
-def activateOneControl(control, listOfControls):
-    control.activate()
-    for altControl in listOfControls:
-        if altControl != control:
-            altControl.deactivate()
