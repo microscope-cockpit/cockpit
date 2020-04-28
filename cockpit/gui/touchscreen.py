@@ -40,7 +40,6 @@ from cockpit import events
 from cockpit.gui.macroStage.macroStageXY import MacroStageXY
 from cockpit.gui.macroStage.macroStageZ import MacroStageZ
 from cockpit.gui.saveTopBottomPanel import moveZCheckMoverLimits
-from cockpit.gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
 from cockpit.handlers.deviceHandler import STATES
 from cockpit.util import ftgl
 
@@ -826,23 +825,6 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
                           lambda evt, obj=objective: h.changeObjective(obj),
                           id=i)
             cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
-
-
-    def textInfoField(self,title,onText,onColour,offText,offColour):
-        textSizer=wx.BoxSizer(wx.VERTICAL)
-
-
-    def cameraToggle(self,camera,i):
-        camera.toggleState()
-        self.wavelength=camera.wavelength
-        self.color=camera.color
-        isEnabled=camera.isEnabled
-        if isEnabled is True:
-            self.camButton[i].SetLabel("ON")
-            self.SetBackgroundColour(ACTIVE_COLOR)
-        elif isEnabled is False:
-            self.camButton[i].SetLabel("OFF")
-            self.SetBackgroundColour(INACTIVE_COLOR)
 
 
 class LightToggleButton(SBitmapToggleButton):
