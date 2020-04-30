@@ -180,7 +180,6 @@ class Imager:
         while not self.shouldStopVideoMode:
             if not self.activeLights:
                 break
-            start = time.time()
             try:
                 # HACK: only wait for one camera.
                 events.executeAndWaitFor(events.NEW_IMAGE % (list(self.activeCameras)[0].name),
