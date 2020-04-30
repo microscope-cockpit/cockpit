@@ -89,7 +89,8 @@ class FilterHandler(deviceHandler.DeviceHandler):
             filters = self.callbacks['getFilters']()
             for f in filters:
                 if f.position == position:
-                    self.setFilter(f)
+                    pass
+                    #self.setFilter(f)
 
     ### UI functions ####
     def makeSelector(self, parent):
