@@ -189,7 +189,13 @@ def executeAndWaitForOrTimeout(eventType, func, timeout, *args, **kwargs):
     releaser.__abort__ = aborter
 
     oneShotSubscribe(eventType, releaser)
-    func(*args, **kwargs)
+    try:
+        func(*args, **kwargs)
+    except:
+        with subscriberLock:
+            subscribers = eventToOneShotSubscribers[eventType]
+            subscribers.remove(releaser)
+        raise
 
     # If event has not already happened, wait for notification or timeout.
     if not released[0]:
