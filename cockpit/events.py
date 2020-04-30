@@ -51,7 +51,6 @@
 
 
 from itertools import chain
-import re
 import sys
 import threading
 import traceback
@@ -147,27 +146,13 @@ def unsubscribe(eventType, func):
 ## Clear one-shot subscribers on abort. Usually, these were subscribed
 # by executeAndWaitFor, which leaves the calling thread waiting for a
 # lock to be released. On an abort, that event may never happen.
-def clearOneShotSubscribers(pattern=None):
+def clearOneShotSubscribers():
     global eventToOneShotSubscribers
-    if pattern is None:
-        with subscriberLock:
-            for subscriber in chain(*eventToOneShotSubscribers.values()):
-                if hasattr(subscriber, '__abort__'):
-                    subscriber.__abort__()
-            eventToOneShotSubscribers = {}
-    else:
-        with subscriberLock:
-            # Need to make list from filter to avoid dict length change errors
-            # in python 3.
-            clearEvents = list(filter(lambda x: re.match(pattern, x), eventToOneShotSubscribers))
-            for evt in clearEvents:
-                for subscriber in eventToOneShotSubscribers[evt]:
-                    if hasattr(subscriber, '__abort__'):
-                        subscriber.__abort__()
-                    eventToOneShotSubscribers[evt].remove(subscriber)
-                if not eventToOneShotSubscribers[evt]:
-                    # list is empty
-                    del(eventToOneShotSubscribers[evt])
+    with subscriberLock:
+        for subscriber in chain(*eventToOneShotSubscribers.values()):
+            if hasattr(subscriber, '__abort__'):
+                subscriber.__abort__()
+        eventToOneShotSubscribers = {}
 
 subscribe(USER_ABORT, clearOneShotSubscribers)
 
