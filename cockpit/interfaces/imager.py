@@ -180,11 +180,21 @@ class Imager:
         while not self.shouldStopVideoMode:
             if not self.activeLights:
                 break
+            # HACK: only wait for one camera.
+            camera = list(self.activeCameras)[0]
+            # Some cameras drop frames, i.e., takeImage() returns but
+            # an image is never received.  If that happens, videoMode
+            # waits forever since there's no NEW_IMAGE event hence the
+            # timeout.  On top of the time to actual acquire the
+            # image, we add 5 seconds for any processing and transfer
+            # which should be more than enough (see issue #584).
+            timeout = 5.0 + ((camera.getExposureTime()
+                              + camera.getTimeBetweenExposures()) / 1000)
             try:
-                # HACK: only wait for one camera.
-                events.executeAndWaitFor(events.NEW_IMAGE % (list(self.activeCameras)[0].name),
-                        self.takeImage, 
-                        shouldBlock = True, shouldStopVideo = False)
+                events.executeAndWaitForOrTimeout(
+                    events.NEW_IMAGE % (camera.name),
+                    self.takeImage, timeout,
+                    shouldBlock = True, shouldStopVideo = False)
             except Exception as e:
                 print ("Video mode failed:", e)
                 events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
@@ -192,11 +202,6 @@ class Imager:
                 break
         self.amInVideoMode = False
         events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
-        # Our thread could be blocked waiting for an image.
-        # Clear one shot new image subscribers to make sure it
-        # is unblocked.
-        events.clearOneShotSubscribers(pattern="new image")
-
 
 
     ## Stop our video thread, if relevant.
