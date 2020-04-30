@@ -74,7 +74,7 @@ import cockpit.util.userConfig
 from . import viewFileDropTarget
 from cockpit.gui.device import OptionButtons
 from cockpit.gui import mainPanels
-
+import cockpit.gui.dialogs.getNumberDialog
 
 ## Window singleton
 window = None
