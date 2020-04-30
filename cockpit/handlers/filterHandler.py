@@ -79,13 +79,17 @@ class FilterHandler(deviceHandler.DeviceHandler):
 
     ## Save our settings in the provided dict.
     def onSaveSettings(self, settings):
-        settings[self.name] = self.currentFilter()
+        settings[self.name] = self.callbacks['getPosition']()
 
     ## Load our settings from the provided dict.
     def onLoadSettings(self, settings):
         if self.name in settings:
-            self.setFilter(settings[self.name])
-
+            position = settings[self.name]
+            print (position)
+            filters = self.callbacks['getFilters']()
+            for f in filters:
+                if f.position == position:
+                    self.setFilter(f)
 
     ### UI functions ####
     def makeSelector(self, parent):
