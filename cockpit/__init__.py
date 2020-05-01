@@ -77,6 +77,7 @@ import cockpit.config
 import cockpit.depot
 import cockpit.events
 import cockpit.gui.loggingWindow
+import cockpit.gui.mainWindow
 import cockpit.interfaces.imager
 import cockpit.interfaces.stageMover
 import cockpit.util.files
@@ -136,8 +137,7 @@ class CockpitApp(wx.App):
             status.Update(updateNum, "Initializing user interface...")
             updateNum+=1
 
-            from cockpit.gui import mainWindow
-            frame = mainWindow.makeWindow()
+            frame = cockpit.gui.mainWindow.makeWindow()
             self.SetTopWindow(frame)
 
             for subname in ['camera.window',
