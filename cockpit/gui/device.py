@@ -48,10 +48,6 @@ DEFAULT_SIZE = (120, 24)
 SMALL_SIZE = (60, 18)
 ## Tall size
 TALL_SIZE = (DEFAULT_SIZE[0], 64)
-## Default font
-DEFAULT_FONT = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD)
-## Small font
-SMALL_FONT = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
 ## Background colour
 BACKGROUND = (128, 128, 128)
 
@@ -122,7 +118,7 @@ class Label(wx.StaticText):
         if 'size' not in kwargs:
             kwargs['size'] = DEFAULT_SIZE
         super(Label, self).__init__(*args, **kwargs)
-        self.SetFont(DEFAULT_FONT)
+        self.SetFont(self.GetFont().Bold())
 
 
 class ValueDisplay(wx.BoxSizer):
@@ -133,13 +129,13 @@ class ValueDisplay(wx.BoxSizer):
         label = Label(
             parent=parent, label=(' ' + label.strip(':') + ':'),
             size=SMALL_SIZE, style=wx.ALIGN_LEFT)
-        label.SetFont(SMALL_FONT)
+        label.SetFont(label.GetFont().Smaller())
         self.label = label
         self.Add(label)
         self.valDisplay = Label(
             parent=parent, label=str(value),
             size=SMALL_SIZE, style=(wx.ALIGN_RIGHT | wx.ST_NO_AUTORESIZE))
-        self.valDisplay.SetFont(SMALL_FONT)
+        self.valDisplay.SetFont(self.valDisplay.GetFont().Smaller())
         self.Add(self.valDisplay)
         self.formatStr = (formatStr or r'%.6s') + (unitStr or '') + ' '
 
@@ -178,7 +174,7 @@ class MultilineDisplay(wx.StaticText):
             n = kwargs.pop('numLines')
             kwargs['size'] = (DEFAULT_SIZE[0], n * DEFAULT_SIZE[1])
         super(MultilineDisplay, self).__init__(*args, **kwargs)
-        self.SetFont(SMALL_FONT)
+        self.SetFont(self.GetFont().Smaller())
 
 
 class Menu(wx.Menu):
