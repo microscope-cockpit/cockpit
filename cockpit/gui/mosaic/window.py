@@ -319,9 +319,9 @@ class MosaicCommon(object):
 
 ## This class handles the UI of the mosaic.
 class MosaicWindow(wx.Frame, MosaicCommon):
+    SHOW_DEFAULT = True
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
-        self.SetWindowStyle(self.GetWindowStyle() | wx.FRAME_NO_TASKBAR)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         ## Mapping of primitive specifications to Primitives.
@@ -1310,9 +1310,7 @@ window = None
 
 def makeWindow(parent):
     global window
-    window = MosaicWindow(parent, title = "Mosaic view",
-            style = wx.CAPTION | wx.MINIMIZE_BOX | wx.RESIZE_BORDER)
-    window.Show()
+    window = MosaicWindow(parent, title="Mosaic view")
     window.centerCanvas()
 
 

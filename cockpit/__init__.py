@@ -137,46 +137,36 @@ class CockpitApp(wx.App):
             status.Update(updateNum, "Initializing user interface...")
             updateNum+=1
 
-            frame = cockpit.gui.mainWindow.makeWindow()
-            self.SetTopWindow(frame)
+            main_window = cockpit.gui.mainWindow.makeWindow()
+            self.SetTopWindow(main_window)
 
-            for subname in ['camera.window',
-                            'mosaic.window',
-                            'macroStage.macroStageWindow']:
-                module = importlib.import_module('cockpit.gui.' + subname)
-                status.Update(updateNum, ' ... ' + subname)
-                updateNum+=1
-                module.makeWindow(frame)
-            # At this point, we have all the main windows are displayed.
-            self.primaryWindows = [w for w in wx.GetTopLevelWindows()]
-
-            # Now create secondary windows. These are single instance
-            # windows that won't appear in the primary window marshalling
-            # list.
-            status.Update(updateNum, " ... secondary windows")
-            updateNum+=1
-            for module_name in ['cockpit.gui.shellWindow',
+            for module_name in ['cockpit.gui.camera.window',
+                                'cockpit.gui.mosaic.window',
+                                'cockpit.gui.macroStage.macroStageWindow',
+                                'cockpit.gui.shellWindow',
                                 'cockpit.gui.touchscreen',
                                 'cockpit.util.intensity']:
                 module = importlib.import_module(module_name)
-                module.makeWindow(frame)
+                status.Update(updateNum, ' ... ' + module_name)
+                updateNum += 1
+                module.makeWindow(main_window)
 
-            # All secondary windows created.
-            self.secondaryWindows = [w for w in wx.GetTopLevelWindows() if w not in self.primaryWindows]
-
-            for w in self.secondaryWindows:
-                # Bind close event to just hide for these windows.
-                w.Bind(wx.EVT_CLOSE, lambda event, w=w: w.Hide())
-                # Show/Hide secondary windows as needed.
-                config_name = 'Show Window ' + w.GetTitle()
+            for window in wx.GetTopLevelWindows():
+                # Bind close event hide these windows.
+                if window is not main_window:
+                    window.Bind(wx.EVT_CLOSE, lambda event, w=window: w.Hide())
+                # Show/Hide windows at start is decided with:
+                #   1. check userConfig (value from last time)
+                #   2. check window class property SHOW_DEFAULT
+                #   3. if none of the above is set, hide
+                default_show = getattr(window, 'SHOW_DEFAULT', False)
+                config_name = 'Show Window ' + window.GetTitle()
                 to_show = cockpit.util.userConfig.getValue(config_name,
-                                                           default=False)
-                w.Show(to_show)
+                                                           default=default_show)
+                window.Show(to_show)
 
             # Now that the UI exists, we don't need this any more.
             # Sometimes, status doesn't make it into the list, so test.
-            if status in self.primaryWindows:
-                self.primaryWindows.remove(status)
             status.Destroy()
 
             self.SetWindowPositions()

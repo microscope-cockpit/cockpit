@@ -22,11 +22,14 @@ import wx.py.shell
 
 window = None
 
+class ShellWindow(wx.py.shell.ShellFrame):
+    SHOW_DEFAULT = False
+
 def makeWindow(parent):
     global window
     # parent is None otherwise some keyboard keys are intercepted and
     # won't work (up/down arrows when selecting an auto-complete
     # choice).  Probably the keyboard intercepts should be changed.
-    window = wx.py.shell.ShellFrame(None)
+    window = ShellWindow(None)
     # Default icon for the ShellFrame is the PyCrust, so replace it.
     window.SetIcon(parent.GetIcon())

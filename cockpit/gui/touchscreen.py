@@ -102,6 +102,7 @@ class SetVariable(wx.Window):
 
 ## This class handles the UI of the mosaic.
 class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
+    SHOW_DEFAULT = False
     ## A number of properties are needed to fetch live values from the mosaic
     # window. These are used in MosaicWindow methods that are rebound to
     # our instance here to duplicate the same view.
@@ -915,9 +916,7 @@ TSwindow = None
 
 def makeWindow(parent):
     global TSwindow
-    TSwindow = TouchScreenWindow(parent, title = "Touch Screen view",
-                                 style = wx.CAPTION| wx.RESIZE_BORDER |
-                                 wx.MINIMIZE_BOX | wx.CLOSE_BOX)
+    TSwindow = TouchScreenWindow(parent, title="Touch Screen view")
     TSwindow.SetSize((1500,1000))
 
 ## Transfer a camera image to the mosaic.

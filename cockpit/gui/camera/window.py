@@ -64,10 +64,10 @@ from . import viewPanel
 
 ## This class provides a grid of camera displays.
 class CamerasWindow(wx.Frame):
+    SHOW_DEFAULT = True
     def __init__(self, parent):
-        wx.Frame.__init__(self, parent, title = "Camera views",
-                          style=wx.FRAME_NO_TASKBAR | wx.CAPTION)
-        
+        super().__init__(parent, title="Camera views")
+
         self.numCameras = len(depot.getHandlersOfType(depot.CAMERA))
 
         self.panel = wx.Panel(self)
@@ -85,17 +85,8 @@ class CamerasWindow(wx.Frame):
         events.subscribe("image pixel info", self.onImagePixelInfo)
         cockpit.gui.keyboard.setKeyboardHandlers(self)
 
-        self.Bind(wx.EVT_CLOSE, self.onClose)
-
         self.resetGrid()
         self.SetDropTarget(cockpit.gui.viewFileDropTarget.ViewFileDropTarget(self))
-
-
-    ## The window is closed; use that as a proxy for closing the program,
-    # even though we aren't the main window.
-    def onClose(self, event):
-        events.publish('program exit')
-        event.Skip()
 
 
     @cockpit.util.threads.callInMainThread
@@ -156,7 +147,6 @@ window = None
 def makeWindow(parent):
     global window
     window = CamerasWindow(parent)
-    window.Show()
 
 
 ## Simple passthrough.

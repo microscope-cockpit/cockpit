@@ -65,10 +65,9 @@ import cockpit.util.logger
 # output (stdout and stderr) from the rest of the program. This simplifies
 # debugging in many ways.
 class LoggingWindow(wx.Frame):
-    def __init__(self, parent, title = 'Logging panels',
-                 style = wx.CAPTION | wx.MAXIMIZE_BOX | wx.FRAME_NO_TASKBAR |
-                         wx.RESIZE_BORDER ):
-        wx.Frame.__init__(self, parent, title = title, style = style)
+    SHOW_DEFAULT = True
+    def __init__(self, parent, title='Logging panels'):
+        super().__init__(parent, title=title)
 
         self.auiManager = wx.aui.AuiManager()
         self.auiManager.SetManagedWindow(self)
@@ -132,4 +131,3 @@ window = None
 def makeWindow(parent):
     global window
     window = LoggingWindow(parent)
-    window.Show()

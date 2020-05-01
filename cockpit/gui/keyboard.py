@@ -129,11 +129,6 @@ def setKeyboardHandlers(window):
 ## Pop up a menu under the mouse that helps the user find a window they may
 # have lost.
 def martialWindows(parent):
-    primaryWindows = wx.GetApp().primaryWindows
-    secondaryWindows = wx.GetApp().secondaryWindows
-    otherWindows = [w for w in wx.GetTopLevelWindows()
-                        if w not in (primaryWindows + secondaryWindows)]
-    # windows = wx.GetTopLevelWindows()
     menu = wx.Menu()
 
     menu_item = menu.Append(wx.ID_ANY, "Reset window positions")
@@ -141,38 +136,21 @@ def martialWindows(parent):
                 lambda e: wx.GetApp().SetWindowPositions(),
                 menu_item)
 
-    #for i, window in enumerate(windows):
-    for i, window in enumerate(primaryWindows):
+    for window in wx.GetTopLevelWindows():
+        if window is parent:
+            # No need to show this sub menu for the window that is
+            # requesting the window (which should only be the main
+            # window anyway).
+            continue
         if not window.GetTitle():
             # Sometimes we get bogus top-level windows; no idea why.
             # Just skip them.
             # \todo Figure out where these windows come from and either get
             # rid of them or fix them so they don't cause trouble here.
             continue
-        subMenu = wx.Menu()
-        menu_item = subMenu.Append(wx.ID_ANY, "Raise to top")
-        parent.Bind(wx.EVT_MENU,
-                    lambda e, w=window: w.Raise(),
-                    menu_item)
-        menu_item = subMenu.Append(wx.ID_ANY, "Move to mouse")
-        parent.Bind(wx.EVT_MENU,
-                    lambda e, w=window: w.SetPosition(wx.GetMousePosition()),
-                    menu_item)
-        menu_item = subMenu.Append(wx.ID_ANY, "Move to top-left corner")
-        parent.Bind(wx.EVT_MENU,
-                    lambda e, w=window: w.SetPosition((0, 0)),
-                    menu_item)
-        menu.AppendSubMenu(subMenu, window.GetTitle())
 
-    menu.AppendSeparator()
-    for i, window in enumerate(secondaryWindows):
-        if not window.GetTitle():
-            # Sometimes we get bogus top-level windows; no idea why.
-            # Just skip them.
-            # \todo Figure out where these windows come from and either get
-            # rid of them or fix them so they don't cause trouble here.
-            continue
         subMenu = wx.Menu()
+
         def show_or_hide(evt, w=window):
             # The window might be hidden but maybe it's just iconized
             # (minimized), or maybe it's both.  If it's iconized we
@@ -183,9 +161,10 @@ def martialWindows(parent):
             else:
                 w.Show(not w.IsShown())
         menu_item = subMenu.Append(wx.ID_ANY, "Show/Hide")
-        parent.Bind(wx.EVT_MENU,
-                    show_or_hide,
-                    menu_item)
+        parent.Bind(wx.EVT_MENU, show_or_hide, menu_item)
+
+        menu_item = subMenu.Append(wx.ID_ANY, "Raise to top")
+        parent.Bind(wx.EVT_MENU, lambda e, w=window: w.Raise(), menu_item)
 
         menu_item = subMenu.Append(wx.ID_ANY, "Move to mouse")
         parent.Bind(wx.EVT_MENU,
@@ -210,32 +189,6 @@ def martialWindows(parent):
                     lambda e: Popen(args, shell=shell),
                     menu_item)
 
-    menu.AppendSeparator()
-    for i, window in enumerate(otherWindows):
-        if not window.GetTitle() or not window.IsShown():
-            # Sometimes we get bogus top-level windows; no idea why.
-            # Just skip them.
-            # Also, some windows are hidden rather than destroyed
-            # (e.g. the experiment setup window). Skip those, too.
-            # \todo Figure out where these windows come from and either get
-            # rid of them or fix them so they don't cause trouble here.
-            continue
-        subMenu = wx.Menu()
-        menu_item = subMenu.Append(wx.ID_ANY, "Raise to top")
-        parent.Bind(wx.EVT_MENU,
-                    lambda e, window = window: window.Raise(),
-                    menu_item)
-        menu_item = subMenu.Append(wx.ID_ANY, "Move to mouse")
-        parent.Bind(wx.EVT_MENU,
-                    lambda e, w=window: w.SetPosition(wx.GetMousePosition()),
-                    menu_item)
-        menu_item = subMenu.Append(wx.ID_ANY, "Move to top-left corner")
-        parent.Bind(wx.EVT_MENU,
-                    lambda e, w=window: w.SetPosition((0, 0)),
-                    menu_item)
-
-        menu_item = menu.Append(wx.ID_ANY, window.GetTitle(), subMenu)
-
     for d in filter(lambda x: hasattr(x, "showDebugWindow"),
                     chain(depot.getAllHandlers(), depot.getAllDevices())):
         menu_item = menu.Append(wx.ID_ANY, 'debug  %s  %s' % (d.__class__.__name__, d.name))
@@ -247,7 +200,7 @@ def martialWindows(parent):
 
 #Function to show/hide the pythion shell window
 def showHideShell(parent):
-    secondaryWindows = wx.GetApp().secondaryWindows
-    for window in secondaryWindows:
-        if (window.GetTitle() == 'PyShell'):
+    for window in wx.GetTopLevelWindows():
+        if window.GetTitle() == 'PyShell':
             window.Show(not window.IsShown())
+            break

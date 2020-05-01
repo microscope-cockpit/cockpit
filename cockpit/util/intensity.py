@@ -231,6 +231,7 @@ class IntensityProfiler(object):
 
 class IntensityProfilerFrame(wx.Frame):
     """This class provides a UI for IntensityProfiler."""
+    SHOW_DEFAULT = False
     def __init__(self, parent=None):
         super(IntensityProfilerFrame, self).__init__(parent, title="SIM intensity profile")
         self.profiler = IntensityProfiler()
@@ -498,8 +499,6 @@ def makeWindow(parent):
     """Call from another app to get a single window instance."""
     global window
     window = IntensityProfilerFrame(parent)
-    #window.Bind(wx.EVT_CLOSE, lambda event: window.Hide())
-    #return window
 
 
 if __name__ == '__main__':

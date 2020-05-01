@@ -70,9 +70,9 @@ import wx
 # related to the UIs the MacroStage instances provide but is not
 # tightly bound to any one of them.
 class MacroStageWindow(wx.Frame):
-    def __init__(self, parent, title='Macro Stage', id=wx.ID_ANY,
-                 style=wx.CAPTION|wx.FRAME_NO_TASKBAR):
-        wx.Frame.__init__(self, parent, id, title, style = style)
+    SHOW_DEFAULT = True
+    def __init__(self, parent, title='Macro Stage'):
+        super().__init__(parent, title=title)
 
         # For relative sizing of items. The overall window is
         # (width * 10) by (height * 8) pixels. The ratio of
@@ -110,8 +110,6 @@ class MacroStageWindow(wx.Frame):
         self.SetSizerAndFit(self.sizer)
         self.SetBackgroundColour((255, 255, 255))
         self.Layout()
-        self.Show(True)
-
         cockpit.gui.keyboard.setKeyboardHandlers(self)
 
 
