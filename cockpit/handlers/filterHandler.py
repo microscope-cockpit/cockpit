@@ -24,6 +24,7 @@ from cockpit import depot
 from cockpit import events
 import cockpit.gui
 import wx
+import cockpit.util.threads
 
 class Filter(object):
     """An individual filter."""
@@ -89,8 +90,7 @@ class FilterHandler(deviceHandler.DeviceHandler):
             filters = self.callbacks['getFilters']()
             for f in filters:
                 if f.position == position:
-                    pass
-                    #self.setFilter(f)
+                    self.setFilter(f)
 
     ### UI functions ####
     def makeSelector(self, parent):
@@ -121,7 +121,7 @@ class FilterHandler(deviceHandler.DeviceHandler):
             if f.position == position:
                 return f
 
-
+    @cockpit.util.threads.callInMainThread
     def updateAfterMove(self, *args):
         # Accept *args so that can be called directly as a Pyro callback
         # or an event handler.
