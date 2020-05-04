@@ -140,8 +140,6 @@ def publish(event: str, *args, **kwargs) -> None:
 def oneShotSubscribe(event: str, func: _Subscriber):
     return _one_shot_publisher.subscribe(event, func)
 
-def clearOneShotSubscribers() -> None:
-    return _one_shot_publisher.clear()
 
 # Clear one-shot subscribers on abort.  Usually, these were subscribed
 # by executeAndWaitFor, which leaves the calling thread waiting for a
