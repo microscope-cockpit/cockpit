@@ -86,7 +86,6 @@ class FilterHandler(deviceHandler.DeviceHandler):
     def onLoadSettings(self, settings):
         if self.name in settings:
             position = settings[self.name]
-            print (position)
             filters = self.callbacks['getFilters']()
             for f in filters:
                 if f.position == position:
