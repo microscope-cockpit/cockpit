@@ -141,7 +141,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
         if self.name in settings:
             # only chnage state if we need to as this is slow
             if self.getIsEnabled() != settings[self.name]:
-                self.setEnabled(settings[self.name])
+                self.toggleState()
 
     @property
     def color(self):

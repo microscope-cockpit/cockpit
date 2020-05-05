@@ -134,11 +134,11 @@ class LightHandler(deviceHandler.DeviceHandler):
     ## Load our settings from the provided dict.
     def onLoadSettings(self, settings):
         if self.name in settings:
-            #Only chnbage settings if needed.
-            if self.getExposureTime != settings[self.name]['exposureTime']:
+            #Only change settings if needed.
+            if self.getExposureTime() != settings[self.name]['exposureTime']:
                 self.setExposureTime(settings[self.name]['exposureTime'])
-            if self.getIsEnabled != settings[self.name]['isEnabled']:
-                self.setEnabled(settings[self.name]['isEnabled'])
+            if self.getIsEnabled() != settings[self.name]['isEnabled']:
+                self.toggleState()
 
 
     ## Turn the laser on, off, or set continuous exposure.
