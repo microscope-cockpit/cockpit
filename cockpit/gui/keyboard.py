@@ -234,15 +234,7 @@ def martialWindows(parent):
                     lambda e, w=window: w.SetPosition((0, 0)),
                     menu_item)
 
-        try:
-            menu_item = menu.Append(wx.ID_ANY, window.GetTitle(), subMenu)
-        except TypeError as e:
-            # Sometimes, windows created late (e.g. wx InspectionTool) cause
-            # a weird error here: menu.Append throws a type error, insisting
-            # it needs a String or Unicode type, despite being passed a String
-            # or Unicode type.
-            print("Omitting %s from window - weird wx string/unicode type error."
-                   % window.GetTitle())
+        menu_item = menu.Append(wx.ID_ANY, window.GetTitle(), subMenu)
 
     for d in filter(lambda x: hasattr(x, "showDebugWindow"),
                     chain(depot.getAllHandlers(), depot.getAllDevices())):
