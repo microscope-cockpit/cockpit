@@ -162,9 +162,7 @@ def martialWindows(parent):
         parent.Bind(wx.EVT_MENU,
                     lambda e, w=window: w.SetPosition((0, 0)),
                     menu_item)
-        # Some windows have very long titles (e.g. the Macro Stage View),
-        # so just take the first 50 characters.
-        menu.AppendSubMenu(subMenu, window.GetTitle()[:50])
+        menu.AppendSubMenu(subMenu, window.GetTitle())
 
     menu.AppendSeparator()
     for i, window in enumerate(secondaryWindows):
@@ -194,9 +192,7 @@ def martialWindows(parent):
                     lambda e, w=window: w.SetPosition(wx.GetMousePosition()),
                     menu_item)
 
-        # Some windows have very long titles (e.g. the Macro Stage View),
-        # so just take the first 50 characters.
-        menu.AppendSubMenu(subMenu, window.GetTitle()[:50])
+        menu.AppendSubMenu(subMenu, window.GetTitle())
 
     # Add item to launch valueLogViewer.
     from subprocess import Popen
@@ -238,10 +234,8 @@ def martialWindows(parent):
                     lambda e, w=window: w.SetPosition((0, 0)),
                     menu_item)
 
-        # Some windows have very long titles (e.g. the Macro Stage View),
-        # so just take the first 50 characters.
         try:
-            menu_item = menu.Append(wx.ID_ANY, window.GetTitle()[:50], subMenu)
+            menu_item = menu.Append(wx.ID_ANY, window.GetTitle(), subMenu)
         except TypeError as e:
             # Sometimes, windows created late (e.g. wx InspectionTool) cause
             # a weird error here: menu.Append throws a type error, insisting
