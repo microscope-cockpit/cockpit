@@ -51,8 +51,10 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-## This module creates the primary window. This window houses widgets to 
-# control the most important hardware elements.
+# This module creates the primary window.  This window houses widgets
+# to control the most important hardware elements.  It is only
+# responsible for setting up the user interface; it assume that the
+# devices have already been initialized.
 
 import json
 import os.path
@@ -89,11 +91,9 @@ ROW_SPACER = 12
 COL_SPACER = 8
 
 
-class MainWindow(wx.Frame):
-    ## Construct the Window. We're only responsible for setting up the 
-    # user interface; we assume that the devices have already been initialized.
-    def __init__(self):
-        wx.Frame.__init__(self, parent = None, title = "Cockpit")
+class MainWindowPanel(wx.Panel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # Find out what devices we have to work with.
         lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
 
@@ -113,7 +113,7 @@ class MainWindow(wx.Frame):
         topPanel = wx.Panel(self)
         self.topPanel=topPanel
         topSizer = wx.BoxSizer(wx.VERTICAL)
- 
+
 
         # A row of buttons for various actions we know we can take.
         buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -219,64 +219,17 @@ class MainWindow(wx.Frame):
         ## Panel for holding light sources.
         self.Sizer.Add(mainPanels.LightControlsPanel(self), flag=wx.EXPAND)
 
-        menu_bar = wx.MenuBar()
-        file_menu = wx.Menu()
-        menu_item = file_menu.Append(wx.ID_EXIT)
-        self.Bind(wx.EVT_MENU, self.OnClose, menu_item)
-        menu_bar.Append(file_menu, '&File')
-
-        help_menu = wx.Menu()
-        menu_item = help_menu.Append(wx.ID_ANY, item='Online repository')
-        self.Bind(wx.EVT_MENU,
-                  lambda evt: wx.LaunchDefaultBrowser('https://github.com/MicronOxford/cockpit/'),
-                  menu_item)
-        menu_item = help_menu.Append(wx.ID_ABOUT)
-        self.Bind(wx.EVT_MENU, self._OnAbout, menu_item)
-        menu_bar.Append(help_menu, '&Help')
-
-        self.SetMenuBar(menu_bar)
-
-        self.SetStatusBar(StatusLights(parent=self))
-
-        # Ensure we use our full width if possible.
-        size = self.Sizer.GetMinSize()
-        if size[0] < MAX_WIDTH:
-            self.Sizer.SetMinSize((MAX_WIDTH, size[1]))
-        
-        self.SetSizerAndFit(self.Sizer)
-
         keyboard.setKeyboardHandlers(self)
         self.joystick = joystick.Joystick(self)
-            
+
         self.SetDropTarget(viewFileDropTarget.ViewFileDropTarget(self))
 
-
-        self.Bind(wx.EVT_CLOSE, self.OnClose)
         # Show the list of windows on right-click.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: keyboard.martialWindows(self))
 
-        # Because mainPanels.PanelLabel uses a font larger than the
-        # default, we need to recompute the Frame size at show time.
-        # Workaround for https://trac.wxwidgets.org/ticket/16088
-        if 'gtk3' in wx.PlatformInfo:
-            self.Bind(wx.EVT_SHOW, self.OnShow)
-
-    def OnShow(self, event: wx.ShowEvent) -> None:
-        self.Fit()
-        event.Skip()
-
-    ## Do any necessary program-shutdown events here instead of in the App's
-    # OnExit, since in that function all of the WX objects have been destroyed
-    # already.
-    def OnClose(self, event):
-        events.publish('program exit')
-        event.Skip()
-
-    def _OnAbout(self, event):
-        wx.adv.AboutBox(CockpitAboutInfo(), parent=self)
 
     ## User clicked the "view last file" button; open the last experiment's
-    # file in an image viewer. A bit tricky when there's multiple files 
+    # file in an image viewer. A bit tricky when there's multiple files
     # generated due to the splitting logic. We just view the first one in
     # that case.
     def onViewLastFile(self, event = None):
@@ -311,7 +264,7 @@ class MainWindow(wx.Frame):
 
     def createNewPath(self):
         #get name for new mode
-        # abuse get value dialog which will also return a string. 
+        # abuse get value dialog which will also return a string.
         pathName = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
             parent=self.topPanel, default='', title='New Path Name',
             prompt='Name', atMouse=True)
@@ -332,12 +285,12 @@ class MainWindow(wx.Frame):
                                                        lambda n=name:
                                                        self.setPath(n)),
                                          self.pathList))
-        #and set button value. 
+        #and set button value.
         self.pathButton.setOption(pathName)
         self.currentPath = pathName
 
-                       
-                
+
+
     ## User wants to save the current exposure settings; get a file path
     # to save to, collect exposure information via an event, and save it.
     def onSaveExposureSettings(self, name, event = None):
@@ -356,7 +309,7 @@ class MainWindow(wx.Frame):
         handle.close()
         self.pathButton.setOption(name)
 
-    
+
     ## User wants to load an old set of exposure settings; get a file path
     # to load from, and publish an event with the data.
     def onLoadExposureSettings(self, event = None):
@@ -370,7 +323,7 @@ class MainWindow(wx.Frame):
         handle = open(dialog.GetPath(), 'r')
         modeName=os.path.splitext(os.path.basename(handle.name))[0]
         #get name for new mode
-        # abuse get value dialog which will also return a string. 
+        # abuse get value dialog which will also return a string.
         name = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
             parent=self.topPanel, default=modeName, title='New Path Name',
             prompt='Name')
@@ -384,10 +337,10 @@ class MainWindow(wx.Frame):
                                                        lambda n=name:
                                                        self.setPath(n)),
                                          self.pathList))
-        #and set button value. 
+        #and set button value.
         self.pathButton.setOption(name)
         self.currentPath = name
-       
+
 
         # If we're using the listbox approach to show/hide light controls,
         # then make sure all enabled lights are shown and vice versa.
@@ -409,6 +362,63 @@ class MainWindow(wx.Frame):
         # newly-displayed lights are extending off the edge of the window.
         self.bottomPanel.SetSizerAndFit(self.bottomPanel.GetSizer())
         self.SetSizerAndFit(self.GetSizer())
+
+
+class MainWindow(wx.Frame):
+    def __init__(self):
+        super().__init__(parent=None, title="Cockpit")
+        panel = MainWindowPanel(self)
+
+        menu_bar = wx.MenuBar()
+        file_menu = wx.Menu()
+        menu_item = file_menu.Append(wx.ID_EXIT)
+        self.Bind(wx.EVT_MENU, self.OnClose, menu_item)
+        menu_bar.Append(file_menu, '&File')
+
+        help_menu = wx.Menu()
+        menu_item = help_menu.Append(wx.ID_ANY, item='Online repository')
+        self.Bind(wx.EVT_MENU,
+                  lambda evt: wx.LaunchDefaultBrowser('https://github.com/MicronOxford/cockpit/'),
+                  menu_item)
+        menu_item = help_menu.Append(wx.ID_ABOUT)
+        self.Bind(wx.EVT_MENU, self._OnAbout, menu_item)
+        menu_bar.Append(help_menu, '&Help')
+
+        self.SetMenuBar(menu_bar)
+
+        self.SetStatusBar(StatusLights(parent=self))
+
+        sizer = wx.BoxSizer()
+        sizer.Add(panel)
+        self.SetSizerAndFit(sizer)
+
+        # Ensure we use our full width if possible.
+        min_size = self.Sizer.GetMinSize()
+        if min_size[0] < MAX_WIDTH:
+            self.Sizer.SetMinSize((MAX_WIDTH, min_size[1]))
+
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+        # Because mainPanels.PanelLabel uses a font larger than the
+        # default, we need to recompute the Frame size at show time.
+        # Workaround for https://trac.wxwidgets.org/ticket/16088
+        if 'gtk3' in wx.PlatformInfo:
+            self.Bind(wx.EVT_SHOW, self.OnShow)
+
+
+    def OnShow(self, event: wx.ShowEvent) -> None:
+        self.Fit()
+        event.Skip()
+
+    ## Do any necessary program-shutdown events here instead of in the App's
+    # OnExit, since in that function all of the WX objects have been destroyed
+    # already.
+    def OnClose(self, event):
+        events.publish('program exit')
+        event.Skip()
+
+    def _OnAbout(self, event):
+        wx.adv.AboutBox(CockpitAboutInfo(), parent=self)
 
 
 class StatusLights(wx.StatusBar):
