@@ -116,14 +116,6 @@ class LoggingWindow(wx.Frame):
                     cockpit.util.logger.log.error(''.join(filter(lambda c: ord(c) < 128, self.textCache)))
                 self.textCache = ''
 
-    def WriteToLogger(self, logger):
-        """Write the content of the windows to a logger.
-        """
-        logger.debug("  *** STANDARD OUTPUT FOLLOWS ***")
-        logger.debug(self.stdOut.GetValue())
-        logger.debug("  *** STANDARD ERROR FOLLOWS ***")
-        logger.debug(self.stdErr.GetValue())
-
 
 ## Global singleton
 window = None

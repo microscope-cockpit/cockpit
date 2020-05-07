@@ -223,8 +223,6 @@ class CockpitApp(wx.App):
             cockpit.util.logger.log.error("Error during logout: %s" % e)
             cockpit.util.logger.log.error(traceback.format_exc())
 
-        cockpit.gui.loggingWindow.window.WriteToLogger(cockpit.util.logger.log)
-
         # Manually clear out any parent-less windows that still exist. This
         # can catch some windows that are spawned by WX and then abandoned,
         # typically because of bugs in the program. If we don't do this, then
