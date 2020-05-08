@@ -55,6 +55,7 @@
 from cockpit import events
 import cockpit.gui
 import cockpit.gui.guiUtils
+import cockpit.gui.dialogs.getNumberDialog
 import cockpit.util.datadoc
 import cockpit.util.threads
 
