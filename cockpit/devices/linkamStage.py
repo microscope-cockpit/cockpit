@@ -192,18 +192,6 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
 
 
         events.subscribe(events.USER_ABORT, self.onAbort)
-        #store and recall condensor LED status.
-        events.subscribe('save exposure settings', self.onSaveSettings)
-        events.subscribe('load exposure settings', self.onLoadSettings)
-
-
-    ## Save our settings in the provided dict.
-    def onSaveSettings(self, settings):
-        pass
-
-    ## Load our settings from the provided dict.
-    def onLoadSettings(self, settings):
-        pass
 
 
     def finalizeInitialization(self):
