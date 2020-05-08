@@ -342,28 +342,6 @@ class MainWindowPanel(wx.Panel):
         self.currentPath = name
 
 
-        # If we're using the listbox approach to show/hide light controls,
-        # then make sure all enabled lights are shown and vice versa.
-        if self.lightList is not None:
-            for i, name in enumerate(self.lightList.GetItems()):
-                handler = depot.getHandlerWithName(name)
-                self.lightList.SetStringSelection(name, handler.getIsEnabled())
-            self.onLightSelect()
-
-
-    ## User selected/deselected a light source from self.lightList; determine
-    # which light panels should be shown/hidden.
-    def onLightSelect(self, event = None):
-        selectionIndices = self.lightList.GetSelections()
-        items = self.lightList.GetItems()
-        for light, panel in self.lightToPanel.items():
-            panel.Show(items.index(light.name) in selectionIndices)
-        # Fix display. We need to redisplay ourselves as well in case the
-        # newly-displayed lights are extending off the edge of the window.
-        self.bottomPanel.SetSizerAndFit(self.bottomPanel.GetSizer())
-        self.SetSizerAndFit(self.GetSizer())
-
-
 class MainWindow(wx.Frame):
     def __init__(self):
         super().__init__(parent=None, title="Cockpit")
