@@ -136,11 +136,10 @@ def martialWindows(parent):
                 lambda e: wx.GetApp().SetWindowPositions(),
                 menu_item)
 
+    main_window = wx.GetApp().GetTopWindow()
     for window in wx.GetTopLevelWindows():
-        if window is parent:
-            # No need to show this sub menu for the window that is
-            # requesting the window (which should only be the main
-            # window anyway).
+        if window is main_window:
+            # Don't show this for the main window.
             continue
         if not window.GetTitle():
             # Sometimes we get bogus top-level windows; no idea why.
