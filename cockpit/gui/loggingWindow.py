@@ -65,7 +65,7 @@ import cockpit.util.logger
 # output (stdout and stderr) from the rest of the program. This simplifies
 # debugging in many ways.
 class LoggingWindow(wx.Frame):
-    SHOW_DEFAULT = True
+    SHOW_DEFAULT = False
     def __init__(self, parent, title='Logging panels'):
         super().__init__(parent, title=title)
 
