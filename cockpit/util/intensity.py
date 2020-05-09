@@ -497,7 +497,6 @@ def main():
 
 def makeWindow(parent):
     """Call from another app to get a single window instance."""
-    global window
     window = IntensityProfilerFrame(parent)
 
 

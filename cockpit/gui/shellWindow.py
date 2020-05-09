@@ -20,13 +20,10 @@
 
 import wx.py.shell
 
-window = None
-
 class ShellWindow(wx.py.shell.ShellFrame):
     SHOW_DEFAULT = False
 
 def makeWindow(parent):
-    global window
     window = ShellWindow(parent)
     # Default icon for the ShellFrame is the PyCrust, so replace it.
     window.SetIcon(parent.GetIcon())

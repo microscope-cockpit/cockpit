@@ -120,9 +120,5 @@ class LoggingWindow(wx.Frame):
                 self.textCache = ''
 
 
-## Global singleton
-window = None
-
 def makeWindow(parent):
-    global window
     window = LoggingWindow(parent)

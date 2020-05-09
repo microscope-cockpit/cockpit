@@ -158,17 +158,5 @@ class MacroStageWindow(wx.Frame):
     def setXYLimit(self, *args):
         self.macroStageXY.setXYLimit(*args)
 
-
-
-window = None
-## Create the MacroStageWindow singleton
 def makeWindow(parent):
-    global window
     window = MacroStageWindow(parent)
-
-# Below this point are functions for exposing parts of the
-# MacroStageWindow singleton
-
-## Passthrough
-def setXYLimit():
-    window.setXYLimit()

@@ -162,15 +162,6 @@ def getCameraScaling(camera):
     raise RuntimeError("Tried to get camera scalings for non-active camera [%s]" % camera.name)
 
 
-## As above, but get the relative values used to generate the black/whitepoints.
-def getRelativeCameraScaling(camera):
-    for view in window.views:
-        if view.curCamera is camera:
-            return view.getRelativeScaling()
-    raise RuntimeError("Tried to get camera scalings for non-active camera [%s]" % camera.name)
-
-
-
 ## Retrieve the image currently displayed by the specified camera.
 def getImageForCamera(camera):
     for view in window.views:

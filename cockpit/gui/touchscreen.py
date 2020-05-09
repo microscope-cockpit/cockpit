@@ -909,16 +909,6 @@ class LightToggleButton(SBitmapToggleButton):
         wx.CallAfter(self.Refresh)
 
 
-
-## Global window singleton.
-TSwindow = None
-
-
 def makeWindow(parent):
-    global TSwindow
     TSwindow = TouchScreenWindow(parent, title="Touch Screen view")
     TSwindow.SetSize((1500,1000))
-
-## Transfer a camera image to the mosaic.
-def transferCameraImage():
-    mosaic.transferCameraImage()

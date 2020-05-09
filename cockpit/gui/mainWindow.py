@@ -82,8 +82,6 @@ from cockpit.gui.device import OptionButtons
 from cockpit.gui import mainPanels
 import cockpit.gui.dialogs.getNumberDialog
 
-## Window singleton
-window = None
 
 ## Max width of rows of UI widgets.
 # This number is chosen to match the width of the Macro Stage view.
@@ -529,7 +527,6 @@ def CockpitAboutInfo() -> wx.adv.AboutDialogInfo:
 
 ## Create the window.
 def makeWindow():
-    global window
     window = MainWindow()
     window.Show()
     return window
