@@ -64,6 +64,7 @@ import wx
 import wx.adv
 
 import cockpit.gui
+import cockpit.gui.fileViewerWindow
 
 from cockpit import depot
 from .dialogs.experiment import multiSiteExperiment
@@ -349,6 +350,8 @@ class MainWindow(wx.Frame):
 
         menu_bar = wx.MenuBar()
         file_menu = wx.Menu()
+        menu_item = file_menu.Append(wx.ID_OPEN)
+        self.Bind(wx.EVT_MENU, self.OnOpen, menu_item)
         menu_item = file_menu.Append(wx.ID_EXIT)
         self.Bind(wx.EVT_MENU, self.OnClose, menu_item)
         menu_bar.Append(file_menu, '&File')
@@ -387,6 +390,17 @@ class MainWindow(wx.Frame):
     def OnShow(self, event: wx.ShowEvent) -> None:
         self.Fit()
         event.Skip()
+
+    def OnOpen(self, event: wx.CommandEvent) -> None:
+        filepath = wx.LoadFileSelector('Select file to open', '', parent=self)
+        if not filepath:
+            return
+        try:
+            cockpit.gui.fileViewerWindow.FileViewer(filepath, parent=self)
+        except Exception as ex:
+            cockpit.gui.ExceptionBox('Failed to open \'%s\'' % filepath,
+                                     parent=self)
+
 
     ## Do any necessary program-shutdown events here instead of in the App's
     # OnExit, since in that function all of the WX objects have been destroyed
