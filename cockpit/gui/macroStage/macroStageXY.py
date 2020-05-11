@@ -138,12 +138,13 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.minY = self.scalebar_position - (self.scalebar_width_major / 2)  # vertical bottom of scale bar
 
         # Ensure there is enough space to draw the coordinate and step size labels. The position is slightly offset,
-        # proportionally to the line height, in order to create a small gap from the scale bar.
+        # proportionally to the line height, in order to create a small gap from the top soft stage limit label.
         self.coord_labels_scale_max = 0.0025 * combinedStageExtent
         self.coord_labels_line_height = ((self.font.getFontAscender() - self.font.getFontDescender()) *
                                           self.coord_labels_scale_max)
-        self.coord_labels_position = self.minY - self.coord_labels_line_height * 0.25
-        self.minY = self.coord_labels_position - 2 * self.coord_labels_line_height
+        self.coord_labels_position = (self.maxY + self.coord_labels_line_height * 0.25 +
+                                      2 * self.coord_labels_line_height)
+        self.maxY = self.coord_labels_position
 
         # Add margins for aesthetics and to ensure that all lines are entirely within the view area
         # NOTE: the margins may not be uniform
