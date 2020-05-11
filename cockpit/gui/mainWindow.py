@@ -78,9 +78,7 @@ from . import keyboard
 import cockpit.util.files
 import cockpit.util.userConfig
 from . import viewFileDropTarget
-from cockpit.gui.device import OptionButtons
 from cockpit.gui import mainPanels
-import cockpit.gui.dialogs.getNumberDialog
 
 
 ## Max width of rows of UI widgets.
@@ -98,10 +96,6 @@ class MainWindowPanel(wx.Panel):
 
         ## Maps LightSource handlers to their associated panels of controls.
         self.lightToPanel = dict()
-        ##objects to store paths and button names
-        self.pathList = ['New...', 'Update','Load...', 'Save...']
-        self.paths=dict()
-        self.currentPath = None
 
         # Construct the UI.
         # Sizer for all controls. We'll split them into bottom half (light
@@ -134,13 +128,6 @@ class MainWindowPanel(wx.Panel):
         events.subscribe(cockpit.events.VIDEO_MODE_TOGGLE, lambda state: videoButton.SetValue(state))
         buttonSizer.Add(videoButton, 1, wx.EXPAND)
 
-        self.pathButton = OptionButtons(topPanel)
-        self.pathButton.mainButton.SetLabel("Light\npath")
-        self.pathButton.setOptions(map(lambda name: (name,
-                                                     lambda n=name:
-                                                     self.setPath(n)),
-                                       self.pathList))
-        buttonSizer.Add(self.pathButton, 1, wx.EXPAND)
         # Snap image button
         snapButton = wx.Button(topPanel, wx.ID_ANY, "Snap\nimage")
         snapButton.Bind(wx.EVT_BUTTON, lambda evt: cockpit.interfaces.imager.imager.takeImage())
@@ -239,120 +226,35 @@ class MainWindowPanel(wx.Panel):
                 print ("Opening first of %d files. Others can be viewed by dragging them from the filesystem onto the main window of the Cockpit." % len(filenames))
 
 
-    ##user defined modes which include cameras and lasers active,
-    ##filter whieels etc...
-    def setPath(self, name):
-        #store current path to text file
-        if name == 'Save...':
-            self.onSaveExposureSettings(self.currentPath)
-        #load stored path
-        elif name == 'Load...':
-            self.onLoadExposureSettings()
-        #update settings for current path
-        elif name == 'Update' and self.currentPath != None:
-            events.publish('save exposure settings',
-                           self.paths[self.currentPath])
-            self.pathButton.setOption(self.currentPath)
-        #create newe stored path with current settings.
-        elif name == 'New...':
-            self.createNewPath()
-        else:
-            events.publish('load exposure settings', self.paths[name])
-            self.currentPath = name
-            self.pathButton.setOption(name)
-
-    def createNewPath(self):
-        #get name for new mode
-        # abuse get value dialog which will also return a string.
-        pathName = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-            parent=self.topPanel, default='', title='New Path Name',
-            prompt='Name', atMouse=True)
-        if not pathName:
-            #None or empty string
-            return()
-        if pathName in self.paths :
-            events.publish('save exposure settings',
-                           self.paths[pathName])
-            self.pathButton.setOption(pathName)
-            return()
-        self.paths[pathName]=dict()
-        self.pathList.append(pathName)
-        #publish an event to populate mode settings.
-        events.publish('save exposure settings', self.paths[pathName])
-        #update button entries.
-        self.pathButton.setOptions(map(lambda name: (name,
-                                                       lambda n=name:
-                                                       self.setPath(n)),
-                                         self.pathList))
-        #and set button value.
-        self.pathButton.setOption(pathName)
-        self.currentPath = pathName
-
-
-
-    ## User wants to save the current exposure settings; get a file path
-    # to save to, collect exposure information via an event, and save it.
-    def onSaveExposureSettings(self, name, event = None):
-        dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
-                               defaultFile=name+'.txt',
-                message = "Please select where to save the settings.",
-                defaultDir = cockpit.util.files.getUserSaveDir())
-        if dialog.ShowModal() != wx.ID_OK:
-            # User cancelled.
-            self.pathButton.setOption(name)
-            return
-        settings = dict()
-        events.publish('save exposure settings', settings)
-        handle = open(dialog.GetPath(), 'w')
-        handle.write(json.dumps(settings))
-        handle.close()
-        self.pathButton.setOption(name)
-
-
-    ## User wants to load an old set of exposure settings; get a file path
-    # to load from, and publish an event with the data.
-    def onLoadExposureSettings(self, event = None):
-        dialog = wx.FileDialog(self, style = wx.FD_OPEN, wildcard = '*.txt',
-                message = "Please select the settings file to load.",
-                defaultDir = cockpit.util.files.getUserSaveDir())
-        if dialog.ShowModal() != wx.ID_OK:
-            # User cancelled.
-            self.pathButton.setOption(self.currentPath)
-            return
-        handle = open(dialog.GetPath(), 'r')
-        modeName=os.path.splitext(os.path.basename(handle.name))[0]
-        #get name for new mode
-        # abuse get value dialog which will also return a string.
-        name = cockpit.gui.dialogs.getNumberDialog.getNumberFromUser(
-            parent=self.topPanel, default=modeName, title='New Path Name',
-            prompt='Name')
-        if name not in self.paths:
-            self.pathList.append(name)
-        self.paths[name] = json.loads('\n'.join(handle.readlines()))
-        handle.close()
-        events.publish('load exposure settings', self.paths[name])
-        #update button list
-        self.pathButton.setOptions(map(lambda name: (name,
-                                                       lambda n=name:
-                                                       self.setPath(n)),
-                                         self.pathList))
-        #and set button value.
-        self.pathButton.setOption(name)
-        self.currentPath = name
-
-
 class MainWindow(wx.Frame):
     def __init__(self):
         super().__init__(parent=None, title="Cockpit")
         panel = MainWindowPanel(self)
 
         menu_bar = wx.MenuBar()
+
         file_menu = wx.Menu()
         menu_item = file_menu.Append(wx.ID_OPEN)
         self.Bind(wx.EVT_MENU, self.OnOpen, menu_item)
         menu_item = file_menu.Append(wx.ID_EXIT)
         self.Bind(wx.EVT_MENU, self.OnClose, menu_item)
         menu_bar.Append(file_menu, '&File')
+
+        # TODO: this should probably go into a separate class so we
+        # can have multiple views and controls on the list of
+        # available channels (see issue #597).
+        self._channels = {}
+        exposure_menu = wx.Menu()
+        self.Bind(wx.EVT_MENU, self.OnAddChannel,
+                  exposure_menu.Append(wx.ID_ANY, item='Add channel…'))
+        self.Bind(wx.EVT_MENU, self.OnRemoveChannel,
+                  exposure_menu.Append(wx.ID_ANY, item='Remove channel…'))
+        self.Bind(wx.EVT_MENU, self.OnExportChannels,
+                  exposure_menu.Append(wx.ID_ANY, item='Export channels…'))
+        self.Bind(wx.EVT_MENU, self.OnImportChannels,
+                  exposure_menu.Append(wx.ID_ANY, item='Import channels…'))
+        exposure_menu.AppendSeparator()
+        menu_bar.Append(exposure_menu, '&Channels')
 
         help_menu = wx.Menu()
         menu_item = help_menu.Append(wx.ID_ANY, item='Online repository')
@@ -406,6 +308,102 @@ class MainWindow(wx.Frame):
     def OnClose(self, event):
         events.publish('program exit')
         event.Skip()
+
+
+    def OnAddChannel(self, event: wx.CommandEvent) -> None:
+        """Add current channel configuration to list."""
+        name = wx.GetTextFromUser('Enter name for new channel:',
+                                  caption='Add new channel',
+                                  parent=self)
+        if not name:
+            return
+        new_channel = {}
+        events.publish('save exposure settings', new_channel)
+
+        if name not in self._channels:
+            menu = event.GetEventObject()
+            self.Bind(wx.EVT_MENU, self.OnApplyChannel,
+                      menu.Append(wx.ID_ANY, item=name))
+        else:
+            answer = wx.MessageBox('There is already a channel named "%s".'
+                                   ' Replace it?' % name,
+                                   caption='Channel already exists',
+                                   parent=self, style=wx.YES_NO)
+            if answer != wx.YES:
+                return
+
+        self._channels[name] = new_channel
+
+
+    def OnRemoveChannel(self, event: wx.CommandEvent) -> None:
+        """Remove one channel."""
+        if not self._channels:
+            wx.MessageBox('There are no channels to be removed.',
+                          caption='Failed to remove channel',
+                          parent=self, style=wx.OK)
+            return
+
+        name = wx.GetSingleChoice('Choose channel to be removed:',
+                                  caption='Remove a channel',
+                                  aChoices=list(self._channels.keys()),
+                                  parent=self)
+        if not name:
+            return
+
+        menu = event.GetEventObject()
+        menu.DestroyItem(menu.FindItemById(menu.FindItem(name)))
+        self._channels.pop(name)
+
+
+    def OnExportChannels(self, event: wx.CommandEvent) -> None:
+        """Save all channels to a file."""
+        filepath = wx.SaveFileSelector('Select file to export', '', parent=self)
+        if not filepath:
+            return
+        try:
+            with open(filepath, 'w') as fh:
+                json.dump(self._channels, fh)
+        except:
+            cockpit.gui.ExceptionBox('Failed to write to \'%s\'' % filepath,
+                                     parent=self)
+
+
+    def OnImportChannels(self, event: wx.CommandEvent) -> None:
+        """Add all channels in a file."""
+        filepath = wx.LoadFileSelector('Select file to import', '', parent=self)
+        if not filepath:
+            return
+        try:
+            with open(filepath, 'r') as fh:
+                new_channels = json.load(fh)
+        except:
+            cockpit.gui.ExceptionBox('Failed to read to \'%s\'' % filepath,
+                                     parent=self)
+        duplicated = [n for n in new_channels.keys() if n in self._channels]
+        if duplicated:
+            answer = wx.MessageBox('The import will overwrite the following'
+                                   ' channels: %s. Do you want to continue?'
+                                   % ', '.join(duplicated),
+                                   caption='Duplicated channels on loaded file',
+                                   parent=self, style=wx.YES_NO)
+            if answer != wx.YES:
+                return
+
+        menu = event.GetEventObject()
+        for name, channel in new_channels.items():
+            # Duplicated channels only need to update our dict but new
+            # channels also need a new menu item.
+            if name not in duplicated:
+                self.Bind(wx.EVT_MENU, self.OnApplyChannel,
+                          menu.Append(wx.ID_ANY, item=name))
+            self._channels[name] = channel
+
+
+    def OnApplyChannel(self, event: wx.CommandEvent) -> None:
+        name = event.GetEventObject().FindItemById(event.GetId()).GetLabel()
+        channel = self._channels[name]
+        events.publish('load exposure settings', channel)
+
 
     def _OnAbout(self, event):
         wx.adv.AboutBox(CockpitAboutInfo(), parent=self)
