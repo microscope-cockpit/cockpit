@@ -136,10 +136,11 @@ def martialWindows(parent):
                 lambda e: wx.GetApp().SetWindowPositions(),
                 menu_item)
 
-    main_window = wx.GetApp().GetTopWindow()
     for window in wx.GetTopLevelWindows():
-        if window is main_window:
-            # Don't show this for the main window.
+        if window is parent:
+            # No need to show this sub menu for the window that is
+            # requesting the window (which should only be the main
+            # window anyway).
             continue
         if not window.GetTitle():
             # Sometimes we get bogus top-level windows; no idea why.
@@ -159,11 +160,18 @@ def martialWindows(parent):
                 w.Show()
             else:
                 w.Show(not w.IsShown())
+                
+        def raise_window(evt,w=window):
+            #hack as the mac version of wx will raise an empty window
+            #if the winodw is currently hidden
+            w.Show()
+            w.Raise()
+            
         menu_item = subMenu.Append(wx.ID_ANY, "Show/Hide")
         parent.Bind(wx.EVT_MENU, show_or_hide, menu_item)
 
         menu_item = subMenu.Append(wx.ID_ANY, "Raise to top")
-        parent.Bind(wx.EVT_MENU, lambda e, w=window: w.Raise(), menu_item)
+        parent.Bind(wx.EVT_MENU, raise_window, menu_item)
 
         menu_item = subMenu.Append(wx.ID_ANY, "Move to mouse")
         parent.Bind(wx.EVT_MENU,
