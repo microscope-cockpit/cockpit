@@ -245,63 +245,172 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         glVertex2f(pointLoc[0], pointLoc[1])
         glEnd()
 
+    def drawTextAt(self, loc, text, scale_x=1.0, scale_y=1.0, alignment_h="left", alignment_v="bottom",
+                    colour=(0.0, 0.0, 0.0, 1.0), scale_axis_x=-1.0, scale_axis_y=1.0, draw_bbox=False):
+        """Draw a line of text.
 
-    ## Draw some text at the specified location
-    def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
-        width, height = self.GetClientSize()
-        aspect = float(height) / width
-        if aspect >= 1.0:
-            # tall
-            scale_w = 1.0
-            scale_h = 1.0 / aspect
-        else:
-            # wide
-            scale_w = 1.0 * aspect
-            scale_h = 1.0
-        glMatrixMode(GL_PROJECTION)
-        glPushMatrix()
-        glLoadIdentity()
+        Draw a line of text at the given location. Optionally, draw the bounding box as well.
+        Possible alignment arguments are:
+            horizontal: left, baseline, centre, right
+            vertical: top, middle, baseline, bottom
+        The format of the colour argument is RGBA, range from 0 to 1.0.
+
+        Args:
+            loc (tuple of int): The location, in OpenGL units, at which to draw the text.
+            text (str): The text to be drawn.
+            scale_x (float): The scaling factor applied in the horizontal direction.
+            scale_y (float): The scaling factor applied in the vertical direction.
+            alignment_h (str): The horizontal alignment of the text with respect to the location.
+            alignment_v (str): The vertical alignment of the text with respect to the location.
+            colour (tuple of floats): The colour used for both the text and the bounding box.
+            scale_axis_x (float): The scaling factor of the x axis. Expect only -1.0 or 1.0.
+            scale_axis_y (float): The scaling factor of the y axis. Expect only -1.0 or 1.0.
+            draw_bbox (boolean): Whether to draw the bounding box of the text.
+
+        """
+        # Save context
+        prev_mmode = glGetInteger(GL_MATRIX_MODE)
+        # Obtain a bounding box of the given string
+        bbox = self.font.getFontBBox(text)
+        # Calculate alignment offsets
+        alignment_h_offset = (0 - bbox[0]) * scale_axis_x
+        alignment_v_offset = (0 - bbox[1]) * scale_axis_y
+        if alignment_h == "centre":
+            # Subtract half of the bbox width
+            alignment_h_offset -= ((bbox[3] - bbox[0]) / 2) * scale_axis_x
+        elif alignment_h == "right":
+            # Subtract the entire bbox width
+            alignment_h_offset -= (bbox[3] - bbox[0]) * scale_axis_x
+        elif alignment_h == "baseline":
+            # The baseline point is (0, 0)
+            alignment_h_offset = 0
+        if alignment_v == "middle":
+            # Subtract half of the bbox height
+            alignment_v_offset -= ((bbox[4] - bbox[1]) / 2) * scale_axis_y
+        elif alignment_v == "top":
+            # Subtract the entire bbox height
+            alignment_v_offset -= (bbox[4] - bbox[1]) * scale_axis_y
+        elif alignment_v == "baseline":
+            # The baseline point is (0, 0)
+            alignment_v_offset = 0
+        # Coordinate transformation
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         glLoadIdentity()
-        loc = self.scaledVertex(loc[0], loc[1], True)
-        glTranslatef(loc[0], loc[1], 0)
-        glScalef(size * scale_w, size * scale_h, 1.0)
-        glColor3fv(color)
+        glTranslatef(loc[0] + alignment_h_offset * scale_x, loc[1] + alignment_v_offset * scale_y, 0.0)
+        glScalef(scale_x * scale_axis_x, scale_y * scale_axis_y, 1.0)
+        # Render the text
+        glColor4f(*colour)
         self.font.render(text)
+        # Draw the bounding box
+        if draw_bbox:
+            glBegin(GL_LINE_LOOP)
+            glVertex2f(bbox[0], bbox[1])
+            glVertex2f(bbox[3], bbox[1])
+            glVertex2f(bbox[3], bbox[4])
+            glVertex2f(bbox[0], bbox[4])
+            glEnd()
+        # Restore context
         glPopMatrix()
-        glMatrixMode(GL_PROJECTION)
-        glPopMatrix()
+        glMatrixMode(prev_mmode)
 
+    def drawStagePosition(self, label, drawLoc, positions, highlightIndex, stepSize, scale_max_x, scale_max_y,
+                           scale_axis_x=-1.0, scale_axis_y=1.0, alignment_h="left", alignment_v="top",
+                           hl_colour=(0.0, 0.5, 0.0, 1.0)):
+        """Draw a stage position line of text.
 
-    ## Draw stage position information.
-    # \param label Text label to draw at the front.
-    # \param positions A list of floats indicating the position of the various
-    #        stage movers.
-    # \param highlightIndex Index into the above indicating which position
-    #        should be highlighted (to indicate keypad control). 
-    # \param stepSize Float that will be drawn afterwards showing the current
-    #        step size.
-    # \param drawLoc (X, Y) tuple indicating the position at which to draw the 
-    #        text.
-    # \param spacer Amount of space to put between each element.
-    # \param labelSpacer Amount of space to dedicate to the label.
-    # \param textSize Size of text to draw.
-    def drawStagePosition(self, label, positions, highlightIndex, stepSize, 
-            drawLoc, spacer, labelSpacer, textSize):
-        # Make the label bigger, since it really needs to call attention to 
-        # itself.
-        self.drawTextAt(drawLoc, label, size = textSize * 1.25)
+        Draw a specially formatted line of text, describing the position of an entity such as an axis, as well as its
+        step size. If there is more than one not-None position, then are all drawn next to each other. The position
+        with index highlightIndex is coloured differently. The scaling factors are applied directly to the label,
+        whereas the rest of the text uses 0.75 of the same factors. Possible alignment arguments are:
+            horizontal: left, baseline, centre, right
+            vertical: top, middle, baseline, bottom
+        The format of the colour argument is RGBA, range from 0 to 1.0.
+
+        Args:
+            label (str): The label of the entity, whose position and step size are being drawn.
+            drawLoc (tuple of int): The location, in OpenGL units, at which to draw the line of text.
+            positions (list of float): The entity positions. All None values are skipped.
+            highlightIndex (int): The index of the position to highlight.
+            stepSize (float): The size of the entity's step.
+            scale_max_x (float): The scaling factor applied to the label in the horizontal direction.
+            scale_max_y (float): The scaling factor applied to the label in the vertical direction.
+            scale_axis_x (float): The scaling factor of the x axis. Expect only -1.0 or 1.0.
+            scale_axis_y (float): The scaling factor of the y axis. Expect only -1.0 or 1.0.
+            alignment_h (str): The horizontal alignment of the text with respect to the location.
+            alignment_v (str): The vertical alignment of the text with respect to the location.
+            hl_colour (tuple of floats): The colour used for highlighting one of the positions.
+
+        """
+        text_pos = list(drawLoc)
+        # Calculate the width of a space character
+        space_char_bbox = self.font.getFontBBox("  ")  # it's actually returning the bbox of a single space
+        space_char_width = (space_char_bbox[3] - space_char_bbox[0]) * scale_max_x
+        # Pre-calculate the total width of all the text that will be drawn
+        total_text_width = 0.0
+        bbox_axis = self.font.getFontBBox(label)
+        total_text_width += ((bbox_axis[3] - bbox_axis[0]) * scale_max_x + space_char_width) * scale_axis_x
+        bbox_miny = bbox_axis[1] * scale_max_y * scale_axis_y
+        bbox_maxy = bbox_axis[4] * scale_max_y * scale_axis_y
+        for pos in positions:
+            if pos is None:
+                continue
+            bbox_coord = self.font.getFontBBox("{:5.2f}".format(pos))
+            total_text_width += ((bbox_coord[3] - bbox_coord[0]) * scale_max_x * 0.75 + space_char_width) * scale_axis_x
+            bbox_miny = min(bbox_miny, bbox_coord[1] * scale_max_y * 0.75 * scale_axis_y)
+            bbox_maxy = max(bbox_maxy, bbox_coord[4] * scale_max_y * 0.75 * scale_axis_y)
+        total_text_width += (space_char_width * 3) * scale_axis_x
+        bbox_step = self.font.getFontBBox("step: {:4.2f}um".format(stepSize))
+        total_text_width += ((bbox_step[3] - bbox_step[0]) * scale_max_x * 0.75) * scale_axis_x
+        bbox_miny = min(bbox_miny, bbox_step[1] * scale_max_y * 0.75 * scale_axis_y)
+        bbox_maxy = max(bbox_maxy, bbox_step[4] * scale_max_y * 0.75 * scale_axis_y)
+        # Calculate alignment offsets and apply them to the initial text position
+        alignment_offset_h = (0 - bbox_axis[0]) * scale_axis_x
+        if alignment_h == "centre":
+            alignment_offset_h = total_text_width / 2
+        elif alignment_h == "right":
+            alignment_offset_h = total_text_width
+        elif alignment_h == "baseline":
+            alignment_offset_h = 0
+        text_pos[0] -= alignment_offset_h
+        alignment_offset_v = bbox_maxy
+        if alignment_v == "baseline":
+            alignment_offset_v = 0
+        elif alignment_v == "middle":
+            alignment_offset_v = (bbox_maxy - bbox_miny) / 2
+        elif alignment_v == "bottom":
+            alignment_offset_v = bbox_miny
+        text_pos[1] -= alignment_offset_v
+        # Draw the axis label and advance the text position horizontal location
+        self.drawTextAt(text_pos, label, scale_max_x, scale_max_y, alignment_v="baseline", scale_axis_x=scale_axis_x)
+        text_pos[0] += ((bbox_axis[3] - bbox_axis[0]) * scale_max_x + space_char_width) * scale_axis_x
         for i, pos in enumerate(positions):
             if pos is None:
                 # No positioning for this axis.
                 continue
-            color = (0, 0, 0)
+            colour_args = {}
             if i == highlightIndex:
-                color = (0, .5, 0)
-            self.drawTextAt((drawLoc[0] - labelSpacer - i * spacer, drawLoc[1]),
-                "%5.2f" % pos, textSize, color)
+                colour_args["colour"] = hl_colour
+            bbox_coord = self.font.getFontBBox("{:5.2f}".format(pos))
+            self.drawTextAt(
+                text_pos,
+                "{:5.2f}".format(pos),
+                scale_max_x * 0.75,
+                scale_max_y * 0.75,
+                alignment_v="baseline",
+                scale_axis_x=scale_axis_x,
+                **colour_args
+            )
+            text_pos[0] += ((bbox_coord[3] - bbox_coord[0]) * scale_max_x * 0.75 + space_char_width) * scale_axis_x
+        # Add more horizontal spacings before the step size text
+        text_pos[0] += (space_char_width * 3) * scale_axis_x
+        # Draw the step size
+        self.drawTextAt(
+            text_pos,
+            "step: {:4.2f}um".format(stepSize),
+            scale_max_x * 0.75,
+            scale_max_y * 0.75,
+            alignment_v="baseline",
+            scale_axis_x=scale_axis_x
+        )
 
-        self.drawTextAt((drawLoc[0] - labelSpacer - len(positions) * spacer,
-                drawLoc[1]),
-                "step: %4.2fum" % stepSize, size = textSize)

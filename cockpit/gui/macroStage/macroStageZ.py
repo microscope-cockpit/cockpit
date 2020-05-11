@@ -459,14 +459,38 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 
             # Draw histogram min/max
             if histogram.shouldLabel:
-                lineHeight = self.stageExtent * .05
-                self.drawTextAt((histogram.xOffset + self.stageExtent * .05, 
-                        minY - self.textLineHeight / 4),
-                        str(int(histogram.minAltitude)), size = self.textSize)
-                self.drawTextAt((histogram.xOffset + self.stageExtent * .05, 
-                        maxY - self.textLineHeight / 4),
-                        str(int(histogram.maxAltitude)), size = self.textSize)
-            
+                text_scale = 0.005
+                width, height = self.GetClientSize()
+                aspect = height / width
+                if aspect >= 1.0:
+                    # tall
+                    text_scale_x = text_scale
+                    text_scale_y = text_scale / aspect
+                else:
+                    # wide
+                    text_scale_x = text_scale * aspect
+                    text_scale_y = text_scale
+                self.drawTextAt(
+                    self.scaledVertex(
+                        histogram.xOffset + self.stageExtent * .05,
+                        minY - self.textLineHeight / 4,
+                        shouldReturn=True),
+                    str(int(histogram.minAltitude)),
+                    text_scale_x,
+                    text_scale_y,
+                    scale_axis_x=1.0
+                )
+                self.drawTextAt(
+                    self.scaledVertex(
+                        histogram.xOffset + self.stageExtent * .05,
+                        maxY - self.textLineHeight / 4,
+                        shouldReturn=True),
+                    str(int(histogram.maxAltitude)),
+                    text_scale_x,
+                    text_scale_y,
+                    scale_axis_x=1.0
+                )
+
             # Draw histogram stage motion delta
             stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
             if stepSize is not None:
@@ -535,20 +559,45 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             labelX = rightEdge - self.stageExtent * .01
             if isLabelOnLeft:
                 labelX = leftEdge + self.stageExtent * .1
+            text_scale = 0.005
+            width, height = self.GetClientSize()
+            aspect = height / width
+            if aspect >= 1.0:
+                # tall
+                text_scale_x = text_scale
+                text_scale_y = text_scale / aspect
+            else:
+                # wide
+                text_scale_x = text_scale * aspect
+                text_scale_y = text_scale
             if shouldLabelMainView:
                 # Draw a text label next to the line, in the line's color.
                 self.drawTextAt(
-                        (labelX, drawAltitude - self.textLineHeight / 4), 
-                        label, size = self.textSize, color = color)
+                    self.scaledVertex(labelX, drawAltitude - self.textLineHeight / 4, shouldReturn=True),
+                    label,
+                    text_scale_x,
+                    text_scale_y,
+                    colour=(*color, 1.0),
+                    scale_axis_x=1.0
+                )
             if shouldLabelHistogram:
                 # Draw the label for the histograms too.
                 for histogram in self.histograms:
                     if histogram.shouldLabel:
                         histogramAltitude = histogram.scale(altitude)
                         histogramLabelX = labelX - histogram.xOffset + self.horizLineLength / 2
-                        self.drawTextAt((histogramLabelX,
-                                histogramAltitude - self.textLineHeight / 4),
-                                label, size = self.textSize, color = color)
+                        self.drawTextAt(
+                            self.scaledVertex(
+                                histogramLabelX,
+                                histogramAltitude - self.textLineHeight / 4,
+                                shouldReturn=True
+                            ),
+                            label,
+                            text_scale_x,
+                            text_scale_y,
+                            colour=(*color, 1.0),
+                            scale_axis_x=1.0
+                        )
 
 
     ## Double click moves the stage in Z.
@@ -630,13 +679,22 @@ class MacroStageZKey(macroStageBase.MacroStageBase):
             glLineWidth(1)
 
             # Draw textual position coordinates.
+            text_scale = 0.04
+            aspect = height / width
+            if aspect >= 1.0:
+                # tall
+                text_scale_x = text_scale
+                text_scale_y = text_scale / aspect
+            else:
+                # wide
+                text_scale_x = text_scale * aspect
+                text_scale_y = text_scale
             positions = cockpit.interfaces.stageMover.getAllPositions()
             positions = [p[2] for p in positions]
             stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
-            self.drawStagePosition('Z:', positions, 
-                    cockpit.interfaces.stageMover.getCurHandlerIndex(), stepSize, 
-                    (self.xOffset, self.yOffset), self.xExtent * .25, 
-                    self.xExtent * .05, self.textSize)
+            self.drawStagePosition("Z:", (0, 0), positions, cockpit.interfaces.stageMover.getCurHandlerIndex(),
+                                    stepSize, text_scale_x, text_scale_y, scale_axis_x=1.0, alignment_h="centre",
+                                    alignment_v="middle")
 
             glFlush()
             self.SwapBuffers()

@@ -87,11 +87,6 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         ## Primitive objects - a map of specification to object.
         self.primitives = {}
 
-        ## Size of text to draw. I confess I don't really understand how this
-        # corresponds to anything, but it seems to work out.
-        self.textSize = .005
-        self.textLineHeight = 1500
-
         self.calculateMeasures()
 
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
@@ -114,29 +109,61 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         # which has micrometers as units
         width, height = self.GetClientSize()
         hardLimits = cockpit.interfaces.stageMover.getHardLimits()
+        combinedStageExtent = (hardLimits[0][1] - hardLimits[0][0]) + (hardLimits[1][1] - hardLimits[1][0])
 
-        # Initialise the view area to the area of the stage's hard limits
-        self.minX, self.maxX = hardLimits[0]
-        self.minY, self.maxY = hardLimits[1]
-
-        # Add margins for good measure and ensure they cover at least the largest objective offsets
+        # Calculate the largest objective offsets
         _maxOffsetX = max([abs(offsets[0]) for offsets in self.listOffsets])
         _maxOffsetY = max([abs(offsets[1]) for offsets in self.listOffsets])
-        self.minX -= max(_maxOffsetX, 1000)
-        self.maxX += max(_maxOffsetX, 1000)
-        self.minY -= max(_maxOffsetY, 10000)
-        self.maxY += max(_maxOffsetY, 1500)
 
-        # Correct the view area to preserve the aspect ratio of the hard limits
+        # Initialise the view area to the area of the stage's hard limits, accounting for largest objective offsets
+        self.minX, self.maxX = hardLimits[0]
+        self.minY, self.maxY = hardLimits[1]
+        self.minX -= _maxOffsetX
+        self.maxX += _maxOffsetX
+        self.minY -= _maxOffsetY
+        self.maxY += _maxOffsetY
+
+        # Calculate soft stage limit label metrics and ensure there is enough space to draw them
+        self.softlimit_label_scale = 0.0018 * combinedStageExtent
+        self.softlimit_label_line_height = ((self.font.getFontAscender() - self.font.getFontDescender()) *
+                                            self.softlimit_label_scale)
+        self.softlimit_label_offset = self.softlimit_label_line_height * 0.25
+        self.maxY += self.softlimit_label_offset + self.softlimit_label_line_height
+        self.minY -= self.softlimit_label_offset + self.softlimit_label_line_height
+
+        # Calculate scale bar metrics and ensure there is enough space to draw it
+        self.scalebar_width_major = self.softlimit_label_line_height
+        self.scalebar_width_minor = self.softlimit_label_line_height * 0.5
+        self.scalebar_position = self.minY - (self.scalebar_width_major / 2)  # vertical middle of scale bar
+        self.minY = self.scalebar_position - (self.scalebar_width_major / 2)  # vertical bottom of scale bar
+
+        # Ensure there is enough space to draw the coordinate and step size labels. The position is slightly offset,
+        # proportionally to the line height, in order to create a small gap from the scale bar.
+        self.coord_labels_scale_max = 0.0025 * combinedStageExtent
+        self.coord_labels_line_height = ((self.font.getFontAscender() - self.font.getFontDescender()) *
+                                          self.coord_labels_scale_max)
+        self.coord_labels_position = self.minY - self.coord_labels_line_height * 0.25
+        self.minY = self.coord_labels_position - 2 * self.coord_labels_line_height
+
+        # Add margins for aesthetics and to ensure that all lines are entirely within the view area
+        # NOTE: the margins may not be uniform
+        minSideLength = min(self.maxX - self.minX, self.maxY - self.minY)
+        self.margin = 0.05 * minSideLength
+        self.minX -= self.margin
+        self.maxX += self.margin
+        self.minY -= self.margin
+        self.maxY += self.margin
+
+        # Correct the view area to preserve the aspect ratio of the stage
         aratio_viewport = width / height
         aratio_viewarea = (self.maxX - self.minX) / (self.maxY - self.minY)
         if aratio_viewport >= aratio_viewarea:
-            # The viewport is wider than what's required => expose more horizontal scene space
+            # The viewport is wider than the stage => expose more horizontal scene space
             extra_space = ((aratio_viewport - aratio_viewarea) / aratio_viewarea) * (self.maxX - self.minX)
             self.minX -= extra_space / 2
             self.maxX += extra_space / 2
         else:
-            # The viewport is taller than what's required => expose more vertical scene space
+            # The viewport is taller than the stage => expose more vertical scene space
             extra_space = ((aratio_viewarea - aratio_viewport) / aratio_viewport) * (self.maxY - self.minY)
             self.minY -= extra_space / 2
             self.maxY += extra_space / 2
@@ -203,6 +230,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glLoadMatrixf(self.projectionMatrix())
 
             #Loop over objective offsets to draw limist in multiple colours.
+            safeties = []
+            softLimits = []
             for obj in self.listObj:
                 offset=self.objective.nameToOffset.get(obj)
                 colour=self.objective.nameToColour.get(obj)
@@ -265,12 +294,27 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             # Now the coordinates. Only draw them if the soft limits aren't
             # the hard limits, to avoid clutter.
             if safeties != hardLimits:
-                for i, (dx, dy) in enumerate([(400, -1000), (0, 800)]):
-                    x = softLimits[i][0]
-                    y = softLimits[i][1]
+                label_alignments = (
+                    # Bottom right corner
+                    {"alignment_h": "right", "alignment_v": "top"},
+                    # Top left corner
+                    {"alignment_h": "left", "alignment_v": "bottom"}
+                )
+                label_vertical_offsets = (
+                    # Bottom right corner
+                    -self.softlimit_label_offset,
+                    # Top left corner,
+                    self.softlimit_label_offset
+                )
+                for i, (x, y) in enumerate(softLimits):
                     label = "({:d}, {:d})".format(x, y)
-                    self.drawTextAt((x + dx*len(label), y + dy),
-                                    label, size=self.textSize * .75)
+                    self.drawTextAt(
+                        (x, y + label_vertical_offsets[i]),
+                        label,
+                        self.softlimit_label_scale,
+                        self.softlimit_label_scale,
+                        **label_alignments[i]
+                    )
 
             glDisable(GL_LINE_STIPPLE)
 
@@ -330,16 +374,15 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glColor3f(0, 0, 0)
             glLineWidth(1)
             glBegin(GL_LINES)
-            yOffset = hardLimits[0][1] - 3000
-            glVertex2f(hardLimits[0][0], yOffset)
-            glVertex2f(hardLimits[1][0], yOffset)
+            glVertex2f(hardLimits[0][0], self.scalebar_position)
+            glVertex2f(hardLimits[1][0], self.scalebar_position)
             # Draw notches in the scale bar every 1mm.
             for scaleX in range(int(hardLimits[0][0]), int(hardLimits[1][0]) + 1000, 1000):
-                width = (hardLimits[1][1] - hardLimits[0][1]) * .04
+                width = self.scalebar_width_minor
                 if scaleX % 5000 == 0:
-                    width = width * 3
-                y1 = yOffset - width / 2
-                y2 = yOffset + width / 2
+                    width = self.scalebar_width_major
+                y1 = self.scalebar_position - width / 2
+                y2 = self.scalebar_position + width / 2
                 glVertex2f(scaleX, y1)
                 glVertex2f(scaleX, y2)
             glEnd()
@@ -347,19 +390,26 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
             # Draw stage coordinates. Use a different color for the mover
             # currently under keypad control.
-            coordsLoc = (hardLimits[1][0], hardLimits[0][1] - 6000)
             allPositions = cockpit.interfaces.stageMover.getAllPositions()
             curControl = cockpit.interfaces.stageMover.getCurHandlerIndex()
-            for axis in [0, 1]:
-                step = stepSizes[axis]
-                if stepSizes[axis] is None:
+            for index, axis_label in enumerate(["X:", "Y:"]):
+                step = stepSizes[index]
+                if step is None:
                     step = 0
-                positions = [p[axis] for p in allPositions]
-                self.drawStagePosition(['X:', 'Y:'][axis],
-                        positions, curControl, step,
-                        (coordsLoc[0], coordsLoc[1] - axis * self.textLineHeight),
-                        7000, 1500,
-                        self.textSize)
+                positions = [p[index] for p in allPositions]
+                self.drawStagePosition(
+                    axis_label,
+                    (
+                        hardLimits[0][0] + (hardLimits[1][0] - hardLimits[0][0]) / 2,
+                        self.coord_labels_position - index * self.coord_labels_line_height
+                    ),
+                    positions,
+                    curControl,
+                    step,
+                    self.coord_labels_scale_max,
+                    self.coord_labels_scale_max,
+                    alignment_h="centre"
+                )
 
             events.publish('macro stage xy draw', self)
 
