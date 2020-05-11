@@ -159,11 +159,20 @@ def martialWindows(parent):
                 w.Show()
             else:
                 w.Show(not w.IsShown())
+
+        def raise_window(evt, w=window):
+            # At least on Mac we need to call Show before Raise in
+            # case the window is hidden (see issue #599).  It is not
+            # yet clear what is wx expected behaviour.  See upstream
+            # issue https://trac.wxwidgets.org/ticket/18762
+            w.Show()
+            w.Raise()
+
         menu_item = subMenu.Append(wx.ID_ANY, "Show/Hide")
         parent.Bind(wx.EVT_MENU, show_or_hide, menu_item)
 
         menu_item = subMenu.Append(wx.ID_ANY, "Raise to top")
-        parent.Bind(wx.EVT_MENU, lambda e, w=window: w.Raise(), menu_item)
+        parent.Bind(wx.EVT_MENU, raise_window, menu_item)
 
         menu_item = subMenu.Append(wx.ID_ANY, "Move to mouse")
         parent.Bind(wx.EVT_MENU,
