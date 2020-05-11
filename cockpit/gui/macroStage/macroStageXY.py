@@ -141,17 +141,6 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             wx.CallAfter(self.Refresh)
 
 
-    def modelView(self):
-        ## Transform from stage co-ordinates to screen.
-        dx = self.maxX - self.minX
-        dy = self.maxY - self.minY
-        # Column-major ordering
-        return   [-2/dx,  0,     0,   0,
-                  0,      2/dy,  0,   0,
-                  0,      0,     1,   0,
-                  2*self.minX/dx+1,  -2*self.minY/dy-1, 0, 1]
-
-
     ## Draw the canvas. We draw the following:
     # - A blue dotted square representing the hard stage limits of
     #   [(4000, 4000), (25000, 25000)]
@@ -189,7 +178,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
             # Set up transform from stage to screen units
             glMatrixMode(GL_MODELVIEW)
-            glLoadMatrixf(self.modelView())
+            glLoadIdentity()
+            glOrtho(self.maxX, self.minX, self.minY, self.maxY, -1.0, 1.0)
 
             #Loop over objective offsets to draw limist in multiple colours.
             for obj in self.listObj:
