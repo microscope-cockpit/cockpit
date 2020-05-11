@@ -24,7 +24,7 @@ import ctypes
 import os
 import sys
 
-from ctypes import POINTER, c_char_p, c_int, c_uint
+from ctypes import POINTER, c_char_p, c_int, c_uint, c_float
 
 try:
     if os.name in ('nt', 'ce'):
@@ -79,6 +79,20 @@ _getFontError = _ftgl.ftglGetFontError
 _getFontError.argtypes = [POINTER(_FTGLfont)]
 _getFontError.restype = _FT_Error
 
+## void ftglGetFontBBox (FTGLfont *font, const char *string, int len, float bounds[6])
+_getFontBBox = _ftgl.ftglGetFontBBox
+_getFontBBox.argtypes = [POINTER(_FTGLfont), c_char_p, c_int, (c_float * 6)]
+_getFontBBox.restype = None
+
+## float ftglGetFontAscender (FTGLfont *font)
+_getFontAscender = _ftgl.ftglGetFontAscender
+_getFontAscender.argtypes = [POINTER(_FTGLfont)]
+_getFontAscender.restype = c_float
+
+## float ftglGetFontDescender (FTGLfont *font)
+_getFontDescender = _ftgl.ftglGetFontDescender
+_getFontDescender.argtypes = [POINTER(_FTGLfont)]
+_getFontDescender.restype = c_float
 
 class TextureFont(object):
     def __init__(self, path):
@@ -99,3 +113,14 @@ class TextureFont(object):
         err = _getFontError(self._font)
         if err != 0:
             raise RuntimeError("failed to render '%s'", text)
+
+    def getFontBBox(self, text, len=-1):
+        retval = (c_float * 6)()
+        _getFontBBox(self._font, text.encode('ascii'), len, retval)
+        return list(retval)
+
+    def getFontAscender(self):
+        return _getFontAscender(self._font)
+
+    def getFontDescender(self):
+        return _getFontDescender(self._font)
