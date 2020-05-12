@@ -75,9 +75,6 @@ HISTOGRAM_MIN_PADDING = 25
 HISTOGRAM_LINE_WIDTH = 3
 ## Size of buckets in microns to use when generating altitude histogram
 ALTITUDE_BUCKET_SIZE = 3
-## Default height of the histogram, in microns
-# (distance between min altitude displayed and max altitude displayed)
-DEFAULT_HISTOGRAM_HEIGHT = 200
 
 ## Amount, in microns, of padding to add on either end of the mini-histogram
 MINI_HISTOGRAM_PADDING = 1

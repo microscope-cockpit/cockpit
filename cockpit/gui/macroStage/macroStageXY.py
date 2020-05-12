@@ -58,13 +58,11 @@ import wx
 
 from cockpit import events
 from cockpit.gui.primitive import Primitive
-import cockpit.gui.mosaic.window
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
 
 from . import macroStageBase
 
-CIRCLE_SEGMENTS = 32
 
 ## This class shows a high-level view of where the stage is in XY space, and
 # how it will move when controlled by the keypad. It includes displays

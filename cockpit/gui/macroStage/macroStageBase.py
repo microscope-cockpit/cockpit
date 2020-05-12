@@ -66,17 +66,10 @@ import cockpit.util.logger
 from cockpit import depot
 
 
-PI = 3.1415926
-
 ## @package cockpit.gui.macroStage
 # This module contains the MacroStageBase base class, used by the MacroStageXY
 # and MacroStageZ classes, as well as some shared constants.
 
-
-## Number of times to update the view, per second.
-UPDATE_FPS = 10
-## Number of previous stage positions to keep in our history
-HISTORY_SIZE = 5
 ## Don't bother showing a movement arrow for
 # movements smaller than this.
 MIN_DELTA_TO_DISPLAY = .01
