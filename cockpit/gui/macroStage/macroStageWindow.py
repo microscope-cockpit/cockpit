@@ -154,9 +154,5 @@ class MacroStageWindow(wx.Frame):
         return sizer
 
 
-    ## Passthrough to MacroStageXY.setXYLimit()
-    def setXYLimit(self, *args):
-        self.macroStageXY.setXYLimit(*args)
-
 def makeWindow(parent):
     window = MacroStageWindow(parent)
