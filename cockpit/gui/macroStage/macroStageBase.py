@@ -251,36 +251,3 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         glColor3fv(color)
         self.font.render(text)
         glPopMatrix()
-
-
-    ## Draw stage position information.
-    # \param label Text label to draw at the front.
-    # \param positions A list of floats indicating the position of the various
-    #        stage movers.
-    # \param highlightIndex Index into the above indicating which position
-    #        should be highlighted (to indicate keypad control). 
-    # \param stepSize Float that will be drawn afterwards showing the current
-    #        step size.
-    # \param drawLoc (X, Y) tuple indicating the position at which to draw the 
-    #        text.
-    # \param spacer Amount of space to put between each element.
-    # \param labelSpacer Amount of space to dedicate to the label.
-    # \param textSize Size of text to draw.
-    def drawStagePosition(self, label, positions, highlightIndex, stepSize, 
-            drawLoc, spacer, labelSpacer, textSize):
-        # Make the label bigger, since it really needs to call attention to 
-        # itself.
-        self.drawTextAt(drawLoc, label, size = textSize * 1.25)
-        for i, pos in enumerate(positions):
-            if pos is None:
-                # No positioning for this axis.
-                continue
-            color = (0, 0, 0)
-            if i == highlightIndex:
-                color = (0, .5, 0)
-            self.drawTextAt((drawLoc[0] - labelSpacer - i * spacer, drawLoc[1]),
-                "%5.2f" % pos, textSize, color)
-
-        self.drawTextAt((drawLoc[0] - labelSpacer - len(positions) * spacer,
-                drawLoc[1]),
-                "step: %4.2fum" % stepSize, size = textSize)

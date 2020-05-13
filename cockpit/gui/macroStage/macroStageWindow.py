@@ -60,8 +60,89 @@ import cockpit.gui
 import cockpit.gui.dialogs.safetyMinDialog
 import cockpit.gui.keyboard
 from cockpit.gui.macroStage.macroStageXY import MacroStageXY
-from cockpit.gui.macroStage.macroStageZ import MacroStageZ, MacroStageZKey
+from cockpit.gui.macroStage.macroStageZ import MacroStageZ
 from cockpit.interfaces import stageMover
+
+
+class HandlerPositionCtrl(wx.TextCtrl):
+    def __init__(self, parent, axis: int, handler_index: int) -> None:
+        super().__init__(parent, style=wx.TE_RIGHT|wx.TE_READONLY)
+        self._axis = axis
+        self._handler_index = handler_index
+
+        if self._handler_index != stageMover.getCurHandlerIndex():
+            self.Disable()
+
+        for event, handler in [(cockpit.events.STAGE_POSITION, self._OnMove),
+                               ('stage step index', self._OnHandlerChange)]:
+            emitter = cockpit.gui.EvtEmitter(self, event)
+            emitter.Bind(cockpit.gui.EVT_COCKPIT, handler)
+
+    def _OnMove(self, event: wx.CommandEvent) -> None:
+        axis = event.EventData[0]
+        if axis == self._axis:
+            pos = stageMover.getAllPositions()[self._handler_index][self._axis]
+            self.SetValue('%5.2f' % pos)
+
+    def _OnHandlerChange(self, event: wx.CommandEvent) -> None:
+        new_handler_index = event.EventData[0]
+        if new_handler_index == self._handler_index:
+            self.Enable()
+        else:
+            self.Disable()
+
+
+class AxisStepCtrl(wx.TextCtrl):
+    def __init__(self, parent, axis: int) -> None:
+        super().__init__(parent, style=wx.TE_RIGHT|wx.TE_READONLY)
+        self._axis = axis
+        self.Disable()
+
+        step_size = cockpit.gui.EvtEmitter(self, 'stage step size')
+        step_size.Bind(cockpit.gui.EVT_COCKPIT, self._OnStepSizeChange)
+
+    def _OnStepSizeChange(self, event: wx.CommandEvent) -> None:
+        axis, step_size = event.EventData
+        if axis != self._axis:
+            event.Skip()
+        else:
+            self.SetValue('%4.2f' % step_size)
+
+
+class AxesPositionPanel(wx.Panel):
+    """A panel showing the position and step size of some axis and stage."""
+    def __init__(self, parent, axes: typing.Sequence[str],
+                 *args, **kwargs) -> None:
+        super().__init__(parent, *args, **kwargs)
+
+        for axis_name in axes:
+            if axis_name not in stageMover.AXIS_MAP:
+                raise ValueError('unknown axis named\'%s\'' % axis_name)
+
+        n_stages = cockpit.interfaces.stageMover.mover.n_stages
+        positions = [] # type: typing.List[typing.List[AxisPositionCtrl]]
+        step_sizes = [] # type: typing.List[StageStepCtrl]
+        for axis_name in axes:
+            axis_index = stageMover.AXIS_MAP[axis_name]
+            axis_positions = [] # type: typing.List[AxisPositionCtrl]
+            for handler_index in range(n_stages):
+                position = HandlerPositionCtrl(self, axis=axis_index,
+                                               handler_index=handler_index)
+                axis_positions.append(position)
+            positions.append(axis_positions)
+            step_sizes.append(AxisStepCtrl(self, axis=axis_index))
+
+        sizer = wx.FlexGridSizer(3 + n_stages)
+        sizer.SetFlexibleDirection(wx.HORIZONTAL)
+        for i, axis_name in enumerate(axes):
+            sizer.Add(wx.StaticText(self, label=axis_name + ':'),
+                      flags=wx.SizerFlags().Centre())
+            for position in positions[i]:
+                sizer.Add(position)
+            sizer.Add(wx.StaticText(self, label='step (µm):'),
+                      flags=wx.SizerFlags().Centre().Border(wx.LEFT))
+            sizer.Add(step_sizes[i])
+        self.SetSizer(sizer)
 
 
 class SaveTopBottomPanel(wx.Panel):
@@ -160,6 +241,10 @@ class MacroStageWindow(wx.Frame):
         # For relative sizing of items. The overall window is
         # (width * 10) by (height * 8) pixels. The ratio of
         # these two values is important for proper drawing.
+        # FIXME: this is not drawing properly (issue #585).  The fix
+        # should be on the MacroStage canvas themselves which should
+        # need a specific size and draw on whatever space is available
+        # to them.
         width = 84
         height = width * 2 / 3.0
 
@@ -176,19 +261,19 @@ class MacroStageWindow(wx.Frame):
         #  |                       |     |                             |     |
         #  |                       |     |                             |     |
         # 2|                       |     |                             |     |
-        #  |                       |     |                             |     |
-        #  |     MacroStageXY      |     |                             |     |
-        # 3|                       |     |           MacroStageZ       |     |
-        #  |                       |     |                             |     |
-        #  |                       |     |                             |     |
+        #  |                       |  E  |                             |  E  |
+        #  |     MacroStageXY      |  M  |                             |  M  |
+        # 3|                       |  P  |           MacroStageZ       |  P  |
+        #  |                       |  T  |                             |  T  |
+        #  |                       |  Y  |                             |  Y  |
         # 4|                       |     |                             |     |
         #  |                       |     |                             |     |
         #  |                       |     |                             |     |
         # 5|                       |     |                             |     |
         #  |                       |     |                             |     |
         #  |                       |     |                             |     |
-        # 6|                       |     |------------------------------------
-        #  |                       |     |  macroStageZKey |                 |
+        # 6|---------------------- |     |------------------------------------
+        #  |     XY AxesPosition   |     |  Z AxesPosition |                 |
         #  |                       |     |                 |       Save      |
         # 7|-----------------------|     |---------------- |     TopBottom   |
         #  |       XY buttons      |     |    Z buttons    |       Panel     |
@@ -200,10 +285,11 @@ class MacroStageWindow(wx.Frame):
         # (7, 4) means an X position (or width) of 4, and a Y
         # position/height of 7.
 
-        xy_stage = MacroStageXY(self, size=(width*4, height*7))
+        xy_stage = MacroStageXY(self, size=(width*4, height*6))
         z_stage = MacroStageZ(self, size=(width*5, height*6))
 
-        z_key = MacroStageZKey(self, size=(width*3, height*1))
+        xy_coords = AxesPositionPanel(self, axes=['X', 'Y'])
+        z_coords = AxesPositionPanel(self, axes=['Z'])
 
         def make_button(label: str, handler: typing.Callable,
                         tooltip: str = '') -> wx.Button:
@@ -241,6 +327,7 @@ class MacroStageWindow(wx.Frame):
 
         xy_sizer = wx.BoxSizer(wx.VERTICAL)
         xy_sizer.Add(xy_stage)
+        xy_sizer.Add(xy_coords)
         xy_buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
         for btn in [xy_safeties_btn, switch_btn, recenter_btn]:
             xy_buttons_sizer.Add(btn)
@@ -248,7 +335,7 @@ class MacroStageWindow(wx.Frame):
         sizer.Add(xy_sizer, pos=(0, 0), span=(8, 4))
 
         sizer.Add(z_stage, pos=(0, 5), span=(6, 5))
-        sizer.Add(z_key, pos=(6, 5), span=(1, 3))
+        sizer.Add(z_coords, pos=(6, 5), span=(1, 3))
         z_buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
         for btn in [z_safeties_btn, touch_down_btn]:
             z_buttons_sizer.Add(btn)

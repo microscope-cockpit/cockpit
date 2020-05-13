@@ -51,8 +51,6 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-import numpy
 from OpenGL.GL import *
 import traceback
 import wx
@@ -587,62 +585,3 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         x = float(width - loc[0]) / width * (self.maxY - self.minY) + self.minY
         y = float(height - loc[1]) / height * (self.maxY - self.minY) + self.minY
         return (x, y)
-
-
-
-## This class shows a key for the MacroStageZ. It's a separate class 
-# primarily because of layout issues -- it's wider than the MacroStageZ itself,
-# and therefore needs to have its own canvas.
-class MacroStageZKey(macroStageBase.MacroStageBase):
-    ## Instantiate the MacroStageZKey.
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
-        ## Still no idea how this relates to anything, but this value seems
-        # to work well. 
-        self.textSize = .03
-        self.xExtent = self.maxX - self.minX
-        self.yExtent = self.maxY - self.minY
-        ## Amount of space to allocate per line of text.
-        self.textLineHeight = self.yExtent * .2
-        ## X offset for text. 
-        self.xOffset = self.xExtent * .9
-        ## Y offset for text. Ditto.
-        self.yOffset = self.yExtent * .75
-
-
-    ## Draw the key
-    def onPaint(self, event = None):
-        if not self.shouldDraw:
-            return
-        try:
-            if not self.haveInitedGL:
-                self.initGL()
-                self.haveInitedGL = True
-
-            dc = wx.PaintDC(self)
-            self.SetCurrent(self.context)
-
-            width, height = self.GetClientSize()
-            glViewport(0, 0, width, height)
-
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-            glLineWidth(1)
-
-            # Draw textual position coordinates.
-            positions = cockpit.interfaces.stageMover.getAllPositions()
-            positions = [p[2] for p in positions]
-            stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
-            self.drawStagePosition('Z:', positions, 
-                    cockpit.interfaces.stageMover.getCurHandlerIndex(), stepSize, 
-                    (self.xOffset, self.yOffset), self.xExtent * .25, 
-                    self.xExtent * .05, self.textSize)
-
-            glFlush()
-            self.SwapBuffers()
-            # Set the event, so our refreshWaiter() can update
-            # our stage position info.
-            self.drawEvent.set()
-        except Exception as e:
-            cockpit.util.logger.log.error("Error drawing Z macro stage key: %s", e)
-            traceback.print_exc()
-            self.shouldDraw = False

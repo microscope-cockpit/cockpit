@@ -113,9 +113,6 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.minY = self.centreY - self.viewExtent / 2 - self.viewDeltaY
         self.maxY = self.centreY + self.viewExtent / 2 - self.viewDeltaY
 
-        ## Amount of vertical space, in stage coordinates, to allot to one
-        # line of text.
-        self.textLineHeight = self.viewExtent * .05
         ## Size of text to draw. I confess I don't really understand how this
         # corresponds to anything, but it seems to work out.
         self.textSize = .004
@@ -341,23 +338,6 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 glVertex2f(scaleX, y2)
             glEnd()
             glLineWidth(1)
-
-            # Draw stage coordinates. Use a different color for the mover
-            # currently under keypad control.
-            coordsLoc = (self.maxX - self.viewExtent * .05,
-                    self.minY + self.viewExtent * .1)
-            allPositions = cockpit.interfaces.stageMover.getAllPositions()
-            curControl = cockpit.interfaces.stageMover.getCurHandlerIndex()
-            for axis in [0, 1]:
-                step = stepSizes[axis]
-                if stepSizes[axis] is None:
-                    step = 0
-                positions = [p[axis] for p in allPositions]
-                self.drawStagePosition(['X:', 'Y:'][axis],
-                        positions, curControl, step,
-                        (coordsLoc[0], coordsLoc[1] - axis * self.textLineHeight),
-                        self.viewExtent * .25, self.viewExtent * .05,
-                        self.textSize)
 
             events.publish('macro stage xy draw', self)
 
