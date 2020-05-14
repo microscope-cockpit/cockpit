@@ -81,9 +81,6 @@ from . import viewFileDropTarget
 from cockpit.gui import mainPanels
 
 
-## Max width of rows of UI widgets.
-# This number is chosen to match the width of the Macro Stage view.
-MAX_WIDTH = 850
 ROW_SPACER = 12
 COL_SPACER = 8
 
@@ -272,11 +269,6 @@ class MainWindow(wx.Frame):
         sizer = wx.BoxSizer()
         sizer.Add(panel)
         self.SetSizerAndFit(sizer)
-
-        # Ensure we use our full width if possible.
-        min_size = self.Sizer.GetMinSize()
-        if min_size[0] < MAX_WIDTH:
-            self.Sizer.SetMinSize((MAX_WIDTH, min_size[1]))
 
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
