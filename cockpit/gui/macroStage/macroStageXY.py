@@ -87,8 +87,6 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         ## Primitive objects - a map of specification to object.
         self.primitives = {}
 
-        self.calculateMeasures()
-
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
         self.Bind(wx.EVT_LEFT_UP, self.OnLeftClick)
         self.Bind(wx.EVT_LEFT_DCLICK, self.OnLeftDoubleClick)
@@ -103,8 +101,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 "Right click for gotoXYZ and double-click to toggle displaying of mosaic " +
                 "tiles."))
 
-    ## Dynamically calculate the various measures used for drawing
-    def calculateMeasures(self):
+    ## Dynamically calculate various parameters used for the drawing and modify
+    ## the viewing area accordingly
+    def calculateDrawingParams(self):
         # All measures are defined in the local (stage) space,
         # which has micrometers as units
         width, height = self.GetClientSize()
@@ -124,27 +123,27 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.maxY += _maxOffsetY
 
         # Calculate soft stage limit label metrics and ensure there is enough space to draw them
-        self.softlimit_label_scale = 0.0018 * combinedStageExtent
+        softlimit_label_scale = 0.0018 * combinedStageExtent
         softlimit_label_line_height = ((self.font.getFontAscender() - self.font.getFontDescender()) *
-                                            self.softlimit_label_scale)
-        self.softlimit_label_offset = softlimit_label_line_height * 0.25
-        self.maxY += self.softlimit_label_offset + softlimit_label_line_height
-        self.minY -= self.softlimit_label_offset + softlimit_label_line_height
+                                            softlimit_label_scale)
+        softlimit_label_offset = softlimit_label_line_height * 0.25
+        self.maxY += softlimit_label_offset + softlimit_label_line_height
+        self.minY -= softlimit_label_offset + softlimit_label_line_height
 
         # Calculate scale bar metrics and ensure there is enough space to draw it
-        self.scalebar_width_major = softlimit_label_line_height
-        self.scalebar_width_minor = softlimit_label_line_height * 0.5
-        self.scalebar_position = self.minY - (self.scalebar_width_major / 2)  # vertical middle of scale bar
-        self.minY = self.scalebar_position - (self.scalebar_width_major / 2)  # vertical bottom of scale bar
+        scalebar_height_major = softlimit_label_line_height
+        scalebar_height_minor = softlimit_label_line_height * 0.5
+        scalebar_position_v = self.minY - (scalebar_height_major / 2)  # vertical middle of scale bar
+        self.minY = scalebar_position_v - (scalebar_height_major / 2)  # vertical bottom of scale bar
 
         # Ensure there is enough space to draw the coordinate and step size labels. The position is slightly offset,
         # proportionally to the line height, in order to create a small gap from the top soft stage limit label.
-        self.coord_labels_scale_max = 0.0025 * combinedStageExtent
-        self.coord_labels_line_height = ((self.font.getFontAscender() - self.font.getFontDescender()) *
-                                          self.coord_labels_scale_max)
-        self.coord_labels_position = (self.maxY + self.coord_labels_line_height * 0.25 +
-                                      2 * self.coord_labels_line_height)
-        self.maxY = self.coord_labels_position
+        coord_labels_scale_max = 0.0025 * combinedStageExtent
+        coord_labels_line_height = ((self.font.getFontAscender() - self.font.getFontDescender()) *
+                                          coord_labels_scale_max)
+        coord_labels_position = (self.maxY + coord_labels_line_height * 0.25 +
+                                      2 * coord_labels_line_height)
+        self.maxY = coord_labels_position
 
         # Add margins for aesthetics and to ensure that all lines are entirely within the view area
         # NOTE: the margins may not be uniform
@@ -168,6 +167,23 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             extra_space = ((aratio_viewarea - aratio_viewport) / aratio_viewport) * (self.maxY - self.minY)
             self.minY -= extra_space / 2
             self.maxY += extra_space / 2
+
+        return {
+            "ssll": {
+                "scale": softlimit_label_scale,
+                "offset": softlimit_label_offset
+            },
+            "sb": {
+                "tick_height_major": scalebar_height_major,
+                "tick_height_minor": scalebar_height_minor,
+                "position_v": scalebar_position_v
+            },
+            "cssl": {
+                "scale_max": coord_labels_scale_max,
+                "line_height": coord_labels_line_height,
+                "position_v": coord_labels_position
+            }
+        }
 
     ## Safety limits have changed, which means we need to force a refresh.
     # \todo Redrawing everything just to tackle the safety limits is a bit
@@ -202,7 +218,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
             glViewport(0, 0, width, height)
 
-            self.calculateMeasures()
+            dParams = self.calculateDrawingParams()
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -293,17 +309,17 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 )
                 label_vertical_offsets = (
                     # Bottom right corner
-                    -self.softlimit_label_offset,
+                    -dParams["ssll"]["offset"],
                     # Top left corner,
-                    self.softlimit_label_offset
+                    dParams["ssll"]["offset"]
                 )
                 for i, (x, y) in enumerate(softLimits):
                     label = "({:d}, {:d})".format(x, y)
                     self.drawTextAt(
                         (x, y + label_vertical_offsets[i]),
                         label,
-                        self.softlimit_label_scale,
-                        self.softlimit_label_scale,
+                        dParams["ssll"]["scale"],
+                        dParams["ssll"]["scale"],
                         **label_alignments[i]
                     )
 
@@ -365,15 +381,15 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glColor3f(0, 0, 0)
             glLineWidth(1)
             glBegin(GL_LINES)
-            glVertex2f(hardLimits[0][0], self.scalebar_position)
-            glVertex2f(hardLimits[1][0], self.scalebar_position)
+            glVertex2f(hardLimits[0][0], dParams["sb"]["position_v"])
+            glVertex2f(hardLimits[1][0], dParams["sb"]["position_v"])
             # Draw notches in the scale bar every 1mm.
             for scaleX in range(int(hardLimits[0][0]), int(hardLimits[1][0]) + 1000, 1000):
-                width = self.scalebar_width_minor
+                width = dParams["sb"]["tick_height_minor"]
                 if scaleX % 5000 == 0:
-                    width = self.scalebar_width_major
-                y1 = self.scalebar_position - width / 2
-                y2 = self.scalebar_position + width / 2
+                    width = dParams["sb"]["tick_height_major"]
+                y1 = dParams["sb"]["position_v"] - width / 2
+                y2 = dParams["sb"]["position_v"] + width / 2
                 glVertex2f(scaleX, y1)
                 glVertex2f(scaleX, y2)
             glEnd()
@@ -392,13 +408,13 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                     axis_label,
                     (
                         hardLimits[0][0] + (hardLimits[1][0] - hardLimits[0][0]) / 2,
-                        self.coord_labels_position - index * self.coord_labels_line_height
+                        dParams["cssl"]["position_v"] - index * dParams["cssl"]["line_height"]
                     ),
                     positions,
                     curControl,
                     step,
-                    self.coord_labels_scale_max,
-                    self.coord_labels_scale_max,
+                    dParams["cssl"]["scale_max"],
+                    dParams["cssl"]["scale_max"],
                     alignment_h="centre"
                 )
 
