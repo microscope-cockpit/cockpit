@@ -98,8 +98,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         events.subscribe("soft safety limit", self.onSafetyChange)
         events.subscribe('objective change', self.onObjectiveChange)
         self.SetToolTip(wx.ToolTip("Left double-click to move the stage. " +
-                "Right click for gotoXYZ and double-click to toggle displaying of mosaic " +
-                "tiles."))
+                "Right click for gotoXYZ and double-click to toggle" +
+                "displayingof mosaic tiles."))
 
     ## Dynamically calculate various parameters used for the drawing and modify
     ## the viewing area accordingly
@@ -108,13 +108,17 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         # which has micrometers as units
         width, height = self.GetClientSize()
         hardLimits = cockpit.interfaces.stageMover.getHardLimits()
-        combinedStageExtent = (hardLimits[0][1] - hardLimits[0][0]) + (hardLimits[1][1] - hardLimits[1][0])
+        combinedStageExtent = (
+                (hardLimits[0][1] - hardLimits[0][0]) +
+                (hardLimits[1][1] - hardLimits[1][0])
+        )
 
         # Calculate the largest objective offsets
         _maxOffsetX = max([abs(offsets[0]) for offsets in self.listOffsets])
         _maxOffsetY = max([abs(offsets[1]) for offsets in self.listOffsets])
 
-        # Initialise the view area to the area of the stage's hard limits, accounting for largest objective offsets
+        # Initialise the view area to the area of the stage's hard limits,
+        # accounting for largest objective offsets
         self.minX, self.maxX = hardLimits[0]
         self.minY, self.maxY = hardLimits[1]
         self.minX -= _maxOffsetX
@@ -122,30 +126,41 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.minY -= _maxOffsetY
         self.maxY += _maxOffsetY
 
-        # Calculate soft stage limit label metrics and ensure there is enough space to draw them
+        # Calculate soft stage limit label metrics and ensure that
+        # there is enough space to draw them
         softlimit_label_scale = 0.0018 * combinedStageExtent
-        softlimit_label_line_height = ((self.font.getFontAscender() - self.font.getFontDescender()) *
-                                            softlimit_label_scale)
+        softlimit_label_line_height = (
+            (self.font.getFontAscender() - self.font.getFontDescender()) *
+            softlimit_label_scale
+        )
         softlimit_label_offset = softlimit_label_line_height * 0.25
         self.maxY += softlimit_label_offset + softlimit_label_line_height
         self.minY -= softlimit_label_offset + softlimit_label_line_height
 
-        # Calculate scale bar metrics and ensure there is enough space to draw it
+        # Calculate scale bar metrics and ensure that
+        # there is enough space to draw it
         scalebar_height_major = softlimit_label_line_height
         scalebar_height_minor = softlimit_label_line_height * 0.5
-        scalebar_position_v = self.minY - (scalebar_height_major / 2)  # vertical middle of scale bar
-        self.minY = scalebar_position_v - (scalebar_height_major / 2)  # vertical bottom of scale bar
+        scalebar_position_v = self.minY - (scalebar_height_major / 2)
+        self.minY = scalebar_position_v - (scalebar_height_major / 2)
 
-        # Ensure there is enough space to draw the coordinate and step size labels. The position is slightly offset,
-        # proportionally to the line height, in order to create a small gap from the top soft stage limit label.
+        # Ensure there is enough space to draw the coordinate and step size
+        # labels. The position is slightly offset, proportionally to the line
+        # height, in order to create a small gap from the top soft stage
+        # limit label.
         coord_labels_scale_max = 0.0025 * combinedStageExtent
-        coord_labels_line_height = ((self.font.getFontAscender() - self.font.getFontDescender()) *
-                                          coord_labels_scale_max)
-        coord_labels_position = (self.maxY + coord_labels_line_height * 0.25 +
-                                      2 * coord_labels_line_height)
+        coord_labels_line_height = (
+            (self.font.getFontAscender() - self.font.getFontDescender()) *
+            coord_labels_scale_max
+        )
+        coord_labels_position = (
+                self.maxY + coord_labels_line_height * 0.25 +
+                2 * coord_labels_line_height
+        )
         self.maxY = coord_labels_position
 
-        # Add margins for aesthetics and to ensure that all lines are entirely within the view area
+        # Add margins for aesthetics and to ensure that all lines are
+        # entirely within the view area
         # NOTE: the margins may not be uniform
         minSideLength = min(self.maxX - self.minX, self.maxY - self.minY)
         margin = 0.05 * minSideLength
@@ -158,13 +173,21 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         aratio_viewport = width / height
         aratio_viewarea = (self.maxX - self.minX) / (self.maxY - self.minY)
         if aratio_viewport >= aratio_viewarea:
-            # The viewport is wider than the stage => expose more horizontal scene space
-            extra_space = ((aratio_viewport - aratio_viewarea) / aratio_viewarea) * (self.maxX - self.minX)
+            # The viewport is wider than the stage =>
+            # expose more horizontal scene space
+            extra_space = (
+              ((aratio_viewport - aratio_viewarea) / aratio_viewarea) *
+              (self.maxX - self.minX)
+            )
             self.minX -= extra_space / 2
             self.maxX += extra_space / 2
         else:
-            # The viewport is taller than the stage => expose more vertical scene space
-            extra_space = ((aratio_viewarea - aratio_viewport) / aratio_viewport) * (self.maxY - self.minY)
+            # The viewport is taller than the stage =>
+            # expose more vertical scene space
+            extra_space = (
+                ((aratio_viewarea - aratio_viewport) / aratio_viewport) *
+                (self.maxY - self.minY)
+            )
             self.minY -= extra_space / 2
             self.maxY += extra_space / 2
 
@@ -229,7 +252,10 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             hardLimits = cockpit.interfaces.stageMover.getHardLimits()[:2]
             # Rearrange limits to (x, y) tuples.
             hardLimits = list(zip(hardLimits[0], hardLimits[1]))
-            maxStageExtent = max(hardLimits[1][0] - hardLimits[0][0], hardLimits[1][1] - hardLimits[0][1])
+            maxStageExtent = max(
+                hardLimits[1][0] - hardLimits[0][0],
+                hardLimits[1][1] - hardLimits[0][1]
+            )
 
             # Set up transform from stage to screen units
             glMatrixMode(GL_PROJECTION)
@@ -350,8 +376,10 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glColor3f(*colour)
             glBegin(GL_LINE_LOOP)
             for (x, y) in squareOffsets:
-                glVertex2f(motorPos[0] - offset[0] + squareSize * x - squareSize / 2,
-                           motorPos[1] + offset[1] + squareSize * y - squareSize / 2)
+                glVertex2f(
+                    motorPos[0] - offset[0] + squareSize * x - squareSize / 2,
+                    motorPos[1] + offset[1] + squareSize * y - squareSize / 2
+                )
             glEnd()
 
             # Draw motion crosshairs
@@ -363,8 +391,14 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                     continue
                 hairLengths = [0, 0]
                 hairLengths[i] = stepSize
-                glVertex2f(motorPos[0] - offset[0] - hairLengths[0], motorPos[1] + offset[1] - hairLengths[1])
-                glVertex2f(motorPos[0] - offset[0] + hairLengths[0], motorPos[1] + offset[1] + hairLengths[1])
+                glVertex2f(
+                    motorPos[0] - offset[0] - hairLengths[0],
+                    motorPos[1] + offset[1] - hairLengths[1]
+                )
+                glVertex2f(
+                    motorPos[0] - offset[0] + hairLengths[0],
+                    motorPos[1] + offset[1] + hairLengths[1]
+                )
             glEnd()
 
             # Draw direction of motion
@@ -384,7 +418,11 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glVertex2f(hardLimits[0][0], dParams["sb"]["position_v"])
             glVertex2f(hardLimits[1][0], dParams["sb"]["position_v"])
             # Draw notches in the scale bar every 1mm.
-            for scaleX in range(int(hardLimits[0][0]), int(hardLimits[1][0]) + 1000, 1000):
+            for scaleX in range(
+                    int(hardLimits[0][0]),
+                    int(hardLimits[1][0]) + 1000,
+                    1000
+            ):
                 width = dParams["sb"]["tick_height_minor"]
                 if scaleX % 5000 == 0:
                     width = dParams["sb"]["tick_height_major"]
@@ -407,8 +445,14 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 self.drawStagePosition(
                     axis_label,
                     (
-                        hardLimits[0][0] + (hardLimits[1][0] - hardLimits[0][0]) / 2,
-                        dParams["cssl"]["position_v"] - index * dParams["cssl"]["line_height"]
+                        (
+                            hardLimits[0][0] +
+                            (hardLimits[1][0] - hardLimits[0][0]) / 2
+                        ),
+                        (
+                            dParams["cssl"]["position_v"] -
+                            index * dParams["cssl"]["line_height"]
+                        )
                     ),
                     positions,
                     curControl,
@@ -426,7 +470,10 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             # our stage position info.
             self.drawEvent.set()
         except Exception as e:
-            cockpit.util.logger.log.error("Exception drawing XY macro stage: %s", e)
+            cockpit.util.logger.log.error(
+                "Exception drawing XY macro stage: %s",
+                e
+            )
             cockpit.util.logger.log.error(traceback.format_exc())
             self.shouldDraw = False
 
@@ -481,7 +528,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         #distance with exisiting mover
         cockpit.interfaces.stageMover.mover.curHandlerIndex = 0
 
-        cockpit.interfaces.stageMover.goToXY(self.remapClick(event.GetPosition()))
+        cockpit.interfaces.stageMover.goToXY(
+            self.remapClick(event.GetPosition())
+        )
 
         #make sure we are back to the expected mover
         cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
@@ -495,22 +544,41 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 atMouse=True)
         newPos=[float(values[0]),float(values[1]),float(values[2])]
 #Work out if we will be ouside the limits of the current stage
-        posDelta = [newPos[0]-position[0],newPos[1]-position[1],newPos[2]-position[2]]
-        originalHandlerIndex = cockpit.interfaces.stageMover.mover.curHandlerIndex
+        posDelta = [
+            newPos[0] - position[0],
+            newPos[1] - position[1],
+            newPos[2] - position[2]
+        ]
+        originalHandlerIndex = (
+            cockpit.interfaces.stageMover.mover.curHandlerIndex
+        )
         currentHandlerIndex = originalHandlerIndex
         allPositions=cockpit.interfaces.stageMover.getAllPositions()
         for axis in range(3):
             if (posDelta[axis]**2 > .001 ):
-                    limits = cockpit.interfaces.stageMover.getIndividualHardLimits(axis)
-                    currentpos = allPositions[currentHandlerIndex][axis]
-                    if ((currentpos + posDelta[axis]<(limits[currentHandlerIndex][0])) # off bottom
-                        or (currentpos + posDelta[axis]>(limits[currentHandlerIndex][1]))): #off top
-                        currentHandlerIndex -= 1 # go to a bigger handler index
-                    if currentHandlerIndex<0:
-                        return False
-        cockpit.interfaces.stageMover.mover.curHandlerIndex = currentHandlerIndex
+                limits = (
+                    cockpit.interfaces.stageMover.getIndividualHardLimits(axis)
+                )
+                currentpos = allPositions[currentHandlerIndex][axis]
+                off_bottom = (
+                    (currentpos + posDelta[axis]) <
+                    (limits[currentHandlerIndex][0])
+                )
+                off_top = (
+                    (currentpos + posDelta[axis]) >
+                    (limits[currentHandlerIndex][1])
+                )
+                if off_bottom or off_top:
+                    currentHandlerIndex -= 1 # go to a bigger handler index
+                if currentHandlerIndex<0:
+                    return False
+        cockpit.interfaces.stageMover.mover.curHandlerIndex = (
+            currentHandlerIndex
+        )
         cockpit.interfaces.stageMover.goTo(newPos)
-        cockpit.interfaces.stageMover.mover.curHandlerIndex = originalHandlerIndex
+        cockpit.interfaces.stageMover.mover.curHandlerIndex = (
+            originalHandlerIndex
+        )
         return True
 
 
@@ -522,8 +590,14 @@ class MacroStageXY(macroStageBase.MacroStageBase):
     ## Remap a click location from pixel coordinates to realspace coordinates
     def remapClick(self, clickLoc):
         width, height = self.GetClientSize()
-        x = float(width - clickLoc[0]) / width * (self.maxX - self.minX) + self.minX
-        y = float(height - clickLoc[1]) / height * (self.maxY - self.minY) + self.minY
+        x = (
+            float(width - clickLoc[0]) / width * (self.maxX - self.minX) +
+            self.minX
+        )
+        y = (
+            float(height - clickLoc[1]) / height * (self.maxY - self.minY) +
+            self.minY
+        )
         return [x+self.offset[0], y-self.offset[1]]
 
 

@@ -92,7 +92,9 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
     ## Create the MacroStage. Mostly, attach a timer to the main window so
     # that we can use it to trigger updates.
     def __init__(self, parent, size, id = -1, *args, **kwargs):
-        wx.glcanvas.GLCanvas.__init__(self, parent, id, size = size, *args, **kwargs)
+        wx.glcanvas.GLCanvas.__init__(
+            self, parent, id, size = size, *args, **kwargs
+        )
 
         ## WX context for drawing.
         self.context = wx.glcanvas.GLContext(self)
@@ -142,12 +144,16 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.shouldForceRedraw = False
 
         ## Thread that ensures we don't spam redisplaying ourselves.
-        self.redrawTimerThread = threading.Thread(target=self.refreshWaiter, name="macrostage-refresh")
+        self.redrawTimerThread = threading.Thread(
+            target=self.refreshWaiter,
+            name="macrostage-refresh"
+        )
         self.redrawTimerThread.start()
 
         self.Bind(wx.EVT_PAINT, self.onPaint)
         self.Bind(wx.EVT_SIZE, lambda event: event)
-        self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event) # Do nothing, to avoid flashing
+        # Do nothing in the erase background event, to avoid flashing
+        self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event)
         events.subscribe(events.STAGE_POSITION, self.onMotion)
         events.subscribe("stage step size", self.onStepSizeChange)
         events.subscribe("stage step index", self.onStepIndexChange)
@@ -226,8 +232,14 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         angle = numpy.arctan2(delta[1], delta[0])
 
         pointLoc = baseLoc + delta
-        headLoc1 = pointLoc - numpy.array([numpy.cos(angle + ARROWHEAD_ANGLE), numpy.sin(angle + ARROWHEAD_ANGLE)]) * arrowHeadSize
-        headLoc2 = pointLoc - numpy.array([numpy.cos(angle - ARROWHEAD_ANGLE), numpy.sin(angle - ARROWHEAD_ANGLE)]) * arrowHeadSize
+        headLoc1 = pointLoc - numpy.array([
+            numpy.cos(angle + ARROWHEAD_ANGLE),
+            numpy.sin(angle + ARROWHEAD_ANGLE)
+        ]) * arrowHeadSize
+        headLoc2 = pointLoc - numpy.array([
+            numpy.cos(angle - ARROWHEAD_ANGLE),
+            numpy.sin(angle - ARROWHEAD_ANGLE)
+        ]) * arrowHeadSize
         
         # Draw
         glColor3f(color[0], color[1], color[2])
@@ -245,26 +257,36 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         glVertex2f(pointLoc[0], pointLoc[1])
         glEnd()
 
-    def drawTextAt(self, loc, text, scale_x=1.0, scale_y=1.0, alignment_h="left", alignment_v="bottom",
-                    colour=(0.0, 0.0, 0.0, 1.0), scale_axis_x=-1.0, scale_axis_y=1.0, draw_bbox=False):
+    def drawTextAt(self, loc, text, scale_x=1.0, scale_y=1.0,
+                   alignment_h="left", alignment_v="bottom",
+                   colour=(0.0, 0.0, 0.0, 1.0), scale_axis_x=-1.0,
+                   scale_axis_y=1.0, draw_bbox=False):
         """Draw a line of text.
 
-        Draw a line of text at the given location. Optionally, draw the bounding box as well.
-        Possible alignment arguments are:
+        Draw a line of text at the given location. Optionally, draw the
+        bounding box as well. Possible alignment arguments are:
             horizontal: left, baseline, centre, right
             vertical: top, middle, baseline, bottom
         The format of the colour argument is RGBA, range from 0 to 1.0.
 
         Args:
-            loc (tuple of int): The location, in OpenGL units, at which to draw the text.
+            loc (tuple of int): The location, in OpenGL units,
+                at which to draw the text.
             text (str): The text to be drawn.
-            scale_x (float): The scaling factor applied in the horizontal direction.
-            scale_y (float): The scaling factor applied in the vertical direction.
-            alignment_h (str): The horizontal alignment of the text with respect to the location.
-            alignment_v (str): The vertical alignment of the text with respect to the location.
-            colour (tuple of floats): The colour used for both the text and the bounding box.
-            scale_axis_x (float): The scaling factor of the x axis. Expect only -1.0 or 1.0.
-            scale_axis_y (float): The scaling factor of the y axis. Expect only -1.0 or 1.0.
+            scale_x (float): The scaling factor applied in the horizontal
+                direction.
+            scale_y (float): The scaling factor applied in the vertical
+                direction.
+            alignment_h (str): The horizontal alignment of the text with
+                respect to the location.
+            alignment_v (str): The vertical alignment of the text with
+                respect to the location.
+            colour (tuple of floats): The colour used for both the text and
+                the bounding box.
+            scale_axis_x (float): The scaling factor of the x axis.
+                Expect only -1.0 or 1.0.
+            scale_axis_y (float): The scaling factor of the y axis.
+                Expect only -1.0 or 1.0.
             draw_bbox (boolean): Whether to draw the bounding box of the text.
 
         """
@@ -297,7 +319,11 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         glLoadIdentity()
-        glTranslatef(loc[0] + alignment_h_offset * scale_x, loc[1] + alignment_v_offset * scale_y, 0.0)
+        glTranslatef(
+            loc[0] + alignment_h_offset * scale_x,
+            loc[1] + alignment_v_offset * scale_y,
+            0.0
+        )
         glScalef(scale_x * scale_axis_x, scale_y * scale_axis_y, 1.0)
         # Render the text
         glColor4f(*colour)
@@ -314,57 +340,99 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         glPopMatrix()
         glMatrixMode(prev_mmode)
 
-    def drawStagePosition(self, label, drawLoc, positions, highlightIndex, stepSize, scale_max_x, scale_max_y,
-                           scale_axis_x=-1.0, scale_axis_y=1.0, alignment_h="left", alignment_v="top",
-                           hl_colour=(0.0, 0.5, 0.0, 1.0)):
+    def drawStagePosition(self, label, drawLoc, positions, highlightIndex,
+                          stepSize, scale_max_x, scale_max_y,
+                          scale_axis_x=-1.0, scale_axis_y=1.0,
+                          alignment_h="left", alignment_v="top",
+                          hl_colour=(0.0, 0.5, 0.0, 1.0)):
         """Draw a stage position line of text.
 
-        Draw a specially formatted line of text, describing the position of an entity such as an axis, as well as its
-        step size. If there is more than one not-None position, then are all drawn next to each other. The position
-        with index highlightIndex is coloured differently. The scaling factors are applied directly to the label,
-        whereas the rest of the text uses 0.75 of the same factors. Possible alignment arguments are:
+        Draw a specially formatted line of text, describing the position of an
+        entity such as an axis, as well as its step size. If there is more than
+        one not-None position, then are all drawn next to each other. The
+        position with index highlightIndex is coloured differently. The scaling
+        factors are applied directly to the label, whereas the rest of the text
+        uses 0.75 of the same factors. Possible alignment arguments are:
             horizontal: left, baseline, centre, right
             vertical: top, middle, baseline, bottom
         The format of the colour argument is RGBA, range from 0 to 1.0.
 
         Args:
-            label (str): The label of the entity, whose position and step size are being drawn.
-            drawLoc (tuple of int): The location, in OpenGL units, at which to draw the line of text.
-            positions (list of float): The entity positions. All None values are skipped.
+            label (str): The label of the entity, whose position and step size
+                are being drawn.
+            drawLoc (tuple of int): The location, in OpenGL units, at which to
+                draw the line of text.
+            positions (list of float): The entity positions. All None values
+                are skipped.
             highlightIndex (int): The index of the position to highlight.
             stepSize (float): The size of the entity's step.
-            scale_max_x (float): The scaling factor applied to the label in the horizontal direction.
-            scale_max_y (float): The scaling factor applied to the label in the vertical direction.
-            scale_axis_x (float): The scaling factor of the x axis. Expect only -1.0 or 1.0.
-            scale_axis_y (float): The scaling factor of the y axis. Expect only -1.0 or 1.0.
-            alignment_h (str): The horizontal alignment of the text with respect to the location.
-            alignment_v (str): The vertical alignment of the text with respect to the location.
-            hl_colour (tuple of floats): The colour used for highlighting one of the positions.
+            scale_max_x (float): The scaling factor applied to the label in the
+                horizontal direction.
+            scale_max_y (float): The scaling factor applied to the label in the
+                vertical direction.
+            scale_axis_x (float): The scaling factor of the x axis.
+                Expect only -1.0 or 1.0.
+            scale_axis_y (float): The scaling factor of the y axis.
+                Expect only -1.0 or 1.0.
+            alignment_h (str): The horizontal alignment of the text with
+                respect to the location.
+            alignment_v (str): The vertical alignment of the text with
+                respect to the location.
+            hl_colour (tuple of floats): The colour used for highlighting one
+                of the positions.
 
         """
         text_pos = list(drawLoc)
-        # Calculate the width of a space character
-        space_char_bbox = self.font.getFontBBox("  ")  # it's actually returning the bbox of a single space
-        space_char_width = (space_char_bbox[3] - space_char_bbox[0]) * scale_max_x
+        # Calculate the width of a space character. Even though two spaces are
+        # used, getFontBBox() actually returns the bbox of a single space
+        space_char_bbox = self.font.getFontBBox("  ")
+        space_char_width = (
+            (space_char_bbox[3] - space_char_bbox[0]) * scale_max_x
+        )
         # Pre-calculate the total width of all the text that will be drawn
         total_text_width = 0.0
         bbox_axis = self.font.getFontBBox(label)
-        total_text_width += ((bbox_axis[3] - bbox_axis[0]) * scale_max_x + space_char_width) * scale_axis_x
+        total_text_width += (
+            ((bbox_axis[3] - bbox_axis[0]) * scale_max_x + space_char_width) *
+            scale_axis_x
+        )
         bbox_miny = bbox_axis[1] * scale_max_y * scale_axis_y
         bbox_maxy = bbox_axis[4] * scale_max_y * scale_axis_y
         for pos in positions:
             if pos is None:
                 continue
             bbox_coord = self.font.getFontBBox("{:5.2f}".format(pos))
-            total_text_width += ((bbox_coord[3] - bbox_coord[0]) * scale_max_x * 0.75 + space_char_width) * scale_axis_x
-            bbox_miny = min(bbox_miny, bbox_coord[1] * scale_max_y * 0.75 * scale_axis_y)
-            bbox_maxy = max(bbox_maxy, bbox_coord[4] * scale_max_y * 0.75 * scale_axis_y)
+            total_text_width += (
+                    (
+                        (bbox_coord[3] - bbox_coord[0]) * scale_max_x * 0.75 +
+                        space_char_width
+                    ) *
+                    scale_axis_x
+            )
+            bbox_miny = min(
+                bbox_miny,
+                bbox_coord[1] * scale_max_y * 0.75 * scale_axis_y
+            )
+            bbox_maxy = max(
+                bbox_maxy,
+                bbox_coord[4] * scale_max_y * 0.75 * scale_axis_y
+            )
         total_text_width += (space_char_width * 3) * scale_axis_x
         bbox_step = self.font.getFontBBox("step: {:4.2f}um".format(stepSize))
-        total_text_width += ((bbox_step[3] - bbox_step[0]) * scale_max_x * 0.75) * scale_axis_x
-        bbox_miny = min(bbox_miny, bbox_step[1] * scale_max_y * 0.75 * scale_axis_y)
-        bbox_maxy = max(bbox_maxy, bbox_step[4] * scale_max_y * 0.75 * scale_axis_y)
-        # Calculate alignment offsets and apply them to the initial text position
+        total_text_width += (
+            ((bbox_step[3] - bbox_step[0]) * scale_max_x * 0.75) *
+            scale_axis_x
+        )
+        bbox_miny = min(
+            bbox_miny,
+            bbox_step[1] * scale_max_y * 0.75 * scale_axis_y
+        )
+        bbox_maxy = max(
+            bbox_maxy,
+            bbox_step[4] * scale_max_y * 0.75 * scale_axis_y
+        )
+        # Calculate alignment offsets and apply them to the initial text
+        # position
         alignment_offset_h = (0 - bbox_axis[0]) * scale_axis_x
         if alignment_h == "centre":
             alignment_offset_h = total_text_width / 2
@@ -382,8 +450,14 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
             alignment_offset_v = bbox_miny
         text_pos[1] -= alignment_offset_v
         # Draw the axis label and advance the text position horizontal location
-        self.drawTextAt(text_pos, label, scale_max_x, scale_max_y, alignment_v="baseline", scale_axis_x=scale_axis_x)
-        text_pos[0] += ((bbox_axis[3] - bbox_axis[0]) * scale_max_x + space_char_width) * scale_axis_x
+        self.drawTextAt(
+            text_pos, label, scale_max_x, scale_max_y, alignment_v="baseline",
+            scale_axis_x=scale_axis_x
+        )
+        text_pos[0] += (
+            ((bbox_axis[3] - bbox_axis[0]) * scale_max_x + space_char_width) *
+            scale_axis_x
+        )
         for i, pos in enumerate(positions):
             if pos is None:
                 # No positioning for this axis.
@@ -401,7 +475,13 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
                 scale_axis_x=scale_axis_x,
                 **colour_args
             )
-            text_pos[0] += ((bbox_coord[3] - bbox_coord[0]) * scale_max_x * 0.75 + space_char_width) * scale_axis_x
+            text_pos[0] += (
+                (
+                    (bbox_coord[3] - bbox_coord[0]) * scale_max_x * 0.75 +
+                    space_char_width
+                ) *
+                scale_axis_x
+            )
         # Add more horizontal spacings before the step size text
         text_pos[0] += (space_char_width * 3) * scale_axis_x
         # Draw the step size

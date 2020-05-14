@@ -112,9 +112,14 @@ class Histogram():
         # data point) in our range.
         self.maxBucketSize = 1
         if data:
-            for y in range(int(self.minAltitude), int(self.maxAltitude) + 1, ALTITUDE_BUCKET_SIZE):
+            for y in range(
+                int(self.minAltitude),
+                int(self.maxAltitude) + 1,
+                ALTITUDE_BUCKET_SIZE
+            ):
                 slot = int(y - self.minAltitude) // ALTITUDE_BUCKET_SIZE
-                # MAP - this can crash here when Z-range is small, so bounds-check slot.
+                # MAP - this can crash here when Z-range is small,
+                # so bounds-check slot.
                 if slot < len(data):
                     self.maxBucketSize = max(self.maxBucketSize, data[slot])
 
@@ -122,8 +127,15 @@ class Histogram():
     ## Rescale an altitude to our min and max, so that our min
     # maps to self.minY and our max to self.maxY, modulo our margin
     def scale(self, altitude):
-        altitude = float(altitude - self.minAltitude) / (self.maxAltitude - self.minAltitude)
-        altitude = altitude * (self.maxY - self.minY - self.margin * 2) + self.minY + self.margin
+        altitude = (
+            float(altitude - self.minAltitude) /
+            (self.maxAltitude - self.minAltitude)
+        )
+        altitude = (
+            altitude * (self.maxY - self.minY - self.margin * 2) +
+            self.minY +
+            self.margin
+        )
         return altitude
         
 
@@ -182,8 +194,9 @@ class MacroStageZ(macroStageBase.MacroStageBase):
     ## Calculate the histogram buckets and min/max settings
     # based on self.experimentAltitudes
     def calculateHistogram(self):
-        self.experimentAltitudes = list(cockpit.util.userConfig.getValue('experimentAltitudes', 
-                                                                         default=[]))
+        self.experimentAltitudes = list(
+            cockpit.util.userConfig.getValue('experimentAltitudes', default=[])
+        )
         ## Set of buckets, by altitude, of the experiments
         self.altitudeBuckets = [0 for i in range(int(self.minY),
                 int(self.maxY + 1), ALTITUDE_BUCKET_SIZE)]
@@ -191,8 +204,10 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             slot = int((altitude - self.minY) // ALTITUDE_BUCKET_SIZE)
             if slot < 0 or slot > len(self.altitudeBuckets):
                 # This should, of course, be impossible.
-                cockpit.util.logger.log.warning("Impossible experiment altitude %f (min %f, max %f)",
-                        altitude, self.minY, self.maxY)
+                cockpit.util.logger.log.warning(
+                    "Impossible experiment altitude %f (min %f, max %f)",
+                    altitude, self.minY, self.maxY
+                )
             else:
             # bounds check slot
                 if slot < len(self.altitudeBuckets):
@@ -204,10 +219,16 @@ class MacroStageZ(macroStageBase.MacroStageBase):
     def onExperimentComplete(self, *args):
         # Update histogram data
         self.experimentAltitudes = list(
-                cockpit.util.userConfig.getValue('experimentAltitudes', default=[])
+                cockpit.util.userConfig.getValue(
+                    'experimentAltitudes',
+                    default=[]
+                )
         )
         self.experimentAltitudes.append(self.curStagePosition[2])
-        cockpit.util.userConfig.setValue('experimentAltitudes', self.experimentAltitudes)
+        cockpit.util.userConfig.setValue(
+            'experimentAltitudes',
+            self.experimentAltitudes
+        )
         self.calculateHistogram()
 
 
@@ -228,11 +249,27 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         #And subtract the lower limit if minor controller exisits.
         if(len(minorLimits)>1):
             minorPos= cockpit.interfaces.stageMover.getAllPositions()[1][2]
-            histogramMin = altitude-(minorPos-minorLimits[1][0]) - HISTOGRAM_MIN_PADDING
-            histogramMax = altitude+(-minorPos+minorLimits[1][1])+HISTOGRAM_MIN_PADDING
-        else: 
-            histogramMin = altitude-(SECONDARY_HISTOGRAM_SIZE/2.0)- HISTOGRAM_MIN_PADDING
-            histogramMax = altitude+(SECONDARY_HISTOGRAM_SIZE/2.0)+HISTOGRAM_MIN_PADDING
+            histogramMin = (
+                altitude -
+                (minorPos-minorLimits[1][0]) -
+                HISTOGRAM_MIN_PADDING
+            )
+            histogramMax = (
+                altitude +
+                (-minorPos+minorLimits[1][1]) +
+                HISTOGRAM_MIN_PADDING
+            )
+        else:
+            histogramMin = (
+                altitude -
+                (SECONDARY_HISTOGRAM_SIZE/2.0) -
+                HISTOGRAM_MIN_PADDING
+            )
+            histogramMax = (
+                altitude +
+                (SECONDARY_HISTOGRAM_SIZE/2.0) +
+                HISTOGRAM_MIN_PADDING
+            )
         histogram = Histogram(histogramMin, histogramMax, 
                 self.zHorizOffset - self.stageExtent * .4, 
                 self.minY, self.maxY, 
@@ -281,7 +318,10 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                         self.histograms = self.histograms[:-1]
 
             except Exception as e:
-                cockpit.util.logger.log.error("Error updating macro stage Z status: %s", e)
+                cockpit.util.logger.log.error(
+                    "Error updating macro stage Z status: %s",
+                    e
+                )
                 cockpit.util.logger.log.error(traceback.format_exc())
                 self.shouldDraw = False
 
@@ -290,7 +330,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
     # - A red line at the current stage height
     # - A purple line at the current Z tower height (or at a ceiling height if
     #   its position is off the scale).
-    # - A pair of dotted blue lines for the hard stage motion limits at [4000, 25000]
+    # - A pair of dotted blue lines for the hard stage motion limits at
+    #   [4000, 25000]
     # - A dotted green line for the soft stage motion min limit (no max limit)
     # - A red line indicating the stage motion delta
     # - When moving, a blue arrow indicating our direction of motion
@@ -313,7 +354,9 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 
             motorPos = self.curStagePosition[2]
             majorPos = cockpit.interfaces.stageMover.getAllPositions()[0][2]
-            minorLimits = cockpit.interfaces.stageMover.getIndividualSoftLimits(2)
+            minorLimits = (
+                cockpit.interfaces.stageMover.getIndividualSoftLimits(2)
+            )
             # Add the max range of motion of the first fine-motion controller.
             #And subtract the lower limit
             if len(minorLimits) > 1:
@@ -373,7 +416,6 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 if pos is not None:
                     self.drawLine(pos, color = (0, 0, 1))
 
-			
             # Draw current stage position
             self.drawLine(motorPos, color = (1, 0, 0),
                     label = str(int(motorPos)), isLabelOnLeft = True)
@@ -436,14 +478,20 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 # Convert pixel offset to altitude inside our histogram
                 # min/max values
                 altitude = float(pixelOffset) / height
-                altitude = altitude * (histogram.maxAltitude - histogram.minAltitude) + histogram.minAltitude
+                altitude = (
+                    altitude *
+                    (histogram.maxAltitude - histogram.minAltitude) +
+                    histogram.minAltitude
+                )
                 # Map that altitude to a bucket
                 bucketIndex = int(altitude - self.minY) // ALTITUDE_BUCKET_SIZE
                 if bucketIndex < len(self.altitudeBuckets):
                     count = self.altitudeBuckets[bucketIndex]
                 else:
                     continue
-                width = int(float(count) / histogram.maxBucketSize * histogram.width)
+                width = int(
+                    float(count) / histogram.maxBucketSize * histogram.width
+                )
                 drawAltitude = histogram.scale(altitude)
                 self.scaledVertex(histogram.xOffset, drawAltitude)
                 self.scaledVertex(histogram.xOffset - width, drawAltitude)
@@ -573,7 +621,11 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             if shouldLabelMainView:
                 # Draw a text label next to the line, in the line's color.
                 self.drawTextAt(
-                    self.scaledVertex(labelX, drawAltitude - self.textLineHeight / 4, shouldReturn=True),
+                    self.scaledVertex(
+                        labelX,
+                        drawAltitude - self.textLineHeight / 4,
+                        shouldReturn=True
+                    ),
                     label,
                     text_scale_x,
                     text_scale_y,
@@ -585,7 +637,11 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 for histogram in self.histograms:
                     if histogram.shouldLabel:
                         histogramAltitude = histogram.scale(altitude)
-                        histogramLabelX = labelX - histogram.xOffset + self.horizLineLength / 2
+                        histogramLabelX = (
+                            labelX -
+                            histogram.xOffset +
+                            self.horizLineLength / 2
+                        )
                         self.drawTextAt(
                             self.scaledVertex(
                                 histogramLabelX,
@@ -605,7 +661,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         if event.LeftDClick():
             clickLoc = event.GetPosition()
             canvasLoc = self.mapClickToCanvas(clickLoc)
-            # Map the click location to one of our histograms or to the main scale.
+            # Map the click location to one of our histograms or
+            # to the main scale.
             scale = (self.minY, self.maxY)
             # if we are on the first hist then use the coarest mover if not
             # then use the currently selected one.
@@ -617,14 +674,18 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                     scale = (histogram.minAltitude, histogram.maxAltitude)
                     # not first hist so revert to current mover whatever that
                     #might be
-                    cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover                
+                    cockpit.interfaces.stageMover.mover.curHandlerIndex = (
+                        originalMover
+                    )
                     break # fall through as we have found which
                           # histogram we clicked on
                 
             width, height = self.GetClientSize()
             weight = 1. - float(clickLoc[1]) / height
             altitude = (scale[1] - scale[0]) * weight + scale[0]
-            zHardMax = cockpit.interfaces.stageMover.getIndividualHardLimits(2)[0][1]
+            zHardMax = (
+                cockpit.interfaces.stageMover.getIndividualHardLimits(2)[0][1]
+            )
             cockpit.interfaces.stageMover.goToZ(min(zHardMax, altitude))
             #make sure we are back to the expected mover
             cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
@@ -634,8 +695,14 @@ class MacroStageZ(macroStageBase.MacroStageBase):
     ## Remap an XY tuple to stage coordinates.
     def mapClickToCanvas(self, loc):
         width, height = self.GetClientSize()
-        x = float(width - loc[0]) / width * (self.maxY - self.minY) + self.minY
-        y = float(height - loc[1]) / height * (self.maxY - self.minY) + self.minY
+        x = (
+            float(width - loc[0]) / width * (self.maxY - self.minY) +
+            self.minY
+        )
+        y = (
+            float(height - loc[1]) / height * (self.maxY - self.minY) +
+            self.minY
+        )
         return (x, y)
 
 
@@ -692,9 +759,12 @@ class MacroStageZKey(macroStageBase.MacroStageBase):
             positions = cockpit.interfaces.stageMover.getAllPositions()
             positions = [p[2] for p in positions]
             stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
-            self.drawStagePosition("Z:", (0, 0), positions, cockpit.interfaces.stageMover.getCurHandlerIndex(),
-                                    stepSize, text_scale_x, text_scale_y, scale_axis_x=1.0, alignment_h="centre",
-                                    alignment_v="middle")
+            self.drawStagePosition(
+                "Z:", (0, 0), positions,
+                cockpit.interfaces.stageMover.getCurHandlerIndex(),
+                stepSize, text_scale_x, text_scale_y,
+                scale_axis_x=1.0, alignment_h="centre", alignment_v="middle"
+            )
 
             glFlush()
             self.SwapBuffers()
@@ -702,6 +772,9 @@ class MacroStageZKey(macroStageBase.MacroStageBase):
             # our stage position info.
             self.drawEvent.set()
         except Exception as e:
-            cockpit.util.logger.log.error("Error drawing Z macro stage key: %s", e)
+            cockpit.util.logger.log.error(
+                "Error drawing Z macro stage key: %s",
+                e
+            )
             traceback.print_exc()
             self.shouldDraw = False
