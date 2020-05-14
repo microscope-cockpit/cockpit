@@ -59,11 +59,6 @@ import cockpit.handlers.stagePositioner
 
 class DummyMover(stage.StageDevice):
     def __init__(self, name="dummy XY stage", config={}):
-        config['primitives'] = \
-            "r 12500 6000 3000 3000\n" \
-            "c 5000 6000 3000\n"       \
-            "c 20000, 6000, 3000\n"
-
         super(DummyMover, self).__init__(name, config)
         # List of 2 doubles indicating our X/Y position.
         self.curPosition = [1000, 1000]
@@ -95,8 +90,7 @@ class DummyMover(stage.StageDevice):
                     'getPosition': self.getPosition,
                     'getMovementTime': self.getMovementTime,
                     'cleanupAfterExperiment': self.cleanup,
-                    'setSafety': self.setSafety,
-                    'getPrimitives': self.getPrimitives},
+                    'setSafety': self.setSafety},
                 axis, [5, 10, 50, 100, 500, 1000],
                 2, (minVal, maxVal), (minVal, maxVal))
             result.append(handler)

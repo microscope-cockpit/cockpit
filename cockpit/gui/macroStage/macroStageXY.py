@@ -270,8 +270,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glEnable(GL_LINE_STIPPLE)
             glLineStipple(1, 0xAAAA)
             glColor3f(0.4, 0.4, 0.4)
-            primitives = cockpit.interfaces.stageMover.getPrimitives()
-            for p in primitives:
+            # FIXME: we should not have to check this on every paint.
+            for p in wx.GetApp().Config['stage'].getlines('primitives', []):
                 if p not in self.primitives:
                     self.primitives[p] = Primitive.factory(p)
                 self.primitives[p].render()

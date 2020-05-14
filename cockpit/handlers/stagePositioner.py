@@ -139,13 +139,6 @@ class PositionerHandler(deviceHandler.DeviceHandler):
         self.stepIndex = min(len(self.stepSizes) - 1, max(0, newIndex))
 
 
-    ## Return list of primitives to draw on the macrostage.
-    def getPrimitives(self):
-        cb = self.callbacks.get('getPrimitives', None)
-        if cb:
-            return cb()
-
-
     ## Return the current step size.
     def getStepSize(self):
         return self.stepSizes[self.stepIndex]

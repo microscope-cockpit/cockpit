@@ -153,13 +153,6 @@ class StageMover:
         self.nameToStoppedEvent = {}
         events.subscribe(events.STAGE_MOVER, self.onMotion)
         events.subscribe(events.STAGE_STOPPED, self.onStop)
-        ## Device-speficic primitives to draw on the macrostage.
-        self.primitives = set()
-        for h in depot.getHandlersOfType(depot.STAGE_POSITIONER):
-            ps = h.getPrimitives()
-            if ps:
-                self.primitives.update(ps)
-        self.primitives.discard(None)
 
 
     ## Handle one of our devices moving. We just republish an abstracted
@@ -230,10 +223,6 @@ def makeInitialPublications():
 
 ## Various module-global functions for interacting with the objects in the
 # Mover.
-
-def getPrimitives():
-    return mover.primitives
-
 
 ## Move one step with the current active handler in the specified direction(s).
 # \param direction A tuple/list of length equal to the number of axes of

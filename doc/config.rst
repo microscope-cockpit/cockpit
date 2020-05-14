@@ -71,6 +71,18 @@ dir
 stage section
 `````````````
 
+primitives
+
+  A list of shapes to draw on stage displays.  Primitives are
+  specified by a config entry of the form::
+
+    primitives: c 1000 1000 100
+                r 1000 1000 100 100
+
+  where ``c x0 y0 radius`` defines a circle centred on ``x0, y0`` and
+  ``r x0 y0 width height`` defines a rectangle centred on ``x0, y0``.
+
+
 .. TODO:: Ian says the options for the stage section are historical
           and a fudge.  That need to be changed and may be removed in
           the future.

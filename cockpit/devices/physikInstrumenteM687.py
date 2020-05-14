@@ -75,8 +75,6 @@ import re # to get regular expression parsing for config file
 #  baud: 115200
 #  timeout: 0.1
 #  softlimits: ((-37500,-67500),(11500,59500))
-#  primitives:  r, 500, -7000 ,22000,76000
-#               c, 6500, -6200, 4500
 #
 
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
@@ -357,8 +355,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
                     {'moveAbsolute': self.moveXYAbsolute,
                          'moveRelative': self.moveXYRelative,
                          'getPosition': self.getXYPosition,
-                         'setSafety': self.setXYSafety,
-                         'getPrimitives': self.getPrimitives},
+                         'setSafety': self.setXYSafety},
                     axis, [.1, .2, .5, 1, 2, 5, 10, 50, 100, 500, 1000, 5000], 3,
                     (minPos, maxPos), (minPos, maxPos)))
         return result

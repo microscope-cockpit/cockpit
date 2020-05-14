@@ -31,34 +31,10 @@ from cockpit import depot
 
 class StageDevice(device.Device):
     """StageDevice sublcasses Device with additions appropriate to any stage."""
+    # FIXME: simple passthrough, kept for backwards compatibility.
+    # Should probably be removed.
     def __init__(self, name, config):
-        """Initialise StageDevice."""
-        super(StageDevice, self).__init__(name, config)
-        # A list of primitives to draw on the macrostage display.
-        self.primitives = None
-    
-
-    def getPrimitives(self):
-        """Return a list of Primitives to draw on stage displays.
-
-        On first call, we read a list of primitives from the config file.
-        Primitives are specified by a config entry of the form:
-            primitives:  c 1000 1000 100
-                         r 1000 1000 100 100
-        where:
-            'c x0 y0 radius' defines a circle centred on x0, y0
-            'r x0 y0 width height' defines a rectangle centred on x0, y0
-        The primitive identifier may be in quotes, and values may be separated
-        by any combination of spaces, commas and semicolons.
-        """
-        if self.primitives is None:
-            # Primitives not yet read from config.
-            self.primitives = []
-            specs = self.config.get('primitives', '')
-            for s in specs.split('\n'):
-                if s:
-                    self.primitives.append(s)
-        return self.primitives
+        super().__init__(name, config)
 
 
 class SimplePiezo(StageDevice):

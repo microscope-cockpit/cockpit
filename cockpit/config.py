@@ -34,6 +34,8 @@ import os
 import os.path
 import sys
 import time
+import typing
+
 import cockpit.util.logger
 
 
@@ -167,6 +169,8 @@ def _default_cockpit_config():
             'filename-template' : '%%Y%%m%%d_%%a-%%H%%M.log',
         },
         'stage' : {
+            # A list of primitives to draw on the macrostage display.
+            'primitives' : '',
             ## TODO: come up with sensible defaults.  These are historical.
             'dishAltitude' : '7570',
             'slideAltitude' : '7370',
@@ -299,6 +303,10 @@ def _default_user_data_dir():
     return os.path.join(root_dir, 'MUI_DATA')
 
 
+def _parse_lines(option: str) -> typing.List[str]:
+    """``ConfigParser`` type converter for separate lines."""
+    return [s.strip() for s in option.splitlines() if s]
+
 def _parse_path(path):
     """``ConfigParser`` type converter for path values.
 
@@ -336,6 +344,7 @@ def _parse_type(full_name):
 ## conversion from string.  To be used in the constructor of
 ## ConfigParser instances.
 _type_converters = {
+    'lines' : _parse_lines,
     'path' : _parse_path,
     'paths' : _parse_paths,
     'type' : _parse_type,

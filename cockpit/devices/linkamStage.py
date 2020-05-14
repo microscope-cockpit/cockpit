@@ -26,15 +26,6 @@ Cockpit-side module for Linkam stages. Tested with CMS196.
 Config uses following parameters:
   type:         LinkamStage
   uri:          uri of pyLinkam remote
-  either
-    primitives:   list of _c_ircles and _r_ectangles to draw on MacroStageXY
-                    view, defining one per line as
-                        c x0 y0 radius
-                        r x0 y0 width height
-  or
-    xoffset:      x-offset of stage centre
-    yoffset:      y-offset of stage centre
-
 """
 from cockpit import events
 import cockpit.gui.guiUtils
@@ -144,10 +135,6 @@ class RefillTimerPanel(wx.Panel):
 class LinkamStage(MicroscopeBase, stage.StageDevice):
     _temperature_names = ('bridge', 'dewar', 'chamber', 'base')
     _refill_names = ('sample', 'external')
-    _config_types = {
-        'xoffset': float, # stage centre X offset
-        'yoffset': float, # stage centre Y offset
-    }
 
     def __init__(self, name, config={}):
         super(LinkamStage, self).__init__(name, config)
@@ -177,15 +164,6 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
             _, ylim = zip(*DEFAULT_LIMITS)
         self.hardlimits = tuple(zip(xlim, ylim))
         self.softlimits = self.hardlimits
-        if not self.getPrimitives():
-            xoff = self.config.get('xoffset', 0)
-            yoff = self.config.get('yoffset', 0)
-            xmid = xoff + (xlim[0] + xlim[1]) / 2
-            ymid = yoff + (ylim[0] + ylim[1]) / 2
-            radius = 1500
-            centres = [-4000, 0, 4000]
-            self.primitives = ['c %f %f %f' % (xmid+dx, ymid, radius) for dx in centres]
-
 
         events.subscribe(events.USER_ABORT, self.onAbort)
 
@@ -252,8 +230,7 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
                     {'moveAbsolute': self.moveAbsolute,
                          'moveRelative': self.moveRelative,
                          'getPosition': self.getPosition,
-                         'setSafety': self.setSafety, 
-                         'getPrimitives': self.getPrimitives},
+                         'setSafety': self.setSafety},
                     axis,
                     [1, 2, 5, 10, 50, 100, 200], # step sizes
                     3, # initial step size index,

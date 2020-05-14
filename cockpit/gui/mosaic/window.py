@@ -259,8 +259,8 @@ class MosaicCommon(object):
             glPushMatrix()
             # Reflect x-cordinates.
             glMultMatrixf([-1.,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1])
-            primitives = cockpit.interfaces.stageMover.getPrimitives()
-            for p in primitives:
+            # FIXME: we should not have to check this on every paint.
+            for p in wx.GetApp().Config['stage'].getlines('primitives', []):
                 if p not in self.primitives:
                     self.primitives[p] = Primitive.factory(p)
                 self.primitives[p].render()
