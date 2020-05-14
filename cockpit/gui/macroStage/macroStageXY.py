@@ -125,15 +125,15 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
         # Calculate soft stage limit label metrics and ensure there is enough space to draw them
         self.softlimit_label_scale = 0.0018 * combinedStageExtent
-        self.softlimit_label_line_height = ((self.font.getFontAscender() - self.font.getFontDescender()) *
+        softlimit_label_line_height = ((self.font.getFontAscender() - self.font.getFontDescender()) *
                                             self.softlimit_label_scale)
-        self.softlimit_label_offset = self.softlimit_label_line_height * 0.25
-        self.maxY += self.softlimit_label_offset + self.softlimit_label_line_height
-        self.minY -= self.softlimit_label_offset + self.softlimit_label_line_height
+        self.softlimit_label_offset = softlimit_label_line_height * 0.25
+        self.maxY += self.softlimit_label_offset + softlimit_label_line_height
+        self.minY -= self.softlimit_label_offset + softlimit_label_line_height
 
         # Calculate scale bar metrics and ensure there is enough space to draw it
-        self.scalebar_width_major = self.softlimit_label_line_height
-        self.scalebar_width_minor = self.softlimit_label_line_height * 0.5
+        self.scalebar_width_major = softlimit_label_line_height
+        self.scalebar_width_minor = softlimit_label_line_height * 0.5
         self.scalebar_position = self.minY - (self.scalebar_width_major / 2)  # vertical middle of scale bar
         self.minY = self.scalebar_position - (self.scalebar_width_major / 2)  # vertical bottom of scale bar
 
@@ -149,11 +149,11 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         # Add margins for aesthetics and to ensure that all lines are entirely within the view area
         # NOTE: the margins may not be uniform
         minSideLength = min(self.maxX - self.minX, self.maxY - self.minY)
-        self.margin = 0.05 * minSideLength
-        self.minX -= self.margin
-        self.maxX += self.margin
-        self.minY -= self.margin
-        self.maxY += self.margin
+        margin = 0.05 * minSideLength
+        self.minX -= margin
+        self.maxX += margin
+        self.minY -= margin
+        self.maxY += margin
 
         # Correct the view area to preserve the aspect ratio of the stage
         aratio_viewport = width / height
