@@ -314,7 +314,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                     dParams["ssll"]["offset"]
                 )
                 for i, (x, y) in enumerate(softLimits):
-                    label = "({:d}, {:d})".format(x, y)
+                    label = "({:.02f}, {:.02f})".format(x, y)
                     self.drawTextAt(
                         (x, y + label_vertical_offsets[i]),
                         label,
