@@ -62,6 +62,7 @@ from OpenGL.GL import *
 
 import cockpit.gui
 import cockpit.gui.camera.window
+import cockpit.gui.dialogs.getNumberDialog
 import cockpit.gui.dialogs.gridSitesDialog
 import cockpit.gui.dialogs.offsetSitesDialog
 import cockpit.gui.guiUtils

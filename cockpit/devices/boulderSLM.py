@@ -44,6 +44,7 @@ import wx
 
 from cockpit import events
 import cockpit.gui.device
+import cockpit.gui.dialogs.getNumberDialog
 import cockpit.handlers.executor
 import time
 import cockpit.util
