@@ -84,9 +84,6 @@ class SaveTopBottomPanel(wx.Panel):
         self._bottom_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedBottom)
         self._UpdateHeight()
 
-        for ctrl in [self._top_ctrl, self._height_ctrl, self._bottom_ctrl]:
-            ctrl.SetFont(wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL))
-
         def make_button(label: str, handler: typing.Callable) -> wx.Button:
             btn = wx.Button(box, label=label, size=(75, -1))
             btn.Bind(wx.EVT_BUTTON, handler)
