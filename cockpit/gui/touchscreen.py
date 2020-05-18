@@ -781,9 +781,8 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
     ##Function to load/unload objective
     def loadUnload(self):
         #toggle to load or unload the sample
-        config = wx.GetApp().config
-        loadPosition = config['stage'].getfloat('loadPosition')
-        unloadPosition = config['stage'].getfloat('unloadPosition')
+        loadPosition = wx.GetApp().Config['stage'].getfloat('loadPosition')
+        unloadPosition = wx.GetApp().Config['stage'].getfloat('unloadPosition')
 
         currentZ=cockpit.interfaces.stageMover.getPosition()[2]
         if (currentZ < loadPosition):
