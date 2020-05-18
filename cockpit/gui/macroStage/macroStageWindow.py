@@ -55,7 +55,6 @@ import cockpit.gui.dialogs.safetyMinDialog
 import cockpit.gui.keyboard
 import cockpit.gui.saveTopBottomPanel
 import cockpit.interfaces.stageMover
-import cockpit.util.userConfig
 
 from . import macroStageXY
 from . import macroStageZ
@@ -84,29 +83,57 @@ class MacroStageWindow(wx.Frame):
         # necessary because of the odd shape of the Z macro
         # stage, which is wider than the other elements in its
         # "column".
+        #
+        #  0     1     2     3     4     5     6     7     8     9     0     1
+        #  |------------------------------------------------------------------
+        #  |                       |     |                             |     |
+        #  |                       |     |                             |     |
+        # 1|                       |     |                             |     |
+        #  |                       |     |                             |     |
+        #  |                       |     |                             |     |
+        # 2|                       |     |                             |     |
+        #  |                       |     |                             |     |
+        #  |     MacroStageXY      |     |                             |     |
+        # 3|                       |     |           MacroStageZ       |     |
+        #  |                       |     |                             |     |
+        #  |                       |     |                             |     |
+        # 4|                       |     |                             |     |
+        #  |                       |     |                             |     |
+        #  |                       |     |                             |     |
+        # 5|                       |     |                             |     |
+        #  |                       |     |                             |     |
+        #  |                       |     |                             |     |
+        # 6|                       |     |------------------------------------
+        #  |                       |     |  macroStageZKey |                 |
+        #  |                       |     |                 |       Save      |
+        # 7|-----------------------|     |---------------- |     TopBottom   |
+        #  |       XY buttons      |     |    Z buttons    |       Panel     |
+        #  |                       |     |                 |                 |
+        # 8|------------------------------------------------------------------
+        #
         # Remember that, in classic "row means X, right?" fashion,
-        # WX has flipped its position and size tuples, so 
+        # WX has flipped its position and size tuples, so
         # (7, 4) means an X position (or width) of 4, and a Y
         # position/height of 7.
         self.sizer = wx.GridBagSizer()
 
         self.macroStageXY = macroStageXY.MacroStageXY(self,
                 size = (width * 4, height * 7), id = -1)
-        self.sizer.Add(self.macroStageXY, (0, 0), (7, 4))
-        self.sizer.Add(self.makeXYButtons(), (7, 0), (1, 4))
+        self.sizer.Add(self.macroStageXY, pos=(0, 0), span=(7, 4))
+        self.sizer.Add(self.makeXYButtons(), pos=(7, 0), span=(1, 4))
 
         self.macroStageZ = macroStageZ.MacroStageZ(self,
                 size = (width * 5, height * 6), id = -1)
-        self.sizer.Add(self.macroStageZ, (0, 5), (6, 5))
+        self.sizer.Add(self.macroStageZ, pos=(0, 5), span=(6, 5))
 
         self.macroStageZKey = macroStageZ.MacroStageZKey(self,
                 size = (width * 3, height * 1), id = -1)
-        self.sizer.Add(self.macroStageZKey, (6, 5), (1, 3))
-        self.sizer.Add(self.makeZButtons(), (7, 5), (1, 3))
+        self.sizer.Add(self.macroStageZKey, pos=(6, 5), span=(1, 3))
+        self.sizer.Add(self.makeZButtons(), pos=(7, 5), span=(1, 3))
 
         self.saveTopBottomPanel = cockpit.gui.saveTopBottomPanel.createSaveTopBottomPanel(self)
-        self.sizer.Add(self.saveTopBottomPanel, (6, 8), (2, 3))
-        
+        self.sizer.Add(self.saveTopBottomPanel, pos=(6, 8), span=(2, 3))
+
         self.SetSizerAndFit(self.sizer)
         self.SetBackgroundColour((255, 255, 255))
         self.Layout()
@@ -116,22 +143,22 @@ class MacroStageWindow(wx.Frame):
     ## Returns a sizer containing a set of buttons related to the XY macro stage
     def makeXYButtons(self):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        
+
         button = wx.Button(self, -1, "Set safeties")
         button.SetToolTip(wx.ToolTip("Click twice on the XY Macro Stage view " +
                 "to set the XY motion limits."))
         button.Bind(wx.EVT_BUTTON, self.macroStageXY.setSafeties)
         sizer.Add(button)
-        
+
         self.motionControllerButton = wx.Button(self, -1, "Switch control")
         self.motionControllerButton.SetToolTip(wx.ToolTip(
                 "Change which stage motion device the keypad controls."))
-        self.motionControllerButton.Bind(wx.EVT_BUTTON, 
+        self.motionControllerButton.Bind(wx.EVT_BUTTON,
                 lambda event: cockpit.interfaces.stageMover.changeMover())
         sizer.Add(self.motionControllerButton)
 
         button = wx.Button(self, -1, "Recenter")
-        button.Bind(wx.EVT_BUTTON, 
+        button.Bind(wx.EVT_BUTTON,
                 lambda event: cockpit.interfaces.stageMover.recenterFineMotion())
         sizer.Add(button)
         return sizer
@@ -140,14 +167,14 @@ class MacroStageWindow(wx.Frame):
     def makeZButtons(self):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         button = wx.Button(self, -1, "Set safeties")
-        button.Bind(wx.EVT_BUTTON, 
+        button.Bind(wx.EVT_BUTTON,
                 lambda event: cockpit.gui.dialogs.safetyMinDialog.showDialog(self.GetParent()))
         sizer.Add(button)
-        
+
         button = wx.Button(self, -1, "Touch down")
         touchdownAltitude = wx.GetApp().Config['stage'].getfloat('slideTouchdownAltitude')
         button.SetToolTip(wx.ToolTip(u"Bring the stage down to %d\u03bcm" % touchdownAltitude))
-        button.Bind(wx.EVT_BUTTON, 
+        button.Bind(wx.EVT_BUTTON,
                 lambda event: cockpit.interfaces.stageMover.goToZ(touchdownAltitude))
         sizer.Add(button)
 
