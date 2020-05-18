@@ -54,6 +54,7 @@
 
 from cockpit import depot
 from cockpit import events
+from cockpit.util import userConfig
 
 import numpy
 import threading
@@ -136,6 +137,10 @@ class StageMover:
         # motion.
         self.axisToHandlers = depot.getSortedStageMovers()
 
+        # FIXME: we should have sensible defaults.
+        self._saved_top = userConfig.getValue('savedTop', default=3010.0)
+        self._saved_bottom = userConfig.getValue('savedBottom', default=3000.0)
+
         ## XXX: We have a single index for all axis, even though each
         ## axis may have a different number of stages.  While we don't
         ## refactor this assumption, we just make copies of the movers
@@ -153,6 +158,25 @@ class StageMover:
         self.nameToStoppedEvent = {}
         events.subscribe(events.STAGE_MOVER, self.onMotion)
         events.subscribe(events.STAGE_STOPPED, self.onStop)
+
+
+    @property
+    def SavedTop(self) -> float:
+        return self._saved_top
+
+    @SavedTop.setter
+    def SavedTop(self, pos: float) -> None:
+        userConfig.setValue('savedTop', pos)
+        self._saved_top = pos
+
+    @property
+    def SavedBottom(self) -> float:
+        return self._saved_bottom
+
+    @SavedBottom.setter
+    def SavedBottom(self, pos: float) -> None:
+        userConfig.setValue('savedBottom', pos)
+        self._saved_bottom = pos
 
 
     ## Handle one of our devices moving. We just republish an abstracted

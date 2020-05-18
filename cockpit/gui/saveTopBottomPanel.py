@@ -50,10 +50,10 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-import cockpit.interfaces.stageMover
-import cockpit.util.userConfig
 import wx
+
+from cockpit.interfaces import stageMover
+
 
 ## @package saveTopBottomPanel
 # This module handles code related to the UI widget for saving the current
@@ -65,24 +65,18 @@ import wx
 topPosControl = None
 ## Text control for the altitude at the "bottom"
 bottomPosControl = None
-## Text label for the total height of the stack. 
+## Text label for the total height of the stack.
 zStackHeightLabel = None
 
-savedTop = None
-savedBottom = None
 
-## Create and lay out the "save top/bottom" panel, which allows the user to 
+## Create and lay out the "save top/bottom" panel, which allows the user to
 # remember Z levels of interest.
 def createSaveTopBottomPanel(parent):
-    global topPosControl, zStackHeightLabel, bottomPosControl,savedTop,savedBottom
-
-    ## Current saved top position stored in user config file.
-    savedTop = cockpit.util.userConfig.getValue('savedTop', default=3010)
-    savedBottom = cockpit.util.userConfig.getValue('savedBottom', default=3000)
+    global topPosControl, zStackHeightLabel, bottomPosControl
 
     panel = wx.Panel(parent, 8910)
     box = wx.StaticBox(panel, -1, '')
-    
+
     sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
     panel.SetSizer(sizer)
 
@@ -101,7 +95,7 @@ def createSaveTopBottomPanel(parent):
     label = wx.StaticText(panel, -1, u"z-height (\u03bcm):")
     box.Add(label, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
 
-    zStackHeightLabel = wx.StaticText(panel, -1, '0', 
+    zStackHeightLabel = wx.StaticText(panel, -1, '0',
             style = wx.TE_RIGHT, size = (60, -1))
     box.Add(zStackHeightLabel, 0, wx.ALIGN_CENTRE | wx.ALL, 1)
 
@@ -111,7 +105,7 @@ def createSaveTopBottomPanel(parent):
     saveBot = wx.Button(panel, 8912, "Save bottom", size = (75, -1))
     box.Add(saveBot, 0, wx.ALIGN_CENTRE | wx.ALL, 1)
 
-    bottomPosControl  = wx.TextCtrl(panel, 8914, '0', 
+    bottomPosControl  = wx.TextCtrl(panel, 8914, '0',
             style = wx.TE_RIGHT, size = (60, -1))
     box.Add(bottomPosControl, 1, wx.ALIGN_CENTRE | wx.ALL, 1)
 
@@ -121,14 +115,14 @@ def createSaveTopBottomPanel(parent):
     topPosControl.SetFont(wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL))
     bottomPosControl.SetFont(wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL))
     zStackHeightLabel.SetFont(wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL))
-    
+
     panel.SetAutoLayout(1)
     sizer.Fit(panel)
 
-    topPosControl.SetValue("%.1f" % savedTop)
-    bottomPosControl.SetValue("%.1f" % savedBottom)
+    topPosControl.SetValue("%.1f" % stageMover.mover.SavedTop)
+    bottomPosControl.SetValue("%.1f" % stageMover.mover.SavedBottom)
     updateZStackHeight()
-    
+
     parent.Bind(wx.EVT_BUTTON, OnTB_saveTop, id=8911 )
     parent.Bind(wx.EVT_BUTTON, OnTB_saveBottom, id=8912)
     parent.Bind(wx.EVT_BUTTON, OnTB_gotoTop, id=8915)
@@ -138,56 +132,47 @@ def createSaveTopBottomPanel(parent):
 
     parent.Bind(wx.EVT_BUTTON, OnTB_gotoCenter, id=8917)
     return panel
-    
 
-## Event for handling users clicking on the "save top" button. Set savedTop.
+
+# Event for handling users clicking on the "save top" button.
 def OnTB_saveTop(ev):
-    global savedTop
-    savedTop = cockpit.interfaces.stageMover.getPosition()[2]
-    topPosControl.SetValue("%.1f" % savedTop)
+    stageMover.mover.SavedTop = stageMover.getPosition()[2]
+    topPosControl.SetValue("%.1f" % stageMover.mover.SavedTop)
     updateZStackHeight()
-    cockpit.util.userConfig.setValue('savedTop', savedTop)
 
-## Event for handling users clicking on the "save bottom" button. Set 
-# savedBottom.
+# Event for handling users clicking on the "save bottom" button.
 def OnTB_saveBottom(ev):
-    global savedBottom
-    savedBottom = cockpit.interfaces.stageMover.getPosition()[2]
-    bottomPosControl.SetValue("%.1f" % savedBottom)
+    stageMover.mover.SavedBottom = stageMover.getPosition()[2]
+    bottomPosControl.SetValue("%.1f" % stageMover.mover.SavedBottom)
     updateZStackHeight()
-    cockpit.util.userConfig.setValue('savedBottom', savedBottom)
 
-## Event for handling users clicking on the "go to top" button.
+## Event for handling users clicking on the "go to top" button. Use the
+# nanomover (and, optionally, also the stage piezo) to move to the target
+# elevation.
 def OnTB_gotoTop(ev):
-    cockpit.interfaces.stageMover.moveZCheckMoverLimits(savedTop)
+    stageMover.moveZCheckMoverLimits(stageMover.mover.SavedTop)
 
 ## As OnTB_gotoTop, but for the bottom button instead.
 def OnTB_gotoBottom(ev):
-    cockpit.interfaces.stageMover.moveZCheckMoverLimits(savedBottom)
+    stageMover.moveZCheckMoverLimits(stageMover.mover.SavedBottom)
 
-## As OnTB_gotoTop, but for the middle button instead. 
+## As OnTB_gotoTop, but for the middle button instead.
 def OnTB_gotoCenter(ev):
-    target = savedBottom + ((savedTop - savedBottom) / 2.0)
-    cockpit.interfaces.stageMover.moveZCheckMoverLimits(target)
-
-
-        
+    centre = (stageMover.mover.SavedBottom
+              + ((stageMover.mover.SavedTop
+                  - stageMover.mover.SavedBottom) / 2.0))
+    stageMover.moveZCheckMoverLimits(centre)
 
 ## Event for when users type into one of the text boxes for the save top/bottom
 # controls. Automatically update the saved top and bottom values.
 def OnTB_TextEdit(ev):
-    global savedTop, savedBottom
-    savedBottom = float(bottomPosControl.GetValue())
-    savedTop = float(topPosControl.GetValue())
+    stageMover.mover.SavedBottom = float(bottomPosControl.GetValue())
+    stageMover.mover.SavedTop = float(topPosControl.GetValue())
     updateZStackHeight()
 
 
-## Whenever the saved top/bottom are changed, this is called to update the 
+## Whenever the saved top/bottom are changed, this is called to update the
 # displayed distance between the two values.
 def updateZStackHeight():
-    zStackHeightLabel.SetLabel("%.2f" % (savedTop - savedBottom))
-
-
-## Get the bottom and top of the stack.
-def getBottomAndTop():
-    return (savedBottom, savedTop)
+    zStackHeightLabel.SetLabel("%.2f" % (stageMover.mover.SavedTop
+                                         - stageMover.mover.SavedBottom))

@@ -54,7 +54,6 @@
 from cockpit import depot
 import cockpit.experiment.experimentRegistry
 from cockpit.gui import guiUtils
-import cockpit.gui.saveTopBottomPanel
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
 import cockpit.util.userConfig
@@ -486,8 +485,8 @@ class ExperimentConfigPanel(wx.Panel):
         if self.zPositionMode.GetStringSelection() == 'Current is center':
             altBottom = altitude - zHeight / 2
         elif self.zPositionMode.GetStringSelection() == 'Use saved top/bottom':
-            altBottom, altTop = cockpit.gui.saveTopBottomPanel.getBottomAndTop()
-            zHeight = altTop - altBottom
+            zHeight = (cockpit.interfaces.stageMover.mover.SavedTop
+                       - cockpit.interfaces.stageMover.mover.SavedBottom)
 
         sliceHeight = guiUtils.tryParseNum(self.sliceHeight, float)
         if zHeight == 0:

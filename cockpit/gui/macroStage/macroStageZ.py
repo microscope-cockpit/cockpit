@@ -63,7 +63,6 @@ import cockpit.util.logger
 import cockpit.util.userConfig
 
 from . import macroStageBase
-import cockpit.gui.saveTopBottomPanel
 
 
 ## Width of an altitude line.
@@ -364,8 +363,10 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 glEnd()
             
             #Draw top and bottom positions of stack in blue.
-            self.stackdef=[cockpit.gui.saveTopBottomPanel.savedTop,
-                          cockpit.gui.saveTopBottomPanel.savedBottom]
+            self.stackdef = [
+                cockpit.interfaces.stageMover.mover.SavedTop,
+                cockpit.interfaces.stageMover.mover.SavedBottom,
+            ]
             for pos in self.stackdef:
                 if pos is not None:
                     self.drawLine(pos, color = (0, 0, 1))
