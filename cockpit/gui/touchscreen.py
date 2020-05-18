@@ -792,7 +792,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             loaded=True
         else:
             #move with the smalled possible mover
-            self.moveZCheckMoverLimits(unloadPosition)
+            moveZCheckMoverLimits(unloadPosition)
             loaded=False
         self.setSampleStateText(loaded)
 
