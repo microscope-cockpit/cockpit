@@ -51,6 +51,7 @@ CAMERA_ENABLE = 'camera enable'
 STAGE_POSITION = 'stage position'
 STAGE_MOVER = 'stage mover'
 STAGE_STOPPED = 'stage stopped'
+STAGE_TOP_BOTTOM = 'stage saved top/bottom'
 USER_ABORT = 'user abort'
 MOSAIC_UPDATE = 'mosaic update'
 NEW_IMAGE = 'new image %s' # must be suffixed with image source

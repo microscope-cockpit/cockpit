@@ -55,6 +55,8 @@ import typing
 
 import wx
 
+import cockpit.events
+import cockpit.gui
 from cockpit.interfaces import stageMover
 
 
@@ -73,16 +75,15 @@ class SaveTopBottomPanel(wx.Panel):
         box = wx.StaticBox(self)
 
         self._top_ctrl = wx.TextCtrl(box, style=wx.TE_RIGHT, size=(60, -1))
-        self._top_ctrl.Bind(wx.EVT_TEXT, self.OnEditPosition)
+        self._top_ctrl.Bind(wx.EVT_TEXT, self.OnEditTopPosition)
 
         self._bottom_ctrl = wx.TextCtrl(box, style=wx.TE_RIGHT, size=(60, -1))
-        self._bottom_ctrl.Bind(wx.EVT_TEXT, self.OnEditPosition)
+        self._bottom_ctrl.Bind(wx.EVT_TEXT, self.OnEditBottomPosition)
 
         self._height_ctrl = wx.StaticText(box, style=wx.TE_RIGHT, size=(60, -1))
 
-        self._top_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedTop)
-        self._bottom_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedBottom)
-        self._UpdateHeight()
+        # Fill in the text controls with current values.
+        self.UpdateSavedPositions(None)
 
         def make_button(label: str, handler: typing.Callable) -> wx.Button:
             btn = wx.Button(box, label=label, size=(75, -1))
@@ -94,6 +95,9 @@ class SaveTopBottomPanel(wx.Panel):
         go_to_top = make_button('Go to top', self.OnGoToTop)
         go_to_centre = make_button('Go to centre', self.OnGoToCentre)
         go_to_bottom = make_button('Go to bottom', self.OnGoToBottom)
+
+        listener = cockpit.gui.EvtEmitter(self,cockpit.events.STAGE_TOP_BOTTOM)
+        listener.Bind(cockpit.gui.EVT_COCKPIT, self.UpdateSavedPositions)
 
         box_sizer = wx.StaticBoxSizer(box)
 
@@ -119,29 +123,23 @@ class SaveTopBottomPanel(wx.Panel):
         self.SetSizer(box_sizer)
 
 
-    def _UpdateHeight(self) -> None:
-        """When saved top and bottom are changed, this needs to be updated."""
-        # FIXME: this should be done as handling of an event from the
-        # stageMover itself.
-        self._height_ctrl.SetLabel('%.2f' % (stageMover.mover.SavedTop
-                                             - stageMover.mover.SavedBottom))
-
     def OnSaveTop(self, evt: wx.CommandEvent) -> None:
         stageMover.mover.SavedTop = stageMover.getPosition()[2]
-        self._top_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedTop)
-        self._UpdateHeight()
 
     def OnSaveBottom(self, evt: wx.CommandEvent) -> None:
         stageMover.mover.SavedBottom = stageMover.getPosition()[2]
+
+    def UpdateSavedPositions(self, evt: wx.CommandEvent) -> None:
+        self._top_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedTop)
         self._bottom_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedBottom)
-        self._UpdateHeight()
+        self._height_ctrl.SetLabel('%.2f' % (stageMover.mover.SavedTop
+                                             - stageMover.mover.SavedBottom))
 
-
-    def OnEditPosition(self, evt: wx.CommandEvent) -> None:
-        """Event for typing into one of the save top/bottom text controls."""
+    def OnEditTopPosition(self, evt: wx.CommandEvent) -> None:
         stageMover.mover.SavedTop = float(self._top_ctrl.GetValue())
+
+    def OnEditBottomPosition(self, evt: wx.CommandEvent) -> None:
         stageMover.mover.SavedBottom = float(self._bottom_ctrl.GetValue())
-        self._UpdateHeight()
 
     def OnGoToTop(self, evt: wx.CommandEvent) -> None:
         stageMover.moveZCheckMoverLimits(stageMover.mover.SavedTop)

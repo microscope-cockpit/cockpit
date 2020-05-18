@@ -168,6 +168,7 @@ class StageMover:
     def SavedTop(self, pos: float) -> None:
         userConfig.setValue('savedTop', pos)
         self._saved_top = pos
+        events.publish(events.STAGE_TOP_BOTTOM)
 
     @property
     def SavedBottom(self) -> float:
@@ -177,6 +178,7 @@ class StageMover:
     def SavedBottom(self, pos: float) -> None:
         userConfig.setValue('savedBottom', pos)
         self._saved_bottom = pos
+        events.publish(events.STAGE_TOP_BOTTOM)
 
 
     ## Handle one of our devices moving. We just republish an abstracted
