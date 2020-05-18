@@ -524,6 +524,37 @@ def setSoftMax(axis, value):
     setSoftLimit(axis, value, True)
 
 
+def moveZCheckMoverLimits(target):
+    # Use the nanomover (and, optionally, also the stage piezo) to
+    # move to the target elevation.
+
+    # Need to check current mover limits, see if we exceed them and if
+    # so drop down to lower mover handler.
+    originalMover = mover.curHandlerIndex
+    limits = getIndividualSoftLimits(2)
+    offset = target - getPosition()[2]
+
+
+    # FIXME: IMD 2018-11-07 I think this test needs to be currentpos
+    # of the current mover not the overall pos.
+    while mover.curHandlerIndex >= 0:
+        handler = mover.curHandlerIndex
+        moverPos = getAllPositions()[handler][2]
+        if ((moverPos + offset) > limits[mover.curHandlerIndex][1]
+            or (moverPos + offset) < limits[mover.curHandlerIndex][0]):
+            # need to drop down a handler to see if next handler can do the move
+            mover.curHandlerIndex -= 1
+            if mover.curHandlerIndex < 0:
+                print ("Move too large for any Z mover.")
+
+        else:
+            goToZ(target)
+            break
+
+    # return to original active mover.
+    mover.curHandlerIndex = originalMover
+
+
 ## Use the nearest-neighbor algorithm to select the order in which to
 # visit the selected sites (i.e. try to solve the Traveling Salesman problem).
 # This could, theoretically, behave worse than just taking the list in

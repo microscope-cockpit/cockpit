@@ -39,7 +39,6 @@ from cockpit import depot
 from cockpit import events
 from cockpit.gui.macroStage.macroStageXY import MacroStageXY
 from cockpit.gui.macroStage.macroStageZ import MacroStageZ
-from cockpit.gui.saveTopBottomPanel import moveZCheckMoverLimits
 from cockpit.handlers.deviceHandler import STATES
 from cockpit.util import ftgl
 
@@ -787,11 +786,11 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         currentZ=cockpit.interfaces.stageMover.getPosition()[2]
         if (currentZ < loadPosition):
             #move with the smalled possible mover
-            moveZCheckMoverLimits(loadPosition)
+            cockpit.interfaces.stageMover.moveZCheckMoverLimits(loadPosition)
             loaded=True
         else:
             #move with the smalled possible mover
-            moveZCheckMoverLimits(unloadPosition)
+            cockpit.interfaces.stageMover.moveZCheckMoverLimits(unloadPosition)
             loaded=False
         self.setSampleStateText(loaded)
 
