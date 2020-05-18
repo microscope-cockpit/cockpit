@@ -131,7 +131,7 @@ class MacroStageWindow(wx.Frame):
         self.sizer.Add(self.macroStageZKey, pos=(6, 5), span=(1, 3))
         self.sizer.Add(self.makeZButtons(), pos=(7, 5), span=(1, 3))
 
-        self.saveTopBottomPanel = cockpit.gui.saveTopBottomPanel.createSaveTopBottomPanel(self)
+        self.saveTopBottomPanel = cockpit.gui.saveTopBottomPanel.SaveTopBottomPanel(self)
         self.sizer.Add(self.saveTopBottomPanel, pos=(6, 8), span=(2, 3))
 
         self.SetSizerAndFit(self.sizer)

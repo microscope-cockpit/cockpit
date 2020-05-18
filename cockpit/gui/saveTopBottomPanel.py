@@ -3,6 +3,7 @@
 
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
+## Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -50,6 +51,8 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import typing
+
 import wx
 
 from cockpit.interfaces import stageMover
@@ -58,121 +61,99 @@ from cockpit.interfaces import stageMover
 ## @package saveTopBottomPanel
 # This module handles code related to the UI widget for saving the current
 # stage altitude as a "top" or "bottom".
-# \todo This should be a proper singleton class instead of a bunch of functions
-# and module-level variables.
-
-## Text control for the altitude at the "top"
-topPosControl = None
-## Text control for the altitude at the "bottom"
-bottomPosControl = None
-## Text label for the total height of the stack.
-zStackHeightLabel = None
 
 
-## Create and lay out the "save top/bottom" panel, which allows the user to
-# remember Z levels of interest.
-def createSaveTopBottomPanel(parent):
-    global topPosControl, zStackHeightLabel, bottomPosControl
+class SaveTopBottomPanel(wx.Panel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    panel = wx.Panel(parent, 8910)
-    box = wx.StaticBox(panel, -1, '')
+        # TODO: might be simpler to just use a raised border instead,
+        # or maybe this should be done by the parent that wants to
+        # insert this box.
+        box = wx.StaticBox(self)
 
-    sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
-    panel.SetSizer(sizer)
+        self._top_ctrl = wx.TextCtrl(box, style=wx.TE_RIGHT, size=(60, -1))
+        self._top_ctrl.Bind(wx.EVT_TEXT, self.OnEditPosition)
 
-    box = wx.FlexGridSizer(3, 3, 0, 0)
-    sizer.Add(box, 0, wx.ALIGN_CENTER | wx.ALL, 1)
+        self._bottom_ctrl = wx.TextCtrl(box, style=wx.TE_RIGHT, size=(60, -1))
+        self._bottom_ctrl.Bind(wx.EVT_TEXT, self.OnEditPosition)
 
-    saveTop = wx.Button(panel, 8911 , "Save top", size=(75, -1))
-    box.Add(saveTop, 0, wx.ALIGN_CENTRE | wx.ALL, 1)
+        self._height_ctrl = wx.StaticText(box, style=wx.TE_RIGHT, size=(60, -1))
 
-    topPosControl = wx.TextCtrl(panel, 8913, '0', style = wx.TE_RIGHT,size = (60, -1))
-    box.Add(topPosControl, 1, wx.ALIGN_CENTRE | wx.ALL, 1)
+        self._top_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedTop)
+        self._bottom_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedBottom)
+        self._UpdateHeight()
 
-    gotoTop = wx.Button(panel, 8915, "Go to top", size = (75, -1))
-    box.Add(gotoTop, 0, wx.ALIGN_CENTRE | wx.ALL, 1)
+        for ctrl in [self._top_ctrl, self._height_ctrl, self._bottom_ctrl]:
+            ctrl.SetFont(wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL))
 
-    label = wx.StaticText(panel, -1, u"z-height (\u03bcm):")
-    box.Add(label, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
+        def make_button(label: str, handler: typing.Callable) -> wx.Button:
+            btn = wx.Button(box, label=label, size=(75, -1))
+            btn.Bind(wx.EVT_BUTTON, handler)
+            return btn
 
-    zStackHeightLabel = wx.StaticText(panel, -1, '0',
-            style = wx.TE_RIGHT, size = (60, -1))
-    box.Add(zStackHeightLabel, 0, wx.ALIGN_CENTRE | wx.ALL, 1)
+        save_top = make_button('Save top', self.OnSaveTop)
+        save_bottom = make_button('Save bottom', self.OnSaveBottom)
+        go_to_top = make_button('Go to top', self.OnGoToTop)
+        go_to_centre = make_button('Go to centre', self.OnGoToCentre)
+        go_to_bottom = make_button('Go to bottom', self.OnGoToBottom)
 
-    gotoCenter = wx.Button(panel, 8917, "Go to center", size = (75, -1))
-    box.Add(gotoCenter, 0, wx.ALIGN_CENTRE | wx.ALL, 1)
+        box_sizer = wx.StaticBoxSizer(box)
 
-    saveBot = wx.Button(panel, 8912, "Save bottom", size = (75, -1))
-    box.Add(saveBot, 0, wx.ALIGN_CENTRE | wx.ALL, 1)
+        sizer = wx.FlexGridSizer(rows=3, cols=3, gap=(0, 0))
+        sizer_flags = wx.SizerFlags(0).Centre()
 
-    bottomPosControl  = wx.TextCtrl(panel, 8914, '0',
-            style = wx.TE_RIGHT, size = (60, -1))
-    box.Add(bottomPosControl, 1, wx.ALIGN_CENTRE | wx.ALL, 1)
+        sizer.Add(save_top, sizer_flags.Border(wx.ALL, 1))
+        sizer.Add(self._top_ctrl,
+                  sizer_flags.Border(wx.ALL, 1).Proportion(1))
+        sizer.Add(go_to_top, sizer_flags.Border(wx.ALL, 1))
 
-    gotoBottom = wx.Button(panel, 8916, "Go to bottom", size = (75, -1))
-    box.Add(gotoBottom, 0, wx.ALIGN_CENTRE | wx.ALL, 1)
+        sizer.Add(wx.StaticText(box, label='z-height (µm):'),
+                  sizer_flags.Border(wx.ALL, 5))
+        sizer.Add(self._height_ctrl, sizer_flags.Border(wx.ALL, 1))
+        sizer.Add(go_to_centre, sizer_flags.Border(wx.ALL, 1))
 
-    topPosControl.SetFont(wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL))
-    bottomPosControl.SetFont(wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL))
-    zStackHeightLabel.SetFont(wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL))
+        sizer.Add(save_bottom, sizer_flags.Border(wx.ALL, 1))
+        sizer.Add(self._bottom_ctrl,
+                  sizer_flags.Border(wx.ALL, 1).Proportion(1))
+        sizer.Add(go_to_bottom, sizer_flags.Border(wx.ALL, 1))
 
-    panel.SetAutoLayout(1)
-    sizer.Fit(panel)
-
-    topPosControl.SetValue("%.1f" % stageMover.mover.SavedTop)
-    bottomPosControl.SetValue("%.1f" % stageMover.mover.SavedBottom)
-    updateZStackHeight()
-
-    parent.Bind(wx.EVT_BUTTON, OnTB_saveTop, id=8911 )
-    parent.Bind(wx.EVT_BUTTON, OnTB_saveBottom, id=8912)
-    parent.Bind(wx.EVT_BUTTON, OnTB_gotoTop, id=8915)
-    parent.Bind(wx.EVT_BUTTON, OnTB_gotoBottom, id=8916)
-    parent.Bind(wx.EVT_TEXT, OnTB_TextEdit, id=8913)
-    parent.Bind(wx.EVT_TEXT, OnTB_TextEdit, id=8914)
-
-    parent.Bind(wx.EVT_BUTTON, OnTB_gotoCenter, id=8917)
-    return panel
+        box_sizer.Add(sizer)
+        self.SetSizer(box_sizer)
 
 
-# Event for handling users clicking on the "save top" button.
-def OnTB_saveTop(ev):
-    stageMover.mover.SavedTop = stageMover.getPosition()[2]
-    topPosControl.SetValue("%.1f" % stageMover.mover.SavedTop)
-    updateZStackHeight()
+    def _UpdateHeight(self) -> None:
+        """When saved top and bottom are changed, this needs to be updated."""
+        # FIXME: this should be done as handling of an event from the
+        # stageMover itself.
+        self._height_ctrl.SetLabel('%.2f' % (stageMover.mover.SavedTop
+                                             - stageMover.mover.SavedBottom))
 
-# Event for handling users clicking on the "save bottom" button.
-def OnTB_saveBottom(ev):
-    stageMover.mover.SavedBottom = stageMover.getPosition()[2]
-    bottomPosControl.SetValue("%.1f" % stageMover.mover.SavedBottom)
-    updateZStackHeight()
+    def OnSaveTop(self, evt: wx.CommandEvent) -> None:
+        stageMover.mover.SavedTop = stageMover.getPosition()[2]
+        self._top_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedTop)
+        self._UpdateHeight()
 
-## Event for handling users clicking on the "go to top" button. Use the
-# nanomover (and, optionally, also the stage piezo) to move to the target
-# elevation.
-def OnTB_gotoTop(ev):
-    stageMover.moveZCheckMoverLimits(stageMover.mover.SavedTop)
-
-## As OnTB_gotoTop, but for the bottom button instead.
-def OnTB_gotoBottom(ev):
-    stageMover.moveZCheckMoverLimits(stageMover.mover.SavedBottom)
-
-## As OnTB_gotoTop, but for the middle button instead.
-def OnTB_gotoCenter(ev):
-    centre = (stageMover.mover.SavedBottom
-              + ((stageMover.mover.SavedTop
-                  - stageMover.mover.SavedBottom) / 2.0))
-    stageMover.moveZCheckMoverLimits(centre)
-
-## Event for when users type into one of the text boxes for the save top/bottom
-# controls. Automatically update the saved top and bottom values.
-def OnTB_TextEdit(ev):
-    stageMover.mover.SavedBottom = float(bottomPosControl.GetValue())
-    stageMover.mover.SavedTop = float(topPosControl.GetValue())
-    updateZStackHeight()
+    def OnSaveBottom(self, evt: wx.CommandEvent) -> None:
+        stageMover.mover.SavedBottom = stageMover.getPosition()[2]
+        self._bottom_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedBottom)
+        self._UpdateHeight()
 
 
-## Whenever the saved top/bottom are changed, this is called to update the
-# displayed distance between the two values.
-def updateZStackHeight():
-    zStackHeightLabel.SetLabel("%.2f" % (stageMover.mover.SavedTop
-                                         - stageMover.mover.SavedBottom))
+    def OnEditPosition(self, evt: wx.CommandEvent) -> None:
+        """Event for typing into one of the save top/bottom text controls."""
+        stageMover.mover.SavedTop = float(self._top_ctrl.GetValue())
+        stageMover.mover.SavedBottom = float(self._bottom_ctrl.GetValue())
+        self._UpdateHeight()
+
+    def OnGoToTop(self, evt: wx.CommandEvent) -> None:
+        stageMover.moveZCheckMoverLimits(stageMover.mover.SavedTop)
+
+    def OnGoToBottom(self, evt: wx.CommandEvent) -> None:
+        stageMover.moveZCheckMoverLimits(stageMover.mover.SavedBottom)
+
+    def OnGoToCentre(self, evt: wx.CommandEvent) -> None:
+        centre = (stageMover.mover.SavedBottom
+                  + ((stageMover.mover.SavedTop
+                      - stageMover.mover.SavedBottom) / 2.0))
+        stageMover.moveZCheckMoverLimits(centre)
