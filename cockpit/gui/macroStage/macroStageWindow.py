@@ -59,8 +59,8 @@ import cockpit.events
 import cockpit.gui
 import cockpit.gui.dialogs.safetyMinDialog
 import cockpit.gui.keyboard
-from cockpit.gui.macroStage import macroStageXY
-from cockpit.gui.macroStage import macroStageZ
+from cockpit.gui.macroStage.macroStageXY import MacroStageXY
+from cockpit.gui.macroStage.macroStageZ import MacroStageZ, MacroStageZKey
 from cockpit.interfaces import stageMover
 
 
@@ -199,71 +199,80 @@ class MacroStageWindow(wx.Frame):
         # WX has flipped its position and size tuples, so
         # (7, 4) means an X position (or width) of 4, and a Y
         # position/height of 7.
-        self.sizer = wx.GridBagSizer()
 
-        self.macroStageXY = macroStageXY.MacroStageXY(self,
-                size = (width * 4, height * 7), id = -1)
-        self.sizer.Add(self.macroStageXY, pos=(0, 0), span=(7, 4))
-        self.sizer.Add(self.makeXYButtons(), pos=(7, 0), span=(1, 4))
+        xy_stage = MacroStageXY(self, size=(width*4, height*7))
+        z_stage = MacroStageZ(self, size=(width*5, height*6))
 
-        self.macroStageZ = macroStageZ.MacroStageZ(self,
-                size = (width * 5, height * 6), id = -1)
-        self.sizer.Add(self.macroStageZ, pos=(0, 5), span=(6, 5))
+        z_key = MacroStageZKey(self, size=(width*3, height*1))
 
-        self.macroStageZKey = macroStageZ.MacroStageZKey(self,
-                size = (width * 3, height * 1), id = -1)
-        self.sizer.Add(self.macroStageZKey, pos=(6, 5), span=(1, 3))
-        self.sizer.Add(self.makeZButtons(), pos=(7, 5), span=(1, 3))
+        def make_button(label: str, handler: typing.Callable,
+                        tooltip: str = '') -> wx.Button:
+            btn = wx.Button(self, label=label)
+            btn.SetToolTip(tooltip)
+            btn.Bind(wx.EVT_BUTTON, handler)
+            return btn
 
-        box = wx.StaticBoxSizer(wx.VERTICAL, parent=self)
-        box.Add(SaveTopBottomPanel(box.GetStaticBox()))
-        self.sizer.Add(box, pos=(6, 8), span=(2, 3))
+        xy_safeties_btn = make_button('Set safeties', xy_stage.setSafeties,
+                                      'Click twice on the XY Macro Stage view'
+                                      ' to set the XY motion limits.')
 
-        self.SetSizerAndFit(self.sizer)
+        z_safeties_btn = make_button('Set safeties', self.OnSetZSafeties)
+
+        switch_btn = make_button('Switch control', self.OnSwitchControl,
+                                 'Change which stage motion device the keypad'
+                                 ' controls.')
+
+        recenter_btn = make_button('Recenter', self.OnRecenter)
+
+        touch_down_btn = make_button('Touch down', self.OnTouchDown,
+                                     'Bring the stage down to touch slide')
+
+        # StaticBox and StaticBoxSizer are a bit weird in that the
+        # sizer needs to be the parent of the controls inside the box.
+        # We should probably be using a bordered style instead of a
+        # static box without a label.
+        top_bottom_sizer = wx.StaticBoxSizer(wx.VERTICAL, parent=self)
+        top_bottom_sizer.Add(SaveTopBottomPanel(top_bottom_sizer.GetStaticBox()))
+
+
         self.SetBackgroundColour((255, 255, 255))
-        self.Layout()
+
+        sizer = wx.GridBagSizer()
+
+        xy_sizer = wx.BoxSizer(wx.VERTICAL)
+        xy_sizer.Add(xy_stage)
+        xy_buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        for btn in [xy_safeties_btn, switch_btn, recenter_btn]:
+            xy_buttons_sizer.Add(btn)
+        xy_sizer.Add(xy_buttons_sizer)
+        sizer.Add(xy_sizer, pos=(0, 0), span=(8, 4))
+
+        sizer.Add(z_stage, pos=(0, 5), span=(6, 5))
+        sizer.Add(z_key, pos=(6, 5), span=(1, 3))
+        z_buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        for btn in [z_safeties_btn, touch_down_btn]:
+            z_buttons_sizer.Add(btn)
+        sizer.Add(z_buttons_sizer, pos=(7, 5), span=(1, 3))
+
+        sizer.Add(top_bottom_sizer, pos=(6, 8), span=(2, 3))
+
+        self.SetSizerAndFit(sizer)
+
         cockpit.gui.keyboard.setKeyboardHandlers(self)
 
 
-    ## Returns a sizer containing a set of buttons related to the XY macro stage
-    def makeXYButtons(self):
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
+    def OnSwitchControl(self, evt: wx.CommandEvent) -> None:
+        stageMover.changeMover()
 
-        button = wx.Button(self, -1, "Set safeties")
-        button.SetToolTip(wx.ToolTip("Click twice on the XY Macro Stage view " +
-                "to set the XY motion limits."))
-        button.Bind(wx.EVT_BUTTON, self.macroStageXY.setSafeties)
-        sizer.Add(button)
+    def OnRecenter(self, evt: wx.CommandEvent) -> None:
+        stageMover.recenterFineMotion()
 
-        self.motionControllerButton = wx.Button(self, -1, "Switch control")
-        self.motionControllerButton.SetToolTip(wx.ToolTip(
-                "Change which stage motion device the keypad controls."))
-        self.motionControllerButton.Bind(wx.EVT_BUTTON,
-                lambda event: cockpit.interfaces.stageMover.changeMover())
-        sizer.Add(self.motionControllerButton)
+    def OnSetZSafeties(self, evt: wx.CommandEvent) -> None:
+        cockpit.gui.dialogs.safetyMinDialog.showDialog(self)
 
-        button = wx.Button(self, -1, "Recenter")
-        button.Bind(wx.EVT_BUTTON,
-                lambda event: cockpit.interfaces.stageMover.recenterFineMotion())
-        sizer.Add(button)
-        return sizer
-
-    ## Returns a sizer containing a set of buttons related to the Z macro stage
-    def makeZButtons(self):
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        button = wx.Button(self, -1, "Set safeties")
-        button.Bind(wx.EVT_BUTTON,
-                lambda event: cockpit.gui.dialogs.safetyMinDialog.showDialog(self.GetParent()))
-        sizer.Add(button)
-
-        button = wx.Button(self, -1, "Touch down")
-        touchdownAltitude = wx.GetApp().Config['stage'].getfloat('slideTouchdownAltitude')
-        button.SetToolTip(wx.ToolTip(u"Bring the stage down to %d\u03bcm" % touchdownAltitude))
-        button.Bind(wx.EVT_BUTTON,
-                lambda event: cockpit.interfaces.stageMover.goToZ(touchdownAltitude))
-        sizer.Add(button)
-
-        return sizer
+    def OnTouchDown(self, ect: wx.CommandEvent) -> None:
+        zpos = wx.GetApp().Config['stage'].getfloat('slideTouchdownAltitude')
+        stageMover.goToZ(zpos)
 
 
 def makeWindow(parent):
