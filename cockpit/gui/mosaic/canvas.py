@@ -107,8 +107,6 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
 
         ## Set to True once we've done some initialization.
         self.haveInitedGL = False
-        ## Controls whether we rerender tiles during our onPaint.
-        self.shouldRerender = True
         ## WX rendering context
         if MosaicCanvas.context is None:
             # This is the first (and master) instance.
@@ -159,12 +157,12 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # Arrays run [0,0] .. [ncols, nrows]; GL runs (-1,-1) .. (1,1). Since
         # making adjustments to render [0,0] at (-1,1), we now add two megatiles
         # at each y limit, rather than 4 at one edge.
-        vendor = glGetString(GL_VENDOR)
         tsize = glGetInteger(GL_MAX_TEXTURE_SIZE)
         # If we use the full texture size, it seems it's too large for manipul-
         # ation in a framebuffer:
         #   * on Macs with Intel chipsets;
         #   * on some mobile nVidia chipsets.
+        # Check vendor with glGetString(GL_VENDOR)
         # GL_MAX_FRAMEBUFFER_WIDTH and _HEIGHT are not universally available,
         # so we just use a quarter of the max texture size or a reasonable
         # upper bound which has been found to work in tests on 2017-ish
@@ -191,7 +189,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             tiles = self.megaTiles
         for tile in tiles:
             tile.recreateTexture()
-            tile.prerenderTiles(self.tiles, self)
+            tile.prerenderTiles(self.tiles)
 
 
     ## Delete all tiles and textures, including the megatiles.
@@ -309,7 +307,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             newTiles.append(Tile(data, pos, size, scalings, layer))
         self.tiles.extend(newTiles)
         for megaTile in self.megaTiles:
-            megaTile.prerenderTiles(newTiles, self)
+            megaTile.prerenderTiles(newTiles)
 
         self.tilesToRefresh.update(newTiles)
 
@@ -445,14 +443,6 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         return (bottomLeft, topRight)
 
 
-    ## Toggle display of the specified layer
-    def toggleLayer(self, layer, isHidden):
-        if isHidden:
-            self.m_noShowLayers.add(layer)
-        elif layer in self.m_noShowLayers:
-            self.m_noShowLayers.remove(layer)
-
-
     ## Given a path to a file, save the mosaic to that file and an adjacent
     # file. The first is a text file that describes the layout of the tiles;
     # the second is an MRC file that holds the actual image data.
@@ -520,7 +510,6 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                 # We'll have to convert the pixel sizes and layer to
                 # ints later.
                 tileStats.append(list(map(float, line.strip().split(','))))
-        numInitialTiles = len(self.tiles)
         try:
             doc = cockpit.util.datadoc.DataDoc(mrcPath)
         except Exception as e:
@@ -571,8 +560,3 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             time.sleep(.1)
         wx.CallAfter(statusDialog.Destroy)
         events.publish(events.MOSAIC_UPDATE)
-               
-
-    ## Return our list of Tiles.
-    def getTiles(self):
-        return self.tiles

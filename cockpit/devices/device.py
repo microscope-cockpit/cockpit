@@ -136,9 +136,3 @@ class Device(object):
     # the module it is contained in.
     def shutdown(self):
         raise RuntimeError("Device %s didn't implement its shutdown function" % str(self))
-
-
-    ## Debugging function: re-initialize the device with the specified list
-    # of handlers.
-    def initWithHandlers(self, handlers):
-        raise RuntimeError("Device %s didn't implement its initWithHandlers function" % str(self))

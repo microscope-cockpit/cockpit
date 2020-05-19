@@ -292,11 +292,9 @@ class BoulderSLM(device.Device):
         # Set up a timer to update value displays.
         self.updateTimer = wx.Timer(posDisplay)
         self.updateTimer.Start(1000)
-        self.display = posDisplay
         # Changed my mind. SIM diffraction angle is an advanced parameter,
         # so it now lives in a right-click menu rather than on a button.
         panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
-        self.hasUI = True
         # Controls other than powerButton only enabled when SLM is enabled.
         triggerButton.Disable()
         posDisplay.Disable()

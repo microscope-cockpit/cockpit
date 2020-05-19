@@ -526,7 +526,6 @@ class SetPointGauge(SafeControl, wx.Window):
           evt (wx.MouseEvent): The drag event.
         """
         pos = evt.GetLogicalPosition(wx.ClientDC(self))
-        scrollpos = None
         if evt.Dragging() and evt.LeftIsDown() and self.GetClientRect().Contains(pos):
             self.SetPending(self.PosToValue(pos))
             self.PostEvent()

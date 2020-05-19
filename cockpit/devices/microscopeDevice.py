@@ -218,11 +218,6 @@ class MicroscopeBase(device.Device):
         self.cached_settings.update(self.settings)
 
 
-    def onPyroError(self, err, *args):
-        """Handle exceptions raised by async. proxy."""
-        raise err
-
-
 class MicroscopeGenericDevice(MicroscopeBase):
     def getHandlers(self):
         """Return device handlers."""

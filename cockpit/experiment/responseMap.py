@@ -191,8 +191,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
                 height, width = image.shape
                 allImages[wavelength, timepoint, 0, :height, :width] = image
                 exposureTimes.append(exposureTime)
-        
-        drawer = depot.getHandlersOfType(depot.DRAWER)[0]
+
         header = cockpit.util.datadoc.makeHeaderFor(allImages, 
                 wavelengths = [cam.wavelength for cam in self.cameras])
 

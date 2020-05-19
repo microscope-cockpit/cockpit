@@ -140,9 +140,6 @@ class PhysikInstrumenteM687(stage.StageDevice):
         ## Maps cockpit axis ordering to a +-1 multiplier to apply to motion,
         # since some of our axes are flipped.
         self.axisSignMapper = {0: -1, 1: 1}
-        ## Time of last action using the piezo; used for tracking if we should
-        # disable closed loop.
-        self.lastPiezoTime = time.time()
 
         ## If there is a config section for the m687, grab the config and
         # subscribe to events.
@@ -462,7 +459,7 @@ class PhysikInstrumenteM687(stage.StageDevice):
     def getXYPosition(self, axis = None, shouldUseCache = True):
         if not shouldUseCache:
             position = self.sendXYCommand(b'POS?', 2, False)
-            y, x, null = position.split(b'\n')
+            y, x = position.split(b'\n', maxsplit=2)[:2]
             # Positions are in millimeters, and we need microns.
             x = float(x.split(b'=')[1]) * 1000 * self.axisSignMapper[0]
             y = float(y.split(b'=')[1]) * 1000 * self.axisSignMapper[1]

@@ -382,7 +382,7 @@ class SIExperiment(experiment.Experiment):
             # i)   track state in some attribute on Experiment
             # ii)  pass state between to this function and back again;
             # iii) have handlers track state as table is built.
-            lastt, lastpos = table.getLastActionFor(self.polarizerHandler)
+            lastpos = table.getLastActionFor(self.polarizerHandler)[1]
             if lastpos is None:
                 lastpos = 0
             table.addAction(curTime, self.polarizerHandler, (angle, longestWavelength))

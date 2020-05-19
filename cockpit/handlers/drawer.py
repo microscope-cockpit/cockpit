@@ -60,7 +60,6 @@ import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
 import cockpit.gui.toggleButton
 
-from cockpit.util.colors import dyeToColor
 
 ## This handler is responsible for tracking what kinds of light each camera
 # receives, via the drawer system.

@@ -220,8 +220,8 @@ class PicoMotorDevice(device.Device):
         #need to split of controller number if we have more than one. Use
         #the format of axis 0 axisMapper string to check this. 
         if(len(self.axisMapper[0].split('>'))==2):
-            (junk,motorState1)=motorState1.split('>')
-            (junk,motorState2)=motorState2.split('>')
+            motorState1 = motorState1.split('>')[1]
+            motorState2 = motorState2.split('>')[1]
 
         return(motorState1 or motorState2)
 
@@ -278,10 +278,10 @@ class PicoMotorDevice(device.Device):
     def checkForMotion(self,controller):
         motorState1=self.sendXYCommand('%s>1 md' %
                                        (controller),1)
-        (tempstring,motorState1)=motorState1.split('>')
+        motorState1 = motorState1.split('>')[1]
         motorState2=self.sendXYCommand('%s>2 md' %
                                        (controller),1)
-        (tempstring,motorState2)=motorState2.split('>')
+        motorState2 = motorState2.split('>')[1]
         return(motorState1 or motorState2)
 
 
@@ -347,7 +347,7 @@ class PicoMotorDevice(device.Device):
                     (minPos, maxPos), (minPos, maxPos)))
         return result
 
-    def getXYMovementTime(slef,axis,start,end):
+    def getXYMovementTime(self,axis,start,end):
         distance=abs (end-start)
         #IMD15072014 closed loop performance is much slower, or counts != steps. 
         #speed is roughly 10,000 counts in 30 secs   
@@ -405,7 +405,7 @@ class PicoMotorDevice(device.Device):
                 position=self.sendXYCommand('%s TP?' % (self.axisMapper[axis]),
                                             1, False)
                 if(len(self.axisMapper[axis].split('>'))==2):
-                    (junk,position)=position.split('>')
+                    position = position.split('>')[1]
                 self.xyPositionCache[axis]=float(position)/self.STAGE_CAL
                 return self.xyPositionCache[axis]                
             else:
@@ -417,7 +417,7 @@ class PicoMotorDevice(device.Device):
                     #have more than one controller so need to split
                     #controller number from position.
                     if(len(self.axisMapper[ax].split('>'))==2):
-                        (junk,position)=position.split('>')
+                        position = position.split('>')[1]
                     # Positions are in steps, and we need microns.
                     self.xyPositionCache[ax]=float(position)/self.STAGE_CAL
 

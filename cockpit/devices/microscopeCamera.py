@@ -218,11 +218,6 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         return self.enabled
 
 
-    def onPyroError(self, err, *args):
-        """Handle exceptions raised by aync. proxy."""
-        raise err
-
-
     def getExposureTime(self, name=None, isExact=False):
         """Read the real exposure time from the camera."""
         # Camera uses times in s; cockpit uses ms.
@@ -345,24 +340,6 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             return
         self.updateSettings({'gain': gain})
 
-
-    def onModeButton(self, evt):
-        menu = wx.Menu()
-        if not self.modes:
-            # Camera not enabled yet.
-            menu.Append(0, str('No modes known - camera never enabled.'))
-            self.panel.Bind(wx.EVT_MENU,  None, id= 0)
-        else:
-            menuID = 0
-            for index, mode in enumerate(self.modes):
-                menu.Append(menuID, mode)
-                self.panel.Bind(wx.EVT_MENU,
-                                lambda event, m=index: self.setReadoutMode(m),
-                                id=menuID)
-                menuID += 1
-        cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
-
-
     @pauseVideo
     def setReadoutMode(self, index):
         if len(self.modes) <= 1:
@@ -370,4 +347,3 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             return
         self.set_setting('readout mode', self.modes[index][0])
         self.updateSettings()
-

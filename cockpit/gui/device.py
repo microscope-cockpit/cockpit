@@ -46,8 +46,6 @@ from cockpit.gui import EvtEmitter, EVT_COCKPIT
 DEFAULT_SIZE = (120, 24)
 ## Small size
 SMALL_SIZE = (60, 18)
-## Tall size
-TALL_SIZE = (DEFAULT_SIZE[0], 64)
 ## Background colour
 BACKGROUND = (128, 128, 128)
 

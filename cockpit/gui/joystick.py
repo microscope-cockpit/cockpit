@@ -70,7 +70,6 @@ class Joystick(object):
         if sys.platform == 'darwin':
             return None
         self._stick = wx.adv.Joystick()
-        self._numsticks = self._stick.GetNumberJoysticks()
         self._stick.SetCapture(window, 50)
         # Stick should be calibrated in the OS rather than correcting
         # for any offset from centre here.

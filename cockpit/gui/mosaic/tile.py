@@ -52,7 +52,6 @@
 
 import numpy
 from OpenGL.GL import *
-from OpenGL import GLUT
 from OpenGL.GL.framebufferobjects import *
 
 ## This module contains the Tile and MegaTile classes, along with some
@@ -84,8 +83,7 @@ dtypeToGlTypeMap = {
 ## This class handles a single tile in the mosaic.
 class Tile:
     def __init__(self, textureData, pos, size,
-            histogramScale, layer, isShown = True,
-            shouldDelayAllocation = False):
+            histogramScale, layer, shouldDelayAllocation=False):
 
         ## Array of pixel brightnesses
         self.textureData = textureData
@@ -270,12 +268,6 @@ class Tile:
 # we have to wait for OpenGL to get set up in our window before we can
 # use it.
 megaTileFramebuffer = None
-## Unallocate the framebuffer
-def clearFramebuffer():
-    global megaTileFramebuffer
-    if megaTileFramebuffer is not None:
-        glDeleteFramebuffers([megaTileFramebuffer])
-        megaTileFramebuffer = None
 
 ## This class handles pre-rendering of normal-sized Tile instances
 # at a reduced level of detail, which allows us to keep the program
@@ -324,7 +316,7 @@ class MegaTile(Tile):
 
     ## Go through the provided list of Tiles, find the ones that overlap
     # our area, and prerender them to our texture
-    def prerenderTiles(self, tiles, viewer):
+    def prerenderTiles(self, tiles):
         if not tiles:
             return
         minX = self.pos[0]

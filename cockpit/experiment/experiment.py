@@ -509,15 +509,8 @@ class Experiment:
 
     #        describing how long to expose each light for.
 
-    # \param pseudoGlobalExposure Boolean for, in the case of using a rolling
-
-    #        shutter, excite with the light only during the time all the pixels are
-    #        exposed.
-    # \param previousMovementTime This is the time used for the z movement
-    #        so we can take advantage of this time to start exposing the camera
     # \return The time at which all exposures are complete.
-    def expose(self, curTime, cameras, lightTimePairs, table,
-               pseudoGlobalExposure=False, previousMovementTime=0):
+    def expose(self, curTime, cameras, lightTimePairs, table):
         # First, determine which cameras are not ready to be exposed, because
         # they may have seen light they weren't supposed to see (due to
 
@@ -538,10 +531,6 @@ class Experiment:
         # Adjust the exposure start based on when the cameras are ready.
         for camera in cameras:
             camExposureReadyTime = self.getTimeWhenCameraCanExpose(table, camera)
-            # we add the readout time to get when the light should be trigger to
-            # obtain pseudo global exposure
-            camPseudoGlobalReadyTime = (camExposureReadyTime
-                                        + self.cameraToReadoutTime[camera])
             exposureStartTime = max(exposureStartTime, camExposureReadyTime)
 
         # Determine the maximum exposure time, which depends on our light

@@ -80,15 +80,6 @@ registeredModules = [
 ]
 
 
-## Add another experiment to the registered set.
-def registerModule(module, index=-1):
-    global registeredModules
-    # HACK: convert -1 to end-of-list.
-    if index == -1:
-        index = len(registeredModules)
-    registeredModules.insert(index, module)
-
-
 ## Retrieve all registered experiments.
 def getExperimentModules():
     global registeredModules

@@ -159,10 +159,6 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
         self.positionCache = (None, None)
         ## Target positions for movement in X and Y.
         self.motionTargets = [None, None]
-        ## Time of last action using the stage.
-        self.lastPiezoTime = time.time()
-        ## Stage velocity
-        self.stageVelocity = [None, None]
         ## Flag to show that sendPositionUpdates is running.
         self.sendingPositionUpdates = False
         ## Status dict updated by remote.
@@ -310,7 +306,6 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
             elif r == 'external':
                 self.elements[r].setRefillFunc(self._proxy.refill_dewar)
         panel.Fit()
-        self.hasUI = True
         return panel
 
 
@@ -402,10 +397,6 @@ class LinkamStage(MicroscopeBase, stage.StageDevice):
     def setSafety(self, axis, value, isMax):
         """Set safety limits on range of motion."""
         pass
-
-
-    def setLight(self, state):
-        self._proxy.set_light(state)
 
 
     def updateUI(self):

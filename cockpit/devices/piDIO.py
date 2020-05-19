@@ -41,8 +41,6 @@ class RaspberryPi(device.Device):
         self.excitationMaps=[]
         self.objective=[]
         self.objectiveMaps=[]
-        self.emission =[]
-        self.emissionMaps=[]
 
         for path in (paths_linesString.split(';')):
             parts = path.split(':')
@@ -52,14 +50,9 @@ class RaspberryPi(device.Device):
             elif (parts[0]=='excitation'):
                 self.excitation.append(parts[1])
                 self.excitationMaps.append(parts[2])
-            elif (parts[0]=='emission'):
-                self.emission.append(parts[1])
-                self.emmisionMaps.append(parts[2])
-            
+
         self.RPiConnection = None
         ## util.connection.Connection for the temperature sensors.
-
-        self.buttonName='piDIO'
 
         ## Maps light modes to the mirror settings for those modes, as a list
         #IMD 20140806
@@ -126,14 +119,6 @@ class RaspberryPi(device.Device):
         for button in self.lightPathButtons:
             button.SetValue(button.GetLabel() == mode)
         self.curExMode = mode
-
-
-    def setDetMode(self, mode):
-        for mirrorIndex, isUp in self.modeToFlips[mode]:
-            self.flipDownUp(mirrorIndex, isUp)
-        for button in self.detPathButtons:
-            button.SetValue(button.GetLabel() == mode)
-        self.curDetMode = mode
 
 
     ## Flip a mirror down and then up, to ensure that it's in the position

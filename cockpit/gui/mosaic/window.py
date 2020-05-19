@@ -623,7 +623,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     ## This generator function creates a clockwise spiral pattern.
     def mosaicStepper(self):
         directions = [(0, -1), (-1, 0), (0, 1), (1, 0)]
-        curDirection = 0
         curSpiralSize = 1
         lastX = lastY = 0
         i = 0
@@ -882,7 +881,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                 p2 = positions[j] - center
                 for k in range(j + 1, len(positions)):
                     p3 = positions[k] - center
-                    points = numpy.rot90([p1, p2, p3])
                     # Calculate normal vector, and normalize
                     normal = numpy.cross(p2 - p1, p3 - p1)
                     magnitude = numpy.sqrt(sum(normal * normal))
@@ -1194,7 +1192,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                     if region.shape[0] < regionSize or region.shape[1] < regionSize:
                         continue
                     # Find connected components in data.
-                    labeled, numComponents = scipy.ndimage.measurements.label(region)
+                    numComponents = scipy.ndimage.measurements.label(region)[1]
                     if numComponents != 1:
                         # More than one bead visible, or no beads at all.
                         continue
