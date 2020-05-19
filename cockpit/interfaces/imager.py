@@ -220,8 +220,6 @@ class Imager:
             lightLimiter = max(lightLimiter, light.getExposureTime())
         # The limiters are in milliseconds; downconvert.
         return self.lastImageTime + (camLimiter + lightLimiter) / 1000.0
-        
-        
 
 
 ## Global singleton.
@@ -244,11 +242,3 @@ def takeImage(shouldBlock = False):
 ## Simple passthrough.
 def videoMode():
     imager.videoMode()
-        
-
-def stopVideo():
-    imager.stopVideo()
-
-
-def isVideoRunning():
-    return imager.amInVideoMode
