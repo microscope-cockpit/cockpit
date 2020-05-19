@@ -3,6 +3,7 @@
 
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
+## Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -50,16 +51,106 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-import cockpit.gui.dialogs.safetyMinDialog
-import cockpit.gui.keyboard
-import cockpit.gui.saveTopBottomPanel
-import cockpit.interfaces.stageMover
-
-from . import macroStageXY
-from . import macroStageZ
+import typing
 
 import wx
+
+import cockpit.events
+import cockpit.gui
+import cockpit.gui.dialogs.safetyMinDialog
+import cockpit.gui.keyboard
+from . import macroStageXY
+from . import macroStageZ
+from cockpit.interfaces import stageMover
+
+
+class SaveTopBottomPanel(wx.Panel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # TODO: might be simpler to just use a raised border instead,
+        # or maybe this should be done by the parent that wants to
+        # insert this box.
+        box = wx.StaticBox(self)
+
+        self._top_ctrl = wx.TextCtrl(box, style=wx.TE_RIGHT, size=(60, -1))
+        self._top_ctrl.Bind(wx.EVT_TEXT, self.OnEditTopPosition)
+
+        self._bottom_ctrl = wx.TextCtrl(box, style=wx.TE_RIGHT, size=(60, -1))
+        self._bottom_ctrl.Bind(wx.EVT_TEXT, self.OnEditBottomPosition)
+
+        self._height_ctrl = wx.StaticText(box, style=wx.TE_RIGHT, size=(60, -1))
+
+        # Fill in the text controls with current values.
+        self.UpdateSavedPositions(None)
+
+        def make_button(label: str, handler: typing.Callable) -> wx.Button:
+            btn = wx.Button(box, label=label, size=(75, -1))
+            btn.Bind(wx.EVT_BUTTON, handler)
+            return btn
+
+        save_top = make_button('Save top', self.OnSaveTop)
+        save_bottom = make_button('Save bottom', self.OnSaveBottom)
+        go_to_top = make_button('Go to top', self.OnGoToTop)
+        go_to_centre = make_button('Go to centre', self.OnGoToCentre)
+        go_to_bottom = make_button('Go to bottom', self.OnGoToBottom)
+
+        listener = cockpit.gui.EvtEmitter(self,cockpit.events.STAGE_TOP_BOTTOM)
+        listener.Bind(cockpit.gui.EVT_COCKPIT, self.UpdateSavedPositions)
+
+        box_sizer = wx.StaticBoxSizer(box)
+
+        sizer = wx.FlexGridSizer(rows=3, cols=3, gap=(0, 0))
+        sizer_flags = wx.SizerFlags(0).Centre()
+
+        sizer.Add(save_top, sizer_flags.Border(wx.ALL, 1))
+        sizer.Add(self._top_ctrl,
+                  sizer_flags.Border(wx.ALL, 1).Proportion(1))
+        sizer.Add(go_to_top, sizer_flags.Border(wx.ALL, 1))
+
+        sizer.Add(wx.StaticText(box, label='z-height (µm):'),
+                  sizer_flags.Border(wx.ALL, 5))
+        sizer.Add(self._height_ctrl, sizer_flags.Border(wx.ALL, 1))
+        sizer.Add(go_to_centre, sizer_flags.Border(wx.ALL, 1))
+
+        sizer.Add(save_bottom, sizer_flags.Border(wx.ALL, 1))
+        sizer.Add(self._bottom_ctrl,
+                  sizer_flags.Border(wx.ALL, 1).Proportion(1))
+        sizer.Add(go_to_bottom, sizer_flags.Border(wx.ALL, 1))
+
+        box_sizer.Add(sizer)
+        self.SetSizer(box_sizer)
+
+
+    def OnSaveTop(self, evt: wx.CommandEvent) -> None:
+        stageMover.mover.SavedTop = stageMover.getPosition()[2]
+
+    def OnSaveBottom(self, evt: wx.CommandEvent) -> None:
+        stageMover.mover.SavedBottom = stageMover.getPosition()[2]
+
+    def UpdateSavedPositions(self, evt: wx.CommandEvent) -> None:
+        self._top_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedTop)
+        self._bottom_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedBottom)
+        self._height_ctrl.SetLabel('%.2f' % (stageMover.mover.SavedTop
+                                             - stageMover.mover.SavedBottom))
+
+    def OnEditTopPosition(self, evt: wx.CommandEvent) -> None:
+        stageMover.mover.SavedTop = float(self._top_ctrl.GetValue())
+
+    def OnEditBottomPosition(self, evt: wx.CommandEvent) -> None:
+        stageMover.mover.SavedBottom = float(self._bottom_ctrl.GetValue())
+
+    def OnGoToTop(self, evt: wx.CommandEvent) -> None:
+        stageMover.moveZCheckMoverLimits(stageMover.mover.SavedTop)
+
+    def OnGoToBottom(self, evt: wx.CommandEvent) -> None:
+        stageMover.moveZCheckMoverLimits(stageMover.mover.SavedBottom)
+
+    def OnGoToCentre(self, evt: wx.CommandEvent) -> None:
+        centre = (stageMover.mover.SavedBottom
+                  + ((stageMover.mover.SavedTop
+                      - stageMover.mover.SavedBottom) / 2.0))
+        stageMover.moveZCheckMoverLimits(centre)
 
 
 ## This class simply contains instances of the various MacroStage
@@ -131,7 +222,7 @@ class MacroStageWindow(wx.Frame):
         self.sizer.Add(self.macroStageZKey, pos=(6, 5), span=(1, 3))
         self.sizer.Add(self.makeZButtons(), pos=(7, 5), span=(1, 3))
 
-        self.saveTopBottomPanel = cockpit.gui.saveTopBottomPanel.SaveTopBottomPanel(self)
+        self.saveTopBottomPanel = SaveTopBottomPanel(self)
         self.sizer.Add(self.saveTopBottomPanel, pos=(6, 8), span=(2, 3))
 
         self.SetSizerAndFit(self.sizer)
