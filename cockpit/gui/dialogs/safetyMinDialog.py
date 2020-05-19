@@ -123,7 +123,7 @@ class SafetyMinDialog(wx.Dialog):
         self.SetAutoLayout(True)
         self.mainSizer.Fit(self)
 
-        self.Bind(wx.EVT_BUTTON, wx.ID_OK, self.OnStart)
+        startButton.Bind(wx.EVT_BUTTON, self.OnStart)
 
 
     ## Set the text for the stage safety min to a default value.
