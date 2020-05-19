@@ -68,24 +68,19 @@ class SaveTopBottomPanel(wx.Panel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # TODO: might be simpler to just use a raised border instead,
-        # or maybe this should be done by the parent that wants to
-        # insert this box.
-        box = wx.StaticBox(self)
-
-        self._top_ctrl = wx.TextCtrl(box, style=wx.TE_RIGHT, size=(60, -1))
+        self._top_ctrl = wx.TextCtrl(self, style=wx.TE_RIGHT, size=(60, -1))
         self._top_ctrl.Bind(wx.EVT_TEXT, self.OnEditTopPosition)
 
-        self._bottom_ctrl = wx.TextCtrl(box, style=wx.TE_RIGHT, size=(60, -1))
+        self._bottom_ctrl = wx.TextCtrl(self, style=wx.TE_RIGHT, size=(60, -1))
         self._bottom_ctrl.Bind(wx.EVT_TEXT, self.OnEditBottomPosition)
 
-        self._height_ctrl = wx.StaticText(box, style=wx.TE_RIGHT, size=(60, -1))
+        self._height_ctrl = wx.StaticText(self, style=wx.TE_RIGHT, size=(60, -1))
 
         # Fill in the text controls with current values.
         self.UpdateSavedPositions(None)
 
         def make_button(label: str, handler: typing.Callable) -> wx.Button:
-            btn = wx.Button(box, label=label, size=(75, -1))
+            btn = wx.Button(self, label=label, size=(75, -1))
             btn.Bind(wx.EVT_BUTTON, handler)
             return btn
 
@@ -98,8 +93,6 @@ class SaveTopBottomPanel(wx.Panel):
         listener = cockpit.gui.EvtEmitter(self,cockpit.events.STAGE_TOP_BOTTOM)
         listener.Bind(cockpit.gui.EVT_COCKPIT, self.UpdateSavedPositions)
 
-        box_sizer = wx.StaticBoxSizer(box)
-
         sizer = wx.FlexGridSizer(rows=3, cols=3, gap=(0, 0))
         sizer_flags = wx.SizerFlags(0).Centre()
 
@@ -108,7 +101,7 @@ class SaveTopBottomPanel(wx.Panel):
                   sizer_flags.Border(wx.ALL, 1).Proportion(1))
         sizer.Add(go_to_top, sizer_flags.Border(wx.ALL, 1))
 
-        sizer.Add(wx.StaticText(box, label='z-height (µm):'),
+        sizer.Add(wx.StaticText(self, label='z-height (µm):'),
                   sizer_flags.Border(wx.ALL, 5))
         sizer.Add(self._height_ctrl, sizer_flags.Border(wx.ALL, 1))
         sizer.Add(go_to_centre, sizer_flags.Border(wx.ALL, 1))
@@ -118,8 +111,7 @@ class SaveTopBottomPanel(wx.Panel):
                   sizer_flags.Border(wx.ALL, 1).Proportion(1))
         sizer.Add(go_to_bottom, sizer_flags.Border(wx.ALL, 1))
 
-        box_sizer.Add(sizer)
-        self.SetSizer(box_sizer)
+        self.SetSizer(sizer)
 
 
     def OnSaveTop(self, evt: wx.CommandEvent) -> None:
@@ -222,8 +214,9 @@ class MacroStageWindow(wx.Frame):
         self.sizer.Add(self.macroStageZKey, pos=(6, 5), span=(1, 3))
         self.sizer.Add(self.makeZButtons(), pos=(7, 5), span=(1, 3))
 
-        self.saveTopBottomPanel = SaveTopBottomPanel(self)
-        self.sizer.Add(self.saveTopBottomPanel, pos=(6, 8), span=(2, 3))
+        box = wx.StaticBoxSizer(wx.VERTICAL, parent=self)
+        box.Add(SaveTopBottomPanel(box.GetStaticBox()))
+        self.sizer.Add(box, pos=(6, 8), span=(2, 3))
 
         self.SetSizerAndFit(self.sizer)
         self.SetBackgroundColour((255, 255, 255))
