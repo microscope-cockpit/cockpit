@@ -90,7 +90,7 @@ class SafetyMinDialog(wx.Dialog):
 
         self.minStageZ = cockpit.gui.guiUtils.addLabeledInput(
                 parent = self, sizer = self.mainSizer,
-                label = u"Stage Z minimum (\u03bcm):",
+                label = "Stage Z minimum (µm):",
                 defaultValue = str(cockpit.interfaces.stageMover.getSoftLimits()[2][0]),
                 size = (70, -1), minSize = (150, -1), 
                 shouldRightAlignInput = True, border = 3, 
@@ -109,11 +109,11 @@ class SafetyMinDialog(wx.Dialog):
 
         buttonsBox = wx.BoxSizer(wx.HORIZONTAL)
 
-        cancelButton = wx.Button(self, wx.ID_CANCEL, "Cancel")
+        cancelButton = wx.Button(self, label="Cancel")
         cancelButton.SetToolTip(wx.ToolTip("Close this window"))
         buttonsBox.Add(cancelButton, 0, wx.ALL, 5)
         
-        startButton = wx.Button(self, wx.ID_OK, "Apply")
+        startButton = wx.Button(self, label="Apply")
         startButton.SetToolTip(wx.ToolTip("Apply the chosen safety min"))
         buttonsBox.Add(startButton, 0, wx.ALL, 5)
         
