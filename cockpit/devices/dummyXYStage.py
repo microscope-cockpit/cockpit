@@ -52,12 +52,12 @@
 
 ## This module creates a simple XY stage-positioning device.
 
-from . import stage
+from cockpit.devices.device import Device
 from cockpit import events
 import cockpit.handlers.stagePositioner
 
 
-class DummyMover(stage.StageDevice):
+class DummyMover(Device):
     def __init__(self, name="dummy XY stage", config={}):
         super(DummyMover, self).__init__(name, config)
         # List of 2 doubles indicating our X/Y position.

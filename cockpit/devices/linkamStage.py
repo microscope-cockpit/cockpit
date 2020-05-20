@@ -27,13 +27,14 @@ Config uses following parameters:
   type:         LinkamStage
   uri:          uri of pyLinkam remote
 """
+
 from cockpit import events
 import cockpit.gui.guiUtils
 import cockpit.gui.device
 from cockpit.devices.microscopeDevice import MicroscopeBase
 import cockpit.handlers.stagePositioner
 import Pyro4
-from . import stage
+from cockpit.devices.device import Device
 import threading
 import cockpit.util.logger as logger
 import cockpit.util.threads
@@ -132,7 +133,7 @@ class RefillTimerPanel(wx.Panel):
             self.Refresh()
 
 
-class LinkamStage(MicroscopeBase, stage.StageDevice):
+class LinkamStage(MicroscopeBase, Device):
     _temperature_names = ('bridge', 'dewar', 'chamber', 'base')
     _refill_names = ('sample', 'external')
 

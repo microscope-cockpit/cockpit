@@ -23,21 +23,13 @@
 """
 
 from decimal import Decimal
-from . import device
+from cockpit.devices.device import Device
 from cockpit.interfaces.stageMover import AXIS_MAP
 from cockpit.handlers import stagePositioner
 from cockpit import depot
 
 
-class StageDevice(device.Device):
-    """StageDevice sublcasses Device with additions appropriate to any stage."""
-    # FIXME: simple passthrough, kept for backwards compatibility.
-    # Should probably be removed.
-    def __init__(self, name, config):
-        super().__init__(name, config)
-
-
-class SimplePiezo(StageDevice):
+class SimplePiezo(Device):
     """A simple piezo axis.
 
     Sample config entry:

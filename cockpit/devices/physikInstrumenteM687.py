@@ -59,7 +59,7 @@ import cockpit.util.logger
 import cockpit.util.threads
 import cockpit.util.userConfig
 
-from . import stage
+from cockpit.devices.device import Device
 from OpenGL.GL import *
 import serial
 import threading
@@ -117,7 +117,7 @@ BANNED_RECTANGLES = ()
 
 
 
-class PhysikInstrumenteM687(stage.StageDevice):
+class PhysikInstrumenteM687(Device):
     _config_types = {'baud': int,
                      'timeout': float,}
     def __init__(self, name, config):

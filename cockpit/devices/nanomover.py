@@ -53,8 +53,7 @@
 import re
 import time
 
-from . import device
-from . import stage
+from cockpit.devices.device import Device
 from cockpit import events
 
 import cockpit.interfaces
@@ -68,9 +67,9 @@ import cockpit.util.userConfig
 
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*\))"
 
-class Nanomover(stage.StageDevice):
+class Nanomover(Device):
     def __init__(self, name, config={}):
-        device.Device.__init__(self, name, config)
+        Device.__init__(self, name, config)
         ## Current stage position information.
         self.curPosition = [14500, 14500, 14500]
         ## Connection to the Nanomover controller program.
