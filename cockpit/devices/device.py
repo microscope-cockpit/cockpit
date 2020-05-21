@@ -122,9 +122,3 @@ class Device:
     # and all initial publications and subscriptions have been made.
     def finalizeInitialization(self):
         pass
-
-
-    ## Debugging function: shutdown the device preparatory to reloading 
-    # the module it is contained in.
-    def shutdown(self):
-        raise RuntimeError("Device %s didn't implement its shutdown function" % str(self))
