@@ -92,8 +92,7 @@ class LightHandler(deviceHandler.DeviceHandler):
                  trigHandler=None, trigLine=None):
         # Note we assume all light sources are eligible for experiments.
         # However there's no associated callbacks for a light source.
-        deviceHandler.DeviceHandler.__init__(self, name, groupName, True, 
-                callbacks, depot.LIGHT_TOGGLE)
+        super().__init__(name, groupName, True, callbacks, depot.LIGHT_TOGGLE)
         self.wavelength = float(wavelength or 0)
         self.defaultExposureTime = exposureTime
         self.exposureTime = exposureTime

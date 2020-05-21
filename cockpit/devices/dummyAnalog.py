@@ -53,7 +53,7 @@ import re
 
 class DummyAnalogDevice(device.Device):
     def __init__(self, name, config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
 
     def initialize(self):
         pass

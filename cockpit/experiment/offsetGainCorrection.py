@@ -98,7 +98,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
         # the kwargs parameter (since our caller may have generic code for
         # setting up arbitrary experiments that assumes e.g. a Z stack), but
         # we ignore them.
-        experiment.Experiment.__init__(self, numReps = 1, repDuration = 0,
+        super().__init__(numReps = 1, repDuration = 0,
                 zPositioner = None, altBottom = 0, zHeight = 0, sliceHeight = 0,
                 cameras = cameras, lights = lights,
                 exposureSettings = exposureSettings)
@@ -305,7 +305,7 @@ from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR
 class ExperimentUI(wx.Panel):
 
     def __init__(self, parent, configKey):
-        wx.Panel.__init__(self, parent = parent)
+        super().__init__(parent=parent)
 
         self.configKey = configKey
         self.settings = self.loadSettings()

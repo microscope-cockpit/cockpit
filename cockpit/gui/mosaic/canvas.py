@@ -95,7 +95,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     # \param mouseCallback Function to propagate mouse events to.
     def __init__(self, parent, stageHardLimits, overlayCallback, 
             mouseCallback, *args, **kwargs):
-        wx.glcanvas.GLCanvas.__init__(self, parent, *args, **kwargs)
+        super().__init__(parent, *args, **kwargs)
 
         self.stageHardLimits = stageHardLimits
         self.overlayCallback = overlayCallback

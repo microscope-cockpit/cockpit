@@ -37,7 +37,7 @@ EXPERIMENT_NAME = 'RotatorSweep'
 class RotatorSweepExperiment(experiment.Experiment):
     def __init__(self, polarizerHandler=None, settlingTime=0.1,
                  startV=0.0, maxV=10., vSteps=100, *args, **kwargs):
-        experiment.Experiment.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.polarizerHandler = polarizerHandler
         self.settlingTime = settlingTime
         # Look up the rotator analogue line handler.
@@ -83,7 +83,7 @@ from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR
 ## Generate the UI for special parameters used by this experiment.
 class ExperimentUI(wx.Panel):
     def __init__(self, parent, configKey):
-        wx.Panel.__init__(self, parent = parent)
+        super().__init__(parent = parent)
         self.configKey = configKey
         sizer = wx.GridSizer(2, 4, 1)
         ## Maps strings to TextCtrls describing how to configure

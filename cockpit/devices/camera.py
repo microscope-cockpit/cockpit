@@ -66,7 +66,7 @@ def Transform(tstr=None):
 # to any camera.
 class CameraDevice(device.Device):
     def __init__(self, name, config):
-        super(CameraDevice, self).__init__(name, config)
+        super().__init__(name, config)
         # baseTransform depends on camera orientation and is constant.
         self.baseTransform = Transform(config.get('transform', None))
 

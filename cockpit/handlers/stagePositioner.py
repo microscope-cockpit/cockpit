@@ -87,9 +87,8 @@ class PositionerHandler(deviceHandler.DeviceHandler):
 
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks, 
             axis, stepSizes, stepIndex, hardLimits, softLimits = None):
-        deviceHandler.DeviceHandler.__init__(self, name, groupName,
-                isEligibleForExperiments, callbacks, 
-                depot.STAGE_POSITIONER)
+        super().__init__(name, groupName, isEligibleForExperiments, callbacks,
+                         depot.STAGE_POSITIONER)
         self.axis = axis
         self.stepSizes = stepSizes
         self.stepIndex = stepIndex

@@ -138,7 +138,7 @@ class LinkamStage(MicroscopeBase, Device):
     _refill_names = ('sample', 'external')
 
     def __init__(self, name, config={}):
-        super(LinkamStage, self).__init__(name, config)
+        super().__init__(name, config)
         ## Connection to the XY stage controller (serial.Serial instance).
         self._proxy = Pyro4.Proxy(config.get('uri'))
         ## Lock around sending commands to the XY stage controller.

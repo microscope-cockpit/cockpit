@@ -288,7 +288,7 @@ class MegaTile(Tile):
     # At this time, if megaTileFramebuffer has not been created
     # yet, create it.
     def __init__(self, pos):
-        Tile.__init__(self, self._emptyTileData, pos,
+        super().__init__(self._emptyTileData, pos,
                  (self.micronSize, self.micronSize),
                  (0, 1), 'megatiles',
                  shouldDelayAllocation = True)
@@ -360,7 +360,7 @@ class MegaTile(Tile):
     ## Prevent trying to delete our texture if we haven't made it yet.
     def wipe(self):
         if self.haveAllocatedMemory:
-            Tile.wipe(self)
+            super().wipe()
             self.haveAllocatedMemory = False
             self.numRenderedTiles = 0
             
@@ -368,7 +368,7 @@ class MegaTile(Tile):
     ## Prevent allocating a new texture if we haven't drawn anything yet.
     def recreateTexture(self):
         if self.haveAllocatedMemory:
-            Tile.recreateTexture(self)
+            super().recreateTexture()
             self.refresh()
 
 
@@ -376,4 +376,4 @@ class MegaTile(Tile):
         if not self.numRenderedTiles:
             # We're empty, so no need to render.
             return
-        Tile.render(self, viewBox)
+        super().render(viewBox)

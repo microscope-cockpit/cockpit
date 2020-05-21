@@ -108,8 +108,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
                              ' '.join(missing)))
             raise e
 
-        deviceHandler.DeviceHandler.__init__(self, name, groupName,
-                False, callbacks, depot.LIGHT_POWER)
+        super().__init__(name, groupName, False, callbacks, depot.LIGHT_POWER)
         LightPowerHandler._instances.append(self)
         self.wavelength = wavelength
         self.minPower = minPower
@@ -124,7 +123,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
 
 
     def finalizeInitialization(self):
-        super(LightPowerHandler, self).finalizeInitialization()
+        super().finalizeInitialization()
         self._applyUserConfig()
 
 

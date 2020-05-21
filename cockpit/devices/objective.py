@@ -80,7 +80,7 @@ DUMMY_OBJECTIVE_PIXEL_SIZES = {
 
 class ObjectiveDevice(device.Device):
     def __init__(self, name='objectives', config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
 
     def getHandlers(self):
         pixel_sizes = {}

@@ -38,7 +38,7 @@ import wx
 
 class NI6036e(device.Device):
     def __init__(self, name, config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
         #get DIO control lines from config file
         linestring = config.get('lines', '')
         self.lines = linestring.split(',')
@@ -306,7 +306,7 @@ class NI6036e(device.Device):
 
 class niOutputWindow(wx.Frame):
     def __init__(self, ni6036e, parent, *args, **kwargs):
-        wx.Frame.__init__(self, parent, *args, **kwargs)
+        super().__init__(parent, *args, **kwargs)
         ## piDevice instance.
         self.nicard = ni6036e
         # Contains all widgets.

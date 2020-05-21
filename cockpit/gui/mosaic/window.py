@@ -322,7 +322,7 @@ class MosaicCommon(object):
 class MosaicWindow(wx.Frame, MosaicCommon):
     SHOW_DEFAULT = True
     def __init__(self, *args, **kwargs):
-        wx.Frame.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         ## Mapping of primitive specifications to Primitives.

@@ -85,7 +85,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
     ## Create the MacroStage. Mostly, attach a timer to the main window so
     # that we can use it to trigger updates.
     def __init__(self, parent, size, id = -1, *args, **kwargs):
-        wx.glcanvas.GLCanvas.__init__(self, parent, id, size = size, *args, **kwargs)
+        super().__init__(parent, id, size = size, *args, **kwargs)
 
         ## WX context for drawing.
         self.context = wx.glcanvas.GLContext(self)

@@ -107,8 +107,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
     def __init__(self, name, groupName, callbacks, exposureMode,
                  trigHandler=None, trigLine=None):
         # Note we assume that cameras are eligible for experiments.
-        deviceHandler.DeviceHandler.__init__(self, name, groupName, True, 
-                callbacks, depot.CAMERA)
+        super().__init__(name, groupName, True, callbacks, depot.CAMERA)
         ## True if the camera is currently receiving images.
         self.isEnabled = False
         self._exposureMode = exposureMode

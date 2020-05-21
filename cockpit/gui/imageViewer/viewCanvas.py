@@ -408,7 +408,7 @@ class Histogram(BaseGL):
 class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Instantiate.
     def __init__(self, parent, *args, **kwargs):
-        wx.glcanvas.GLCanvas.__init__(self, parent, *args, **kwargs)
+        super().__init__(parent, *args, **kwargs)
 
         self.image = Image()
         self.histogram = Histogram()

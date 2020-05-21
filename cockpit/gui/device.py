@@ -59,9 +59,8 @@ class Button(wx.StaticText):
         # Default size:
         if 'size' not in kwargs:
             kwargs['size'] = DEFAULT_SIZE
-        wx.StaticText.__init__(self,
-                style = wx.RAISED_BORDER | wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE,
-                **kwargs)
+        super().__init__(style = wx.RAISED_BORDER | wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE,
+                         **kwargs)
         flag = wx.FONTWEIGHT_BOLD
         if not isBold:
             flag = wx.FONTWEIGHT_NORMAL
@@ -101,7 +100,7 @@ class Button(wx.StaticText):
         numLinesUsed = len(text.split("\n"))
         lineBuffer = (maxLines - numLinesUsed) // 2 - 1
         newText = ("\n" * lineBuffer) + text + ("\n" * lineBuffer)
-        wx.StaticText.SetLabel(self, newText, *args, **kwargs)
+        super().SetLabel(newText, *args, **kwargs)
 
 
 class Label(wx.StaticText):
@@ -115,14 +114,14 @@ class Label(wx.StaticText):
             kwargs['style'] = wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE
         if 'size' not in kwargs:
             kwargs['size'] = DEFAULT_SIZE
-        super(Label, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.SetFont(self.GetFont().Bold())
 
 
 class ValueDisplay(wx.BoxSizer):
     """A simple value display for devices."""
     def __init__(self, parent, label, value='', formatStr=None, unitStr=None):
-        super(ValueDisplay, self).__init__(wx.HORIZONTAL)
+        super().__init__(wx.HORIZONTAL)
         self.value = value
         label = Label(
             parent=parent, label=(' ' + label.strip(':') + ':'),
@@ -171,14 +170,14 @@ class MultilineDisplay(wx.StaticText):
         if 'numLines' in kwargs:
             n = kwargs.pop('numLines')
             kwargs['size'] = (DEFAULT_SIZE[0], n * DEFAULT_SIZE[1])
-        super(MultilineDisplay, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.SetFont(self.GetFont().Smaller())
 
 
 class Menu(wx.Menu):
     def __init__(self, menuItems, menuCallback):
         """Initialise a menu of menuItems that are handled by menuCallback."""
-        super(Menu, self).__init__()
+        super().__init__()
         for i, item in enumerate(menuItems):
             if len(item):
                 self.Append(i, item, '')
@@ -314,7 +313,7 @@ class SettingsEditor(wx.Frame):
 
 
     def __init__(self, device, parent=None, handler=None):
-        wx.Frame.__init__(self, parent, wx.ID_ANY, style=wx.FRAME_FLOAT_ON_PARENT)
+        super().__init__(parent, wx.ID_ANY, style=wx.FRAME_FLOAT_ON_PARENT)
         self.device = device
         self.SetTitle("%s settings" % device.name)
         self.settings = {}

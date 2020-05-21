@@ -70,7 +70,7 @@ class _BaseValidator(wx.Validator):
     SetValidator.
     """
     def __init__(self, allowEmpty=False):
-        wx.Validator.__init__(self)
+        super().__init__()
         self.Bind(wx.EVT_CHAR, self.OnChar)
 
 

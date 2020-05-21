@@ -69,7 +69,7 @@ import cockpit.interfaces.imager
 # the image the camera sees, and a histogram at the bottom.
 class ViewPanel(wx.Panel):
     def __init__(self, *args, **kwargs):
-        wx.Panel.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         ## Handle of the current camera we're controlling.
         self.curCamera = None

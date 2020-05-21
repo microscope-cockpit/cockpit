@@ -110,7 +110,7 @@ class PicoMotorDevice(device.Device):
         'port': int,
     }
     def __init__(self, name, config):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
         self.STAGE_CAL = config.get('cal') # e.g. 13.750
         self.PICO_CONTROLLER = config.get('ipaddress') # e.g. 172.16.0.30'
         self.PICO_PORT = config.get('port') # e.g. 23

@@ -97,8 +97,8 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
             shouldPreserveIntermediaryFiles, **kwargs):
         # Fill in some dummy values here for parameters that we don't actually
         # use.
-        offsetGainCorrection.OffsetGainCorrectionExperiment.__init__(
-                self, cameras, lights, exposureSettings,
+        super().__init__(
+                cameras, lights, exposureSettings,
                 numExposures, savePath, exposureMultiplier = 0, 
                 maxIntensity = None, cosmicRayThreshold = cosmicRayThreshold,
                 shouldPreserveIntermediaryFiles = shouldPreserveIntermediaryFiles)
@@ -357,7 +357,7 @@ from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR, CSVVALIDATOR
 ## Generate the UI for special parameters used by this experiment.
 class ExperimentUI(wx.Panel):
     def __init__(self, parent, configKey):
-        wx.Panel.__init__(self, parent = parent)
+        super().__init__(parent=parent)
         self.configKey = configKey
         sizer = wx.GridSizer(2, 2, 2, 2)
         ## Maps strings to TextCtrls describing how to configure 

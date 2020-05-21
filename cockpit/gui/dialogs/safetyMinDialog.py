@@ -78,8 +78,7 @@ class SafetyMinDialog(wx.Dialog):
             self, parent, size = wx.DefaultSize, pos = wx.DefaultPosition, 
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.TAB_TRAVERSAL
             ):
-        wx.Dialog.__init__(self, parent, -1, "Set Z motion minimum", 
-                pos, size, style)
+        super().__init__(parent, -1, "Set Z motion minimum", pos, size, style)
         
         self.mainSizer = wx.BoxSizer(wx.VERTICAL)
 

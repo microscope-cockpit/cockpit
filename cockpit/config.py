@@ -51,7 +51,7 @@ class CockpitConfig(configparser.ConfigParser):
 
     """
     def __init__(self, argv):
-        super(CockpitConfig, self).__init__(converters=_type_converters)
+        super().__init__(converters=_type_converters)
         self.read_dict(_default_cockpit_config())
 
         cmd_line_options = _parse_cmd_line_options(argv[1:])
@@ -124,8 +124,7 @@ class DepotConfig(configparser.ConfigParser):
 
     """
     def __init__(self, filepaths):
-        super(DepotConfig, self).__init__(converters=_type_converters,
-                                          interpolation=None)
+        super().__init__(converters=_type_converters, interpolation=None)
         self.files = [] # type: List[str]
         self.read(filepaths)
 

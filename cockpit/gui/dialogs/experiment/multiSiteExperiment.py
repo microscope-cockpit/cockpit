@@ -71,7 +71,7 @@ FIELD_SIZE = (70, -1)
 ## This class allows for configuring multi-site experiments.
 class MultiSiteExperimentDialog(wx.Dialog):
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent,
+        super().__init__(parent,
                 title = "OMX multi-site experiment",
                 style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 

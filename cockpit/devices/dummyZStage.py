@@ -60,7 +60,7 @@ import cockpit.handlers.stagePositioner
 
 class DummyZStage(device.Device):
     def __init__(self, name='dummy Z stage', config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
         self.curPosition = 100
         self.deviceType = "stage positioner"
         # Is this device in use?

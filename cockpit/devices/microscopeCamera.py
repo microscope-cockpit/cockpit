@@ -93,7 +93,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         return modes
 
     def finalizeInitialization(self):
-        super(MicroscopeCamera, self).finalizeInitialization()
+        super().finalizeInitialization()
         self._readUserConfig()
         # Decorate updateSettings. Can't do this from the outset, as camera
         # is initialized before interfaces.imager.

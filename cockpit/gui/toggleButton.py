@@ -86,9 +86,8 @@ class ToggleButton(wx.StaticText):
         # Default size:
         if 'size' not in kwargs:
             kwargs['size'] = DEFAULT_SIZE
-        wx.StaticText.__init__(self,
-                style = wx.RAISED_BORDER | wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE,
-                **kwargs)
+        super().__init__(style = wx.RAISED_BORDER | wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE,
+                         **kwargs)
         flag = wx.FONTWEIGHT_BOLD
         if not isBold:
             flag = wx.FONTWEIGHT_NORMAL
@@ -119,7 +118,7 @@ class ToggleButton(wx.StaticText):
         numLinesUsed = len(text.split("\n"))
         lineBuffer = int((maxLines - numLinesUsed) // 2 - 1)
         newText = ("\n" * lineBuffer) + text + ("\n" * lineBuffer)
-        wx.StaticText.SetLabel(self, newText, *args, **kwargs)
+        super().SetLabel(newText, *args, **kwargs)
 
 
     ## Update the button to match known state.

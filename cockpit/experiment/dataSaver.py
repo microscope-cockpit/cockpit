@@ -529,7 +529,7 @@ class DataSaver:
 # second.
 class StatusUpdateThread(threading.Thread):
     def __init__(self, cameraNames, totals):
-        threading.Thread.__init__(self)
+        super().__init__()
         ## List of names of the cameras.
         self.cameraNames = cameraNames
         ## List of images received per camera.

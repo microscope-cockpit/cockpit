@@ -121,7 +121,7 @@ class PhysikInstrumenteM687(Device):
     _config_types = {'baud': int,
                      'timeout': float,}
     def __init__(self, name, config):
-        super(PhysikInstrumenteM687, self).__init__(name, config)
+        super().__init__(name, config)
         ## Connection to the XY stage controller (serial.Serial instance)
         self.xyConnection = None
         ## Lock around sending commands to the XY stage controller.

@@ -94,7 +94,7 @@ class CockpitApp(wx.App):
         ## OnInit() will make use of config, and wx.App.__init__()
         ## calls OnInit().  So we need to assign this before super().
         self._config = config
-        super(CockpitApp, self).__init__(redirect=False)
+        super().__init__(redirect=False)
 
     @property
     def Config(self):

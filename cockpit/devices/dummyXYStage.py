@@ -59,7 +59,7 @@ import cockpit.handlers.stagePositioner
 
 class DummyMover(Device):
     def __init__(self, name="dummy XY stage", config={}):
-        super(DummyMover, self).__init__(name, config)
+        super().__init__(name, config)
         # List of 2 doubles indicating our X/Y position.
         self.curPosition = [1000, 1000]
         events.subscribe(events.USER_ABORT, self.onAbort)

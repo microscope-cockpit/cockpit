@@ -65,7 +65,7 @@ class ImageSequenceViewer(wx.Frame):
     # \param title Title string for the window. We'll update it with pixel
     # value information when the user mouses over the display.
     def __init__(self, images, title, *args, **kwargs):
-        wx.Frame.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         
         self.images = images
         self.title = title

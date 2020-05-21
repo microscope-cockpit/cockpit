@@ -91,7 +91,7 @@ class ImmediateModeExperiment(experiment.Experiment):
         for light in depot.getHandlersOfType(depot.LIGHT_TOGGLE):
             if light.getIsEnabled():
                 self.lights.append(light)
-        experiment.Experiment.__init__(self, numReps, repDuration,
+        super().__init__(numReps, repDuration,
                 None, 0, 0, sliceHeight, self.cameras, self.lights, {},
                 metadata = metadata, savePath = savePath)
 
@@ -106,7 +106,7 @@ class ImmediateModeExperiment(experiment.Experiment):
     ## Assume we use all active cameras and light sources.
     def run(self):
         self.cameraToImageCount = {c: self.imagesPerRep for c in self.cameras}
-        return experiment.Experiment.run(self)
+        return super().run()
 
 
     ## Run the experiment. Return True if it was successful. This will call

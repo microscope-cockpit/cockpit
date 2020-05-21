@@ -65,7 +65,7 @@ import numpy
 class GridSitesDialog(wx.Dialog):
     ## Create the dialog, and lay out its UI widgets. 
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent, -1, "Place a Grid of Sites")
+        super().__init__(parent, -1, "Place a Grid of Sites")
 
         ## Config-loaded settings for the form.
         self.settings = cockpit.util.userConfig.getValue('gridSitesDialog', default = {

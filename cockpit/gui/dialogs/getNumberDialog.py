@@ -65,9 +65,9 @@ class GetNumberDialog(wx.Dialog):
         style = wx.CAPTION
         if atMouse:
             mousePos = wx.GetMousePosition()
-            wx.Dialog.__init__(self, parent, -1, title, mousePos, style=style)
+            super().__init__(parent, -1, title, mousePos, style=style)
         else:
-            wx.Dialog.__init__(self, parent, -1, title, style=style)
+            super().__init__(parent, -1, title, style=style)
         
         mainSizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -108,9 +108,9 @@ class GetManyNumbersDialog(wx.Dialog):
         style = wx.CAPTION
         if atMouse:
             mousePos = wx.GetMousePosition()
-            wx.Dialog.__init__(self, parent, -1, title, mousePos, style=style)
+            super().__init__(parent, -1, title, mousePos, style=style)
         else:
-            wx.Dialog.__init__(self, parent, -1, title, style=style)
+            super().__init__(parent, -1, title, style=style)
         
         mainSizer = wx.BoxSizer(wx.VERTICAL)
 

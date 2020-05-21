@@ -64,7 +64,7 @@ import re
 class MicroscopeBase(device.Device):
     """A class to communicate with the UniversalDevice interface."""
     def __init__(self, name, config):
-        super(MicroscopeBase, self).__init__(name, config)
+        super().__init__(name, config)
         self.handlers = []
         self.panel = None
         # Pyro proxy
@@ -108,7 +108,7 @@ class MicroscopeBase(device.Device):
         self.describe_settings = self._proxy.describe_settings
 
     def finalizeInitialization(self):
-        super(MicroscopeBase, self).finalizeInitialization()
+        super().finalizeInitialization()
         # Set default settings on remote device. These will be over-
         # ridden by any defaults in userConfig, later.
         # Currently, settings are an 'advanced' feature --- the remote
@@ -267,7 +267,7 @@ class MicroscopeSwitchableDevice(MicroscopeBase):
 
 
     def finalizeInitialization(self):
-        super(MicroscopeSwitchableDevice, self).finalizeInitialization()
+        super().finalizeInitialization()
         self.enabled = self._proxy.get_is_enabled()
 
 
@@ -344,7 +344,7 @@ class MicroscopeLaser(MicroscopeBase):
 
 class MicroscopeFilter(MicroscopeBase):
     def __init__(self, *args, **kwargs):
-        super(MicroscopeFilter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # Cameras
         cdefs = self.config.get('cameras', None)
         if cdefs:

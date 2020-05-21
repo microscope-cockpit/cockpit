@@ -33,7 +33,7 @@ import cockpit.gui.device
 class RaspberryPi(device.Device):
     def __init__(self, name, config):
         # self.ipAddress and self.port set by device.Device.__init__
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
         linestring = config.get('lines')
         self.lines = linestring.split(',')
         paths_linesString = config.get('paths')
@@ -141,7 +141,7 @@ class RaspberryPi(device.Device):
 # individually.
 class piOutputWindow(wx.Frame):
     def __init__(self, piDIO, parent, *args, **kwargs):
-        wx.Frame.__init__(self, parent, *args, **kwargs)
+        super().__init__(parent, *args, **kwargs)
         ## piDevice instance.
         self.pi = piDIO
         # Contains all widgets.

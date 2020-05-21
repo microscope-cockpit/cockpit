@@ -71,8 +71,7 @@ class DrawerHandler(deviceHandler.DeviceHandler):
     # \param settingIndex Index into settings list indicating the current mode.
     def __init__(self, name, groupName, settings = None, settingIndex = None,
                  callbacks = {}):
-        deviceHandler.DeviceHandler.__init__(self, name, groupName,
-                False, callbacks, depot.DRAWER)
+        super().__init__(name, groupName, False, callbacks, depot.DRAWER)
         self.settings = settings
         self.settingIndex = settingIndex
         ## List of ToggleButtons, one per setting.

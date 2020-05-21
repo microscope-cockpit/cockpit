@@ -58,7 +58,7 @@ class PolarizationDevice(device.Device):
     # For use in SI experiments, should be named "SI polarizer" in config.
     # TODO - identify the polarizer some other way.
     def __init__(self, name, config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
 
 
     def getHandlers(self):

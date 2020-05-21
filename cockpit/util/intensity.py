@@ -233,7 +233,7 @@ class IntensityProfilerFrame(wx.Frame):
     """This class provides a UI for IntensityProfiler."""
     SHOW_DEFAULT = False
     def __init__(self, parent=None):
-        super(IntensityProfilerFrame, self).__init__(parent, title="SIM intensity profile")
+        super().__init__(parent, title="SIM intensity profile")
         self.profiler = IntensityProfiler()
         # Outermost sizer.
         vbox = wx.BoxSizer(wx.VERTICAL)

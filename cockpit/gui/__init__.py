@@ -73,7 +73,7 @@ class EvtEmitter(wx.EvtHandler):
     """
     def __init__(self, parent, cockpit_event_type):
         assert isinstance(parent, wx.Window)
-        super(EvtEmitter, self).__init__()
+        super().__init__()
         self._cockpit_event_type = cockpit_event_type
         cockpit.events.subscribe(self._cockpit_event_type,
                                  self._EmitCockpitEvent)
@@ -95,7 +95,7 @@ class EvtEmitter(wx.EvtHandler):
 
     def Destroy(self):
         self._Unsubscribe()
-        return super(EventHandler, self).Destroy()
+        return super().Destroy()
 
 
 def ExceptionBox(caption="", parent=None):

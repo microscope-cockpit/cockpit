@@ -120,7 +120,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
 
     def __init__(self, *args, **kwargs):
-        wx.Frame.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.panel = wx.Panel(self)
         self.masterMosaic=mosaic.window
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -881,7 +881,7 @@ class LightToggleButton(SBitmapToggleButton):
         dc.SelectObject(wx.NullBitmap)
 
         kwargs['size'] = size
-        super(LightToggleButton, self).__init__(parent, wx.ID_ANY, bmpOff, **kwargs)
+        super().__init__(parent, wx.ID_ANY, bmpOff, **kwargs)
         self.SetBitmapDisabled(bmpOff)
         self.SetBitmapSelected(bmpOn)
         self.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.light.toggleState())

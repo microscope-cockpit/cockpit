@@ -73,7 +73,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
     ## Instantiate the object. Just calls the parent constructor and sets
     # up the mouse event.
     def __init__(self, *args, **kwargs):
-        macroStageBase.MacroStageBase.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         ## Whether or not to draw the mosaic tiles
         self.shouldDrawMosaic = True
         ## True if we're in the processing of changing the soft motion limits.

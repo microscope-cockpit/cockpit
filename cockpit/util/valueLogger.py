@@ -98,7 +98,7 @@ class PollingLogger(ValueLogger):
         :param getValues: a callable to fetch a value or values to log
         :param keys: keys that name fetched values; used in header
         """
-        super(PollingLogger, self).__init__(name, keys)
+        super().__init__(name, keys)
         self.dt = dt
         self.getValues = getValues
 

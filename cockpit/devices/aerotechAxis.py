@@ -67,7 +67,7 @@ RESPONSE_CHARS = {
 
 class AerotechZStage(device.Device):
     def __init__(self, name, config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
         try :
             limitString = config.get('softlimits', '')
             parsed = re.search(LIMITS_PAT, limitString)

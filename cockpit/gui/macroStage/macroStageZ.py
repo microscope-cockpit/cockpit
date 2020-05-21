@@ -131,7 +131,7 @@ class Histogram():
 class MacroStageZ(macroStageBase.MacroStageBase):
     ## Instantiate the MacroStageZ. 
     def __init__(self, parent, *args, **kwargs):
-        macroStageBase.MacroStageBase.__init__(self, parent, *args, **kwargs)
+        super().__init__(parent, *args, **kwargs)
         ## Backlink to parent for accessing one of its datastructures
         self.parent = parent
         ## Previous value of the Z safety min; when it changes we have to redo
@@ -248,7 +248,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         if axis != 2:
             # We only care about the Z axis.
             return
-        macroStageBase.MacroStageBase.onMotion(self, axis, position)
+        super().onMotion(axis, position)
         # Ensure there's a histogram to work with based around current pos.
         self.makeBigHistogram(cockpit.interfaces.stageMover.getPosition()[2])
         if self.shouldDraw:
@@ -594,7 +594,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 class MacroStageZKey(macroStageBase.MacroStageBase):
     ## Instantiate the MacroStageZKey.
     def __init__(self, parent, *args, **kwargs):
-        macroStageBase.MacroStageBase.__init__(self, parent, *args, **kwargs)
+        super().__init__(parent, *args, **kwargs)
         ## Still no idea how this relates to anything, but this value seems
         # to work well. 
         self.textSize = .03

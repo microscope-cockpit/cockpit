@@ -66,9 +66,7 @@ class ImagerHandler(deviceHandler.DeviceHandler):
     ## callbacks should fill in the following functions:
     # - takeImage(): Cause an image to be collected.
     def __init__(self, name, groupName, callbacks):
-        deviceHandler.DeviceHandler.__init__(self, name, groupName, False, 
-                callbacks, depot.IMAGER)
-
+        super().__init__(name, groupName, False, callbacks, depot.IMAGER)
 
     def takeImage(self):
         self.callbacks['takeImage']()

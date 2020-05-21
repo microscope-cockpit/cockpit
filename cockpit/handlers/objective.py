@@ -70,8 +70,7 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
     #   done.
     def __init__(self, name, groupName, nameToPixelSize, nameToTransform, nameToOffset, nameToColour, nameToLensID, curObjective,
             callbacks = {}):
-        deviceHandler.DeviceHandler.__init__(self, name, groupName, 
-                False, {}, depot.OBJECTIVE)
+        super().__init__(name, groupName, False, {}, depot.OBJECTIVE)
         self.nameToPixelSize = nameToPixelSize
         self.nameToTransform = nameToTransform
         self.nameToOffset = nameToOffset

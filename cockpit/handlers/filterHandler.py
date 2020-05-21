@@ -60,11 +60,8 @@ class Filter(object):
 class FilterHandler(deviceHandler.DeviceHandler):
     """A handler for emission and ND filter wheels."""
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks, cameras, lights):
-        deviceHandler.DeviceHandler.__init__(self,
-                                             name, groupName,
-                                             isEligibleForExperiments,
-                                             callbacks,
-                                             depot.LIGHT_FILTER)
+        super().__init__(name, groupName, isEligibleForExperiments, callbacks,
+                         depot.LIGHT_FILTER)
         self.cameras = cameras or []
         self.lights = lights or []
         self.lastFilter = None

@@ -98,7 +98,7 @@ class ExperimentConfigPanel(wx.Panel):
     #        encapsulated by some other system that handles its own filenames).
     def __init__(self, parent, resizeCallback, resetCallback,
             configKey = 'singleSiteExperiment', shouldShowFileControls = True):
-        wx.Panel.__init__(self, parent, style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.TAB_TRAVERSAL)
+        super().__init__(parent, style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.TAB_TRAVERSAL)
         self.parent = parent
 
         self.configKey = configKey

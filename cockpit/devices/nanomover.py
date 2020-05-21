@@ -69,7 +69,7 @@ LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d
 
 class Nanomover(Device):
     def __init__(self, name, config={}):
-        Device.__init__(self, name, config)
+        super().__init__(name, config)
         ## Current stage position information.
         self.curPosition = [14500, 14500, 14500]
         ## Connection to the Nanomover controller program.
