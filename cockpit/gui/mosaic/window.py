@@ -259,11 +259,8 @@ class MosaicCommon:
             glPushMatrix()
             # Reflect x-cordinates.
             glMultMatrixf([-1.,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1])
-            # FIXME: we should not have to check this on every paint.
-            for p in wx.GetApp().Config['stage'].getlines('primitives', []):
-                if p not in self.primitives:
-                    self.primitives[p] = Primitive.factory(p)
-                self.primitives[p].render()
+            for primitive in self.primitives:
+                primitive.render()
             glPopMatrix()
             glDisable(GL_LINE_STIPPLE)
 
@@ -324,9 +321,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        ## Mapping of primitive specifications to Primitives.
-        self.primitives = {}
         ## Prevent r-click on buttons displaying MainWindow context menu.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         ## Last known location of the mouse.
@@ -341,6 +335,9 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         self.offset=(0,0)
         ## Event object to control run state of mosaicLoop.
         self.shouldContinue = threading.Event()
+
+        primitive_specs = wx.GetApp().Config['stage'].getlines('primitives', [])
+        self.primitives = [Primitive.factory(spec) for spec in primitive_specs]
 
         ## Camera used for making a mosaic
         self.camera = None

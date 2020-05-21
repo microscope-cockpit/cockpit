@@ -83,8 +83,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.firstSafetyMousePos = None
         ## Last seen mouse position
         self.lastMousePos = [0, 0]
-        ## Primitive objects - a map of specification to object.
-        self.primitives = {}
+
+        primitive_specs = wx.GetApp().Config['stage'].getlines('primitives', [])
+        self._primitives = [Primitive.factory(spec) for spec in primitive_specs]
 
         hardLimits = cockpit.interfaces.stageMover.getHardLimits()
         self.minX, self.maxX = hardLimits[0]
@@ -270,11 +271,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glEnable(GL_LINE_STIPPLE)
             glLineStipple(1, 0xAAAA)
             glColor3f(0.4, 0.4, 0.4)
-            # FIXME: we should not have to check this on every paint.
-            for p in wx.GetApp().Config['stage'].getlines('primitives', []):
-                if p not in self.primitives:
-                    self.primitives[p] = Primitive.factory(p)
-                self.primitives[p].render()
+            for primitive in self._primitives:
+                primitive.render()
             glDisable(GL_LINE_STIPPLE)
 
             #Draw possibloe stage positions for current objective
