@@ -152,9 +152,6 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         #default scale bar size is Zero
         self.scalebar = cockpit.util.userConfig.getValue('mosaicScaleBar',
                                                          default=0)
-        #Default to drawing primitives
-        self.drawPrimitives = cockpit.util.userConfig.getValue('mosaicDrawPrimitives',
-                                                               default = True)
 
         ##define text strings to change status strings.
         self.sampleStateText=None
@@ -680,10 +677,6 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             menu.Append(menuId, "Toggle mosaic scale bar")
             self.panel.Bind(wx.EVT_MENU,
                             lambda event: self.togglescalebar(), id= menuId)
-            menuId += 1
-            menu.Append(menuId, "Toggle draw primitives")
-            self.panel.Bind(wx.EVT_MENU,
-                            lambda event: self.toggleDrawPrimitives(), id= menuId)
 
             cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
@@ -707,17 +700,6 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             self.scalebar = 1
         #store current state for future.
         cockpit.util.userConfig.setValue('mosaicScaleBar',self.scalebar)
-        self.Refresh()
-
-    def toggleDrawPrimitives(self):
-        #toggle the scale bar between 0 and 1.
-        if (self.drawPrimitives!=False):
-            self.drawPrimitives=False
-        else:
-            self.drawPrimitives = True
-        #store current state for future.
-        cockpit.util.userConfig.setValue('mosaicDrawPrimitives',
-                                         self.drawPrimitives)
         self.Refresh()
 
 

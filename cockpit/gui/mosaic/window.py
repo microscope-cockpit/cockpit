@@ -138,7 +138,6 @@ class MosaicCommon:
     #   put self.scalefont onto the canvas;
     #   pull self.offset straight from the objective;
     #   move self.selectedSites to the stageMover or some other space manager;
-    #   eliminate self.drawPrimitives - they're useful for navigation and don't add much clutter.
     def drawOverlay(self):
         for site in cockpit.interfaces.stageMover.getAllSites():
             # Draw a crude circle.
@@ -249,20 +248,18 @@ class MosaicCommon:
             glPopMatrix()
 
         #Draw stage primitives.
-        if(self.drawPrimitives):
-            # Draw device-specific primitives.
-            glEnable(GL_LINE_STIPPLE)
-            glLineStipple(1, 0xAAAA)
-            glColor3f(0.4, 0.4, 0.4)
-            glColor3f(0.4, 0.4, 0.4)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            # Reflect x-cordinates.
-            glMultMatrixf([-1.,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1])
-            for primitive in self.primitives:
-                primitive.render()
-            glPopMatrix()
-            glDisable(GL_LINE_STIPPLE)
+        glEnable(GL_LINE_STIPPLE)
+        glLineStipple(1, 0xAAAA)
+        glColor3f(0.4, 0.4, 0.4)
+        glColor3f(0.4, 0.4, 0.4)
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        # Reflect x-cordinates.
+        glMultMatrixf([-1.,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1])
+        for primitive in self.primitives:
+            primitive.render()
+        glPopMatrix()
+        glDisable(GL_LINE_STIPPLE)
 
 
     # Draw a crosshairs at the specified position with the specified color.
@@ -372,9 +369,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         #default scale bar size is Zero
         self.scalebar = cockpit.util.userConfig.getValue('mosaicScaleBar',
                                                          default= 0)
-        #Default to drawing primitives
-        self.drawPrimitives = cockpit.util.userConfig.getValue('mosaicDrawPrimitives',
-                                                               default = True)
         ## Maps button names to wx.Button instances.
         self.nameToButton = {}
 
@@ -597,11 +591,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             self.Bind(wx.EVT_MENU,
                       lambda event: self.togglescalebar(),
                       id=menuId)
-            menuId += 1
-            menu.Append(menuId, "Toggle draw primitives")
-            self.Bind(wx.EVT_MENU,
-                      lambda event: self.toggleDrawPrimitives(),
-                      id=menuId)
 
             cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
 
@@ -810,16 +799,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         cockpit.util.userConfig.setValue('mosaicScaleBar',self.scalebar)
         self.Refresh()
 
-    def toggleDrawPrimitives(self):
-        #toggle the scale bar between 0 and 1.
-        if (self.drawPrimitives!=False):
-            self.drawPrimitives=False
-        else:
-            self.drawPrimitives = True
-        #store current state for future.
-        cockpit.util.userConfig.setValue('mosaicDrawPrimitives',
-                                         self.drawPrimitives)
-        self.Refresh()
     ## Save the current stage position as a new site with the specified
     # color (or our currently-selected color if none is provided).
     def saveSite(self, color = None):
