@@ -66,9 +66,6 @@ class Device:
 
 
     def __init__(self, name='', config={}):
-        ## Set to False to disable this device. Disabled devices will not be 
-        # initialized on startup. 
-        self.isActive = True
         self.name = name
         self.config = config
         # Convert config strings to types specified on device class.
@@ -125,11 +122,6 @@ class Device:
     # and all initial publications and subscriptions have been made.
     def finalizeInitialization(self):
         pass
-
-
-    ## Simple getter
-    def getIsActive(self):
-        return self.isActive
 
 
     ## Debugging function: shutdown the device preparatory to reloading 

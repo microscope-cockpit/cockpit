@@ -80,9 +80,6 @@ class NIcRIO(executorDevices.ExecutorDevice):
         super().__init__(name, config)
         # TODO: tickrate should go into a config?
         self.tickrate = 100  # Number of ticks per ms. As of the resolution of the action table.
-        # TODO: check
-        # if not self.isActive:
-        #     return
         self.sendPort = config.get('sendport')
         self.receivePort = config.get('receiveport')
         self.port = [self.sendPort, self.receivePort]
