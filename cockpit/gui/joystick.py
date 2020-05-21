@@ -65,7 +65,7 @@ import cockpit.interfaces.imager as imager
 import cockpit.gui.mosaic.window as mosaic
 
 
-class Joystick(object):
+class Joystick:
     def __init__(self, window):
         if sys.platform == 'darwin':
             return None

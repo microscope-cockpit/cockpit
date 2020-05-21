@@ -79,7 +79,7 @@ class STATES():
     busy = 4
 
 
-class DeviceHandler(object):
+class DeviceHandler:
     ## \param name The name of the device being controlled. This should be
     #         unique, as it is used to indicate the specific DeviceHandler
     #         in many callback functions. 

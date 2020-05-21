@@ -30,7 +30,7 @@ from . import files
 import os
 DELIMITER = ';'
 
-class ValueLogger(object):
+class ValueLogger:
     _fhs = [] # A list of all filehandles opened in this session.
 
     def __init__(self, name, keys=None):

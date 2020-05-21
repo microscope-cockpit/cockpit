@@ -42,7 +42,7 @@ ICON_SIZE = (16,16)
 BITMAP_SIZE = (512,512)
 
 
-class IntensityProfiler(object):
+class IntensityProfiler:
     """A class to profile intensity and store calculation variables."""
     def __init__(self):
         self._data = None

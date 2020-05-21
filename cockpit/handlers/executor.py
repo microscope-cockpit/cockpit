@@ -237,7 +237,7 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
 
 
 
-class DigitalMixin(object):
+class DigitalMixin:
     ## Digital handler mixin.
 
     ## Register a client device that is connected to one of our lines.
@@ -357,7 +357,7 @@ class DigitalMixin(object):
         self.writeDigital(entryState)
 
 
-class AnalogMixin(object):
+class AnalogMixin:
     ## Analog handler mixin.
     # Consider output 'level' in volts, amps or ADUS, and input
     # 'position' in experimental units (e.g. um or deg).

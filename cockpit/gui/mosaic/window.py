@@ -105,7 +105,7 @@ def _pauseMosaicLoop(func):
     return wrapped
 
 
-class MosaicCommon(object):
+class MosaicCommon:
     # A class to house methods that are common to both the Mosaic
     # and TouchScreen windows. Previously, these were dynamically
     # rebound on the TouchScreen window, which worked fine in

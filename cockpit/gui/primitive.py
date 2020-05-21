@@ -26,7 +26,7 @@ import numpy
 CIRCLE_SEGMENTS = 32
 PI = 3.141592654
 
-class Primitive(object):
+class Primitive:
     """ A class for rendering primitives from devices.
 
     Stages can use primitives to show reference positions, such

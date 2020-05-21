@@ -26,7 +26,7 @@ import cockpit.gui
 import wx
 import cockpit.util.threads
 
-class Filter(object):
+class Filter:
     """An individual filter."""
 
     def __init__(self, position, *args):

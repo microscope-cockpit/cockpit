@@ -54,7 +54,7 @@
 # as MUI gets to speaking directly to hardware. Device implementation is 
 # largely left up to the client; this class simply provides a framework of 
 # stub functions that must be implemented. 
-class Device(object):
+class Device:
     _config_types = {
         'port': int,
     }

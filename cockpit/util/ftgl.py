@@ -80,7 +80,7 @@ _getFontError.argtypes = [POINTER(_FTGLfont)]
 _getFontError.restype = _FT_Error
 
 
-class TextureFont(object):
+class TextureFont:
     def __init__(self, path):
         self._font = _createTextureFont(path.encode('ascii'))
         if not self._font:
