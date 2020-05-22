@@ -556,7 +556,6 @@ class TriggerProxy(deviceHandler.DeviceHandler):
         super().__init__(name + " trigger", name + " group",
                          False, {}, depot.GENERIC_DEVICE)
         self.triggerNow = lambda: trigSource.triggerDigital(self)
-        self.setHigh = lambda: trigHandler.setDigital(trigLine, state)
 
 
 ## This handler can examine and modify an action table, but delegates
