@@ -156,7 +156,8 @@ def executeAndWaitFor(eventType: str, func: _Subscriber, *args, **kwargs):
 ## Call the specified function with the provided arguments, and then wait for
 # either the named event to occur or the timeout to expire.
 def executeAndWaitForOrTimeout(eventType: str, func: _Subscriber,
-                               timeout: float,*args, **kwargs):
+                               timeout: typing.Optional[float],
+                               *args, **kwargs):
     global _one_shot_publisher
 
     # Timeout implemented with a condition.
