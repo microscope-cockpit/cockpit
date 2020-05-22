@@ -51,6 +51,7 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import typing
 
 from cockpit import depot
 from cockpit import events
@@ -58,7 +59,10 @@ from cockpit.util import userConfig
 
 import numpy
 import threading
-from collections import namedtuple
+
+
+AxisLimits = typing.Tuple[float, float]
+StageLimits = typing.Tuple[AxisLimits, AxisLimits, AxisLimits]
 
 
 ## Stage movement threshold (previously a hard-coded value).
@@ -136,6 +140,8 @@ class StageMover:
         ## Maps axis to the handlers for that axis, sorted by their range of
         # motion.
         self.axisToHandlers = depot.getSortedStageMovers()
+        if set(self.axisToHandlers.keys()) != {0, 1, 2}:
+            raise ValueError('stage mover requires 3 axis: X, Y, and Z')
 
         # FIXME: we should have sensible defaults.
         self._saved_top = userConfig.getValue('savedTop', default=3010.0)
@@ -153,6 +159,26 @@ class StageMover:
         self.curHandlerIndex = 0
         ## Maps Site unique IDs to Site instances.
         self.idToSite = {}
+
+        # Compute the hard motion limits for each axis as the
+        # summation of all limits for handlers on that axis.
+        hard_limits = [None] * 3
+        for axis in range(3):
+            lower = 0.0
+            upper = 0.0
+            # We need set() to avoid duplicated handlers, and we might
+            # have duplicated handlers because of the hack to meet
+            # cockpit requirements that all axis have the same number
+            # of handlers (see comments on issue #413).
+            for handler in set(self.axisToHandlers[axis]):
+                handler_limits = handler.getHardLimits()
+                lower += handler_limits[0]
+                upper += handler_limits[1]
+            hard_limits[axis] = (lower, upper)
+        # Use a tuple to prevent changes to it, and assemble it like
+        # this to enable static code analysis.
+        self._hard_limits = (hard_limits[0], hard_limits[1], hard_limits[2])
+
         ## Maps handler names to events indicating if those handlers
         # have stopped moving.
         self.nameToStoppedEvent = {}
@@ -459,22 +485,13 @@ def getCurHandlerIndex():
 
 ## Get the hard motion limits for a specific axis, as the summation of all
 # limits for movers on that axis.
-def getHardLimitsForAxis(axis):
-    lowLimit = 0
-    highLimit = 0
-    for handler in set(mover.axisToHandlers[axis]):
-        low, high = handler.getHardLimits()
-        lowLimit += low
-        highLimit += high
-    return (lowLimit, highLimit)
+def getHardLimitsForAxis(axis: int) -> AxisLimits:
+    return mover._hard_limits[axis]
 
 
 ## Repeat the above for each axis.
-def getHardLimits():
-    result = []
-    for axis in sorted(mover.axisToHandlers.keys()):
-        result.append(getHardLimitsForAxis(axis))
-    return result
+def getHardLimits() -> StageLimits:
+    return mover._hard_limits
 
 
 ## Returns a list of all hard motion limits for the given axis.
