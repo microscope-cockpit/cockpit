@@ -205,9 +205,8 @@ class Nanomover(Device):
 
     ## Publish the current stage position.
     def publishPosition(self):
-        for i in range(3):
-            events.publish(events.STAGE_MOVER, '%d nanomover' % i, i, 
-                    (self.curPosition[i]))
+        for axis in range(3):
+            events.publish(events.STAGE_MOVER, axis)
 
 
     ## Send updates on the XY stage's position, until it stops moving.
@@ -222,9 +221,8 @@ class Nanomover(Device):
                 for axis in [0, 1]:
                     events.publish(events.STAGE_STOPPED, '%d nanomover' % axis)
                 return
-            for axis, val in enumerate([x, y]):
-                events.publish(events.STAGE_MOVER, '%d nanomover' % axis, 
-                               axis, self.axisSignMapper[axis] * val)
+            for axis in [0, 1]:
+                events.publish(events.STAGE_MOVER, axis)
             time.sleep(.1)
 
     def getPosition(self, axis = None, shouldUseCache = True):

@@ -443,10 +443,8 @@ class PhysikInstrumenteM687(Device):
                 with self.xyLock:
                     self.xyMotionTargets = [None, None]
                 return
-            for axis, val in enumerate([x, y]):
-                events.publish(events.STAGE_MOVER, '%d PI mover' % axis, axis,
-                        self.axisSignMapper[axis] * val)
-            curPosition = (x, y)
+            for axis in [0, 1]:
+                events.publish(events.STAGE_MOVER, axis)
             time.sleep(.01)
 
 

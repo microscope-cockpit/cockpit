@@ -157,7 +157,7 @@ class StageMover:
 
     ## Handle one of our devices moving. We just republish an abstracted
     # stage position for that axis.
-    def onMotion(self, deviceName, axis, position):
+    def onMotion(self, axis):
         events.publish(events.STAGE_POSITION, axis, getPositionForAxis(axis))
 
 

@@ -173,8 +173,7 @@ class AerotechZStage(device.Device):
     ## Publish our current position.
     def makeInitialPublications(self):
         axis = self.axis
-        events.publish(events.STAGE_MOVER, '%d %s' % (axis, NAME_STRING), axis,
-                self.position)
+        events.publish(events.STAGE_MOVER, axis)
 
 
     ## User clicked the abort button; stop moving.
@@ -189,12 +188,12 @@ class AerotechZStage(device.Device):
         self.command(b'ENABLE')
         self.command(b'MOVEABS D %f F %f'
                         % (pos / 1000.0, self.speed))
-        events.publish(events.STAGE_MOVER, '%d %s' % (axis, NAME_STRING), axis, self.position)
+        events.publish(events.STAGE_MOVER, axis)
         # Wait until the move has finished - status bit 2 is InPosition.
         while not int(self.command(b'AXISSTATUS')) & (1 << 2):
             sleep(0.1)
         self.position = self.command(b'CMDPOS').decode()
-        events.publish(events.STAGE_MOVER, '%d %s' % (axis, NAME_STRING), axis, self.position)
+        events.publish(events.STAGE_MOVER, axis)
         events.publish(events.STAGE_STOPPED, '%d mover' % axis)
         self.command (b'DISABLE')
 
@@ -204,12 +203,12 @@ class AerotechZStage(device.Device):
         self.command(b'ENABLE')
         self.command(b'MOVEINC D %f F %f'
                         % (delta / 1000.0, self.speed))
-        events.publish(events.STAGE_MOVER, '%d %s' % (axis, NAME_STRING), axis, self.position)
+        events.publish(events.STAGE_MOVER, axis)
         # Wait until the move has finished - status bit 2 is InPosition.
         while not int(self.command(b'AXISSTATUS')) & (1 << 2):
             sleep(0.1)
         self.position = self.command(b'CMDPOS').decode()
-        events.publish(events.STAGE_MOVER, '%d %s' % (axis, NAME_STRING), axis, self.position)
+        events.publish(events.STAGE_MOVER, axis)
         events.publish(events.STAGE_STOPPED, '%d %s' % (axis, NAME_STRING))
         self.command (b'DISABLE')
 

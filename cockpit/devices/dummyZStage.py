@@ -102,8 +102,7 @@ class DummyZStage(device.Device):
         if not self.active:
             return
         axis = 2
-        events.publish(events.STAGE_MOVER, '%d dummy mover' % axis, axis,
-                self.curPosition)
+        events.publish(events.STAGE_MOVER, axis)
 
 
     ## User clicked the abort button; stop moving.
@@ -116,8 +115,7 @@ class DummyZStage(device.Device):
     def moveAbsolute(self, axis, pos):
         self.curPosition = pos
         # Dummy movers finish movement immediately.
-        events.publish(events.STAGE_MOVER, '%d dummy mover' % axis, axis, 
-                self.curPosition)
+        events.publish(events.STAGE_MOVER, axis)
         events.publish(events.STAGE_STOPPED, '%d dummy mover' % axis)
 
 
@@ -125,8 +123,7 @@ class DummyZStage(device.Device):
     def moveRelative(self, axis, delta):
         self.curPosition += delta
         # Dummy movers finish movement immediately.
-        events.publish(events.STAGE_MOVER, '%d dummy mover' % axis, axis, 
-                self.curPosition)
+        events.publish(events.STAGE_MOVER, axis)
         events.publish(events.STAGE_STOPPED, '%d dummy mover' % axis)
 
 

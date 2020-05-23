@@ -326,11 +326,11 @@ class LinkamStage(MicroscopeBase, Device):
             # Sleep at start of loop to allow stage time to respond to
             # move request so remote.isMoving() returns True.
             time.sleep(0.1)
-            coords = self.getPosition(shouldUseCache=False)
-            for axis, value in enumerate(coords):
-                events.publish(events.STAGE_MOVER,
-                               '%d linkam mover' % axis, 
-                               axis, value)
+            # Update position cache before publishing STAGE_MOVER so
+            # that the UI gets the new position when it queries it.
+            self.getPosition(shouldUseCache=False)
+            for axis in [0, 1]:
+                events.publish(events.STAGE_MOVER, axis)
             moving = self._proxy.is_moving()
 
         for axis in (0, 1):

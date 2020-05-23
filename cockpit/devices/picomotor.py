@@ -389,8 +389,8 @@ class PicoMotorDevice(device.Device):
                 for axis in [0, 1, 2]:
                     events.publish(events.STAGE_STOPPED, '%d PI mover' % axis)
                 return
-            for axis, val in enumerate([x, y, z]):
-                events.publish(events.STAGE_MOVER, '%d PI mover' % axis, axis, val)
+            for axis in [0, 1, 2]:
+                events.publish(events.STAGE_MOVER, axis)
             (prevX, prevY, prevZ)= (x, y, z)
             time.sleep(0.1)
 
