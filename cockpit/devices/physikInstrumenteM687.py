@@ -354,8 +354,7 @@ class PhysikInstrumenteM687(Device):
                     "%d PI mover" % axis, "%d stage motion" % axis, False,
                     {'moveAbsolute': self.moveXYAbsolute,
                          'moveRelative': self.moveXYRelative,
-                         'getPosition': self.getXYPosition,
-                         'setSafety': self.setXYSafety},
+                         'getPosition': self.getXYPosition},
                     axis, [.1, .2, .5, 1, 2, 5, 10, 50, 100, 500, 1000, 5000], 3,
                     (minPos, maxPos), (minPos, maxPos)))
         return result
@@ -462,10 +461,6 @@ class PhysikInstrumenteM687(Device):
         if axis is None:
             return self.xyPositionCache
         return self.xyPositionCache[axis]
-
-
-    def setXYSafety(self, axis, value, isMax):
-        pass
 
 
     def makeInitialPublications(self):

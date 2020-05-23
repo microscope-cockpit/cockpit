@@ -196,8 +196,7 @@ class Nanomover(Device):
                 "%d nanomover" % axis, "%d stage motion" % axis, False, 
                 {'moveAbsolute': self.moveAbsolute, 
                     'moveRelative': self.moveRelative,
-                    'getPosition': self.getPosition,
-                    'setSafety': self.setSafety}, 
+                    'getPosition': self.getPosition}, 
                 axis, stepSizes, 3, 
                 (softLowLimit, softHighLimit), (lowLimit, highLimit)))
         return result
@@ -258,15 +257,6 @@ class Nanomover(Device):
     def moveRelative(self, axis, delta):
         self.sendXYPositionUpdates()
         self.connection.connection.moveOMX_dAxis(axis, delta)
-
-
-    ## Set the soft motion limit (min or max) for the specified axis.
-    def setSafety(self, axis, value, isMax):
-        connection = self.connection.connection
-        if isMax:
-            connection.setSafetyMaxOMX(axis, value)
-        else:
-            connection.setSafetyMinOMX(axis, value)
 
 
     ## User clicked the abort button; halt motion.

@@ -89,8 +89,7 @@ class DummyMover(Device):
                     'moveRelative': self.moveRelative,
                     'getPosition': self.getPosition,
                     'getMovementTime': self.getMovementTime,
-                    'cleanupAfterExperiment': self.cleanup,
-                    'setSafety': self.setSafety},
+                    'cleanupAfterExperiment': self.cleanup},
                 axis, [5, 10, 50, 100, 500, 1000],
                 2, (minVal, maxVal), (minVal, maxVal))
             result.append(handler)
@@ -139,14 +138,6 @@ class DummyMover(Device):
     # experiments.
     def getMovementTime(self, axis, start, end):
         return (1, 1)
-
-
-    ## Set the soft motion safeties for one of the movers. Note that the 
-    # PositionerHandler provides its own soft safeties on the cockpit side; 
-    # this function just allows you to propagate safeties to device control
-    # code, if applicable.
-    def setSafety(self, axis, value, isMax):
-        pass
 
 
     ## Cleanup after an experiment. For a real mover, this would probably 

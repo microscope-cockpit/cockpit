@@ -341,7 +341,6 @@ class PicoMotorDevice(device.Device):
                     {'moveAbsolute': self.moveXYAbsolute,
                          'moveRelative': self.moveXYRelative,
                          'getPosition': lambda axis=axis: self.getXYPosition(axis=axis),
-                         'setSafety': self.setXYSafety,
                          'getMovementTime' :self.getXYMovementTime},
                     axis, [.1, .5, 1, 5, 10, 50, 100, 500, 1000, 5000], 3,
                     (minPos, maxPos), (minPos, maxPos)))
@@ -429,11 +428,5 @@ class PicoMotorDevice(device.Device):
 
 
 
-    def setXYSafety(self, axis, value, isMax):
-        pass
-
-
     def makeInitialPublications(self):
         self.sendXYPositionUpdates()
-
-

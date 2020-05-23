@@ -230,8 +230,7 @@ class LinkamStage(MicroscopeBase, Device):
                     "%d linkam mover" % axis, "%d stage motion" % axis, False,
                     {'moveAbsolute': self.moveAbsolute,
                          'moveRelative': self.moveRelative,
-                         'getPosition': self.getPosition,
-                         'setSafety': self.setSafety},
+                         'getPosition': self.getPosition},
                     axis,
                     [1, 2, 5, 10, 50, 100, 200], # step sizes
                     3, # initial step size index,
@@ -370,11 +369,6 @@ class LinkamStage(MicroscopeBase, Device):
             return self.positionCache
         else:
             return self.positionCache[axis]
-
-
-    def setSafety(self, axis, value, isMax):
-        """Set safety limits on range of motion."""
-        pass
 
 
     def updateUI(self):

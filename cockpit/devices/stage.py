@@ -62,9 +62,6 @@ class SimplePiezo(Device):
     def __init__(self, name, config):
         super(SimplePiezo, self).__init__(name, config)
 
-    def setSafety(self, *args, **kwargs):
-        pass
-
     def getHandlers(self):
         asource = self.config.get('analogsource', None)
         aline = self.config.get('analogline', None)
@@ -105,8 +102,7 @@ class SimplePiezo(Device):
         handler = stagePositioner.PositionerHandler(
             "%d %s" % (axis, self.name), "%d stage motion" % axis, True,
             {'getMovementTime': lambda x, start, delta: (Decimal(0.05), Decimal(0.05)) ,
-             'cleanupAfterExperiment': None,
-             'setSafety': self.setSafety},
+             'cleanupAfterExperiment': None},
             axis, stepSizes, min(4, len(stepSizes)),
             (posMin, posMax), (posMin, posMax))
 
