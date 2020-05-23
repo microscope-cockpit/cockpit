@@ -215,7 +215,7 @@ class Nanomover(Device):
     def sendXYPositionUpdates(self):
         while True:
             prevX, prevY = self.positionCache[:2]
-            x, y, z = self.getPosition(shouldUseCache = False)
+            x, y = self.getPosition(shouldUseCache = False)[:2]
             delta = abs(x - prevX) + abs(y - prevY)
             if delta < 2:
                 # No movement since last time; done moving.
