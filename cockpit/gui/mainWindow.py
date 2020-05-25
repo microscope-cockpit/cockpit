@@ -120,7 +120,7 @@ class MainWindowPanel(wx.Panel):
             btn.Bind(wx.EVT_BUTTON, fn)
             buttonSizer.Add(btn, 1, wx.EXPAND)
         # Video mode button
-        videoButton = wx.ToggleButton(topPanel, wx.ID_ANY, "Video\nmode")
+        videoButton = wx.ToggleButton(topPanel, wx.ID_ANY, "Live")
         videoButton.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: cockpit.interfaces.imager.videoMode())
         events.subscribe(cockpit.events.VIDEO_MODE_TOGGLE, lambda state: videoButton.SetValue(state))
         buttonSizer.Add(videoButton, 1, wx.EXPAND)
