@@ -74,7 +74,7 @@ class SetVariable(wx.Window):
         tsizer.AddStretchSpacer()
         # Pack into sizer as " -  00.000 uu  + "
         self.Sizer.Add(decButton, 0, wx.FIXED_MINSIZE, 0)
-        self.Sizer.Add(tsizer, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
+        self.Sizer.Add(tsizer, 1, wx.EXPAND)
         self.Sizer.Add(incButton, 0, wx.FIXED_MINSIZE, 0)
         self.Fit()
 
