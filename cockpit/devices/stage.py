@@ -22,6 +22,8 @@
 """ stage.py: defines a base class for stage devices.
 """
 
+import itertools
+
 from decimal import Decimal
 from cockpit.devices.device import Device
 from cockpit.interfaces.stageMover import AXIS_MAP
@@ -89,15 +91,14 @@ class SimplePiezo(Device):
         else:
             raise Exception('No min, max or range specified for stage %s.' % self.name)
 
-        # TODO - consider moving stepSizes creation to the handler.
-        stepSizes = [self.config.get('minstep', (posMax - posMin) * 1e-5)]
-        m = 5
-        while True:
-            next = m * stepSizes[-1]
-            if next > (posMax - posMin) / 10.:
+        # TODO: move stepSizes creation to the handler (issue #612)
+        axis_length = posMax - posMin
+        stepSizes = [self.config.get('minstep', axis_length  * 1e-5)]
+        for factor in itertools.cycle([5, 2]):
+            next_step = stepSizes[-1] * factor
+            if next_step > axis_length / 10.0:
                 break
-            stepSizes.append(next)
-            m = [2, 5][m == 2]
+            stepSizes.append(next_step)
 
         result = []
         # Create handler without movement callbacks.
