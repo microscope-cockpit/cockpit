@@ -114,6 +114,18 @@ class MainWindowPanel(wx.Panel):
         abortButton.SetLabelMarkup("<span foreground='red'><big><b>ABORT</b></big></span>")
         abortButton.Bind(wx.EVT_BUTTON, lambda event: events.publish(events.USER_ABORT))
         buttonSizer.Add(abortButton, 1, wx.EXPAND)
+
+        # Snap image button
+        snapButton = wx.Button(topPanel, wx.ID_ANY, "Snap\nimage")
+        snapButton.Bind(wx.EVT_BUTTON, lambda evt: cockpit.interfaces.imager.imager.takeImage())
+        buttonSizer.Add(snapButton, 1, wx.EXPAND)
+
+        # Video mode button
+        videoButton = wx.ToggleButton(topPanel, wx.ID_ANY, "Live")
+        videoButton.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: cockpit.interfaces.imager.videoMode())
+        events.subscribe(cockpit.events.VIDEO_MODE_TOGGLE, lambda state: videoButton.SetValue(state))
+        buttonSizer.Add(videoButton, 1, wx.EXPAND)
+
         # Experiment & review buttons
         for lbl, fn in ( ("Single-site\nexperiment", lambda evt: singleSiteExperiment.showDialog(self) ),
                          ("Multi-site\nexperiment", lambda evt: multiSiteExperiment.showDialog(self) ),
@@ -121,16 +133,9 @@ class MainWindowPanel(wx.Panel):
             btn = wx.Button(topPanel, wx.ID_ANY, lbl)
             btn.Bind(wx.EVT_BUTTON, fn)
             buttonSizer.Add(btn, 1, wx.EXPAND)
-        # Video mode button
-        videoButton = wx.ToggleButton(topPanel, wx.ID_ANY, "Live")
-        videoButton.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: cockpit.interfaces.imager.videoMode())
-        events.subscribe(cockpit.events.VIDEO_MODE_TOGGLE, lambda state: videoButton.SetValue(state))
-        buttonSizer.Add(videoButton, 1, wx.EXPAND)
 
-        # Snap image button
-        snapButton = wx.Button(topPanel, wx.ID_ANY, "Snap\nimage")
-        snapButton.Bind(wx.EVT_BUTTON, lambda evt: cockpit.interfaces.imager.imager.takeImage())
-        buttonSizer.Add(snapButton, 1, wx.EXPAND)
+
+
         # Increase font size in top row buttons.
         for w in [child.GetWindow() for child in buttonSizer.Children]:
             w.SetFont(w.GetFont().Larger())
