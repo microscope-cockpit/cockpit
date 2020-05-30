@@ -142,7 +142,7 @@ class MainWindowPanel(wx.Panel):
         # Light power things will be handled later.
         lightPowerThings = depot.getHandlersOfType(depot.LIGHT_POWER)
         lightPowerThings.sort(key = lambda l: l.wavelength)
-        # Camera UIs are drawn seperately. Currently, they are drawn first,
+        # Camera UIs are drawn separately. Currently, they are drawn first,
         # but this separation may make it easier to implement cameras in
         # ordered slots, giving the user control over exposure order.
         cameraThings = depot.getHandlersOfType(depot.CAMERA)
