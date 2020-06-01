@@ -151,6 +151,7 @@ class CockpitApp(wx.App):
                 updateNum += 1
                 module.makeWindow(main_window)
 
+            self.SetWindowPositions()
             for window in wx.GetTopLevelWindows():
                 # Bind close event hide these windows.
                 if window is not main_window:
@@ -168,8 +169,6 @@ class CockpitApp(wx.App):
             # Now that the UI exists, we don't need this any more.
             # Sometimes, status doesn't make it into the list, so test.
             status.Destroy()
-
-            self.SetWindowPositions()
 
             cockpit.depot.makeInitialPublications()
             cockpit.interfaces.imager.makeInitialPublications()
