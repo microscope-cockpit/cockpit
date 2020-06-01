@@ -152,10 +152,14 @@ class CockpitApp(wx.App):
                 module.makeWindow(main_window)
 
             self.SetWindowPositions()
+
+            main_window.Show()
             for window in wx.GetTopLevelWindows():
-                # Bind close event hide these windows.
-                if window is not main_window:
-                    window.Bind(wx.EVT_CLOSE, lambda event, w=window: w.Hide())
+                if window is main_window:
+                    continue
+                # Cockpit assumes we have window singleton, so bind
+                # close event to hide them.
+                window.Bind(wx.EVT_CLOSE, lambda event, w=window: w.Hide())
                 # Show/Hide windows at start is decided with:
                 #   1. check userConfig (value from last time)
                 #   2. check window class property SHOW_DEFAULT
@@ -289,6 +293,8 @@ class CockpitApp(wx.App):
         cockpit.util.userConfig.setValue('WindowPositions', positions)
 
         for window in wx.GetTopLevelWindows():
+            if window is wx.GetApp().GetTopWindow():
+                continue
             config_name = 'Show Window ' + window.GetTitle()
             cockpit.util.userConfig.setValue(config_name, window.IsShown())
 
