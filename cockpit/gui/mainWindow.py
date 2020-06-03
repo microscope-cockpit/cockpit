@@ -59,12 +59,14 @@
 import json
 import os.path
 import pkg_resources
+import typing
 
 import wx
 import wx.adv
 
 import cockpit.gui
 import cockpit.gui.fileViewerWindow
+import cockpit.interfaces.channels
 
 from cockpit import depot
 from cockpit.gui.dialogs.experiment import multiSiteExperiment
@@ -226,57 +228,100 @@ class MainWindowPanel(wx.Panel):
 class ChannelsMenu(wx.Menu):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # TODO: this should probably go into a separate class so we
-        # can have multiple views and controls on the list of
-        # available channels (see issue #597).
-        self._channels = {}
-        for label, method in [('Add channel…', self.OnAddChannel),
-                              ('Remove channel…', self.OnRemoveChannel),
-                              ('Export channels…', self.OnExportChannels),
-                              ('Import channels…', self.OnImportChannels)]:
+        control_items = [
+            ('Add channel…', self.OnAddChannel),
+            ('Remove channel…', self.OnRemoveChannel),
+            ('Export channels…', self.OnExportChannels),
+            ('Import channels…', self.OnImportChannels),
+        ]
+        for label, method in control_items:
             menu_item = self.Append(wx.ID_ANY, item=label)
             self.Bind(wx.EVT_MENU, method, menu_item)
         self.AppendSeparator()
+        self._n_control_items = len(control_items) +1 # +1 for the separator
+        for name in wx.GetApp().Channels.Names:
+            self.AddChannelItem(name)
+
+        wx.GetApp().Channels.Bind(cockpit.interfaces.channels.EVT_CHANNEL_ADDED,
+                                  self.OnChannelAdded)
+        wx.GetApp().Channels.Bind(cockpit.interfaces.channels.EVT_CHANNEL_REMOVED,
+                                  self.OnChannelRemoved)
+
+
+    @property
+    def ChannelItems(self) -> typing.List[wx.MenuItem]:
+        """List of channel items in the menu."""
+        channel_items = []
+        for i, menu_item in enumerate(self.MenuItems):
+            if i < self._n_control_items:
+                continue # skip control items
+            channel_items.append(menu_item)
+        return channel_items
+
+    def AddChannelItem(self, name: str) -> None:
+        menu_item = self.Append(wx.ID_ANY, item=name)
+        self.Bind(wx.EVT_MENU, self.OnChannel, menu_item)
+
+    def FindChannelItem(self, channel_name: str) -> wx.MenuItem:
+        """Find the channel menu item with the given channel name."""
+        # wx.Menu.FindItem works perfectly to find the channel by name
+        # but we deploy our own logic to cover the case of channels
+        # named like one of our control menu items.  Sure, the only
+        # reason to name a channel like that is to piss us off, but we
+        # still need to handle it.
+        for menu_item in self.ChannelItems:
+            if menu_item.ItemLabelText == channel_name:
+                return menu_item
+        else:
+            raise ValueError('There is no menu item named \'%s\''
+                             % channel_name)
+
+
+    def OnChannelAdded(self, event: wx.CommandEvent) -> None:
+        channel_name = event.GetString()
+        self.AddChannelItem(channel_name)
+        event.Skip()
+
+    def OnChannelRemoved(self, event: wx.CommandEvent) -> None:
+        channel_name = event.GetString()
+        menu_item = self.FindChannelItem(channel_name)
+        self.Delete(menu_item)
+        event.Skip()
 
 
     def OnAddChannel(self, event: wx.CommandEvent) -> None:
-        """Add current channel configuration to list."""
+        """Add current channel configuration."""
         name = wx.GetTextFromUser('Enter name for new channel:',
                                   caption='Add new channel')
         if not name:
             return
-        new_channel = {}
-        events.publish('save exposure settings', new_channel)
 
-        if name not in self._channels:
-            self.Bind(wx.EVT_MENU, self.OnApplyChannel,
-                      self.Append(wx.ID_ANY, item=name))
-        else:
+        if name in wx.GetApp().Channels.Names:
             answer = wx.MessageBox('There is already a channel named "%s".'
                                    ' Replace it?' % name,
                                    caption='Channel already exists',
                                    style=wx.YES_NO)
-            if answer != wx.YES:
-                return
-
-        self._channels[name] = new_channel
+            if answer == wx.YES:
+                channel = cockpit.interfaces.channels.CurrentChannel()
+                wx.GetApp().Channels.Change(name, channel)
+        else:
+            channel = cockpit.interfaces.channels.CurrentChannel()
+            wx.GetApp().Channels.Add(name, channel)
 
 
     def OnRemoveChannel(self, event: wx.CommandEvent) -> None:
         """Remove one channel."""
-        if not self._channels:
+        if not wx.GetApp().Channels.Names:
             wx.MessageBox('There are no channels to be removed.',
                           caption='Failed to remove channel', style=wx.OK)
             return
 
         name = wx.GetSingleChoice('Choose channel to be removed:',
                                   caption='Remove a channel',
-                                  aChoices=list(self._channels.keys()))
+                                  aChoices=wx.GetApp().Channels.Names)
         if not name:
             return
-
-        self.DestroyItem(self.FindItemById(self.FindItem(name)))
-        self._channels.pop(name)
+        wx.GetApp().Channels.Remove(name)
 
 
     def OnExportChannels(self, event: wx.CommandEvent) -> None:
@@ -285,8 +330,8 @@ class ChannelsMenu(wx.Menu):
         if not filepath:
             return
         try:
-            with open(filepath, 'w') as fh:
-                json.dump(self._channels, fh)
+            cockpit.interfaces.channels.SaveToFile(filepath,
+                                                   wx.GetApp().Channels)
         except:
             cockpit.gui.ExceptionBox('Failed to write to \'%s\'' % filepath)
 
@@ -297,11 +342,11 @@ class ChannelsMenu(wx.Menu):
         if not filepath:
             return
         try:
-            with open(filepath, 'r') as fh:
-                new_channels = json.load(fh)
+            new_channels = cockpit.interfaces.channels.LoadFromFile(filepath)
         except:
             cockpit.gui.ExceptionBox('Failed to read to \'%s\'' % filepath)
-        duplicated = [n for n in new_channels.keys() if n in self._channels]
+        current_names = wx.GetApp().Channels.Names
+        duplicated = [n for n in new_channels.Names if n in current_names]
         if duplicated:
             answer = wx.MessageBox('The import will overwrite the following'
                                    ' channels: %s. Do you want to continue?'
@@ -310,20 +355,14 @@ class ChannelsMenu(wx.Menu):
                                    style=wx.YES_NO)
             if answer != wx.YES:
                 return
-
-        for name, channel in new_channels.items():
-            # Duplicated channels only need to update our dict but new
-            # channels also need a new menu item.
-            if name not in duplicated:
-                self.Bind(wx.EVT_MENU, self.OnApplyChannel,
-                          self.Append(wx.ID_ANY, item=name))
-            self._channels[name] = channel
+        wx.GetApp().Channels.Update(new_channels)
 
 
-    def OnApplyChannel(self, event: wx.CommandEvent) -> None:
-        name = self.FindItemById(event.GetId()).GetLabel()
-        channel = self._channels[name]
-        events.publish('load exposure settings', channel)
+    def OnChannel(self, event: wx.CommandEvent) -> None:
+        """Apply channel with same name as the menu item."""
+        name = self.FindItemById(event.GetId()).ItemLabelText
+        channel = wx.GetApp().Channels.Get(name)
+        cockpit.interfaces.channels.ApplyChannel(channel)
 
 
 class MainWindow(wx.Frame):
@@ -340,7 +379,8 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnClose, menu_item)
         menu_bar.Append(file_menu, '&File')
 
-        menu_bar.Append(ChannelsMenu(), '&Channels')
+        channels_menu = ChannelsMenu()
+        menu_bar.Append(channels_menu, '&Channels')
 
         help_menu = wx.Menu()
         menu_item = help_menu.Append(wx.ID_ANY, item='Online repository')

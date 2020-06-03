@@ -78,6 +78,7 @@ import cockpit.depot
 import cockpit.events
 import cockpit.gui.loggingWindow
 import cockpit.gui.mainWindow
+import cockpit.interfaces.channels
 import cockpit.interfaces.imager
 import cockpit.interfaces.stageMover
 import cockpit.util.files
@@ -99,6 +100,11 @@ class CockpitApp(wx.App):
     @property
     def Config(self):
         return self._config
+
+    @property
+    def Channels(self):
+        return self._channels
+
 
     def OnInit(self):
         try:
@@ -133,6 +139,7 @@ class CockpitApp(wx.App):
             updateNum+=1
             cockpit.interfaces.imager.initialize()
             cockpit.interfaces.stageMover.initialize()
+            self._channels = cockpit.interfaces.channels.Channels()
 
             status.Update(updateNum, "Initializing user interface...")
             updateNum+=1
