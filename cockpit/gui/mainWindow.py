@@ -201,8 +201,10 @@ class MainWindowPanel(wx.Panel):
         self.Sizer.Add(topPanel, flag=wx.EXPAND)
         self.Sizer.AddSpacer(ROW_SPACER)
 
-        ## Panel for holding light sources.
-        self.Sizer.Add(mainPanels.LightControlsPanel(self), flag=wx.EXPAND)
+        lights_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        lights_sizer.Add(mainPanels.LightControlsPanel(self), flag=wx.EXPAND)
+        lights_sizer.Add(mainPanels.ChannelsPanel(self), flag=wx.EXPAND)
+        self.Sizer.Add(lights_sizer, flag=wx.EXPAND)
 
         keyboard.setKeyboardHandlers(self)
         self.joystick = joystick.Joystick(self)

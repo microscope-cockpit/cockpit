@@ -18,7 +18,11 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
+import typing
+
 import wx
+
+import cockpit.interfaces.channels
 from cockpit import depot, events
 from cockpit.util.colors import wavelengthToColor
 from cockpit.gui.device import EnableButton
@@ -228,3 +232,62 @@ class FilterControls(wx.Panel):
         for i, f in enumerate(filters):
             subpanel.Sizer.Add(f.makeUI(subpanel), 0,
                                wx.EXPAND | wx.RIGHT | wx.BOTTOM, 8)
+
+
+class ChannelsPanel(wx.Panel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        label = PanelLabel(self, label="Channels")
+        self._buttons_sizer = wx.WrapSizer(wx.VERTICAL)
+
+        for name in wx.GetApp().Channels.Names:
+            self.AddButton(name)
+
+        wx.GetApp().Channels.Bind(cockpit.interfaces.channels.EVT_CHANNEL_ADDED,
+                                  self.OnChannelAdded)
+        wx.GetApp().Channels.Bind(cockpit.interfaces.channels.EVT_CHANNEL_REMOVED,
+                                  self.OnChannelRemoved)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(label)
+        sizer.Add(self._buttons_sizer, flag=wx.EXPAND)
+        self.SetSizer(sizer)
+
+
+    def Refresh(self, *args, **kwargs) -> None:
+        super().Refresh(*args, **kwargs)
+        self.Layout()
+        self.Fit()
+
+    def AddButton(self, name: str) -> None:
+        button = wx.Button(self, label=name)
+        button.Bind(wx.EVT_BUTTON, self.OnButton)
+        self._buttons_sizer.Add(button, flag=wx.EXPAND)
+        self.Refresh()
+
+
+    def GetButtonByLabel(self, name: str) -> wx.Button:
+        for sizer_item in self._buttons_sizer.Children:
+            if sizer_item.Window.LabelText == name:
+                return sizer_item.Window
+        else:
+            raise ValueError('There is no button named \'%s\''
+                             % channel_name)
+
+
+    def OnChannelAdded(self, event: wx.CommandEvent) -> None:
+        channel_name = event.GetString()
+        self.AddButton(channel_name)
+
+    def OnChannelRemoved(self, event: wx.CommandEvent) -> None:
+        channel_name = event.GetString()
+        button = self.GetButtonByLabel(channel_name)
+        self._buttons_sizer.Detach(button)
+        self.Refresh()
+
+
+    def OnButton(self, event: wx.CommandEvent) -> None:
+        """Apply channel with same name as the button."""
+        name = event.EventObject.Label
+        channel = wx.GetApp().Channels.Get(name)
+        cockpit.interfaces.channels.ApplyChannel(channel)
