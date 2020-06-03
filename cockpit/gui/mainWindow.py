@@ -223,6 +223,109 @@ class MainWindowPanel(wx.Panel):
                 print ("Opening first of %d files. Others can be viewed by dragging them from the filesystem onto the main window of the Cockpit." % len(filenames))
 
 
+class ChannelsMenu(wx.Menu):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # TODO: this should probably go into a separate class so we
+        # can have multiple views and controls on the list of
+        # available channels (see issue #597).
+        self._channels = {}
+        for label, method in [('Add channel…', self.OnAddChannel),
+                              ('Remove channel…', self.OnRemoveChannel),
+                              ('Export channels…', self.OnExportChannels),
+                              ('Import channels…', self.OnImportChannels)]:
+            menu_item = self.Append(wx.ID_ANY, item=label)
+            self.Bind(wx.EVT_MENU, method, menu_item)
+        self.AppendSeparator()
+
+
+    def OnAddChannel(self, event: wx.CommandEvent) -> None:
+        """Add current channel configuration to list."""
+        name = wx.GetTextFromUser('Enter name for new channel:',
+                                  caption='Add new channel')
+        if not name:
+            return
+        new_channel = {}
+        events.publish('save exposure settings', new_channel)
+
+        if name not in self._channels:
+            self.Bind(wx.EVT_MENU, self.OnApplyChannel,
+                      self.Append(wx.ID_ANY, item=name))
+        else:
+            answer = wx.MessageBox('There is already a channel named "%s".'
+                                   ' Replace it?' % name,
+                                   caption='Channel already exists',
+                                   style=wx.YES_NO)
+            if answer != wx.YES:
+                return
+
+        self._channels[name] = new_channel
+
+
+    def OnRemoveChannel(self, event: wx.CommandEvent) -> None:
+        """Remove one channel."""
+        if not self._channels:
+            wx.MessageBox('There are no channels to be removed.',
+                          caption='Failed to remove channel', style=wx.OK)
+            return
+
+        name = wx.GetSingleChoice('Choose channel to be removed:',
+                                  caption='Remove a channel',
+                                  aChoices=list(self._channels.keys()))
+        if not name:
+            return
+
+        self.DestroyItem(self.FindItemById(self.FindItem(name)))
+        self._channels.pop(name)
+
+
+    def OnExportChannels(self, event: wx.CommandEvent) -> None:
+        """Save all channels to a file."""
+        filepath = wx.SaveFileSelector('Select file to export', '')
+        if not filepath:
+            return
+        try:
+            with open(filepath, 'w') as fh:
+                json.dump(self._channels, fh)
+        except:
+            cockpit.gui.ExceptionBox('Failed to write to \'%s\'' % filepath)
+
+
+    def OnImportChannels(self, event: wx.CommandEvent) -> None:
+        """Add all channels in a file."""
+        filepath = wx.LoadFileSelector('Select file to import', '')
+        if not filepath:
+            return
+        try:
+            with open(filepath, 'r') as fh:
+                new_channels = json.load(fh)
+        except:
+            cockpit.gui.ExceptionBox('Failed to read to \'%s\'' % filepath)
+        duplicated = [n for n in new_channels.keys() if n in self._channels]
+        if duplicated:
+            answer = wx.MessageBox('The import will overwrite the following'
+                                   ' channels: %s. Do you want to continue?'
+                                   % ', '.join(duplicated),
+                                   caption='Duplicated channels on loaded file',
+                                   style=wx.YES_NO)
+            if answer != wx.YES:
+                return
+
+        for name, channel in new_channels.items():
+            # Duplicated channels only need to update our dict but new
+            # channels also need a new menu item.
+            if name not in duplicated:
+                self.Bind(wx.EVT_MENU, self.OnApplyChannel,
+                          self.Append(wx.ID_ANY, item=name))
+            self._channels[name] = channel
+
+
+    def OnApplyChannel(self, event: wx.CommandEvent) -> None:
+        name = self.FindItemById(event.GetId()).GetLabel()
+        channel = self._channels[name]
+        events.publish('load exposure settings', channel)
+
+
 class MainWindow(wx.Frame):
     def __init__(self):
         super().__init__(parent=None, title="Cockpit")
@@ -237,21 +340,7 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnClose, menu_item)
         menu_bar.Append(file_menu, '&File')
 
-        # TODO: this should probably go into a separate class so we
-        # can have multiple views and controls on the list of
-        # available channels (see issue #597).
-        self._channels = {}
-        exposure_menu = wx.Menu()
-        self.Bind(wx.EVT_MENU, self.OnAddChannel,
-                  exposure_menu.Append(wx.ID_ANY, item='Add channel…'))
-        self.Bind(wx.EVT_MENU, self.OnRemoveChannel,
-                  exposure_menu.Append(wx.ID_ANY, item='Remove channel…'))
-        self.Bind(wx.EVT_MENU, self.OnExportChannels,
-                  exposure_menu.Append(wx.ID_ANY, item='Export channels…'))
-        self.Bind(wx.EVT_MENU, self.OnImportChannels,
-                  exposure_menu.Append(wx.ID_ANY, item='Import channels…'))
-        exposure_menu.AppendSeparator()
-        menu_bar.Append(exposure_menu, '&Channels')
+        menu_bar.Append(ChannelsMenu(), '&Channels')
 
         help_menu = wx.Menu()
         menu_item = help_menu.Append(wx.ID_ANY, item='Online repository')
@@ -300,101 +389,6 @@ class MainWindow(wx.Frame):
     def OnClose(self, event):
         events.publish('program exit')
         event.Skip()
-
-
-    def OnAddChannel(self, event: wx.CommandEvent) -> None:
-        """Add current channel configuration to list."""
-        name = wx.GetTextFromUser('Enter name for new channel:',
-                                  caption='Add new channel',
-                                  parent=self)
-        if not name:
-            return
-        new_channel = {}
-        events.publish('save exposure settings', new_channel)
-
-        if name not in self._channels:
-            menu = event.GetEventObject()
-            self.Bind(wx.EVT_MENU, self.OnApplyChannel,
-                      menu.Append(wx.ID_ANY, item=name))
-        else:
-            answer = wx.MessageBox('There is already a channel named "%s".'
-                                   ' Replace it?' % name,
-                                   caption='Channel already exists',
-                                   parent=self, style=wx.YES_NO)
-            if answer != wx.YES:
-                return
-
-        self._channels[name] = new_channel
-
-
-    def OnRemoveChannel(self, event: wx.CommandEvent) -> None:
-        """Remove one channel."""
-        if not self._channels:
-            wx.MessageBox('There are no channels to be removed.',
-                          caption='Failed to remove channel',
-                          parent=self, style=wx.OK)
-            return
-
-        name = wx.GetSingleChoice('Choose channel to be removed:',
-                                  caption='Remove a channel',
-                                  aChoices=list(self._channels.keys()),
-                                  parent=self)
-        if not name:
-            return
-
-        menu = event.GetEventObject()
-        menu.DestroyItem(menu.FindItemById(menu.FindItem(name)))
-        self._channels.pop(name)
-
-
-    def OnExportChannels(self, event: wx.CommandEvent) -> None:
-        """Save all channels to a file."""
-        filepath = wx.SaveFileSelector('Select file to export', '', parent=self)
-        if not filepath:
-            return
-        try:
-            with open(filepath, 'w') as fh:
-                json.dump(self._channels, fh)
-        except:
-            cockpit.gui.ExceptionBox('Failed to write to \'%s\'' % filepath,
-                                     parent=self)
-
-
-    def OnImportChannels(self, event: wx.CommandEvent) -> None:
-        """Add all channels in a file."""
-        filepath = wx.LoadFileSelector('Select file to import', '', parent=self)
-        if not filepath:
-            return
-        try:
-            with open(filepath, 'r') as fh:
-                new_channels = json.load(fh)
-        except:
-            cockpit.gui.ExceptionBox('Failed to read to \'%s\'' % filepath,
-                                     parent=self)
-        duplicated = [n for n in new_channels.keys() if n in self._channels]
-        if duplicated:
-            answer = wx.MessageBox('The import will overwrite the following'
-                                   ' channels: %s. Do you want to continue?'
-                                   % ', '.join(duplicated),
-                                   caption='Duplicated channels on loaded file',
-                                   parent=self, style=wx.YES_NO)
-            if answer != wx.YES:
-                return
-
-        menu = event.GetEventObject()
-        for name, channel in new_channels.items():
-            # Duplicated channels only need to update our dict but new
-            # channels also need a new menu item.
-            if name not in duplicated:
-                self.Bind(wx.EVT_MENU, self.OnApplyChannel,
-                          menu.Append(wx.ID_ANY, item=name))
-            self._channels[name] = channel
-
-
-    def OnApplyChannel(self, event: wx.CommandEvent) -> None:
-        name = event.GetEventObject().FindItemById(event.GetId()).GetLabel()
-        channel = self._channels[name]
-        events.publish('load exposure settings', channel)
 
 
     def _OnAbout(self, event):
