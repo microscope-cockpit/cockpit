@@ -93,22 +93,22 @@ class ExperimentUI(wx.Panel):
                                         self, sizer, label='settling time',
                                         defaultValue=self.settings['settlingTime'],)
         self.settlingTimeControl.SetValidator(FLOATVALIDATOR)
-        sizer.Add(self.settlingTimeControl)
+
         self.vStepsControl = guiUtils.addLabeledInput(
                                         self, sizer, label='V steps',
                                         defaultValue=self.settings['vSteps'],)
         self.vStepsControl.SetValidator(INTVALIDATOR)
-        sizer.Add(self.vStepsControl)
+
         self.startVControl = guiUtils.addLabeledInput(
                                         self, sizer, label='V start',
                                         defaultValue=self.settings['startV'],)
         self.startVControl.SetValidator(FLOATVALIDATOR)
-        sizer.Add(self.startVControl)
+
         self.maxVControl = guiUtils.addLabeledInput(
                                         self, sizer, label='V max',
                                         defaultValue=self.settings['maxV'],)
         self.maxVControl.SetValidator(FLOATVALIDATOR)
-        sizer.Add(self.maxVControl)
+
         self.SetSizerAndFit(sizer)
 
 
