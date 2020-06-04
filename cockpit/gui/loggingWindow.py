@@ -121,4 +121,4 @@ class LoggingWindow(wx.Frame):
 
 
 def makeWindow(parent):
-    window = LoggingWindow(parent)
+    return LoggingWindow(parent)

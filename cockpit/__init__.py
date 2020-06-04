@@ -117,7 +117,7 @@ class CockpitApp(wx.App):
             status.Show()
 
             # Do this early so we can see output while initializing.
-            cockpit.gui.loggingWindow.makeWindow(None)
+            logging_window = cockpit.gui.loggingWindow.makeWindow(None)
 
             updateNum=1
             status.Update(updateNum, "Initializing config...")
@@ -139,6 +139,10 @@ class CockpitApp(wx.App):
 
             main_window = cockpit.gui.mainWindow.makeWindow()
             self.SetTopWindow(main_window)
+
+            # Now that the main window exists, we can reparent the
+            # logging window like all the other ones.
+            logging_window.Reparent(main_window)
 
             for module_name in ['cockpit.gui.camera.window',
                                 'cockpit.gui.mosaic.window',
