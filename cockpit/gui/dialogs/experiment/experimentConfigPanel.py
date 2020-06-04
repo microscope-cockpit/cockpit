@@ -452,9 +452,7 @@ class ExperimentConfigPanel(wx.Panel):
                     message = "No cameras are enabled, so the experiment cannot be run.",
                     style = wx.ICON_EXCLAMATION | wx.STAY_ON_TOP | wx.OK).ShowModal()
             return True
-        lights = list(filter(lambda l: l.getIsEnabled(),
-                depot.getHandlersOfType(depot.LIGHT_TOGGLE)))
-        
+
         exposureSettings = []
         if self.shouldExposeSimultaneously.GetValue():
             # A single exposure event with all cameras and lights.
@@ -503,8 +501,6 @@ class ExperimentConfigPanel(wx.Panel):
                 'altBottom': altBottom,
                 'zHeight': zHeight,
                 'sliceHeight': sliceHeight,
-                'cameras': cameras,
-                'lights': lights,
                 'exposureSettings': exposureSettings,
                 'savePath': savePath
         }

@@ -101,8 +101,6 @@ class Experiment:
     # \param altBottom Altitude of the stage at the bottom of the stack.
     # \param zHeight Total height of the stack.
     # \param sliceHeight Distance between slices in the stack.
-    # \param cameras List of CameraHandler instances.
-    # \param lights List of LightSourceHandler instances.
     # \param exposureSettings List of ([cameras], [(light, exposure time)])
     #        tuples describing how to take images.
     # \param otherHandlers List of miscellaneous handlers that are involved in
@@ -117,7 +115,7 @@ class Experiment:
     # *z* values refer to the position of the zPositioner specified in the args.
     def __init__(self, numReps, repDuration,
             zPositioner, altBottom, zHeight, sliceHeight,
-            cameras, lights, exposureSettings, otherHandlers = [],
+            exposureSettings, otherHandlers = [],
             metadata = '', savePath = ''):
         self.numReps = numReps
         self.repDuration = repDuration
@@ -125,9 +123,14 @@ class Experiment:
         self.altBottom = altBottom
         self.zHeight = zHeight
         self.sliceHeight = sliceHeight
-        self.cameras = list(cameras)
-        self.lights = list(lights)
         self.exposureSettings = exposureSettings
+
+        self.cameras = []
+        self.lights = []
+        for cameras, light_times in exposureSettings:
+            self.cameras.extend(cameras)
+            self.lights.extend([light for light, time in light_times])
+
         self.otherHandlers = list(otherHandlers)
         self.metadata = metadata
         self.savePath = savePath
