@@ -59,7 +59,7 @@ import wx.glcanvas
 
 from cockpit import depot
 from cockpit import events
-from .tile import Tile, MegaTile
+from cockpit.gui.mosaic.tile import Tile, MegaTile
 import cockpit.util.datadoc
 import cockpit.util.logger
 import cockpit.util.threads

@@ -53,7 +53,7 @@
 ## This module creates a simple stage-positioning device.
 
 from cockpit import depot
-from . import device
+from cockpit.devices import device
 from cockpit import events
 import cockpit.handlers.stagePositioner
 

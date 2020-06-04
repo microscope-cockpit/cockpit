@@ -45,7 +45,7 @@ For connection via a controller::
 import Pyro4
 import wx
 from cockpit import events
-from . import device
+from cockpit.devices import device
 from cockpit import depot
 import cockpit.gui.device
 import cockpit.handlers.deviceHandler

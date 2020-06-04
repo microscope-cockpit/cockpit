@@ -47,7 +47,7 @@ from those stored on the device, and insert those into the action table rather
 than the index.
 """
 from cockpit import depot
-from . import device
+from cockpit.devices import device
 import re
 
 

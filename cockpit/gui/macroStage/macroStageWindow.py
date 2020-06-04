@@ -59,8 +59,8 @@ import cockpit.events
 import cockpit.gui
 import cockpit.gui.dialogs.safetyMinDialog
 import cockpit.gui.keyboard
-from . import macroStageXY
-from . import macroStageZ
+from cockpit.gui.macroStage import macroStageXY
+from cockpit.gui.macroStage import macroStageZ
 from cockpit.interfaces import stageMover
 
 

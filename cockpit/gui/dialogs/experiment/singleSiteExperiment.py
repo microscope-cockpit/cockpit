@@ -52,7 +52,7 @@
 
 
 import wx
-from . import experimentConfigPanel
+from cockpit.gui.dialogs.experiment import experimentConfigPanel
 from cockpit.gui.guiUtils import EVT_COCKPIT_VALIDATION_ERROR
 
 ## A simple wrapper around the ExperimentConfigPanel class.

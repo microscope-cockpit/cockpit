@@ -58,7 +58,7 @@ from cockpit import depot
 from cockpit import events
 import cockpit.gui.dialogs.enumerateSitesPanel
 from cockpit.gui import guiUtils
-from . import experimentConfigPanel
+from cockpit.gui.dialogs.experiment import experimentConfigPanel
 import cockpit.interfaces.stageMover
 import cockpit.util.userConfig
 import cockpit.util.threads

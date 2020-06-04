@@ -53,7 +53,7 @@
 
 import collections
 from cockpit import depot
-from . import deviceHandler
+from cockpit.handlers import deviceHandler
 from cockpit import events
 from cockpit.handlers.genericPositioner import GenericPositionerHandler
 from numbers import Number

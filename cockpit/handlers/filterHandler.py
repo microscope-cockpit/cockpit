@@ -19,7 +19,7 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from . import deviceHandler
+from cockpit.handlers import deviceHandler
 from cockpit import depot
 from cockpit import events
 import cockpit.gui

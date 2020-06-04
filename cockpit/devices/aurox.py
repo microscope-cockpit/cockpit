@@ -18,7 +18,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import microscopeDevice
+from cockpit.devices import microscopeDevice
 import cockpit.gui.device
 import cockpit.handlers.filterHandler
 from cockpit.handlers.deviceHandler import STATES

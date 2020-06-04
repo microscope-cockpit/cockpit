@@ -54,7 +54,7 @@ import concurrent.futures as futures
 import time
 
 from cockpit import depot
-from . import deviceHandler
+from cockpit.handlers import deviceHandler
 from cockpit import events
 import cockpit.util.logger
 import cockpit.util.userConfig

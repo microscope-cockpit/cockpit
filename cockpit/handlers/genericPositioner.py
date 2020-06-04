@@ -51,7 +51,7 @@
 
 
 from cockpit import depot
-from . import deviceHandler
+from cockpit.handlers import deviceHandler
 import decimal
 
 ## This handler is for generic positioning devices that can move along a 

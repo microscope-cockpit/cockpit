@@ -62,7 +62,7 @@ import cockpit.interfaces.stageMover
 import cockpit.util.logger
 import cockpit.util.userConfig
 
-from . import macroStageBase
+from cockpit.gui.macroStage import macroStageBase
 
 
 ## Width of an altitude line.

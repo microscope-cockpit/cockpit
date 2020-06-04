@@ -58,7 +58,7 @@ from cockpit import events
 import cockpit.gui.keyboard
 import cockpit.util.threads
 import cockpit.gui.viewFileDropTarget
-from . import viewPanel
+from cockpit.gui.camera import viewPanel
 
 
 

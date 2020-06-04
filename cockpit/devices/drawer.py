@@ -62,7 +62,7 @@
 #       TRITC: FITC: 518, TRITC: 600
 #
 
-from . import device
+from cockpit.devices import device
 from cockpit.handlers.drawer import DrawerHandler, DrawerSettings
 import re
 

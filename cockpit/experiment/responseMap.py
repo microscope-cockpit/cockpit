@@ -50,16 +50,16 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import actionTable
+from cockpit.experiment import actionTable
 import decimal
 from cockpit import depot
 from cockpit import events
-from . import experiment
+from cockpit.experiment import experiment
 from cockpit.gui import guiUtils
 import cockpit.gui.imageSequenceViewer
 import cockpit.gui.progressDialog
 import cockpit.handlers.camera
-from . import offsetGainCorrection
+from cockpit.experiment import offsetGainCorrection
 import cockpit.util.correctNonlinear
 import cockpit.util.datadoc
 import cockpit.util.threads

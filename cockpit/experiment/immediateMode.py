@@ -50,10 +50,10 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import dataSaver
+from cockpit.experiment import dataSaver
 from cockpit import depot
 from cockpit import events
-from . import experiment
+from cockpit.experiment import experiment
 from cockpit.gui import guiUtils
 import cockpit.interfaces.stageMover
 import cockpit.util.logger

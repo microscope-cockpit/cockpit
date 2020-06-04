@@ -37,7 +37,7 @@ Sample config entry:
 
 from collections import OrderedDict
 import decimal
-from . import device
+from cockpit.devices import device
 from itertools import groupby
 import Pyro4
 import wx

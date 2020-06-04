@@ -60,7 +60,7 @@ import cockpit.handlers.stagePositioner
 import threading
 import cockpit.util.threads
 import cockpit.util.connection
-from . import executorDevices
+from cockpit.devices import executorDevices
 
 COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2, 'SI angle': -1}
 FPGA_IDLE_STATE = 3

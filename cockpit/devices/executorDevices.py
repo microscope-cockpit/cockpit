@@ -82,7 +82,7 @@ import Pyro4
 import time
 
 from cockpit import depot
-from . import device
+from cockpit.devices import device
 from cockpit import events
 import cockpit.handlers.executor
 import cockpit.handlers.imager

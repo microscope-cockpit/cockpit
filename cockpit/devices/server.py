@@ -54,7 +54,7 @@ import Pyro4
 import threading
 import traceback
 
-from . import device
+from cockpit.devices import device
 import cockpit.handlers.server
 import cockpit.util.logger
 import cockpit.util.threads

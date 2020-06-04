@@ -50,7 +50,7 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import imageSequenceViewer
+from cockpit.gui import imageSequenceViewer
 import cockpit.util.datadoc
 
 

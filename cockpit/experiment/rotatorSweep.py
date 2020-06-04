@@ -19,9 +19,9 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from . import actionTable
+from cockpit.experiment import actionTable
 from cockpit import depot
-from . import experiment
+from cockpit.experiment import experiment
 from cockpit.gui import guiUtils
 import cockpit.util
 

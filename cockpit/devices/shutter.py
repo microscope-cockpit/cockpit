@@ -26,7 +26,7 @@ This is a base shutter device with dummy methods for testing.
 """
 import re
 from cockpit import depot
-from . import device
+from cockpit.devices import device
 from cockpit import events
 from cockpit.handlers.lightSource import LightHandler
 

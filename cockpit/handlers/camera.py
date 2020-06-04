@@ -55,7 +55,7 @@ import decimal
 import wx
 
 from cockpit import depot
-from . import deviceHandler
+from cockpit.handlers import deviceHandler
 from cockpit import events
 import cockpit.handlers.imager
 import cockpit.interfaces.imager

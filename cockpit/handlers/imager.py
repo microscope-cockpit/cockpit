@@ -53,7 +53,7 @@
 import wx
 
 from cockpit import depot
-from . import deviceHandler
+from cockpit.handlers import deviceHandler
 
 from cockpit import events
 

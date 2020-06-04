@@ -53,7 +53,7 @@
 
 ## This module provides a dummy camera that generates test pattern images. 
 
-from . import device
+from cockpit.devices import device
 
 def Transform(tstr=None):
     """Desribes a simple transform: (flip LR, flip UD, rotate 90)"""

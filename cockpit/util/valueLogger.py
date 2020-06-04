@@ -26,7 +26,7 @@ try:
 except:
     from collections import Iterable
 from datetime import datetime
-from . import files
+from cockpit.util import files
 import os
 DELIMITER = ';'
 

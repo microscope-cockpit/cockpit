@@ -50,8 +50,8 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import actionTable
-from . import experiment
+from cockpit.experiment import actionTable
+from cockpit.experiment import experiment
 
 import decimal
 import math

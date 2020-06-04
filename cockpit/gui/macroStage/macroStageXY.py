@@ -62,7 +62,7 @@ import cockpit.gui.dialogs.getNumberDialog
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
 
-from . import macroStageBase
+from cockpit.gui.macroStage import macroStageBase
 
 
 ## This class shows a high-level view of where the stage is in XY space, and

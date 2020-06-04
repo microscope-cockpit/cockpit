@@ -51,7 +51,7 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import device
+from cockpit.devices import device
 from cockpit import events
 import cockpit.handlers.stagePositioner
 import cockpit.util.threads

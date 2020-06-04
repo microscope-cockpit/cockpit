@@ -41,7 +41,7 @@ Sample config entry:
 
 """
 
-from . import shutter
+from cockpit.devices import shutter
 import telnetlib
 
 

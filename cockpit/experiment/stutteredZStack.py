@@ -51,10 +51,10 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import actionTable
+from cockpit.experiment import actionTable
 from cockpit import events
 import cockpit.util.userConfig
-from . import zStack
+from cockpit.experiment import zStack
 
 import wx
 

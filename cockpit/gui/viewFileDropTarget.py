@@ -50,7 +50,7 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import fileViewerWindow
+from cockpit.gui import fileViewerWindow
 
 import wx
 

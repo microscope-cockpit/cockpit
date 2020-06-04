@@ -54,7 +54,7 @@
 from cockpit import depot
 from cockpit.gui import guiUtils
 import cockpit.util.userConfig
-from . import zStack
+from cockpit.experiment import zStack
 
 import threading
 import time

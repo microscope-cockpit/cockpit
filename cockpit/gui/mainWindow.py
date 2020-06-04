@@ -67,17 +67,17 @@ import cockpit.gui
 import cockpit.gui.fileViewerWindow
 
 from cockpit import depot
-from .dialogs.experiment import multiSiteExperiment
-from .dialogs.experiment import singleSiteExperiment
+from cockpit.gui.dialogs.experiment import multiSiteExperiment
+from cockpit.gui.dialogs.experiment import singleSiteExperiment
 from cockpit import events
 import cockpit.experiment.experiment
-from . import fileViewerWindow
+from cockpit.gui import fileViewerWindow
 import cockpit.interfaces.imager
-from . import joystick
-from . import keyboard
+from cockpit.gui import joystick
+from cockpit.gui import keyboard
 import cockpit.util.files
 import cockpit.util.userConfig
-from . import viewFileDropTarget
+from cockpit.gui import viewFileDropTarget
 from cockpit.gui import mainPanels
 
 

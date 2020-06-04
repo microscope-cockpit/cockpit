@@ -46,7 +46,7 @@ Sample config entry:
   ...
 """
 from cockpit import depot
-from . import device
+from cockpit.devices import device
 
 class PolarizationDevice(device.Device):
     _config_types = {

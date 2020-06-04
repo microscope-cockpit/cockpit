@@ -20,7 +20,7 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from . import device
+from cockpit.devices import device
 from cockpit.util import valueLogger
 from cockpit import depot
 from cockpit import events
