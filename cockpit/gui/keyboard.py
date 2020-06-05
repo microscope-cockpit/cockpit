@@ -50,16 +50,12 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 import wx
 
-from cockpit import depot
 import cockpit.gui.camera.window
-import cockpit.gui.guiUtils
 import cockpit.gui.mosaic.window
 import cockpit.interfaces.stageMover
 
-from itertools import chain
 
 def onChar(evt):
     if isinstance(evt.EventObject, wx.TextCtrl) \
@@ -122,89 +118,9 @@ def setKeyboardHandlers(window):
         (wx.ACCEL_CTRL, ord('P'), 6322),
     ])
     window.SetAcceleratorTable(accelTable)
-    window.Bind(wx.EVT_MENU, lambda e: martialWindows(window), id=6321)
     window.Bind(wx.EVT_MENU, lambda e: showHideShell(window), id=6322)
     window.Bind(wx.EVT_CHAR_HOOK, onChar)
 
-## Pop up a menu under the mouse that helps the user find a window they may
-# have lost.
-def martialWindows(parent):
-    menu = wx.Menu()
-
-    menu_item = menu.Append(wx.ID_ANY, "Reset window positions")
-    parent.Bind(wx.EVT_MENU,
-                lambda e: wx.GetApp().SetWindowPositions(),
-                menu_item)
-
-    main_window = wx.GetApp().GetTopWindow()
-    for window in wx.GetTopLevelWindows():
-        if window is main_window:
-            # Don't show this for the main window.
-            continue
-        if not window.GetTitle():
-            # Sometimes we get bogus top-level windows; no idea why.
-            # Just skip them.
-            # \todo Figure out where these windows come from and either get
-            # rid of them or fix them so they don't cause trouble here.
-            continue
-
-        subMenu = wx.Menu()
-
-        def show_or_hide(evt, w=window):
-            # The window might be hidden but maybe it's just iconized
-            # (minimized), or maybe it's both.  If it's iconized we
-            # need to restore it first
-            if w.IsIconized():
-                w.Restore()
-                w.Show()
-            else:
-                w.Show(not w.IsShown())
-
-        def raise_window(evt, w=window):
-            # At least on Mac we need to call Show before Raise in
-            # case the window is hidden (see issue #599).  It is not
-            # yet clear what is wx expected behaviour.  See upstream
-            # issue https://trac.wxwidgets.org/ticket/18762
-            w.Show()
-            w.Raise()
-
-        menu_item = subMenu.Append(wx.ID_ANY, "Show/Hide")
-        parent.Bind(wx.EVT_MENU, show_or_hide, menu_item)
-
-        menu_item = subMenu.Append(wx.ID_ANY, "Raise to top")
-        parent.Bind(wx.EVT_MENU, raise_window, menu_item)
-
-        menu_item = subMenu.Append(wx.ID_ANY, "Move to mouse")
-        parent.Bind(wx.EVT_MENU,
-                    lambda e, w=window: w.SetPosition(wx.GetMousePosition()),
-                    menu_item)
-
-        menu.AppendSubMenu(subMenu, window.GetTitle())
-
-    # Add item to launch valueLogViewer.
-    from subprocess import Popen
-    from sys import platform
-    from cockpit.util import valueLogger
-    from cockpit.util import csv_plotter
-    menu_item = menu.Append(wx.ID_ANY, "Launch ValueLogViewer")
-    logs = valueLogger.ValueLogger.getLogFiles()
-    if not logs:
-        menu_item.Enable(False)
-    else:
-        shell = platform == 'win32'
-        args = ['python', csv_plotter.__file__] + logs
-        parent.Bind(wx.EVT_MENU,
-                    lambda e: Popen(args, shell=shell),
-                    menu_item)
-
-    for d in filter(lambda x: hasattr(x, "showDebugWindow"),
-                    chain(depot.getAllHandlers(), depot.getAllDevices())):
-        menu_item = menu.Append(wx.ID_ANY, 'debug  %s  %s' % (d.__class__.__name__, d.name))
-        parent.Bind(wx.EVT_MENU,
-                    lambda e, d=d: d.showDebugWindow(),
-                    menu_item)
-
-    cockpit.gui.guiUtils.placeMenuAtMouse(parent, menu)
 
 #Function to show/hide the pythion shell window
 def showHideShell(parent):

@@ -59,7 +59,11 @@
 import json
 import os.path
 import pkg_resources
+import platform
+import subprocess
+import sys
 import typing
+from itertools import chain
 
 import wx
 import wx.adv
@@ -216,9 +220,6 @@ class MainWindowPanel(wx.Panel):
 
         self.SetDropTarget(viewFileDropTarget.ViewFileDropTarget(self))
 
-        # Show the list of windows on right-click.
-        self.Bind(wx.EVT_CONTEXT_MENU, lambda event: keyboard.martialWindows(self))
-
 
     ## User clicked the "view last file" button; open the last experiment's
     # file in an image viewer. A bit tricky when there's multiple files
@@ -372,6 +373,109 @@ class ChannelsMenu(wx.Menu):
         cockpit.interfaces.channels.ApplyChannel(channel)
 
 
+class WindowsMenu(wx.Menu):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._id_to_window = {} # type: typing.Dict[int, wx.Frame]
+
+        menu_item = self.Append(wx.ID_ANY, item='Reset window positions')
+        self.Bind(wx.EVT_MENU, self.OnResetWindowPositions, menu_item)
+
+        # Add item to launch valueLogViewer (XXX: this should be
+        # handled by some sort of plugin system and not hardcoded).
+        from cockpit.util import valueLogger
+        from cockpit.util import csv_plotter
+        menu_item = self.Append(wx.ID_ANY, "Launch ValueLogViewer")
+        logs = valueLogger.ValueLogger.getLogFiles()
+        if not logs:
+            menu_item.Enable(False)
+        else:
+            shell = sys.platform == 'win32'
+            args = ['python', csv_plotter.__file__] + logs
+            self.Bind(wx.EVT_MENU,
+                      lambda e: subprocess.Popen(args, shell=shell),
+                      menu_item)
+
+        # This is only for the piDIO and executor, both of which are a
+        # window to set lines high/low.  We should probably have a
+        # general window for this which we could use for all executor
+        # handlers (probably piDIO device should provide an executor
+        # handler).
+        for obj in chain(depot.getAllHandlers(), depot.getAllDevices()):
+            if hasattr(obj, 'showDebugWindow'):
+                label = 'debug %s (%s)' % (obj.name, obj.__class__.__name__)
+                menu_item = self.Append(wx.ID_ANY, label)
+                self.Bind(wx.EVT_MENU,
+                          lambda e, obj=obj: obj.showDebugWindow(),
+                          menu_item)
+
+        # When the menu is created the windows don't exist yet so we
+        # will update it each time the menu is open.
+        self.Bind(wx.EVT_MENU_OPEN, self.OnMenuOpen)
+
+
+    def OnMenuOpen(self, event: wx.MenuEvent) -> None:
+        if event.GetMenu() is not self:
+            # We may be just opening one of the submenus but we only
+            # want to do this when opening the main menu.
+            event.Skip()
+            return
+
+        main_window = wx.GetApp().GetTopWindow()
+        all_windows = {w for w in wx.GetTopLevelWindows() if w is not main_window}
+
+        for window in all_windows.difference(self._id_to_window.values()):
+            if not window.Title:
+                # We have bogus top-level windows because of the use
+                # of AuiManager on the logging window (see issue #617)
+                # so skip windows without a title.
+                continue
+            sub_menu = wx.Menu()
+            for label, method in [('Show/Hide', self.OnShowOrHide),
+                                  ('Raise to top', self.OnRaiseToTop),
+                                  ('Move to mouse', self.OnMoveToMouse),]:
+                menu_item = sub_menu.Append(wx.ID_ANY, label)
+                sub_menu.Bind(wx.EVT_MENU, method, menu_item)
+                self._id_to_window[menu_item.Id] = window
+
+            # Place this submenu after the "Reset window positions"
+            # but before the log viewer and debug window.
+            position = len(self._id_to_window) /3
+            self.Insert(position, wx.ID_ANY, window.Title, sub_menu)
+
+
+    def OnResetWindowPositions(self, event: wx.CommandEvent) -> None:
+        del event
+        wx.GetApp().SetWindowPositions()
+
+
+    def OnShowOrHide(self, event: wx.CommandEvent) -> None:
+        window = self._id_to_window[event.GetId()]
+        # The window might be hidden but maybe it's just iconized
+        # (minimized) or maybe it's both.  If it's iconized we need to
+        # restore it first
+        if window.IsIconized():
+            window.Restore()
+            window.Show()
+        else:
+            window.Show(not window.IsShown())
+
+
+    def OnRaiseToTop(self, event: wx.CommandEvent) -> None:
+        window = self._id_to_window[event.GetId()]
+        # At least on Mac we need to call Show before Raise in case
+        # the window is hidden (see issue #599).  It is not yet clear
+        # what is wx expected behaviour.  See upstream issue
+        # https://trac.wxwidgets.org/ticket/18762
+        window.Show()
+        window.Raise()
+
+
+    def OnMoveToMouse(self, event: wx.CommandEvent) -> None:
+        window = self._id_to_window[event.GetId()]
+        window.SetPosition(wx.GetMousePosition())
+
+
 class MainWindow(wx.Frame):
     def __init__(self):
         super().__init__(parent=None, title="Cockpit")
@@ -388,6 +492,8 @@ class MainWindow(wx.Frame):
 
         channels_menu = ChannelsMenu()
         menu_bar.Append(channels_menu, '&Channels')
+
+        menu_bar.Append(WindowsMenu(), '&Windows')
 
         help_menu = wx.Menu()
         menu_item = help_menu.Append(wx.ID_ANY, item='Online repository')
