@@ -97,6 +97,7 @@ class LoggingWindow(wx.Frame):
                           % wx.GetApp().Config.depot_config.files)
         self.auiManager.Update()
 
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
         self.SetSize((600, 460))
 
 
@@ -118,6 +119,10 @@ class LoggingWindow(wx.Frame):
                 else:
                     cockpit.util.logger.log.error(''.join(filter(lambda c: ord(c) < 128, self.textCache)))
                 self.textCache = ''
+
+    def OnDestroy(self, event: wx.WindowDestroyEvent) -> None:
+        self.auiManager.UnInit()
+        event.Skip()
 
 
 def makeWindow(parent):
