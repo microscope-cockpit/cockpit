@@ -128,6 +128,5 @@ def LoadFromFile(filepath: str) -> Channels:
         internal_map = json.load(fh)
     channels = Channels()
     for name, channel in internal_map.items():
-        print('loading from file ', name)
         channels.Add(name, channel)
     return channels
