@@ -69,23 +69,40 @@ class Channels(wx.EvtHandler):
     def Get(self, name: str) -> Channel:
         return self._map[name]
 
+    def _ProcessChannelEvent(self, event_type, name: str) -> bool:
+        """Helper to call `wx.EvtHandler.ProcessEvent` for channel events.
+
+        The reason to prefer `ProcessEvent` over `QueueEvent` is that
+        `ProcessEvent` is synchronous.  This prevents the following
+        situation:
+
+        1. `Channels` instance is created during `CockpitApp.OnInit`.
+        2. New channels are then added to that instance after reading
+           the channel files.  This would queue `EVT_CHANNEL_ADDED`
+           events.
+        3. The `ChannelsPanel` is then created with the channels that
+           have already been added.
+        4. After `CockpitApp.OnInit` returns, the main loop is started
+           and the queued add events would then processed by the panel
+           which adds those channels a second time.
+        """
+        event = wx.CommandEvent(event_type.typeId)
+        event.SetString(name)
+        return self.ProcessEvent(event)
+
     def Add(self, name: str, channel: Channel) -> None:
         """Add new channel. Use `Change` to modify existing channel."""
         if name in self._map:
             raise ValueError('channel \'%s\' already exists' % name)
         self._map[name] = channel
-        event = wx.CommandEvent(EVT_CHANNEL_ADDED.typeId)
-        event.SetString(name)
-        self.QueueEvent(event)
+        self._ProcessChannelEvent(EVT_CHANNEL_ADDED, name)
 
     def Change(self, name: str, channel: typing.Dict) -> None:
         self._map[name] = channel
 
     def Remove(self, name: str) -> None:
         self._map.pop(name)
-        event = wx.CommandEvent(EVT_CHANNEL_REMOVED.typeId)
-        event.SetString(name)
-        self.QueueEvent(event)
+        self._ProcessChannelEvent(EVT_CHANNEL_REMOVED, name)
 
     def Update(self, other: 'Channels') -> None:
         """Update this instances with the channels from other."""
