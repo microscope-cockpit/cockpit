@@ -47,6 +47,12 @@ The following sections and their options are recognised:
 global section
 ``````````````
 
+channel-files
+  List of files defining channel configurations to be loaded by
+  default.  Each file can have any number of channels, later files
+  overriding previous channels with the same name.  These files can be
+  created via the Channels menu on the menu bar.
+
 config-dir
   Directory for the user configuration file, effectively a cache for
   the last used settings.

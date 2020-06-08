@@ -155,6 +155,7 @@ class DepotConfig(configparser.ConfigParser):
 def _default_cockpit_config():
     default = {
         'global' : {
+            'channel-files' : '',
             'config-dir' : _default_user_config_dir(),
             'data-dir' : _default_user_data_dir(),
             ## The default value of 'depot-files' is only set after
