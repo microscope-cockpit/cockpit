@@ -149,7 +149,12 @@ class CockpitApp(wx.App):
 
             # Now that the main window exists, we can reparent the
             # logging window like all the other ones.
-            logging_window.Reparent(main_window)
+
+            # We use parent.AddChild(child) even though it is not
+            # recommended.  We should be using child.Reparent(parent)
+            # but that fails pretty bad in wxMSW and wxOSX (see issue
+            # #618 and https://trac.wxwidgets.org/ticket/18785)
+            main_window.AddChild(logging_window)
 
             for module_name in ['cockpit.gui.camera.window',
                                 'cockpit.gui.mosaic.window',
