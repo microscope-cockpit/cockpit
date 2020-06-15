@@ -74,7 +74,8 @@ class SaveTopBottomPanel(wx.Panel):
         self._bottom_ctrl = wx.TextCtrl(self, style=wx.TE_RIGHT)
         self._bottom_ctrl.Bind(wx.EVT_TEXT, self.OnEditBottomPosition)
 
-        self._height_ctrl = wx.StaticText(self, style=wx.TE_RIGHT)
+        self._height_ctrl = wx.TextCtrl(self, style=wx.TE_RIGHT|wx.TE_READONLY)
+        self._height_ctrl.Disable()
 
         # Fill in the text controls with current values.
         self.UpdateSavedPositions(None)
@@ -104,8 +105,7 @@ class SaveTopBottomPanel(wx.Panel):
 
         sizer.Add(wx.StaticText(self, label='z-height (µm):'),
                   wx.SizerFlags(sizer_flags).CentreVertical().Right())
-        sizer.Add(self._height_ctrl,
-                  wx.SizerFlags(sizer_flags).CentreVertical().Right())
+        sizer.Add(self._height_ctrl, expand_sizer_flags)
         sizer.Add(go_to_centre, expand_sizer_flags)
 
         sizer.Add(save_bottom, expand_sizer_flags)
@@ -124,8 +124,8 @@ class SaveTopBottomPanel(wx.Panel):
     def UpdateSavedPositions(self, evt: wx.CommandEvent) -> None:
         self._top_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedTop)
         self._bottom_ctrl.ChangeValue('%.1f' % stageMover.mover.SavedBottom)
-        self._height_ctrl.SetLabel('%.2f' % (stageMover.mover.SavedTop
-                                             - stageMover.mover.SavedBottom))
+        self._height_ctrl.ChangeValue('%.2f' % (stageMover.mover.SavedTop
+                                                - stageMover.mover.SavedBottom))
 
     def OnEditTopPosition(self, evt: wx.CommandEvent) -> None:
         stageMover.mover.SavedTop = float(self._top_ctrl.GetValue())
