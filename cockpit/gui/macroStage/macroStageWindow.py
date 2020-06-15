@@ -68,19 +68,19 @@ class SaveTopBottomPanel(wx.Panel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._top_ctrl = wx.TextCtrl(self, style=wx.TE_RIGHT, size=(60, -1))
+        self._top_ctrl = wx.TextCtrl(self, style=wx.TE_RIGHT)
         self._top_ctrl.Bind(wx.EVT_TEXT, self.OnEditTopPosition)
 
-        self._bottom_ctrl = wx.TextCtrl(self, style=wx.TE_RIGHT, size=(60, -1))
+        self._bottom_ctrl = wx.TextCtrl(self, style=wx.TE_RIGHT)
         self._bottom_ctrl.Bind(wx.EVT_TEXT, self.OnEditBottomPosition)
 
-        self._height_ctrl = wx.StaticText(self, style=wx.TE_RIGHT, size=(60, -1))
+        self._height_ctrl = wx.StaticText(self, style=wx.TE_RIGHT)
 
         # Fill in the text controls with current values.
         self.UpdateSavedPositions(None)
 
         def make_button(label: str, handler: typing.Callable) -> wx.Button:
-            btn = wx.Button(self, label=label, size=(75, -1))
+            btn = wx.Button(self, label=label)
             btn.Bind(wx.EVT_BUTTON, handler)
             return btn
 
@@ -93,23 +93,24 @@ class SaveTopBottomPanel(wx.Panel):
         listener = cockpit.gui.EvtEmitter(self,cockpit.events.STAGE_TOP_BOTTOM)
         listener.Bind(cockpit.gui.EVT_COCKPIT, self.UpdateSavedPositions)
 
-        sizer = wx.FlexGridSizer(rows=3, cols=3, gap=(0, 0))
-        sizer_flags = wx.SizerFlags(0).Centre()
+        sizer = wx.GridSizer(rows=3, cols=3, gap=(0, 0))
 
-        sizer.Add(save_top, sizer_flags.Border(wx.ALL, 1))
-        sizer.Add(self._top_ctrl,
-                  sizer_flags.Border(wx.ALL, 1).Proportion(1))
-        sizer.Add(go_to_top, sizer_flags.Border(wx.ALL, 1))
+        sizer_flags = wx.SizerFlags(1).Border()
+        expand_sizer_flags = wx.SizerFlags(sizer_flags).Expand()
+
+        sizer.Add(save_top, expand_sizer_flags)
+        sizer.Add(self._top_ctrl, expand_sizer_flags)
+        sizer.Add(go_to_top, expand_sizer_flags)
 
         sizer.Add(wx.StaticText(self, label='z-height (µm):'),
-                  sizer_flags.Border(wx.ALL, 5))
-        sizer.Add(self._height_ctrl, sizer_flags.Border(wx.ALL, 1))
-        sizer.Add(go_to_centre, sizer_flags.Border(wx.ALL, 1))
+                  wx.SizerFlags(sizer_flags).CentreVertical().Right())
+        sizer.Add(self._height_ctrl,
+                  wx.SizerFlags(sizer_flags).CentreVertical().Right())
+        sizer.Add(go_to_centre, expand_sizer_flags)
 
-        sizer.Add(save_bottom, sizer_flags.Border(wx.ALL, 1))
-        sizer.Add(self._bottom_ctrl,
-                  sizer_flags.Border(wx.ALL, 1).Proportion(1))
-        sizer.Add(go_to_bottom, sizer_flags.Border(wx.ALL, 1))
+        sizer.Add(save_bottom, expand_sizer_flags)
+        sizer.Add(self._bottom_ctrl, expand_sizer_flags)
+        sizer.Add(go_to_bottom, expand_sizer_flags)
 
         self.SetSizer(sizer)
 
