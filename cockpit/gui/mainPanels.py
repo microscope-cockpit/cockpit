@@ -250,21 +250,37 @@ class ChannelsPanel(wx.Panel):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(label)
-        sizer.Add(self._buttons_sizer, flag=wx.EXPAND)
+        sizer.Add(self._buttons_sizer, wx.SizerFlags().Expand())
         self.SetSizer(sizer)
 
 
-    def Refresh(self, *args, **kwargs) -> None:
-        super().Refresh(*args, **kwargs)
+    def _LayoutWithFrame(self):
         self.Layout()
-        self.Fit()
+        # When we add a new button, we may require a new column.  When
+        # that happens, it's not enough to call Layout(), the parent
+        # sizer also needs to make space for our new needs, which
+        # comes all the way up from the frame sizer itself, which is
+        # why also call Layout() on the Frame. See
+        # https://stackoverflow.com/questions/62411713
+        frame = wx.GetTopLevelParent(self)
+        frame.Layout()
+        # But even calling Layout() on the frame may not be enough if
+        # the frame itself needs to be resized.  But we can't just
+        # call Fit() otherwise we may shrink the window.  We only want
+        # to make it wider if required.
+        if frame.BestSize[0] > frame.Size[0]:
+            frame.SetSize(frame.BestSize[0], frame.Size[1])
 
     def AddButton(self, name: str) -> None:
         button = wx.Button(self, label=name)
         button.Bind(wx.EVT_BUTTON, self.OnButton)
-        self._buttons_sizer.Add(button, flag=wx.EXPAND)
-        self.Refresh()
+        self._buttons_sizer.Add(button, wx.SizerFlags().Expand())
+        self._LayoutWithFrame()
 
+    def RemoveButton(self, name: str) -> None:
+        button = self.GetButtonByLabel(name)
+        self._buttons_sizer.Detach(button)
+        self._LayoutWithFrame()
 
     def GetButtonByLabel(self, name: str) -> wx.Button:
         for sizer_item in self._buttons_sizer.Children:
@@ -281,10 +297,7 @@ class ChannelsPanel(wx.Panel):
 
     def OnChannelRemoved(self, event: wx.CommandEvent) -> None:
         channel_name = event.GetString()
-        button = self.GetButtonByLabel(channel_name)
-        self._buttons_sizer.Detach(button)
-        self.Refresh()
-
+        self.RemoveButton(channel_name)
 
     def OnButton(self, event: wx.CommandEvent) -> None:
         """Apply channel with same name as the button."""
