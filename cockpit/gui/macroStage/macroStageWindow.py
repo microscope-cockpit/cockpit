@@ -177,7 +177,7 @@ class SaveTopBottomPanel(wx.Panel):
 
         sizer = wx.GridSizer(rows=3, cols=3, gap=(0, 0))
 
-        sizer_flags = wx.SizerFlags(1).Border()
+        sizer_flags = wx.SizerFlags(1)
         expand_sizer_flags = wx.SizerFlags(sizer_flags).Expand()
 
         sizer.Add(save_top, expand_sizer_flags)
@@ -248,38 +248,6 @@ class MacroStageWindow(wx.Frame):
         width = 84
         height = width * 2 / 3.0
 
-        # I apologize for the use of the GridBagSizer here. It's
-        # necessary because of the odd shape of the Z macro
-        # stage, which is wider than the other elements in its
-        # "column".
-        #
-        #  0     1     2     3     4     5     6     7     8     9     0     1
-        #  |------------------------------------------------------------------
-        #  |                       |     |                             |     |
-        #  |                       |     |                             |     |
-        # 1|                       |     |                             |     |
-        #  |                       |     |                             |     |
-        #  |                       |     |                             |     |
-        # 2|                       |     |                             |     |
-        #  |                       |  E  |                             |  E  |
-        #  |     MacroStageXY      |  M  |                             |  M  |
-        # 3|                       |  P  |           MacroStageZ       |  P  |
-        #  |                       |  T  |                             |  T  |
-        #  |                       |  Y  |                             |  Y  |
-        # 4|                       |     |                             |     |
-        #  |                       |     |                             |     |
-        #  |                       |     |                             |     |
-        # 5|                       |     |                             |     |
-        #  |                       |     |                             |     |
-        #  |                       |     |                             |     |
-        # 6|---------------------- |     |------------------------------------
-        #  |     XY AxesPosition   |     |  Z AxesPosition |                 |
-        #  |                       |     |                 |       Save      |
-        # 7|-----------------------|     |---------------- |     TopBottom   |
-        #  |       XY buttons      |     |    Z buttons    |       Panel     |
-        #  |                       |     |                 |                 |
-        # 8|------------------------------------------------------------------
-        #
         # Remember that, in classic "row means X, right?" fashion,
         # WX has flipped its position and size tuples, so
         # (7, 4) means an X position (or width) of 4, and a Y
@@ -288,8 +256,7 @@ class MacroStageWindow(wx.Frame):
         xy_stage = MacroStageXY(self, size=(width*4, height*6))
         z_stage = MacroStageZ(self, size=(width*5, height*6))
 
-        xy_coords = AxesPositionPanel(self, axes=['X', 'Y'])
-        z_coords = AxesPositionPanel(self, axes=['Z'])
+        xyz_coords = AxesPositionPanel(self, axes=['X', 'Y', 'Z'])
 
         def make_button(label: str, handler: typing.Callable,
                         tooltip: str = '') -> wx.Button:
@@ -298,50 +265,39 @@ class MacroStageWindow(wx.Frame):
             btn.Bind(wx.EVT_BUTTON, handler)
             return btn
 
-        xy_safeties_btn = make_button('Set safeties', xy_stage.setSafeties,
+        xy_safeties_btn = make_button('Set XY safeties', xy_stage.setSafeties,
                                       'Click twice on the XY Macro Stage view'
                                       ' to set the XY motion limits.')
-
-        z_safeties_btn = make_button('Set safeties', self.OnSetZSafeties)
-
+        z_safeties_btn = make_button('Set Z safeties', self.OnSetZSafeties)
         switch_btn = make_button('Switch control', self.OnSwitchControl,
                                  'Change which stage motion device the keypad'
                                  ' controls.')
-
         recenter_btn = make_button('Recenter', self.OnRecenter)
-
         touch_down_btn = make_button('Touch down', self.OnTouchDown,
                                      'Bring the stage down to touch slide')
 
-        # StaticBox and StaticBoxSizer are a bit weird in that the
-        # sizer needs to be the parent of the controls inside the box.
-        # We should probably be using a bordered style instead of a
-        # static box without a label.
-        top_bottom_sizer = wx.StaticBoxSizer(wx.VERTICAL, parent=self)
-        top_bottom_sizer.Add(SaveTopBottomPanel(top_bottom_sizer.GetStaticBox()))
+        top_bottom_panel = SaveTopBottomPanel(self)
 
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.SetBackgroundColour((255, 255, 255))
+        stage_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        stage_sizer.Add(xy_stage)
+        stage_sizer.Add(z_stage)
+        sizer.Add(stage_sizer)
 
-        sizer = wx.GridBagSizer()
+        buttons_sizer = wx.GridSizer(cols=0, rows=1, gap=(0,0))
+        for btn in [xy_safeties_btn,
+                    switch_btn,
+                    recenter_btn,
+                    z_safeties_btn,
+                    touch_down_btn]:
+            buttons_sizer.Add(btn, wx.SizerFlags().Expand().Border())
+        sizer.Add(buttons_sizer, wx.SizerFlags().CentreHorizontal())
 
-        xy_sizer = wx.BoxSizer(wx.VERTICAL)
-        xy_sizer.Add(xy_stage)
-        xy_sizer.Add(xy_coords)
-        xy_buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        for btn in [xy_safeties_btn, switch_btn, recenter_btn]:
-            xy_buttons_sizer.Add(btn)
-        xy_sizer.Add(xy_buttons_sizer)
-        sizer.Add(xy_sizer, pos=(0, 0), span=(8, 4))
-
-        sizer.Add(z_stage, pos=(0, 5), span=(6, 5))
-        sizer.Add(z_coords, pos=(6, 5), span=(1, 3))
-        z_buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        for btn in [z_safeties_btn, touch_down_btn]:
-            z_buttons_sizer.Add(btn)
-        sizer.Add(z_buttons_sizer, pos=(7, 5), span=(1, 3))
-
-        sizer.Add(top_bottom_sizer, pos=(6, 8), span=(2, 3))
+        coords_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        coords_sizer.Add(xyz_coords, wx.SizerFlags().Border())
+        coords_sizer.Add(top_bottom_panel, wx.SizerFlags().Border())
+        sizer.Add(coords_sizer)
 
         self.SetSizerAndFit(sizer)
 
