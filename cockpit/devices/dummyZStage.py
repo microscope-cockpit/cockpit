@@ -90,8 +90,7 @@ class DummyZStage(device.Device):
                 'getPosition': self.getPosition, 
                 'getMovementTime': self.getMovementTime,
                 'cleanupAfterExperiment': self.cleanup},
-                axis, [.01, .05, .1, .5, 1, 5, 10, 50, 100, 500, 1000, 5000],
-                2, (minVal, maxVal), (minVal, maxVal))
+                axis, (minVal, maxVal), (minVal, maxVal))
         result.append(handler)
         return result
 

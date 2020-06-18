@@ -72,9 +72,6 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     # - cleanupAfterExperiment(axis, isCleanupFinal): return the axis to to the
     #   state it was in prior to the experiment.
     # \param axis A numerical indicator of the axis (0 = X, 1 = Y, 2 = Z).
-    # \param stepSizes List of step size increments for when the user wants
-    #        to move using the keypad.
-    # \param stepIndex Default index into stepSizes.
     # \param hardLimits A (minPosition, maxPosition) tuple indicating
     #        the device's hard motion limits.
     # \param softLimits Default soft motion limits for the device. Defaults
@@ -85,12 +82,10 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     cached = deviceHandler.DeviceHandler.cached
 
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks, 
-            axis, stepSizes, stepIndex, hardLimits, softLimits = None):
+            axis, hardLimits, softLimits = None):
         super().__init__(name, groupName, isEligibleForExperiments, callbacks,
                          depot.STAGE_POSITIONER)
         self.axis = axis
-        self.stepSizes = stepSizes
-        self.stepIndex = stepIndex
         self.hardLimits = hardLimits
         if softLimits is None:
             softLimits = hardLimits
@@ -121,25 +116,6 @@ class PositionerHandler(deviceHandler.DeviceHandler):
             raise RuntimeError("Tried to move %s " % (self.name) +
                     "outside soft motion limits (target %.2f, limits [%.2f, %.2f])" %
                     (target, self.softLimits[0], self.softLimits[1]))
-
-
-    ## Handle being told to move by a step.
-    # \param stepDirection Either -1 or +1, depending on direction of motion.
-    def moveStep(self, stepDirection):
-        self.moveRelative(stepDirection * self.stepSizes[self.stepIndex])
-
-
-    ## Change the current step size by the provided delta (that is, change 
-    # our index into self.stepSizes by the given delta). If we try to go off
-    # the end of the list, then just stay at the current index.
-    def changeStepSize(self, delta):
-        newIndex = self.stepIndex + delta
-        self.stepIndex = min(len(self.stepSizes) - 1, max(0, newIndex))
-
-
-    ## Return the current step size.
-    def getStepSize(self):
-        return self.stepSizes[self.stepIndex]
 
 
     ## Retrieve the current position.

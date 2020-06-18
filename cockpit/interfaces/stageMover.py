@@ -4,6 +4,7 @@
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
 ## Copyright (C) 2018 Nicholas Hall <nicholas.hall@dtc.ox.ac.uk>
+## Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -51,6 +52,8 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import math
+import operator
 import typing
 
 from cockpit import depot
@@ -133,6 +136,24 @@ def deserializeSite(line):
     return result
 
 
+def _SensibleStepSize(step_size: float, bases: typing.Sequence[int],
+                      cmp: typing.Callable[[float, float], bool]) -> float:
+    power_of_ten = 10**math.floor(math.log10(step_size))
+    for base in bases:
+        threshold = base * power_of_ten
+        if cmp(step_size, threshold):
+            return threshold
+    else:
+        raise RuntimeError('failed to estimate best step size after trying'
+                           ' all bases in %s' % bases)
+
+def SensibleNextStepSize(step_size: float) -> float:
+    return _SensibleStepSize(step_size, [2, 5, 10], operator.lt)
+
+def SensiblePreviousStepSize(step_size: float) -> float:
+    return _SensibleStepSize(step_size, [5, 2, 1, 0.5], operator.gt)
+
+
 ## This class provides an interface between the rest of the UI and the Devices
 # that handle moving the stage.
 class StageMover:
@@ -179,6 +200,24 @@ class StageMover:
         # this to enable static code analysis.
         self._hard_limits = (hard_limits[0], hard_limits[1], hard_limits[2])
 
+        # Compute the initial step sizes.  We have different step
+        # sizes for each handler index which maybe doesn't make sense
+        # anymore but comes from the time when it were the handlers
+        # themselves that kept track of step size.
+        self._step_sizes = [] # type: typing.List[typing.Tuple[float, float, float]]
+        for stage_index in range(self.n_stages):
+            default_step_sizes = []
+            for axis in (0, 1, 2):
+                limits = self.axisToHandlers[axis][stage_index].getHardLimits()
+                step_size = SensiblePreviousStepSize((limits[1] - limits[0])
+                                                     / 100.0)
+                default_step_sizes.append(step_size)
+            # Default is 1/100 of the axis length but in rectangular
+            # stages that will lead to xy with different step sizes so
+            # use the min of the two.
+            min_xy = min(default_step_sizes[0], default_step_sizes[1])
+            self._step_sizes.append((min_xy, min_xy, default_step_sizes[2]))
+
         ## Maps handler names to events indicating if those handlers
         # have stopped moving.
         self.nameToStoppedEvent = {}
@@ -205,6 +244,41 @@ class StageMover:
         userConfig.setValue('savedBottom', pos)
         self._saved_bottom = pos
         events.publish(events.STAGE_TOP_BOTTOM)
+
+
+    def GetStepSizes(self) -> typing.Tuple[float, float, float]:
+        """Return a (dX, dY, dZ) tuple of the current step sizes."""
+        return self._step_sizes[self.curHandlerIndex]
+
+    def Step(self, direction: typing.Tuple[int, int, int]) -> None:
+        """Move one step with the current active handler in the specified
+        direction(s).
+
+        Args:
+            direction: A tuple/list of length equal to the number of
+                axes of motion, where each element is the number of
+                steps (positive or negative) to take along that axis.
+        """
+        if len(direction) != 3:
+            raise ValueError('direction must be a 3 element list')
+        for axis, sign in enumerate(direction):
+            if sign != 0:
+                step_size = self._step_sizes[self.curHandlerIndex][axis]
+                handler.moveRelative(step_size * sign)
+
+    def ChangeStepSize(self, direction: int) -> None:
+        if direction == +1:
+            guess_new = SensibleNextStepSize
+        elif direction == -1:
+            guess_new = SensiblePreviousStepSize
+        else:
+            raise ValueError('direction must be -1 (decrease) or +1 (increase)')
+        old_step_sizes = self.GetStepSizes()
+        new_step_sizes = tuple([guess_new(x) for x in old_step_sizes])
+        self._step_sizes[self.curHandlerIndex] = new_step_sizes
+
+        for axis, step_size in enumerate(self.GetStepSizes()):
+            events.publish('stage step size', axis, step_size)
 
 
     ## Handle one of our devices moving. We just republish an abstracted
@@ -274,18 +348,8 @@ def makeInitialPublications():
 ## Various module-global functions for interacting with the objects in the
 # Mover.
 
-## Move one step with the current active handler in the specified direction(s).
-# \param direction A tuple/list of length equal to the number of axes of
-#        motion, where each element is the number of steps (positive or
-#        negative) to take along that axis.
 def step(direction):
-    for axis, sign in enumerate(direction):
-        handler = mover.axisToHandlers[axis][mover.curHandlerIndex]
-
-        #IMD 20150414 don't need to move if sign==0.
-        # Prevents aerotech axis unlocking stage on every keyboard move.
-        if sign != 0:
-            handler.moveStep(sign)
+    mover.Step(direction)
 
 
 ## Change to the next handler.
@@ -293,21 +357,17 @@ def changeMover():
     oldIndex = mover.curHandlerIndex
     newIndex = (mover.curHandlerIndex + 1) % mover.n_stages
     if newIndex != oldIndex:
+        old_step_sizes = mover.GetStepSizes()
         mover.curHandlerIndex = newIndex
         events.publish("stage step index", mover.curHandlerIndex)
-        for axis, handlers in mover.axisToHandlers.items():
-            old_step_size = handlers[oldIndex].getStepSize()
-            new_step_size = handlers[newIndex].getStepSize()
-            if old_step_size != new_step_size:
+        for axis, new_step_size in enumerate(mover.GetStepSizes()):
+            if old_step_sizes[axis] != new_step_size:
                 events.publish("stage step size", axis, new_step_size)
 
 
 ## Change the step size for the current handlers.
 def changeStepSize(direction):
-    for axis, handlers in mover.axisToHandlers.items():
-        handlers[mover.curHandlerIndex].changeStepSize(direction)
-        events.publish("stage step size", axis,
-                       handlers[mover.curHandlerIndex].getStepSize())
+    mover.ChangeStepSize(direction)
 
 
 ## Recenter the fine-motion devices by adjusting the large-scale motion
@@ -472,14 +532,8 @@ def getAllPositions():
     return result
 
 
-## Return a (dX, dY, dZ) tuple of the current step sizes.
-# If there's no controller for a given axis under the current step index,
-# then return None for that axis.
 def getCurStepSizes():
-    result = [None] * len(mover.axisToHandlers)
-    for axis, handlers in mover.axisToHandlers.items():
-        result[axis] = handlers[mover.curHandlerIndex].getStepSize()
-    return tuple(result)
+    return mover.GetStepSizes()
 
 
 ## Simple getter.

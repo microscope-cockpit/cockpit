@@ -342,8 +342,7 @@ class PicoMotorDevice(device.Device):
                          'moveRelative': self.moveXYRelative,
                          'getPosition': lambda axis=axis: self.getXYPosition(axis=axis),
                          'getMovementTime' :self.getXYMovementTime},
-                    axis, [.1, .5, 1, 5, 10, 50, 100, 500, 1000, 5000], 3,
-                    (minPos, maxPos), (minPos, maxPos)))
+                    axis, (minPos, maxPos), (minPos, maxPos)))
         return result
 
     def getXYMovementTime(self,axis,start,end):

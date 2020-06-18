@@ -186,10 +186,6 @@ class Nanomover(Device):
     def getHandlers(self):
         result = []
         for axis in range(3):
-            stepSizes = [.1, .2, .5, 1, 2, 5, 10, 50, 100, 500, 1000]
-            if axis == 2:
-                # Add smaller step sizes for the Z axis.
-                stepSizes = [.01, .02, .05] + stepSizes
             lowLimit, highLimit = self.safeties[axis]
             softLowLimit , softHighLimit = self.softlimits[axis]
             result.append(cockpit.handlers.stagePositioner.PositionerHandler(
@@ -197,8 +193,7 @@ class Nanomover(Device):
                 {'moveAbsolute': self.moveAbsolute, 
                     'moveRelative': self.moveRelative,
                     'getPosition': self.getPosition}, 
-                axis, stepSizes, 3, 
-                (softLowLimit, softHighLimit), (lowLimit, highLimit)))
+                axis, (softLowLimit, softHighLimit), (lowLimit, highLimit)))
         return result
 
 

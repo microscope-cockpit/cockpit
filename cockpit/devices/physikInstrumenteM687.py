@@ -355,8 +355,7 @@ class PhysikInstrumenteM687(Device):
                     {'moveAbsolute': self.moveXYAbsolute,
                          'moveRelative': self.moveXYRelative,
                          'getPosition': self.getXYPosition},
-                    axis, [.1, .2, .5, 1, 2, 5, 10, 50, 100, 500, 1000, 5000], 3,
-                    (minPos, maxPos), (minPos, maxPos)))
+                    axis, (minPos, maxPos), (minPos, maxPos)))
         return result
 
 

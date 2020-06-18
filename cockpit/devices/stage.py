@@ -88,23 +88,13 @@ class SimplePiezo(Device):
         else:
             raise Exception('No min, max or range specified for stage %s.' % self.name)
 
-        # TODO: move stepSizes creation to the handler (issue #612)
-        axis_length = posMax - posMin
-        stepSizes = [self.config.get('minstep', axis_length  * 1e-5)]
-        for factor in itertools.cycle([5, 2]):
-            next_step = stepSizes[-1] * factor
-            if next_step > axis_length / 10.0:
-                break
-            stepSizes.append(next_step)
-
         result = []
         # Create handler without movement callbacks.
         handler = stagePositioner.PositionerHandler(
             "%d %s" % (axis, self.name), "%d stage motion" % axis, True,
             {'getMovementTime': lambda x, start, delta: (Decimal(0.05), Decimal(0.05)) ,
              'cleanupAfterExperiment': None},
-            axis, stepSizes, min(4, len(stepSizes)),
-            (posMin, posMax), (posMin, posMax))
+            axis, (posMin, posMax), (posMin, posMax))
 
         # Connect handler to analogue source to populate movement callbacks.
         handler.connectToAnalogSource(aHandler, aline, offset, gain)
