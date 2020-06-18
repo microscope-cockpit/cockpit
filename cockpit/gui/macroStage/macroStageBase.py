@@ -119,12 +119,6 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         # the above.
         self.drawEvent = threading.Event()
 
-        ## (dX, dY, dZ) vector describing the stage step sizes as of the last
-        # time we drew ourselves.
-        self.prevStepSizes = numpy.zeros(3)
-        ## As above, but represents our knowledge of the current sizes.
-        self.curStepSizes = numpy.zeros(3)
-        
         ##objective offset info to get correct position and limits
         self.objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         self.listObj = list(self.objective.nameToOffset.keys())
@@ -142,9 +136,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.Bind(wx.EVT_SIZE, lambda event: event)
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event) # Do nothing, to avoid flashing
         events.subscribe(events.STAGE_POSITION, self.onMotion)
-        events.subscribe("stage step size", self.onStepSizeChange)
         events.subscribe("stage step index", self.onStepIndexChange)
-
 
     ## Set up some set-once things for OpenGL.
     def initGL(self):
@@ -158,37 +150,28 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.curStagePosition[axis] = position
 
 
-    ## Step sizes have changed, which means we get to redraw.
-    # \todo Redrawing *everything* at this stage seems a trifle excessive.
-    def onStepSizeChange(self, axis, newSize):
-        self.curStepSizes[axis] = newSize
-
-
     ## Step index has changed, so the highlighting on our step displays
     # is different.
-    # \todo Same caveat as onStepSizeChange -- redrawing everything is 
-    # excessive.
+    # \todo Redrawing *everything* at this stage seems a trifle excessive.
     def onStepIndexChange(self, index):
         self.shouldForceRedraw = True
 
 
     ## Wait until a minimum amount of time has passed since our last redraw
-    # before we redraw again. Since we redraw when the stage moves or the
-    # step size changes, and these events may happen rapidly, this
-    # prevents us from spamming OpenGL calls.
+    # before we redraw again. Since we redraw when the stage moves and
+    # these events may happen rapidly, this prevents us from spamming
+    # OpenGL calls.
     def refreshWaiter(self):
         while True:
             if not self:
                 # Our window has been deleted; we're done here.
                 return
-            if (numpy.any(self.curStagePosition != self.prevStagePosition) or
-                    numpy.any(self.curStepSizes != self.prevStepSizes) or
-                    self.shouldForceRedraw):
+            if (numpy.any(self.curStagePosition != self.prevStagePosition)
+                or self.shouldForceRedraw):
                 self.drawEvent.clear()
                 wx.CallAfter(self.Refresh)
                 self.drawEvent.wait()
                 self.prevStagePosition[:] = self.curStagePosition
-                self.prevStepSizes[:] = self.curStepSizes
                 # Draw again after a delay, so that motion arrows get
                 # cleared.
                 time.sleep(.25)

@@ -156,6 +156,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         # something on the Z scale.
         self.horizLineLength = self.stageExtent * .1
 
+        self.stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
+
         ## List of altitudes at which experiments have occurred
         self.experimentAltitudes = []
         ## List of histograms for drawing: one zoomed-out, one zoomed-in.
@@ -171,6 +173,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         events.subscribe(events.EXPERIMENT_COMPLETE, self.onExperimentComplete)
         events.subscribe(events.STAGE_TOP_BOTTOM, self.Refresh)
         events.subscribe("soft safety limit", self.onSafetyChange)
+        events.subscribe("stage step size", self.onStepSizeChange)
         self.SetToolTip(wx.ToolTip("Double-click to move in Z"))
 
 
@@ -215,6 +218,13 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             # Update primary histogram display settings
             self.prevZSafety = position
 
+
+    ## Step sizes have changed, which means we get to redraw.
+    # \todo Redrawing *everything* at this stage seems a trifle excessive.
+    def onStepSizeChange(self, axis: int, newSize: float) -> None:
+        if axis == 2 and self.stepSize != newSize:
+            self.stepSize = newSize
+            self.shouldForceRedraw = True
 
     ## Generate the larger of the two histograms.
     def makeBigHistogram(self, altitude):
@@ -387,16 +397,14 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                         color = (0, .8, 0), label = str(int(self.prevZSafety)))
 
             # Draw stage motion delta
-            stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
-            if stepSize is not None:
-                glLineWidth(1)
-                glColor3f(1, 0, 0)
-                glBegin(GL_LINES)
-                self.scaledVertex(scaleX + self.horizLineLength / 2, 
-                        motorPos + stepSize)
-                self.scaledVertex(scaleX + self.horizLineLength / 2, 
-                        motorPos - stepSize)
-                glEnd()
+            glLineWidth(1)
+            glColor3f(1, 0, 0)
+            glBegin(GL_LINES)
+            self.scaledVertex(scaleX + self.horizLineLength / 2, 
+                              motorPos + self.stepSize)
+            self.scaledVertex(scaleX + self.horizLineLength / 2, 
+                              motorPos - self.stepSize)
+            glEnd()
 
             # Draw direction of stage motion, if any
             if abs(motorPos - self.prevStagePosition[2]) > .01:
@@ -465,17 +473,15 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                         str(int(histogram.maxAltitude)), size = self.textSize)
             
             # Draw histogram stage motion delta
-            stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
-            if stepSize is not None:
-                motorPos = self.curStagePosition[2]
-                glLineWidth(1)
-                glBegin(GL_LINES)
-                glColor3f(1, 0, 0)
-                self.scaledVertex(histogram.xOffset + self.stageExtent * .01, 
-                        histogram.scale(motorPos + stepSize))
-                self.scaledVertex(histogram.xOffset + self.stageExtent * .01, 
-                        histogram.scale(motorPos - stepSize))
-                glEnd()
+            motorPos = self.curStagePosition[2]
+            glLineWidth(1)
+            glBegin(GL_LINES)
+            glColor3f(1, 0, 0)
+            self.scaledVertex(histogram.xOffset + self.stageExtent * .01, 
+                              histogram.scale(motorPos + self.stepSize))
+            self.scaledVertex(histogram.xOffset + self.stageExtent * .01, 
+                              histogram.scale(motorPos - self.stepSize))
+            glEnd()
             
             # Draw lines showing how the histogram relates to the
             # less zoomed-in view to its left.
