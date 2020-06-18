@@ -98,15 +98,20 @@ class AxisStepCtrl(wx.TextCtrl):
         self._axis = axis
         self.Disable()
 
+        self._SetStepSizeValue(stageMover.getCurStepSizes()[self._axis])
+
         step_size = cockpit.gui.EvtEmitter(self, 'stage step size')
         step_size.Bind(cockpit.gui.EVT_COCKPIT, self._OnStepSizeChange)
+
+    def _SetStepSizeValue(self, step_size: float) -> None:
+        self.SetValue('%4.2f' % step_size)
 
     def _OnStepSizeChange(self, event: wx.CommandEvent) -> None:
         axis, step_size = event.EventData
         if axis != self._axis:
             event.Skip()
         else:
-            self.SetValue('%4.2f' % step_size)
+            self._SetStepSizeValue(step_size)
 
 
 class AxesPositionPanel(wx.Panel):
