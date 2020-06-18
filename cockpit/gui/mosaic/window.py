@@ -462,7 +462,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         self.SetClientSize((sideSizer.Size[0] * 4, sideSizer.Size[1]))
 
         events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
-        events.subscribe('stage step size', self.onAxisRefresh)
         events.subscribe('soft safety limit', self.onAxisRefresh)
         events.subscribe('objective change', self.onObjectiveChange)
         events.subscribe(events.USER_ABORT, self.onAbort)
@@ -502,7 +501,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                            curPosition[1]-self.offset[1], scale)
 
 
-    ## Get updated about new stage position info or step size.
+    ## Get updated about new stage position info.
     # This requires redrawing the display, if the axis is the X or Y axes.
     def onAxisRefresh(self, axis, *args):
         if axis in [0, 1]:
