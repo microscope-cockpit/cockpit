@@ -292,10 +292,16 @@ def step(direction):
 
 ## Change to the next handler.
 def changeMover():
+    oldIndex = mover.curHandlerIndex
     newIndex = (mover.curHandlerIndex + 1) % mover.n_stages
-    if newIndex != mover.curHandlerIndex:
+    if newIndex != oldIndex:
         mover.curHandlerIndex = newIndex
         events.publish("stage step index", mover.curHandlerIndex)
+        for axis, handlers in mover.axisToHandlers.items():
+            old_step_size = handlers[oldIndex].getStepSize()
+            new_step_size = handlers[newIndex].getStepSize()
+            if old_step_size != new_step_size:
+                events.publish("stage step size", axis, new_step_size)
 
 
 ## Change the step size for the current handlers.
