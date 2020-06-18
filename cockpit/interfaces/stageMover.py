@@ -269,8 +269,6 @@ def makeInitialPublications():
         for isMax in [0, 1]:
             events.publish("soft safety limit", axis, limits[isMax],
                     bool(isMax))
-        events.publish("stage step size", axis,
-                mover.axisToHandlers[axis][mover.curHandlerIndex].getStepSize())
 
 
 ## Various module-global functions for interacting with the objects in the
