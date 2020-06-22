@@ -190,7 +190,7 @@ class SaveTopBottomPanel(wx.Panel):
         sizer.Add(go_to_top, expand_sizer_flags)
 
         sizer.Add(wx.StaticText(self, label='z-height (µm):'),
-                  wx.SizerFlags(sizer_flags).CentreVertical().Right())
+                  wx.SizerFlags(sizer_flags).Centre())
         sizer.Add(self._height_ctrl, expand_sizer_flags)
         sizer.Add(go_to_centre, expand_sizer_flags)
 
