@@ -297,7 +297,7 @@ class MacroStageWindow(wx.Frame):
                     z_safeties_btn,
                     touch_down_btn]:
             buttons_sizer.Add(btn, wx.SizerFlags().Expand().Border())
-        sizer.Add(buttons_sizer, wx.SizerFlags().CentreHorizontal())
+        sizer.Add(buttons_sizer, wx.SizerFlags().Centre())
 
         coords_sizer = wx.BoxSizer(wx.HORIZONTAL)
         coords_sizer.Add(xyz_coords, wx.SizerFlags().Border())
