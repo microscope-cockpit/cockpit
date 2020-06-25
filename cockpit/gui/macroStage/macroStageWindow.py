@@ -302,7 +302,7 @@ class MacroStageWindow(wx.Frame):
         coords_sizer = wx.BoxSizer(wx.HORIZONTAL)
         coords_sizer.Add(xyz_coords, wx.SizerFlags().Border())
         coords_sizer.Add(top_bottom_panel, wx.SizerFlags().Border())
-        sizer.Add(coords_sizer)
+        sizer.Add(coords_sizer, wx.SizerFlags().Centre())
 
         self.SetSizerAndFit(sizer)
 
