@@ -139,13 +139,14 @@ class MosaicCommon:
     #   pull self.offset straight from the objective;
     #   move self.selectedSites to the stageMover or some other space manager;
     def drawOverlay(self):
+        siteLineWidth = max(1, self.canvas.scale * 1.5)
+        siteFontScale = 3 / max(5.0, self.canvas.scale)
+
         for site in cockpit.interfaces.stageMover.getAllSites():
             # Draw a crude circle.
             x, y = site.position[:2]
             x = -x
-            # Set line width based on zoom factor.
-            lineWidth = max(1, self.canvas.scale * 1.5)
-            glLineWidth(lineWidth)
+            glLineWidth(siteLineWidth)
             glColor3f(*site.color)
             glBegin(GL_LINE_LOOP)
             for i in range(8):
@@ -156,9 +157,7 @@ class MosaicCommon:
 
             glPushMatrix()
             glTranslatef(x, y, 0)
-            # Scale the text with respect to the current zoom factor.
-            fontScale = 3 / max(5.0, self.canvas.scale)
-            glScalef(fontScale, fontScale, 1)
+            glScalef(siteFontScale, siteFontScale, 1)
             self.sitefont.render(str(site.uniqueID))
             glPopMatrix()
 
