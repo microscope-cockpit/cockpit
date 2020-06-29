@@ -241,12 +241,12 @@ class StageMover:
                 waiters.append(event)
                 self.nameToStoppedEvent[handler.name] = event
                 handler.moveAbsolute(target - offset)
-            if shouldBlock:
-                for event in waiters:
-                    try:
-                        event.wait(30)
-                    except Exception as e:
-                        print ("Failed waiting for stage to stop after 30s")
+        if shouldBlock:
+            for event in waiters:
+                try:
+                    event.wait(30)
+                except Exception as e:
+                    print ("Failed waiting for stage to stop after 30s")
 
 
 
