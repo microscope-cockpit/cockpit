@@ -810,12 +810,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
 class LightToggleButton(SBitmapToggleButton):
     size = 75
-    try:
-        # wx >= 4
-        _bmp = wx.Bitmap(size, size, depth=1)
-    except:
-        # wx < 4
-        _bmp = wx.EmptyBitmap(size, size)
+    _bmp = wx.Bitmap(size, size, depth=1)
     _dc = wx.MemoryDC()
     _dc.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT,
                         wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
