@@ -161,7 +161,7 @@ class Image(BaseGL):
     """
     def __init__(self):
         # Maximum texture edge size
-        self._maxTexEdge = glGetInteger(GL_MAX_TEXTURE_SIZE)
+        self._maxTexEdge = 0
         # Textures used to display this image.
         self._textures = []
         # New data flag
@@ -222,6 +222,7 @@ class Image(BaseGL):
         be called in the main thread."""
         if self._data is None:
             return
+        self._maxTexEdge = glGetInteger(GL_MAX_TEXTURE_SIZE)
         data = self._data
         glPixelStorei(GL_UNPACK_SWAP_BYTES, False)
         # Ensure the right number of textures available.
