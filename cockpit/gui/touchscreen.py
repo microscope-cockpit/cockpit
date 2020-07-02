@@ -831,14 +831,8 @@ class LightToggleButton(SBitmapToggleButton):
             label = light.name[0:4]
             colour = ((240,240,240))
 
-        try:
-            # wx >= 4
-            bmpOff = wx.Bitmap(*size)
-            bmpOn = wx.Bitmap(*size)
-        except:
-            # wx < 4
-            bmpOff = wx.EmptyBitmap(*size)
-            bmpOn = wx.EmptyBitmap(*size)
+        bmpOff = wx.Bitmap(size)
+        bmpOn = wx.Bitmap(size)
 
         bmpOff.SetMask(LightToggleButton.mask)
         bmpOn.SetMask(LightToggleButton.mask)
