@@ -44,9 +44,6 @@ from cockpit.handlers.deviceHandler import STATES
 from cockpit.util import ftgl
 
 
-BACKGROUND_COLOUR = (160,160,160)
-
-
 class SetVariable(wx.Window):
     def __init__(self, parent):
         super().__init__(parent, wx.ID_ANY)
@@ -162,7 +159,6 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
         self.buttonPanel=wx.Panel(self.panel, -1, size=(300,-1),
                                   style=wx.BORDER_RAISED)
-        self.buttonPanel.SetBackgroundColour(BACKGROUND_COLOUR)
         self.buttonPanel.SetDoubleBuffered(True)
         ##right side sizer is the button bar on right side of ts window
         rightSideSizer = wx.BoxSizer(wx.VERTICAL)
@@ -263,14 +259,12 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             powerHandler = next(filter(lambda p: p.groupName == light.groupName, lightPowers), None)
             if powerHandler is not None:
                 powerctrl = SetVariable(self.buttonPanel)
-                powerctrl.SetBackgroundColour(BACKGROUND_COLOUR)
                 powerctrl.SetUnits(powerHandler.units)
                 powerctrl.SetValue(powerHandler.powerSetPoint)
                 powerctrl.Bind(wx.EVT_SPINCTRLDOUBLE, lambda evt, h=powerHandler: h.setPower(evt.Value) )
                 powerHandler.addWatch('powerSetPoint', powerctrl.SetValue)
             # Exposure control
             expctrl = SetVariable(self.buttonPanel)
-            expctrl.SetBackgroundColour(BACKGROUND_COLOUR)
             expctrl.SetUnits('ms')
             expctrl.SetValue(light.exposureTime)
             expctrl.Bind(wx.EVT_SPINCTRLDOUBLE, lambda evt, h=light: h.setExposureTime(evt.Value) )
