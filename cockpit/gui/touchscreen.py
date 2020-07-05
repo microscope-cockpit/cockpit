@@ -826,10 +826,9 @@ class LightToggleButton(SBitmapToggleButton):
         self.light = light
         if light.wavelength:
             label = str(int(light.wavelength))
-            colour = cockpit.util.colors.wavelengthToColor(light.wavelength)
         else:
             label = light.name[0:4]
-            colour = ((240,240,240))
+        colour = cockpit.util.colors.wavelengthToColor(light.wavelength)
 
         bmpOff = wx.Bitmap(size)
         bmpOn = wx.Bitmap(size)
