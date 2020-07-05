@@ -56,9 +56,8 @@ class SetVariable(wx.Window):
         # Create decrement and increment buttons.
         decButton = SButton(self, -1, '-')
         incButton = SButton(self, -1, '+')
-        bfont = wx.Font(16, wx.DEFAULT, wx.NORMAL, wx.BOLD)
         for b in (incButton, decButton):
-            b.SetFont(bfont)
+            b.SetFont(b.Font.Bold().Larger().Larger())
             # GetBestSize produces a size that is 3 times wider than it needs to be,
             # so set size to the smaller dimension.
             s = b.DoGetBestSize()
@@ -67,7 +66,7 @@ class SetVariable(wx.Window):
         incButton.Bind(wx.EVT_BUTTON, lambda evt: self._spin(1))
         # Create a text display of width to fit text like "00.000 uuu"
         self._text = wx.StaticText(self, -1, label="00.000 uuu", style=wx.ST_NO_AUTORESIZE | wx.ALIGN_CENTER)
-        self._text.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
+        self._text.SetFont(self._text.Font.Larger().Larger())
         # Add text to its own sizer with stretch spacers to centre vertically.
         tsizer = wx.BoxSizer(wx.VERTICAL)
         tsizer.AddStretchSpacer()
@@ -170,9 +169,6 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
 
         ## objectiveSizer at top of rightSideSizer for objective stuff
-        font=wx.Font(12,wx.FONTFAMILY_DEFAULT,wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
-#        font=wx.Font(12,wx.FONTFAMILY_DEFAULT, wx.FONTWEIGHT_NORMAL,
-#                     wx.FONTSTYLE_NORMAL)
         objectiveSizer=wx.GridSizer(2, 2, 1)
 
         button = self.makeToggleButton(self.buttonPanel, 'Load/Unload',
@@ -184,11 +180,11 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
         textSizer=wx.BoxSizer(wx.VERTICAL)
         sampleText=wx.StaticText(self.buttonPanel,-1,'Sample',style=wx.ALIGN_CENTER)
-        sampleText.SetFont(font)
+        sampleText.SetFont(sampleText.Font.Bold())
         textSizer.Add(sampleText, 0, wx.EXPAND|wx.ALL, border=5)
 
         self.sampleStateText=wx.StaticText(self.buttonPanel,-1,style=wx.ALIGN_CENTER)
-        self.sampleStateText.SetFont(font)
+        self.sampleStateText.SetFont(self.sampleStateText.Font.Bold())
         #empty call to set the default sample state
         self.setSampleStateText()
 
@@ -205,14 +201,14 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         textSizer2=wx.BoxSizer(wx.VERTICAL)
         objectiveText=wx.StaticText(self.buttonPanel,-1,'Objective',
                                     style=wx.ALIGN_CENTER)
-        objectiveText.SetFont(font)
+        objectiveText.SetFont(objectiveText.Font.Bold())
         textSizer2.Add(objectiveText, 0, wx.EXPAND|wx.ALL,border=5)
 
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
 
         self.objectiveSelectedText=wx.StaticText(self.buttonPanel,-1,
                                                  style=wx.ALIGN_CENTER)
-        self.objectiveSelectedText.SetFont(font)
+        self.objectiveSelectedText.SetFont(self.objectiveSelectedText.Font.Bold())
         self.objectiveSelectedText.SetLabel(objective.curObjective.center(15))
 
         colour = tuple(map(lambda x: 255*x, objective.getColour()))
@@ -349,10 +345,9 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             button = self.makeButton(self.panel, *args)
             zButtonSizer.Add(button, 1, wx.EXPAND|wx.ALL,border=2)
         ##Text of position and step size
-        font=wx.Font(12,wx.FONTFAMILY_DEFAULT,wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
         zPositionText = wx.StaticText(self.panel,-1,
                                       style=wx.ALIGN_CENTER)
-        zPositionText.SetFont(font)
+        zPositionText.SetFont(zPositionText.Font.Bold())
         #Read current exposure time and store pointer in
         #self. so that we can change it at a later date
         label = 'Z Pos %5.2f'%(cockpit.interfaces.stageMover.getPosition()[2])
@@ -361,7 +356,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         zButtonSizer.Add(zPositionText, 0, wx.EXPAND|wx.ALL,border=15)
         zStepText = wx.StaticText(self.panel,-1,
                                   style=wx.ALIGN_CENTER)
-        zStepText.SetFont(font)
+        zStepText.SetFont(zStepText.Font.Bold())
         #Read current exposure time and store pointer in
         #self. so that we can change it at a later date
         label = 'Z Step %5d'%(cockpit.interfaces.stageMover.getCurStepSizes()[2])
@@ -749,8 +744,7 @@ class LightToggleButton(SToggleButton):
         super().__init__(parent, **kwargs)
         self.light = light
 
-        self.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
-                             wx.FONTWEIGHT_BOLD, False))
+        self.SetFont(self.Font.Bold().Larger().Larger())
 
         if self.light.wavelength:
             label = str(int(self.light.wavelength))
