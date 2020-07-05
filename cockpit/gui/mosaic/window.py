@@ -65,6 +65,7 @@ import cockpit.gui.camera.window
 import cockpit.gui.dialogs.getNumberDialog
 import cockpit.gui.dialogs.gridSitesDialog
 import cockpit.gui.dialogs.offsetSitesDialog
+import cockpit.gui.freetype
 import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
 import cockpit.interfaces.stageMover
@@ -74,7 +75,6 @@ from cockpit import depot
 from cockpit import events
 from cockpit.gui.mosaic import canvas
 from cockpit.gui.primitive import Primitive
-from cockpit.util import ftgl
 
 
 ## Valid colors to use for site markers.
@@ -141,7 +141,6 @@ class MosaicCommon:
     def drawOverlay(self):
         siteLineWidth = max(1, self.canvas.scale * 1.5)
         siteFontScale = 3 / max(5.0, self.canvas.scale)
-
         for site in cockpit.interfaces.stageMover.getAllSites():
             # Draw a crude circle.
             x, y = site.position[:2]
@@ -158,7 +157,7 @@ class MosaicCommon:
             glPushMatrix()
             glTranslatef(x, y, 0)
             glScalef(siteFontScale, siteFontScale, 1)
-            self.sitefont.render(str(site.uniqueID))
+            self.site_face.render(str(site.uniqueID))
             glPopMatrix()
 
         self.drawCrosshairs(cockpit.interfaces.stageMover.getPosition()[:2], (1, 0, 0),
@@ -241,9 +240,9 @@ class MosaicCommon:
             fontScale = 1. / self.canvas.scale
             glScalef(fontScale, fontScale, 1.)
             if (self.scalebar>1.0):
-                self.scalefont.render('%d um' % self.scalebar)
+                self.scale_face.render('%d um' % self.scalebar)
             else:
-                self.scalefont.render('%.3f um' % self.scalebar)
+                self.scale_face.render('%.3f um' % self.scalebar)
             glPopMatrix()
 
         #Draw stage primitives.
@@ -353,17 +352,12 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         # (point on plane, normal vector to plane).
         self.focalPlaneParams = None
 
-        ## Font to use for site labels.
-        self.sitefont = ftgl.TextureFont(cockpit.gui.FONT_PATH)
-        self.defaultFaceSize = 96
-        self.sitefont.setFaceSize(self.defaultFaceSize)
-
-        ## A font to use for the scale bar.
-        # We used to resize the site font dynamically to do this,
-        # but it seems to break on some GL implementations so that
-        # the default face size was not restored correctly.
-        self.scalefont = ftgl.TextureFont(cockpit.gui.FONT_PATH)
-        self.scalefont.setFaceSize(18)
+        # Fonts to use for site labels and scale bar.  Keep two
+        # separate fonts instead of dynamically changing the font size
+        # because changing the font size would mean discarding the
+        # glyph textures for that size.
+        self.site_face = cockpit.gui.freetype.Face(96)
+        self.scale_face = cockpit.gui.freetype.Face(18)
 
         #default scale bar size is Zero
         self.scalebar = cockpit.util.userConfig.getValue('mosaicScaleBar',

@@ -54,6 +54,7 @@
 
 from cockpit import events
 import cockpit.gui
+import cockpit.gui.freetype
 import cockpit.gui.guiUtils
 import cockpit.gui.dialogs.getNumberDialog
 import cockpit.util.datadoc
@@ -62,7 +63,6 @@ import cockpit.util.threads
 from wx.glcanvas import GLCanvas
 from collections.abc import Iterable
 
-from cockpit.util import ftgl
 import numpy
 from OpenGL.GL import *
 import numpy as np
@@ -475,8 +475,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.context = wx.glcanvas.GLContext(self)
 
         ## Font for text rendering
-        self.font = ftgl.TextureFont(cockpit.gui.FONT_PATH)
-        self.font.setFaceSize(18)
+        self.face = cockpit.gui.freetype.Face(18)
 
         self.Bind(wx.EVT_PAINT, self.onPaint)
         # Do nothing, to prevent flickering
@@ -637,7 +636,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             glOrtho (0, self.w, 0, self.h, 1., -1.)
             glTranslatef(0, HISTOGRAM_HEIGHT/2+2, 0)
             try:
-                self.font.render('%d [%-10d %10d] %d' %
+                self.face.render('%d [%-10d %10d] %d' %
                                  (self.image.dmin, self.histogram.lthresh,
                                   self.histogram.uthresh, self.image.dmin+self.image.dptp))
             except:

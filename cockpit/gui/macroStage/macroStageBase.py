@@ -50,8 +50,6 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-from cockpit.util import ftgl
 import numpy
 import os
 from OpenGL.GL import *
@@ -61,6 +59,7 @@ import wx
 
 from cockpit import events
 import cockpit.gui
+import cockpit.gui.freetype
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
 from cockpit import depot
@@ -94,11 +93,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         ## Whether or not we should try to draw
         self.shouldDraw = True
         ## Font for drawing text
-        try:
-            self.font = ftgl.TextureFont(cockpit.gui.FONT_PATH)
-            self.font.setFaceSize(18)
-        except Exception as e:
-            print ("Failed to make font:",e)
+        self.face = cockpit.gui.freetype.Face(18)
 
         ## X values below this are off the canvas. We leave it up to children
         # to fill in proper values for these.
@@ -226,11 +221,12 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
     def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
         width, height = self.GetClientSize()
         aspect = float(height) / width
+        loc = self.scaledVertex(loc[0], loc[1], True)
+
         glPushMatrix()
         glLoadIdentity()
-        loc = self.scaledVertex(loc[0], loc[1], True)
         glTranslatef(loc[0], loc[1], 0)
         glScalef(size * aspect, size, size)
         glColor3fv(color)
-        self.font.render(text)
+        self.face.render(text)
         glPopMatrix()

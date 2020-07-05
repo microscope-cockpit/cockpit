@@ -28,6 +28,7 @@ from wx.lib.agw.shapedbutton import (SButton, SBitmapButton,SBitmapToggleButton,
                                      SToggleButton)
 
 import cockpit.gui
+import cockpit.gui.freetype
 import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
 import cockpit.gui.mainWindow
@@ -41,7 +42,6 @@ from cockpit import events
 from cockpit.gui.macroStage.macroStageXY import MacroStageXY
 from cockpit.gui.macroStage.macroStageZ import MacroStageZ
 from cockpit.handlers.deviceHandler import STATES
-from cockpit.util import ftgl
 
 
 class SetVariable(wx.Window):
@@ -133,18 +133,12 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         ## Size of the box to draw at the center of the crosshairs.
         self.crosshairBoxSize = 0
 
-
-        ## Font to use for site labels.
-        self.sitefont = ftgl.TextureFont(cockpit.gui.FONT_PATH)
-        self.defaultFaceSize = 64
-        self.sitefont.setFaceSize(self.defaultFaceSize)
-
-        ## A font to use for the scale bar.
-        # We used to resize the site font dynamically to do this,
-        # but it seems to break on some GL implementations so that
-        # the default face size was not restored correctly.
-        self.scalefont = ftgl.TextureFont(cockpit.gui.FONT_PATH)
-        self.scalefont.setFaceSize(18)
+        # Fonts to use for site labels and scale bar.  Keep two
+        # separate fonts instead of dynamically changing the font size
+        # because changing the font size would mean discarding the
+        # glyph textures for that size.
+        self.site_face = cockpit.gui.freetype.Face(64)
+        self.scale_face = cockpit.gui.freetype.Face(18)
 
         #default scale bar size is Zero
         self.scalebar = cockpit.util.userConfig.getValue('mosaicScaleBar',

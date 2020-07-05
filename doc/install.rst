@@ -23,14 +23,14 @@ if they are available via the system package manager.
 Debian based distributions (such as Ubuntu)
 -------------------------------------------
 
-The only Cockpit dependency not available on Debian repositories is
-`microscope <https://github.com/MicronOxford/microscope>`_ which can
-be installed with `pip`.  To avoid having `pip` installing the other
-dependencies from PyPI, they need to be installed first with `apt`::
+The Cockpit dependencies not available on Debian repositories are
+`microscope <https://pypi.org/project/microscope/>`_ and `freetype-py
+<https://pypi.org/project/freetype-py/>`_ which can be installed with
+`pip`.  To avoid having `pip` installing the other dependencies from
+PyPI, they need to be installed first with `apt`::
 
   sudo apt install \
     git \
-    libftgl-dev \
     python3 \
     python3-matplotlib \
     python3-numpy \
@@ -72,13 +72,11 @@ a terminal (/Applications/Utilities/terminal.app) and running the command::
 
  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 
-Then use homebrew to install git and python3 and ftgl::
+Then use homebrew to install git and python3::
 
  brew install git
 
  brew install python3
-
- brew install ftgl
 
 Create a directory for microscope and cockpit, I used ~/src::
 

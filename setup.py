@@ -61,6 +61,7 @@ setuptools.setup(
     install_requires = [
         'PyOpenGL',
         'Pyro4',
+        'freetype-py',
         'matplotlib',
         'microscope',
         'numpy',

@@ -32,11 +32,6 @@ import cockpit.events
 ## filesystem filepath.  It is a /-separated filepath, even on
 ## windows, so do not use os.path.join.
 
-FONT_PATH = pkg_resources.resource_filename(
-    'cockpit',
-    'resources/fonts/UniversalisADFStd-Regular.otf'
-)
-
 BITMAPS_PATH = pkg_resources.resource_filename(
     'cockpit',
     'resources/bitmaps/'

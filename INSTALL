@@ -8,7 +8,3 @@ can however, be installed from development sources::
 Cockpit `setup.py` script will automatically check and install its
 Python dependencies.  Its main dependencies are microscope, numpy,
 PyOpenGL, Pyro4, and wxPython.
-
-The only non Python dependency is `FTGL
-<https://sourceforge.net/projects/ftgl/>`_ which needs to be installed
-separately.
