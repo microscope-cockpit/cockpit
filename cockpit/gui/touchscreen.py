@@ -855,10 +855,8 @@ class LightToggleButton(SBitmapToggleButton):
         self.SetBitmapDisabled(bmpOff)
         self.SetBitmapSelected(bmpOn)
         self.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.light.toggleState())
-        from cockpit.gui import EvtEmitter, EVT_COCKPIT
-        from cockpit.events import DEVICE_STATUS
-        listener = EvtEmitter(self, DEVICE_STATUS)
-        listener.Bind(EVT_COCKPIT, self.onStatusEvent)
+        listener = cockpit.gui.EvtEmitter(self, events.DEVICE_STATUS)
+        listener.Bind(cockpit.gui.EVT_COCKPIT, self.onStatusEvent)
 
 
     def onStatusEvent(self, evt):
