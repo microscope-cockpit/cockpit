@@ -24,7 +24,8 @@ import sys
 
 import numpy
 import wx
-from wx.lib.agw.shapedbutton import SButton, SBitmapButton,SBitmapToggleButton
+from wx.lib.agw.shapedbutton import (SButton, SBitmapButton,SBitmapToggleButton,
+                                     SToggleButton)
 
 import cockpit.gui
 import cockpit.gui.guiUtils
@@ -261,7 +262,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         # Create light controls
         for light in lightToggles:
             # Enable/disable button
-            button = LightToggleButton(self.buttonPanel, light)
+            button = LightToggleButton(self.buttonPanel, light, size=(75, 75))
             # Power control
             powerHandler = next(filter(lambda p: p.groupName == light.groupName, lightPowers), None)
             if powerHandler is not None:
@@ -743,52 +744,33 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
-class LightToggleButton(SBitmapToggleButton):
-    size = 75
-    _bmp = wx.Bitmap(size, size, depth=1)
-    _dc = wx.MemoryDC()
-    _dc.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT,
-                        wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
-    _dc.SelectObject(_bmp)
-    _dc.DrawCircle(size/2, size/2, size/3)
-    _dc.SelectObject(wx.NullBitmap)
-    mask = wx.Mask(_bmp)
-    del _bmp
-
-
+class LightToggleButton(SToggleButton):
     def __init__(self, parent, light, **kwargs):
-        size = (LightToggleButton.size, LightToggleButton.size)
+        super().__init__(parent, **kwargs)
         self.light = light
-        if light.wavelength:
-            label = str(int(light.wavelength))
+
+        self.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                             wx.FONTWEIGHT_BOLD, False))
+
+        if self.light.wavelength:
+            label = str(int(self.light.wavelength))
         else:
-            label = light.name[0:4]
-        colour = cockpit.util.colors.wavelengthToColor(light.wavelength)
+            label = self.light.name[0:4]
+        self.SetLabel(label)
 
-        bmpOff = wx.Bitmap(size)
-        bmpOn = wx.Bitmap(size)
+        # The button is greyscale. We want to use grey for when the
+        # light is disabled, and the light colour when it is enabled.
 
-        bmpOff.SetMask(LightToggleButton.mask)
-        bmpOn.SetMask(LightToggleButton.mask)
+        # XXX: SetButtonColour does not work (see
+        # https://github.com/wxWidgets/Phoenix/issues/1716) so we need
+        # to manually edit the internal bitmap for the pressed button
+        # state.  If SetButtonColour did work, it would still change
+        # the colour of both up/down bitmaps so we would have to call
+        # SetButtonColour while handling the mouse press event.
+        colour = cockpit.util.colors.wavelengthToColor(self.light.wavelength)
+        correction = [c/255.0 for c in colour]
+        self._mainbuttondown = self._mainbuttondown.AdjustChannels(*correction)
 
-        dc = LightToggleButton._dc
-        dc.SelectObject(bmpOff)
-        dc.SetBackground(wx.Brush((192,192,192)))
-        dc.Clear()
-        tw, th = dc.GetTextExtent(label)
-        dc.DrawText(label, (size[0]-tw)/2, (size[1]-th)/2)
-
-        dc.SelectObject(bmpOn)
-        dc.SetBackground(wx.Brush(colour))
-        dc.Clear()
-        dc.DrawText(label, (size[0] - tw) / 2, (size[1] - th) / 2)
-
-        dc.SelectObject(wx.NullBitmap)
-
-        kwargs['size'] = size
-        super().__init__(parent, wx.ID_ANY, bmpOff, **kwargs)
-        self.SetBitmapDisabled(bmpOff)
-        self.SetBitmapSelected(bmpOn)
         self.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.light.toggleState())
         listener = cockpit.gui.EvtEmitter(self, events.DEVICE_STATUS)
         listener.Bind(cockpit.gui.EVT_COCKPIT, self.onStatusEvent)
