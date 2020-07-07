@@ -34,8 +34,6 @@ class testStagePositioner(unittest.TestCase):
             'isEligibleForExperiments': True,
             'callbacks': self.callbacks,
             'axis': 0,
-            'stepSizes': range(10),
-            'stepIndex': 1,
             'hardLimits': (-10, 10),
         }
 
