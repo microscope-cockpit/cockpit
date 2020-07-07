@@ -266,6 +266,16 @@ class StageMover:
                 step_size = self._step_sizes[self.curHandlerIndex][axis]
                 handler.moveRelative(step_size * sign)
 
+    def SetStepSize(self, axis: int, step_size: float) -> None:
+        if step_size <= 0.0:
+            raise ValueError('step size must be a positive number')
+        elif axis not in [0, 1, 2]:
+            raise ValueError('axis must be in [0, 1, 2]')
+        step_sizes = list(self.GetStepSizes())
+        step_sizes[axis] = step_size
+        self._step_sizes[self.curHandlerIndex] = tuple(step_sizes)
+        events.publish('stage step size', axis, step_size)
+
     def ChangeStepSize(self, direction: int) -> None:
         if direction == +1:
             guess_new = SensibleNextStepSize

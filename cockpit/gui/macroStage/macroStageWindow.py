@@ -93,25 +93,65 @@ class HandlerPositionCtrl(wx.TextCtrl):
 
 
 class AxisStepCtrl(wx.TextCtrl):
+    """Text control to display step size for one axis.
+
+    Unlike the controls in :mod:`cockpit.gui.safeControls` this
+    control does not require affirmative action, i.e., the user is not
+    required to press enter to confirm the value.  Simply selecting
+    another control or window will attempt to set the new step size.
+    This is because the step size value is not critical in that
+    setting an incorrect value by accident does not have consequences.
+
+    However, like the safe controls, if the value is not valid, empty
+    or non-numeric for example, then it returns to the previous,
+    valid, value.
+
+    """
     def __init__(self, parent, axis: int) -> None:
-        super().__init__(parent, style=wx.TE_RIGHT|wx.TE_READONLY)
+        super().__init__(parent, style=wx.TE_RIGHT)
         self._axis = axis
-        self.Disable()
 
         self._SetStepSizeValue(stageMover.getCurStepSizes()[self._axis])
+
+        # When we gain focus we will update the last value.  When we
+        # then lose focus we set the new step size.  If that fails,
+        # probably because it's invalid, we can revert back to the
+        # previous step size.
+        self._last_value = self.GetValue() # type: str
+        self.Bind(wx.EVT_KILL_FOCUS, self._OnKillFocus)
+        self.Bind(wx.EVT_SET_FOCUS, self._OnSetFocus)
 
         step_size = cockpit.gui.EvtEmitter(self, 'stage step size')
         step_size.Bind(cockpit.gui.EVT_COCKPIT, self._OnStepSizeChange)
 
+
     def _SetStepSizeValue(self, step_size: float) -> None:
         self.SetValue('%4.2f' % step_size)
 
-    def _OnStepSizeChange(self, event: wx.CommandEvent) -> None:
+
+    def _OnStepSizeChange(self, event: cockpit.gui.CockpitEvent) -> None:
         axis, step_size = event.EventData
         if axis != self._axis:
             event.Skip()
         else:
             self._SetStepSizeValue(step_size)
+
+
+    def _OnSetFocus(self, event: wx.FocusEvent) -> None:
+        # Record value so that we can revert to it if we later fail to
+        # set the new value.
+        self._last_value = self.GetValue()
+        event.Skip()
+
+    def _OnKillFocus(self, event: wx.FocusEvent) -> None:
+        try:
+            new_step_size = float(self.GetValue())
+            wx.GetApp().Stage.SetStepSize(self._axis, new_step_size)
+        except:
+            self.ChangeValue(self._last_value)
+        else:
+            self._last_value = self.GetValue()
+        event.Skip()
 
 
 class AxesPositionPanel(wx.Panel):
