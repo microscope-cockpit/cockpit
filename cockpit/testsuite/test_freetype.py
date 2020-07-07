@@ -30,4 +30,4 @@ class FaceTestCase(unittest.TestCase):
     def test_render(self):
         ## Not sure how to actual test if it gets rendered, but this
         ## should at least not error.
-        self.font.render('foobar')
+        self.face.render('foobar')
