@@ -69,8 +69,6 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     # Additionally, if the device is to be used in experiments, it must have:
     # - getMovementTime(axis, start, end): Get the amount of time it takes to 
     #   move from start to end and then stabilize.
-    # - cleanupAfterExperiment(axis, isCleanupFinal): return the axis to to the
-    #   state it was in prior to the experiment.
     # \param axis A numerical indicator of the axis (0 = X, 1 = Y, 2 = Z).
     # \param hardLimits A (minPosition, maxPosition) tuple indicating
     #        the device's hard motion limits.
@@ -158,14 +156,7 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     @cached
     def getDeltaMovementTime(self, delta):
         return self.callbacks['getMovementTime'](self.axis, 0., delta)
-        
 
-    ## Do any necessary cleanup now that the experiment is over.
-    def cleanupAfterExperiment(self, isCleanupFinal = True):
-        if self.isEligibleForExperiments:
-            cb = self.callbacks.get('cleanupAfterExperiment', None)
-            if cb is not None:
-                return cb(self.axis, isCleanupFinal)
 
     ## Register this handler with an analogue source.
     def connectToAnalogSource(self, source, line, offset, gain):
