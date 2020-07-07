@@ -238,10 +238,9 @@ class SaveTopBottomPanel(wx.Panel):
 # the different subclasses, and has some logic that is generally
 # related to the UIs the MacroStage instances provide but is not
 # tightly bound to any one of them.
-class MacroStageWindow(wx.Frame):
-    SHOW_DEFAULT = True
-    def __init__(self, parent, title='Macro Stage'):
-        super().__init__(parent, title=title)
+class MacroStagePanel(wx.Panel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         # For relative sizing of items. The overall window is
         # (width * 10) by (height * 8) pixels. The ratio of
@@ -321,6 +320,16 @@ class MacroStageWindow(wx.Frame):
     def OnTouchDown(self, ect: wx.CommandEvent) -> None:
         zpos = wx.GetApp().Config['stage'].getfloat('slideTouchdownAltitude')
         stageMover.goToZ(zpos)
+
+
+class MacroStageWindow(wx.Frame):
+    SHOW_DEFAULT = True
+    def __init__(self, parent, title='Macro Stage'):
+        super().__init__(parent, title=title)
+        panel = MacroStagePanel(self)
+        sizer = wx.BoxSizer()
+        sizer.Add(panel)
+        self.SetSizerAndFit(sizer)
 
 
 def makeWindow(parent):
