@@ -189,11 +189,22 @@ class DeviceDepot:
         # Dummy stages
         axes = self.getSortedStageMovers().keys()
         if 2 not in axes:
-            from cockpit.devices.dummyZStage import DummyZStage
-            dummies.append(DummyZStage())
+            from cockpit.devices.dummies import DummyStage
+            dummies.append(DummyStage("dummy Z stage",
+                                      {"z-lower-limits": "0",
+                                       "z-upper-limits": "2500",
+                                       "z-units-per-micron": "1"}))
+
         if (0 not in axes) or (1 not in axes):
-            from cockpit.devices.dummyXYStage import DummyMover
-            dummies.append(DummyMover())
+            from cockpit.devices.dummies import DummyStage
+            dummies.append(DummyStage("dummy XY stage",
+                                      {"x-lower-limits": "0",
+                                       "x-upper-limits": "25000",
+                                       "x-units-per-micron": "1",
+                                       "y-lower-limits": "0",
+                                       "y-upper-limits": "12000",
+                                       "y-units-per-micron": "1"}))
+
         # Cameras
         if not getHandlersOfType(CAMERA):
             from cockpit.devices.dummies import DummyCamera
