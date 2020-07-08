@@ -63,7 +63,7 @@ setuptools.setup(
         'Pyro4',
         'freetype-py',
         'matplotlib',
-        'microscope',
+        'microscope>=0.5',
         'numpy',
         'pyserial',
         'scipy',
