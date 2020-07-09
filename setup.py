@@ -30,7 +30,7 @@ class sdist(setuptools.command.sdist.sdist):
 
 
 setuptools.setup(
-    name = 'cockpit',
+    name = 'microscope-cockpit',
     version = '2.9.0+dev',
     description = 'Hardware agnostic microscope user interface',
     long_description = open('README', 'r').read(),
