@@ -81,24 +81,9 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
         ## List of ToggleButtons, one per objective.
         self.buttons = []
 
-        events.subscribe('save exposure settings', self.onSaveSettings)
-        events.subscribe('load exposure settings', self.onLoadSettings)
-
     @property
     def numObjectives(self):
         return len(self.nameToPixelSize)
-
-
-    ## Save our settings in the provided dict.
-    def onSaveSettings(self, settings):
-        settings[self.name] = self.curObjective
-
-
-    ## Load our settings from the provided dict.
-    def onLoadSettings(self, settings):
-        if self.name in settings:
-            self.changeObjective(settings[self.name])
-
 
     ## A list of objectives sorted by magnification.
     @property
