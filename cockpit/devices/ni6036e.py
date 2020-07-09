@@ -105,11 +105,9 @@ class NI6036e(device.Device):
                     flipsList=flips.split(',')
                     flipsInt=[int(flipsList[0]),int(flipsList[1])]
                     self.objectiveToFlips[self.objective[i]].append(flipsInt)
-                
-        self.lightPathButtons = []
 
         ## Current light path mode.
-        self.curExMode = None
+        self.curExMode = 0
         self.curStageMode = None
         self.curDetMode = None
 
@@ -137,7 +135,7 @@ class NI6036e(device.Device):
     ## Try to switch to widefield mode.
     def finalizeInitialization(self):
         if self.excitation:
-            self.setExMode(self.excitation[0])
+            self.setExMode(self.excitation[self.curExMode])
         self.temperatureConnection.connect(self.receiveTemperatureData)
 #        self.setStageMode('Inverted')
         #set default emission path
@@ -157,24 +155,11 @@ class NI6036e(device.Device):
     ## Generate a column of buttons for setting the light path. Make a window
     # that plots our temperature data.
     def makeUI(self, parent):
-
-        rowSizer=wx.BoxSizer(wx.HORIZONTAL)
-        
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(parent, -1, "Excitation path:")
-        label.SetFont(label.GetFont().Larger().Bold())
-        sizer.Add(label)
-        for mode in self.excitation:
-            button = wx.ToggleButton(parent, label=mode, size=(180, 50))
-            button.Bind(wx.EVT_TOGGLEBUTTON,
-                        lambda event, mode=mode: self.setExMode(mode))
-            sizer.Add(button)
-            self.lightPathButtons.append(button)
-            if mode == self.curExMode:
-                button.activate()
-        rowSizer.Add(sizer)
-        return rowSizer
-
+        box = wx.RadioBox(panel, label='Excitation path',
+                          choices=[mode for mode in self.excitation])
+        box.SetSelection(self.excitation.index(self.curExMode))
+        box.Bind(wx.EVT_RADIOBOX, self.OnRadioBox)
+        return box
 
     #IMD commented out 20170320 as we asre moving all this to config file.
     
@@ -225,14 +210,15 @@ class NI6036e(device.Device):
         # return rowSizer
 
 
+    def OnRadioBox(self, event: wx.CommandEvent) -> None:
+        mode = self.excitation[event.GetInt()]
+        self.setExMode(mode)
+
+
     ## Set the light path to the specified mode.
     def setExMode(self, mode):
         for mirrorIndex, isUp in self.modeToFlips[mode]:
             self.flipDownUp(mirrorIndex, isUp)
-        # TODO: we should be using a wx.RadioBox or something like
-        # that that handles the press/unpress of the other choices.
-        for button in self.lightPathButtons:
-            button.SetValue(button.GetLabel() == mode)
         self.curExMode = mode
 
 
