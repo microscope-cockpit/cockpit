@@ -164,7 +164,7 @@ class StageMover:
         if set(self.axisToHandlers.keys()) != {0, 1, 2}:
             raise ValueError('stage mover requires 3 axis: X, Y, and Z')
 
-        # FIXME: we should have sensible defaults.
+        # FIXME: we should have sensible defaults (see issue #638).
         self._saved_top = userConfig.getValue('savedTop', default=3010.0)
         self._saved_bottom = userConfig.getValue('savedBottom', default=3000.0)
 
