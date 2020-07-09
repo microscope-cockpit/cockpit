@@ -47,12 +47,24 @@ other dependencies::
   pip3 install --user microscope-cockpit
 
 
-Developer install instructions
-==============================
+Development sources
+===================
+
+Cockpit development happens in a public git repository making it
+possible to install cockpit from development sources::
+
+  git clone https://github.com/MicronOxford/cockpit.git
+  pip install --no-index cockpit/
+
+If the plan is to make changes to the source code or to have the
+installed version follow development, consider installing in develop
+mode, also known as editable mode::
+
+  pip install --no-index --editable cockpit/
 
 
 macOS
-=====
+-----
 
 macOS needs git and python3 which are not part of the default
 setup. There are various route to get these two packages but below are
