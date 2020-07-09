@@ -24,7 +24,6 @@ from cockpit.devices import device
 from cockpit.util import valueLogger
 from cockpit import depot
 from cockpit import events
-import cockpit.gui.toggleButton
 import cockpit.util.connection
 import collections
 import matplotlib
@@ -166,11 +165,9 @@ class NI6036e(device.Device):
         label.SetFont(label.GetFont().Larger().Bold())
         sizer.Add(label)
         for mode in self.excitation:
-            button = cockpit.gui.toggleButton.ToggleButton( 
-                textSize = 12, label = mode, size = (180, 50), 
-                parent = parent)
-            # Respond to clicks on the button.
-            button.Bind(wx.EVT_LEFT_DOWN, lambda event, mode = mode: self.setExMode(mode))
+            button = wx.ToggleButton(parent, label=mode, size=(180, 50))
+            button.Bind(wx.EVT_TOGGLEBUTTON,
+                        lambda event, mode=mode: self.setExMode(mode))
             sizer.Add(button)
             self.lightPathButtons.append(button)
             if mode == self.curExMode:
@@ -232,8 +229,10 @@ class NI6036e(device.Device):
     def setExMode(self, mode):
         for mirrorIndex, isUp in self.modeToFlips[mode]:
             self.flipDownUp(mirrorIndex, isUp)
+        # TODO: we should be using a wx.RadioBox or something like
+        # that that handles the press/unpress of the other choices.
         for button in self.lightPathButtons:
-            button.setActive(button.GetLabel() == mode)
+            button.SetValue(button.GetLabel() == mode)
         self.curExMode = mode
 
 
@@ -281,7 +280,7 @@ class NI6036e(device.Device):
 
     ## Flip a mirror down and then up, to ensure that it's in the position
     # we want.
-    def flipDownUp(self, index, isUp):
+    def flipDownUp(self, index, isUp: bool):
         self.niConnection.flipDownUp(index, int(isUp))
 
 
@@ -318,12 +317,9 @@ class niOutputWindow(wx.Frame):
         self.buttonToLine = {}
 
         # Set up the digital lineout buttons.
-        for i in range(len(self.nicard.lines)) :
-            button = cockpit.gui.toggleButton.ToggleButton(
-                    parent = panel, label = str(self.nicard.lines[i]),
-                    activateAction = self.toggle,
-                    deactivateAction = self.toggle,
-                    size = (140, 80))
+        for i, line in enumerate(self.nicard.lines):
+            button = wx.ToggleButton(panel, label=str(line), size=(140, 80))
+            button.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleButton)
             buttonSizer.Add(button, 1, wx.EXPAND)
             self.buttonToLine[button] = i
         mainSizer.Add(buttonSizer)
@@ -331,15 +327,14 @@ class niOutputWindow(wx.Frame):
         panel.SetSizerAndFit(mainSizer)
         self.SetClientSize(panel.GetSize())
 
-
     ## One of our buttons was clicked; update the DSP's output.
-    def toggle(self):
-        output = 0
+    def OnToggleButton(self, event: wx.CommandEvent) -> None:
+        del event
+        # TODO: we know exactly which of the toggle buttons has been
+        # pressed/unpressed, we shouldn't have to loop over all lines
+        # and set them all again.
         for button, line in self.buttonToLine.items():
-            if button.getIsActive():
-                self.nicard.niConnection.flipDownUp(line, 1)
-            else:
-                self.nicard.niConnection.flipDownUp(line, 0)
+            self.nicard.niConnection.flipDownUp(line, button.GetValue())
 
 
 
