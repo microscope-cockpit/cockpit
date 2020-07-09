@@ -29,6 +29,3 @@ mainWindow.py: Shows exposure settings, the run-experiment buttons, and any
 saveTopBottomPanel.py: A panel used by the macro stage viewer code. 
 
 shellWindow.py: Sets up a Python shell (the command line). 
-
-toggleButton.py: Utility module for the ToggleButton class used throughout the 
-  UI.
