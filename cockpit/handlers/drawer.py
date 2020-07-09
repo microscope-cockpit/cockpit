@@ -77,7 +77,9 @@ class DrawerHandler(deviceHandler.DeviceHandler):
         ## List of ToggleButtons, one per setting.
         self.buttons = []
         # Last thing to do is update UI to show default selections.
-        events.subscribe('cockpit initialization complete', self.changeDrawer)
+        initial_settings = self.settings[self.settingIndex]
+        events.oneShotSubscribe('cockpit initialization complete',
+                                lambda: self.changeDrawer(initial_settings))
 
 
     ## Generate a row of buttons, one for each possible drawer.
@@ -105,15 +107,11 @@ class DrawerHandler(deviceHandler.DeviceHandler):
 
 
     ## Set dye and wavelength on each camera, and update our UI.
-    def changeDrawer(self, newSetting=None):
-        if newSetting is None:
-            ns = self.settings[0]
-        else:
-            ns = newSetting
-            self.settingIndex = self.settings.index(ns)
-        for cname in ns.cameraNames:
-            h = depot.getHandler(cname, depot.CAMERA)
-            h.updateFilter(ns.cameraToDye[cname], ns.cameraToWavelength[cname])
+    def changeDrawer(self, newSetting):
+        for cname in newSetting.cameraNames:
+            handler = depot.getHandler(cname, depot.CAMERA)
+            handler.updateFilter(newSetting.cameraToDye[cname],
+                                 newSetting.cameraToWavelength[cname])
         for i, b in enumerate(self.buttons):
             state = i == self.settingIndex
             b.updateState(state)
