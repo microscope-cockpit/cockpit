@@ -49,6 +49,7 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import typing
 
 import wx
 
@@ -61,68 +62,12 @@ import cockpit.gui.keyboard
 import cockpit.gui.toggleButton
 
 
-## This handler is responsible for tracking what kinds of light each camera
-# receives, via the drawer system.
-class DrawerHandler(deviceHandler.DeviceHandler):
-    ## We allow either for a set of pre-chosen filters (via DrawerSettings),
-    # or for a more variable approach with callbacks. If callbacks are
-    # supplied, they override the DrawerSettings if any. 
-    # \param settings A list of DrawerSettings instances.
-    # \param settingIndex Index into settings list indicating the current mode.
-    def __init__(self, name, groupName, settings = None, settingIndex = None,
-                 callbacks = {}):
-        super().__init__(name, groupName, False, callbacks, depot.DRAWER)
-        self.settings = settings
-        self.settingIndex = settingIndex
-        ## List of ToggleButtons, one per setting.
-        self.buttons = []
-        # Last thing to do is update UI to show default selections.
-        initial_settings = self.settings[self.settingIndex]
-        events.oneShotSubscribe('cockpit initialization complete',
-                                lambda: self.changeDrawer(initial_settings))
-
-
-    ## Generate a row of buttons, one for each possible drawer.
-    def makeUI(self, parent):
-        if not self.settings or len(self.settings) == 1:
-            # Nothing to be done here.
-            return None
-        frame = wx.Frame(parent, title = "Drawers",
-                style = wx.RESIZE_BORDER | wx.CAPTION | wx.FRAME_NO_TASKBAR)
-        panel = wx.Panel(frame)
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        for setting in self.settings:
-            button = cockpit.gui.toggleButton.ToggleButton(
-                    label = setting.name, parent = panel, 
-                    size = (80, 40))
-            button.Bind(wx.EVT_LEFT_DOWN, 
-                    lambda event, setting = setting: self.changeDrawer(setting))
-            sizer.Add(button)
-            self.buttons.append(button)
-        panel.SetSizerAndFit(sizer)
-        frame.SetClientSize(panel.GetSize())
-        frame.Show()
-        cockpit.gui.keyboard.setKeyboardHandlers(frame)
-        return None
-
-
-    ## Set dye and wavelength on each camera, and update our UI.
-    def changeDrawer(self, newSetting):
-        for cname in newSetting.cameraNames:
-            handler = depot.getHandler(cname, depot.CAMERA)
-            handler.updateFilter(newSetting.cameraToDye[cname],
-                                 newSetting.cameraToWavelength[cname])
-        for i, b in enumerate(self.buttons):
-            state = i == self.settingIndex
-            b.updateState(state)
-
-
-## This is a simple container class to describe a single drawer. 
+## This is a simple container class to describe a single drawer.
 class DrawerSettings:
     ## All parameters except the drawer name are lists, and the lists refer to
     # cameras in the same orders.
-    # \param name Name used to refer to the drawer. 
-    # \param cameraNames Unique names for each camera. These are the same 
+    # \param name Name used to refer to the drawer.
+    # \param cameraNames Unique names for each camera. These are the same
     #        across all drawers.
     # \param dyeNames Names of dyes that roughly correspond to the wavelengths
     #        that the cameras see.
@@ -149,3 +94,60 @@ class DrawerSettings:
             self.wavelengths.append(wavelength)
         self.cameraToDye = dict(zip(self.cameraNames, self.dyeNames))
         self.cameraToWavelength = dict(zip(self.cameraNames, self.wavelengths))
+
+
+## This handler is responsible for tracking what kinds of light each camera
+# receives, via the drawer system.
+class DrawerHandler(deviceHandler.DeviceHandler):
+    ## We allow either for a set of pre-chosen filters (via DrawerSettings),
+    # or for a more variable approach with callbacks. If callbacks are
+    # supplied, they override the DrawerSettings if any.
+    # \param settings A list of DrawerSettings instances.
+    # \param settingIndex Index into settings list indicating the current mode.
+    def __init__(self, name: str, groupName: str,
+                 settings: typing.Sequence[DrawerSettings], settingIndex: int,
+                 callbacks: typing.Mapping[str, typing.Callable] = {}) -> None:
+        super().__init__(name, groupName, False, callbacks, depot.DRAWER)
+        self.settings = settings
+        self.settingIndex = settingIndex
+        ## List of ToggleButtons, one per setting.
+        self.buttons = []
+        # Last thing to do is update UI to show default selections.
+        initial_settings = self.settings[self.settingIndex]
+        events.oneShotSubscribe('cockpit initialization complete',
+                                lambda: self.changeDrawer(initial_settings))
+
+
+    ## Generate a row of buttons, one for each possible drawer.
+    def makeUI(self, parent) -> None:
+        if not self.settings or len(self.settings) == 1:
+            # Nothing to be done here.
+            return None
+        frame = wx.Frame(parent, title = "Drawers",
+                style = wx.RESIZE_BORDER | wx.CAPTION | wx.FRAME_NO_TASKBAR)
+        panel = wx.Panel(frame)
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        for setting in self.settings:
+            button = cockpit.gui.toggleButton.ToggleButton(
+                    label = setting.name, parent = panel,
+                    size = (80, 40))
+            button.Bind(wx.EVT_LEFT_DOWN,
+                    lambda event, setting = setting: self.changeDrawer(setting))
+            sizer.Add(button)
+            self.buttons.append(button)
+        panel.SetSizerAndFit(sizer)
+        frame.SetClientSize(panel.GetSize())
+        frame.Show()
+        cockpit.gui.keyboard.setKeyboardHandlers(frame)
+        return None
+
+
+    ## Set dye and wavelength on each camera, and update our UI.
+    def changeDrawer(self, newSetting: DrawerSettinge) -> None:
+        for cname in newSetting.cameraNames:
+            handler = depot.getHandler(cname, depot.CAMERA)
+            handler.updateFilter(newSetting.cameraToDye[cname],
+                                 newSetting.cameraToWavelength[cname])
+        for i, b in enumerate(self.buttons):
+            state = i == self.settingIndex
+            b.updateState(state)
