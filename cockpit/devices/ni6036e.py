@@ -163,7 +163,7 @@ class NI6036e(device.Device):
         
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(parent, -1, "Excitation path:")
-        label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        label.SetFont(label.GetFont().Larger().Bold())
         sizer.Add(label)
         for mode in self.excitation:
             button = cockpit.gui.toggleButton.ToggleButton( 

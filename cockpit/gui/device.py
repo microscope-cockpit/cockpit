@@ -61,10 +61,8 @@ class Button(wx.StaticText):
             kwargs['size'] = DEFAULT_SIZE
         super().__init__(style = wx.RAISED_BORDER | wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE,
                          **kwargs)
-        flag = wx.FONTWEIGHT_BOLD
-        if not isBold:
-            flag = wx.FONTWEIGHT_NORMAL
-        self.SetFont(wx.Font(textSize,wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, flag))
+        if isBold:
+            self.SetFont(self.GetFont().Bold())
         self.SetToolTip(wx.ToolTip(tooltip))
         self.SetBackgroundColour(BACKGROUND)
         # Realign the label using our custom version of the function

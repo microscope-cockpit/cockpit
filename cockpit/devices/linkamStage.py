@@ -64,8 +64,6 @@ class RefillTimerPanel(wx.Panel):
                                       style=wx.ST_NO_AUTORESIZE)
         self.current = wx.StaticText(self, wx.ID_ANY, label=self.format(None),
                                      style= wx.ST_NO_AUTORESIZE)
-        font = wx.SystemSettings.GetFont(wx.SYS_OEM_FIXED_FONT)
-        [o.SetFont(font) for o in (self.filling, self.previous, self.current)]
         [self.Sizer.Add(o, flag=wx.ALL | wx.EXPAND, border=2) \
            for o in (label, self.previous, self.current, self.filling)]
         self.Bind(wx.EVT_CONTEXT_MENU, self.onContextMenu)

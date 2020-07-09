@@ -33,10 +33,7 @@ class PanelLabel(wx.StaticText):
     """A formatted label for panels of controls."""
     def __init__(self, parent, label=""):
         super().__init__(parent, label=label)
-        # Can't seem to modify font in-situ: must modify via local ref then re-set.
-        font = self.Font.Bold()
-        font.SetSymbolicSize(wx.FONTSIZE_X_LARGE)
-        self.SetFont(font)
+        self.SetFont(self.GetFont().Bold().Larger().Larger())
 
 
 class LightPanel(wx.Panel):
