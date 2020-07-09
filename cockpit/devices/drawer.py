@@ -93,6 +93,5 @@ class Drawer(device.Device):
         # Just return an empty handler for now. It will be configured
         # after the cameras have been initialized.
         settings = self.parseConfig()
-        self.handler = DrawerHandler("drawer", "miscellaneous",
-                                        settings, 0, None)
+        self.handler = DrawerHandler("drawer", "miscellaneous", settings, 0)
         return [self.handler]
