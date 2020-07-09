@@ -155,7 +155,7 @@ class NI6036e(device.Device):
     ## Generate a column of buttons for setting the light path. Make a window
     # that plots our temperature data.
     def makeUI(self, parent):
-        box = wx.RadioBox(panel, label='Excitation path',
+        box = wx.RadioBox(parent, label='Excitation path',
                           choices=[mode for mode in self.excitation])
         box.SetSelection(self.excitation.index(self.curExMode))
         box.Bind(wx.EVT_RADIOBOX, self.OnRadioBox)
