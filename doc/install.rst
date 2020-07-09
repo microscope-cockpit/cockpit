@@ -30,7 +30,6 @@ The Cockpit dependencies not available on Debian repositories are
 PyPI, they need to be installed first with `apt`::
 
   sudo apt install \
-    git \
     python3 \
     python3-matplotlib \
     python3-numpy \
@@ -42,20 +41,12 @@ PyPI, they need to be installed first with `apt`::
     python3-setuptools \
     python3-wxgtk4.0
 
-Of Microscope's own dependencies, `hidapi
-<https://pypi.org/project/hidapi/>`_ is also not available on Debian
-repositories.  It will be installed at the same time as microscope
-with `pip`::
+Once that is done, installing Cockpit with `pip` will also install the
+other dependencies::
 
-  pip3 install --user microscope
+  pip3 install --user microscope-cockpit
 
-Finally clone the Cockpit repository and install it::
 
-  git clone cockpit
-  pip3 install --user --no-index cockpit/
-  rm -r cockpit
-
-	     
 Developer install instructions
 ==============================
 

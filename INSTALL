@@ -1,10 +1,6 @@
-Cockpit does not yet have a release and is not available on PyPI.  It
-can however, be installed from development sources::
+Cockpit is available on the Python Package Index (PyPI) and can be
+`installed like any other Python package
+<https://packaging.python.org/tutorials/installing-packages/>`_.  The
+short version of it is::
 
-    git clone git@github.com:MicronOxford/cockpit.git
-    cd cockpit
-    python setup.py install
-
-Cockpit `setup.py` script will automatically check and install its
-Python dependencies.  Its main dependencies are microscope, numpy,
-PyOpenGL, Pyro4, and wxPython.
+  pip install microscope-cockpit
