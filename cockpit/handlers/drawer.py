@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -54,12 +55,8 @@ import typing
 import wx
 
 from cockpit import depot
-from cockpit.handlers import deviceHandler
-
 from cockpit import events
-import cockpit.gui.guiUtils
-import cockpit.gui.keyboard
-import cockpit.gui.toggleButton
+from cockpit.handlers import deviceHandler
 
 
 ## This is a simple container class to describe a single drawer.
@@ -105,49 +102,48 @@ class DrawerHandler(deviceHandler.DeviceHandler):
     # \param settings A list of DrawerSettings instances.
     # \param settingIndex Index into settings list indicating the current mode.
     def __init__(self, name: str, groupName: str,
-                 settings: typing.Sequence[DrawerSettings], settingIndex: int,
-                 callbacks: typing.Mapping[str, typing.Callable] = {}) -> None:
+                 settings: typing.Sequence[DrawerSettings],
+                 settingIndex: int, callbacks = {}) -> None:
         super().__init__(name, groupName, False, callbacks, depot.DRAWER)
         self.settings = settings
         self.settingIndex = settingIndex
-        ## List of ToggleButtons, one per setting.
-        self.buttons = []
+
         # Last thing to do is update UI to show default selections.
         initial_settings = self.settings[self.settingIndex]
         events.oneShotSubscribe('cockpit initialization complete',
                                 lambda: self.changeDrawer(initial_settings))
-
 
     ## Generate a row of buttons, one for each possible drawer.
     def makeUI(self, parent) -> None:
         if not self.settings or len(self.settings) == 1:
             # Nothing to be done here.
             return None
-        frame = wx.Frame(parent, title = "Drawers",
-                style = wx.RESIZE_BORDER | wx.CAPTION | wx.FRAME_NO_TASKBAR)
-        panel = wx.Panel(frame)
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        for setting in self.settings:
-            button = cockpit.gui.toggleButton.ToggleButton(
-                    label = setting.name, parent = panel,
-                    size = (80, 40))
-            button.Bind(wx.EVT_LEFT_DOWN,
-                    lambda event, setting = setting: self.changeDrawer(setting))
-            sizer.Add(button)
-            self.buttons.append(button)
-        panel.SetSizerAndFit(sizer)
-        frame.SetClientSize(panel.GetSize())
-        frame.Show()
-        cockpit.gui.keyboard.setKeyboardHandlers(frame)
-        return None
 
+        frame = wx.Frame(parent, title='Drawers',
+                         style=wx.RESIZE_BORDER|wx.CAPTION |wx.FRAME_NO_TASKBAR)
+        panel = wx.Panel(frame)
+
+        box = wx.RadioBox(panel, label='Drawers',
+                          choices=[s.name for s in self.settings])
+        box.SetSelection(self.settingIndex)
+        box.SetFont(box.GetFont().Larger())
+        box.Bind(wx.EVT_RADIOBOX, self.OnRadioBox)
+
+        panel_sizer = wx.BoxSizer()
+        panel_sizer.Add(box)
+        panel.SetSizer(panel_sizer)
+
+        frame_sizer = wx.BoxSizer()
+        frame_sizer.Add(panel)
+        frame.SetSizerAndFit(frame_sizer)
+
+
+    def OnRadioBox(self, event: wx.CommandEvent) -> None:
+        self.changeDrawer(self.settings[event.GetInt()])
 
     ## Set dye and wavelength on each camera, and update our UI.
-    def changeDrawer(self, newSetting: DrawerSettinge) -> None:
+    def changeDrawer(self, newSetting: DrawerSettings) -> None:
         for cname in newSetting.cameraNames:
             handler = depot.getHandler(cname, depot.CAMERA)
             handler.updateFilter(newSetting.cameraToDye[cname],
                                  newSetting.cameraToWavelength[cname])
-        for i, b in enumerate(self.buttons):
-            state = i == self.settingIndex
-            b.updateState(state)
