@@ -339,17 +339,17 @@ class SettingsEditor(wx.Frame):
         okButton = wx.Button(self, id=wx.ID_OK)
         okButton.Bind(wx.EVT_BUTTON, self.onClose)
         okButton.SetToolTip(wx.ToolTip("Apply settings and close this window."))
-        buttonSizer.Add(okButton, 0, wx.ALIGN_RIGHT)
+        buttonSizer.Add(okButton, 0)
 
         cancelButton = wx.Button(self, id=wx.ID_CANCEL)
         cancelButton.Bind(wx.EVT_BUTTON, self.onClose)
         cancelButton.SetToolTip(wx.ToolTip("Close this window without applying settings."))
-        buttonSizer.Add(cancelButton, 0, wx.ALIGN_RIGHT)
+        buttonSizer.Add(cancelButton, 0)
 
         applyButton = wx.Button(self, id=wx.ID_APPLY)
         applyButton.SetToolTip(wx.ToolTip("Apply these settings."))
         applyButton.Bind(wx.EVT_BUTTON, lambda evt: self.device.updateSettings(self.current))
-        buttonSizer.Add(applyButton, 0, wx.ALIGN_RIGHT)
+        buttonSizer.Add(applyButton, 0)
 
         sizer.Add(buttonSizer, 0, wx.ALIGN_CENTER, 0, 0)
         self.SetSizerAndFit(sizer)
