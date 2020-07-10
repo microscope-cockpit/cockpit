@@ -47,6 +47,21 @@ other dependencies::
   pip3 install --user microscope-cockpit
 
 
+Microsoft Windows
+=================
+
+Python must be installed first, and the installer can be downloaded
+from `python.org <https://www.python.org/downloads/windows/>`_.
+During the Python installation, ensure that pip is also installed (it
+will be by default) and that the install and scripts directories are
+added to Windows ``PATH`` (check the "Add Python X.Y to PATH" option
+during installation).
+
+Once Python is installed, Cockpit can be installed with pip like so::
+
+  pip install microscope-cockpit
+
+
 Development sources
 ===================
 
