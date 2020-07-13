@@ -12,6 +12,7 @@ Installation
 
 .. include:: ../INSTALL
 
+
 Linux
 =====
 
@@ -47,6 +48,35 @@ other dependencies::
   pip3 install --user microscope-cockpit
 
 
+macOS
+-----
+
+The easiest method to install cockpit on macOS is to install the
+python.org build of the latest python version and then use the pip to
+install cockpit and its dependencies.
+
+First download and install the latest python 3 from `python.org
+<https://www.python.org/downloads/mac-osx/>`_.
+
+Once python is installed open a terminal window
+(``/Application/Utilities/Terminal``) and use pip to install cockpit.
+You must use 'pip3' as this will run the newly installed python3
+rather than the system default Python 2.7 which cockpit does not
+support::
+
+  pip3 install microscope-cockpit
+
+This may prompt you to install the XCode command line utilities.
+Please install these as they are required for some of the instrument
+control functionality in Cockpit (they are required to build hidapi
+used in microscope).  If this step is required you will have to rerun
+the pip3 install command above as it will have failed the first time.
+
+Once installed, cockpit can be started from command line::
+
+ cockpit
+
+
 Microsoft Windows
 =================
 
@@ -76,35 +106,3 @@ installed version follow development, consider installing in develop
 mode, also known as editable mode::
 
   pip install --no-index --editable cockpit/
-
-
-macOS
------
-
-The easiest method to install cockpit on macOS is to install the
-python.org build of the latest python version and then use the pip to
-install cockpit and its dependencies.
-
-First download and install the latest python 3 from `python.org
-<https://www.python.org/downloads/mac-osx/>`_.
-
-Once python is installed open a terminal window
-(/Application/Utilities/Terminal) and use pip to install
-cockpit. You must use 'pip3' as this will run the newly installed
-python3 rather than the system default python 2.7 which cockpit does
-not support::
-
-  pip3 install microscope-cockpit
-
-This may prompt you to install the xcode command line
-utilities. Please install these as they are required for some of the
-instrument control functionality in cockpit (they are required to
-build hidapi used in microscope). If this step is required you will
-have to rerun the pip3 install command above as it will have failed
-the first time. 
-  
-Then test::
-
- cockpit
-
-This should start the cockpit GUI.
