@@ -81,55 +81,28 @@ mode, also known as editable mode::
 macOS
 -----
 
-macOS needs git and python3 which are not part of the default
-setup. There are various route to get these two packages but below are
-instructions for how to do this via homebrew.
+The easiest method to install cockpit on macOS is to install the
+python.org build of the latest python version and then use the pip to
+install cockpit and its dependencies.
 
-Install Homebrew from https://brew.sh/ currently this involves starting
-a terminal (/Applications/Utilities/terminal.app) and running the command::
+First download and install the latest python 3 from `python.org
+<https://www.python.org/downloads/mac-osx/>`_.
 
- /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+Once python is installed open a terminal window
+(/Application/Utilities/Terminal) and use pip to install
+cockpit. You must use 'pip3' as this will run the newly installed
+python3 rather than the system default python 2.7 which cockpit does
+not support::
 
-Then use homebrew to install git and python3::
+  pip3 install microscope-cockpit
 
- brew install git
-
- brew install python3
-
-Create a directory for microscope and cockpit, I used ~/src::
-
- mkdir ~/src
- cd ~/src
-
-Next clone the github respoitories::
-
- git clone https://github.com/MicronOxford/microscope.git
- git clone https://github.com/MicronOxford/cockpit.git
-
-Setup these packages as a developer::
-
- cd microscope
- python3 setup.py develop
-
-For me this failed as I didn't have write access to the python library
-directory /Library/Python/3.7/site-packages. If this is not a problem
-move on the the cockpit septup. I had to create this directory and
-change its ownership to my userid. As this is a laptop and I am the
-only user this shouldn't be a problem::
-
- sudo mkdir /Library/Python/3.7
- sudo chown <username> /Library/Python/3.7
- mkdir /Library/Python/3.7/site-packages
-
-Then run the setup again::
-
- python3 setup.py develop
-
-Finally install cockpit in the same way::
-
- cd ../cockpit
- python3 setup.py develop
-
+This may prompt you to install the xcode command line
+utilities. Please install these as they are required for some of the
+instrument control functionality in cockpit (they are required to
+build hidapi used in microscope). If this step is required you will
+have to rerun the pip3 install command above as it will have failed
+the first time. 
+  
 Then test::
 
  cockpit
