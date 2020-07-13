@@ -694,7 +694,7 @@ def writeDataAsMrc(data, filename, XYSize = None, ZSize = None, wavelengths = []
     handle = open(filename, 'wb')
     writeMrcHeader(header, handle)
     handle.seek(1024) # Seek to end of header
-    handle.write(data_out)
+    data_out.tofile(handle)
     handle.close()
 
 
