@@ -63,16 +63,15 @@ class LightPanel(wx.Panel):
 
         if lightPower is not None:
             self.Sizer.AddSpacer(4)
-            self.Sizer.Add(wx.StaticText(self, label="Power / mW"),
+            self.Sizer.Add(wx.StaticText(self, label='Power (%)'),
                            flag=wx.ALIGN_CENTER_HORIZONTAL)
-            powCtrl = safeControls.SpinGauge(self,
-                                             minValue = lightPower.minPower,
-                                             maxValue = lightPower.maxPower,
-                                             fetch_current=lightPower.getPower)
-            powCtrl.SetValue(lightPower.powerSetPoint)
-            lightPower.addWatch('powerSetPoint', powCtrl.SetValue)
+            powCtrl = safeControls.SpinGauge(self, minValue=0.0, maxValue=100.0,
+                                             fetch_current=lambda: lightPower.getPower()*100.0)
+            powCtrl.SetValue(lightPower.powerSetPoint *100.0)
+            lightPower.addWatch('powerSetPoint',
+                                lambda p: powCtrl.SetValue(p *100.0))
             powCtrl.Bind(safeControls.EVT_SAFE_CONTROL_COMMIT,
-                         lambda evt: lightPower.setPower(evt.Value))
+                         lambda evt: lightPower.setPower(evt.Value /100.0))
             self.Sizer.Add(powCtrl)
 
         if lightFilters:

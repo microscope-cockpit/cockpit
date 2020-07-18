@@ -253,10 +253,12 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             powerHandler = next(filter(lambda p: p.groupName == light.groupName, lightPowers), None)
             if powerHandler is not None:
                 powerctrl = SetVariable(self.buttonPanel)
-                powerctrl.SetUnits('mW')
-                powerctrl.SetValue(powerHandler.powerSetPoint)
-                powerctrl.Bind(wx.EVT_SPINCTRLDOUBLE, lambda evt, h=powerHandler: h.setPower(evt.Value) )
-                powerHandler.addWatch('powerSetPoint', powerctrl.SetValue)
+                powerctrl.SetUnits('%')
+                powerctrl.SetValue(powerHandler.powerSetPoint * 100.0)
+                powerctrl.Bind(wx.EVT_SPINCTRLDOUBLE,
+                               lambda evt, h=powerHandler: h.setPower(evt.Value / 100.0))
+                powerHandler.addWatch('powerSetPoint',
+                                      lambda p, c=powerctrl: c.SetValue(p*100.0))
             # Exposure control
             expctrl = SetVariable(self.buttonPanel)
             expctrl.SetUnits('ms')
