@@ -253,7 +253,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             powerHandler = next(filter(lambda p: p.groupName == light.groupName, lightPowers), None)
             if powerHandler is not None:
                 powerctrl = SetVariable(self.buttonPanel)
-                powerctrl.SetUnits(powerHandler.units)
+                powerctrl.SetUnits('mW')
                 powerctrl.SetValue(powerHandler.powerSetPoint)
                 powerctrl.Bind(wx.EVT_SPINCTRLDOUBLE, lambda evt, h=powerHandler: h.setPower(evt.Value) )
                 powerHandler.addWatch('powerSetPoint', powerctrl.SetValue)

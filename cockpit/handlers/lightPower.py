@@ -71,7 +71,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     # \param maxPower Maximum output power in milliwatts.
     # \param curPower Initial output power.
     # \param isEnabled True iff the handler can be interacted with.
-    # \param units Units to use to describe the power; defaults to "mW".
 
     ## We use a class method to monitor output power by querying hardware.
     # A list of instances. Light persist until exit, so don't need weakrefs.
@@ -97,7 +96,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
 
 
     def __init__(self, name, groupName, callbacks, wavelength, minPower,
-                 maxPower, curPower, isEnabled=True, units='mW'):
+                 maxPower, curPower, isEnabled=True):
         # Validation:
         required = set(['getPower', 'setPower'])
         missing = required.difference(callbacks)
@@ -116,7 +115,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         self.lastPower = curPower
         self.powerSetPoint = None
         self.isEnabled = isEnabled
-        self.units = units
 
         events.subscribe('save exposure settings', self.onSaveSettings)
         events.subscribe('load exposure settings', self.onLoadSettings)
@@ -189,7 +187,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
 
     ## Experiments should include the laser power.
     def getSavefileInfo(self):
-        return "%s: %.1f%s" % (self.name, self.lastPower, self.units)
+        return "%s: %.1fmW" % (self.name, self.lastPower)
 
 # Fire up the status updater.
 LightPowerHandler._updater()
