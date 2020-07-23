@@ -418,11 +418,9 @@ class WindowsMenu(wx.Menu):
                 # so skip windows without a title.
                 continue
             sub_menu = wx.Menu()
-            for label, method in [('Show', self.OnShow),
-                                  ('Move to mouse', self.OnMoveToMouse),]:
-                menu_item = sub_menu.Append(wx.ID_ANY, label)
-                sub_menu.Bind(wx.EVT_MENU, method, menu_item)
-                self._id_to_window[menu_item.Id] = window
+            menu_item = sub_menu.Append(wx.ID_ANY, 'Show')
+            sub_menu.Bind(wx.EVT_MENU, self.OnShow, menu_item)
+            self._id_to_window[menu_item.Id] = window
 
             # Place this submenu after the "Reset window positions"
             # but before the log viewer and debug window.
@@ -449,10 +447,12 @@ class WindowsMenu(wx.Menu):
         window.Show()
         window.Raise()
 
-
-    def OnMoveToMouse(self, event: wx.CommandEvent) -> None:
-        window = self._id_to_window[event.GetId()]
-        window.SetPosition(wx.GetMousePosition())
+        # On Windows and OSX, when adding/removing displays, it is
+        # possible that a window is at a position that no longer
+        # exists.  So ensure that the window is shown at valid
+        # coordinates.
+        if wx.Display.GetFromWindow(window) == wx.NOT_FOUND:
+            window.SetPosition(wx.GetMousePosition())
 
 
 class MainWindow(wx.Frame):
