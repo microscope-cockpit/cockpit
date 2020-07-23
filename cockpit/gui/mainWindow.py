@@ -432,7 +432,6 @@ class WindowsMenu(wx.Menu):
                 continue
             sub_menu = wx.Menu()
             for label, method in [('Show', self.OnShow),
-                                  ('Raise to top', self.OnRaiseToTop),
                                   ('Move to mouse', self.OnMoveToMouse),]:
                 menu_item = sub_menu.Append(wx.ID_ANY, label)
                 sub_menu.Bind(wx.EVT_MENU, method, menu_item)
@@ -456,15 +455,10 @@ class WindowsMenu(wx.Menu):
         # window when the user only wanted to bring it to the front.
         if window.IsIconized():
             window.Restore()
-        window.Show()
-
-
-    def OnRaiseToTop(self, event: wx.CommandEvent) -> None:
-        window = self._id_to_window[event.GetId()]
-        # At least on Mac we need to call Show before Raise in case
-        # the window is hidden (see issue #599).  It is not yet clear
-        # what is wx expected behaviour.  See upstream issue
-        # https://trac.wxwidgets.org/ticket/18762
+        # On GTK3 calling Raise() would be enough since it also calls
+        # Show(), but on other platforms we do need to call Show()
+        # first (see issue #599).  It's unclear what is the expected
+        # wx behaviour (see https://trac.wxwidgets.org/ticket/18762)
         window.Show()
         window.Raise()
 
