@@ -431,7 +431,7 @@ class WindowsMenu(wx.Menu):
                 # so skip windows without a title.
                 continue
             sub_menu = wx.Menu()
-            for label, method in [('Show/Hide', self.OnShowOrHide),
+            for label, method in [('Show', self.OnShow),
                                   ('Raise to top', self.OnRaiseToTop),
                                   ('Move to mouse', self.OnMoveToMouse),]:
                 menu_item = sub_menu.Append(wx.ID_ANY, label)
@@ -449,16 +449,14 @@ class WindowsMenu(wx.Menu):
         wx.GetApp().SetWindowPositions()
 
 
-    def OnShowOrHide(self, event: wx.CommandEvent) -> None:
+    def OnShow(self, event: wx.CommandEvent) -> None:
         window = self._id_to_window[event.GetId()]
-        # The window might be hidden but maybe it's just iconized
-        # (minimized) or maybe it's both.  If it's iconized we need to
-        # restore it first
+        # Don't just call Restore() without checking if the window is
+        # really iconized otherwise it might unmaximize a maximized
+        # window when the user only wanted to bring it to the front.
         if window.IsIconized():
             window.Restore()
-            window.Show()
-        else:
-            window.Show(not window.IsShown())
+        window.Show()
 
 
     def OnRaiseToTop(self, event: wx.CommandEvent) -> None:
