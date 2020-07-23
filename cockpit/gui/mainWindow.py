@@ -368,6 +368,10 @@ class WindowsMenu(wx.Menu):
         menu_item = self.Append(wx.ID_ANY, item='Reset window positions')
         self.Bind(wx.EVT_MENU, self.OnResetWindowPositions, menu_item)
 
+        # A separator between the window menu items and the other
+        # extra windows.
+        self.AppendSeparator()
+
         # Add item to launch valueLogViewer (XXX: this should be
         # handled by some sort of plugin system and not hardcoded).
         from cockpit.util import valueLogger
@@ -417,15 +421,14 @@ class WindowsMenu(wx.Menu):
                 # of AuiManager on the logging window (see issue #617)
                 # so skip windows without a title.
                 continue
-            sub_menu = wx.Menu()
-            menu_item = sub_menu.Append(wx.ID_ANY, 'Show')
-            sub_menu.Bind(wx.EVT_MENU, self.OnShow, menu_item)
+            menu_item = wx.MenuItem(self, wx.ID_ANY, window.Title)
+            self.Bind(wx.EVT_MENU, self.OnWindowTitle, menu_item)
             self._id_to_window[menu_item.Id] = window
 
-            # Place this submenu after the "Reset window positions"
+            # Place this menu item after the "Reset window positions"
             # but before the log viewer and debug window.
-            position = len(self._id_to_window) /3
-            self.Insert(position, wx.ID_ANY, window.Title, sub_menu)
+            position = len(self._id_to_window)
+            self.Insert(position, menu_item)
 
 
     def OnResetWindowPositions(self, event: wx.CommandEvent) -> None:
@@ -433,7 +436,8 @@ class WindowsMenu(wx.Menu):
         wx.GetApp().SetWindowPositions()
 
 
-    def OnShow(self, event: wx.CommandEvent) -> None:
+    def OnWindowTitle(self, event: wx.CommandEvent) -> None:
+        """Action when user selects the menu item with the window title."""
         window = self._id_to_window[event.GetId()]
         # Don't just call Restore() without checking if the window is
         # really iconized otherwise it might unmaximize a maximized
