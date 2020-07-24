@@ -18,7 +18,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import structuredIllumination
+from cockpit.experiment import structuredIllumination
 
 
 EXPERIMENT_NAME = '2D Structured Illumination'

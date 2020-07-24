@@ -20,7 +20,7 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 from cockpit.gui import guiUtils
-from . import structuredIllumination
+from cockpit.experiment import structuredIllumination
 
 import wx
 

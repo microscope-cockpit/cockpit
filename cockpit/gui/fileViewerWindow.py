@@ -50,7 +50,7 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import imageSequenceViewer
+from cockpit.gui import imageSequenceViewer
 import cockpit.util.datadoc
 
 
@@ -61,6 +61,4 @@ class FileViewer(imageSequenceViewer.ImageSequenceViewer):
         doc = cockpit.util.datadoc.DataDoc(filename)
         images = doc.imageArray
 
-        imageSequenceViewer.ImageSequenceViewer.__init__(self,
-                images, "Viewer for %s" % filename, *args, **kwargs)
-
+        super().__init__(images, "Viewer for %s" % filename, *args, **kwargs)

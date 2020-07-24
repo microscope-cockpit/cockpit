@@ -53,7 +53,7 @@
 
 import collections
 from cockpit import depot
-from . import deviceHandler
+from cockpit.handlers import deviceHandler
 from cockpit import events
 from cockpit.handlers.genericPositioner import GenericPositionerHandler
 from numbers import Number
@@ -80,8 +80,7 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
         # Note that even though this device is directly involved in running
         # experiments, it is never itself a part of an experiment, so 
         # we pass False for isEligibleForExperiments here.
-        deviceHandler.DeviceHandler.__init__(self, name, groupName, False,
-                callbacks, depot.EXECUTOR)
+        super().__init__(name, groupName, False, callbacks, depot.EXECUTOR)
         # Base class contains empty dicts used by mixins so that methods like
         # getNumRunnableLines can be implemented here for all mixin combos. This
         # works just great, but is probably a horrible abuse of OOP. It might be
@@ -104,8 +103,8 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
             self.getAnalog = self._raiseNoAnalogException
             self.setAnalogClient = self._raiseNoAnalogException
             self.getAnalogClient = self._raiseNoAnalogException
-        events.subscribe('prepare for experiment', self.onPrepareForExperiment)
-        events.subscribe('cleanup after experiment', self.cleanupAfterExperiment)
+        events.subscribe(events.PREPARE_FOR_EXPERIMENT, self.onPrepareForExperiment)
+        events.subscribe(events.CLEANUP_AFTER_EXPERIMENT, self.cleanupAfterExperiment)
 
     def examineActions(self, table):
         return self.callbacks['examineActions'](table)
@@ -200,8 +199,8 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
                 hPrev, argsPrev = [h], [args]
                 tPrev = t
 
-        events.publish('update status light', 'device waiting',
-                       'Waiting for\n%s to finish' % self.name, (255, 255, 0))
+        events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
+                       'Waiting for %s to finish' % self.name)
 
         return self.callbacks['executeTable'](actions, 0, len(actions), numReps,
                                               repDuration)
@@ -238,7 +237,7 @@ class ExecutorHandler(deviceHandler.DeviceHandler):
 
 
 
-class DigitalMixin(object):
+class DigitalMixin:
     ## Digital handler mixin.
 
     ## Register a client device that is connected to one of our lines.
@@ -358,7 +357,7 @@ class DigitalMixin(object):
         self.writeDigital(entryState)
 
 
-class AnalogMixin(object):
+class AnalogMixin:
     ## Analog handler mixin.
     # Consider output 'level' in volts, amps or ADUS, and input
     # 'position' in experimental units (e.g. um or deg).
@@ -422,8 +421,7 @@ class AnalogLineHandler(GenericPositionerHandler):
             self.callbacks['getMovementTime'] = lambda *args: (movementTimeFunc, 0)
         else:
             self.callbacks['getMovementTime'] = lambda *args: (0, 0)
-        deviceHandler.DeviceHandler.__init__(self, name, groupName, True,
-                                             self.callbacks, depot.GENERIC_POSITIONER)
+        super().__init__(name, groupName, True, self.callbacks)
 
     def savePosition(self):
         self._savedPos = self.getPosition()
@@ -476,7 +474,7 @@ class ExecutorDebugWindow(wx.Frame):
     def __init__(self, handler, parent, *args, **kwargs):
         title = handler.name + " Executor control lines"
         kwargs['style'] = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.CLIP_CHILDREN
-        wx.Frame.__init__(self, parent, title=title, *args, **kwargs)
+        super().__init__(parent, title=title, *args, **kwargs)
         panel = wx.Panel(self)
         mainSizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -523,8 +521,8 @@ class ExecutorDebugWindow(wx.Frame):
 # but doesn't have any analogue or digital capabilities.
 class SimpleExecutor(deviceHandler.DeviceHandler):
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks):
-        super(SimpleExecutor, self).__init__(name, groupName, isEligibleForExperiments,
-                                             callbacks, depot.EXECUTOR)
+        super().__init__(name, groupName, isEligibleForExperiments,
+                         callbacks, depot.EXECUTOR)
         for cbname, cb in callbacks.items():
             if cbname is 'executeTable':
                 continue
@@ -555,10 +553,9 @@ class SimpleExecutor(deviceHandler.DeviceHandler):
 # triggered device in the action table.
 class TriggerProxy(deviceHandler.DeviceHandler):
     def __init__(self, name, trigSource):
-        super(TriggerProxy, self).__init__(name + " trigger", name + " group",
-                                             False, {}, depot.GENERIC_DEVICE)
+        super().__init__(name + " trigger", name + " group",
+                         False, {}, depot.GENERIC_DEVICE)
         self.triggerNow = lambda: trigSource.triggerDigital(self)
-        self.setHigh = lambda: trigHandler.setDigital(trigLine, state)
 
 
 ## This handler can examine and modify an action table, but delegates
@@ -570,8 +567,7 @@ class TriggerProxy(deviceHandler.DeviceHandler):
 class DelegateTrigger(SimpleExecutor):
     #def __init__(self, name, groupName, trigSource, trigLine, examineActions, movementTime=0):
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks):
-        super(DelegateTrigger, self).__init__(name, groupName, isEligibleForExperiments,
-                                              callbacks)
+        super().__init__(name, groupName, isEligibleForExperiments, callbacks)
         self._trigger = None
         self._triggerTime = 0
         self._responseTime = 0

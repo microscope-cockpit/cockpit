@@ -55,7 +55,7 @@
 # practice, the only difference you might have to make to this device to use
 # it would be to change the available objectives and their pixel sizes.
 
-from . import device
+from cockpit.devices import device
 import cockpit.handlers.objective
 import re
 
@@ -80,7 +80,7 @@ DUMMY_OBJECTIVE_PIXEL_SIZES = {
 
 class ObjectiveDevice(device.Device):
     def __init__(self, name='objectives', config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
 
     def getHandlers(self):
         pixel_sizes = {}

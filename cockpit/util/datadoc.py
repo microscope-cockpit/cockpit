@@ -57,7 +57,7 @@
 # transformations of data on the fly. It's since expanded to provide multiple
 # utility functions for reading and writing MRC files and headers.
 
-from . import Mrc
+from cockpit.util import Mrc
 
 import numpy
 import scipy.ndimage
@@ -687,15 +687,14 @@ def writeMrcHeader(header, filehandle):
 # dimensions it will be augmented with dimensions of size 1 starting from
 # the left (e.g. a 512x512 array becomes a 1x1x1x512x512 array).
 def writeDataAsMrc(data, filename, XYSize = None, ZSize = None, wavelengths = []):
-    while len(data.shape) < 5:
-        # Fill in missing dimensions in the data.
-        data.shape = [1] + list(data.shape)
-    header = makeHeaderFor(data, XYSize = XYSize, ZSize = ZSize,
+    shape = (5 - len(data.shape)) * [1] + list(data.shape)
+    data_out = data.reshape(shape)
+    header = makeHeaderFor(data_out, XYSize = XYSize, ZSize = ZSize,
             wavelengths = wavelengths)
     handle = open(filename, 'wb')
     writeMrcHeader(header, handle)
     handle.seek(1024) # Seek to end of header
-    handle.write(data)
+    data_out.tofile(handle)
     handle.close()
 
 

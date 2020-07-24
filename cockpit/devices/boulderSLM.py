@@ -37,7 +37,7 @@ Sample config entry:
 
 from collections import OrderedDict
 import decimal
-from . import device
+from cockpit.devices import device
 from itertools import groupby
 import Pyro4
 import wx
@@ -45,6 +45,7 @@ import numpy as np
 
 from cockpit import events
 import cockpit.gui.device
+import cockpit.gui.dialogs.getNumberDialog
 import cockpit.handlers.executor
 import time
 import cockpit.util
@@ -134,9 +135,7 @@ class BoulderSLM(device.Device):
     }
 
     def __init__(self, name, config={}):
-        device.Device.__init__(self, name, config)
-        if not self.isActive:
-            return
+        super().__init__(name, config)
         self.connection = None
         self.asproxy = None
         self.position = None
@@ -211,8 +210,7 @@ class BoulderSLM(device.Device):
         # is reached.
         for t, h, args in table[startIndex:stopIndex]:
             events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
-                           'SLM moving to\nindex %d' % args,
-                           (255, 255, 0))
+                           'SLM moving to index %d' % args)
             self.cycleToPosition(args)
 
     def examineActions(self, table):
@@ -336,11 +334,9 @@ class BoulderSLM(device.Device):
         # Set up a timer to update value displays.
         self.updateTimer = wx.Timer(posDisplay)
         self.updateTimer.Start(1000)
-        self.display = posDisplay
         # Changed my mind. SIM diffraction angle is an advanced parameter,
         # so it now lives in a right-click menu rather than on a button.
         panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
-        self.hasUI = True
         # Controls other than powerButton only enabled when SLM is enabled.
         triggerButton.Disable()
         posDisplay.Disable()
@@ -380,9 +376,9 @@ class BoulderSLM(device.Device):
 
 
     def performSubscriptions(self):
-        #events.subscribe('user abort', self.onAbort)
-        events.subscribe('prepare for experiment', self.onPrepareForExperiment)
-        events.subscribe('cleanup after experiment', self.cleanupAfterExperiment)
+        #events.subscribe(events.USER_ABORT, self.onAbort)
+        events.subscribe(events.PREPARE_FOR_EXPERIMENT, self.onPrepareForExperiment)
+        events.subscribe(events.CLEANUP_AFTER_EXPERIMENT, self.cleanupAfterExperiment)
 
 
     def wait(self, asyncResult, message):

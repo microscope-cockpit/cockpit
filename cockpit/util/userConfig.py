@@ -22,7 +22,7 @@ import os
 import os.path
 import pprint
 
-from . import logger
+from cockpit.util import logger
 
 ## @package userConfig
 # This module handles loading and saving changes to user configuration, which

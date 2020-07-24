@@ -71,7 +71,7 @@ import wx
 class EnumerateSitesPanel(wx.Panel):
     def __init__(self, parent, label, id = -1, size = (200, -1),
                  minSize = (280, -1), defaultIsAllSites = True):
-        wx.Panel.__init__(self, parent, id)
+        super().__init__(parent, id)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sites = cockpit.gui.guiUtils.addLabeledInput(parent = self, 
                 sizer = sizer,

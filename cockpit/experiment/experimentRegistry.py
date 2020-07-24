@@ -54,16 +54,16 @@
 # some experiment types may not be appropriate (due to requiring
 # hardware that is not available).
 
-from . import offsetGainCorrection
-from . import optoScriptExample
-from . import responseMap
-from . import structuredIllumination
-from . import stutteredZStack
-from . import sweptShutter
-from . import zStack
-from . import si2d
-from . import rotatorSweep
-from . import SIMFlux
+from cockpit.experiment import offsetGainCorrection
+from cockpit.experiment import optoScriptExample
+from cockpit.experiment import responseMap
+from cockpit.experiment import structuredIllumination
+from cockpit.experiment import stutteredZStack
+from cockpit.experiment import sweptShutter
+from cockpit.experiment import zStack
+from cockpit.experiment import si2d
+from cockpit.experiment import rotatorSweep
+from cockpit.experiment import SIMFlux
 
 ## List of registered modules.
 registeredModules = [
@@ -78,15 +78,6 @@ registeredModules = [
     si2d,
     rotatorSweep,
 ]
-
-
-## Add another experiment to the registered set.
-def registerModule(module, index=-1):
-    global registeredModules
-    # HACK: convert -1 to end-of-list.
-    if index == -1:
-        index = len(registeredModules)
-    registeredModules.insert(index, module)
 
 
 ## Retrieve all registered experiments.

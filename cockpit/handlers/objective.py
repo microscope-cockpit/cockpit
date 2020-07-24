@@ -54,7 +54,7 @@
 import wx
 
 from cockpit import depot
-from . import deviceHandler
+from cockpit.handlers import deviceHandler
 
 from cockpit import events
 import re
@@ -70,8 +70,7 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
     #   done.
     def __init__(self, name, groupName, nameToPixelSize, nameToTransform, nameToOffset, nameToColour, nameToLensID, curObjective,
             callbacks = {}):
-        deviceHandler.DeviceHandler.__init__(self, name, groupName, 
-                False, {}, depot.OBJECTIVE)
+        super().__init__(name, groupName, False, {}, depot.OBJECTIVE)
         self.nameToPixelSize = nameToPixelSize
         self.nameToTransform = nameToTransform
         self.nameToOffset = nameToOffset
@@ -82,24 +81,9 @@ class ObjectiveHandler(deviceHandler.DeviceHandler):
         ## List of ToggleButtons, one per objective.
         self.buttons = []
 
-        events.subscribe('save exposure settings', self.onSaveSettings)
-        events.subscribe('load exposure settings', self.onLoadSettings)
-
     @property
     def numObjectives(self):
         return len(self.nameToPixelSize)
-
-
-    ## Save our settings in the provided dict.
-    def onSaveSettings(self, settings):
-        settings[self.name] = self.curObjective
-
-
-    ## Load our settings from the provided dict.
-    def onLoadSettings(self, settings):
-        if self.name in settings:
-            self.changeObjective(settings[self.name])
-
 
     ## A list of objectives sorted by magnification.
     @property

@@ -53,7 +53,7 @@
 
 ## This module provides a dummy camera that generates test pattern images. 
 
-from . import device
+from cockpit.devices import device
 
 def Transform(tstr=None):
     """Desribes a simple transform: (flip LR, flip UD, rotate 90)"""
@@ -66,7 +66,7 @@ def Transform(tstr=None):
 # to any camera.
 class CameraDevice(device.Device):
     def __init__(self, name, config):
-        super(CameraDevice, self).__init__(name, config)
+        super().__init__(name, config)
         # baseTransform depends on camera orientation and is constant.
         self.baseTransform = Transform(config.get('transform', None))
 

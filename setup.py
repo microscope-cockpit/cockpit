@@ -30,7 +30,7 @@ class sdist(setuptools.command.sdist.sdist):
 
 
 setuptools.setup(
-    name = 'cockpit',
+    name = 'microscope-cockpit',
     version = '2.9.0+dev',
     description = 'Hardware agnostic microscope user interface',
     long_description = open('README', 'r').read(),
@@ -59,13 +59,15 @@ setuptools.setup(
 
     python_requires = '>=3.5',
     install_requires = [
-        'matplotlib',
-        'numpy',
-        'scipy',
-        'wxPython',
-        'Pyro4',
-        'pyserial',
         'PyOpenGL',
+        'Pyro4',
+        'freetype-py',
+        'matplotlib',
+        'microscope>=0.5',
+        'numpy',
+        'pyserial',
+        'scipy',
+        'wxPython>=4',
     ],
 
     test_suite = 'cockpit.testsuite',

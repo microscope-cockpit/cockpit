@@ -97,8 +97,3 @@ class Connection:
             except Exception as e:
                 print ("Couldn't disconnect from %s: %s" % (self.serviceName, e))
             self.connection = None
-
-
-    ## Return whether or not our connection is active.
-    def getIsConnected(self):
-        return self.connection is not None

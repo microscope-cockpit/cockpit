@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -49,85 +50,21 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import typing
 
 import wx
 
 from cockpit import depot
-from . import deviceHandler
-
 from cockpit import events
-import cockpit.gui.guiUtils
-import cockpit.gui.keyboard
-import cockpit.gui.toggleButton
-
-from cockpit.util.colors import dyeToColor
-
-## This handler is responsible for tracking what kinds of light each camera
-# receives, via the drawer system.
-class DrawerHandler(deviceHandler.DeviceHandler):
-    ## We allow either for a set of pre-chosen filters (via DrawerSettings),
-    # or for a more variable approach with callbacks. If callbacks are
-    # supplied, they override the DrawerSettings if any. 
-    # \param settings A list of DrawerSettings instances.
-    # \param settingIndex Index into settings list indicating the current mode.
-    def __init__(self, name, groupName, settings = None, settingIndex = None,
-                 callbacks = {}):
-        deviceHandler.DeviceHandler.__init__(self, name, groupName,
-                False, callbacks, depot.DRAWER)
-        self.settings = settings
-        self.settingIndex = settingIndex
-        ## List of ToggleButtons, one per setting.
-        self.buttons = []
-        # Last thing to do is update UI to show default selections.
-        events.subscribe('cockpit initialization complete', self.changeDrawer)
+from cockpit.handlers import deviceHandler
 
 
-    ## Generate a row of buttons, one for each possible drawer.
-    def makeUI(self, parent):
-        if not self.settings or len(self.settings) == 1:
-            # Nothing to be done here.
-            return None
-        frame = wx.Frame(parent, title = "Drawers",
-                style = wx.RESIZE_BORDER | wx.CAPTION | wx.FRAME_NO_TASKBAR)
-        panel = wx.Panel(frame)
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        for setting in self.settings:
-            button = cockpit.gui.toggleButton.ToggleButton(
-                    label = setting.name, parent = panel, 
-                    size = (80, 40))
-            button.Bind(wx.EVT_LEFT_DOWN, 
-                    lambda event, setting = setting: self.changeDrawer(setting))
-            sizer.Add(button)
-            self.buttons.append(button)
-        panel.SetSizerAndFit(sizer)
-        frame.SetClientSize(panel.GetSize())
-        frame.SetPosition((2400, 65))
-        frame.Show()
-        cockpit.gui.keyboard.setKeyboardHandlers(frame)
-        return None
-
-
-    ## Set dye and wavelength on each camera, and update our UI.
-    def changeDrawer(self, newSetting=None):
-        if newSetting is None:
-            ns = self.settings[0]
-        else:
-            ns = newSetting
-            self.settingIndex = self.settings.index(ns)
-        for cname in ns.cameraNames:
-            h = depot.getHandler(cname, depot.CAMERA)
-            h.updateFilter(ns.cameraToDye[cname], ns.cameraToWavelength[cname])
-        for i, b in enumerate(self.buttons):
-            state = i == self.settingIndex
-            b.updateState(state)
-
-
-## This is a simple container class to describe a single drawer. 
+## This is a simple container class to describe a single drawer.
 class DrawerSettings:
     ## All parameters except the drawer name are lists, and the lists refer to
     # cameras in the same orders.
-    # \param name Name used to refer to the drawer. 
-    # \param cameraNames Unique names for each camera. These are the same 
+    # \param name Name used to refer to the drawer.
+    # \param cameraNames Unique names for each camera. These are the same
     #        across all drawers.
     # \param dyeNames Names of dyes that roughly correspond to the wavelengths
     #        that the cameras see.
@@ -154,3 +91,59 @@ class DrawerSettings:
             self.wavelengths.append(wavelength)
         self.cameraToDye = dict(zip(self.cameraNames, self.dyeNames))
         self.cameraToWavelength = dict(zip(self.cameraNames, self.wavelengths))
+
+
+## This handler is responsible for tracking what kinds of light each camera
+# receives, via the drawer system.
+class DrawerHandler(deviceHandler.DeviceHandler):
+    ## We allow either for a set of pre-chosen filters (via DrawerSettings),
+    # or for a more variable approach with callbacks. If callbacks are
+    # supplied, they override the DrawerSettings if any.
+    # \param settings A list of DrawerSettings instances.
+    # \param settingIndex Index into settings list indicating the current mode.
+    def __init__(self, name: str, groupName: str,
+                 settings: typing.Sequence[DrawerSettings],
+                 settingIndex: int, callbacks = {}) -> None:
+        super().__init__(name, groupName, False, callbacks, depot.DRAWER)
+        self.settings = settings
+        self.settingIndex = settingIndex
+
+        # Last thing to do is update UI to show default selections.
+        initial_settings = self.settings[self.settingIndex]
+        events.oneShotSubscribe('cockpit initialization complete',
+                                lambda: self.changeDrawer(initial_settings))
+
+    ## Generate a row of buttons, one for each possible drawer.
+    def makeUI(self, parent) -> None:
+        if not self.settings or len(self.settings) == 1:
+            # Nothing to be done here.
+            return None
+
+        frame = wx.Frame(parent, title='Drawers',
+                         style=wx.RESIZE_BORDER|wx.CAPTION |wx.FRAME_NO_TASKBAR)
+        panel = wx.Panel(frame)
+
+        box = wx.RadioBox(panel, label='Drawers',
+                          choices=[s.name for s in self.settings])
+        box.SetSelection(self.settingIndex)
+        box.SetFont(box.GetFont().Larger())
+        box.Bind(wx.EVT_RADIOBOX, self.OnRadioBox)
+
+        panel_sizer = wx.BoxSizer()
+        panel_sizer.Add(box)
+        panel.SetSizer(panel_sizer)
+
+        frame_sizer = wx.BoxSizer()
+        frame_sizer.Add(panel)
+        frame.SetSizerAndFit(frame_sizer)
+
+
+    def OnRadioBox(self, event: wx.CommandEvent) -> None:
+        self.changeDrawer(self.settings[event.GetInt()])
+
+    ## Set dye and wavelength on each camera, and update our UI.
+    def changeDrawer(self, newSetting: DrawerSettings) -> None:
+        for cname in newSetting.cameraNames:
+            handler = depot.getHandler(cname, depot.CAMERA)
+            handler.updateFilter(newSetting.cameraToDye[cname],
+                                 newSetting.cameraToWavelength[cname])

@@ -774,7 +774,7 @@ def shapeFromHdr(hdr, verbose=0):
 
 # my hack to allow thinks like a.Mrc.hdr.d = (1,2,3)
 def implement_hdr(hdrArray):
-    class hdr(object):
+    class hdr:
         __slots__ = mrcHdrNames[:] + ['_array']
         def __init__(s):
             pass

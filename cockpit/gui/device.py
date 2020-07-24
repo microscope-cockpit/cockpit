@@ -46,12 +46,6 @@ from cockpit.gui import EvtEmitter, EVT_COCKPIT
 DEFAULT_SIZE = (120, 24)
 ## Small size
 SMALL_SIZE = (60, 18)
-## Tall size
-TALL_SIZE = (DEFAULT_SIZE[0], 64)
-## Default font
-DEFAULT_FONT = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD)
-## Small font
-SMALL_FONT = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
 ## Background colour
 BACKGROUND = (128, 128, 128)
 
@@ -65,13 +59,10 @@ class Button(wx.StaticText):
         # Default size:
         if 'size' not in kwargs:
             kwargs['size'] = DEFAULT_SIZE
-        wx.StaticText.__init__(self,
-                style = wx.RAISED_BORDER | wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE,
-                **kwargs)
-        flag = wx.FONTWEIGHT_BOLD
-        if not isBold:
-            flag = wx.FONTWEIGHT_NORMAL
-        self.SetFont(wx.Font(textSize,wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, flag))
+        super().__init__(style = wx.RAISED_BORDER | wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE,
+                         **kwargs)
+        if isBold:
+            self.SetFont(self.GetFont().Bold())
         self.SetToolTip(wx.ToolTip(tooltip))
         self.SetBackgroundColour(BACKGROUND)
         # Realign the label using our custom version of the function
@@ -107,7 +98,7 @@ class Button(wx.StaticText):
         numLinesUsed = len(text.split("\n"))
         lineBuffer = (maxLines - numLinesUsed) // 2 - 1
         newText = ("\n" * lineBuffer) + text + ("\n" * lineBuffer)
-        wx.StaticText.SetLabel(self, newText, *args, **kwargs)
+        super().SetLabel(newText, *args, **kwargs)
 
 
 class Label(wx.StaticText):
@@ -121,25 +112,25 @@ class Label(wx.StaticText):
             kwargs['style'] = wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE
         if 'size' not in kwargs:
             kwargs['size'] = DEFAULT_SIZE
-        super(Label, self).__init__(*args, **kwargs)
-        self.SetFont(DEFAULT_FONT)
+        super().__init__(*args, **kwargs)
+        self.SetFont(self.GetFont().Bold())
 
 
 class ValueDisplay(wx.BoxSizer):
     """A simple value display for devices."""
     def __init__(self, parent, label, value='', formatStr=None, unitStr=None):
-        super(ValueDisplay, self).__init__(wx.HORIZONTAL)
+        super().__init__(wx.HORIZONTAL)
         self.value = value
         label = Label(
             parent=parent, label=(' ' + label.strip(':') + ':'),
             size=SMALL_SIZE, style=wx.ALIGN_LEFT)
-        label.SetFont(SMALL_FONT)
+        label.SetFont(label.GetFont().Smaller())
         self.label = label
         self.Add(label)
         self.valDisplay = Label(
             parent=parent, label=str(value),
             size=SMALL_SIZE, style=(wx.ALIGN_RIGHT | wx.ST_NO_AUTORESIZE))
-        self.valDisplay.SetFont(SMALL_FONT)
+        self.valDisplay.SetFont(self.valDisplay.GetFont().Smaller())
         self.Add(self.valDisplay)
         self.formatStr = (formatStr or r'%.6s') + (unitStr or '') + ' '
 
@@ -177,14 +168,14 @@ class MultilineDisplay(wx.StaticText):
         if 'numLines' in kwargs:
             n = kwargs.pop('numLines')
             kwargs['size'] = (DEFAULT_SIZE[0], n * DEFAULT_SIZE[1])
-        super(MultilineDisplay, self).__init__(*args, **kwargs)
-        self.SetFont(SMALL_FONT)
+        super().__init__(*args, **kwargs)
+        self.SetFont(self.GetFont().Smaller())
 
 
 class Menu(wx.Menu):
     def __init__(self, menuItems, menuCallback):
         """Initialise a menu of menuItems that are handled by menuCallback."""
-        super(Menu, self).__init__()
+        super().__init__()
         for i, item in enumerate(menuItems):
             if len(item):
                 self.Append(i, item, '')
@@ -194,6 +185,26 @@ class Menu(wx.Menu):
 
     def show(self, event):
         cockpit.gui.guiUtils.placeMenuAtMouse(event.GetEventObject(), self)
+
+
+class EnumChoice(wx.Choice):
+    """A wx.Choice which coverts between it's own 0-based indexes and enum values."""
+    def __init__(self, *args, **kwargs):
+        self._enumitems = []
+        self._action = None
+        super().__init__(*args, **kwargs)
+
+    def Set(self, items):
+        """Store the enum values in a 0-indexed list for recall later."""
+        self._enumitems = [value for value, desc in items]
+        super().Set([desc for value, desc in items])
+
+    def _onChoice(self, evt):
+        self._action(self._enumitems[evt.Selection])
+
+    def setOnChoice(self, action):
+        self._action = action
+        self.Bind(wx.EVT_CHOICE, self._onChoice)
 
 
 _BMP_SIZE=(16,16)
@@ -300,7 +311,7 @@ class SettingsEditor(wx.Frame):
 
 
     def __init__(self, device, parent=None, handler=None):
-        wx.Frame.__init__(self, parent, wx.ID_ANY, style=wx.FRAME_FLOAT_ON_PARENT)
+        super().__init__(parent, wx.ID_ANY, style=wx.FRAME_FLOAT_ON_PARENT)
         self.device = device
         self.SetTitle("%s settings" % device.name)
         self.settings = {}
@@ -328,17 +339,17 @@ class SettingsEditor(wx.Frame):
         okButton = wx.Button(self, id=wx.ID_OK)
         okButton.Bind(wx.EVT_BUTTON, self.onClose)
         okButton.SetToolTip(wx.ToolTip("Apply settings and close this window."))
-        buttonSizer.Add(okButton, 0, wx.ALIGN_RIGHT)
+        buttonSizer.Add(okButton, 0)
 
         cancelButton = wx.Button(self, id=wx.ID_CANCEL)
         cancelButton.Bind(wx.EVT_BUTTON, self.onClose)
         cancelButton.SetToolTip(wx.ToolTip("Close this window without applying settings."))
-        buttonSizer.Add(cancelButton, 0, wx.ALIGN_RIGHT)
+        buttonSizer.Add(cancelButton, 0)
 
         applyButton = wx.Button(self, id=wx.ID_APPLY)
         applyButton.SetToolTip(wx.ToolTip("Apply these settings."))
         applyButton.Bind(wx.EVT_BUTTON, lambda evt: self.device.updateSettings(self.current))
-        buttonSizer.Add(applyButton, 0, wx.ALIGN_RIGHT)
+        buttonSizer.Add(applyButton, 0)
 
         sizer.Add(buttonSizer, 0, wx.ALIGN_CENTER, 0, 0)
         self.SetSizerAndFit(sizer)
@@ -456,96 +467,3 @@ class SettingsEditor(wx.Frame):
             if desc['readonly']:
                 prop.Enable(False)
             grid.Append(prop)
-
-
-class OptionButtons(wx.Panel):
-    """A control to select one of many mutually-exclusive options.
-
-    A dropdown using style buttons.
-    Presents a single button labelled with the current setting. When
-    clicked, a panel showing buttons for all options is displayed.
-
-    Note that this control does not yet support scrolling: if there
-    are too many options, they will just extend off screen.
-    """
-    def __init__(self, *args, **kwargs):
-        try:
-            label = kwargs.pop("label")
-        except:
-            label = None
-        super(OptionButtons, self).__init__(*args, **kwargs)
-
-        self.size = kwargs.get('size', TALL_SIZE)
-
-        s = wx.BoxSizer(wx.VERTICAL)
-        if label:
-            labelctrl = Label(parent=self, label=label)
-            s.Add(labelctrl)
-
-        self.mainButton = wx.Button(self, wx.ID_ANY, '...')
-        self.mainButton.Bind(wx.EVT_BUTTON, self.showButtons)
-        s.Add(self.mainButton, 1, wx.EXPAND)
-        self.SetSizerAndFit(s)
-
-        self.subframe = wx.Frame(self, style=wx.FRAME_TOOL_WINDOW | wx.BORDER_NONE)
-        self.subframe.Bind(wx.EVT_ACTIVATE, self.onSubframeEvtActivate)
-        self.subframe.SetWindowStyle(wx.BORDER_NONE)
-        self.subframe.SetSizer(wx.GridSizer(1, 0, 1))
-        self.buttons = []
-
-
-    def onSubframeEvtActivate(self, event):
-        # Hide subframe if it loses focus.
-        # Binding to EVT_KILL_FOCUS is simpler and works under windows,
-        # but we don't see that event under Linux when another window
-        # gains focus.
-        if not event.Active:
-            self.subframe.Hide()
-
-
-    def activateOneButton(self, button):
-        # Activate one button in the set.
-        button.SetValue(True)
-        for other in self.buttons:
-            if other != button:
-                other.SetValue(False)
-
-
-    def setOption(self, optionName):
-        # Set state to named option.
-        for b in self.buttons:
-            if b.LabelText.strip()== optionName:
-                self.activateOneButton(b)
-                break
-        self.mainButton.SetLabel(optionName)
-
-
-    def setOptions(self, options):
-        # Set buttons with options = [(label, callback or None), ...]
-        self.buttons=[]
-        self.subframe.Sizer.Clear()
-        for label, callback in options:
-            b = wx.ToggleButton(self.subframe, wx.ID_ANY, label)
-            b.Bind(wx.EVT_TOGGLEBUTTON, lambda evt, b=b, c=callback: self.onButton(b, c))
-            self.subframe.Sizer.Add(b)
-            self.buttons.append(b)
-        self.subframe.Fit()
-
-
-    def onButton(self, button, callback):
-        # Set button states and trigger callback.
-        self.activateOneButton(button)
-        self.mainButton.SetLabel(button.LabelText)
-        self.subframe.Hide()
-        if callback is not None:
-            callback()
-
-
-    def showButtons(self, evt):
-        # Show the subpanel of option buttons.
-        if not self.buttons:
-            return
-        here = self.ClientToScreen(self.mainButton.GetPosition())
-        here += (0, self.mainButton.Size[1] + 4)
-        self.subframe.Move(here)
-        self.subframe.Show()

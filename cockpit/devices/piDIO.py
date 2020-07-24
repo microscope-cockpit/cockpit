@@ -20,7 +20,7 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from . import device
+from cockpit.devices import device
 from cockpit.util import valueLogger
 from cockpit import events
 import collections
@@ -33,7 +33,7 @@ import cockpit.gui.device
 class RaspberryPi(device.Device):
     def __init__(self, name, config):
         # self.ipAddress and self.port set by device.Device.__init__
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
         linestring = config.get('lines')
         self.lines = linestring.split(',')
         paths_linesString = config.get('paths')
@@ -41,8 +41,6 @@ class RaspberryPi(device.Device):
         self.excitationMaps=[]
         self.objective=[]
         self.objectiveMaps=[]
-        self.emission =[]
-        self.emissionMaps=[]
 
         for path in (paths_linesString.split(';')):
             parts = path.split(':')
@@ -52,14 +50,9 @@ class RaspberryPi(device.Device):
             elif (parts[0]=='excitation'):
                 self.excitation.append(parts[1])
                 self.excitationMaps.append(parts[2])
-            elif (parts[0]=='emission'):
-                self.emission.append(parts[1])
-                self.emmisionMaps.append(parts[2])
-            
+
         self.RPiConnection = None
         ## util.connection.Connection for the temperature sensors.
-
-        self.buttonName='piDIO'
 
         ## Maps light modes to the mirror settings for those modes, as a list
         #IMD 20140806
@@ -128,14 +121,6 @@ class RaspberryPi(device.Device):
         self.curExMode = mode
 
 
-    def setDetMode(self, mode):
-        for mirrorIndex, isUp in self.modeToFlips[mode]:
-            self.flipDownUp(mirrorIndex, isUp)
-        for button in self.detPathButtons:
-            button.SetValue(button.GetLabel() == mode)
-        self.curDetMode = mode
-
-
     ## Flip a mirror down and then up, to ensure that it's in the position
     # we want.
     def flipDownUp(self, index, isUp):
@@ -156,7 +141,7 @@ class RaspberryPi(device.Device):
 # individually.
 class piOutputWindow(wx.Frame):
     def __init__(self, piDIO, parent, *args, **kwargs):
-        wx.Frame.__init__(self, parent, *args, **kwargs)
+        super().__init__(parent, *args, **kwargs)
         ## piDevice instance.
         self.pi = piDIO
         # Contains all widgets.

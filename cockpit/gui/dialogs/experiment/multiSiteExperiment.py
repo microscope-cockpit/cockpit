@@ -58,7 +58,7 @@ from cockpit import depot
 from cockpit import events
 import cockpit.gui.dialogs.enumerateSitesPanel
 from cockpit.gui import guiUtils
-from . import experimentConfigPanel
+from cockpit.gui.dialogs.experiment import experimentConfigPanel
 import cockpit.interfaces.stageMover
 import cockpit.util.userConfig
 import cockpit.util.threads
@@ -71,13 +71,13 @@ FIELD_SIZE = (70, -1)
 ## This class allows for configuring multi-site experiments.
 class MultiSiteExperimentDialog(wx.Dialog):
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent,
+        super().__init__(parent,
                 title = "OMX multi-site experiment",
                 style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
         ## Whether or not we should abort the current experiment.
         self.shouldAbort = False
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         
         ## List of all light handlers.
         self.allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
@@ -413,7 +413,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
             handlers = depot.getHandlersOfType(depot.POWER_CONTROL)
             for handler in handlers:
                 handler.disable()
-        events.publish('update status light', 'device waiting', '')
+        events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting', '')
 
 
     ## Select the appropriate light sources for this cycle.
@@ -436,8 +436,8 @@ class MultiSiteExperimentDialog(wx.Dialog):
 
     ## Go to the specified site and run our experiment on it.
     def imageSite(self, siteId, cycleNum, experimentStart):
-        events.publish('update status light', 'device waiting',
-                'Waiting for stage motion')
+        events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
+                       'Waiting for stage motion')
         cockpit.interfaces.stageMover.waitForStop()
         cockpit.interfaces.stageMover.goToSite(siteId, shouldBlock = True)
         self.waitFor(float(self.delayBeforeImaging.GetValue()))
@@ -456,7 +456,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
                 cycleNum, siteId, self.fileBase.GetValue())
         self.experimentPanel.setFilename(filename)
         start = time.time()
-        events.executeAndWaitFor('experiment complete',
+        events.executeAndWaitFor(events.EXPERIMENT_COMPLETE,
                 self.experimentPanel.runExperiment)
         print ("Imaging took %.2fs" % (time.time() - start))
 
@@ -480,9 +480,9 @@ class MultiSiteExperimentDialog(wx.Dialog):
                 # Advanced to a new second; update the status light.
                 displayMinutes = remaining // 60
                 displaySeconds = (remaining - displayMinutes * 60) // 1
-                events.publish('update status light', 'device waiting',
-                        'Waiting for %02d:%02d' % (displayMinutes, displaySeconds),
-                        (255, 255, 0))
+                events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
+                               ('Waiting for %02d:%02d'
+                                % (displayMinutes, displaySeconds)))
             time.sleep(.25)
             curTime = time.time()
         return True

@@ -51,10 +51,10 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import actionTable
+from cockpit.experiment import actionTable
 from cockpit import events
 import cockpit.util.userConfig
-from . import zStack
+from cockpit.experiment import zStack
 
 import wx
 
@@ -72,11 +72,11 @@ class StutteredZStackExperiment(zStack.ZStackExperiment):
     #         the list before running out of reps, then we recommence from
     #         the beginning.
     def __init__(self, sampleRates, *args, **kwargs):
-        zStack.ZStackExperiment.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.sampleRates = sampleRates
         self.shouldAbort = False
 
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
 
 
     ## User aborted.
@@ -103,7 +103,7 @@ class StutteredZStackExperiment(zStack.ZStackExperiment):
             self.numReps = numReps
             self.repDuration = interval
             # Run a normal experiment.
-            wasSuccessful = zStack.ZStackExperiment.execute(self)
+            wasSuccessful = super().execute()
             sequenceIndex += 1
             numRepsPerformed += numReps
             if self.shouldAbort:
@@ -118,7 +118,7 @@ from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR
 
 class ExperimentUI(wx.Panel):
     def __init__(self, parent, configKey):
-        wx.Panel.__init__(self, parent = parent)
+        super().__init__(parent=parent)
 
         self.configKey = configKey
         ## List of (interval in seconds, number of reps) tuples

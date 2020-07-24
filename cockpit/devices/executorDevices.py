@@ -82,11 +82,9 @@ import Pyro4
 import time
 
 from cockpit import depot
-from . import device
+from cockpit.devices import device
 from cockpit import events
 import cockpit.handlers.executor
-import cockpit.handlers.genericHandler
-import cockpit.handlers.genericPositioner
 import cockpit.handlers.imager
 import cockpit.util.threads
 import numpy as np
@@ -100,7 +98,7 @@ class ExecutorDevice(device.Device):
     }
 
     def __init__(self, name, config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
         ## Connection to the remote DSP computer
         self.connection = None
         ## Set of all handlers we control.
@@ -194,7 +192,7 @@ class ExecutorDevice(device.Device):
         actions = actions_from_table(table, startIndex, stopIndex, repDuration)
 
         events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
-                'Waiting for\nDSP to finish', (255, 255, 0))
+                       'Waiting for DSP to finish')
         self.connection.PrepareActions(actions, numReps)
         events.executeAndWaitFor(events.EXECUTOR_DONE % self.name, self.connection.RunActions)
         events.publish(events.EXPERIMENT_EXECUTION)
@@ -209,7 +207,7 @@ class ExecutorDevice(device.Device):
 class LegacyDSP(ExecutorDevice):
     #        May need to wrap profile digitals and analogs in numpy object.
     def __init__(self, name, config):
-        super(self.__class__, self).__init__(name, config)
+        super().__init__(name, config)
         self.tickrate = 10 # Number of ticks per ms.
         # We store the current position for each analogue channel, because
         # reasons:
@@ -229,12 +227,12 @@ class LegacyDSP(ExecutorDevice):
         self._lastProfile = None
 
     def finalizeInitialization(self):
-        super(LegacyDSP, self).finalizeInitialization()
+        super().finalizeInitialization()
         for line in range(4):
             self.setAnalog(line, 65536//2)
 
     def onPrepareForExperiment(self, *args):
-        super(self.__class__, self).onPrepareForExperiment(*args)
+        super().onPrepareForExperiment(*args)
         self._lastAnalogs = [line for line in self._currentAnalogs]
         self._lastDigital = self.connection.ReadDigital()
 
@@ -356,7 +354,7 @@ class LegacyDSP(ExecutorDevice):
         self._lastAnalogs = list(map(lambda x, y: x - (y[-1:][1:] or 0), self._lastAnalogs, analogs))
 
         events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
-                       'Waiting for\nDSP to finish', (255, 255, 0))
+                       'Waiting for DSP to finish')
         # Convert digitals to array of uints.
         digitalsArr = np.array(digitals, dtype=np.uint32).reshape(-1,2)
         # Convert analogs to array of uints.

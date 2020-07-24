@@ -78,17 +78,8 @@ class STATES():
     constant = 3
     busy = 4
 
-    @staticmethod
-    def toStr(value):
-        return {-1:'ERROR',
-                 0:'OFF',
-                 1:'ON',
-                 2:'ENABLING...',
-                 3:'ALWAYS ON',
-                 4:'BUSY'}.get(value, '')
 
-
-class DeviceHandler(object):
+class DeviceHandler:
     ## \param name The name of the device being controlled. This should be
     #         unique, as it is used to indicate the specific DeviceHandler
     #         in many callback functions. 

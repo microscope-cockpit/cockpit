@@ -138,7 +138,7 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
           value  (float): The initial value
           **kwargs: arbitrary keyword arguments.
         """
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._pending = None
         self._min = minValue
         self._max = maxValue
@@ -273,7 +273,7 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
             wx.CallAfter(self.ReleaseFocus)
         elif evt.KeyCode in [wx.WXK_NUMPAD_ENTER, wx.WXK_RETURN, wx.WXK_SPACE,
                              wx.WXK_NUMPAD_TAB, wx.WXK_TAB]:
-            if self._laststr is not '':
+            if self._laststr != '':
                 # Commit on return, enter, space or tab
                 self._pending = min(max(self.Value, self._min), self._max)
                 self.Commit()
@@ -325,7 +325,7 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
         """
         # Reset the focus-check timer.
         self._checkTimer.StartOnce(500)
-        super(self.__class__, self).SetPending(pending)
+        super().SetPending(pending)
         if self._pending is not None and not self.HasFocus():
             self.Value = self._pending
         if pending is None:
@@ -526,7 +526,6 @@ class SetPointGauge(SafeControl, wx.Window):
           evt (wx.MouseEvent): The drag event.
         """
         pos = evt.GetLogicalPosition(wx.ClientDC(self))
-        scrollpos = None
         if evt.Dragging() and evt.LeftIsDown() and self.GetClientRect().Contains(pos):
             self.SetPending(self.PosToValue(pos))
             self.PostEvent()
@@ -746,7 +745,7 @@ class SpinGauge(wx.Panel):
           size (wx.Size): The window size.
           style: A combination of wx WindowStyle flags.
         """
-        super(SpinGauge, self).__init__(parent=parent, id=wx.ID_ANY)
+        super().__init__(parent=parent, id=wx.ID_ANY)
         # Determine increment
         increment = increment or float("%1.g" % ((maxValue - minValue) / 1000))
 

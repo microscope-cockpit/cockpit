@@ -55,7 +55,7 @@ import decimal
 import wx
 
 from cockpit import depot
-from . import deviceHandler
+from cockpit.handlers import deviceHandler
 from cockpit import events
 import cockpit.handlers.imager
 import cockpit.interfaces.imager
@@ -83,10 +83,6 @@ class CameraHandler(deviceHandler.DeviceHandler):
     # - getExposureTime(name, isExact): Returns the time in milliseconds that
     #   the camera is set to expose for when triggered. If isExact is set,
     #   returns a decimal.Decimal instance.
-    # - getImageSizes(name): Return a list of strings describing the available
-    #   image sizes for this camera.
-    # - setImageSize(name, size): Set the image size for this camera to one
-    #   of the values returned by getImageSizes().
     # - prepareForExperiment(name, experiment): Get the camera ready for an
     #   experiment.
     # - Optional: getMinExposureTime(name): returns the minimum exposure time
@@ -111,8 +107,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
     def __init__(self, name, groupName, callbacks, exposureMode,
                  trigHandler=None, trigLine=None):
         # Note we assume that cameras are eligible for experiments.
-        deviceHandler.DeviceHandler.__init__(self, name, groupName, True, 
-                callbacks, depot.CAMERA)
+        super().__init__(name, groupName, True, callbacks, depot.CAMERA)
         ## True if the camera is currently receiving images.
         self.isEnabled = False
         self._exposureMode = exposureMode
@@ -145,7 +140,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
         if self.name in settings:
             # only chnage state if we need to as this is slow
             if self.getIsEnabled() != settings[self.name]:
-                self.setEnabled(settings[self.name])
+                self.toggleState()
 
     @property
     def color(self):
@@ -167,15 +162,8 @@ class CameraHandler(deviceHandler.DeviceHandler):
 
     @exposureMode.setter
     def exposureMode(self, triggerType):
-        """Set exposure mode.
-
-        If the device set a softTrigger handler, subscribe to "dummy take image"
-        if exposureMode is TRIGGER_SOFT, otherwise unsubscribe."""
+        """Set exposure mode."""
         self._exposureMode = triggerType
-        softTrigger = self.callbacks.get('softTrigger', None)
-        events.unsubscribe("dummy take image", softTrigger)
-        if softTrigger:
-            events.subscribe("dummy take image", softTrigger)
 
 
     def updateFilter(self, dye, wavelength=None):
@@ -198,7 +186,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
             raise Exception("Problem enabling device with handler %s" % self)
         # Subscribe / unsubscribe to the prepare-for-experiment event.
         func = [events.unsubscribe, events.subscribe][shouldEnable]
-        func('prepare for experiment', self.prepareForExperiment)
+        func(events.PREPARE_FOR_EXPERIMENT, self.prepareForExperiment)
         events.publish(events.CAMERA_ENABLE, self, self.isEnabled)
 
 
@@ -244,18 +232,6 @@ class CameraHandler(deviceHandler.DeviceHandler):
     @cached
     def getExposureTime(self, isExact = False):
         return self.callbacks['getExposureTime'](self.name, isExact)
-
-
-    ## Get a list of strings describing the available image sizes (in pixels).
-    def getImageSizes(self):
-        return self.callbacks['getImageSizes'](self.name)
-
-
-    ## Set the image size to one of the options returned by getImageSizes.
-    @reset_cache
-    def setImageSize(self, size):
-        return self.callbacks['setImageSize'](self.name, size)
-
 
     ## Do any necessary preparation for the camera to participate in an 
     # experiment.

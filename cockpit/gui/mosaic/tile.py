@@ -52,7 +52,6 @@
 
 import numpy
 from OpenGL.GL import *
-from OpenGL import GLUT
 from OpenGL.GL.framebufferobjects import *
 
 ## This module contains the Tile and MegaTile classes, along with some
@@ -84,8 +83,7 @@ dtypeToGlTypeMap = {
 ## This class handles a single tile in the mosaic.
 class Tile:
     def __init__(self, textureData, pos, size,
-            histogramScale, layer, isShown = True,
-            shouldDelayAllocation = False):
+            histogramScale, layer, shouldDelayAllocation=False):
 
         ## Array of pixel brightnesses
         self.textureData = textureData
@@ -270,12 +268,6 @@ class Tile:
 # we have to wait for OpenGL to get set up in our window before we can
 # use it.
 megaTileFramebuffer = None
-## Unallocate the framebuffer
-def clearFramebuffer():
-    global megaTileFramebuffer
-    if megaTileFramebuffer is not None:
-        glDeleteFramebuffers([megaTileFramebuffer])
-        megaTileFramebuffer = None
 
 ## This class handles pre-rendering of normal-sized Tile instances
 # at a reduced level of detail, which allows us to keep the program
@@ -296,7 +288,7 @@ class MegaTile(Tile):
     # At this time, if megaTileFramebuffer has not been created
     # yet, create it.
     def __init__(self, pos):
-        Tile.__init__(self, self._emptyTileData, pos,
+        super().__init__(self._emptyTileData, pos,
                  (self.micronSize, self.micronSize),
                  (0, 1), 'megatiles',
                  shouldDelayAllocation = True)
@@ -324,7 +316,7 @@ class MegaTile(Tile):
 
     ## Go through the provided list of Tiles, find the ones that overlap
     # our area, and prerender them to our texture
-    def prerenderTiles(self, tiles, viewer):
+    def prerenderTiles(self, tiles):
         if not tiles:
             return
         minX = self.pos[0]
@@ -368,7 +360,7 @@ class MegaTile(Tile):
     ## Prevent trying to delete our texture if we haven't made it yet.
     def wipe(self):
         if self.haveAllocatedMemory:
-            Tile.wipe(self)
+            super().wipe()
             self.haveAllocatedMemory = False
             self.numRenderedTiles = 0
             
@@ -376,7 +368,7 @@ class MegaTile(Tile):
     ## Prevent allocating a new texture if we haven't drawn anything yet.
     def recreateTexture(self):
         if self.haveAllocatedMemory:
-            Tile.recreateTexture(self)
+            super().recreateTexture()
             self.refresh()
 
 
@@ -384,4 +376,4 @@ class MegaTile(Tile):
         if not self.numRenderedTiles:
             # We're empty, so no need to render.
             return
-        Tile.render(self, viewBox)
+        super().render(viewBox)

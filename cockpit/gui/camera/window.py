@@ -58,16 +58,16 @@ from cockpit import events
 import cockpit.gui.keyboard
 import cockpit.util.threads
 import cockpit.gui.viewFileDropTarget
-from . import viewPanel
+from cockpit.gui.camera import viewPanel
 
 
 
 ## This class provides a grid of camera displays.
 class CamerasWindow(wx.Frame):
+    SHOW_DEFAULT = True
     def __init__(self, parent):
-        wx.Frame.__init__(self, parent, title = "Camera views",
-                          style=wx.FRAME_NO_TASKBAR | wx.CAPTION)
-        
+        super().__init__(parent, title="Camera views")
+
         self.numCameras = len(depot.getHandlersOfType(depot.CAMERA))
 
         self.panel = wx.Panel(self)
@@ -81,23 +81,12 @@ class CamerasWindow(wx.Frame):
             view = viewPanel.ViewPanel(self.panel)
             self.views.append(view)
 
-        self.SetPosition((675, 280))
-
         events.subscribe(events.CAMERA_ENABLE, self.onCameraEnableEvent)
         events.subscribe("image pixel info", self.onImagePixelInfo)
         cockpit.gui.keyboard.setKeyboardHandlers(self)
 
-        self.Bind(wx.EVT_CLOSE, self.onClose)
-
         self.resetGrid()
         self.SetDropTarget(cockpit.gui.viewFileDropTarget.ViewFileDropTarget(self))
-
-
-    ## The window is closed; use that as a proxy for closing the program,
-    # even though we aren't the main window.
-    def onClose(self, event):
-        events.publish('program exit')
-        event.Skip()
 
 
     @cockpit.util.threads.callInMainThread
@@ -113,30 +102,25 @@ class CamerasWindow(wx.Frame):
         self.resetGrid()
 
 
-    ## When cameras are enabled/disabled, we resize the UI to suit. We want
-    # there to always be at least one unused ViewPanel the user can use to 
-    # enable a new camera, but ideally there should be as few as possible, 
-    # to conserve screen real estate.
+    # When cameras are enabled/disabled, we resize the UI to suit. We
+    # want there to always be at least one unused ViewPanel so the
+    # window itself is visible but otherwise we keep only the enabled
+    # cameras to conserve screen real estate.
     def resetGrid(self):
-        activeViews = []
-        inactiveViews = []
+        viewsToShow = []
         for view in self.views:
             view.Hide()
             if view.getIsEnabled():
-                activeViews.append(view)
-            else:
-                inactiveViews.append(view)
+                viewsToShow.append(view)
+        # If there are no active views then display one empty panel.
+        if not viewsToShow:
+            viewsToShow.append(self.views[0])
 
-        # Remake the sizer, adding all active views to it first.
         self.sizer.Clear()
-        for view in activeViews:
+        for view in viewsToShow:
             self.sizer.Add(view)
-            view.Show()
-        for view in inactiveViews:
-            self.sizer.Add(view)
-            if view is inactiveViews[0]:
-                view.Show()
-                # Other inactive views are hidden.
+        self.sizer.ShowItems(True)
+
         self.sizer.Layout()
         self.panel.SetSizerAndFit(self.sizer)
         self.SetClientSize(self.panel.GetSize())
@@ -163,7 +147,6 @@ window = None
 def makeWindow(parent):
     global window
     window = CamerasWindow(parent)
-    window.Show()
 
 
 ## Simple passthrough.
@@ -177,15 +160,6 @@ def getCameraScaling(camera):
         if view.curCamera is camera:
             return view.getScaling()
     raise RuntimeError("Tried to get camera scalings for non-active camera [%s]" % camera.name)
-
-
-## As above, but get the relative values used to generate the black/whitepoints.
-def getRelativeCameraScaling(camera):
-    for view in window.views:
-        if view.curCamera is camera:
-            return view.getRelativeScaling()
-    raise RuntimeError("Tried to get camera scalings for non-active camera [%s]" % camera.name)
-
 
 
 ## Retrieve the image currently displayed by the specified camera.

@@ -312,10 +312,10 @@ class DataSaver:
             def func(data, timestamp, camera=camera):
                 return self.onImage(self.cameraToIndex[camera], data, timestamp)
             self.lambdas.append(func)
-            events.subscribe('new image %s' % camera.name, func)
+            events.subscribe(events.NEW_IMAGE % camera.name, func)
 
             self.minMaxVals.append((float('inf'), float('-inf')))
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         self.statusThread.start()
 
 
@@ -379,8 +379,8 @@ class DataSaver:
     def cleanup(self):
         self.statusThread.shouldStop = True
         for i, camera in enumerate(self.cameras):
-            events.unsubscribe('new image %s' % camera.name, self.lambdas[i])
-        events.unsubscribe('user abort', self.onAbort)
+            events.unsubscribe(events.NEW_IMAGE % camera.name, self.lambdas[i])
+        events.unsubscribe(events.USER_ABORT, self.onAbort)
 
 
     ## Receive new data, and add it to the queue.
@@ -529,7 +529,7 @@ class DataSaver:
 # second.
 class StatusUpdateThread(threading.Thread):
     def __init__(self, cameraNames, totals):
-        threading.Thread.__init__(self)
+        super().__init__()
         ## List of names of the cameras.
         self.cameraNames = cameraNames
         ## List of images received per camera.
@@ -557,19 +557,19 @@ class StatusUpdateThread(threading.Thread):
                 # No images; wait a bit.
                 time.sleep(.1)
         # Clear the status light.
-        events.publish('update status light', 'image count', '',
-                (170, 170, 170))
+        events.publish(events.UPDATE_STATUS_LIGHT, 'image count', '')
 
 
     ## Push a new text to the status light.
     def updateText(self):
-        statusText = ''
+        statusText = []
         for i, name in enumerate(self.cameraNames):
             curCount = self.imagesReceived[i]
             maxCount = self.totals[i]
-            statusText += '%s: %d/%d\n' % (name, curCount, maxCount)
-        events.publish('update status light', 'image count', statusText,
-                (255, 255, 0))
+            statusText.append('%s: %d/%d' % (name, curCount, maxCount))
+
+        events.publish(events.UPDATE_STATUS_LIGHT, 'image count',
+                       ' | '.join(statusText))
 
 
     ## Update our image count.

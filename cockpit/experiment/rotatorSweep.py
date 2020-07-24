@@ -19,9 +19,9 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from . import actionTable
+from cockpit.experiment import actionTable
 from cockpit import depot
-from . import experiment
+from cockpit.experiment import experiment
 from cockpit.gui import guiUtils
 import cockpit.util
 
@@ -37,7 +37,7 @@ EXPERIMENT_NAME = 'RotatorSweep'
 class RotatorSweepExperiment(experiment.Experiment):
     def __init__(self, polarizerHandler=None, settlingTime=0.1,
                  startV=0.0, maxV=10., vSteps=100, *args, **kwargs):
-        experiment.Experiment.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.polarizerHandler = polarizerHandler
         self.settlingTime = settlingTime
         # Look up the rotator analogue line handler.
@@ -83,7 +83,7 @@ from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR
 ## Generate the UI for special parameters used by this experiment.
 class ExperimentUI(wx.Panel):
     def __init__(self, parent, configKey):
-        wx.Panel.__init__(self, parent = parent)
+        super().__init__(parent = parent)
         self.configKey = configKey
         sizer = wx.GridSizer(2, 4, 1)
         ## Maps strings to TextCtrls describing how to configure
@@ -93,22 +93,22 @@ class ExperimentUI(wx.Panel):
                                         self, sizer, label='settling time',
                                         defaultValue=self.settings['settlingTime'],)
         self.settlingTimeControl.SetValidator(FLOATVALIDATOR)
-        sizer.Add(self.settlingTimeControl)
+
         self.vStepsControl = guiUtils.addLabeledInput(
                                         self, sizer, label='V steps',
                                         defaultValue=self.settings['vSteps'],)
         self.vStepsControl.SetValidator(INTVALIDATOR)
-        sizer.Add(self.vStepsControl)
+
         self.startVControl = guiUtils.addLabeledInput(
                                         self, sizer, label='V start',
                                         defaultValue=self.settings['startV'],)
         self.startVControl.SetValidator(FLOATVALIDATOR)
-        sizer.Add(self.startVControl)
+
         self.maxVControl = guiUtils.addLabeledInput(
                                         self, sizer, label='V max',
                                         defaultValue=self.settings['maxV'],)
         self.maxVControl.SetValidator(FLOATVALIDATOR)
-        sizer.Add(self.maxVControl)
+
         self.SetSizerAndFit(sizer)
 
 

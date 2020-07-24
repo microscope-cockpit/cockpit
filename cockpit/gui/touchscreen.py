@@ -19,52 +19,29 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-import collections
-from cockpit.util import ftgl
-import numpy
-import os
-import wx
-from wx.lib.agw.shapedbutton import SButton, SBitmapButton,SBitmapToggleButton
-from cockpit.gui.toggleButton import ACTIVE_COLOR, INACTIVE_COLOR
-from cockpit.handlers.deviceHandler import STATES
+import os.path
+import sys
 
-import cockpit.gui.macroStage.macroStageBase
-from cockpit.gui.macroStage.macroStageXY import MacroStageXY
-from cockpit.gui.macroStage.macroStageZ import MacroStageZ
-from cockpit import depot
-from cockpit import events
+import numpy
+import wx
+from wx.lib.agw.shapedbutton import (SButton, SBitmapButton,SBitmapToggleButton,
+                                     SToggleButton)
+
 import cockpit.gui
-import cockpit.gui.camera.window
-import cockpit.gui.dialogs.gridSitesDialog
-import cockpit.gui.dialogs.offsetSitesDialog
+import cockpit.gui.freetype
 import cockpit.gui.guiUtils
 import cockpit.gui.keyboard
-import cockpit.gui.mosaic.window as mosaic
+import cockpit.gui.mainWindow
 import cockpit.gui.mosaic.canvas
+import cockpit.gui.mosaic.window as mosaic
 import cockpit.interfaces.stageMover
 import cockpit.util.colors
-import cockpit.util.threads
 import cockpit.util.userConfig
-from cockpit.gui.saveTopBottomPanel import moveZCheckMoverLimits
-
-## Size of the crosshairs indicating the stage position.
-CROSSHAIR_SIZE = 10000
-## Valid colors to use for site markers.
-SITE_COLORS = [('green', (0, 1, 0)), ('red', (1, 0, 0)),
-    ('blue', (0, 0, 1)), ('orange', (1, .6, 0))]
-
-## Width of widgets in the sidebar.
-SIDEBAR_WIDTH = 150
-BACKGROUND_COLOUR = (160,160,160)
-
-## Timeout for mosaic new image events
-CAMERA_TIMEOUT = 5
-##how good a circle to draw
-CIRCLE_SEGMENTS = 32
-PI = 3.141592654
-
-## Simple structure for marking potential beads.
-BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
+from cockpit import depot
+from cockpit import events
+from cockpit.gui.macroStage.macroStageXY import MacroStageXY
+from cockpit.gui.macroStage.macroStageZ import MacroStageZ
+from cockpit.handlers.deviceHandler import STATES
 
 
 class SetVariable(wx.Window):
@@ -76,9 +53,8 @@ class SetVariable(wx.Window):
         # Create decrement and increment buttons.
         decButton = SButton(self, -1, '-')
         incButton = SButton(self, -1, '+')
-        bfont = wx.Font(16, wx.DEFAULT, wx.NORMAL, wx.BOLD)
         for b in (incButton, decButton):
-            b.SetFont(bfont)
+            b.SetFont(b.Font.Bold().Larger().Larger())
             # GetBestSize produces a size that is 3 times wider than it needs to be,
             # so set size to the smaller dimension.
             s = b.DoGetBestSize()
@@ -87,7 +63,7 @@ class SetVariable(wx.Window):
         incButton.Bind(wx.EVT_BUTTON, lambda evt: self._spin(1))
         # Create a text display of width to fit text like "00.000 uuu"
         self._text = wx.StaticText(self, -1, label="00.000 uuu", style=wx.ST_NO_AUTORESIZE | wx.ALIGN_CENTER)
-        self._text.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
+        self._text.SetFont(self._text.Font.Larger().Larger())
         # Add text to its own sizer with stretch spacers to centre vertically.
         tsizer = wx.BoxSizer(wx.VERTICAL)
         tsizer.AddStretchSpacer()
@@ -95,7 +71,7 @@ class SetVariable(wx.Window):
         tsizer.AddStretchSpacer()
         # Pack into sizer as " -  00.000 uu  + "
         self.Sizer.Add(decButton, 0, wx.FIXED_MINSIZE, 0)
-        self.Sizer.Add(tsizer, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
+        self.Sizer.Add(tsizer, 1, wx.EXPAND)
         self.Sizer.Add(incButton, 0, wx.FIXED_MINSIZE, 0)
         self.Fit()
 
@@ -122,6 +98,7 @@ class SetVariable(wx.Window):
 
 ## This class handles the UI of the mosaic.
 class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
+    SHOW_DEFAULT = False
     ## A number of properties are needed to fetch live values from the mosaic
     # window. These are used in MosaicWindow methods that are rebound to
     # our instance here to duplicate the same view.
@@ -140,7 +117,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
 
     def __init__(self, *args, **kwargs):
-        wx.Frame.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.panel = wx.Panel(self)
         self.masterMosaic=mosaic.window
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -156,25 +133,16 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         ## Size of the box to draw at the center of the crosshairs.
         self.crosshairBoxSize = 0
 
-
-        ## Font to use for site labels.
-        self.sitefont = ftgl.TextureFont(cockpit.gui.FONT_PATH)
-        self.defaultFaceSize = 64
-        self.sitefont.setFaceSize(self.defaultFaceSize)
-
-        ## A font to use for the scale bar.
-        # We used to resize the site font dynamically to do this,
-        # but it seems to break on some GL implementations so that
-        # the default face size was not restored correctly.
-        self.scalefont = ftgl.TextureFont(cockpit.gui.FONT_PATH)
-        self.scalefont.setFaceSize(18)
+        # Fonts to use for site labels and scale bar.  Keep two
+        # separate fonts instead of dynamically changing the font size
+        # because changing the font size would mean discarding the
+        # glyph textures for that size.
+        self.site_face = cockpit.gui.freetype.Face(64)
+        self.scale_face = cockpit.gui.freetype.Face(18)
 
         #default scale bar size is Zero
         self.scalebar = cockpit.util.userConfig.getValue('mosaicScaleBar',
                                                          default=0)
-        #Default to drawing primitives
-        self.drawPrimitives = cockpit.util.userConfig.getValue('mosaicDrawPrimitives',
-                                                               default = True)
 
         ##define text strings to change status strings.
         self.sampleStateText=None
@@ -185,16 +153,12 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
         self.buttonPanel=wx.Panel(self.panel, -1, size=(300,-1),
                                   style=wx.BORDER_RAISED)
-        self.buttonPanel.SetBackgroundColour(BACKGROUND_COLOUR)
         self.buttonPanel.SetDoubleBuffered(True)
         ##right side sizer is the button bar on right side of ts window
         rightSideSizer = wx.BoxSizer(wx.VERTICAL)
 
 
         ## objectiveSizer at top of rightSideSizer for objective stuff
-        font=wx.Font(12,wx.FONTFAMILY_DEFAULT,wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
-#        font=wx.Font(12,wx.FONTFAMILY_DEFAULT, wx.FONTWEIGHT_NORMAL,
-#                     wx.FONTSTYLE_NORMAL)
         objectiveSizer=wx.GridSizer(2, 2, 1)
 
         button = self.makeToggleButton(self.buttonPanel, 'Load/Unload',
@@ -206,11 +170,11 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
         textSizer=wx.BoxSizer(wx.VERTICAL)
         sampleText=wx.StaticText(self.buttonPanel,-1,'Sample',style=wx.ALIGN_CENTER)
-        sampleText.SetFont(font)
+        sampleText.SetFont(sampleText.Font.Bold())
         textSizer.Add(sampleText, 0, wx.EXPAND|wx.ALL, border=5)
 
         self.sampleStateText=wx.StaticText(self.buttonPanel,-1,style=wx.ALIGN_CENTER)
-        self.sampleStateText.SetFont(font)
+        self.sampleStateText.SetFont(self.sampleStateText.Font.Bold())
         #empty call to set the default sample state
         self.setSampleStateText()
 
@@ -227,14 +191,14 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         textSizer2=wx.BoxSizer(wx.VERTICAL)
         objectiveText=wx.StaticText(self.buttonPanel,-1,'Objective',
                                     style=wx.ALIGN_CENTER)
-        objectiveText.SetFont(font)
+        objectiveText.SetFont(objectiveText.Font.Bold())
         textSizer2.Add(objectiveText, 0, wx.EXPAND|wx.ALL,border=5)
 
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
 
         self.objectiveSelectedText=wx.StaticText(self.buttonPanel,-1,
                                                  style=wx.ALIGN_CENTER)
-        self.objectiveSelectedText.SetFont(font)
+        self.objectiveSelectedText.SetFont(self.objectiveSelectedText.Font.Bold())
         self.objectiveSelectedText.SetLabel(objective.curObjective.center(15))
 
         colour = tuple(map(lambda x: 255*x, objective.getColour()))
@@ -284,19 +248,17 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         # Create light controls
         for light in lightToggles:
             # Enable/disable button
-            button = LightToggleButton(self.buttonPanel, light)
+            button = LightToggleButton(self.buttonPanel, light, size=(75, 75))
             # Power control
             powerHandler = next(filter(lambda p: p.groupName == light.groupName, lightPowers), None)
             if powerHandler is not None:
                 powerctrl = SetVariable(self.buttonPanel)
-                powerctrl.SetBackgroundColour(BACKGROUND_COLOUR)
-                powerctrl.SetUnits(powerHandler.units)
+                powerctrl.SetUnits('mW')
                 powerctrl.SetValue(powerHandler.powerSetPoint)
                 powerctrl.Bind(wx.EVT_SPINCTRLDOUBLE, lambda evt, h=powerHandler: h.setPower(evt.Value) )
                 powerHandler.addWatch('powerSetPoint', powerctrl.SetValue)
             # Exposure control
             expctrl = SetVariable(self.buttonPanel)
-            expctrl.SetBackgroundColour(BACKGROUND_COLOUR)
             expctrl.SetUnits('ms')
             expctrl.SetValue(light.exposureTime)
             expctrl.Bind(wx.EVT_SPINCTRLDOUBLE, lambda evt, h=light: h.setExposureTime(evt.Value) )
@@ -371,10 +333,9 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             button = self.makeButton(self.panel, *args)
             zButtonSizer.Add(button, 1, wx.EXPAND|wx.ALL,border=2)
         ##Text of position and step size
-        font=wx.Font(12,wx.FONTFAMILY_DEFAULT,wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
         zPositionText = wx.StaticText(self.panel,-1,
                                       style=wx.ALIGN_CENTER)
-        zPositionText.SetFont(font)
+        zPositionText.SetFont(zPositionText.Font.Bold())
         #Read current exposure time and store pointer in
         #self. so that we can change it at a later date
         label = 'Z Pos %5.2f'%(cockpit.interfaces.stageMover.getPosition()[2])
@@ -383,7 +344,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         zButtonSizer.Add(zPositionText, 0, wx.EXPAND|wx.ALL,border=15)
         zStepText = wx.StaticText(self.panel,-1,
                                   style=wx.ALIGN_CENTER)
-        zStepText.SetFont(font)
+        zStepText.SetFont(zStepText.Font.Bold())
         #Read current exposure time and store pointer in
         #self. so that we can change it at a later date
         label = 'Z Step %5d'%(cockpit.interfaces.stageMover.getCurStepSizes()[2])
@@ -406,17 +367,18 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
         sizer.Add(leftSizer,0,wx.EXPAND)
 
-        self.panel.SetSizerAndFit(sizer)
-        self.SetRect((0, 0, 1800, 1000))
+        self.SetStatusBar(cockpit.gui.mainWindow.StatusLights(parent=self))
 
-        events.subscribe('stage position', self.onAxisRefresh)
+        self.panel.SetSizerAndFit(sizer)
+
+        events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
         events.subscribe('stage step size', self.onAxisRefresh)
         events.subscribe('stage step index', self.stageIndexChange)
         events.subscribe('soft safety limit', self.onAxisRefresh)
         events.subscribe('objective change', self.onObjectiveChange)
         events.subscribe('mosaic start', self.mosaicStart)
         events.subscribe('mosaic stop', self.mosaicStop)
-        events.subscribe('mosaic update', self.mosaicUpdate)
+        events.subscribe(events.MOSAIC_UPDATE, self.mosaicUpdate)
 
 
 
@@ -424,6 +386,19 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
         for item in [self, self.panel, self.canvas]:
             cockpit.gui.keyboard.setKeyboardHandlers(item)
+
+    def Refresh(self, *args, **kwargs):
+        """Refresh, with explicit refresh of glCanvases on Mac.
+
+        Refresh is supposed to be called recursively on child objects,
+        but is not always called for our glCanvases on the Mac. This may
+        be due to the canvases not having any invalid regions, but I see
+        no way to invalidate a region on demand."""
+        super().Refresh(*args, **kwargs)
+        if sys.platform == 'darwin':
+            wx.CallAfter(self.canvas.Refresh)
+            wx.CallAfter(self.macroStageXY.Refresh)
+            wx.CallAfter(self.macroStageZ.Refresh)
 
     ##function ot check if a bitmpa exists or return a generic missing
     ##file bitmap
@@ -479,77 +454,12 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             return
 
         #take the image
-        events.executeAndWaitFor("new image %s" %
+        events.executeAndWaitFor(events.NEW_IMAGE %
                                  (list(cockpit.interfaces.imager.imager.activeCameras)[0].name),
                                  cockpit.interfaces.imager.imager.takeImage,
                                  shouldStopVideo = False)
         mosaic.transferCameraImage()
         self.Refresh()
-
-    def laserToggle(self, event, light, button):
-        if event.GetIsDown():
-            light.setEnabled(True)
-            events.publish(events.LIGHT_SOURCE_ENABLE, light, True)
-        else:
-            light.setEnabled(False)
-            button.SetBackgroundColour(BACKGROUND_COLOUR)
-            events.publish(events.LIGHT_SOURCE_ENABLE, light, False)
-
-
-    def laserPowerUpdate(self, light):
-        textString=self.nameToText[light.groupName+'power']
-        if light.powerSetPoint is None:
-            # Light has no power control
-            return
-        label = '%5.1f %s'%(light.powerSetPoint, light.units)
-        textString.SetLabel(label.rjust(10))
-        if light.powerSetPoint and light.lastPower:
-            matched = 0.95*light.powerSetPoint < light.lastPower < 1.05*light.powerSetPoint
-        else:
-            matched = False
-        if matched:
-            textString.SetBackgroundColour(light.color)
-        else:
-            textString.SetBackgroundColour(BACKGROUND_COLOUR)
-        self.Refresh()
-
-    #Update exposure time text on event.
-    def laserExpUpdate(self, source=None):
-        # TODO: fix this to use the handler reference passed in source
-        # i.e. we *do* know which light is update.
-
-        #Dont know which light is updated so update them all.
-        lightToggles = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
-        lightToggles = sorted(lightToggles, key = lambda l: l.wavelength)
-        for light in lightToggles:
-           textString=self.nameToText[light.groupName+'exp']
-           label = '%5d ms'%(light.getExposureTime())
-           textString.SetLabel(label.rjust(10))
-
-        self.Refresh()
-
-    #function called by minus expsoure time button
-    def decreaseLaserExp(self,light):
-        currentExp=light.getExposureTime()
-        newExposure=int(currentExp*0.9)
-        light.setExposureTime(newExposure)
-
-    #function called by plus expsoure time button
-    def increaseLaserExp(self,light):
-        currentExp=light.getExposureTime()
-        newExposure=int(currentExp*1.1)
-        light.setExposureTime(newExposure)
-
-    #function called by minus laser power button
-    def decreaseLaserPower(self,powerHandler):
-        currentSP = powerHandler.powerSetPoint or powerHandler.minPower
-        powerHandler.setPower(int(currentSP*0.9))
-
-
-    #function called by plus expsoure time button
-    def increaseLaserPower(self,powerHandler):
-        currentSP = powerHandler.powerSetPoint or powerHandler.minPower
-        powerHandler.setPower(int(currentSP*1.1))
 
 
     ## Now that we've been created, recenter the canvas.
@@ -673,7 +583,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             # Display a context menu.
             menu = wx.Menu()
             menuId = 1
-            for label, color in SITE_COLORS:
+            for label, color in mosaic.SITE_COLORS:
                 menu.Append(menuId, "Mark site with %s marker" % label)
                 self.panel.Bind(wx.EVT_MENU,
                                 lambda event, color = color: mosaic.window.saveSite(color), id= menuId)
@@ -686,10 +596,6 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             menu.Append(menuId, "Toggle mosaic scale bar")
             self.panel.Bind(wx.EVT_MENU,
                             lambda event: self.togglescalebar(), id= menuId)
-            menuId += 1
-            menu.Append(menuId, "Toggle draw primitives")
-            self.panel.Bind(wx.EVT_MENU,
-                            lambda event: self.toggleDrawPrimitives(), id= menuId)
 
             cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
@@ -713,17 +619,6 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             self.scalebar = 1
         #store current state for future.
         cockpit.util.userConfig.setValue('mosaicScaleBar',self.scalebar)
-        self.Refresh()
-
-    def toggleDrawPrimitives(self):
-        #toggle the scale bar between 0 and 1.
-        if (self.drawPrimitives!=False):
-            self.drawPrimitives=False
-        else:
-            self.drawPrimitives = True
-        #store current state for future.
-        cockpit.util.userConfig.setValue('mosaicDrawPrimitives',
-                                         self.drawPrimitives)
         self.Refresh()
 
 
@@ -786,18 +681,17 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
     ##Function to load/unload objective
     def loadUnload(self):
         #toggle to load or unload the sample
-        config = wx.GetApp().config
-        loadPosition = config['stage'].getfloat('loadPosition')
-        unloadPosition = config['stage'].getfloat('unloadPosition')
+        loadPosition = wx.GetApp().Config['stage'].getfloat('loadPosition')
+        unloadPosition = wx.GetApp().Config['stage'].getfloat('unloadPosition')
 
         currentZ=cockpit.interfaces.stageMover.getPosition()[2]
         if (currentZ < loadPosition):
             #move with the smalled possible mover
-            moveZCheckMoverLimits(loadPosition)
+            cockpit.interfaces.stageMover.moveZCheckMoverLimits(loadPosition)
             loaded=True
         else:
             #move with the smalled possible mover
-            self.moveZCheckMoverLimits(unloadPosition)
+            cockpit.interfaces.stageMover.moveZCheckMoverLimits(unloadPosition)
             loaded=False
         self.setSampleStateText(loaded)
 
@@ -833,86 +727,35 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
 
-    def textInfoField(self,title,onText,onColour,offText,offColour):
-        textSizer=wx.BoxSizer(wx.VERTICAL)
-
-
-    def cameraToggle(self,camera,i):
-        camera.toggleState()
-        self.wavelength=camera.wavelength
-        self.color=camera.color
-        isEnabled=camera.isEnabled
-        if isEnabled is True:
-            self.camButton[i].SetLabel("ON")
-            self.SetBackgroundColour(ACTIVE_COLOR)
-        elif isEnabled is False:
-            self.camButton[i].SetLabel("OFF")
-            self.SetBackgroundColour(INACTIVE_COLOR)
-
-
-class LightToggleButton(SBitmapToggleButton):
-    size = 75
-    try:
-        # wx >= 4
-        _bmp = wx.Bitmap(size, size, depth=1)
-    except:
-        # wx < 4
-        _bmp = wx.EmptyBitmap(size, size)
-    _dc = wx.MemoryDC()
-    _dc.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT,
-                        wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
-    _dc.SelectObject(_bmp)
-    _dc.DrawCircle(size/2, size/2, size/3)
-    _dc.SelectObject(wx.NullBitmap)
-    mask = wx.Mask(_bmp)
-    del _bmp
-
-
+class LightToggleButton(SToggleButton):
     def __init__(self, parent, light, **kwargs):
-        size = (LightToggleButton.size, LightToggleButton.size)
+        super().__init__(parent, **kwargs)
         self.light = light
-        if light.wavelength:
-            label = str(int(light.wavelength))
-            colour = cockpit.util.colors.wavelengthToColor(light.wavelength)
+
+        self.SetFont(self.Font.Bold().Larger().Larger())
+
+        if self.light.wavelength:
+            label = str(int(self.light.wavelength))
         else:
-            label = light.name[0:4]
-            colour = ((240,240,240))
+            label = self.light.name[0:4]
+        self.SetLabel(label)
 
-        try:
-            # wx >= 4
-            bmpOff = wx.Bitmap(*size)
-            bmpOn = wx.Bitmap(*size)
-        except:
-            # wx < 4
-            bmpOff = wx.EmptyBitmap(*size)
-            bmpOn = wx.EmptyBitmap(*size)
+        # The button is greyscale. We want to use grey for when the
+        # light is disabled, and the light colour when it is enabled.
 
-        bmpOff.SetMask(LightToggleButton.mask)
-        bmpOn.SetMask(LightToggleButton.mask)
+        # XXX: SetButtonColour does not work (see
+        # https://github.com/wxWidgets/Phoenix/issues/1716) so we need
+        # to manually edit the internal bitmap for the pressed button
+        # state.  If SetButtonColour did work, it would still change
+        # the colour of both up/down bitmaps so we would have to call
+        # SetButtonColour while handling the mouse press event.
+        colour = cockpit.util.colors.wavelengthToColor(self.light.wavelength)
+        correction = [c/255.0 for c in colour]
+        self._mainbuttondown = self._mainbuttondown.AdjustChannels(*correction)
 
-        dc = LightToggleButton._dc
-        dc.SelectObject(bmpOff)
-        dc.SetBackground(wx.Brush((192,192,192)))
-        dc.Clear()
-        tw, th = dc.GetTextExtent(label)
-        dc.DrawText(label, (size[0]-tw)/2, (size[1]-th)/2)
-
-        dc.SelectObject(bmpOn)
-        dc.SetBackground(wx.Brush(colour))
-        dc.Clear()
-        dc.DrawText(label, (size[0] - tw) / 2, (size[1] - th) / 2)
-
-        dc.SelectObject(wx.NullBitmap)
-
-        kwargs['size'] = size
-        super(LightToggleButton, self).__init__(parent, wx.ID_ANY, bmpOff, **kwargs)
-        self.SetBitmapDisabled(bmpOff)
-        self.SetBitmapSelected(bmpOn)
         self.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.light.toggleState())
-        from cockpit.gui import EvtEmitter, EVT_COCKPIT
-        from cockpit.events import DEVICE_STATUS
-        listener = EvtEmitter(self, DEVICE_STATUS)
-        listener.Bind(EVT_COCKPIT, self.onStatusEvent)
+        listener = cockpit.gui.EvtEmitter(self, events.DEVICE_STATUS)
+        listener.Bind(cockpit.gui.EVT_COCKPIT, self.onStatusEvent)
 
 
     def onStatusEvent(self, evt):
@@ -931,25 +774,6 @@ class LightToggleButton(SBitmapToggleButton):
         wx.CallAfter(self.Refresh)
 
 
-
-## Global window singleton.
-TSwindow = None
-
-
 def makeWindow(parent):
-    global TSwindow
-    TSwindow = TouchScreenWindow(parent, title = "Touch Screen view",
-                                 style = wx.CAPTION| wx.RESIZE_BORDER |
-                                 wx.MINIMIZE_BOX | wx.CLOSE_BOX)
+    TSwindow = TouchScreenWindow(parent, title="Touch Screen view")
     TSwindow.SetSize((1500,1000))
-    # TODO - determine if we need to Show the touchscreen or not.
-    # TODO - if the touchscreen is shown, ensure it is shown *on screen* ...
-    # otherwise, it suddenly appears when raised on re-activating the app.
-    #TSwindow.Show()
-    #TSwindow.centerCanvas()
-
-
-## Transfer a camera image to the mosaic.
-def transferCameraImage():
-    mosaic.transferCameraImage()
-

@@ -51,7 +51,7 @@
 
 
 from cockpit import depot
-from . import deviceHandler
+from cockpit.handlers import deviceHandler
 import decimal
 
 ## This handler is for generic positioning devices that can move along a 
@@ -75,9 +75,8 @@ class GenericPositionerHandler(deviceHandler.DeviceHandler):
     cached = deviceHandler.DeviceHandler.cached
 
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks):
-        deviceHandler.DeviceHandler.__init__(self, name, groupName,
-                isEligibleForExperiments, callbacks, 
-                depot.GENERIC_POSITIONER)
+        super().__init__(name, groupName, isEligibleForExperiments, callbacks,
+                         depot.GENERIC_POSITIONER)
 
 
     ## Handle being told to move to a specific position.

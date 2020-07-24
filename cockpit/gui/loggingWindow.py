@@ -65,10 +65,9 @@ import cockpit.util.logger
 # output (stdout and stderr) from the rest of the program. This simplifies
 # debugging in many ways.
 class LoggingWindow(wx.Frame):
-    def __init__(self, parent, title = 'Logging panels',
-                 style = wx.CAPTION | wx.MAXIMIZE_BOX | wx.FRAME_NO_TASKBAR |
-                         wx.RESIZE_BORDER ):
-        wx.Frame.__init__(self, parent, title = title, style = style)
+    SHOW_DEFAULT = False
+    def __init__(self, parent, title='Logging panels'):
+        super().__init__(parent, title=title)
 
         self.auiManager = wx.aui.AuiManager()
         self.auiManager.SetManagedWindow(self)
@@ -98,12 +97,16 @@ class LoggingWindow(wx.Frame):
                           % wx.GetApp().Config.depot_config.files)
         self.auiManager.Update()
 
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
         self.SetSize((600, 460))
 
 
     ## Send text to one of our output boxes, and also log that text.
     def write(self, target, *args):
         wx.CallAfter(target.AppendText, *args)
+        # Text output reveals logging window.
+        self.Show()
+
         with self.cacheLock:
             self.textCache += ' '.join(map(str, args))
             if '\n' in self.textCache:
@@ -117,19 +120,10 @@ class LoggingWindow(wx.Frame):
                     cockpit.util.logger.log.error(''.join(filter(lambda c: ord(c) < 128, self.textCache)))
                 self.textCache = ''
 
-    def WriteToLogger(self, logger):
-        """Write the content of the windows to a logger.
-        """
-        logger.debug("  *** STANDARD OUTPUT FOLLOWS ***")
-        logger.debug(self.stdOut.GetValue())
-        logger.debug("  *** STANDARD ERROR FOLLOWS ***")
-        logger.debug(self.stdErr.GetValue())
+    def OnDestroy(self, event: wx.WindowDestroyEvent) -> None:
+        self.auiManager.UnInit()
+        event.Skip()
 
-
-## Global singleton
-window = None
 
 def makeWindow(parent):
-    global window
-    window = LoggingWindow(parent)
-    window.Show()
+    return LoggingWindow(parent)

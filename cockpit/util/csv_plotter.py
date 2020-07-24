@@ -180,7 +180,7 @@ class CSVPlotter(wx.Frame):
     def __init__(self, *args, **kwargs):
         """CSVPlotter instance"""
         kwargs['title'] = "value log viewer"
-        super(CSVPlotter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fn_to_src = {}
         self.item_to_trace = {}
         self.trace_to_item = {}

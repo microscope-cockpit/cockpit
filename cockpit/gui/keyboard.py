@@ -50,17 +50,12 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 import wx
 
-from cockpit import depot
 import cockpit.gui.camera.window
-import cockpit.gui.guiUtils
 import cockpit.gui.mosaic.window
 import cockpit.interfaces.stageMover
 
-from distutils import version
-from itertools import chain
 
 def onChar(evt):
     if isinstance(evt.EventObject, wx.TextCtrl) \
@@ -123,151 +118,13 @@ def setKeyboardHandlers(window):
         (wx.ACCEL_CTRL, ord('P'), 6322),
     ])
     window.SetAcceleratorTable(accelTable)
-    window.Bind(wx.EVT_MENU, lambda e: martialWindows(window), id=6321)
     window.Bind(wx.EVT_MENU, lambda e: showHideShell(window), id=6322)
     window.Bind(wx.EVT_CHAR_HOOK, onChar)
 
-## Pop up a menu under the mouse that helps the user find a window they may
-# have lost.
-def martialWindows(parent):
-    primaryWindows = wx.GetApp().primaryWindows
-    secondaryWindows = wx.GetApp().secondaryWindows
-    otherWindows = [w for w in wx.GetTopLevelWindows() 
-                        if w not in (primaryWindows + secondaryWindows)]
-    # windows = wx.GetTopLevelWindows()
-    menu = wx.Menu()
-    menuId = 1000
-    menu.Append(menuId, "Reset window positions")
-    parent.Bind(wx.EVT_MENU,
-                lambda e: wx.GetApp().SetWindowPositions(), id= menuId)
-    menuId += 1
-    #for i, window in enumerate(windows):
-    for i, window in enumerate(primaryWindows):
-        if not window.GetTitle():
-            # Sometimes we get bogus top-level windows; no idea why.
-            # Just skip them.
-            # \todo Figure out where these windows come from and either get
-            # rid of them or fix them so they don't cause trouble here.
-            continue
-        subMenu = wx.Menu()
-        subMenu.Append(menuId, "Raise to top")
-        parent.Bind(wx.EVT_MENU,
-                    lambda e, window = window: window.Raise(),id=menuId)
-        menuId += 1
-        subMenu.Append(menuId, "Move to mouse")
-        parent.Bind(wx.EVT_MENU,
-                lambda e, window = window: window.SetPosition(wx.GetMousePosition()), id=menuId)
-        menuId += 1
-        subMenu.Append(menuId, "Move to top-left corner")
-        parent.Bind(wx.EVT_MENU,
-                lambda e, window = window: window.SetPosition((0, 0)),
-                    id=menuId)
-        menuId += 1
-        # Some windows have very long titles (e.g. the Macro Stage View),
-        # so just take the first 50 characters.
-        if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
-            menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
-        else:
-            menu.AppendSubMenu(subMenu, str(window.GetTitle())[:50])
-        menuId += 1
-
-    menu.AppendSeparator()
-    for i, window in enumerate(secondaryWindows):
-        if not window.GetTitle():
-            # Sometimes we get bogus top-level windows; no idea why.
-            # Just skip them.
-            # \todo Figure out where these windows come from and either get
-            # rid of them or fix them so they don't cause trouble here.
-            continue
-        subMenu = wx.Menu()
-        subMenu.Append(menuId, "Show/Hide")
-        parent.Bind(wx.EVT_MENU,
-                lambda e, window = window: ((window.Restore() and
-                    (cockpit.util.userConfig.setValue('windowState'+window.GetTitle(),
-                                               1)))
-                                                if window.IsIconized() 
-                                                else ((window.Show(not window.IsShown()) ) and (cockpit.util.userConfig.setValue('windowState'+window.GetTitle(),0)))), id=menuId)
-        menuId += 1
-        subMenu.Append(menuId, "Move to mouse")
-        parent.Bind(wx.EVT_MENU,
-                lambda e, window = window: window.SetPosition(wx.GetMousePosition()), id=menuId)
-        menuId += 1
-        # Some windows have very long titles (e.g. the Macro Stage View),
-        # so just take the first 50 characters.
-        if version.LooseVersion(wx.__version__) < version.LooseVersion('4'):
-            menu.AppendMenu(menuId, str(window.GetTitle())[:50], subMenu)
-        else:
-            menu.AppendSubMenu(subMenu, str(window.GetTitle())[:50])
-        menuId += 1
-
-    # Add item to launch valueLogViewer.
-    from subprocess import Popen
-    from sys import platform
-    from cockpit.util import valueLogger
-    from cockpit.util import csv_plotter
-    menu.Append(menuId, "Launch ValueLogViewer")
-    logs = valueLogger.ValueLogger.getLogFiles()
-    if not logs:
-        menu.Enable(menuId, False)
-    else:
-        shell = platform == 'win32'
-        args = ['python', csv_plotter.__file__] + logs
-        parent.Bind(wx.EVT_MENU,
-                    lambda e: Popen(args, shell=shell),
-                    id = menuId)
-    menuId += 1
-
-    menu.AppendSeparator()
-    for i, window in enumerate(otherWindows):
-        if not window.GetTitle() or not window.IsShown():
-            # Sometimes we get bogus top-level windows; no idea why.
-            # Just skip them.
-            # Also, some windows are hidden rather than destroyed
-            # (e.g. the experiment setup window). Skip those, too.
-            # \todo Figure out where these windows come from and either get
-            # rid of them or fix them so they don't cause trouble here.
-            continue
-        subMenu = wx.Menu()
-        subMenu.Append(menuId, "Raise to top")
-        parent.Bind(wx.EVT_MENU,
-                    lambda e, window = window: window.Raise(), id=menuId)
-        menuId += 1
-        subMenu.Append(menuId, "Move to mouse")
-        parent.Bind(wx.EVT_MENU,
-                    lambda e, window = window: window.SetPosition(wx.GetMousePosition()), id=menuId)
-        menuId += 1
-        subMenu.Append(menuId, "Move to top-left corner")
-        parent.Bind(wx.EVT_MENU,
-                lambda e, window = window: window.SetPosition((0, 0))
-                    , id=menuId)
-        menuId += 1
-        # Some windows have very long titles (e.g. the Macro Stage View),
-        # so just take the first 50 characters.
-        try:
-            menu.Append(menuId, str(window.GetTitle())[:50], subMenu)
-        except TypeError as e:
-            # Sometimes, windows created late (e.g. wx InspectionTool) cause
-            # a weird error here: menu.Append throws a type error, insisting
-            # it needs a String or Unicode type, despite being passed a String
-            # or Unicode type.
-            print ("Omitting %s from window - weird wx string/unicode type error." % window.GetTitle())
-        menuId += 1
-
-    for d in filter(lambda x: hasattr(x, "showDebugWindow"),
-                    chain(depot.getAllHandlers(), depot.getAllDevices())):
-        menu.Append(menuId, 'debug  %s  %s' % (d.__class__.__name__, d.name ))
-        parent.Bind(wx.EVT_MENU,
-                    lambda e, d=d: d.showDebugWindow(),
-                    id=menuId)
-        menuId += 1
-
-    cockpit.gui.guiUtils.placeMenuAtMouse(parent, menu)
 
 #Function to show/hide the pythion shell window
 def showHideShell(parent):
-    secondaryWindows = wx.GetApp().secondaryWindows
-    for window in secondaryWindows:
-        if (window.GetTitle() == 'Python shell'):
+    for window in wx.GetTopLevelWindows():
+        if window.GetTitle() == 'PyShell':
             window.Show(not window.IsShown())
-            cockpit.util.userConfig.setValue('windowState'+window.GetTitle()
-                                             ,window.IsShown())
+            break

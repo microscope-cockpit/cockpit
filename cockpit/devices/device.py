@@ -54,7 +54,7 @@
 # as MUI gets to speaking directly to hardware. Device implementation is 
 # largely left up to the client; this class simply provides a framework of 
 # stub functions that must be implemented. 
-class Device(object):
+class Device:
     _config_types = {
         'port': int,
     }
@@ -66,9 +66,6 @@ class Device(object):
 
 
     def __init__(self, name='', config={}):
-        ## Set to False to disable this device. Disabled devices will not be 
-        # initialized on startup. 
-        self.isActive = True
         self.name = name
         self.config = config
         # Convert config strings to types specified on device class.
@@ -125,20 +122,3 @@ class Device(object):
     # and all initial publications and subscriptions have been made.
     def finalizeInitialization(self):
         pass
-
-
-    ## Simple getter
-    def getIsActive(self):
-        return self.isActive
-
-
-    ## Debugging function: shutdown the device preparatory to reloading 
-    # the module it is contained in.
-    def shutdown(self):
-        raise RuntimeError("Device %s didn't implement its shutdown function" % str(self))
-
-
-    ## Debugging function: re-initialize the device with the specified list
-    # of handlers.
-    def initWithHandlers(self, handlers):
-        raise RuntimeError("Device %s didn't implement its initWithHandlers function" % str(self))

@@ -52,9 +52,9 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import actionTable
+from cockpit.experiment import actionTable
 from cockpit import depot
-from . import experiment
+from cockpit.experiment import experiment
 from cockpit.gui import guiUtils
 import cockpit.util.Mrc
 import cockpit.util.datadoc
@@ -189,7 +189,7 @@ class SIExperiment(experiment.Experiment):
             kwargs['metadata'] += "; %s" % metadata
         else:
             kwargs['metadata'] = metadata
-        experiment.Experiment.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.numAngles = numAngles
         self.numPhases = numPhases
         self.numZSlices = int(math.ceil(self.zHeight / self.sliceHeight))
@@ -382,7 +382,7 @@ class SIExperiment(experiment.Experiment):
             # i)   track state in some attribute on Experiment
             # ii)  pass state between to this function and back again;
             # iii) have handlers track state as table is built.
-            lastt, lastpos = table.getLastActionFor(self.polarizerHandler)
+            lastpos = table.getLastActionFor(self.polarizerHandler)[1]
             if lastpos is None:
                 lastpos = 0
             table.addAction(curTime, self.polarizerHandler, (angle, longestWavelength))
@@ -394,7 +394,7 @@ class SIExperiment(experiment.Experiment):
             table.addAction(curTime, self.slmHandler, (angle, phase, longestWavelength))
             delay = max(delay, self.slmHandler.getMovementTime())
         curTime += delay
-        return experiment.Experiment.expose(self, curTime, cameras, newPairs, table)
+        return super().expose(curTime, cameras, newPairs, table)
 
     def reorder_img_file(self):
         """Reorder the Z dimension in the file.
@@ -492,7 +492,7 @@ class SIExperiment(experiment.Experiment):
 
 
     def cleanup(self, runThread = None, saveThread = None):
-        experiment.Experiment.cleanup(self, runThread, saveThread)
+        super().cleanup(runThread, saveThread)
         if self.savePath:
             self.reorder_img_file()
         return

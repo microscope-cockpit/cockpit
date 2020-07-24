@@ -51,8 +51,6 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-import numpy
 from OpenGL.GL import *
 import traceback
 import wx
@@ -62,8 +60,7 @@ import cockpit.interfaces.stageMover
 import cockpit.util.logger
 import cockpit.util.userConfig
 
-from . import macroStageBase
-import cockpit.gui.saveTopBottomPanel
+from cockpit.gui.macroStage import macroStageBase
 
 
 ## Width of an altitude line.
@@ -75,9 +72,6 @@ HISTOGRAM_MIN_PADDING = 25
 HISTOGRAM_LINE_WIDTH = 3
 ## Size of buckets in microns to use when generating altitude histogram
 ALTITUDE_BUCKET_SIZE = 3
-## Default height of the histogram, in microns
-# (distance between min altitude displayed and max altitude displayed)
-DEFAULT_HISTOGRAM_HEIGHT = 200
 
 ## Amount, in microns, of padding to add on either end of the mini-histogram
 MINI_HISTOGRAM_PADDING = 1
@@ -134,7 +128,7 @@ class Histogram():
 class MacroStageZ(macroStageBase.MacroStageBase):
     ## Instantiate the MacroStageZ. 
     def __init__(self, parent, *args, **kwargs):
-        macroStageBase.MacroStageBase.__init__(self, parent, *args, **kwargs)
+        super().__init__(parent, *args, **kwargs)
         ## Backlink to parent for accessing one of its datastructures
         self.parent = parent
         ## Previous value of the Z safety min; when it changes we have to redo
@@ -162,6 +156,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         # something on the Z scale.
         self.horizLineLength = self.stageExtent * .1
 
+        self.stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
+
         ## List of altitudes at which experiments have occurred
         self.experimentAltitudes = []
         ## List of histograms for drawing: one zoomed-out, one zoomed-in.
@@ -174,8 +170,10 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         self.calculateHistogram()
 
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
-        events.subscribe("experiment complete", self.onExperimentComplete)
+        events.subscribe(events.EXPERIMENT_COMPLETE, self.onExperimentComplete)
+        events.subscribe(events.STAGE_TOP_BOTTOM, self.Refresh)
         events.subscribe("soft safety limit", self.onSafetyChange)
+        events.subscribe("stage step size", self.onStepSizeChange)
         self.SetToolTip(wx.ToolTip("Double-click to move in Z"))
 
 
@@ -221,6 +219,13 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             self.prevZSafety = position
 
 
+    ## Step sizes have changed, which means we get to redraw.
+    # \todo Redrawing *everything* at this stage seems a trifle excessive.
+    def onStepSizeChange(self, axis: int, newSize: float) -> None:
+        if axis == 2 and self.stepSize != newSize:
+            self.stepSize = newSize
+            self.shouldForceRedraw = True
+
     ## Generate the larger of the two histograms.
     def makeBigHistogram(self, altitude):
         minorLimits = cockpit.interfaces.stageMover.getIndividualSoftLimits(2)
@@ -251,7 +256,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         if axis != 2:
             # We only care about the Z axis.
             return
-        macroStageBase.MacroStageBase.onMotion(self, axis, position)
+        super().onMotion(axis, position)
         # Ensure there's a histogram to work with based around current pos.
         self.makeBigHistogram(cockpit.interfaces.stageMover.getPosition()[2])
         if self.shouldDraw:
@@ -340,7 +345,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             self.scaledVertex(scaleX, minY)
             self.scaledVertex(scaleX, maxY)
             # Draw notches in the scale bar, one every 1mm.
-            for scaleY in range(minY, maxY + 1000, 1000):
+            for scaleY in range(int(minY), int(maxY) + 1000, 1000):
                 width = self.stageExtent * .025
                 if scaleY % 5000 == 0:
                     width = self.stageExtent * .05
@@ -367,8 +372,10 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 glEnd()
             
             #Draw top and bottom positions of stack in blue.
-            self.stackdef=[cockpit.gui.saveTopBottomPanel.savedTop,
-                          cockpit.gui.saveTopBottomPanel.savedBottom]
+            self.stackdef = [
+                cockpit.interfaces.stageMover.mover.SavedTop,
+                cockpit.interfaces.stageMover.mover.SavedBottom,
+            ]
             for pos in self.stackdef:
                 if pos is not None:
                     self.drawLine(pos, color = (0, 0, 1))
@@ -390,16 +397,14 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                         color = (0, .8, 0), label = str(int(self.prevZSafety)))
 
             # Draw stage motion delta
-            stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
-            if stepSize is not None:
-                glLineWidth(1)
-                glColor3f(1, 0, 0)
-                glBegin(GL_LINES)
-                self.scaledVertex(scaleX + self.horizLineLength / 2, 
-                        motorPos + stepSize)
-                self.scaledVertex(scaleX + self.horizLineLength / 2, 
-                        motorPos - stepSize)
-                glEnd()
+            glLineWidth(1)
+            glColor3f(1, 0, 0)
+            glBegin(GL_LINES)
+            self.scaledVertex(scaleX + self.horizLineLength / 2, 
+                              motorPos + self.stepSize)
+            self.scaledVertex(scaleX + self.horizLineLength / 2, 
+                              motorPos - self.stepSize)
+            glEnd()
 
             # Draw direction of stage motion, if any
             if abs(motorPos - self.prevStagePosition[2]) > .01:
@@ -468,17 +473,15 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                         str(int(histogram.maxAltitude)), size = self.textSize)
             
             # Draw histogram stage motion delta
-            stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
-            if stepSize is not None:
-                motorPos = self.curStagePosition[2]
-                glLineWidth(1)
-                glBegin(GL_LINES)
-                glColor3f(1, 0, 0)
-                self.scaledVertex(histogram.xOffset + self.stageExtent * .01, 
-                        histogram.scale(motorPos + stepSize))
-                self.scaledVertex(histogram.xOffset + self.stageExtent * .01, 
-                        histogram.scale(motorPos - stepSize))
-                glEnd()
+            motorPos = self.curStagePosition[2]
+            glLineWidth(1)
+            glBegin(GL_LINES)
+            glColor3f(1, 0, 0)
+            self.scaledVertex(histogram.xOffset + self.stageExtent * .01, 
+                              histogram.scale(motorPos + self.stepSize))
+            self.scaledVertex(histogram.xOffset + self.stageExtent * .01, 
+                              histogram.scale(motorPos - self.stepSize))
+            glEnd()
             
             # Draw lines showing how the histogram relates to the
             # less zoomed-in view to its left.
@@ -588,62 +591,3 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         x = float(width - loc[0]) / width * (self.maxY - self.minY) + self.minY
         y = float(height - loc[1]) / height * (self.maxY - self.minY) + self.minY
         return (x, y)
-
-
-
-## This class shows a key for the MacroStageZ. It's a separate class 
-# primarily because of layout issues -- it's wider than the MacroStageZ itself,
-# and therefore needs to have its own canvas.
-class MacroStageZKey(macroStageBase.MacroStageBase):
-    ## Instantiate the MacroStageZKey.
-    def __init__(self, parent, *args, **kwargs):
-        macroStageBase.MacroStageBase.__init__(self, parent, *args, **kwargs)
-        ## Still no idea how this relates to anything, but this value seems
-        # to work well. 
-        self.textSize = .03
-        self.xExtent = self.maxX - self.minX
-        self.yExtent = self.maxY - self.minY
-        ## Amount of space to allocate per line of text.
-        self.textLineHeight = self.yExtent * .2
-        ## X offset for text. 
-        self.xOffset = self.xExtent * .9
-        ## Y offset for text. Ditto.
-        self.yOffset = self.yExtent * .75
-
-
-    ## Draw the key
-    def onPaint(self, event = None):
-        if not self.shouldDraw:
-            return
-        try:
-            if not self.haveInitedGL:
-                self.initGL()
-                self.haveInitedGL = True
-
-            dc = wx.PaintDC(self)
-            self.SetCurrent(self.context)
-
-            width, height = self.GetClientSize()
-            glViewport(0, 0, width, height)
-
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-            glLineWidth(1)
-
-            # Draw textual position coordinates.
-            positions = cockpit.interfaces.stageMover.getAllPositions()
-            positions = [p[2] for p in positions]
-            stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
-            self.drawStagePosition('Z:', positions, 
-                    cockpit.interfaces.stageMover.getCurHandlerIndex(), stepSize, 
-                    (self.xOffset, self.yOffset), self.xExtent * .25, 
-                    self.xExtent * .05, self.textSize)
-
-            glFlush()
-            self.SwapBuffers()
-            # Set the event, so our refreshWaiter() can update
-            # our stage position info.
-            self.drawEvent.set()
-        except Exception as e:
-            cockpit.util.logger.log.error("Error drawing Z macro stage key: %s", e)
-            traceback.print_exc()
-            self.shouldDraw = False

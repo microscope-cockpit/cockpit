@@ -53,14 +53,14 @@
 ## This module creates a simple stage-positioning device.
 
 from cockpit import depot
-from . import device
+from cockpit.devices import device
 from cockpit import events
 import cockpit.handlers.stagePositioner
 
 
 class DummyZStage(device.Device):
     def __init__(self, name='dummy Z stage', config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
         self.curPosition = 100
         self.deviceType = "stage positioner"
         # Is this device in use?
@@ -71,7 +71,7 @@ class DummyZStage(device.Device):
     def initialize(self):
         # At this point we would normally get the true stage position from
         # the actual device, but of course we have no such device.
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         self.active = True
         pass
         
@@ -88,11 +88,8 @@ class DummyZStage(device.Device):
             {'moveAbsolute': self.moveAbsolute,
                 'moveRelative': self.moveRelative, 
                 'getPosition': self.getPosition, 
-                'getMovementTime': self.getMovementTime,
-                'cleanupAfterExperiment': self.cleanup,
-                'setSafety': self.setSafety},
-                axis, [.01, .05, .1, .5, 1, 5, 10, 50, 100, 500, 1000, 5000],
-                2, (minVal, maxVal), (minVal, maxVal))
+                'getMovementTime': self.getMovementTime},
+                axis, (minVal, maxVal), (minVal, maxVal))
         result.append(handler)
         return result
 
@@ -102,32 +99,29 @@ class DummyZStage(device.Device):
         if not self.active:
             return
         axis = 2
-        events.publish('stage mover', '%d dummy mover' % axis, axis,
-                self.curPosition)
+        events.publish(events.STAGE_MOVER, axis)
 
 
     ## User clicked the abort button; stop moving.
     def onAbort(self):
         axis = 2
-        events.publish('stage stopped', '%d dummy mover' % axis)
+        events.publish(events.STAGE_STOPPED, '%d dummy mover' % axis)
 
 
     ## Move the stage piezo to a given position.
     def moveAbsolute(self, axis, pos):
         self.curPosition = pos
         # Dummy movers finish movement immediately.
-        events.publish('stage mover', '%d dummy mover' % axis, axis, 
-                self.curPosition)
-        events.publish('stage stopped', '%d dummy mover' % axis)
+        events.publish(events.STAGE_MOVER, axis)
+        events.publish(events.STAGE_STOPPED, '%d dummy mover' % axis)
 
 
     ## Move the stage piezo by a given delta.
     def moveRelative(self, axis, delta):
         self.curPosition += delta
         # Dummy movers finish movement immediately.
-        events.publish('stage mover', '%d dummy mover' % axis, axis, 
-                self.curPosition)
-        events.publish('stage stopped', '%d dummy mover' % axis)
+        events.publish(events.STAGE_MOVER, axis)
+        events.publish(events.STAGE_STOPPED, '%d dummy mover' % axis)
 
 
     ## Get the current piezo position.
@@ -142,18 +136,3 @@ class DummyZStage(device.Device):
     # experiments.
     def getMovementTime(self, axis, start, end):
         return (1, 1)
-
-
-    ## Set the soft motion safeties for one of the movers. Note that the 
-    # PositionerHandler provides its own soft safeties on the cockpit side; 
-    # this function just allows you to propagate safeties to device control
-    # code, if applicable.
-    def setSafety(self, axis, value, isMax):
-        pass
-
-
-    ## Cleanup after an experiment. For a real mover, this would probably 
-    # just mean making sure we were back where we were before the experiment
-    # started.
-    def cleanup(self, axis, isCleanupFinal):
-        pass

@@ -54,15 +54,15 @@
 
 from cockpit import events
 import cockpit.gui
+import cockpit.gui.freetype
 import cockpit.gui.guiUtils
+import cockpit.gui.dialogs.getNumberDialog
+import cockpit.util.datadoc
 import cockpit.util.threads
-
 
 from wx.glcanvas import GLCanvas
 from collections.abc import Iterable
 
-
-from cockpit.util import ftgl
 import numpy
 from OpenGL.GL import *
 import numpy as np
@@ -161,7 +161,7 @@ class Image(BaseGL):
     """
     def __init__(self):
         # Maximum texture edge size
-        self._maxTexEdge = glGetInteger(GL_MAX_TEXTURE_SIZE)
+        self._maxTexEdge = 0
         # Textures used to display this image.
         self._textures = []
         # New data flag
@@ -222,6 +222,7 @@ class Image(BaseGL):
         be called in the main thread."""
         if self._data is None:
             return
+        self._maxTexEdge = glGetInteger(GL_MAX_TEXTURE_SIZE)
         data = self._data
         glPixelStorei(GL_UNPACK_SWAP_BYTES, False)
         # Ensure the right number of textures available.
@@ -408,13 +409,24 @@ class Histogram(BaseGL):
 class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Instantiate.
     def __init__(self, parent, *args, **kwargs):
-        wx.glcanvas.GLCanvas.__init__(self, parent, *args, **kwargs)
-
-        ## Parent, so we can adjust its size when we receive an image.
-        self.parent = parent
+        super().__init__(parent, *args, **kwargs)
 
         self.image = Image()
         self.histogram = Histogram()
+
+        ## Menu - keep reference to store state of toggle buttons.
+        # Must be created after self.image.
+        self._menu = wx.Menu()
+        for label, action in self.getMenuActions():
+            if not label:
+                self._menu.AppendSeparator()
+                continue
+            id = wx.NewIdRef()
+            if label.lower().startswith("toggle"):
+                self._menu.AppendCheckItem(id, label)
+            else:
+                self._menu.Append(id, label)
+            self.Bind(wx.EVT_MENU, lambda event, action=action: action(), id=id)
 
         # Canvas geometry - will be set by InitGL, or setSize.
         self.w, self.h = None, None
@@ -463,8 +475,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.context = wx.glcanvas.GLContext(self)
 
         ## Font for text rendering
-        self.font = ftgl.TextureFont(cockpit.gui.FONT_PATH)
-        self.font.setFaceSize(18)
+        self.face = cockpit.gui.freetype.Face(18)
 
         self.Bind(wx.EVT_PAINT, self.onPaint)
         # Do nothing, to prevent flickering
@@ -478,7 +489,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.painting = False
 
         # Initialise FFT variables
-        self.menuStrFFT = "Enable FFT mode"
         self.showFFT = False
 
     def onMouseWheel(self, event):
@@ -558,7 +568,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.imageShape = newImage.shape
             self.histogram.setData(newImage)
             if self.showFFT:
-                self.image.setData(np.log(np.fft.fftshift(np.fft.fft2(self.imageData))))
+                self.image.setData(np.log(np.abs(np.fft.fftshift(np.fft.fft2(self.imageData))) + 1e-16))
             else:
                 self.image.setData(newImage)
             if shouldResetView:
@@ -626,7 +636,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             glOrtho (0, self.w, 0, self.h, 1., -1.)
             glTranslatef(0, HISTOGRAM_HEIGHT/2+2, 0)
             try:
-                self.font.render('%d [%-10d %10d] %d' %
+                self.face.render('%d [%-10d %10d] %d' %
                                  (self.image.dmin, self.histogram.lthresh,
                                   self.histogram.uthresh, self.image.dmin+self.image.dptp))
             except:
@@ -702,13 +712,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.mouseDragX = self.curMouseX
             self.mouseDragY = self.curMouseY
         elif event.RightDown():
-            # Show a menu.
-            menu = wx.Menu()
-            for label, action in self.getMenuActions():
-                id = wx.NewIdRef()
-                menu.Append(id, label)
-                self.Bind(wx.EVT_MENU,  lambda event, action = action: action(), id= id)
-            cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
+            cockpit.gui.guiUtils.placeMenuAtMouse(self, self._menu)
         elif event.Entering() and self.TopLevelParent.IsActive():
             self.SetFocus()
         else:
@@ -723,9 +727,13 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def getMenuActions(self):
         return [('Reset view', self.resetView),
                 ('Set histogram parameters', self.onSetHistogram),
+                ('Toggle clip highlighting', self.image.toggleClipHighlight),
+                ('', None),
                 ('Toggle alignment crosshair', self.toggleCrosshair),
-                (self.menuStrFFT, self.toggleFFT),
-                ('Toggle clip highlighting', self.image.toggleClipHighlight),]
+                ("Toggle FFT mode", self.toggleFFT),
+                ('', None),
+                ('Save image', self.saveData)
+                ]
 
 
     ## Let the user specify the blackpoint and whitepoint for image scaling.
@@ -748,11 +756,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         if self.showFFT:
             self.showFFT = False
             self.image.setData(self.imageData)
-            self.menuStrFFT = "Enable FFT mode"
         else:
             self.showFFT = True
-            self.image.setData(np.log(np.fft.fftshift(np.fft.fft2(self.imageData))))
-            self.menuStrFFT = "Enable Normal mode"
+            self.image.setData(np.log(np.abs(np.fft.fftshift(np.fft.fft2(self.imageData))) + 1e-16))
 
 
     ## Convert window co-ordinates to gl co-ordinates.
@@ -813,3 +819,16 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.image.autoscale()
         self.histogram.lthresh, self.histogram.uthresh = self.image.getDisplayRange()
         self.Refresh()
+
+    def saveData(self, evt=None):
+        with wx.FileDialog(self, "Save image", wildcard="DV files (*.dv)|*.dv",
+                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
+            if fileDialog.ShowModal() != wx.ID_OK:
+                return
+            path = fileDialog.GetPath()
+        # TODO: add XYsize and wavelength to saved data. These can be passed as
+        # kwargs, but the way per-camera pixel sizes are handled needs to be
+        # addressed first. See issue #538.
+        if self.Parent.Parent.curCamera is not None:
+            wls = [self.Parent.Parent.curCamera.wavelength,]
+        cockpit.util.datadoc.writeDataAsMrc(self.imageData, path, wavelengths=wls)

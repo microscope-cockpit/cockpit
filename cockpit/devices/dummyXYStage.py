@@ -52,22 +52,17 @@
 
 ## This module creates a simple XY stage-positioning device.
 
-from . import stage
+from cockpit.devices.device import Device
 from cockpit import events
 import cockpit.handlers.stagePositioner
 
 
-class DummyMover(stage.StageDevice):
+class DummyMover(Device):
     def __init__(self, name="dummy XY stage", config={}):
-        config['primitives'] = \
-            "r 12500 6000 3000 3000\n" \
-            "c 5000 6000 3000\n"       \
-            "c 20000, 6000, 3000\n"
-
-        super(DummyMover, self).__init__(name, config)
+        super().__init__(name, config)
         # List of 2 doubles indicating our X/Y position.
         self.curPosition = [1000, 1000]
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         # Is this device in use?
         self.active = False
         self.deviceType = "stage positioner"
@@ -77,7 +72,7 @@ class DummyMover(stage.StageDevice):
     def initialize(self):
         # At this point we would normally get the true stage position from
         # the actual device, but of course we have no such device.
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         self.active = True
         pass
 
@@ -93,12 +88,8 @@ class DummyMover(stage.StageDevice):
                 {'moveAbsolute': self.moveAbsolute,
                     'moveRelative': self.moveRelative,
                     'getPosition': self.getPosition,
-                    'getMovementTime': self.getMovementTime,
-                    'cleanupAfterExperiment': self.cleanup,
-                    'setSafety': self.setSafety,
-                    'getPrimitives': self.getPrimitives},
-                axis, [5, 10, 50, 100, 500, 1000],
-                2, (minVal, maxVal), (minVal, maxVal))
+                    'getMovementTime': self.getMovementTime},
+                axis, (minVal, maxVal), (minVal, maxVal))
             result.append(handler)
         return result
 
@@ -108,32 +99,29 @@ class DummyMover(stage.StageDevice):
         if not self.active:
             return
         for axis in range(2):
-            events.publish('stage mover', '%d dummy mover' % axis, axis,
-                    self.curPosition[axis])
+            events.publish(events.STAGE_MOVER, axis)
 
 
     ## User clicked the abort button; stop moving.
     def onAbort(self):
         for axis in range(2):
-            events.publish('stage stopped', '%d dummy mover' % axis)
+            events.publish(events.STAGE_STOPPED, '%d dummy mover' % axis)
 
 
     ## Move the stage piezo to a given position.
     def moveAbsolute(self, axis, pos):
         self.curPosition[axis] = pos
         # Dummy movers finish movement immediately.
-        events.publish('stage mover', '%d dummy mover' % axis, axis,
-                self.curPosition[axis])
-        events.publish('stage stopped', '%d dummy mover' % axis)
+        events.publish(events.STAGE_MOVER, axis)
+        events.publish(events.STAGE_STOPPED, '%d dummy mover' % axis)
 
 
     ## Move the stage piezo by a given delta.
     def moveRelative(self, axis, delta):
         self.curPosition[axis] += delta
         # Dummy movers finish movement immediately.
-        events.publish('stage mover', '%d dummy mover' % axis, axis,
-                self.curPosition[axis])
-        events.publish('stage stopped', '%d dummy mover' % axis)
+        events.publish(events.STAGE_MOVER, axis)
+        events.publish(events.STAGE_STOPPED, '%d dummy mover' % axis)
 
 
     ## Get the current piezo position.
@@ -148,18 +136,3 @@ class DummyMover(stage.StageDevice):
     # experiments.
     def getMovementTime(self, axis, start, end):
         return (1, 1)
-
-
-    ## Set the soft motion safeties for one of the movers. Note that the 
-    # PositionerHandler provides its own soft safeties on the cockpit side; 
-    # this function just allows you to propagate safeties to device control
-    # code, if applicable.
-    def setSafety(self, axis, value, isMax):
-        pass
-
-
-    ## Cleanup after an experiment. For a real mover, this would probably 
-    # just mean making sure we were back where we were before the experiment
-    # started.
-    def cleanup(self, axis, isCleanupFinal):
-        pass

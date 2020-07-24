@@ -51,7 +51,7 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import device
+from cockpit.devices import device
 from cockpit import events
 import cockpit.handlers.stagePositioner
 import cockpit.util.threads
@@ -110,7 +110,7 @@ class PicoMotorDevice(device.Device):
         'port': int,
     }
     def __init__(self, name, config):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
         self.STAGE_CAL = config.get('cal') # e.g. 13.750
         self.PICO_CONTROLLER = config.get('ipaddress') # e.g. 172.16.0.30'
         self.PICO_PORT = config.get('port') # e.g. 23
@@ -137,7 +137,7 @@ class PicoMotorDevice(device.Device):
         self.xyPositionCache = [10 ** 100, 10 ** 100,7500]
 
         events.subscribe('program exit', self.onExit)
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
 
 
     def initialize(self):
@@ -220,8 +220,8 @@ class PicoMotorDevice(device.Device):
         #need to split of controller number if we have more than one. Use
         #the format of axis 0 axisMapper string to check this. 
         if(len(self.axisMapper[0].split('>'))==2):
-            (junk,motorState1)=motorState1.split('>')
-            (junk,motorState2)=motorState2.split('>')
+            motorState1 = motorState1.split('>')[1]
+            motorState2 = motorState2.split('>')[1]
 
         return(motorState1 or motorState2)
 
@@ -278,10 +278,10 @@ class PicoMotorDevice(device.Device):
     def checkForMotion(self,controller):
         motorState1=self.sendXYCommand('%s>1 md' %
                                        (controller),1)
-        (tempstring,motorState1)=motorState1.split('>')
+        motorState1 = motorState1.split('>')[1]
         motorState2=self.sendXYCommand('%s>2 md' %
                                        (controller),1)
-        (tempstring,motorState2)=motorState2.split('>')
+        motorState2 = motorState2.split('>')[1]
         return(motorState1 or motorState2)
 
 
@@ -341,13 +341,11 @@ class PicoMotorDevice(device.Device):
                     {'moveAbsolute': self.moveXYAbsolute,
                          'moveRelative': self.moveXYRelative,
                          'getPosition': lambda axis=axis: self.getXYPosition(axis=axis),
-                         'setSafety': self.setXYSafety,
                          'getMovementTime' :self.getXYMovementTime},
-                    axis, [.1, .5, 1, 5, 10, 50, 100, 500, 1000, 5000], 3,
-                    (minPos, maxPos), (minPos, maxPos)))
+                    axis, (minPos, maxPos), (minPos, maxPos)))
         return result
 
-    def getXYMovementTime(slef,axis,start,end):
+    def getXYMovementTime(self,axis,start,end):
         distance=abs (end-start)
         #IMD15072014 closed loop performance is much slower, or counts != steps. 
         #speed is roughly 10,000 counts in 30 secs   
@@ -387,10 +385,10 @@ class PicoMotorDevice(device.Device):
             if delta < .3:
                 # No movement since last time; done moving.
                 for axis in [0, 1, 2]:
-                    events.publish('stage stopped', '%d PI mover' % axis)
+                    events.publish(events.STAGE_STOPPED, '%d PI mover' % axis)
                 return
-            for axis, val in enumerate([x, y, z]):
-                events.publish('stage mover', '%d PI mover' % axis, axis, val)
+            for axis in [0, 1, 2]:
+                events.publish(events.STAGE_MOVER, axis)
             (prevX, prevY, prevZ)= (x, y, z)
             time.sleep(0.1)
 
@@ -405,7 +403,7 @@ class PicoMotorDevice(device.Device):
                 position=self.sendXYCommand('%s TP?' % (self.axisMapper[axis]),
                                             1, False)
                 if(len(self.axisMapper[axis].split('>'))==2):
-                    (junk,position)=position.split('>')
+                    position = position.split('>')[1]
                 self.xyPositionCache[axis]=float(position)/self.STAGE_CAL
                 return self.xyPositionCache[axis]                
             else:
@@ -417,7 +415,7 @@ class PicoMotorDevice(device.Device):
                     #have more than one controller so need to split
                     #controller number from position.
                     if(len(self.axisMapper[ax].split('>'))==2):
-                        (junk,position)=position.split('>')
+                        position = position.split('>')[1]
                     # Positions are in steps, and we need microns.
                     self.xyPositionCache[ax]=float(position)/self.STAGE_CAL
 
@@ -429,11 +427,5 @@ class PicoMotorDevice(device.Device):
 
 
 
-    def setXYSafety(self, axis, value, isMax):
-        pass
-
-
     def makeInitialPublications(self):
         self.sendXYPositionUpdates()
-
-

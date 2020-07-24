@@ -143,12 +143,12 @@ class DeviceDepot:
             # TODO - catch circular dependencies.
             d = devices.pop(0)
             depends = []
-            for dependency in ['triggersource', 'analogsource']:
+            for dependency in ['triggersource', 'analogsource', 'controller']:
                 other = d.config.get(dependency)
                 if other:
                     if other not in self.nameToDevice:
-                        raise Exception("Device %s depends on non-existent device %s." %
-                                        (d, other))
+                        raise Exception("Device %s depends on non-existent device '%s'." %
+                                        (d.name, other))
                     depends.append(other)
 
             if any([other not in done for other in depends]):
@@ -179,25 +179,23 @@ class DeviceDepot:
             dummies.append(DummyMover())
         # Cameras
         if not getHandlersOfType(CAMERA):
-            from cockpit.devices.dummyCamera import DummyCamera
-            dummies.append(DummyCamera())
+            from cockpit.devices.dummies import DummyCamera
+            for i in range(1, 5):
+                dummies.append(DummyCamera('Dummy camera %d' % i, {}))
         # Dummy imager
         if not getHandlersOfType(IMAGER):
-            from cockpit.devices.imager import DummyImagerDevice
-            dummies.append(DummyImagerDevice())
+            from cockpit.devices.dummies import DummyDSP
+            dummies.append(DummyDSP('imager', {}))
+        # Dummy laser
+        if not getHandlersOfType(LIGHT_TOGGLE):
+            from cockpit.devices.dummies import DummyLaser
+            for wl in [405, 488, 633]:
+                dummies.append(DummyLaser('Dummy %d' % wl, {'wavelength' : wl}))
         # Initialise dummies.
         for d in dummies:
             self.nameToDevice[d.name] = d
             self.initDevice(d)
-        # Ambient light source
-        from cockpit.handlers.lightSource import LightHandler
-        ambient = {'t': 100}
-        h = LightHandler('ambient', 'ambient',
-                         {'setExposureTime': lambda null, t: ambient.__setitem__('t', t),
-                          'getExposureTime': lambda null: ambient['t'],
-                          'setEnabled': lambda null, state: True,
-                          }, 0, 100)
-        self.addHandler(h)
+
         self.finalizeInitialization()
         yield 'dummy-devices'
 

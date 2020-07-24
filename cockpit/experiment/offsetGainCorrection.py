@@ -50,11 +50,11 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import actionTable
+from cockpit.experiment import actionTable
 import decimal
 from cockpit import depot
 from cockpit import events
-from . import experiment
+from cockpit.experiment import experiment
 from cockpit.gui import guiUtils
 import cockpit.handlers.camera
 import cockpit.util.datadoc
@@ -98,7 +98,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
         # the kwargs parameter (since our caller may have generic code for
         # setting up arbitrary experiments that assumes e.g. a Z stack), but
         # we ignore them.
-        experiment.Experiment.__init__(self, numReps = 1, repDuration = 0,
+        super().__init__(numReps = 1, repDuration = 0,
                 zPositioner = None, altBottom = 0, zHeight = 0, sliceHeight = 0,
                 cameras = cameras, lights = lights,
                 exposureSettings = exposureSettings)
@@ -148,7 +148,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
         # Start out with no-exposure-time images to get a measured offset.
         multiplier = 0
         for camera, func in self.camToFunc.items():
-            events.subscribe('new image %s' % camera.name, func)
+            events.subscribe(events.NEW_IMAGE % camera.name, func)
         activeCameras = set(self.cameras)
         for i in range(self.numCollections):
             if not activeCameras or self.shouldAbort:
@@ -188,7 +188,7 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
             print ("Came out with active cams",activeCameras)
 
         for camera, func in self.camToFunc.items():
-            events.unsubscribe('new image %s' % camera.name, func)
+            events.unsubscribe(events.NEW_IMAGE % camera.name, func)
 
         if self.shouldAbort:
             # Don't bother processing images.
@@ -203,7 +203,6 @@ class OffsetGainCorrectionExperiment(experiment.Experiment):
 
         # Construct a header for the image data.
         objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        drawer = depot.getHandlersOfType(depot.DRAWER)[0]
         wavelengths = [c.wavelength for c in self.cameras]
         header = cockpit.util.datadoc.makeHeaderFor(results, 
                 XYSize = objective.getPixelSize(), ZSize = 0, 
@@ -306,7 +305,7 @@ from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR
 class ExperimentUI(wx.Panel):
 
     def __init__(self, parent, configKey):
-        wx.Panel.__init__(self, parent = parent)
+        super().__init__(parent=parent)
 
         self.configKey = configKey
         self.settings = self.loadSettings()

@@ -73,7 +73,7 @@
 # count; I wouldn't count on them bearing much resemblance.
 
 
-from . import datadoc
+from cockpit.util import datadoc
 
 import collections
 import numpy

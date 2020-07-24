@@ -74,7 +74,7 @@ def pauseVideo(func):
                 time.sleep(0.05)
                 if time.time() > tstart + 1.:
                     print("Timeout pausing video mode - abort and restart.")
-                    events.publish('user abort')
+                    events.publish(events.USER_ABORT)
                     break
         result = func(*args, **kwargs)
         if wasInVideoMode:
@@ -104,7 +104,7 @@ class Imager:
         self.shouldStopVideoMode = False
         ## Boolean that indicates if we're currently in video mode.
         self.amInVideoMode = False
-        events.subscribe('user abort', self.stopVideo)
+        events.subscribe(events.USER_ABORT, self.stopVideo)
         # Update exposure times on certain events.
         events.subscribe('light exposure update', self.updateExposureTime)
         events.subscribe(events.LIGHT_SOURCE_ENABLE, lambda *args: self.updateExposureTime())
@@ -180,12 +180,21 @@ class Imager:
         while not self.shouldStopVideoMode:
             if not self.activeLights:
                 break
-            start = time.time()
+            # HACK: only wait for one camera.
+            camera = list(self.activeCameras)[0]
+            # Some cameras drop frames, i.e., takeImage() returns but
+            # an image is never received.  If that happens, videoMode
+            # waits forever since there's no NEW_IMAGE event hence the
+            # timeout.  On top of the time to actual acquire the
+            # image, we add 5 seconds for any processing and transfer
+            # which should be more than enough (see issue #584).
+            timeout = 5.0 + ((camera.getExposureTime()
+                              + camera.getTimeBetweenExposures()) / 1000)
             try:
-                # HACK: only wait for one camera.
-                events.executeAndWaitFor("new image %s" % (list(self.activeCameras)[0].name),
-                        self.takeImage, 
-                        shouldBlock = True, shouldStopVideo = False)
+                events.executeAndWaitForOrTimeout(
+                    events.NEW_IMAGE % (camera.name),
+                    self.takeImage, timeout,
+                    shouldBlock = True, shouldStopVideo = False)
             except Exception as e:
                 print ("Video mode failed:", e)
                 events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
@@ -193,11 +202,6 @@ class Imager:
                 break
         self.amInVideoMode = False
         events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
-        # Our thread could be blocked waiting for an image.
-        # Clear one shot new image subscribers to make sure it
-        # is unblocked.
-        events.clearOneShotSubscribers(pattern="new image")
-
 
 
     ## Stop our video thread, if relevant.
@@ -216,8 +220,6 @@ class Imager:
             lightLimiter = max(lightLimiter, light.getExposureTime())
         # The limiters are in milliseconds; downconvert.
         return self.lastImageTime + (camLimiter + lightLimiter) / 1000.0
-        
-        
 
 
 ## Global singleton.
@@ -240,11 +242,3 @@ def takeImage(shouldBlock = False):
 ## Simple passthrough.
 def videoMode():
     imager.videoMode()
-        
-
-def stopVideo():
-    imager.stopVideo()
-
-
-def isVideoRunning():
-    return imager.amInVideoMode

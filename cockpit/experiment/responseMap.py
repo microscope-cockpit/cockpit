@@ -50,16 +50,16 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import actionTable
+from cockpit.experiment import actionTable
 import decimal
 from cockpit import depot
 from cockpit import events
-from . import experiment
+from cockpit.experiment import experiment
 from cockpit.gui import guiUtils
 import cockpit.gui.imageSequenceViewer
 import cockpit.gui.progressDialog
 import cockpit.handlers.camera
-from . import offsetGainCorrection
+from cockpit.experiment import offsetGainCorrection
 import cockpit.util.correctNonlinear
 import cockpit.util.datadoc
 import cockpit.util.threads
@@ -97,8 +97,8 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
             shouldPreserveIntermediaryFiles, **kwargs):
         # Fill in some dummy values here for parameters that we don't actually
         # use.
-        offsetGainCorrection.OffsetGainCorrectionExperiment.__init__(
-                self, cameras, lights, exposureSettings,
+        super().__init__(
+                cameras, lights, exposureSettings,
                 numExposures, savePath, exposureMultiplier = 0, 
                 maxIntensity = None, cosmicRayThreshold = cosmicRayThreshold,
                 shouldPreserveIntermediaryFiles = shouldPreserveIntermediaryFiles)
@@ -130,7 +130,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
                 raise RuntimeError("Camera %s did not provide an exact (decimal.Decimal) readout time" % camera.name)
 
         for camera, func in self.camToFunc.items():
-            events.subscribe('new image %s' % camera.name, func)
+            events.subscribe(events.NEW_IMAGE % camera.name, func)
         for exposureTime in self.exposureTimes:
             if self.shouldAbort:
                 break
@@ -170,7 +170,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
             progress.Destroy()
 
         for camera, func in self.camToFunc.items():
-            events.unsubscribe('new image %s' % camera.name, func)
+            events.unsubscribe(events.NEW_IMAGE % camera.name, func)
 
         self.save()
         self.showResults()
@@ -191,8 +191,7 @@ class ResponseMapExperiment(offsetGainCorrection.OffsetGainCorrectionExperiment)
                 height, width = image.shape
                 allImages[wavelength, timepoint, 0, :height, :width] = image
                 exposureTimes.append(exposureTime)
-        
-        drawer = depot.getHandlersOfType(depot.DRAWER)[0]
+
         header = cockpit.util.datadoc.makeHeaderFor(allImages, 
                 wavelengths = [cam.wavelength for cam in self.cameras])
 
@@ -358,7 +357,7 @@ from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR, CSVVALIDATOR
 ## Generate the UI for special parameters used by this experiment.
 class ExperimentUI(wx.Panel):
     def __init__(self, parent, configKey):
-        wx.Panel.__init__(self, parent = parent)
+        super().__init__(parent=parent)
         self.configKey = configKey
         sizer = wx.GridSizer(2, 2, 2, 2)
         ## Maps strings to TextCtrls describing how to configure 

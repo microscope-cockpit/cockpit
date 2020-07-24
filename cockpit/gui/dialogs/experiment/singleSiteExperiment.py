@@ -52,13 +52,13 @@
 
 
 import wx
-from . import experimentConfigPanel
+from cockpit.gui.dialogs.experiment import experimentConfigPanel
 from cockpit.gui.guiUtils import EVT_COCKPIT_VALIDATION_ERROR
 
 ## A simple wrapper around the ExperimentConfigPanel class.
 class SingleSiteExperimentDialog(wx.Dialog):
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent,
+        super().__init__(parent,
                 title = "OMX single-site experiment",
                 style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         self.SetExtraStyle(wx.WS_EX_VALIDATE_RECURSIVELY)
@@ -82,12 +82,12 @@ class SingleSiteExperimentDialog(wx.Dialog):
         self.buttonBox.Add((1, 1), 1, wx.EXPAND)
 
         button = wx.Button(self, wx.ID_CANCEL, "Cancel")
-        self.buttonBox.Add(button, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        self.buttonBox.Add(button, 0, wx.ALL, 5)
         
         button = wx.Button(self, wx.ID_OK, "Start")
         button.SetToolTip(wx.ToolTip("Start the experiment"))
         button.Bind(wx.EVT_BUTTON, self.onStart)
-        self.buttonBox.Add(button, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        self.buttonBox.Add(button, 0, wx.ALL, 5)
 
         self.sizer.Add(self.buttonBox, 1, wx.EXPAND)
 

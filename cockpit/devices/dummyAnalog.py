@@ -47,13 +47,13 @@ from those stored on the device, and insert those into the action table rather
 than the index.
 """
 from cockpit import depot
-from . import device
+from cockpit.devices import device
 import re
 
 
 class DummyAnalogDevice(device.Device):
     def __init__(self, name, config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
 
     def initialize(self):
         pass

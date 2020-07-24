@@ -26,11 +26,11 @@ try:
 except:
     from collections import Iterable
 from datetime import datetime
-from . import files
+from cockpit.util import files
 import os
 DELIMITER = ';'
 
-class ValueLogger(object):
+class ValueLogger:
     _fhs = [] # A list of all filehandles opened in this session.
 
     def __init__(self, name, keys=None):
@@ -98,7 +98,7 @@ class PollingLogger(ValueLogger):
         :param getValues: a callable to fetch a value or values to log
         :param keys: keys that name fetched values; used in header
         """
-        super(PollingLogger, self).__init__(name, keys)
+        super().__init__(name, keys)
         self.dt = dt
         self.getValues = getValues
 

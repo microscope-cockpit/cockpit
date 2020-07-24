@@ -51,7 +51,7 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import dataSaver
+from cockpit.experiment import dataSaver
 from cockpit import depot
 from cockpit import events
 from cockpit.gui import guiUtils
@@ -101,8 +101,6 @@ class Experiment:
     # \param altBottom Altitude of the stage at the bottom of the stack.
     # \param zHeight Total height of the stack.
     # \param sliceHeight Distance between slices in the stack.
-    # \param cameras List of CameraHandler instances.
-    # \param lights List of LightSourceHandler instances.
     # \param exposureSettings List of ([cameras], [(light, exposure time)])
     #        tuples describing how to take images.
     # \param otherHandlers List of miscellaneous handlers that are involved in
@@ -117,7 +115,7 @@ class Experiment:
     # *z* values refer to the position of the zPositioner specified in the args.
     def __init__(self, numReps, repDuration,
             zPositioner, altBottom, zHeight, sliceHeight,
-            cameras, lights, exposureSettings, otherHandlers = [],
+            exposureSettings, otherHandlers = [],
             metadata = '', savePath = ''):
         self.numReps = numReps
         self.repDuration = repDuration
@@ -125,9 +123,14 @@ class Experiment:
         self.altBottom = altBottom
         self.zHeight = zHeight
         self.sliceHeight = sliceHeight
-        self.cameras = list(cameras)
-        self.lights = list(lights)
         self.exposureSettings = exposureSettings
+
+        self.cameras = []
+        self.lights = []
+        for cameras, light_times in exposureSettings:
+            self.cameras.extend(cameras)
+            self.lights.extend([light for light, time in light_times])
+
         self.otherHandlers = list(otherHandlers)
         self.metadata = metadata
         self.savePath = savePath
@@ -171,7 +174,7 @@ class Experiment:
 
         ## Whether or not we should stop the experiment at the next opportunity.
         self.shouldAbort = False
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
 
         ## Resultant Z altitude prior to execution, used to restore position.
         self.initialAltitude = None
@@ -302,7 +305,7 @@ class Experiment:
         # Prepare our position.
         cockpit.interfaces.stageMover.goToZ(self.altBottom, shouldBlock = True)
         self.zStart = cockpit.interfaces.stageMover.getAllPositions()[-1][-1]
-        events.publish('prepare for experiment', self)
+        events.publish(events.PREPARE_FOR_EXPERIMENT, self)
         # Prepare cameras.
         for camera in self.cameras:
             # We set the expsoure time here. This needs to be set before
@@ -392,7 +395,7 @@ class Experiment:
                         timeToNext = delay + startTime + float(self.table[curIndex][0]) / 1000. - time.time()
                         time.sleep(max(0,timeToNext))
 
-                    events.executeAndWaitFor('experiment execution',
+                    events.executeAndWaitFor(events.EXPERIMENT_EXECUTION,
                             best.executeTable, self.table, curIndex,
                             curIndex + bestLen, numReps, repDuration)
                     curIndex += bestLen
@@ -416,18 +419,17 @@ class Experiment:
         if runThread is not None:
             runThread.join()
         if saveThread is not None and saveThread.isAlive():
-            events.publish('update status light', 'device waiting',
-                    'Waiting for saving to complete', (255, 255, 0))
+            events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
+                           'Waiting for saving to complete')
             saveThread.join()
         for handler in self.allHandlers:
             handler.cleanupAfterExperiment()
-        events.publish('cleanup after experiment')
+        events.publish(events.CLEANUP_AFTER_EXPERIMENT)
         if self.initialAltitude is not None:
             # Restore our initial altitude.
             cockpit.interfaces.stageMover.goToZ(self.initialAltitude, shouldBlock = True)
-        events.publish('experiment complete')
-        events.publish('update status light', 'device waiting',
-                '', (170, 170, 170))
+        events.publish(events.EXPERIMENT_COMPLETE)
+        events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting', '')
         # Ensure the saveThread's memory, which includes all the images
         # collected thus far, is garbage collected. Otherwise memory tends
         # to pile up and then the GC has more work to do, which can interfere
@@ -510,15 +512,8 @@ class Experiment:
 
     #        describing how long to expose each light for.
 
-    # \param pseudoGlobalExposure Boolean for, in the case of using a rolling
-
-    #        shutter, excite with the light only during the time all the pixels are
-    #        exposed.
-    # \param previousMovementTime This is the time used for the z movement
-    #        so we can take advantage of this time to start exposing the camera
     # \return The time at which all exposures are complete.
-    def expose(self, curTime, cameras, lightTimePairs, table,
-               pseudoGlobalExposure=False, previousMovementTime=0):
+    def expose(self, curTime, cameras, lightTimePairs, table):
         # First, determine which cameras are not ready to be exposed, because
         # they may have seen light they weren't supposed to see (due to
 
@@ -539,10 +534,6 @@ class Experiment:
         # Adjust the exposure start based on when the cameras are ready.
         for camera in cameras:
             camExposureReadyTime = self.getTimeWhenCameraCanExpose(table, camera)
-            # we add the readout time to get when the light should be trigger to
-            # obtain pseudo global exposure
-            camPseudoGlobalReadyTime = (camExposureReadyTime
-                                        + self.cameraToReadoutTime[camera])
             exposureStartTime = max(exposureStartTime, camExposureReadyTime)
 
         # Determine the maximum exposure time, which depends on our light
@@ -573,7 +564,7 @@ class Experiment:
         # cameras without any special light.
         exposureEndTime = exposureStartTime + maxExposureTime
         for light, exposureTime, in lightTimePairs:
-            if light is not None and light.name is not 'ambient': # i.e. not ambient light
+            if light is not None and light.name != 'ambient': # i.e. not ambient light
                 # Center the light exposure.
                 timeSlop = maxExposureTime - exposureTime
                 offset = timeSlop / 2

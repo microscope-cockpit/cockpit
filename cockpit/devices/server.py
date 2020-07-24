@@ -54,7 +54,7 @@ import Pyro4
 import threading
 import traceback
 
-from . import device
+from cockpit.devices import device
 import cockpit.handlers.server
 import cockpit.util.logger
 import cockpit.util.threads
@@ -66,7 +66,7 @@ import cockpit.util.threads
 # so that each incoming connection is on its own port.
 class CockpitServer(device.Device):
     def __init__(self, name, config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
         ## IP address of the cockpit computer.
         if not(hasattr(self, 'ipAddress')):
             self.ipAddress = "127.0.0.1"

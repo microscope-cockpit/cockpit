@@ -41,13 +41,13 @@ Sample config entry:
 
 """
 
-from . import shutter
+from cockpit.devices import shutter
 import telnetlib
 
 
 class StanfordShutter(shutter.ShutterDevice):
     def __init__(self, name, config={}):
-        shutter.ShutterDevice.__init__(self, name, config)
+        super().__init__(name, config)
         # Telnet connection to device
         self.connection = None
 

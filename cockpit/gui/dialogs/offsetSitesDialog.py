@@ -65,7 +65,7 @@ import wx
 class OffsetSites_Dialog(wx.Dialog):
     ## Create the dialog, and lay out its UI widgets. 
     def __init__(self, parent, *args):
-        wx.Dialog.__init__(self, parent, -1, "Move Sites", *args)
+        super().__init__(parent, -1, "Move Sites", *args)
         
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(self, -1, "What offset should we apply?")

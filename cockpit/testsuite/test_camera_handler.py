@@ -27,6 +27,21 @@ import cockpit.events
 import cockpit.interfaces.imager
 import cockpit.handlers.camera
 
+def mock_events_at(where: str):
+    # This function mocks the entire events module at a specific place
+    # but it does while keeping the original event constants so that
+    # it can be used to check if the events were subscribed to,
+    # otherwise they would subscribe to mock constants.  No need to
+    # fix all events, name only those that are needed.
+    mocked_events = unittest.mock.MagicMock()
+    for event_name in ['PREPARE_FOR_EXPERIMENT',]:
+        setattr(mocked_events, event_name, getattr(cockpit.events, event_name))
+
+    @unittest.mock.patch(where + '.events', new=mocked_events)
+    def with_mocked_events(func):
+        return lambda func : func(mocked_events)
+    return with_mocked_events
+
 
 class CameraHandlerTestCase(unittest.TestCase):
     def setUp(self):
@@ -71,29 +86,30 @@ class CameraHandlerTestCase(unittest.TestCase):
         camera = cockpit.handlers.camera.CameraHandler(**self.args)
 
         event_handler = unittest.mock.Mock()
-        cockpit.events.subscribe('camera enable', event_handler)
+        cockpit.events.subscribe(cockpit.events.CAMERA_ENABLE, event_handler)
         try:
             camera.setEnabled(True)
         finally:
-            cockpit.events.unsubscribe('camera enable', event_handler)
+            cockpit.events.unsubscribe(cockpit.events.CAMERA_ENABLE,
+                                       event_handler)
 
         event_handler.assert_called_once()
         event_handler.assert_called_with(camera, True)
         self.callback_mocks['setEnabled'].assert_called_with('mock', True)
 
-    @unittest.mock.patch('cockpit.handlers.camera.events')
+    @mock_events_at('cockpit.handlers.camera')
     def test_set_enabled_sends_experiment_event(self, mockEvents):
         camera = cockpit.handlers.camera.CameraHandler(**self.args)
         camera.setEnabled(True)
 
-        mockEvents.subscribe.assert_called_with('prepare for experiment',
+        mockEvents.subscribe.assert_called_with(cockpit.events.PREPARE_FOR_EXPERIMENT,
                                                 camera.prepareForExperiment)
 
-    @unittest.mock.patch('cockpit.handlers.camera.events')
+    @mock_events_at('cockpit.handlers.camera')
     def testSetEnabledSendsCorrectEvent_disable(self, mockEvents):
         camera = cockpit.handlers.camera.CameraHandler(**self.args)
         camera.setEnabled(False)
-        mockEvents.unsubscribe.assert_called_with('prepare for experiment',
+        mockEvents.unsubscribe.assert_called_with(cockpit.events.PREPARE_FOR_EXPERIMENT,
                                                   camera.prepareForExperiment)
 
     def test_enabled_getter(self):

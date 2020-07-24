@@ -214,6 +214,22 @@ class TestGetPaths(TestConfigConverters):
         self.assertPaths(txt, paths)
 
 
+class TestGetLines(TestConfigConverters):
+    def assertLines(self, value, lines):
+        txt = ('[sec]\n'
+               'opt = %s' % (value))
+        self.config.read_string(txt)
+        self.assertListEqual(self.config.getlines('sec', 'opt'), lines)
+
+    def test_whitespace(self):
+        """Trailing and leading whitespace, and empty lines are removed"""
+        txt = ('foo bar \n'
+               '  \n'
+               '  qux\n')
+        lines = ['foo bar', 'qux']
+        self.assertLines(txt, lines)
+
+
 @patch_like_linux
 class TestLinuxPaths(unittest.TestCase):
     def assertConfigDirs(self, env_value, expected):

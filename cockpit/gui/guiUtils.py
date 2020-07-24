@@ -70,7 +70,7 @@ class _BaseValidator(wx.Validator):
     SetValidator.
     """
     def __init__(self, allowEmpty=False):
-        wx.Validator.__init__(self)
+        super().__init__()
         self.Bind(wx.EVT_CHAR, self.OnChar)
 
 
@@ -143,7 +143,7 @@ class FloatValidator(_BaseValidator):
         if key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
             # Pass cursors, backspace, etc. to control
             event.Skip()
-        elif chr(key) is '-' and event.EventObject.InsertionPoint == 0:
+        elif chr(key) == '-' and event.EventObject.InsertionPoint == 0:
             event.Skip()
         elif chr(key) in string.digits:
             # Pass any digit to control.
@@ -199,7 +199,7 @@ class CSVValidator(_BaseValidator):
         elif chr(key) in string.digits:
             # Pass any digit to control.
             event.Skip()
-        elif chr(key) is '-':
+        elif chr(key) == '-':
             event.Skip()
         elif chr(key) == ',' and len(event.EventObject.Value) > 0:
             # Could also check that adjacent characters are not ','.

@@ -62,13 +62,13 @@
 #       TRITC: FITC: 518, TRITC: 600
 #
 
-from . import device
+from cockpit.devices import device
 from cockpit.handlers.drawer import DrawerHandler, DrawerSettings
 import re
 
 class Drawer(device.Device):
     def __init__(self, name, config):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
 
     def parseConfig(self, config=None):
         if config is not None:
@@ -93,6 +93,5 @@ class Drawer(device.Device):
         # Just return an empty handler for now. It will be configured
         # after the cameras have been initialized.
         settings = self.parseConfig()
-        self.handler = DrawerHandler("drawer", "miscellaneous",
-                                        settings, 0, None)
+        self.handler = DrawerHandler("drawer", "miscellaneous", settings, 0)
         return [self.handler]

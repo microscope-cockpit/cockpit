@@ -26,13 +26,13 @@ This is a base shutter device with dummy methods for testing.
 """
 import re
 from cockpit import depot
-from . import device
+from cockpit.devices import device
 from cockpit import events
 from cockpit.handlers.lightSource import LightHandler
 
 class ShutterDevice(device.Device):
     def __init__(self, name, config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
         lights = config.get('lights', None)
         if lights:
             self.lights = re.split('[,;: ]\s*', lights)
@@ -57,9 +57,9 @@ class ShutterDevice(device.Device):
 
 
     def performSubscriptions(self):
-            events.subscribe('prepare for experiment',
+            events.subscribe(events.PREPARE_FOR_EXPERIMENT,
                             self.onPrepareForExperiment)
-            events.subscribe('experiment complete',
+            events.subscribe(events.EXPERIMENT_COMPLETE,
                             self.onCleanupAfterExperiment)
             events.subscribe(events.LIGHT_SOURCE_ENABLE, self.onLightSourceEnable)
 

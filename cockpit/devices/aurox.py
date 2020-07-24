@@ -18,7 +18,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import microscopeDevice
+from cockpit.devices import microscopeDevice
 import cockpit.gui.device
 import cockpit.handlers.filterHandler
 from cockpit.handlers.deviceHandler import STATES
@@ -52,22 +52,24 @@ class Clarity(microscopeDevice.MicroscopeFilter):
         try:
             status = self._proxy.get_status()
         except:
-            state = STATES.error
             status = {}
+        connected = status.get('connected', False)
+        mode_selector = self.buttons['mode']
+        mode_selector.SetSelection(mode_selector.FindString(status.get('mode', '')))
+        self.panel.Enable(connected)
+        if not connected:
+            state = STATES.error
         else:
-            if status.get('on'):
-                if status.get('busy'):
-                    state = STATES.busy
-                else:
-                    state = STATES.enabled
+            if status['on'] and status['busy']:
+                state = STATES.busy
+            elif status['on']:
+                state = STATES.enabled
             else:
                 state = STATES.disabled
+            self.buttons['door'].SetValue(status['door open'])
         for h in self.handlers:
             events.publish(events.DEVICE_STATUS, h, state)
-            if status is not {}:
-                self.buttons['door'].SetValue(status.get('door open'))
-                self.buttons['calib'].SetValue(status.get('calibration'))
-            if state not in  [STATES.error, STATES.busy]:
+            if state not in [STATES.error, STATES.busy]:
                 h.updateAfterMove()
 
     def setEnabled(self, state):
@@ -99,10 +101,6 @@ class Clarity(microscopeDevice.MicroscopeFilter):
     def get_slides_as_filters(self):
         return [Filter(k, v) for k, v in self._proxy.get_slides().items()]
 
-    def onCheckbox(self, evt):
-        if evt.EventObject == self.buttons['calib']:
-            self._proxy.set_calibration(evt.EventObject.Value)
-
     def makeUI(self, parent):
         """Draw the Clarity's UI"""
         # Use an outer panel and a subpanel, so that the power button
@@ -129,19 +127,23 @@ class Clarity(microscopeDevice.MicroscopeFilter):
         panel.Sizer.AddSpacer(4)
         panel.Sizer.Add(wx.StaticText(panel, label='sectioning'))
         panel.Sizer.Add(powerhandler.makeSelector(panel), flag=wx.EXPAND)
-        # filter selector
-        panel.Sizer.AddSpacer(4)
-        panel.Sizer.Add(wx.StaticText(panel, label='filter'))
-        filterhandler = next(h for h in self.handlers if h is not powerhandler)
-        panel.Sizer.Add(filterhandler.makeSelector(panel), flag=wx.EXPAND)
+        # # filter selector -- moved to filters panel
+        # panel.Sizer.AddSpacer(4)
+        # panel.Sizer.Add(wx.StaticText(panel, label='filter'))
+        # filterhandler = next(h for h in self.handlers if h is not powerhandler)
+        # panel.Sizer.Add(filterhandler.makeSelector(panel), flag=wx.EXPAND)
         # Additional buttons
         panel.Sizer.AddSpacer(4)
         self.buttons = {}
-        # calibration mode selector
-        cb = wx.CheckBox(panel, wx.ID_ANY, "calibration")
-        cb.Bind(wx.EVT_CHECKBOX, self.onCheckbox)
-        self.buttons['calib'] = cb
-        panel.Sizer.Add(cb)
+        # Mode selector
+        panel.Sizer.AddSpacer(4)
+        panel.Sizer.Add(wx.StaticText(panel, label='Mode'))
+        mode_selector = cockpit.gui.device.EnumChoice(panel)
+        mode_selector.Set(self.describe_setting('mode')['values'])
+        self.buttons['mode'] = mode_selector
+        from functools import partial
+        mode_selector.setOnChoice(partial(self.set_setting, 'mode'))
+        panel.Sizer.Add(mode_selector)
         # door status indicator
         cb = wx.CheckBox(panel, wx.ID_ANY, "door open")
         cb.Disable()
@@ -152,4 +154,5 @@ class Clarity(microscopeDevice.MicroscopeFilter):
         self._timer.Start(1000)
         panel.Bind(wx.EVT_TIMER, self.checkStatus, self._timer)
         panel.Fit()
+        self.panel = panel
         return outer

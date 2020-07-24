@@ -78,8 +78,7 @@ class SafetyMinDialog(wx.Dialog):
             self, parent, size = wx.DefaultSize, pos = wx.DefaultPosition, 
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.TAB_TRAVERSAL
             ):
-        wx.Dialog.__init__(self, parent, -1, "Set Z motion minimum", 
-                pos, size, style)
+        super().__init__(parent, -1, "Set Z motion minimum", pos, size, style)
         
         self.mainSizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -90,7 +89,7 @@ class SafetyMinDialog(wx.Dialog):
 
         self.minStageZ = cockpit.gui.guiUtils.addLabeledInput(
                 parent = self, sizer = self.mainSizer,
-                label = u"Stage Z minimum (\u03bcm):",
+                label = "Stage Z minimum (µm):",
                 defaultValue = str(cockpit.interfaces.stageMover.getSoftLimits()[2][0]),
                 size = (70, -1), minSize = (150, -1), 
                 shouldRightAlignInput = True, border = 3, 
@@ -109,11 +108,11 @@ class SafetyMinDialog(wx.Dialog):
 
         buttonsBox = wx.BoxSizer(wx.HORIZONTAL)
 
-        cancelButton = wx.Button(self, wx.ID_CANCEL, "Cancel")
+        cancelButton = wx.Button(self, label="Cancel")
         cancelButton.SetToolTip(wx.ToolTip("Close this window"))
         buttonsBox.Add(cancelButton, 0, wx.ALL, 5)
         
-        startButton = wx.Button(self, wx.ID_OK, "Apply")
+        startButton = wx.Button(self, label="Apply")
         startButton.SetToolTip(wx.ToolTip("Apply the chosen safety min"))
         buttonsBox.Add(startButton, 0, wx.ALL, 5)
         
@@ -123,7 +122,7 @@ class SafetyMinDialog(wx.Dialog):
         self.SetAutoLayout(True)
         self.mainSizer.Fit(self)
 
-        self.Bind(wx.EVT_BUTTON, wx.ID_OK, self.OnStart)
+        startButton.Bind(wx.EVT_BUTTON, self.OnStart)
 
 
     ## Set the text for the stage safety min to a default value.

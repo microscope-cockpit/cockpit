@@ -1,82 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright 2013, The Regents of University of California
+## Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions
-## are met:
+## This file is part of Cockpit.
 ##
-## 1. Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
+## Cockpit is free software: you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
 ##
-## 2. Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in
-##   the documentation and/or other materials provided with the
-##   distribution.
+## Cockpit is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
 ##
-## 3. Neither the name of the copyright holder nor the names of its
-##   contributors may be used to endorse or promote products derived
-##   from this software without specific prior written permission.
-##
-## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-## "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-## LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-## FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-## COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-## INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-## BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-## LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-## CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-## LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-## POSSIBILITY OF SUCH DAMAGE.
+## You should have received a copy of the GNU General Public License
+## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
+import wx.py.shell
 
-## This module handles creating the in-program Python REPL
-# (read-eval-print loop) shell.
-
-import os
-import wx
-import wx.py
-
-
-
-class ShellWindow(wx.Frame):
-    def __init__(self, *args, **kwargs):
-        wx.Frame.__init__(self, *args, **kwargs)
-
-        self.shell = wx.py.shell.Shell(self)
-        self.SetRect((0, 300, 650, 550))
-
-        self.SetDropTarget(DropTarget(self))
-        self.shell.SetDropTarget(DropTarget(self))
-
-        self.Show()
-
-
-
-## Allow users to drag MRC files onto this window to bind them to a variable.
-class DropTarget(wx.FileDropTarget):
-    def __init__(self, parent):
-        wx.FileDropTarget.__init__(self)
-        self.parent = parent
-
-
-    def OnDropFiles(self, x, y, filenames):
-        for filename in filenames:
-            variable = wx.GetTextFromUser("Bind the contents of %s to a variable named:" % filename)
-            if not variable:
-                continue
-            # Stupid Windows backslashes...
-            filename = filename.replace('\\', '/')
-            # UGH this is a hack, but as far as I can tell there's no clean
-            # way to insert variables into the shell's context.
-            self.parent.shell.push('import cockpit.util.datadoc; %s = cockpit.util.datadoc.DataDoc("%s")' % (variable, filename))
-                
-
+class ShellWindow(wx.py.shell.ShellFrame):
+    SHOW_DEFAULT = False
 
 def makeWindow(parent):
-    shell = ShellWindow(None, title = "Python shell",
-            style = wx.CAPTION | wx.MAXIMIZE_BOX | wx.MINIMIZE_BOX |
-                        wx.CLOSE_BOX| wx.FRAME_NO_TASKBAR | wx.RESIZE_BORDER)
+    window = ShellWindow(parent)
+    # Default icon for the ShellFrame is the PyCrust, so replace it.
+    window.SetIcon(parent.GetIcon())

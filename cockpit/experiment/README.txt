@@ -29,6 +29,3 @@ structuredIllumination.py: Runs SI experiments.
 sweptShutter.py: Does an open-shutter sweep in Z.
 
 zStack.py: Standard Z-stack experiment. 
-
-zStackMulti.py: Unofficial module for running Z-stacks with multiple different
-  exposure times depending on the (hardcoded) criterion.

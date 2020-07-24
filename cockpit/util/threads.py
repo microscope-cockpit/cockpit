@@ -53,15 +53,9 @@ def callInNewThread(function):
 # interface or uses OpenGL. We first test if the current thread is the main
 # thread to avoid unnecessary requeuing.
 
-from sys import version_info
-if version_info[0] >= 3 and version_info[1] >= 4:
-    __isMainThread = lambda: threading.current_thread() is threading.main_thread()
-else:
-    __isMainThread = lambda: threading.current_thread().name is 'MainThread'
-
 def callInMainThread(function):
     def wrappedFunc(*args, **kwargs):
-        if __isMainThread():
+        if threading.current_thread() is threading.main_thread():
             # Already in main thread.
             function(*args, **kwargs)
         else:
@@ -88,5 +82,3 @@ def locked(func):
         with objectToLock[first]:
             return func(first, *args, **kwargs)
     return wrappedFunc
-
-

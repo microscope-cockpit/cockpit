@@ -54,7 +54,7 @@
 from cockpit import depot
 from cockpit.gui import guiUtils
 import cockpit.util.userConfig
-from . import zStack
+from cockpit.experiment import zStack
 
 import threading
 import time
@@ -95,7 +95,7 @@ class OptoExperiment(zStack.ZStackExperiment):
             self.lightToIsOnDuringAcquisition[handler] = isOn
         # Call the ZStackExperiment constructor with all of our remaining
         # parameters, which are in the "kwargs" dictionary object.
-        zStack.ZStackExperiment.__init__(self, **kwargs)
+        super().__init__(**kwargs)
 
 
     ## This function overrides the base execute() function in the Experiment
@@ -133,7 +133,7 @@ class OptoExperiment(zStack.ZStackExperiment):
                     light.setExposing(True)
                     activatedLights.append(light)
             # Invoke our base class' execute() function to collect data.
-            result = zStack.ZStackExperiment.execute(self)
+            result = super().execute()
             # Turn off the triggering lights.
             for light in activatedLights:
                 light.setExposing(False)
@@ -166,7 +166,7 @@ EXPERIMENT_CLASS = OptoExperiment
 ## Generate the UI for special parameters used by this experiment.
 class ExperimentUI(wx.Panel):
     def __init__(self, parent, configKey):
-        wx.Panel.__init__(self, parent = parent)
+        super().__init__(parent=parent)
 
         self.configKey = configKey
 
@@ -264,7 +264,7 @@ from cockpit.gui.guiUtils import FLOATVALIDATOR
 
 class OptoPanel(wx.Panel):
     def __init__(self, parent, light, sequence, doesStartOn):
-        wx.Panel.__init__(self, parent)
+        super().__init__(parent)
         self.light = light
 
         ## List of [start, stop] lists, indicating times when the light

@@ -58,13 +58,12 @@ import wx
 
 from cockpit import events
 from cockpit.gui.primitive import Primitive
-import cockpit.gui.mosaic.window
+import cockpit.gui.dialogs.getNumberDialog
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
 
-from . import macroStageBase
+from cockpit.gui.macroStage import macroStageBase
 
-CIRCLE_SEGMENTS = 32
 
 ## This class shows a high-level view of where the stage is in XY space, and
 # how it will move when controlled by the keypad. It includes displays
@@ -74,7 +73,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
     ## Instantiate the object. Just calls the parent constructor and sets
     # up the mouse event.
     def __init__(self, *args, **kwargs):
-        macroStageBase.MacroStageBase.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         ## Whether or not to draw the mosaic tiles
         self.shouldDrawMosaic = True
         ## True if we're in the processing of changing the soft motion limits.
@@ -84,8 +83,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.firstSafetyMousePos = None
         ## Last seen mouse position
         self.lastMousePos = [0, 0]
-        ## Primitive objects - a map of specification to object.
-        self.primitives = {}
+
+        primitive_specs = wx.GetApp().Config['stage'].getlines('primitives', [])
+        self._primitives = [Primitive.factory(spec) for spec in primitive_specs]
 
         hardLimits = cockpit.interfaces.stageMover.getHardLimits()
         self.minX, self.maxX = hardLimits[0]
@@ -113,9 +113,6 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.minY = self.centreY - self.viewExtent / 2 - self.viewDeltaY
         self.maxY = self.centreY + self.viewExtent / 2 - self.viewDeltaY
 
-        ## Amount of vertical space, in stage coordinates, to allot to one
-        # line of text.
-        self.textLineHeight = self.viewExtent * .05
         ## Size of text to draw. I confess I don't really understand how this
         # corresponds to anything, but it seems to work out.
         self.textSize = .004
@@ -142,17 +139,6 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         # We only care about the X and Y axes.
         if axis in [0, 1]:
             wx.CallAfter(self.Refresh)
-
-
-    def modelView(self):
-        ## Transform from stage co-ordinates to screen.
-        dx = self.maxX - self.minX
-        dy = self.maxY - self.minY
-        # Column-major ordering
-        return   [-2/dx,  0,     0,   0,
-                  0,      2/dy,  0,   0,
-                  0,      0,     1,   0,
-                  2*self.minX/dx+1,  -2*self.minY/dy-1, 0, 1]
 
 
     ## Draw the canvas. We draw the following:
@@ -192,7 +178,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
             # Set up transform from stage to screen units
             glMatrixMode(GL_MODELVIEW)
-            glLoadMatrixf(self.modelView())
+            glLoadIdentity()
+            glOrtho(self.maxX, self.minX, self.minY, self.maxY, -1.0, 1.0)
 
             #Loop over objective offsets to draw limist in multiple colours.
             for obj in self.listObj:
@@ -271,11 +258,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glEnable(GL_LINE_STIPPLE)
             glLineStipple(1, 0xAAAA)
             glColor3f(0.4, 0.4, 0.4)
-            primitives = cockpit.interfaces.stageMover.getPrimitives()
-            for p in primitives:
-                if p not in self.primitives:
-                    self.primitives[p] = Primitive.factory(p)
-                self.primitives[p].render()
+            for primitive in self._primitives:
+                primitive.render()
             glDisable(GL_LINE_STIPPLE)
 
             #Draw possibloe stage positions for current objective
@@ -344,23 +328,6 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 glVertex2f(scaleX, y2)
             glEnd()
             glLineWidth(1)
-
-            # Draw stage coordinates. Use a different color for the mover
-            # currently under keypad control.
-            coordsLoc = (self.maxX - self.viewExtent * .05,
-                    self.minY + self.viewExtent * .1)
-            allPositions = cockpit.interfaces.stageMover.getAllPositions()
-            curControl = cockpit.interfaces.stageMover.getCurHandlerIndex()
-            for axis in [0, 1]:
-                step = stepSizes[axis]
-                if stepSizes[axis] is None:
-                    step = 0
-                positions = [p[axis] for p in allPositions]
-                self.drawStagePosition(['X:', 'Y:'][axis],
-                        positions, curControl, step,
-                        (coordsLoc[0], coordsLoc[1] - axis * self.textLineHeight),
-                        self.viewExtent * .25, self.viewExtent * .05,
-                        self.textSize)
 
             events.publish('macro stage xy draw', self)
 

@@ -50,10 +50,10 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from . import dataSaver
+from cockpit.experiment import dataSaver
 from cockpit import depot
 from cockpit import events
-from . import experiment
+from cockpit.experiment import experiment
 from cockpit.gui import guiUtils
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
@@ -79,21 +79,35 @@ class ImmediateModeExperiment(experiment.Experiment):
     # be recorded). Optionally, additional metadata can be supplied.
     def __init__(self, numReps, repDuration, imagesPerRep, sliceHeight = 0,
             metadata = '', savePath = ''):
-        ## Number of images to be collected per camera per rep.
+        super().__init__(numReps, repDuration,
+                None, 0, 0, sliceHeight, {},
+                metadata = metadata, savePath = savePath)
+        # Number of images to be collected per camera per rep.
         self.imagesPerRep = imagesPerRep
+
+        # We didn't pass a proper exposureSettings value when calling
+        # the Experiment constructor so we must fix the cameras and
+        # lights attributes, as well as related attributes, ourselves.
+
         ## List of cameras. Assume our cameras are all active cameras.
         self.cameras = []
         for cam in depot.getHandlersOfType(depot.CAMERA):
             if cam.getIsEnabled():
                 self.cameras.append(cam)
+
         ## List of light sources. Assume our lights are all active lights.
         self.lights = []
         for light in depot.getHandlersOfType(depot.LIGHT_TOGGLE):
             if light.getIsEnabled():
                 self.lights.append(light)
-        experiment.Experiment.__init__(self, numReps, repDuration,
-                None, 0, 0, sliceHeight, self.cameras, self.lights, {},
-                metadata = metadata, savePath = savePath)
+
+        self.allHandlers += self.cameras + self.lights
+
+        self.lightToExposureTime = {l: set() for l in self.lights}
+        self.cameraToIsReady = {c: True for c in self.cameras}
+        self.cameraToImageCount = {c: 0 for c in self.cameras}
+        self.cameraToIgnoredImageIndices = {c: set() for c in self.cameras}
+
 
     def prepareHandlers(self):
         """Unlike with normal experiments, we don't prep handlers."""
@@ -106,7 +120,7 @@ class ImmediateModeExperiment(experiment.Experiment):
     ## Assume we use all active cameras and light sources.
     def run(self):
         self.cameraToImageCount = {c: self.imagesPerRep for c in self.cameras}
-        return experiment.Experiment.run(self)
+        return super().run()
 
 
     ## Run the experiment. Return True if it was successful. This will call

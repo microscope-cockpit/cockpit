@@ -54,7 +54,6 @@
 from cockpit import depot
 import cockpit.experiment.experimentRegistry
 from cockpit.gui import guiUtils
-import cockpit.gui.saveTopBottomPanel
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
 import cockpit.util.userConfig
@@ -98,7 +97,7 @@ class ExperimentConfigPanel(wx.Panel):
     #        encapsulated by some other system that handles its own filenames).
     def __init__(self, parent, resizeCallback, resetCallback,
             configKey = 'singleSiteExperiment', shouldShowFileControls = True):
-        wx.Panel.__init__(self, parent, style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.TAB_TRAVERSAL)
+        super().__init__(parent, style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.TAB_TRAVERSAL)
         self.parent = parent
 
         self.configKey = configKey
@@ -453,9 +452,7 @@ class ExperimentConfigPanel(wx.Panel):
                     message = "No cameras are enabled, so the experiment cannot be run.",
                     style = wx.ICON_EXCLAMATION | wx.STAY_ON_TOP | wx.OK).ShowModal()
             return True
-        lights = list(filter(lambda l: l.getIsEnabled(),
-                depot.getHandlersOfType(depot.LIGHT_TOGGLE)))
-        
+
         exposureSettings = []
         if self.shouldExposeSimultaneously.GetValue():
             # A single exposure event with all cameras and lights.
@@ -486,8 +483,8 @@ class ExperimentConfigPanel(wx.Panel):
         if self.zPositionMode.GetStringSelection() == 'Current is center':
             altBottom = altitude - zHeight / 2
         elif self.zPositionMode.GetStringSelection() == 'Use saved top/bottom':
-            altBottom, altTop = cockpit.gui.saveTopBottomPanel.getBottomAndTop()
-            zHeight = altTop - altBottom
+            zHeight = (cockpit.interfaces.stageMover.mover.SavedTop
+                       - cockpit.interfaces.stageMover.mover.SavedBottom)
 
         sliceHeight = guiUtils.tryParseNum(self.sliceHeight, float)
         if zHeight == 0:
@@ -504,8 +501,6 @@ class ExperimentConfigPanel(wx.Panel):
                 'altBottom': altBottom,
                 'zHeight': zHeight,
                 'sliceHeight': sliceHeight,
-                'cameras': cameras,
-                'lights': lights,
                 'exposureSettings': exposureSettings,
                 'savePath': savePath
         }

@@ -50,26 +50,12 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-import wx
-
 from cockpit import depot
-from . import deviceHandler
+from cockpit.handlers import deviceHandler
 from cockpit import events
 
-import cockpit.gui.dialogs.getNumberDialog
-import cockpit.gui.guiUtils
-import cockpit.gui.toggleButton
 import cockpit.util.threads
 
-## List of exposure times to allow the user to set.
-EXPOSURE_TIMES = [1, 5] + list(range(10, 100, 10)) + list(range(100, 1100, 100))
-
-## Color to use for light sources that are in continuous exposure mode.
-CONTINUOUS_COLOR = (255, 170, 0)
-
-## Size of the button we make in the UI.
-BUTTON_SIZE = (120, 40)
 
 ## This handler is for lightsource toggle buttons and exposure time settings,
 # to control if a given illumination source is currently active (and for how
@@ -106,8 +92,7 @@ class LightHandler(deviceHandler.DeviceHandler):
                  trigHandler=None, trigLine=None):
         # Note we assume all light sources are eligible for experiments.
         # However there's no associated callbacks for a light source.
-        deviceHandler.DeviceHandler.__init__(self, name, groupName, True, 
-                callbacks, depot.LIGHT_TOGGLE)
+        super().__init__(name, groupName, True, callbacks, depot.LIGHT_TOGGLE)
         self.wavelength = float(wavelength or 0)
         self.defaultExposureTime = exposureTime
         self.exposureTime = exposureTime
@@ -130,7 +115,7 @@ class LightHandler(deviceHandler.DeviceHandler):
         # an abort event.
         if trigHandler and trigLine:
             onAbort = lambda *args: trigHandler.setDigital(trigLine, False)
-            events.subscribe('user abort', onAbort)
+            events.subscribe(events.USER_ABORT, onAbort)
 
 
     def makeInitialPublications(self):
@@ -148,11 +133,11 @@ class LightHandler(deviceHandler.DeviceHandler):
     ## Load our settings from the provided dict.
     def onLoadSettings(self, settings):
         if self.name in settings:
-            #Only chnbage settings if needed.
-            if self.getExposureTime != settings[self.name]['exposureTime']:
+            #Only change settings if needed.
+            if self.getExposureTime() != settings[self.name]['exposureTime']:
                 self.setExposureTime(settings[self.name]['exposureTime'])
-            if self.getIsEnabled != settings[self.name]['isEnabled']:
-                self.setEnabled(settings[self.name]['isEnabled'])
+            if self.getIsEnabled() != settings[self.name]['isEnabled']:
+                self.toggleState()
 
 
     ## Turn the laser on, off, or set continuous exposure.
@@ -167,7 +152,7 @@ class LightHandler(deviceHandler.DeviceHandler):
                 self.callbacks['setEnabled'](self.name, False)
                 # Update setState since used to set self.state later
                 setState = deviceHandler.STATES.disabled
-                events.publish('light source enable', self, False)
+                events.publish(events.LIGHT_SOURCE_ENABLE, self, False)
             else:
                 # Turn on the light continuously.
                 self.callbacks['setEnabled'](self.name, True)
@@ -177,15 +162,15 @@ class LightHandler(deviceHandler.DeviceHandler):
                 # it being switched off by an exposure, but this event is
                 # used to update controls, so we need to chain it with a
                 # manual update.
-                events.oneShotSubscribe('light source enable',
+                events.oneShotSubscribe(events.LIGHT_SOURCE_ENABLE,
                                         lambda *args: self.notifyListeners(self, setState))
-                events.publish('light source enable', self, False)
+                events.publish(events.LIGHT_SOURCE_ENABLE, self, False)
         elif setState == deviceHandler.STATES.enabled:
             self.callbacks['setEnabled'](self.name, True)
-            events.publish('light source enable', self, True)
+            events.publish(events.LIGHT_SOURCE_ENABLE, self, True)
         else:
             self.callbacks['setEnabled'](self.name, False)
-            events.publish('light source enable', self, False)
+            events.publish(events.LIGHT_SOURCE_ENABLE, self, False)
         self.state = setState
 
 
@@ -206,13 +191,6 @@ class LightHandler(deviceHandler.DeviceHandler):
             raise Exception('Problem encountered en/disabling %s:\n%s' % (self.name, e))
         finally:
             self.enableLock.release()
-
-
-    ## Return True iff we are in continuous-exposure mode. We use the color
-    # of our button as the indicator for that state.
-    def getIsExposingContinuously(self):
-        return self.state == deviceHandler.STATES.constant
-
 
     ## Set a new exposure time, in milliseconds.
     @reset_cache
@@ -249,4 +227,3 @@ class LightHandler(deviceHandler.DeviceHandler):
     ## Let them know what wavelength we are.
     def getSavefileInfo(self):
         return str(self.wavelength)
-

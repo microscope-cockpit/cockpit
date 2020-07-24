@@ -50,26 +50,26 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import re
+import time
 
-from . import device
-from . import stage
+from cockpit.devices.device import Device
 from cockpit import events
-import cockpit.gui.toggleButton
+
+import cockpit.interfaces
 import cockpit.handlers.genericPositioner
 import cockpit.handlers.stagePositioner
 import cockpit.util.connection
 import cockpit.util.threads
 import cockpit.util.userConfig
-from cockpit import interfaces
-import time
 
 ## TODO: test with hardware.
 
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*\))"
 
-class Nanomover(stage.StageDevice):
+class Nanomover(Device):
     def __init__(self, name, config={}):
-        device.Device.__init__(self, name, config)
+        super().__init__(name, config)
         ## Current stage position information.
         self.curPosition = [14500, 14500, 14500]
         ## Connection to the Nanomover controller program.
@@ -109,7 +109,7 @@ class Nanomover(stage.StageDevice):
         # a useful middle position for after a home
         self.middleXY=( (self.safeties[0][1]-self.safeties[0][0])/2.0,
                         (self.safeties[0][1]-self.safeties[0][0])/2.0)
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
         events.subscribe('cockpit initialization complete',
                          self.promptExerciseStage)
 
@@ -163,11 +163,10 @@ class Nanomover(stage.StageDevice):
 
 
     def performSubscriptions(self):
-        events.subscribe('user abort', self.onAbort)
+        events.subscribe(events.USER_ABORT, self.onAbort)
 
 
     def makeInitialPublications(self):
-        events.publish('new status light', 'stage vertical position', '')
         self.publishPosition()
         self.sendXYPositionUpdates()
 
@@ -187,39 +186,21 @@ class Nanomover(stage.StageDevice):
     def getHandlers(self):
         result = []
         for axis in range(3):
-            stepSizes = [.1, .2, .5, 1, 2, 5, 10, 50, 100, 500, 1000]
-            if axis == 2:
-                # Add smaller step sizes for the Z axis.
-                stepSizes = [.01, .02, .05] + stepSizes
             lowLimit, highLimit = self.safeties[axis]
             softLowLimit , softHighLimit = self.softlimits[axis]
             result.append(cockpit.handlers.stagePositioner.PositionerHandler(
                 "%d nanomover" % axis, "%d stage motion" % axis, False, 
                 {'moveAbsolute': self.moveAbsolute, 
                     'moveRelative': self.moveRelative,
-                    'getPosition': self.getPosition,
-                    'setSafety': self.setSafety}, 
-                axis, stepSizes, 3, 
-                (softLowLimit, softHighLimit), (lowLimit, highLimit)))
+                    'getPosition': self.getPosition}, 
+                axis, (softLowLimit, softHighLimit), (lowLimit, highLimit)))
         return result
 
 
-    ## Publish the current stage position, and update the status light that
-    # shows roughly where the stage is vertically.
+    ## Publish the current stage position.
     def publishPosition(self):
-        for i in range(3):
-            events.publish('stage mover', '%d nanomover' % i, i, 
-                    (self.curPosition[i]))
-        label = 'Stage up'
-        color = (170, 170, 170)
-        if 10000 < self.curPosition[2] < 16000:
-            label = 'Stage middle'
-            color = (255, 255, 0)
-        elif self.curPosition[2] < 10000:
-            label = 'Stage DOWN'
-            color = (255, 0, 0)
-        events.publish('update status light', 'stage vertical position',
-                label, color)
+        for axis in range(3):
+            events.publish(events.STAGE_MOVER, axis)
 
 
     ## Send updates on the XY stage's position, until it stops moving.
@@ -227,16 +208,15 @@ class Nanomover(stage.StageDevice):
     def sendXYPositionUpdates(self):
         while True:
             prevX, prevY = self.positionCache[:2]
-            x, y, z = self.getPosition(shouldUseCache = False)
+            x, y = self.getPosition(shouldUseCache = False)[:2]
             delta = abs(x - prevX) + abs(y - prevY)
             if delta < 2:
                 # No movement since last time; done moving.
                 for axis in [0, 1]:
-                    events.publish('stage stopped', '%d nanomover' % axis)
+                    events.publish(events.STAGE_STOPPED, '%d nanomover' % axis)
                 return
-            for axis, val in enumerate([x, y]):
-                events.publish('stage mover', '%d nanomover' % axis, 
-                               axis, self.axisSignMapper[axis] * val)
+            for axis in [0, 1]:
+                events.publish(events.STAGE_MOVER, axis)
             time.sleep(.1)
 
     def getPosition(self, axis = None, shouldUseCache = True):
@@ -258,7 +238,7 @@ class Nanomover(stage.StageDevice):
             self.publishPosition()
             if args[-1] == 'allStopped':
                 for i in range(3):
-                    events.publish('stage stopped', '%d nanomover' % i)
+                    events.publish(events.STAGE_STOPPED, '%d nanomover' % i)
 
 
     ## Move a specific axis to a given position.
@@ -272,15 +252,6 @@ class Nanomover(stage.StageDevice):
     def moveRelative(self, axis, delta):
         self.sendXYPositionUpdates()
         self.connection.connection.moveOMX_dAxis(axis, delta)
-
-
-    ## Set the soft motion limit (min or max) for the specified axis.
-    def setSafety(self, axis, value, isMax):
-        connection = self.connection.connection
-        if isMax:
-            connection.setSafetyMaxOMX(axis, value)
-        else:
-            connection.setSafetyMinOMX(axis, value)
 
 
     ## User clicked the abort button; halt motion.

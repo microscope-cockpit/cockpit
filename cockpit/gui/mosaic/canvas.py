@@ -59,7 +59,7 @@ import wx.glcanvas
 
 from cockpit import depot
 from cockpit import events
-from .tile import Tile, MegaTile
+from cockpit.gui.mosaic.tile import Tile, MegaTile
 import cockpit.util.datadoc
 import cockpit.util.logger
 import cockpit.util.threads
@@ -95,7 +95,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     # \param mouseCallback Function to propagate mouse events to.
     def __init__(self, parent, stageHardLimits, overlayCallback, 
             mouseCallback, *args, **kwargs):
-        wx.glcanvas.GLCanvas.__init__(self, parent, *args, **kwargs)
+        super().__init__(parent, *args, **kwargs)
 
         self.stageHardLimits = stageHardLimits
         self.overlayCallback = overlayCallback
@@ -107,8 +107,6 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
 
         ## Set to True once we've done some initialization.
         self.haveInitedGL = False
-        ## Controls whether we rerender tiles during our onPaint.
-        self.shouldRerender = True
         ## WX rendering context
         if MosaicCanvas.context is None:
             # This is the first (and master) instance.
@@ -159,15 +157,17 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # Arrays run [0,0] .. [ncols, nrows]; GL runs (-1,-1) .. (1,1). Since
         # making adjustments to render [0,0] at (-1,1), we now add two megatiles
         # at each y limit, rather than 4 at one edge.
-        vendor = glGetString(GL_VENDOR)
         tsize = glGetInteger(GL_MAX_TEXTURE_SIZE)
-        if vendor.startswith(b'Intel'):
-            # If we use the full texture size, it seems it's too large
-            # for manipulation in a framebuffer on Macs with Intel chipsets.
-            # GL_MAX_FRAMEBUFFER_WIDTH and _HEIGHT are not available, so we
-            # just use a quarter of the max texture size, which has been found
-            # to work intests on 2017-ish MacbookPro.
-            tsize //= 4
+        # If we use the full texture size, it seems it's too large for manipul-
+        # ation in a framebuffer:
+        #   * on Macs with Intel chipsets;
+        #   * on some mobile nVidia chipsets.
+        # Check vendor with glGetString(GL_VENDOR)
+        # GL_MAX_FRAMEBUFFER_WIDTH and _HEIGHT are not universally available,
+        # so we just use a quarter of the max texture size or a reasonable
+        # upper bound which has been found to work in tests on 2017-ish
+        # Macbook Pro.
+        tsize = min(tsize // 4, 16384)
         MegaTile.setPixelSize(tsize)
         xMin += min(0, xOffLim[0]) - MegaTile.micronSize
         xMax += max(0, xOffLim[1]) + MegaTile.micronSize
@@ -189,13 +189,13 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             tiles = self.megaTiles
         for tile in tiles:
             tile.recreateTexture()
-            tile.prerenderTiles(self.tiles, self)
+            tile.prerenderTiles(self.tiles)
 
 
     ## Delete all tiles and textures, including the megatiles.
     def deleteAll(self):
         self.deleteTilesList(list(self.tiles))
-        events.publish('mosaic update')
+        events.publish(events.MOSAIC_UPDATE)
 
 
     ## Get all tiles that intersect the specified box, pulling from the provided
@@ -272,7 +272,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     ## Delete all tiles that intersect the specified box.
     def deleteTilesIntersecting(self, start, end):
         self.deleteTilesList(self.getTilesIntersecting(start, end))
-        events.publish('mosaic update')
+        events.publish(events.MOSAIC_UPDATE)
                
 
     ## Delete a list of tiles.
@@ -292,7 +292,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                     break
         self.rerenderMegatiles(dirtied)
         self.Refresh()
-        events.publish('mosaic update')
+        events.publish(events.MOSAIC_UPDATE)
 
 
     def onIdle(self, event):
@@ -307,12 +307,12 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             newTiles.append(Tile(data, pos, size, scalings, layer))
         self.tiles.extend(newTiles)
         for megaTile in self.megaTiles:
-            megaTile.prerenderTiles(newTiles, self)
+            megaTile.prerenderTiles(newTiles)
 
         self.tilesToRefresh.update(newTiles)
 
         self.Refresh()
-        events.publish('mosaic update')
+        events.publish(events.MOSAIC_UPDATE)
         if not self.pendingImages.empty():
             event.RequestMore()
 
@@ -443,14 +443,6 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         return (bottomLeft, topRight)
 
 
-    ## Toggle display of the specified layer
-    def toggleLayer(self, layer, isHidden):
-        if isHidden:
-            self.m_noShowLayers.add(layer)
-        elif layer in self.m_noShowLayers:
-            self.m_noShowLayers.remove(layer)
-
-
     ## Given a path to a file, save the mosaic to that file and an adjacent
     # file. The first is a text file that describes the layout of the tiles;
     # the second is an MRC file that holds the actual image data.
@@ -518,7 +510,6 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                 # We'll have to convert the pixel sizes and layer to
                 # ints later.
                 tileStats.append(list(map(float, line.strip().split(','))))
-        numInitialTiles = len(self.tiles)
         try:
             doc = cockpit.util.datadoc.DataDoc(mrcPath)
         except Exception as e:
@@ -568,9 +559,4 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                 break
             time.sleep(.1)
         wx.CallAfter(statusDialog.Destroy)
-        events.publish('mosaic update')
-               
-
-    ## Return our list of Tiles.
-    def getTiles(self):
-        return self.tiles
+        events.publish(events.MOSAIC_UPDATE)

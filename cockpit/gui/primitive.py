@@ -26,7 +26,7 @@ import numpy
 CIRCLE_SEGMENTS = 32
 PI = 3.141592654
 
-class Primitive(object):
+class Primitive:
     """ A class for rendering primitives from devices.
 
     Stages can use primitives to show reference positions, such
@@ -89,7 +89,7 @@ class Primitive(object):
 
 class Circle(Primitive):
     def __init__(self, x0, y0, r, n=CIRCLE_SEGMENTS):
-        Primitive.__init__(self)
+        super().__init__()
         dTheta = 2. * PI / n
         cosTheta = numpy.cos(dTheta)
         sinTheta = numpy.sin(dTheta)
@@ -107,7 +107,7 @@ class Circle(Primitive):
 
 class Rectangle(Primitive):
     def __init__(self, x0, y0, w, h):
-        Primitive.__init__(self)
+        super().__init__()
         dw = w / 2.
         dh = h / 2.
 

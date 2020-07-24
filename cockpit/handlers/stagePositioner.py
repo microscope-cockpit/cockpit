@@ -54,7 +54,7 @@
 import wx
 
 from cockpit import depot
-from . import deviceHandler
+from cockpit.handlers import deviceHandler
 from cockpit import events
 import time
 
@@ -66,16 +66,10 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     # - moveRelative(axis, delta): Move the axis by the specified
     #   delta, in microns.
     # - getPosition(axis): Get the position for the specified axis.
-    # - setSafety(axis, value, isMax): Set the min or max soft safety limit.
     # Additionally, if the device is to be used in experiments, it must have:
     # - getMovementTime(axis, start, end): Get the amount of time it takes to 
     #   move from start to end and then stabilize.
-    # - cleanupAfterExperiment(axis, isCleanupFinal): return the axis to to the
-    #   state it was in prior to the experiment.
     # \param axis A numerical indicator of the axis (0 = X, 1 = Y, 2 = Z).
-    # \param stepSizes List of step size increments for when the user wants
-    #        to move using the keypad.
-    # \param stepIndex Default index into stepSizes.
     # \param hardLimits A (minPosition, maxPosition) tuple indicating
     #        the device's hard motion limits.
     # \param softLimits Default soft motion limits for the device. Defaults
@@ -86,13 +80,10 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     cached = deviceHandler.DeviceHandler.cached
 
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks, 
-            axis, stepSizes, stepIndex, hardLimits, softLimits = None):
-        deviceHandler.DeviceHandler.__init__(self, name, groupName,
-                isEligibleForExperiments, callbacks, 
-                depot.STAGE_POSITIONER)
+            axis, hardLimits, softLimits = None):
+        super().__init__(name, groupName, isEligibleForExperiments, callbacks,
+                         depot.STAGE_POSITIONER)
         self.axis = axis
-        self.stepSizes = stepSizes
-        self.stepIndex = stepIndex
         self.hardLimits = hardLimits
         if softLimits is None:
             softLimits = hardLimits
@@ -125,32 +116,6 @@ class PositionerHandler(deviceHandler.DeviceHandler):
                     (target, self.softLimits[0], self.softLimits[1]))
 
 
-    ## Handle being told to move by a step.
-    # \param stepDirection Either -1 or +1, depending on direction of motion.
-    def moveStep(self, stepDirection):
-        self.moveRelative(stepDirection * self.stepSizes[self.stepIndex])
-
-
-    ## Change the current step size by the provided delta (that is, change 
-    # our index into self.stepSizes by the given delta). If we try to go off
-    # the end of the list, then just stay at the current index.
-    def changeStepSize(self, delta):
-        newIndex = self.stepIndex + delta
-        self.stepIndex = min(len(self.stepSizes) - 1, max(0, newIndex))
-
-
-    ## Return list of primitives to draw on the macrostage.
-    def getPrimitives(self):
-        cb = self.callbacks.get('getPrimitives', None)
-        if cb:
-            return cb()
-
-
-    ## Return the current step size.
-    def getStepSize(self):
-        return self.stepSizes[self.stepIndex]
-
-
     ## Retrieve the current position.
     def getPosition(self):
         return self.callbacks['getPosition'](self.axis)
@@ -172,7 +137,6 @@ class PositionerHandler(deviceHandler.DeviceHandler):
             raise RuntimeError("Attempted to set soft motion limit of %s, exceeding our hard motion limit of %s" % (value, self.hardLimits[1]))
         elif not isMax and value < self.hardLimits[0]:
             raise RuntimeError("Attempted to set soft motion limit of %s, lower than our hard motion limit of %s" % (value, self.hardLimits[0]))
-        self.callbacks['setSafety'](self.axis, value, isMax)
         self.softLimits[int(isMax)] = value
 
     
@@ -192,14 +156,7 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     @cached
     def getDeltaMovementTime(self, delta):
         return self.callbacks['getMovementTime'](self.axis, 0., delta)
-        
 
-    ## Do any necessary cleanup now that the experiment is over.
-    def cleanupAfterExperiment(self, isCleanupFinal = True):
-        if self.isEligibleForExperiments:
-            cb = self.callbacks.get('cleanupAfterExperiment', None)
-            if cb is not None:
-                return cb(self.axis, isCleanupFinal)
 
     ## Register this handler with an analogue source.
     def connectToAnalogSource(self, source, line, offset, gain):
@@ -210,8 +167,8 @@ class PositionerHandler(deviceHandler.DeviceHandler):
             def call(x, arg):
                 f(arg)
                 time.sleep(sum(self.getMovementTime(0, arg)))
-                events.publish('stage mover', self.name, x, self.getPosition())
-                events.publish('stage stopped', self.name)
+                events.publish(events.STAGE_MOVER, x)
+                events.publish(events.STAGE_STOPPED, self.name)
             return call
 
         self.callbacks['moveAbsolute'] = wrapMoveFunc(h.moveAbsolute)
