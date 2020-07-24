@@ -475,8 +475,8 @@ def deleteSite(siteID):
 
 
 ## Retrieve the sites as a list.
-def getAllSites():
-    return mover.idToSite.values()
+def getAllSites() -> typing.List[int]:
+    return list(mover.idToSite.values())
 
 
 ## Return True if there's a site with the specified ID.
