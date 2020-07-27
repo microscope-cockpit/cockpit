@@ -265,6 +265,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
     ## User checked/unchecked the "customize light frequencies" button.
     def onCustomizeLightFrequencies(self, event):
         self.lightFrequenciesPanel.Show(self.shouldCustomizeLightFrequencies.GetValue())
+        self.panel.Layout()
         self.panel.SetSizerAndFit(self.panelSizer)
         self.SetClientSize(self.panel.GetSize())
 
