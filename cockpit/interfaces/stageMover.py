@@ -264,6 +264,7 @@ class StageMover:
         for axis, sign in enumerate(direction):
             if sign != 0:
                 step_size = self._step_sizes[self.curHandlerIndex][axis]
+                handler = self.axisToHandlers[axis][self.curHandlerIndex]
                 handler.moveRelative(step_size * sign)
 
     def SetStepSize(self, axis: int, step_size: float) -> None:
