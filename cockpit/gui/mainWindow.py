@@ -595,7 +595,7 @@ class StatusLights(wx.StatusBar):
             self.SetBackgroundColour(self._defaultBackgroundColour)
         # On Windows, we need to call Refresh() after
         # SetBackgroundColour() (see issue #654).
-        self.Resfresh()
+        self.Refresh()
 
 
 def CockpitAboutInfo() -> wx.adv.AboutDialogInfo:
