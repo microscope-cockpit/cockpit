@@ -524,7 +524,7 @@ class SimpleExecutor(deviceHandler.DeviceHandler):
         super().__init__(name, groupName, isEligibleForExperiments,
                          callbacks, depot.EXECUTOR)
         for cbname, cb in callbacks.items():
-            if cbname is 'executeTable':
+            if cbname == 'executeTable':
                 continue
             if not callable(cb):
                 cb = lambda *args, **kwargs: cb

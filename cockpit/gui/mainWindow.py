@@ -100,32 +100,23 @@ class MainWindowPanel(wx.Panel):
         ## Maps LightSource handlers to their associated panels of controls.
         self.lightToPanel = dict()
 
-        # Construct the UI.
-        # Sizer for all controls. We'll split them into bottom half (light
-        # sources) and top half (everything else).
-        self.Sizer = wx.BoxSizer(wx.VERTICAL)
-
-        # Panel for holding the non-lightsource controls.
-        topPanel = wx.Panel(self)
-        self.topPanel=topPanel
-        topSizer = wx.BoxSizer(wx.VERTICAL)
-
+        root_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # A row of buttons for various actions we know we can take.
         buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
         # Abort button
-        abortButton = wx.Button(topPanel, wx.ID_ANY, "abort")
+        abortButton = wx.Button(self, wx.ID_ANY, "abort")
         abortButton.SetLabelMarkup("<span foreground='red'><big><b>ABORT</b></big></span>")
         abortButton.Bind(wx.EVT_BUTTON, lambda event: events.publish(events.USER_ABORT))
         buttonSizer.Add(abortButton, 1, wx.EXPAND)
 
         # Snap image button
-        snapButton = wx.Button(topPanel, wx.ID_ANY, "Snap\nimage")
+        snapButton = wx.Button(self, wx.ID_ANY, "Snap\nimage")
         snapButton.Bind(wx.EVT_BUTTON, lambda evt: cockpit.interfaces.imager.imager.takeImage())
         buttonSizer.Add(snapButton, 1, wx.EXPAND)
 
         # Video mode button
-        videoButton = wx.ToggleButton(topPanel, wx.ID_ANY, "Live")
+        videoButton = wx.ToggleButton(self, wx.ID_ANY, "Live")
         videoButton.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: cockpit.interfaces.imager.videoMode())
         events.subscribe(cockpit.events.VIDEO_MODE_TOGGLE, lambda state: videoButton.SetValue(state))
         buttonSizer.Add(videoButton, 1, wx.EXPAND)
@@ -134,7 +125,7 @@ class MainWindowPanel(wx.Panel):
         for lbl, fn in ( ("Single-site\nexperiment", lambda evt: singleSiteExperiment.showDialog(self) ),
                          ("Multi-site\nexperiment", lambda evt: multiSiteExperiment.showDialog(self) ),
                          ("View last\nfile", self.onViewLastFile) ):
-            btn = wx.Button(topPanel, wx.ID_ANY, lbl)
+            btn = wx.Button(self, wx.ID_ANY, lbl)
             btn.Bind(wx.EVT_BUTTON, fn)
             buttonSizer.Add(btn, 1, wx.EXPAND)
 
@@ -143,8 +134,8 @@ class MainWindowPanel(wx.Panel):
         # Increase font size in top row buttons.
         for w in [child.GetWindow() for child in buttonSizer.Children]:
             w.SetFont(w.GetFont().Larger())
-        topSizer.Add(buttonSizer)
-        topSizer.AddSpacer(ROW_SPACER)
+        root_sizer.Add(buttonSizer)
+        root_sizer.AddSpacer(ROW_SPACER)
 
         # Make UIs for any other handlers / devices and insert them into
         # our window, if possible.
@@ -169,14 +160,15 @@ class MainWindowPanel(wx.Panel):
         # otherwise add to start of 2nd row.
         hs = depot.getHandlersOfType(depot.OBJECTIVE)
         if len(hs) == 1:
-            buttonSizer.Add(mainPanels.ObjectiveControls(self.topPanel), flag=wx.LEFT, border=2)
+            buttonSizer.Add(mainPanels.ObjectiveControls(self),
+                            flag=wx.LEFT, border=2)
         else:
-            rowSizer.Add(mainPanels.ObjectiveControls(self.topPanel), flag=wx.EXPAND)
+            rowSizer.Add(mainPanels.ObjectiveControls(self))
             rowSizer.AddSpacer(COL_SPACER)
         ignoreThings.extend(hs)
 
         # Make the UI elements for the cameras.
-        rowSizer.Add(mainPanels.CameraControlsPanel(self.topPanel), flag=wx.EXPAND)
+        rowSizer.Add(mainPanels.CameraControlsPanel(self))
         rowSizer.AddSpacer(COL_SPACER)
 
         # Add light controls.
@@ -184,7 +176,7 @@ class MainWindowPanel(wx.Panel):
         ignoreThings.extend(lightfilters)
 
         # Add filterwheel controls.
-        rowSizer.Add(mainPanels.FilterControls(self.topPanel), flag=wx.EXPAND)
+        rowSizer.Add(mainPanels.FilterControls(self))
 
         # Make the UI elements for eveything else.
         for thing in ignoreThings:
@@ -194,26 +186,25 @@ class MainWindowPanel(wx.Panel):
             if depot.getHandler(thing, depot.CAMERA):
                 # Camera UIs already drawn.
                 continue
-            item = thing.makeUI(topPanel)
+            item = thing.makeUI(self)
             if item is not None:
                 itemsizer = wx.BoxSizer(wx.VERTICAL)
-                itemsizer.Add(cockpit.gui.mainPanels.PanelLabel(topPanel, thing.name))
+                itemsizer.Add(cockpit.gui.mainPanels.PanelLabel(self, thing.name))
                 itemsizer.Add(item, 1, wx.EXPAND)
                 if rowSizer.GetChildren():
                     # Add a spacer.
                     rowSizer.AddSpacer(COL_SPACER)
-                rowSizer.Add(itemsizer, flag=wx.EXPAND)
+                rowSizer.Add(itemsizer)
 
-        topSizer.Add(rowSizer)
-        topPanel.SetSizerAndFit(topSizer)
-
-        self.Sizer.Add(topPanel, flag=wx.EXPAND)
-        self.Sizer.AddSpacer(ROW_SPACER)
+        root_sizer.Add(rowSizer, wx.SizerFlags().Expand())
+        root_sizer.AddSpacer(ROW_SPACER)
 
         lights_sizer = wx.BoxSizer(wx.HORIZONTAL)
         lights_sizer.Add(mainPanels.LightControlsPanel(self), flag=wx.EXPAND)
         lights_sizer.Add(mainPanels.ChannelsPanel(self), flag=wx.EXPAND)
-        self.Sizer.Add(lights_sizer, flag=wx.EXPAND)
+        root_sizer.Add(lights_sizer, flag=wx.EXPAND)
+
+        self.SetSizer(root_sizer)
 
         keyboard.setKeyboardHandlers(self)
         self.joystick = joystick.Joystick(self)
@@ -593,6 +584,9 @@ class StatusLights(wx.StatusBar):
             self.SetBackgroundColour(self._notificationColour)
         else:
             self.SetBackgroundColour(self._defaultBackgroundColour)
+        # On Windows, we need to call Refresh() after
+        # SetBackgroundColour() (see issue #654).
+        self.Refresh()
 
 
 def CockpitAboutInfo() -> wx.adv.AboutDialogInfo:

@@ -67,8 +67,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
     ## callbacks should fill in the following functions:
     # - setPower(value): Set power level.
     # - getPower(): Get current output power level.
-    # \param minPower Minimum output power in milliwatts.
-    # \param maxPower Maximum output power in milliwatts.
     # \param curPower Initial output power.
     # \param isEnabled True iff the handler can be interacted with.
 
@@ -95,8 +93,8 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
                         queries[light] = executor.submit(getPower)
 
 
-    def __init__(self, name, groupName, callbacks, wavelength, minPower,
-                 maxPower, curPower, isEnabled=True):
+    def __init__(self, name, groupName, callbacks, wavelength, curPower: float,
+                 isEnabled=True) -> None:
         # Validation:
         required = set(['getPower', 'setPower'])
         missing = required.difference(callbacks)
@@ -110,8 +108,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         super().__init__(name, groupName, False, callbacks, depot.LIGHT_POWER)
         LightPowerHandler._instances.append(self)
         self.wavelength = wavelength
-        self.minPower = minPower
-        self.maxPower = maxPower
         self.lastPower = curPower
         self.powerSetPoint = None
         self.isEnabled = isEnabled
@@ -158,23 +154,15 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         return self.isEnabled
 
 
-    ## Set a new value for minPower.
-    def setMinPower(self, minPower):
-        self.minPower = minPower
-
-
-    ## Set a new value for maxPower.
-    def setMaxPower(self, maxPower):
-        self.maxPower = maxPower
-
     ## Fetch the current laser power.
     def getPower(self):
         return self.callbacks['getPower']()
 
     ## Handle the user selecting a new power level.
     def setPower(self, power):
-        if power < self.minPower or power > self.maxPower:
-            raise RuntimeError("Tried to set invalid power %f for light %s (range %f to %f)" % (power, self.name, self.minPower, self.maxPower))
+        if power < 0.0 or power > 1.0:
+            raise RuntimeError("Tried to set invalid power %f for light %s"
+                               % (power, self.name))
         self.callbacks['setPower'](power)
         self.powerSetPoint = power
         cockpit.util.userConfig.setValue(self.name + '-lightPower', power)
@@ -187,7 +175,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
 
     ## Experiments should include the laser power.
     def getSavefileInfo(self):
-        return "%s: %.1fmW" % (self.name, self.lastPower)
+        return "%s: %.1f" % (self.name, self.lastPower)
 
 # Fire up the status updater.
 LightPowerHandler._updater()

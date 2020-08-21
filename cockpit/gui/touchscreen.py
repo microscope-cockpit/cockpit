@@ -233,9 +233,9 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
                 "Click to snap an image at the current stage positon and " +
                       "transfer it directly into the mosaic.")]:
 
-            if len(args) is 7:
+            if len(args) == 7:
                 button = self.makeToggleButton(self.buttonPanel, *args)
-            elif len(args) is 5:
+            elif len(args) == 5:
                 button = self.makeButton(self.buttonPanel, *args)
             mosaicButtonSizer.Add(button, 0, wx.EXPAND|wx.ALL,border=2)
 
@@ -253,10 +253,12 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             powerHandler = next(filter(lambda p: p.groupName == light.groupName, lightPowers), None)
             if powerHandler is not None:
                 powerctrl = SetVariable(self.buttonPanel)
-                powerctrl.SetUnits('mW')
-                powerctrl.SetValue(powerHandler.powerSetPoint)
-                powerctrl.Bind(wx.EVT_SPINCTRLDOUBLE, lambda evt, h=powerHandler: h.setPower(evt.Value) )
-                powerHandler.addWatch('powerSetPoint', powerctrl.SetValue)
+                powerctrl.SetUnits('%')
+                powerctrl.SetValue(powerHandler.powerSetPoint * 100.0)
+                powerctrl.Bind(wx.EVT_SPINCTRLDOUBLE,
+                               lambda evt, h=powerHandler: h.setPower(evt.Value / 100.0))
+                powerHandler.addWatch('powerSetPoint',
+                                      lambda p, c=powerctrl: c.SetValue(p*100.0))
             # Exposure control
             expctrl = SetVariable(self.buttonPanel)
             expctrl.SetUnits('ms')
@@ -449,7 +451,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         for light in depot.getHandlersOfType(depot.LIGHT_TOGGLE):
             if light.getIsEnabled():
                 lights=lights+1
-        if (cams is 0) or (lights is 0):
+        if not cams or not lights:
             print ("Snap needs a light and a camera to opperate")
             return
 
@@ -506,7 +508,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         if axis in [0, 1]:
             # Only care about the X and Y axes.
             wx.CallAfter(self.Refresh)
-        if axis is 2:
+        if axis == 2:
             #Z axis updates
             posString=self.nameToText['Zpos']
             label = 'Z Pos %5.2f'%(cockpit.interfaces.stageMover.getPosition()[2])

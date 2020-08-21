@@ -235,17 +235,17 @@ class MultiSiteExperimentDialog(wx.Dialog):
         button = wx.Button(self.panel, -1, "Reset")
         button.SetToolTip(wx.ToolTip("Reload this window with all default values"))
         button.Bind(wx.EVT_BUTTON, self.onReset)
-        buttonSizer.Add(button, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+        buttonSizer.Add(button, 0, wx.ALL, 5)
 
         buttonSizer.Add((1, 0), 1, wx.EXPAND)
 
         button = wx.Button(self.panel, wx.ID_CANCEL, "Cancel")
-        buttonSizer.Add(button, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        buttonSizer.Add(button, 0, wx.ALL, 5)
         
         button = wx.Button(self.panel, wx.ID_OK, "Start")
         button.SetToolTip(wx.ToolTip("Start the experiment"))
         button.Bind(wx.EVT_BUTTON, self.onStart)
-        buttonSizer.Add(button, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        buttonSizer.Add(button, 0, wx.ALL, 5)
 
         self.panelSizer.Add(buttonSizer, 0, wx.ALL, 5)
         self.panel.SetSizerAndFit(self.panelSizer)
@@ -265,6 +265,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
     ## User checked/unchecked the "customize light frequencies" button.
     def onCustomizeLightFrequencies(self, event):
         self.lightFrequenciesPanel.Show(self.shouldCustomizeLightFrequencies.GetValue())
+        self.panel.Layout()
         self.panel.SetSizerAndFit(self.panelSizer)
         self.SetClientSize(self.panel.GetSize())
 
