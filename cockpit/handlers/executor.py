@@ -325,12 +325,15 @@ class DigitalMixin:
         else:
             # No lights. Just trigger the cameras.
             seq = [(0, camlines)]
-        ambient = depot.getHandlerWithName('ambient')
-        # If ambient light is enabled, extend exposure if necessary.
-        if ambient.getIsEnabled():
+
+        # If there is an ambient light enabled, extend exposure as
+        # necessary (see issue #669).
+        ambient = depot.getHandlerWithName('Ambient')
+        if ambient is not None and ambient.getIsEnabled():
             t = ambient.getExposureTime()
             if t > seq[-1][0]:
                 seq.append((ambient.getExposureTime(), 0))
+
         # Switch all lights and cameras off.
         seq.append( (seq[-1][0] + 1, 0) )
         if self.callbacks.get('runSequence', None):
