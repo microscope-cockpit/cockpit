@@ -56,6 +56,7 @@ from OpenGL.GL import *
 import traceback
 import wx
 
+from cockpit import depot
 from cockpit import events
 from cockpit.gui.primitive import Primitive
 import cockpit.gui.dialogs.getNumberDialog
@@ -74,6 +75,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
     # up the mouse event.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        ## Objective offset info to get correct position and limits
+        self.objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
+        self.offset = self.objective.getOffset()
         ## Whether or not to draw the mosaic tiles
         self.shouldDrawMosaic = True
         ## True if we're in the processing of changing the soft motion limits.
@@ -182,7 +186,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glOrtho(self.maxX, self.minX, self.minY, self.maxY, -1.0, 1.0)
 
             #Loop over objective offsets to draw limist in multiple colours.
-            for obj in self.listObj:
+            for obj in self.objective.nameToOffset.keys():
                 offset=self.objective.nameToOffset.get(obj)
                 colour=self.objective.nameToColour.get(obj)
                 glLineWidth(4)
