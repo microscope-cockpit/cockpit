@@ -54,6 +54,7 @@
 # are initialized and registered from here, and if a part of the UI wants to 
 # interact with a specific kind of device, they can find it through the depot.
 
+import collections
 import configparser
 import os
 
@@ -90,12 +91,12 @@ class DeviceDepot:
         self.handlersList = []
         ## Maps handler device types to lists of the handlers controlling that
         # type.
-        self.deviceTypeToHandlers = {}
+        self.deviceTypeToHandlers = collections.defaultdict(list)
         ## Maps handler names to handlers with those names. NB we enforce that
         # there only be one handler per name when we load the handlers.
         self.nameToHandler = {}
         ## Maps group name to handlers.
-        self.groupNameToHandlers = {}
+        self.groupNameToHandlers = collections.defaultdict(list)
 
 
     ## Call the initialize() method for each registered device, then get
@@ -201,8 +202,6 @@ class DeviceDepot:
 
 
     def addHandler(self, handler, device=None):
-        if handler.deviceType not in self.deviceTypeToHandlers:
-            self.deviceTypeToHandlers[handler.deviceType] = []
         self.deviceTypeToHandlers[handler.deviceType].append(handler)
         if handler.name in self.nameToHandler:
             # We enforce unique names, but multiple devices may reference
@@ -216,8 +215,6 @@ class DeviceDepot:
                                    (handler.name, str(device), str(otherDevice)))
         self.nameToHandler[handler.name] = handler
         self.handlerToDevice[handler] = device
-        if handler.groupName not in self.groupNameToHandlers:
-            self.groupNameToHandlers[handler.groupName] = []
         self.groupNameToHandlers[handler.groupName].append(handler)
 
 
@@ -262,9 +259,8 @@ class DeviceDepot:
     # We sort by range of motion, with the largest range coming first in the
     # list.
     def getSortedStageMovers(self):
-        movers = self.deviceTypeToHandlers.get(STAGE_POSITIONER, [])
         axisToMovers = {}
-        for mover in movers:
+        for mover in self.deviceTypeToHandlers[STAGE_POSITIONER]:
             if mover.axis not in axisToMovers:
                 axisToMovers[mover.axis] = []
             axisToMovers[mover.axis].append(mover)
@@ -306,12 +302,12 @@ def getHandlerWithName(name):
 
 ## Return all registered device handlers of the appropriate type.
 def getHandlersOfType(deviceType):
-    return deviceDepot.deviceTypeToHandlers.get(deviceType, [])
+    return deviceDepot.deviceTypeToHandlers[deviceType]
 
 
 ## Return all registered device handlers in the appropriate group.
 def getHandlersInGroup(groupName):
-    return deviceDepot.groupNameToHandlers.get(groupName, [])
+    return deviceDepot.groupNameToHandlers[groupName]
 
 
 ## Get all registered device handlers.
