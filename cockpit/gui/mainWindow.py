@@ -156,16 +156,12 @@ class MainWindowPanel(wx.Panel):
         rowSizer = wx.WrapSizer(wx.HORIZONTAL)
 
         # Add objective control
-        # If only one objective device (usual), add to end of top row,
-        # otherwise add to start of 2nd row.
-        hs = depot.getHandlersOfType(depot.OBJECTIVE)
-        if len(hs) == 1:
-            buttonSizer.Add(mainPanels.ObjectiveControls(self),
-                            flag=wx.LEFT, border=2)
-        else:
-            rowSizer.Add(mainPanels.ObjectiveControls(self))
-            rowSizer.AddSpacer(COL_SPACER)
-        ignoreThings.extend(hs)
+        buttonSizer.Add(
+            mainPanels.ObjectiveControls(self, wx.GetApp().Objectives),
+            flag=wx.LEFT,
+            border=2,
+        )
+        ignoreThings.extend(wx.GetApp().Objectives.GetHandlers())
 
         # Make the UI elements for the cameras.
         rowSizer.Add(mainPanels.CameraControlsPanel(self))

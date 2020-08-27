@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
-## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
+## Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -19,112 +18,45 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-## Copyright 2013, The Regents of University of California
-##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions
-## are met:
-##
-## 1. Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-##
-## 2. Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in
-##   the documentation and/or other materials provided with the
-##   distribution.
-##
-## 3. Neither the name of the copyright holder nor the names of its
-##   contributors may be used to endorse or promote products derived
-##   from this software without specific prior written permission.
-##
-## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-## "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-## LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-## FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-## COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-## INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-## BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-## LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-## CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-## LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-## POSSIBILITY OF SUCH DAMAGE.
+import typing
+
+import cockpit.depot
+import cockpit.handlers.deviceHandler
 
 
-import wx
+class ObjectiveHandler(cockpit.handlers.deviceHandler.DeviceHandler):
+    """Handler for a single objective.
 
-from cockpit import depot
-from cockpit.handlers import deviceHandler
+    Args:
+        name:
+        group_name:
+        pixel_size: how many microns wide a pixel using that objective
+            appears to be.
+        transform:
+        offset:
+        colour:
+        lens_ID:
+    """
 
-from cockpit import events
-import re
-
-## This handler is responsible for tracking the current objective. 
-class ObjectiveHandler(deviceHandler.DeviceHandler):
-    ## \param nameToPixelSize A mapping of objective names to how many microns
-    #         wide a pixel using that objective appears to be.
-    # \param curObjective Currently-active objective.
-    # \param callbacks
-    # - setObjective(name, objectiveName): Set the current objective to the
-    #   named one. This is an optional callback; if not provided, nothing is
-    #   done.
-    def __init__(self, name, groupName, nameToPixelSize, nameToTransform, nameToOffset, nameToColour, nameToLensID, curObjective,
-            callbacks = {}):
-        super().__init__(name, groupName, False, {}, depot.OBJECTIVE)
-        self.nameToPixelSize = nameToPixelSize
-        self.nameToTransform = nameToTransform
-        self.nameToOffset = nameToOffset
-        self.nameToColour = nameToColour
-        self.nameToLensID = nameToLensID
-        self.curObjective = curObjective
-        self.callbacks = callbacks
-        ## List of ToggleButtons, one per objective.
-        self.buttons = []
-
-    @property
-    def numObjectives(self):
-        return len(self.nameToPixelSize)
-
-    ## A list of objectives sorted by magnification.
-    @property
-    def sortedObjectives(self):
-        def parseMag(name):
-            m = re.search('[0-9.]+', name)
-            if m is None:
-                return None
-            else:
-                return float(m.group())
-        return sorted(self.nameToPixelSize.keys(), key=parseMag)
-
-
-    ## Let everyone know what the initial objective.
-    def makeInitialPublications(self):
-        self.changeObjective(self.curObjective)
-
-
-    ## Let everyone know that the objective has been changed.
-    def changeObjective(self, newName):
-        if 'setObjective' in self.callbacks:
-            self.callbacks['setObjective'](self.name, newName)
-        self.curObjective = newName
-        events.publish("objective change", newName, 
-                pixelSize=self.nameToPixelSize[newName], 
-                transform=self.nameToTransform[newName],
-                offset=self.nameToOffset[newName])
-
-
-    ## Get the current pixel size.
-    def getPixelSize(self):
-        return self.nameToPixelSize[self.curObjective]
-
-    ## Get the current offset.
-    def getOffset(self):
-        return self.nameToOffset[self.curObjective]
-
-    ## Get Current lensID for file metadata.
-    def getLensID(self):
-        return self.nameToLensID[self.curObjective]
-
-    ## Get Current lens colour.
-    def getColour(self):
-        return self.nameToColour[self.curObjective]
+    def __init__(
+        self,
+        name: str,
+        group_name: str,
+        pixel_size: float,
+        transform: typing.Tuple[int, int, int],
+        offset: typing.Tuple[int, int, int],
+        colour: typing.Tuple[float, float, float],
+        lens_ID: int,
+    ) -> None:
+        super().__init__(
+            name,
+            group_name,
+            isEligibleForExperiments=False,
+            callbacks={},
+            deviceType=cockpit.depot.OBJECTIVE,
+        )
+        self.pixel_size = pixel_size
+        self.transform = transform
+        self.offset = offset
+        self.colour = colour
+        self.lens_ID = lens_ID

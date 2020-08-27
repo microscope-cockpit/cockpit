@@ -76,7 +76,7 @@ POWER_CONTROL = "power control"
 SERVER = "server"
 STAGE_POSITIONER = "stage positioner"
 
-SKIP_CONFIG = ['objectives', 'server']
+SKIP_CONFIG = ['server']
 
 class DeviceDepot:
     ## Initialize the Depot.
@@ -161,15 +161,31 @@ class DeviceDepot:
 
         # Add dummy devices as required.
         dummies = []
+
         # Dummy objectives
         if not getHandlersOfType(OBJECTIVE):
             from cockpit.devices.objective import ObjectiveDevice
+            dummy_obj_config = {
+                "40x": {
+                    "pixel_size": "0.2",
+                    "offset": "(-100, 50, 0)",
+                },
+                "60xWater": {
+                    "pixel_size": "0.1",
+                },
+                "60xOil": {
+                    "pixel_size": "0.1",
+                },
+                "100xOil": {
+                    "pixel_size": "0.08",
+                },
+                "150xTIRF": {
+                    "pixel_size": "0.06",
+                },
+            }
+            for obj_name, obj_config in dummy_obj_config.items():
+                dummies.append(ObjectiveDevice(obj_name, obj_config))
 
-            if config.has_section('objectives'):
-                objs = dict(config.items('objectives'))
-            else:
-                objs = {}
-            dummies.append(ObjectiveDevice('objectives', objs))
         # Dummy stages
         axes = self.getSortedStageMovers().keys()
         if 2 not in axes:

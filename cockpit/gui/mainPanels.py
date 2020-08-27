@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+## Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ## Copyright (C) 2018-19 Mick Phillips <mick.phillips@gmail.com>
 ##
 ## This file is part of Cockpit.
@@ -192,22 +193,38 @@ class CameraControlsPanel(wx.Panel):
 
 class ObjectiveControls(wx.Panel):
     """A panel with an objective selector."""
-    def __init__(self, parent):
+    def __init__(
+        self,
+        parent: wx.Window,
+        interface: cockpit.interfaces.Objectives,
+    ) -> None:
         super().__init__(parent)
-        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        self._interface = interface
         label = PanelLabel(self, label="Objective")
-        self.Sizer.Add(label)
-        panel = wx.Panel(self, style=wx.RAISED_BORDER)
-        self.Sizer.Add(panel, 1, wx.EXPAND)
-        panel.Sizer =  wx.BoxSizer(wx.VERTICAL)
+        self._choice = wx.Choice(self, choices=interface.GetNamesSorted())
+        if not self._choice.SetStringSelection(interface.GetName()):
+            raise Exception(
+                "failed to find objective '%s'" % interface.GetName()
+            )
 
-        for o in depot.getHandlersOfType(depot.OBJECTIVE):
-            ctrl = wx.Choice(panel)
-            ctrl.Set(o.sortedObjectives)
-            panel.Sizer.Add(ctrl)
-            ctrl.Bind(wx.EVT_CHOICE, lambda evt: o.changeObjective(evt.GetString()))
-            events.subscribe("objective change",
-                             lambda *a, **kw: ctrl.SetSelection(ctrl.FindString(a[0])))
+        self._choice.Bind(wx.EVT_CHOICE, self._OnObjectiveChoice)
+        self._interface.Bind(
+            cockpit.interfaces.EVT_OBJECTIVE_CHANGED,
+            self._OnObjectiveChanged,
+        )
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(label)
+        sizer.Add(self._choice)
+        self.SetSizer(sizer)
+
+    def _OnObjectiveChoice(self, event: wx.CommandEvent) -> None:
+        self._interface.ChangeObjective(event.GetString())
+
+    def _OnObjectiveChanged(self, event: wx.CommandEvent) -> None:
+        if not self._choice.SetStringSelection(event.GetString()):
+            raise Exception("failed to find objective '%s'" % event.GetString())
+        event.Skip()
 
 
 class FilterControls(wx.Panel):

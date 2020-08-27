@@ -34,6 +34,7 @@ import cockpit.gui.keyboard
 import cockpit.gui.mainWindow
 import cockpit.gui.mosaic.canvas
 import cockpit.gui.mosaic.window as mosaic
+import cockpit.interfaces
 import cockpit.interfaces.stageMover
 import cockpit.util.colors
 import cockpit.util.userConfig
@@ -194,14 +195,13 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         objectiveText.SetFont(objectiveText.Font.Bold())
         textSizer2.Add(objectiveText, 0, wx.EXPAND|wx.ALL,border=5)
 
-        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-
         self.objectiveSelectedText=wx.StaticText(self.buttonPanel,-1,
                                                  style=wx.ALIGN_CENTER)
         self.objectiveSelectedText.SetFont(self.objectiveSelectedText.Font.Bold())
-        self.objectiveSelectedText.SetLabel(objective.curObjective.center(15))
-
-        colour = tuple(map(lambda x: 255*x, objective.getColour()))
+        self.objectiveSelectedText.SetLabel(
+            wx.GetApp().Objectives.GetName().center(15)
+        )
+        colour = tuple([int(x*255) for x in wx.GetApp().Objectives.GetColour()])
         self.sampleStateText.SetBackgroundColour(colour)
         textSizer2.Add(self.objectiveSelectedText, 0, wx.CENTER|wx.ALL,border=5)
 
@@ -377,12 +377,14 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         events.subscribe('stage step size', self.onAxisRefresh)
         events.subscribe('stage step index', self.stageIndexChange)
         events.subscribe('soft safety limit', self.onAxisRefresh)
-        events.subscribe('objective change', self.onObjectiveChange)
         events.subscribe('mosaic start', self.mosaicStart)
         events.subscribe('mosaic stop', self.mosaicStop)
         events.subscribe(events.MOSAIC_UPDATE, self.mosaicUpdate)
 
-
+        wx.GetApp().Objectives.Bind(
+            cockpit.interfaces.EVT_OBJECTIVE_CHANGED,
+            self._OnObjectiveChanged,
+        )
 
         self.Bind(wx.EVT_SIZE, self.onSize)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
@@ -470,11 +472,10 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
         # Calculate the size of the box at the center of the crosshairs.
         # \todo Should we necessarily assume a 512x512 area here?
-        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
         #if we havent previously set crosshairBoxSize (maybe no camera active)
         if (self.crosshairBoxSize == 0):
-            self.crosshairBoxSize = 512 * objective.getPixelSize()
-        self.offset = objective.getOffset()
+            self.crosshairBoxSize = 512 * wx.GetApp().Objectives.GetPixelSize()
+        self.offset = wx.GetApp().Objectives.GetOffset()
         scale = (150./self.crosshairBoxSize)
         self.canvas.zoomTo(-curPosition[0]+self.offset[0],
                            curPosition[1]-self.offset[1], scale)
@@ -519,16 +520,17 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
             wx.CallAfter(self.Refresh)
 
     ## User changed the objective in use; resize our crosshair box to suit.
-    def onObjectiveChange(self, name, pixelSize, transform, offset, **kwargs):
-        h = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        self.crosshairBoxSize = 512 * pixelSize
-        self.offset = offset
-        self.objectiveSelectedText.SetLabel(name.center(15))
-        colour = tuple(map(lambda x: 255*x, h.getColour()))
+    def _OnObjectiveChanged(self, event: wx.CommandEvent) -> None:
+        objective_name = event.GetString()
+        self.crosshairBoxSize = 512 * wx.GetApp().Objectives.GetPixelSize()
+        self.offset = wx.GetApp().Objectives.GetOffset()
+        self.objectiveSelectedText.SetLabel(objective_name.center(15))
+        colour = tuple([int(x*255) for x in wx.GetApp().Objectives.GetColour()])
         self.objectiveSelectedText.SetBackgroundColour(colour)
 
         #force a redraw so that the crosshairs are properly sized
         self.Refresh()
+        event.Skip()
 
 
     ## Handle mouse events.
@@ -711,21 +713,23 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
     ##Function to load/unload objective
     def changeObjective(self):
-        # If we have only two objectives, then simply flip them
-        h = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        if (h.numObjectives == 2):
-            for obj in h.sortedObjectives:
-                if h.currentObj != obj:
-                    h.changeObjective(obj)
-                    break
+        objectives = wx.GetApp().Objectives
+        names = objectives.GetNames()
+        # If we have only two objectives, then simply flip them.
+        if len(names) == 2:
+            names.remove(objectives.GetName())
+            assert len(names) == 1
+            objectives.ChangeObjective(names[0])
         else:
             # More than 2 objectives so need to present a list.
             menu = wx.Menu()
-            for i, objective in enumerate(h.sortedObjectives):
-                menu.Append(i, objective)
-                menu.Bind(wx.EVT_MENU,
-                          lambda evt, obj=objective: h.changeObjective(obj),
-                          id=i)
+            for name in objectives.GetNamesSorted():
+                def change_to_this(event: wx.CommandEvent,
+                                   name: str = name) -> None:
+                    del event
+                    objectives.ChangeObjective(name)
+                menu_item = menu.Append(wx.ID_ANY, name)
+                menu.Bind(wx.EVT_MENU, change_to_this, menu_item)
             cockpit.gui.guiUtils.placeMenuAtMouse(self.panel, menu)
 
 

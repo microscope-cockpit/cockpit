@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
-## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
+## Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -19,114 +18,105 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-## Copyright 2013, The Regents of University of California
-##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions
-## are met:
-##
-## 1. Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-##
-## 2. Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in
-##   the documentation and/or other materials provided with the
-##   distribution.
-##
-## 3. Neither the name of the copyright holder nor the names of its
-##   contributors may be used to endorse or promote products derived
-##   from this software without specific prior written permission.
-##
-## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-## "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-## LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-## FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-## COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-## INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-## BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-## LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-## CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-## LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-## POSSIBILITY OF SUCH DAMAGE.
-
-
-## This dummy device presents a selection of objectives to the user. In
-# practice, the only difference you might have to make to this device to use
-# it would be to change the available objectives and their pixel sizes.
-
-from cockpit.devices import device
-import cockpit.handlers.objective
 import re
+import typing
 
-PIXEL_PAT =  r"(?P<pixel_size>\d*[.]?\d*)"
-LENSID_PAT = r"(?P<lensID>\d*)"
-TRANSFORM_PAT = r"(?P<transform>\(\s*\d*\s*,\s*\d*\s*,\s*\d*\s*\))"
-OFFSET_PAT = r"(?P<offset>\(\s*[-]?\d*\s*,\s*[-]?\d*\s*,\s*[-]?\d*\s*\))?"
-COLOUR_PAT = r"(?P<colour>\(\s*[-]?\d*\s*,\s*[-]?\d*\s*,\s*[-]?\d*\s*\))?"
+import cockpit.devices.device
+from cockpit.handlers.objective import ObjectiveHandler
 
-CONFIG_PAT = PIXEL_PAT + r"(\s*(,|;)\s*)?" + LENSID_PAT + r"(\s*(,|;)\s*)?" + TRANSFORM_PAT + r"(\s*(,|;)\s*)?" + OFFSET_PAT+ r"(\s*(,|;)\s*)?" + COLOUR_PAT
 
-## Maps objective names to the pixel sizes for those objectives. This is the 
-# amount of sample viewed by the pixel, not the physical size of the 
-# pixel sensor.
-DUMMY_OBJECTIVE_PIXEL_SIZES = {
-        "40x": .2,
-        "60xWater": .1,
-        "60xOil": .1,
-        "100xOil": .08,
-        "150xTIRF": .06,
-}
+def _parse_three_number_tuple(string: str) -> typing.Tuple[str, str, str]:
+    # Note the capture of '.*?' which is non-greddy to avoid capturing
+    # an optional comma/spaces at the end in cases like '(1,1,1 , )'.
+    match = re.search(r"^\s*\(\s*(.*?)\s*,?\s*\)\s*$", string)
+    if not match:
+        raise Exception("failed to match a tuple in '%s'" % string)
+    values = match[1].split(",")
+    if len(values) != 3:
+        raise Exception(
+            "failed to find 3 elements inside match '%s'" % match[1]
+        )
+    return tuple([x.strip() for x in values])
 
-class ObjectiveDevice(device.Device):
-    def __init__(self, name='objectives', config={}):
+
+class ObjectiveDevice(cockpit.devices.device.Device):
+    """Objective device.
+
+    While this device wraps an objective, it actually wraps the whole
+    light path originating from that objective, which is why it
+    includes the attributes `pixel_size`, `transform`, and `offset`.
+
+    The configuration section for an `ObjectiveDevice` takes the
+    following keys:
+
+    ``pixel_size`` (required)
+      Amount of sample viewed by the pixel, not the physical size of the
+      pixel sensor, in microns.
+
+    ``transform`` (optional)
+      Defaults to `(0, 0, 0)`.
+
+    ``offset`` (optional)
+      Defaults to `(0, 0, 0)`.
+
+    ``colour``
+      Defaults to `(1.0, 1.0, 1.0)` (white).
+
+    ``lensID`` (optional)
+      Lens identification number, to be recorded on the saved dv/mrc
+      files.  Defaults to `0`.
+
+    For example::
+
+      [60x water]
+      type: cockpit.devices.objective.ObjectiveDevice
+      pixel_size: 0.1
+      transform: (1, 0, 0)
+      offset: (-100, 50, 0)
+      colour: (1.0, .5, .5)
+      lensID: 10611
+
+    """
+
+    def __init__(self, name: str, config: typing.Mapping[str, str]) -> None:
         super().__init__(name, config)
+        self._pixel_size = float(config["pixel_size"])
+        self._transform = (0, 0, 0)
+        self._offset = (0, 0, 0)
+        self._colour = (1.0, 1.0, 1.0)
+        self._lens_ID = 0
 
-    def getHandlers(self):
-        pixel_sizes = {}
-        transforms = {}
-        offsets = {}
-        lensIDs = {}
-        colours = {}
-        if not self.config:
-            # No objectives section in config
-            pixel_sizes = DUMMY_OBJECTIVE_PIXEL_SIZES
-            transforms = {obj: (0,0,0) for obj in pixel_sizes.keys()}
-            offsets = {obj: (0,0,0) for obj in pixel_sizes.keys()}
-            lensIDs = {obj: 0 for obj in pixel_sizes.keys()}
-            colours = {obj: (1,1,1) for obj in pixel_sizes.keys()}
-            offsets['40x'] = (-100,50,0) # Add a test offset to one objective.
-        else:
-            for obj, cfg in self.config.items():
-                parsed = re.search(CONFIG_PAT, cfg)
-                if not parsed:
-                    # Could not parse config entry.
-                    raise Exception('Bad config: objectives.')
-                    # No transform tuple
-                else:    
-                    pstr = parsed.groupdict()['pixel_size']
-                    lstr = parsed.groupdict()['lensID']
-                    tstr = parsed.groupdict()['transform']
-                    ostr =  parsed.groupdict()['offset']
-                    cstr =  parsed.groupdict()['colour']
-                    pixel_size = float(pstr)
-                    lensID = int(lstr) if lstr else 0
-                    transform = eval(tstr) if tstr else (0,0,0)
-                    offset = eval(ostr) if ostr else (0,0,0)
-                    colour = eval(cstr) if cstr else (1,0,0)
-                pixel_sizes.update({obj: pixel_size})
-                lensIDs.update({obj: lensID})
-                transforms.update({obj: transform})
-                offsets.update({obj: offset})
-                colours.update({obj: colour})
+        if "lensid" in config:
+            self._lens_ID = int(config["lensid"])
 
-        default = list(pixel_sizes.keys())[0]
+        if "transform" in config:
+            values = _parse_three_number_tuple(config["transform"])
+            self._transform = tuple([int(x) for x in values])
+            if any([x not in [0, 1] for x in self._transform]):
+                raise ValueError(
+                    "invalid transform config '%s'" % config["transform"]
+                )
 
-        return [cockpit.handlers.objective.ObjectiveHandler("objective",
-                                                    "miscellaneous",
-                                                    pixel_sizes,
-                                                    transforms,
-                                                    offsets,
-                                                    colours,
-                                                    lensIDs,
-                                                    default)]
+        if "offset" in config:
+            values = _parse_three_number_tuple(config["offset"])
+            self._offset = tuple([int(x) for x in values])
+
+        if "colour" in config:
+            values = _parse_three_number_tuple(config["colour"])
+            self._colour = tuple([float(x) for x in values])
+            if not all([0.0 <= x <= 1.0 for x in self._colour]):
+                raise ValueError(
+                    "invalid colour config '%s'" % config["colour"]
+                )
+
+    def getHandlers(self) -> typing.List[ObjectiveHandler]:
+        handler = ObjectiveHandler(
+            name=self.name,
+            group_name="miscellaneous",
+            pixel_size=self._pixel_size,
+            transform=self._transform,
+            offset=self._offset,
+            colour=self._colour,
+            lens_ID=self._lens_ID,
+        )
+        return [handler]

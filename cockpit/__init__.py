@@ -78,6 +78,7 @@ import cockpit.depot
 import cockpit.events
 import cockpit.gui.loggingWindow
 import cockpit.gui.mainWindow
+import cockpit.interfaces
 import cockpit.interfaces.channels
 import cockpit.interfaces.imager
 import cockpit.interfaces.stageMover
@@ -104,6 +105,10 @@ class CockpitApp(wx.App):
     @property
     def Channels(self):
         return self._channels
+
+    @property
+    def Objectives(self):
+        return self._objectives
 
     @property
     def Stage(self):
@@ -143,6 +148,9 @@ class CockpitApp(wx.App):
             updateNum+=1
             cockpit.interfaces.imager.initialize()
             cockpit.interfaces.stageMover.initialize()
+            self._objectives = cockpit.interfaces.Objectives(
+                cockpit.depot.getHandlersOfType(cockpit.depot.OBJECTIVE)
+            )
             self._stage = cockpit.interfaces.stageMover.mover
             self._channels = cockpit.interfaces.channels.Channels()
             for fpath in self.Config['global'].getpaths('channel-files', []):
