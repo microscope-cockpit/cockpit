@@ -57,7 +57,6 @@ import cockpit.util.threads
 import cockpit.gui.guiUtils
 import cockpit.gui.imageViewer.viewCanvas
 import cockpit.interfaces.stageMover
-import cockpit.interfaces.imager
 
 
 ## Default viewer dimensions.

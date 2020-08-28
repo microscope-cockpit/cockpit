@@ -19,12 +19,12 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
+import contextlib
 import unittest
 import unittest.mock
 
 import cockpit.depot
 import cockpit.events
-import cockpit.interfaces.imager
 import cockpit.handlers.camera
 
 def mock_events_at(where: str):
@@ -43,13 +43,37 @@ def mock_events_at(where: str):
     return with_mocked_events
 
 
+@contextlib.contextmanager
+def mock_not_in_video_mode():
+    """Mock CockpitApp that reports we are not in video mode.
+
+    The camera handler uses `cockpit.interfaces.imager.pauseVideo`
+    which looks into wx's app singleton.  This ruins the abstraction,
+    the handlers should not require a wx app running.  While that is
+    not fixed, this mocks access to CockpitApp.Imager so it reports we
+    are not in video mode and pauseVideo then does nothing.
+
+    """
+    class MockImager:
+        def __init__(self):
+            self.amInVideoMode = False
+
+    class MockCockpitApp():
+        @property
+        def Imager(self):
+            return MockImager()
+
+    with unittest.mock.patch('cockpit.interfaces.imager.wx.GetApp',
+                             new=MockCockpitApp):
+        yield
+
+
 class CameraHandlerTestCase(unittest.TestCase):
     def setUp(self):
         ## On each test we will be creating new handlers which may
         ## conflict with handlers created in previous tests.  So just
         ## build a new depot and reinitialise the imager.
         cockpit.depot.deviceDepot = cockpit.depot.DeviceDepot()
-        cockpit.interfaces.imager.initialize()
 
         self.callback_mocks = {
             'setEnabled' : unittest.mock.Mock(side_effect=lambda n, s : s),
@@ -88,7 +112,8 @@ class CameraHandlerTestCase(unittest.TestCase):
         event_handler = unittest.mock.Mock()
         cockpit.events.subscribe(cockpit.events.CAMERA_ENABLE, event_handler)
         try:
-            camera.setEnabled(True)
+            with mock_not_in_video_mode():
+                camera.setEnabled(True)
         finally:
             cockpit.events.unsubscribe(cockpit.events.CAMERA_ENABLE,
                                        event_handler)
@@ -115,9 +140,11 @@ class CameraHandlerTestCase(unittest.TestCase):
     def test_enabled_getter(self):
         camera = cockpit.handlers.camera.CameraHandler(**self.args)
         self.assertFalse(camera.getIsEnabled())
-        camera.setEnabled(True)
+        with mock_not_in_video_mode():
+            camera.setEnabled(True)
         self.assertTrue(camera.getIsEnabled())
-        camera.setEnabled(False)
+        with mock_not_in_video_mode():
+            camera.setEnabled(False)
         self.assertFalse(camera.getIsEnabled())
 
     def test_get_time_between_exposures(self):

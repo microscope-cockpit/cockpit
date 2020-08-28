@@ -107,13 +107,16 @@ class CockpitApp(wx.App):
         return self._channels
 
     @property
+    def Imager(self):
+        return self._imager
+
+    @property
     def Objectives(self):
         return self._objectives
 
     @property
     def Stage(self):
         return self._stage
-
 
     def OnInit(self):
         try:
@@ -146,7 +149,10 @@ class CockpitApp(wx.App):
                 updateNum+=1
             status.Update(updateNum, "Initializing device interfaces...")
             updateNum+=1
-            cockpit.interfaces.imager.initialize()
+
+            self._imager = cockpit.interfaces.imager.Imager(
+                cockpit.depot.getHandlersOfType(cockpit.depot.IMAGER)
+            )
             cockpit.interfaces.stageMover.initialize()
             self._objectives = cockpit.interfaces.Objectives(
                 cockpit.depot.getHandlersOfType(cockpit.depot.OBJECTIVE)
@@ -207,7 +213,6 @@ class CockpitApp(wx.App):
             status.Destroy()
 
             cockpit.depot.makeInitialPublications()
-            cockpit.interfaces.imager.makeInitialPublications()
             cockpit.interfaces.stageMover.makeInitialPublications()
 
             cockpit.events.publish('cockpit initialization complete')

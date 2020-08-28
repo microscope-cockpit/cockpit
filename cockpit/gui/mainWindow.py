@@ -78,7 +78,6 @@ from cockpit.gui.dialogs.experiment import singleSiteExperiment
 from cockpit import events
 import cockpit.experiment.experiment
 from cockpit.gui import fileViewerWindow
-import cockpit.interfaces.imager
 from cockpit.gui import joystick
 from cockpit.gui import keyboard
 import cockpit.util.files
@@ -112,12 +111,12 @@ class MainWindowPanel(wx.Panel):
 
         # Snap image button
         snapButton = wx.Button(self, wx.ID_ANY, "Snap\nimage")
-        snapButton.Bind(wx.EVT_BUTTON, lambda evt: cockpit.interfaces.imager.imager.takeImage())
+        snapButton.Bind(wx.EVT_BUTTON, lambda evt: wx.GetApp().Imager.takeImage())
         buttonSizer.Add(snapButton, 1, wx.EXPAND)
 
         # Video mode button
         videoButton = wx.ToggleButton(self, wx.ID_ANY, "Live")
-        videoButton.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: cockpit.interfaces.imager.videoMode())
+        videoButton.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: wx.GetApp().Imager.videoMode())
         events.subscribe(cockpit.events.VIDEO_MODE_TOGGLE, lambda state: videoButton.SetValue(state))
         buttonSizer.Add(videoButton, 1, wx.EXPAND)
 

@@ -711,7 +711,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             try:
                 data, timestamp = events.executeAndWaitForOrTimeout(
                     events.NEW_IMAGE % camera.name,
-                    cockpit.interfaces.imager.takeImage,
+                    wx.GetApp().Imager.takeImage,
                     camera.getExposureTime()/1000 + CAMERA_TIMEOUT,
                     shouldBlock=True)
             except Exception as e:
@@ -1255,7 +1255,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             for offset in numpy.arange(-1, 1.1, .1):
                 cockpit.interfaces.stageMover.goTo((x, y, z + offset), shouldBlock = True)
                 image, timestamp = events.executeAndWaitFor(events.NEW_IMAGE % camera.name,
-                        cockpit.interfaces.imager.takeImage, shouldBlock = True)
+                        wx.GetApp().Imager.takeImage, shouldBlock = True)
                 if bestIntensity is None or image.max() > bestIntensity:
                     bestIntensity = image.max()
                     bestOffset = offset

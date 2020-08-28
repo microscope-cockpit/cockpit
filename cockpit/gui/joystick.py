@@ -61,7 +61,6 @@ _THRESHOLD = 300
 # here as imager is None at time of import, so must either:
 #  * import module and use imager.imager,
 #  * or 'from ... import imager' wherever it's used.
-import cockpit.interfaces.imager as imager
 import cockpit.gui.mosaic.window as mosaic
 
 
@@ -92,7 +91,8 @@ class Joystick:
         ts = event.GetTimestamp() or (time.time() * 1000)
         self._buttonDownTimes[event.ButtonChange] = ts
         if buttonTest(event.ButtonChange, 2):
-            wx.CallLater(_CLICKMS, self._longPress, 2, imager.imager.videoMode)
+            wx.CallLater(_CLICKMS, self._longPress, 2,
+                         wx.GetApp().Imager.videoMode)
 
 
     def _onButtonUp(self, event):
@@ -107,7 +107,7 @@ class Joystick:
             from cockpit.interfaces.stageMover import changeMover
             changeMover()
         elif buttonTest(event.ButtonChange, 2):
-            imager.imager.takeImage()
+            wx.GetApp().Imager.takeImage()
         elif buttonTest(event.ButtonChange, 3):
              mosaic.window.toggleMosaic()
 

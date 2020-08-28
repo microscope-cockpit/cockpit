@@ -459,8 +459,8 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
 
         #take the image
         events.executeAndWaitFor(events.NEW_IMAGE %
-                                 (list(cockpit.interfaces.imager.imager.activeCameras)[0].name),
-                                 cockpit.interfaces.imager.imager.takeImage,
+                                 (list(wx.GetApp().Imager.activeCameras)[0].name),
+                                 wx.GetApp().Imager.takeImage,
                                  shouldStopVideo = False)
         mosaic.transferCameraImage()
         self.Refresh()
