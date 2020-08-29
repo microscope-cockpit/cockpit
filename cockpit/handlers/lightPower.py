@@ -112,9 +112,6 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         self.powerSetPoint = None
         self.isEnabled = isEnabled
 
-        events.subscribe('save exposure settings', self.onSaveSettings)
-        events.subscribe('load exposure settings', self.onLoadSettings)
-
 
     def finalizeInitialization(self):
         super().finalizeInitialization()
@@ -129,19 +126,15 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
             cockpit.util.logger.log.warning("Failed to set prior power level %s for %s: %s" % (targetPower, self.name, e))
 
 
-    ## Save our settings in the provided dict.
-    def onSaveSettings(self, settings):
-        settings[self.name] = self.powerSetPoint
+    def onSaveSettings(self):
+        return self.powerSetPoint
 
-
-    ## Load our settings from the provided dict.
     def onLoadSettings(self, settings):
-        if self.name in settings:
-            try:
-                self.setPower(settings[self.name])
-            except Exception as e:
-                # Invalid power; just ignore it.
-                print ("Invalid power for %s: %s" % (self.name, settings.get(self.name, '')))
+        try:
+            self.setPower(settings)
+        except Exception as e:
+            # Invalid power; just ignore it.
+            print("Invalid power for %s: %s" % (self.name, settings))
 
 
     ## Toggle accessibility of the handler.

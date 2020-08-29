@@ -118,17 +118,26 @@ class Channels(wx.EvtHandler):
 
 def CurrentChannel() -> Channel:
     """Returns current channel configuration."""
-    # FIXME: we should be doing this directly, probably via a
-    # DeviceDepot instance, and not use events.
     new_channel = {}
-    cockpit.events.publish('save exposure settings', new_channel)
+    for handler in cockpit.depot.getAllHandlers():
+        if handler.deviceType in [cockpit.depot.CAMERA,
+                                  cockpit.depot.LIGHT_FILTER,
+                                  cockpit.depot.LIGHT_POWER,
+                                  cockpit.depot.LIGHT_TOGGLE]:
+            new_channel[handler.name] = handler.onSaveSettings()
     return new_channel
+
 
 def ApplyChannel(channel: Channel) -> None:
     """Apply the given channel configuration."""
-    # FIXME: we should be doing this directly, probably via a
-    # DeviceDepot instance, and not use events.
-    cockpit.events.publish('load exposure settings', channel)
+    for name, settings in channel.items():
+        handler = cockpit.depot.getHandlerWithName(name)
+        if handler is None:
+            # FIXME: we should error (see #633)
+            continue
+        handler.onLoadSettings(settings)
+    # FIXME: we should check that all cameras, filters, light source,
+    # and light power that exist have a config (see #633).
 
 
 def SaveToFile(filepath: str, channels: Channels) -> None:
