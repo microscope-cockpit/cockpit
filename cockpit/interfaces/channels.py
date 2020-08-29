@@ -21,6 +21,7 @@
 import collections
 import json
 import typing
+import warnings
 
 import wx
 
@@ -133,11 +134,17 @@ def ApplyChannel(channel: Channel) -> None:
     for name, settings in channel.items():
         handler = cockpit.depot.getHandlerWithName(name)
         if handler is None:
-            # FIXME: we should error (see #633)
-            continue
+            raise Exception("no handler named '%s'" % name)
         handler.onLoadSettings(settings)
-    # FIXME: we should check that all cameras, filters, light source,
-    # and light power that exist have a config (see #633).
+
+    for handler in cockpit.depot.getAllHandlers():
+        if handler.deviceType in [cockpit.depot.CAMERA,
+                                  cockpit.depot.LIGHT_FILTER,
+                                  cockpit.depot.LIGHT_POWER,
+                                  cockpit.depot.LIGHT_TOGGLE]:
+            if handler.name not in channel:
+                warnings.warn("no channel settings for handler '%s'"
+                              % handler.name)
 
 
 def SaveToFile(filepath: str, channels: Channels) -> None:
