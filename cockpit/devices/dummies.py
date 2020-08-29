@@ -43,7 +43,8 @@ class _MicroscopeTestDevice:
         test_device.initialize()
         pyro_daemon = Pyro4.Daemon()
         pyro_uri = pyro_daemon.register(test_device)
-        self._pyro_thread = threading.Thread(target=pyro_daemon.requestLoop)
+        self._pyro_thread = threading.Thread(target=pyro_daemon.requestLoop,
+                                             daemon=True)
         self._pyro_thread.start()
 
         if 'uri' in config:
