@@ -279,8 +279,6 @@ class CockpitApp(wx.App):
                 dev.onExit()
             except:
                 pass
-        # The following cleanup code used to be in main(), after App.MainLoop(),
-        # where it was never reached.
         # HACK: manually exit the program. If we don't do this, then there's a small
         # possibility that non-daemonic threads (i.e. ones that don't exit when the
         # main thread exits) will hang around uselessly, forcing the program to be
@@ -291,10 +289,11 @@ class CockpitApp(wx.App):
         # status.
         badThreads = []
         for thread in threading.enumerate():
-            if not thread.daemon:
+            if not thread.daemon and thread is not threading.main_thread():
                 badThreads.append(thread)
         if badThreads:
-            cockpit.util.logger.log.error("Still have non-daemon threads %s" % map(str, badThreads))
+            cockpit.util.logger.log.error("Still have non-daemon threads %s"
+                                          % [str(t) for t in badThreads])
             for thread in badThreads:
                 cockpit.util.logger.log.error(str(thread.__dict__))
         os._exit(0)
