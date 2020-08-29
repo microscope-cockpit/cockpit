@@ -118,7 +118,9 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.shouldForceRedraw = False
 
         ## Thread that ensures we don't spam redisplaying ourselves.
-        self.redrawTimerThread = threading.Thread(target=self.refreshWaiter, name="macrostage-refresh")
+        self.redrawTimerThread = threading.Thread(target=self.refreshWaiter,
+                                                  name="macrostage-refresh",
+                                                  daemon=True)
         self.redrawTimerThread.start()
 
         self.Bind(wx.EVT_PAINT, self.onPaint)
