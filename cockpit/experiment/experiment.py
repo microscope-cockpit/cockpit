@@ -483,7 +483,7 @@ class Experiment:
                     # find associated power entries (if they have them)
                     
                     for hand in depot.getHandlersInGroup(handler.groupName):
-                        if hand.deviceType == 'light power':
+                        if hand.deviceType == depot.LIGHT_POWER:
                             text += " %3.3f mW" % hand.lastPower
                 if text:
                     entries.append(text)
