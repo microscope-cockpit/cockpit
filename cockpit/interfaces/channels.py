@@ -36,9 +36,8 @@ Channel = typing.Dict[str, typing.Any]
 class Channels(wx.EvtHandler):
     """Map names to channel configurations.
 
-    A channel configuration sets objective, light sources, and
-    cameras.  It is the configuration to replicate the image
-    acquisition settings.
+    A channel configuration sets light sources and cameras.  It is the
+    configuration to replicate the image acquisition settings.
 
     `Channels` keep the order of channels that are added.  While
     technically not needed for a map/dict object, this is used to
