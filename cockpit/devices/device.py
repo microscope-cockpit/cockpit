@@ -122,3 +122,6 @@ class Device:
     # and all initial publications and subscriptions have been made.
     def finalizeInitialization(self):
         pass
+
+    def onExit(self) -> None:
+        pass
