@@ -111,6 +111,11 @@ class ExecutorDevice(device.Device):
         self.connection._pyroTimeout = 6
         self.connection.Abort()
 
+    def onExit(self) -> None:
+        if self.connection is not None:
+            self.connection._pyroRelease()
+        super().onExit()
+
     # Subscribe to events.
     def performSubscriptions(self):
         events.subscribe(events.USER_ABORT, self.onAbort)

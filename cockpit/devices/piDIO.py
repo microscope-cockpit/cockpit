@@ -86,6 +86,10 @@ class RaspberryPi(device.Device):
         self.logger = valueLogger.PollingLogger(self.name, 15,
                                                 self.RPiConnection.get_temperature)
 
+    def onExit(self) -> None:
+        if self.RPiConnection is not None:
+            self.RPiConnection._pyroRelease()
+        super().onExit()
 
     ## Try to switch to widefield mode.
     def finalizeInitialization(self):
