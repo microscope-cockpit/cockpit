@@ -259,8 +259,8 @@ class CockpitApp(wx.App):
 
         try:
             cockpit.events.publish(cockpit.events.USER_ABORT)
-        except Exception as e:
-            cockpit.util.logger.log.error("Error during logout: %s" % e)
+        except:
+            cockpit.util.logger.log.error("Error on USER_ABORT during exit")
             cockpit.util.logger.log.error(traceback.format_exc())
 
         # Manually clear out any parent-less windows that still exist. This
@@ -278,7 +278,10 @@ class CockpitApp(wx.App):
             try:
                 dev.onExit()
             except:
-                pass
+                cockpit.util.logger.log.error(
+                    "Error on device '%s' during exit", dev.name
+                )
+                cockpit.util.logger.log.error(traceback.format_exc())
         # HACK: manually exit the program. If we don't do this, then there's a small
         # possibility that non-daemonic threads (i.e. ones that don't exit when the
         # main thread exits) will hang around uselessly, forcing the program to be
