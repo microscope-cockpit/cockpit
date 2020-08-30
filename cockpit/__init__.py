@@ -261,7 +261,6 @@ class CockpitApp(wx.App):
         except:
             cockpit.util.logger.log.error("Error on USER_ABORT during exit")
             cockpit.util.logger.log.error(traceback.format_exc())
-
         for dev in cockpit.depot.getAllDevices():
             try:
                 dev.onExit()
