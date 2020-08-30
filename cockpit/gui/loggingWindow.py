@@ -122,6 +122,8 @@ class LoggingWindow(wx.Frame):
 
     def OnDestroy(self, event: wx.WindowDestroyEvent) -> None:
         self.auiManager.UnInit()
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
         event.Skip()
 
 
