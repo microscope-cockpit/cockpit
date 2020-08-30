@@ -158,7 +158,6 @@ class PhysikInstrumenteM687(Device):
             print ("No softlimits section setting default limits")
             self.softlimits = ((-67500, 67500), (-42500, 42500))
 
-        events.subscribe('program exit', self.onExit)
         events.subscribe(events.USER_ABORT, self.onAbort)
         events.subscribe('macro stage xy draw', self.onMacroStagePaint)
         #events.subscribe('cockpit initialization complete', self.promptExerciseStage)

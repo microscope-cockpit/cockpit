@@ -136,7 +136,6 @@ class PicoMotorDevice(device.Device):
         # value; this will be modified in initialize.
         self.xyPositionCache = [10 ** 100, 10 ** 100,7500]
 
-        events.subscribe('program exit', self.onExit)
         events.subscribe(events.USER_ABORT, self.onAbort)
 
 

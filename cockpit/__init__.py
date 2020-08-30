@@ -120,9 +120,6 @@ class CockpitApp(wx.App):
 
     def OnInit(self):
         try:
-            # Allow subsequent actions to abort startup by publishing
-            cockpit.events.subscribe('program exit', self.onExit)
-
             depot_config = self.Config.depot_config
             cockpit.depot.initialize(depot_config)
             numDevices = len(depot_config.sections()) + 1 # +1 for dummy devices
@@ -217,7 +214,6 @@ class CockpitApp(wx.App):
 
             cockpit.events.publish('cockpit initialization complete')
             self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
-
             return True
         except Exception as e:
             cockpit.gui.ExceptionBox(caption='Failed to initialise cockpit')
@@ -252,28 +248,20 @@ class CockpitApp(wx.App):
         if top is not uppermost:
             top.Raise()
 
-    # Do anything we need to do to shut down cleanly. At this point UI
-    # objects still exist, but they won't by the time we're done.
-    def onExit(self):
-        self._SaveWindowPositions()
+    def OnExit(self) -> int:
+        """Do any non-GUI cleanup.
 
+        At this point, all windows and controls have been removed, and
+        wx has ran its cleanup next.  This is the moment to cleanup
+        all our non wx stuff.
+
+        """
         try:
             cockpit.events.publish(cockpit.events.USER_ABORT)
         except:
             cockpit.util.logger.log.error("Error on USER_ABORT during exit")
             cockpit.util.logger.log.error(traceback.format_exc())
 
-        # Manually clear out any parent-less windows that still exist. This
-        # can catch some windows that are spawned by WX and then abandoned,
-        # typically because of bugs in the program. If we don't do this, then
-        # sometimes the program will continue running, invisibly, and must
-        # be killed via Task Manager.
-        for window in wx.GetTopLevelWindows():
-            cockpit.util.logger.log.error("Destroying %s" % window)
-            window.Destroy()
-
-        # Call any deviec onExit code to, for example, close shutters and
-        # switch of lasers.
         for dev in cockpit.depot.getAllDevices():
             try:
                 dev.onExit()
@@ -282,24 +270,9 @@ class CockpitApp(wx.App):
                     "Error on device '%s' during exit", dev.name
                 )
                 cockpit.util.logger.log.error(traceback.format_exc())
-        # HACK: manually exit the program. If we don't do this, then there's a small
-        # possibility that non-daemonic threads (i.e. ones that don't exit when the
-        # main thread exits) will hang around uselessly, forcing the program to be
-        # manually shut down via Task Manager or equivalent. Why do we have non-daemonic
-        # threads? That's tricky to track down. Daemon status is inherited from the
-        # parent thread, and must be manually set otherwise. Since it's easy to get
-        # wrong, we'll just leave this here to catch any failures to set daemon
-        # status.
-        badThreads = []
-        for thread in threading.enumerate():
-            if not thread.daemon and thread is not threading.main_thread():
-                badThreads.append(thread)
-        if badThreads:
-            cockpit.util.logger.log.error("Still have non-daemon threads %s"
-                                          % [str(t) for t in badThreads])
-            for thread in badThreads:
-                cockpit.util.logger.log.error(str(thread.__dict__))
-        os._exit(0)
+        # Documentation states that we must return the same return value
+        # as the base class.
+        return super().OnExit()
 
 
     def SetWindowPositions(self):
@@ -338,7 +311,7 @@ class CockpitApp(wx.App):
             cockpit.util.userConfig.setValue(config_name, window.IsShown())
 
 
-def main():
+def main() -> int:
     ## wxglcanvas (used in the mosaic windows) does not work with
     ## wayland (see https://trac.wxwidgets.org/ticket/17702).  The
     ## workaround is to force GTK to use the x11 backend.  See also
@@ -346,14 +319,40 @@ def main():
     if wx.Platform == '__WXGTK__' and 'GDK_BACKEND' not in os.environ:
         os.environ['GDK_BACKEND'] = 'x11'
 
-    ## TODO: have this in a try, and show a window (would probably
-    ## need to be different wx.App), with the error if it fails.
+    # TODO: have this in a try, and show a window (would probably need
+    # to be different wx.App), with the error if it fails (see #439).
     config = cockpit.config.CockpitConfig(sys.argv)
     cockpit.util.logger.makeLogger(config['log'])
     cockpit.util.files.initialize(config)
 
     app = CockpitApp(config=config)
     app.MainLoop()
+
+    # HACK: manually exit the program if we find threads running.  At
+    # this point, any thread running is non-daemonic, i.e., a thread
+    # that doesn't exit when the main thread exits.  These will make
+    # cockipt process hang and require it to be manually terminated.
+    # Why do we have non-daemonic threads?  Daemon status is inherited
+    # from the parent thread, and must be manually set.  Since it is
+    # easy to forget, we'll leave this here to catch any failure and
+    # remind us.
+    #
+    # All this assumes that cockpit is the only program running and this
+    # prevents `cockpit.main()` from being called in other programs.
+    badThreads = []
+    for thread in threading.enumerate():
+        if not thread.daemon and thread is not threading.main_thread():
+            badThreads.append(thread)
+    if badThreads:
+        cockpit.util.logger.log.error(
+            "Found %d non-daemon threads at exit.  These are:", len(badThreads)
+        )
+        for thread in badThreads:
+            cockpit.util.logger.log.error(
+                "Thread '%s': %s", thread.name, thread.__dict__
+            )
+        os._exit(1)
+    return 0
 
 
 if __name__ == '__main__':

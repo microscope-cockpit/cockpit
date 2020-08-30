@@ -469,7 +469,7 @@ class MainWindow(wx.Frame):
         menu_item = file_menu.Append(wx.ID_OPEN)
         self.Bind(wx.EVT_MENU, self.OnOpen, menu_item)
         menu_item = file_menu.Append(wx.ID_EXIT)
-        self.Bind(wx.EVT_MENU, self.OnClose, menu_item)
+        self.Bind(wx.EVT_MENU, self.OnQuit, menu_item)
         menu_bar.Append(file_menu, '&File')
 
         channels_menu = ChannelsMenu()
@@ -517,14 +517,23 @@ class MainWindow(wx.Frame):
             cockpit.gui.ExceptionBox('Failed to open \'%s\'' % filepath,
                                      parent=self)
 
+    def OnQuit(self, event: wx.CommandEvent) -> None:
+        self.Close()
 
-    ## Do any necessary program-shutdown events here instead of in the App's
-    # OnExit, since in that function all of the WX objects have been destroyed
-    # already.
     def OnClose(self, event):
-        events.publish('program exit')
-        event.Skip()
+        """Close the main window, leads to close cockpit program.
 
+        Do any necessary GUI pre-shutdown events here instead of
+        CockpitApp.OnExit, since in that function all of the wx
+        objects have been destroyed already.
+        """
+        if not event.CanVeto():
+            event.Destroy()
+        else:
+            wx.GetApp()._SaveWindowPositions()
+            # Let the default event handler handle the frame
+            # destruction.
+            event.Skip()
 
     def _OnAbout(self, event):
         wx.adv.AboutBox(CockpitAboutInfo(), parent=self)
