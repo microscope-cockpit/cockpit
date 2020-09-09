@@ -127,8 +127,7 @@ class GridSitesDialog(wx.Dialog):
         imageWidth = float(self.imageWidth.GetValue())
         imageHeight = float(self.imageHeight.GetValue())
         markerSize = float(self.markerSize.GetValue())
-        objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        pixelSize = objective.getPixelSize()
+        pixelSize = wx.GetApp().Objectives.GetPixelSize()
 
         for xOffset in range(int(self.numColumns.GetValue())):
             xLoc = curLoc[0] - xOffset * pixelSize * imageWidth

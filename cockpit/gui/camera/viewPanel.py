@@ -57,7 +57,6 @@ import cockpit.util.threads
 import cockpit.gui.guiUtils
 import cockpit.gui.imageViewer.viewCanvas
 import cockpit.interfaces.stageMover
-import cockpit.interfaces.imager
 
 
 ## Default viewer dimensions.
@@ -110,7 +109,7 @@ class ViewPanel(wx.Panel):
             if self.imagePos is None:
                 self.imagePos = cockpit.interfaces.stageMover.getPosition()
             x, y = event.GetPosition()
-            pixelSize = depot.getHandlersOfType(depot.OBJECTIVE)[0].getPixelSize()
+            pixelSize = wx.GetApp().Objectives.GetPixelSize()
             x0, y0 = self.canvas.glToIndices(0, 0)
             dy, dx = self.canvas.canvasToIndices(x, y)
             dx -= x0

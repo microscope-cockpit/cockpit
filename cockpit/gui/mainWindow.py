@@ -78,7 +78,6 @@ from cockpit.gui.dialogs.experiment import singleSiteExperiment
 from cockpit import events
 import cockpit.experiment.experiment
 from cockpit.gui import fileViewerWindow
-import cockpit.interfaces.imager
 from cockpit.gui import joystick
 from cockpit.gui import keyboard
 import cockpit.util.files
@@ -112,12 +111,12 @@ class MainWindowPanel(wx.Panel):
 
         # Snap image button
         snapButton = wx.Button(self, wx.ID_ANY, "Snap\nimage")
-        snapButton.Bind(wx.EVT_BUTTON, lambda evt: cockpit.interfaces.imager.imager.takeImage())
+        snapButton.Bind(wx.EVT_BUTTON, lambda evt: wx.GetApp().Imager.takeImage())
         buttonSizer.Add(snapButton, 1, wx.EXPAND)
 
         # Video mode button
         videoButton = wx.ToggleButton(self, wx.ID_ANY, "Live")
-        videoButton.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: cockpit.interfaces.imager.videoMode())
+        videoButton.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: wx.GetApp().Imager.videoMode())
         events.subscribe(cockpit.events.VIDEO_MODE_TOGGLE, lambda state: videoButton.SetValue(state))
         buttonSizer.Add(videoButton, 1, wx.EXPAND)
 
@@ -156,16 +155,12 @@ class MainWindowPanel(wx.Panel):
         rowSizer = wx.WrapSizer(wx.HORIZONTAL)
 
         # Add objective control
-        # If only one objective device (usual), add to end of top row,
-        # otherwise add to start of 2nd row.
-        hs = depot.getHandlersOfType(depot.OBJECTIVE)
-        if len(hs) == 1:
-            buttonSizer.Add(mainPanels.ObjectiveControls(self),
-                            flag=wx.LEFT, border=2)
-        else:
-            rowSizer.Add(mainPanels.ObjectiveControls(self))
-            rowSizer.AddSpacer(COL_SPACER)
-        ignoreThings.extend(hs)
+        buttonSizer.Add(
+            mainPanels.ObjectiveControls(self, wx.GetApp().Objectives),
+            flag=wx.LEFT,
+            border=2,
+        )
+        ignoreThings.extend(wx.GetApp().Objectives.GetHandlers())
 
         # Make the UI elements for the cameras.
         rowSizer.Add(mainPanels.CameraControlsPanel(self))
@@ -372,6 +367,10 @@ class WindowsMenu(wx.Menu):
         menu_item = self.Append(wx.ID_ANY, item='Reset window positions')
         self.Bind(wx.EVT_MENU, self.OnResetWindowPositions, menu_item)
 
+        # A separator between the window menu items and the other
+        # extra windows.
+        self.AppendSeparator()
+
         # Add item to launch valueLogViewer (XXX: this should be
         # handled by some sort of plugin system and not hardcoded).
         from cockpit.util import valueLogger
@@ -421,17 +420,14 @@ class WindowsMenu(wx.Menu):
                 # of AuiManager on the logging window (see issue #617)
                 # so skip windows without a title.
                 continue
-            sub_menu = wx.Menu()
-            for label, method in [('Show', self.OnShow),
-                                  ('Move to mouse', self.OnMoveToMouse),]:
-                menu_item = sub_menu.Append(wx.ID_ANY, label)
-                sub_menu.Bind(wx.EVT_MENU, method, menu_item)
-                self._id_to_window[menu_item.Id] = window
+            menu_item = wx.MenuItem(self, wx.ID_ANY, window.Title)
+            self.Bind(wx.EVT_MENU, self.OnWindowTitle, menu_item)
+            self._id_to_window[menu_item.Id] = window
 
-            # Place this submenu after the "Reset window positions"
+            # Place this menu item after the "Reset window positions"
             # but before the log viewer and debug window.
-            position = len(self._id_to_window) /3
-            self.Insert(position, wx.ID_ANY, window.Title, sub_menu)
+            position = len(self._id_to_window)
+            self.Insert(position, menu_item)
 
 
     def OnResetWindowPositions(self, event: wx.CommandEvent) -> None:
@@ -439,7 +435,8 @@ class WindowsMenu(wx.Menu):
         wx.GetApp().SetWindowPositions()
 
 
-    def OnShow(self, event: wx.CommandEvent) -> None:
+    def OnWindowTitle(self, event: wx.CommandEvent) -> None:
+        """Action when user selects the menu item with the window title."""
         window = self._id_to_window[event.GetId()]
         # Don't just call Restore() without checking if the window is
         # really iconized otherwise it might unmaximize a maximized
@@ -453,10 +450,12 @@ class WindowsMenu(wx.Menu):
         window.Show()
         window.Raise()
 
-
-    def OnMoveToMouse(self, event: wx.CommandEvent) -> None:
-        window = self._id_to_window[event.GetId()]
-        window.SetPosition(wx.GetMousePosition())
+        # On Windows and OSX, when adding/removing displays, it is
+        # possible that a window is at a position that no longer
+        # exists.  So ensure that the window is shown at valid
+        # coordinates.
+        if wx.Display.GetFromWindow(window) == wx.NOT_FOUND:
+            window.SetPosition(wx.GetMousePosition())
 
 
 class MainWindow(wx.Frame):
@@ -470,7 +469,7 @@ class MainWindow(wx.Frame):
         menu_item = file_menu.Append(wx.ID_OPEN)
         self.Bind(wx.EVT_MENU, self.OnOpen, menu_item)
         menu_item = file_menu.Append(wx.ID_EXIT)
-        self.Bind(wx.EVT_MENU, self.OnClose, menu_item)
+        self.Bind(wx.EVT_MENU, self.OnQuit, menu_item)
         menu_bar.Append(file_menu, '&File')
 
         channels_menu = ChannelsMenu()
@@ -518,14 +517,23 @@ class MainWindow(wx.Frame):
             cockpit.gui.ExceptionBox('Failed to open \'%s\'' % filepath,
                                      parent=self)
 
+    def OnQuit(self, event: wx.CommandEvent) -> None:
+        self.Close()
 
-    ## Do any necessary program-shutdown events here instead of in the App's
-    # OnExit, since in that function all of the WX objects have been destroyed
-    # already.
     def OnClose(self, event):
-        events.publish('program exit')
-        event.Skip()
+        """Close the main window, leads to close cockpit program.
 
+        Do any necessary GUI pre-shutdown events here instead of
+        CockpitApp.OnExit, since in that function all of the wx
+        objects have been destroyed already.
+        """
+        if not event.CanVeto():
+            event.Destroy()
+        else:
+            wx.GetApp()._SaveWindowPositions()
+            # Let the default event handler handle the frame
+            # destruction.
+            event.Skip()
 
     def _OnAbout(self, event):
         wx.adv.AboutBox(CockpitAboutInfo(), parent=self)

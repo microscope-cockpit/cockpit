@@ -51,7 +51,6 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-from cockpit import depot
 from cockpit import events
 import cockpit.util.datadoc
 import cockpit.util.logger
@@ -61,6 +60,8 @@ import numpy
 import queue
 import threading
 import time
+
+import wx
 
 
 ## Unique ID for identifying saver instances
@@ -199,8 +200,8 @@ class DataSaver:
         ## Lock on writing to each file.
         self.fileLocks = [threading.Lock() for handle in self.filehandles]
 
-        pixelSizeXY = depot.getHandlersOfType(depot.OBJECTIVE)[0].getPixelSize()
-        lensID = depot.getHandlersOfType(depot.OBJECTIVE)[0].getLensID()
+        pixelSizeXY = wx.GetApp().Objectives.GetPixelSize()
+        lensID = wx.GetApp().Objectives.GetCurrent().lens_ID
         #wavelength should always be on camera even if "0"
         wavelengths = [c.wavelength for c in self.cameras]
 

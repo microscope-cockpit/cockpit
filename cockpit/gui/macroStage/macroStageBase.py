@@ -114,17 +114,13 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         # the above.
         self.drawEvent = threading.Event()
 
-        ##objective offset info to get correct position and limits
-        self.objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-        self.listObj = list(self.objective.nameToOffset.keys())
-        self.listOffsets = list(self.objective.nameToOffset.values())
-        self.offset = self.objective.getOffset()
- 
         ## Boolean to just force a redraw.
         self.shouldForceRedraw = False
 
         ## Thread that ensures we don't spam redisplaying ourselves.
-        self.redrawTimerThread = threading.Thread(target=self.refreshWaiter, name="macrostage-refresh")
+        self.redrawTimerThread = threading.Thread(target=self.refreshWaiter,
+                                                  name="macrostage-refresh",
+                                                  daemon=True)
         self.redrawTimerThread.start()
 
         self.Bind(wx.EVT_PAINT, self.onPaint)

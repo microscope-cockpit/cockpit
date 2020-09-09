@@ -62,6 +62,7 @@ from cockpit.util import userConfig
 
 import numpy
 import threading
+import wx
 
 
 AxisLimits = typing.Tuple[float, float]
@@ -439,8 +440,7 @@ def waitForStop(timeout = 5):
 ## Move to the specified site.
 def goToSite(uniqueID, shouldBlock = False):
     site = mover.idToSite[uniqueID]
-    objective = depot.getHandlersOfType(depot.OBJECTIVE)[0]
-    objOffset = objective.getOffset()
+    objOffset = wx.GetApp().Objectives.GetOffset()
     offsetPosition=list(site.position)
     for i in range(len(offsetPosition)):
         offsetPosition[i]=offsetPosition[i]+objOffset[i]

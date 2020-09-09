@@ -40,6 +40,7 @@ import cockpit.util.threads
 import cockpit.util.userConfig
 from cockpit.devices.microscopeDevice import MicroscopeBase
 from cockpit.devices.camera import CameraDevice
+from cockpit.handlers.objective import ObjectiveHandler
 from cockpit.interfaces.imager import pauseVideo
 from microscope.devices import ROI, Binning
 
@@ -129,8 +130,11 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
                 self.onObjectiveChange)
 
 
-    def onObjectiveChange(self, name, pixelSize, transform, offset):
-        self.updateTransform(transform)
+    def onObjectiveChange(self, handler: ObjectiveHandler) -> None:
+        # Changing an objective might change the transform since a
+        # different objective might actually mean a different light
+        # path (see comments on issue #456).
+        self.updateTransform(handler.transform)
 
 
     def setAnyDefaults(self):
@@ -303,6 +307,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         # Readout mode control
         sizer.Add(wx.StaticText(self.panel, label="Readout mode"))
         modeButton = wx.Choice(self.panel, choices=self._modenames)
+        self.updateModeButton(modeButton)
         sizer.Add(modeButton, flag=wx.EXPAND)
         events.subscribe(events.SETTINGS_CHANGED % self,
                          lambda: self.updateModeButton(modeButton))
@@ -310,7 +315,8 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         sizer.AddSpacer(4)
         # Gain control
         sizer.Add(wx.StaticText(self.panel, label="Gain"))
-        gainButton = wx.Button(self.panel)
+        gainButton = wx.Button(self.panel,
+                               label="%s" % self.settings.get('gain', None))
         gainButton.Bind(wx.EVT_LEFT_UP, self.onGainButton)
         sizer.Add(gainButton, flag=wx.EXPAND)
         events.subscribe(events.SETTINGS_CHANGED % self,

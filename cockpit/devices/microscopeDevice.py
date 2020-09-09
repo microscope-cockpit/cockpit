@@ -114,6 +114,11 @@ class MicroscopeBase(device.Device):
         self.describe_setting = self._proxy.describe_setting
         self.describe_settings = self._proxy.describe_settings
 
+    def onExit(self) -> None:
+        if self._proxy is not None:
+            self._proxy._pyroRelease()
+        super().onExit()
+
     def finalizeInitialization(self):
         super().finalizeInitialization()
         # Set default settings on remote device. These will be over-

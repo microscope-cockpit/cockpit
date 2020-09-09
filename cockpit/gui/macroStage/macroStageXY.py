@@ -56,9 +56,11 @@ from OpenGL.GL import *
 import traceback
 import wx
 
+from cockpit import depot
 from cockpit import events
 from cockpit.gui.primitive import Primitive
 import cockpit.gui.dialogs.getNumberDialog
+import cockpit.interfaces
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
 
@@ -74,6 +76,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
     # up the mouse event.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        ## Objective offset info to get correct position and limits
+        self.offset = wx.GetApp().Objectives.GetOffset()
         ## Whether or not to draw the mosaic tiles
         self.shouldDrawMosaic = True
         ## True if we're in the processing of changing the soft motion limits.
@@ -126,11 +130,14 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         # being displayed in preference to our own.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         events.subscribe("soft safety limit", self.onSafetyChange)
-        events.subscribe('objective change', self.onObjectiveChange)
         self.SetToolTip(wx.ToolTip("Left double-click to move the stage. " +
                 "Right click for gotoXYZ and double-click to toggle displaying of mosaic " +
                 "tiles."))
 
+        wx.GetApp().Objectives.Bind(
+            cockpit.interfaces.EVT_OBJECTIVE_CHANGED,
+            self._OnObjectiveChanged,
+        )
 
     ## Safety limits have changed, which means we need to force a refresh.
     # \todo Redrawing everything just to tackle the safety limits is a bit
@@ -182,11 +189,11 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glOrtho(self.maxX, self.minX, self.minY, self.maxY, -1.0, 1.0)
 
             #Loop over objective offsets to draw limist in multiple colours.
-            for obj in self.listObj:
-                offset=self.objective.nameToOffset.get(obj)
-                colour=self.objective.nameToColour.get(obj)
+            for obj in wx.GetApp().Objectives.GetHandlers():
+                offset = obj.offset
+                colour = obj.colour
                 glLineWidth(4)
-                if obj is not self.objective.curObjective:
+                if obj is not wx.GetApp().Objectives.GetCurrent():
                     colour = (min(1,colour[0]+0.7),min(1,colour[1]+0.7),
                               min(1,colour[2]+0.7))
                     glLineWidth(2)
@@ -263,9 +270,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glDisable(GL_LINE_STIPPLE)
 
             #Draw possibloe stage positions for current objective
-            obj = self.objective.curObjective
-            offset=self.objective.nameToOffset.get(obj)
-            colour=self.objective.nameToColour.get(obj)
+            offset = wx.GetApp().Objectives.GetOffset()
+            colour = wx.GetApp().Objectives.GetColour()
             glLineWidth(2)
             # Draw stage position
             motorPos = self.curStagePosition[:2]
@@ -443,8 +449,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         self.amSettingSafeties = True
 
     ## Refresh display on objective change
-    def onObjectiveChange(self, name, pixelSize, transform, offset, **kwargs):
-        self.offset = offset
+    def _OnObjectiveChanged(self, event: wx.CommandEvent) -> None:
+        self.offset = wx.GetApp().Objectives.GetOffset()
         self.Refresh()
-
-
+        event.Skip()

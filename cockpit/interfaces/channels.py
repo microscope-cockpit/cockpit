@@ -21,6 +21,7 @@
 import collections
 import json
 import typing
+import warnings
 
 import wx
 
@@ -36,9 +37,8 @@ Channel = typing.Dict[str, typing.Any]
 class Channels(wx.EvtHandler):
     """Map names to channel configurations.
 
-    A channel configuration sets objective, light sources, and
-    cameras.  It is the configuration to replicate the image
-    acquisition settings.
+    A channel configuration sets light sources and cameras.  It is the
+    configuration to replicate the image acquisition settings.
 
     `Channels` keep the order of channels that are added.  While
     technically not needed for a map/dict object, this is used to
@@ -119,17 +119,32 @@ class Channels(wx.EvtHandler):
 
 def CurrentChannel() -> Channel:
     """Returns current channel configuration."""
-    # FIXME: we should be doing this directly, probably via a
-    # DeviceDepot instance, and not use events.
     new_channel = {}
-    cockpit.events.publish('save exposure settings', new_channel)
+    for handler in cockpit.depot.getAllHandlers():
+        if handler.deviceType in [cockpit.depot.CAMERA,
+                                  cockpit.depot.LIGHT_FILTER,
+                                  cockpit.depot.LIGHT_POWER,
+                                  cockpit.depot.LIGHT_TOGGLE]:
+            new_channel[handler.name] = handler.onSaveSettings()
     return new_channel
+
 
 def ApplyChannel(channel: Channel) -> None:
     """Apply the given channel configuration."""
-    # FIXME: we should be doing this directly, probably via a
-    # DeviceDepot instance, and not use events.
-    cockpit.events.publish('load exposure settings', channel)
+    for name, settings in channel.items():
+        handler = cockpit.depot.getHandlerWithName(name)
+        if handler is None:
+            raise Exception("no handler named '%s'" % name)
+        handler.onLoadSettings(settings)
+
+    for handler in cockpit.depot.getAllHandlers():
+        if handler.deviceType in [cockpit.depot.CAMERA,
+                                  cockpit.depot.LIGHT_FILTER,
+                                  cockpit.depot.LIGHT_POWER,
+                                  cockpit.depot.LIGHT_TOGGLE]:
+            if handler.name not in channel:
+                warnings.warn("no channel settings for handler '%s'"
+                              % handler.name)
 
 
 def SaveToFile(filepath: str, channels: Channels) -> None:

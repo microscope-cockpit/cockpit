@@ -28,6 +28,8 @@ import Pyro4
 import wx
 import cockpit.gui.device
 
+from cockpit.handlers.objective import ObjectiveHandler
+
 ## TODO: Clean up code.
 
 class RaspberryPi(device.Device):
@@ -84,6 +86,10 @@ class RaspberryPi(device.Device):
         self.logger = valueLogger.PollingLogger(self.name, 15,
                                                 self.RPiConnection.get_temperature)
 
+    def onExit(self) -> None:
+        if self.RPiConnection is not None:
+            self.RPiConnection._pyroRelease()
+        super().onExit()
 
     ## Try to switch to widefield mode.
     def finalizeInitialization(self):
@@ -127,8 +133,8 @@ class RaspberryPi(device.Device):
         self.RPiConnection.flipDownUp(index, int(isUp))
 
 
-    def onObjectiveChange(self, name, pixelSize, transform, offset):
-        for flips in self.objectiveToFlips[name]:
+    def onObjectiveChange(self, handler: ObjectiveHandler) -> None:
+        for flips in self.objectiveToFlips[handler.name]:
             self.flipDownUp(flips[0], flips[1])
 
 

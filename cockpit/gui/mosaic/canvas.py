@@ -136,8 +136,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
 
         # Non-zero objective offsets require expansion of area covered
         # by megatiles.
-        objs = depot.getHandlersOfType(depot.OBJECTIVE)
-        offsets = list(itertools.chain(*[ob.nameToOffset.values() for ob in objs]))
+        offsets = [h.offset for h in wx.GetApp().Objectives.GetHandlers()]
         minmax = lambda l: (min(l), max(l))
         xOffLim = minmax([-offset[0] for offset in offsets])
         yOffLim = minmax([offset[1] for offset in offsets])

@@ -50,12 +50,13 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from cockpit import depot
 from cockpit import events
+from cockpit.handlers.imager import ImagerHandler
 import cockpit.util.threads
 import wx
 
 import time
+import typing
 import traceback
 
 ## This module provides an interface for taking images with the current
@@ -66,11 +67,11 @@ import traceback
 def pauseVideo(func):
     """A wrapper to pause and resume video."""
     def wrapper(*args, **kwargs):
-        wasInVideoMode = imager.amInVideoMode
+        wasInVideoMode = wx.GetApp().Imager.amInVideoMode
         if wasInVideoMode:
-            imager.shouldStopVideoMode = True
+            wx.GetApp().Imager.shouldStopVideoMode = True
             tstart = time.time()
-            while imager.amInVideoMode:
+            while wx.GetApp().Imager.amInVideoMode:
                 time.sleep(0.05)
                 if time.time() > tstart + 1.:
                     print("Timeout pausing video mode - abort and restart.")
@@ -78,7 +79,7 @@ def pauseVideo(func):
                     break
         result = func(*args, **kwargs)
         if wasInVideoMode:
-            imager.videoMode()
+            wx.GetApp().Imager.videoMode()
         return result
 
     return wrapper
@@ -86,9 +87,9 @@ def pauseVideo(func):
 
 ## Simple container class.
 class Imager:
-    def __init__(self):
+    def __init__(self, handlers: typing.Sequence[ImagerHandler]) -> None:
         ## List of Handlers capable of taking images.
-        self.imageHandlers = depot.getHandlersOfType(depot.IMAGER)
+        self._imageHandlers = handlers
         ## Set of active cameras, so we can check their framerates.
         self.activeCameras = set()
         events.subscribe(events.CAMERA_ENABLE,
@@ -152,7 +153,7 @@ class Imager:
                 time.sleep(waitTime)
             else:
                 return
-        for handler in self.imageHandlers:
+        for handler in self._imageHandlers:
             handler.takeImage()
         self.lastImageTime = time.time()
 
@@ -220,25 +221,3 @@ class Imager:
             lightLimiter = max(lightLimiter, light.getExposureTime())
         # The limiters are in milliseconds; downconvert.
         return self.lastImageTime + (camLimiter + lightLimiter) / 1000.0
-
-
-## Global singleton.
-imager = None
-
-def initialize():
-    global imager
-    imager = Imager()
-
-
-def makeInitialPublications():
-    pass
-
-
-## Simple passthrough.
-def takeImage(shouldBlock = False):
-    imager.takeImage(shouldBlock)
-
-
-## Simple passthrough.
-def videoMode():
-    imager.videoMode()

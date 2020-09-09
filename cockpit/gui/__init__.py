@@ -87,6 +87,7 @@ class EvtEmitter(wx.EvtHandler):
 
     def _OnParentDestroy(self, event):
         self._Unsubscribe()
+        event.Skip()
 
     def Destroy(self):
         self._Unsubscribe()

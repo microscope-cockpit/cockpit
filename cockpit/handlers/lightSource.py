@@ -108,9 +108,6 @@ class LightHandler(deviceHandler.DeviceHandler):
         else:
             self.triggerNow = lambda: None
 
-
-        events.subscribe('save exposure settings', self.onSaveSettings)
-        events.subscribe('load exposure settings', self.onLoadSettings)
         # Most lasers use bulb-type triggering. Ensure they're not left on after
         # an abort event.
         if trigHandler and trigLine:
@@ -123,21 +120,18 @@ class LightHandler(deviceHandler.DeviceHandler):
         events.publish(events.DEVICE_STATUS, self, self.state)
 
 
-    ## Save our settings in the provided dict.
-    def onSaveSettings(self, settings):
-        settings[self.name] = {
-            'isEnabled': self.getIsEnabled(),
-            'exposureTime': self.getExposureTime()}
+    def onSaveSettings(self):
+        return {
+            "isEnabled": self.getIsEnabled(),
+            "exposureTime": self.getExposureTime(),
+        }
 
-
-    ## Load our settings from the provided dict.
     def onLoadSettings(self, settings):
-        if self.name in settings:
-            #Only change settings if needed.
-            if self.getExposureTime() != settings[self.name]['exposureTime']:
-                self.setExposureTime(settings[self.name]['exposureTime'])
-            if self.getIsEnabled() != settings[self.name]['isEnabled']:
-                self.toggleState()
+        # Only change settings if needed.
+        if self.getExposureTime() != settings["exposureTime"]:
+            self.setExposureTime(settings["exposureTime"])
+        if self.getIsEnabled() != settings["isEnabled"]:
+            self.toggleState()
 
 
     ## Turn the laser on, off, or set continuous exposure.
