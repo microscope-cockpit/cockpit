@@ -47,7 +47,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
 
     def initialize(self):
         self.proxy = Pyro4.Proxy(self.uri)
-        self.proxy.set_trigger(ttype=TriggerType['SOFTWARE'], tmode=TriggerMode['ONCE'])
+        self.proxy.set_trigger(ttype=TriggerType.SOFTWARE, tmode=TriggerMode.ONCE)
         self.no_actuators = self.proxy.n_actuators
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
