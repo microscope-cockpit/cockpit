@@ -30,8 +30,7 @@ import cockpit.util.charAssayViewer as charAssayViewer
 import numpy as np
 import scipy.stats as stats
 import aotools
-from microscope import TriggerType
-from microscope import TriggerMode
+
 
 # the AO device subclasses Device to provide compatibility with microscope.
 class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
@@ -47,8 +46,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
 
     def initialize(self):
         self.proxy = Pyro4.Proxy(self.uri)
-        self.proxy.set_trigger(ttype=TriggerType.SOFTWARE, tmode=TriggerMode.ONCE)
-        self.no_actuators = self.proxy.n_actuators
+        self.proxy.set_trigger(cp_ttype="FALLING_EDGE", cp_tmode="ONCE")
+        self.no_actuators = self.proxy.get_n_actuators()
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
 
@@ -67,10 +66,9 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
 
         # Excercise the DM to remove residual static and then set to 0 position
         for ii in range(50):
-            self.proxy.apply_pattern(np.random.rand(self.no_actuators))
+            self.proxy.send(np.random.rand(self.no_actuators))
             time.sleep(0.01)
-        #This is not implemented in the current microscope DM module. 
-        #self.proxy.reset()
+        self.proxy.reset()
 
         # Create accurate look up table for certain Z positions
         # LUT dict has key of Z positions
