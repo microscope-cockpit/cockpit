@@ -513,7 +513,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         except Exception as e:
             try:
                 test_image = self.proxy.acquire()
-                self.proxy.set_fourierfilter(test_image=test_image)
+                self.proxy.set_fourierfilter(test_image=test_image, window_dim=50,
+                                             mask_di=int((2 * self.parameters[2]) * (3.0 / 16.0)))
             except:
                 raise e
 
@@ -543,7 +544,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         except Exception as e:
             try:
                 test_image = self.proxy.acquire()
-                self.proxy.set_fourierfilter(test_image=test_image)
+                self.proxy.set_fourierfilter(test_image=test_image, window_dim=50,
+                                             mask_di=int((2 * self.parameters[2]) * (3.0 / 16.0)))
             except:
                 raise e
 
@@ -596,7 +598,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         except:
             try:
                 test_image = self.proxy.acquire()
-                self.proxy.set_fourierfilter(test_image=test_image)
+                self.proxy.set_fourierfilter(test_image=test_image, window_dim=50,
+                                             mask_di=int((2 * self.parameters[2]) * (3.0 / 16.0)))
             except Exception as e:
                 raise e
 
@@ -642,7 +645,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         except:
             try:
                 test_image = self.proxy.acquire()
-                self.proxy.set_fourierfilter(test_image=test_image)
+                self.proxy.set_fourierfilter(test_image=test_image, window_dim=50,
+                                             mask_di= int((2*self.parameters[2]) * (3.0 / 16.0)))
             except Exception as e:
                 raise e
 
