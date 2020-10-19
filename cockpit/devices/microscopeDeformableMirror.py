@@ -563,7 +563,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             cm = self.proxy.get_controlMatrix()
             self.proxy.set_controlMatrix((-1*cm))
             assay = assay * -1
-            Config.setValue('dm_controlMatrix', cm)
+            Config.setValue('dm_controlMatrix', np.ndarray.tolist(cm))
+            contol_matrix_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
+                                                   'cockpit', 'control_matrix.txt')
+            np.savetxt(contol_matrix_file_path, cm)
 
         file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
                                  'cockpit', 'characterisation_assay')
