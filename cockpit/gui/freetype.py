@@ -106,8 +106,7 @@ class _Glyph:
 
 
     def __del__(self):
-        glDeleteTexture([self._texture_id])
-
+        glDeleteTextures([self._texture_id])
 
     @property
     def advance(self) -> numpy.ndarray:
