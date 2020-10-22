@@ -374,16 +374,12 @@ class MicroscopeFilter(MicroscopeBase):
             self.lights = None
 
         # Filters
-        # Used to do this in finalizeInitialization, but there's
-        # no obvious reason to do it there, and it occasionally
-        # caused a threadpool deadlock.
-        fdefs = self.config.get('filters', None)
-        if fdefs:
-            fdefs = [re.split(':\s*|,\s*', f) for f in re.split('\n', fdefs) if f]
-        else:
-            fdefs = self._proxy.get_filters()
-        if not fdefs:
-            raise Exception ("No local or remote filter definitions for %s." % self.name)
+        fdefs = self.config.get('filters')
+        if fdefs is None:
+            raise Exception(
+                "Missing 'filters' value for device '%s'" % self.name
+            )
+        fdefs = [re.split(':\s*|,\s*', f) for f in re.split('\n', fdefs) if f]
         self.filters = [cockpit.handlers.filterHandler.Filter(*f) for f in fdefs]
 
 
