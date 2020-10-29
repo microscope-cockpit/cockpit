@@ -67,7 +67,7 @@ setuptools.setup(
         'numpy',
         'pyserial',
         'scipy',
-        'wxPython>=4',
+        'wxPython>=4.1',
     ],
 
     test_suite = 'cockpit.testsuite',
