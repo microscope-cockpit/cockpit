@@ -52,12 +52,54 @@ to get FTGL installed (see issue #615).
 
 """
 
-import pkg_resources
-
 import freetype
 import numpy
-from OpenGL.GL import *
-
+import pkg_resources
+from OpenGL.GL import (
+    GL_ALPHA,
+    GL_BLEND,
+    GL_CLAMP,
+    GL_CLIENT_PIXEL_STORE_BIT,
+    GL_COLOR_BUFFER_BIT,
+    GL_ENABLE_BIT,
+    GL_FALSE,
+    GL_LINEAR,
+    GL_MODULATE,
+    GL_ONE,
+    GL_ONE_MINUS_SRC_ALPHA,
+    GL_QUADS,
+    GL_SRC_ALPHA,
+    GL_TEXTURE_2D,
+    GL_TEXTURE_BIT,
+    GL_TEXTURE_ENV,
+    GL_TEXTURE_ENV_MODE,
+    GL_TEXTURE_MAG_FILTER,
+    GL_TEXTURE_MIN_FILTER,
+    GL_TEXTURE_WRAP_S,
+    GL_TEXTURE_WRAP_T,
+    GL_UNPACK_ALIGNMENT,
+    GL_UNPACK_LSB_FIRST,
+    GL_UNPACK_ROW_LENGTH,
+    GL_UNSIGNED_BYTE,
+    glBegin,
+    glBindTexture,
+    glBlendFuncSeparate,
+    glDeleteTextures,
+    glEnable,
+    glEnd,
+    glGenTextures,
+    glPixelStorei,
+    glPopAttrib,
+    glPopClientAttrib,
+    glPushAttrib,
+    glPushClientAttrib,
+    glTexCoord2f,
+    glTexEnvi,
+    glTexImage2D,
+    glTexParameterf,
+    glTexParameteri,
+    glVertex2f,
+)
 
 # The resource_name argument for resource_filename is not a filesystem
 # filepath.  It is a /-separated filepath, even on windows, so do not
@@ -106,8 +148,7 @@ class _Glyph:
 
 
     def __del__(self):
-        glDeleteTexture([self._texture_id])
-
+        glDeleteTextures([self._texture_id])
 
     @property
     def advance(self) -> numpy.ndarray:
