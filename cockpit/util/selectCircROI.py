@@ -54,7 +54,6 @@ class ROISelect(wx.Frame):
         saveBtn.Bind(wx.EVT_BUTTON, lambda evt, sf=scale_factor: self.onSave(event=evt, sf=sf))
         self.Sizer.Add(saveBtn)
         self.Fit()
-        self.Show()
 
     @property
     def roi(self):

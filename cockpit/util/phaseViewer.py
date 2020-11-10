@@ -64,7 +64,6 @@ class viewPhase(wx.Frame):
         saveBtn.Bind(wx.EVT_BUTTON, self.onSwitch)
         self.Sizer.Add(saveBtn)
         self.Fit()
-        self.Show()
 
     def onSwitch(self, event):
         if self.showing_fourier:

@@ -46,7 +46,6 @@ class viewCharAssay(wx.Frame):
 
         self.Fit()
         self.doPlotting(characterisation_assay)
-        self.Show()
 
     def doPlotting(self, image):
         self.axes1.imshow(image)
