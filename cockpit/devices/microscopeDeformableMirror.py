@@ -50,6 +50,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         self.no_actuators = self.proxy.get_n_actuators()
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
+        self.config_dir = wx.GetApp().Config['global'].get('config-dir')
 
         # Need initial values for system flat calculations
         self.sys_flat_num_it = 10
@@ -73,7 +74,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         # Create accurate look up table for certain Z positions
         # LUT dict has key of Z positions
         try:
-            file_path = os.path.join(os.path.expandvars('%LocalAppData%'), 'cockpit', 'remote_focus_LUT.txt')
+            file_path = os.path.join(self.config_dir, 'remote_focus_LUT.txt')
             LUT_array = np.loadtxt(file_path)
             self.LUT = {}
             for ii in (LUT_array[:, 0])[:]:
@@ -348,7 +349,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                     raise Exception("Argument Error: Argument type %s not understood." % str(type(args)))
 
         if len(self.remote_focus_LUT) != 0:
-            file_path = os.path.join(os.path.expandvars('%LocalAppData%'), 'cockpit', 'remote_focus_LUT.txt')
+            file_path = os.path.join(self.config_dir, 'remote_focus_LUT.txt')
             np.savetxt(file_path, np.asanyarray(self.remote_focus_LUT))
             Config.setValue('dm_remote_focus_LUT', self.remote_focus_LUT)
 
@@ -519,8 +520,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
 
         controlMatrix = self.proxy.calibrate(numPokeSteps=5)
         Config.setValue('dm_controlMatrix', np.ndarray.tolist(controlMatrix))
-        contol_matrix_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                                               'cockpit', 'control_matrix.txt')
+        contol_matrix_file_path = os.path.join(self.config_dir, 'control_matrix.txt')
         np.savetxt(contol_matrix_file_path, controlMatrix)
 
     def onCharacterise(self):
@@ -563,12 +563,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             self.proxy.set_controlMatrix((-1*cm))
             assay = assay * -1
             Config.setValue('dm_controlMatrix', np.ndarray.tolist(cm))
-            contol_matrix_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                                                   'cockpit', 'control_matrix.txt')
+            contol_matrix_file_path = os.path.join(self.config_dir, 'control_matrix.txt')
             np.savetxt(contol_matrix_file_path, cm)
 
-        file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                                 'cockpit', 'characterisation_assay')
+        file_path = os.path.join(self.config_dir, 'characterisation_assay')
         np.save(file_path, assay)
         # The default system corrections should be for the zernike modes we can accurately recreate
         self.sysFlatNollZernike = (np.where(np.diag(assay) > 0.75)[0]) + 1
@@ -657,17 +655,14 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                                                                            unwrapped_phase.shape[0])
         unwrapped_RMS_error = self.proxy.wavefront_rms_error(unwrapped_phase_mptt)
 
-        interferogram_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                                               'cockpit', 'interferogram')
+        interferogram_file_path = os.path.join(self.config_dir, 'interferogram')
         np.save(interferogram_file_path, interferogram)
 
         interferogram_ft = np.fft.fftshift(np.fft.fft2(interferogram))
-        interferogram_ft_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                                                  'cockpit', 'interferogram_ft')
+        interferogram_ft_file_path = os.path.join(self.config_dir, 'interferogram_ft')
         np.save(interferogram_ft_file_path, interferogram_ft)
 
-        unwrapped_phase_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                                                 'cockpit', 'unwrapped_phase')
+        unwrapped_phase_file_path = os.path.join(self.config_dir, 'unwrapped_phase')
         np.save(unwrapped_phase_file_path, unwrapped_phase)
 
         unwrapped_phase = np.require(unwrapped_phase, requirements='C')
@@ -829,20 +824,17 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
 
             # Save full stack of images used
             self.correction_stack = np.asarray(self.correction_stack)
-            correction_stack_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                                                      'cockpit',
+            correction_stack_file_path = os.path.join(self.config_dir,
                                                       'sensorless_AO_correction_stack_%i%i%i_%i%i'
                                                       % (time.gmtime()[2], time.gmtime()[1], time.gmtime()[0],
                                                          time.gmtime()[3], time.gmtime()[4]))
             np.save(correction_stack_file_path, self.correction_stack)
-            zernike_applied_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                                                     'cockpit',
+            zernike_applied_file_path = os.path.join(self.config_dir,
                                                      'sensorless_AO_zernike_applied_%i%i%i_%i%i'
                                                      % (time.gmtime()[2], time.gmtime()[1], time.gmtime()[0],
                                                         time.gmtime()[3], time.gmtime()[4]))
             np.save(zernike_applied_file_path, self.zernike_applied)
-            nollZernike_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                                                 'cockpit',
+            nollZernike_file_path = os.path.join(self.config_dir,
                                                  'sensorless_AO_nollZernike_%i%i%i_%i%i'
                                                  % (time.gmtime()[2], time.gmtime()[1], time.gmtime()[0],
                                                     time.gmtime()[3], time.gmtime()[4]))
@@ -861,21 +853,18 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             self.sensorless_correct_coef[nollInd - 1] += amp_to_correct
             print("Aberrations measured: ", self.sensorless_correct_coef)
             print("Actuator positions applied: ", self.actuator_offset)
-            sensorless_correct_coef_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                                                             'cockpit',
+            sensorless_correct_coef_file_path = os.path.join(self.config_dir,
                                                              'sensorless_correct_coef_%i%i%i_%i%i'
                                                              % (time.gmtime()[2], time.gmtime()[1], time.gmtime()[0],
                                                                 time.gmtime()[3], time.gmtime()[4]))
             np.save(sensorless_correct_coef_file_path, self.sensorless_correct_coef)
-            ac_pos_sensorless_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                                                       'cockpit',
+            ac_pos_sensorless_file_path = os.path.join(self.config_dir,
                                                        'ac_pos_sensorless_%i%i%i_%i%i'
                                                        % (time.gmtime()[2], time.gmtime()[1], time.gmtime()[0],
                                                           time.gmtime()[3], time.gmtime()[4]))
             np.save(ac_pos_sensorless_file_path, self.actuator_offset)
 
-            log_file_path = os.path.join(os.path.expandvars('%LocalAppData%'),
-                                         'cockpit',
+            log_file_path = os.path.join(self.config_dir,
                                          'sensorless_AO_logger.txt')
             log_file = open(log_file_path, "a+")
             log_file.write("Time stamp: %i:%i:%i %i/%i/%i\n" % (
