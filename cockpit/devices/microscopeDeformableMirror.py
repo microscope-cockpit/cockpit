@@ -488,10 +488,9 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             print("Detecting nothing but background noise")
 
     def createCanvas(self, temp, scale_factor):
-        app = wx.App()
         temp = np.require(temp, requirements='C')
         frame = selectCircle.ROISelect(input_image=temp, scale_factor=scale_factor)
-        app.MainLoop()
+        frame.Show()
 
     def onCalibrate(self):
         self.parameters = Config.getValue('dm_circleParams')
@@ -575,9 +574,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         self.sysFlatNollZernike = (np.where(np.diag(assay) > 0.75)[0]) + 1
 
         # Show characterisation assay, excluding piston
-        app = wx.App()
         frame = charAssayViewer.viewCharAssay(assay[1:, 1:])
-        app.MainLoop()
+        frame.Show()
 
     def onSysFlatCalc(self):
         self.parameters = Config.getValue('dm_circleParams')
@@ -675,9 +673,8 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         unwrapped_phase = np.require(unwrapped_phase, requirements='C')
         power_spectrum = np.require(np.log(abs(interferogram_ft)), requirements='C')
 
-        app = wx.App()
         frame = phaseViewer.viewPhase(unwrapped_phase, power_spectrum, unwrapped_RMS_error)
-        app.MainLoop()
+        frame.Show()
 
     def onApplySysFlat(self):
         if self.sys_flat_values is None:
