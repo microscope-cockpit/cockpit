@@ -171,7 +171,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         menu.show(event)
 
     def takeImage(self):
-        cockpit.interfaces.imager.takeImage()
+        wx.GetApp().Imager.takeImage()
 
     def enablecamera(self, camera, isOn):
         self.curCamera = camera
@@ -744,11 +744,11 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         print("Subscribing to camera events")
         # Subscribe to camera events
         self.camera = camera
-        events.subscribe("new image %s" % self.camera.name, self.correctSensorlessImage)
+        events.subscribe(events.NEW_IMAGE % self.camera.name, self.correctSensorlessImage)
 
         # Get pixel size
-        self.objectives = cockpit.depot.getHandlersOfType(cockpit.depot.OBJECTIVE)[0]
-        self.pixelSize = self.objectives.getPixelSize()
+        self.objectives = wx.GetApp().Objectives.GetCurrent().lens_ID
+        self.pixelSize = wx.GetApp().Objectives.GetPixelSize() * 10 ** -6
 
         # Initialise the Zernike modes to apply
         print("Initialising the Zernike modes to apply")
@@ -785,7 +785,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             wx.CallAfter(self.correctSensorlessProcessing)
         else:
             print("Error in unsubscribing to camera events. Trying again")
-            events.unsubscribe("new image %s" % self.camera.name, self.correctSensorlessImage)
+            events.unsubscribe(events.NEW_IMAGE % self.camera.name, self.correctSensorlessImage)
 
     def correctSensorlessProcessing(self):
         print("Processing sensorless image")
@@ -799,7 +799,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
                 amp_to_correct, ac_pos_correcting = self.proxy.correct_sensorless_single_mode(image_stack=current_stack,
                                                                                               zernike_applied=self.z_steps,
                                                                                               nollIndex=nollInd,
-                                                                                              offset=self.actuator_offset)
+                                                                                              offset=self.actuator_offset,
+                                                                                              wavelength = 500 * 10 ** -9,
+                                                                                              NA = 1.1,
+                                                                                              pixel_size = self.pixelSize)
                 self.actuator_offset = ac_pos_correcting
                 self.sensorless_correct_coef[nollInd - 1] += amp_to_correct
                 print("Aberrations measured: ", self.sensorless_correct_coef)
@@ -820,7 +823,7 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
         else:
             # Once all images have been obtained, unsubscribe
             print("Unsubscribing to camera %s events" % self.camera.name)
-            events.unsubscribe("new image %s" % self.camera.name, self.correctSensorlessImage)
+            events.unsubscribe(events.NEW_IMAGE % self.camera.name, self.correctSensorlessImage)
 
             # Save full stack of images used
             self.correction_stack = np.asarray(self.correction_stack)
@@ -848,7 +851,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             amp_to_correct, ac_pos_correcting = self.proxy.correct_sensorless_single_mode(image_stack=current_stack,
                                                                                           zernike_applied=self.z_steps,
                                                                                           nollIndex=nollInd,
-                                                                                          offset=self.actuator_offset)
+                                                                                          offset=self.actuator_offset,
+                                                                                          wavelength=500 * 10 ** -9,
+                                                                                          NA=1.1,
+                                                                                          pixel_size=self.pixelSize                                                                                          )
             self.actuator_offset = ac_pos_correcting
             self.sensorless_correct_coef[nollInd - 1] += amp_to_correct
             print("Aberrations measured: ", self.sensorless_correct_coef)
@@ -903,7 +909,7 @@ class dmOutputWindow(wx.Frame):
         textSizer.Add(self.piezoText, 0, wx.EXPAND | wx.ALL, border=5)
         mainSizer.Add(textSizer, 0, wx.EXPAND | wx.ALL, border=5)
         self.panel.SetSizerAndFit(mainSizer)
-        events.subscribe('stage position', self.onMove)
+        events.subscribe(events.STAGE_POSITION, self.onMove)
 
     def onMove(self, axis, *args):
         if axis != 2:
