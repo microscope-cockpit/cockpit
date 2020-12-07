@@ -1,4 +1,4 @@
-# Cockpit Device file for Deformable Mirror AO device.
+# Cockpit Device file for a Composite AO device as constructed by Microscope-AOtools.
 # Copyright Ian Dobbie, 2017
 # Copyright Nick Hall, 2018
 # released under the GPL 3+
@@ -15,9 +15,7 @@ import wx
 import cockpit.interfaces.stageMover
 import cockpit.util
 import cockpit.interfaces.imager
-from itertools import groupby
 import cockpit.gui.device
-#import cockpit.gui.toggleButton
 import Pyro4
 import cockpit.util.userConfig as Config
 import cockpit.handlers.executor
@@ -28,14 +26,13 @@ import cockpit.util.selectCircROI as selectCircle
 import cockpit.util.phaseViewer as phaseViewer
 import cockpit.util.charAssayViewer as charAssayViewer
 import numpy as np
-import scipy.stats as stats
 import aotools
 
 
 # the AO device subclasses Device to provide compatibility with microscope.
 class MicroscopeAOCompositeDevice(MicroscopeBase, device.Device):
-    def __init__(self, name, dm_config={}):
-        super(self.__class__, self).__init__(name, dm_config)
+    def __init__(self, name, aoComp_config={}):
+        super(self.__class__, self).__init__(name, aoComp_config)
         self.proxy = None
         self.sendImage = False
         self.curCamera = None
@@ -479,7 +476,7 @@ class MicroscopeAOCompositeDevice(MicroscopeBase, device.Device):
                 pass
         # If we get this far, we need to create a new window.
         global _deviceInstance
-        dmOutputWindow(self, parent=wx.GetApp().GetTopWindow()).Show()
+        aoCompositeOutputWindow(self, parent=wx.GetApp().GetTopWindow()).Show()
 
     ### Sensorless AO functions ###
 
@@ -520,6 +517,10 @@ class MicroscopeAOCompositeDevice(MicroscopeBase, device.Device):
                 self.proxy.set_controlMatrix(self.controlMatrix)
             except:
                 raise e
+
+        self.controlMatrix = self.proxy.get_controlMatrix()
+        if self.controlMatrix is None:
+            raise Exception("No control matrix exists. Please calibrate the DM or load a control matrix")
 
         print("Setting Zernike modes")
 
@@ -676,12 +677,12 @@ class MicroscopeAOCompositeDevice(MicroscopeBase, device.Device):
 
 # This debugging window lets each digital lineout of the DSP be manipulated
 # individually.
-class dmOutputWindow(wx.Frame):
+class aoCompositeOutputWindow(wx.Frame):
     def __init__(self, AoDevice, parent, *args, **kwargs):
         wx.Frame.__init__(self, parent, *args, **kwargs)
         ## dm Device instance.
         self.dm = AoDevice
-        self.SetTitle("Deformable Mirror AO device control")
+        self.SetTitle("Composite AO device control")
         # Contains all widgets.
         self.panel = wx.Panel(self)
         font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
