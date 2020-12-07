@@ -48,8 +48,6 @@ class MicroscopeAOCompositeDevice(MicroscopeBase, device.Device):
         self.proxy = Pyro4.Proxy(self.uri)
         self.proxy.set_trigger(cp_ttype="FALLING_EDGE", cp_tmode="ONCE")
         self.no_actuators = self.proxy.get_n_actuators()
-        self.actuator_slopes = np.zeros(self.no_actuators)
-        self.actuator_intercepts = np.zeros(self.no_actuators)
         self.config_dir = wx.GetApp().Config['global'].get('config-dir')
 
         # Need initial values for system flat calculations
@@ -70,26 +68,6 @@ class MicroscopeAOCompositeDevice(MicroscopeBase, device.Device):
             self.proxy.send(np.random.rand(self.no_actuators))
             time.sleep(0.01)
         self.proxy.reset()
-
-        # Create accurate look up table for certain Z positions
-        # LUT dict has key of Z positions
-        try:
-            file_path = os.path.join(self.config_dir, 'remote_focus_LUT.txt')
-            LUT_array = np.loadtxt(file_path)
-            self.LUT = {}
-            for ii in (LUT_array[:, 0])[:]:
-                self.LUT[ii] = LUT_array[np.where(LUT_array == ii)[0][0], 1:]
-        except:
-            self.LUT = None
-
-        # Slopes and intercepts are used for extrapolating values not
-        # found in the LUT dict
-        if self.LUT is not None:
-            self.actuator_slopes, self.actuator_intercepts = \
-                self.remote_ac_fits(self.LUT, self.no_actuators)
-
-        # Initiate a table for calibrating the look up table
-        self.remote_focus_LUT = []
 
         # Load values from config
         try:
@@ -176,27 +154,6 @@ class MicroscopeAOCompositeDevice(MicroscopeBase, device.Device):
     def enablecamera(self, camera, isOn):
         self.curCamera = camera
         # Subscribe to new image events only after canvas is prepared.
-
-    def remote_ac_fits(self, LUT_array, no_actuators):
-        # For Z positions which have not been calibrated, approximate with
-        # a regression of known positions.
-
-        actuator_slopes = np.zeros(no_actuators)
-        actuator_intercepts = np.zeros(no_actuators)
-
-        pos = np.sort(LUT_array[:, 0])[:]
-        ac_array = np.zeros((np.shape(LUT_array)[0], no_actuators))
-
-        count = 0
-        for jj in pos:
-            ac_array[count, :] = LUT_array[np.where(LUT_array == jj)[0][0], 1:]
-            count += 1
-
-        for kk in range(no_actuators):
-            s, i, r, p, se = stats.linregress(pos, ac_array[:, kk])
-            actuator_slopes[kk] = s
-            actuator_intercepts[kk] = i
-        return actuator_slopes, actuator_intercepts
 
     ### UI functions ###
     def makeUI(self, parent):
