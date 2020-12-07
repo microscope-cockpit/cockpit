@@ -7,7 +7,6 @@
 # mirror as currently mounted on DeepSIM in Oxford
 
 import os
-from collections import OrderedDict
 import cockpit.devices
 from cockpit.devices import device
 from cockpit import events
@@ -17,20 +16,13 @@ import cockpit.util
 import cockpit.interfaces.imager
 from itertools import groupby
 import cockpit.gui.device
-#import cockpit.gui.toggleButton
 import Pyro4
 import cockpit.util.userConfig as Config
 import cockpit.handlers.executor
 from cockpit.devices.microscopeDevice import MicroscopeBase
-from cockpit import depot
 import time
-import cockpit.util.selectCircROI as selectCircle
-import cockpit.util.phaseViewer as phaseViewer
-import cockpit.util.charAssayViewer as charAssayViewer
 import numpy as np
 import scipy.stats as stats
-import aotools
-
 
 # the AO device subclasses Device to provide compatibility with microscope.
 class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
@@ -288,10 +280,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
 # This debugging window lets each digital lineout of the DSP be manipulated
 # individually.
 class dmOutputWindow(wx.Frame):
-    def __init__(self, AoDevice, parent, *args, **kwargs):
+    def __init__(self, dmDevice, parent, *args, **kwargs):
         wx.Frame.__init__(self, parent, *args, **kwargs)
         ## dm Device instance.
-        self.dm = AoDevice
+        self.dm = dmDevice
         self.SetTitle("Deformable Mirror AO device control")
         # Contains all widgets.
         self.panel = wx.Panel(self)
