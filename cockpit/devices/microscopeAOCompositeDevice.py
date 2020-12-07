@@ -19,7 +19,6 @@ import cockpit.gui.device
 import Pyro4
 import cockpit.util.userConfig as Config
 import cockpit.handlers.executor
-from cockpit.devices.microscopeDevice import MicroscopeBase
 from cockpit import depot
 import time
 import cockpit.util.selectCircROI as selectCircle
@@ -29,8 +28,7 @@ import numpy as np
 import aotools
 
 
-# the AO device subclasses Device to provide compatibility with microscope.
-class MicroscopeAOCompositeDevice(MicroscopeBase, device.Device):
+class MicroscopeAOCompositeDevice(device.Device):
     def __init__(self, name, aoComp_config={}):
         super(self.__class__, self).__init__(name, aoComp_config)
         self.proxy = None
@@ -464,20 +462,6 @@ class MicroscopeAOCompositeDevice(MicroscopeBase, device.Device):
         last_ac = self.proxy.get_last_actuator_values()
         self.proxy.send(last_ac)
 
-    def showDebugWindow(self):
-        # Ensure only a single instance of the window.
-        global _windowInstance
-        window = globals().get('_windowInstance')
-        if window:
-            try:
-                window.Raise()
-                return None
-            except:
-                pass
-        # If we get this far, we need to create a new window.
-        global _deviceInstance
-        aoCompositeOutputWindow(self, parent=wx.GetApp().GetTopWindow()).Show()
-
     ### Sensorless AO functions ###
 
     ## Display a menu to the user letting them choose which camera
@@ -673,34 +657,3 @@ class MicroscopeAOCompositeDevice(MicroscopeBase, device.Device):
             print("Actuator positions applied: ", self.actuator_offset)
             self.proxy.send(self.actuator_offset)
             wx.CallAfter(self.takeImage)
-
-
-# This debugging window lets each digital lineout of the DSP be manipulated
-# individually.
-class aoCompositeOutputWindow(wx.Frame):
-    def __init__(self, AoDevice, parent, *args, **kwargs):
-        wx.Frame.__init__(self, parent, *args, **kwargs)
-        ## dm Device instance.
-        self.dm = AoDevice
-        self.SetTitle("Composite AO device control")
-        # Contains all widgets.
-        self.panel = wx.Panel(self)
-        font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
-        mainSizer = wx.BoxSizer(wx.VERTICAL)
-        allPositions = cockpit.interfaces.stageMover.getAllPositions()
-        self.piezoPos = allPositions[1][2]
-        textSizer = wx.BoxSizer(wx.VERTICAL)
-        self.piezoText = wx.StaticText(self.panel, -1, str(self.piezoPos),
-                                       style=wx.ALIGN_CENTER)
-        self.piezoText.SetFont(font)
-        textSizer.Add(self.piezoText, 0, wx.EXPAND | wx.ALL, border=5)
-        mainSizer.Add(textSizer, 0, wx.EXPAND | wx.ALL, border=5)
-        self.panel.SetSizerAndFit(mainSizer)
-        events.subscribe(events.STAGE_POSITION, self.onMove)
-
-    def onMove(self, axis, *args):
-        if axis != 2:
-            # We only care about the Z axis.
-            return
-        self.piezoText.SetLabel(
-            str(cockpit.interfaces.stageMover.getAllPositions()[1][2]))
