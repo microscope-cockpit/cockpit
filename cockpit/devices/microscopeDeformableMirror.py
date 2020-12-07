@@ -9,7 +9,6 @@
 import os
 import cockpit.devices
 from cockpit.devices import device
-from cockpit import events
 import wx
 import cockpit.interfaces.stageMover
 import cockpit.util
@@ -20,7 +19,6 @@ import Pyro4
 import cockpit.util.userConfig as Config
 import cockpit.handlers.executor
 from cockpit.devices.microscopeDevice import MicroscopeBase
-import time
 import numpy as np
 import scipy.stats as stats
 
@@ -38,17 +36,10 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
 
     def initialize(self):
         self.proxy = Pyro4.Proxy(self.uri)
-        self.proxy.set_trigger(cp_ttype="FALLING_EDGE", cp_tmode="ONCE")
         self.no_actuators = self.proxy.n_actuators
         self.actuator_slopes = np.zeros(self.no_actuators)
         self.actuator_intercepts = np.zeros(self.no_actuators)
         self.config_dir = wx.GetApp().Config['global'].get('config-dir')
-
-        # Excercise the DM to remove residual static and then set to 0 position
-        for ii in range(50):
-            self.proxy.apply_pattern(np.random.rand(self.no_actuators))
-            time.sleep(0.01)
-        self.proxy.apply_pattern(np.zeros(self.no_actuators) + 0.5)
 
         # Create accurate look up table for certain Z positions
         # LUT dict has key of Z positions
@@ -245,64 +236,3 @@ class MicroscopeDeformableMirror(MicroscopeBase, device.Device):
             file_path = os.path.join(self.config_dir, 'remote_focus_LUT.txt')
             np.savetxt(file_path, np.asanyarray(self.remote_focus_LUT))
             Config.setValue('dm_remote_focus_LUT', self.remote_focus_LUT)
-
-    def getPiezoPos(self):
-        return (cockpit.interfaces.stageMover.getAllPositions()[1][2])
-
-    def movePiezoRelative(self, distance):
-        current = self.getPiezoPos()
-        currentpos = self.movePiezoAbsolute(current + distance)
-        return currentpos
-
-    def movePiezoAbsolute(self, position):
-        #        originalHandlerIndex= cockpit.interfaces.stageMover.mover.curHandlerIndex
-        #        interfaces.cockpit.stageMover.mover.curHandlerIndex=1
-        handler = cockpit.interfaces.stageMover.mover.axisToHandlers[2][1]
-        handler.moveAbsolute(position)
-        #        cockpit.interfaces.stageMover.mover.curHandlerIndex=originalHandlerIndex
-        return (self.getPiezoPos())
-
-    def showDebugWindow(self):
-        # Ensure only a single instance of the window.
-        global _windowInstance
-        window = globals().get('_windowInstance')
-        if window:
-            try:
-                window.Raise()
-                return None
-            except:
-                pass
-        # If we get this far, we need to create a new window.
-        global _deviceInstance
-        dmOutputWindow(self, parent=wx.GetApp().GetTopWindow()).Show()
-
-
-# This debugging window lets each digital lineout of the DSP be manipulated
-# individually.
-class dmOutputWindow(wx.Frame):
-    def __init__(self, dmDevice, parent, *args, **kwargs):
-        wx.Frame.__init__(self, parent, *args, **kwargs)
-        ## dm Device instance.
-        self.dm = dmDevice
-        self.SetTitle("Deformable Mirror AO device control")
-        # Contains all widgets.
-        self.panel = wx.Panel(self)
-        font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
-        mainSizer = wx.BoxSizer(wx.VERTICAL)
-        allPositions = cockpit.interfaces.stageMover.getAllPositions()
-        self.piezoPos = allPositions[1][2]
-        textSizer = wx.BoxSizer(wx.VERTICAL)
-        self.piezoText = wx.StaticText(self.panel, -1, str(self.piezoPos),
-                                       style=wx.ALIGN_CENTER)
-        self.piezoText.SetFont(font)
-        textSizer.Add(self.piezoText, 0, wx.EXPAND | wx.ALL, border=5)
-        mainSizer.Add(textSizer, 0, wx.EXPAND | wx.ALL, border=5)
-        self.panel.SetSizerAndFit(mainSizer)
-        events.subscribe(events.STAGE_POSITION, self.onMove)
-
-    def onMove(self, axis, *args):
-        if axis != 2:
-            # We only care about the Z axis.
-            return
-        self.piezoText.SetLabel(
-            str(cockpit.interfaces.stageMover.getAllPositions()[1][2]))
