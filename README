@@ -13,7 +13,7 @@ microscopes.  Its main features are:
   multiple computers.
 
 * Independent of the actual devices being used.  Cockpit uses Python's
-  `Microscope <https://github.com/MicronOxford/microscope>`_ package to
+  `Microscope <https://github.com/python-microscope/microscope>`_ package to
   control the devices.  The graphical interface and experiments
   automatically adjust to the  existing devices.
 
