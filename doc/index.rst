@@ -1,4 +1,4 @@
-.. Copyright (C) 2019 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
+.. Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 
    Permission is granted to copy, distribute and/or modify this
    document under the terms of the GNU Free Documentation License,
@@ -18,9 +18,12 @@ Cockpit
    install
    config
 
-Indices and tables
-******************
+.. These are commented out because we are not building the modules
+   documentation (because they don't have docstrings).
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   Indices and tables
+   ******************
+
+   * :ref:`genindex`
+   * :ref:`modindex`
+   * :ref:`search`
