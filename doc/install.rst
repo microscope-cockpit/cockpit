@@ -29,18 +29,18 @@ The only Cockpit dependency not available on Debian repositories is
 installed with `pip`.  To avoid having `pip` installing the other
 dependencies from PyPI, they need to be installed first with `apt`::
 
-  sudo apt install \
-    python3 \
-    python3-freetype \
-    python3-matplotlib \
-    python3-numpy \
-    python3-opengl \
-    python3-pip \
-    python3-pyro4 \
-    python3-scipy \
-    python3-serial \
-    python3-setuptools \
-    python3-wxgtk4.0
+    sudo apt install \
+      python3 \
+      python3-freetype \
+      python3-matplotlib \
+      python3-numpy \
+      python3-opengl \
+      python3-pip \
+      python3-pyro4 \
+      python3-scipy \
+      python3-serial \
+      python3-setuptools \
+      python3-wxgtk4.0
 
 .. note::
 
@@ -53,7 +53,7 @@ dependencies from PyPI, they need to be installed first with `apt`::
 Once that is done, installing Cockpit with `pip` will install the
 missing dependencies::
 
-  pip3 install --user microscope-cockpit
+    pip3 install --user microscope-cockpit
 
 
 macOS
@@ -81,7 +81,7 @@ failed the first time.
 
 4. Once installed, cockpit can be started from command line::
 
-   cockpit
+    cockpit
 
 
 Microsoft Windows
