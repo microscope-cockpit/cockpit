@@ -198,7 +198,6 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             if self.enabled:
                 self.enabled = False
                 self._proxy.disable()
-                self._proxy.make_safe()
                 self.listener.disconnect()
                 return self.enabled
 

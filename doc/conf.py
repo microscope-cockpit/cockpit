@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2019 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
+## Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## Copying and distribution of this file, with or without modification,
 ## are permitted in any medium without royalty provided the copyright
@@ -11,13 +11,6 @@
 import sys
 
 sys.path.insert(0, '../cockpit')
-
-
-## This should be read from setup.py.  Maybe we should use
-## pkg_resources to avoid duplication?
-author = 'Micron Oxford'
-project = 'Cockpit'
-copyright = '2019, Micron Oxford'
 
 
 master_doc = 'index'
@@ -43,4 +36,7 @@ napoleon_include_special_with_doc = True
 ## Options for HTML output
 ##
 
-html_theme = 'agogo'
+html_theme = "classic"
+html_short_title = "Cockpit documentation"
+html_show_copyright = False
+html_show_sphinx = False
