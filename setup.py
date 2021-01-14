@@ -38,8 +38,8 @@ setuptools.setup(
 
     url = "https://github.com/MicronOxford/cockpit",
 
-    author = '',
-    author_email = '',
+    author = 'See source for a complete list of contributors',
+    author_email = ' ',
 
     ## https://pypi.org/pypi?:action=list_classifiers
     classifiers = [
