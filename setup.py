@@ -18,7 +18,8 @@ import setuptools.command.sdist
 ## distribution.  We could also have a MANIFEST file but we'd rather
 ## not have the distribution configuration over multiple files.
 manifest_files = [
-    'README',
+    'README.rst',
+    'INSTALL.rst',
     'COPYING',
     os.path.join('cockpit', 'resources', 'fonts', 'Universalis_COPYING.txt'),
     os.path.join('cockpit', 'resources', 'fonts', 'Universalis_NOTICE.txt'),
