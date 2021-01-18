@@ -4,3 +4,6 @@ Cockpit is available on the Python Package Index (PyPI) and can be
 short version of it is::
 
     pip install microscope-cockpit
+
+For details on dependencies, system specific instructions, and
+installing from development sources see `doc/install.rst`.
