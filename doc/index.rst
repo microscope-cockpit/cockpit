@@ -10,7 +10,7 @@
 Cockpit
 #######
 
-.. include:: ../README
+.. include:: ../README.rst
 
 .. toctree::
    :maxdepth: 2
