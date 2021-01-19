@@ -60,6 +60,7 @@ from cockpit.handlers.deviceHandler import DeviceHandler
 from cockpit import events
 from cockpit.handlers.genericPositioner import GenericPositionerHandler
 from cockpit.experiment.actionTable import ActionTable
+from cockpit.experiment import experiment
 from numbers import Number
 import operator
 import time
@@ -567,10 +568,24 @@ class ExecutorDebugWindow(wx.Frame):
                                 # If dealing with ADUs, float should perhaps be int,
                                 # but rely on device to set correct type.
                 anaSizer.Add(control, 0, wx.RIGHT, 20)
+
+            btn = wx.Button(self, label="Display last experiment")
+            btn.SetToolTip(wx.ToolTip(
+                "Plot the last experiment like an oscilloscope display."
+            ))
+            btn.Bind(wx.EVT_BUTTON, self._OnDisplayLastExperiment)
+            anaSizer.Add(btn, 0, wx.RIGHT, 20)
             mainSizer.Add(anaSizer)
 
         panel.SetSizerAndFit(mainSizer)
         self.SetClientSize(panel.GetSize())
+
+    def _OnDisplayLastExperiment(self, evt: wx.CommandEvent) -> None:
+        del evt
+        if experiment.lastExperiment is None:
+            wx.MessageBox("No experiment has been done yet.")
+        else:
+            plot_action_table_profile(experiment.lastExperiment.table)
 
 
 ## A class for a handler that can perform actions in an experiment,
