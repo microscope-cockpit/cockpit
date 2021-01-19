@@ -18,7 +18,8 @@ import setuptools.command.sdist
 ## distribution.  We could also have a MANIFEST file but we'd rather
 ## not have the distribution configuration over multiple files.
 manifest_files = [
-    'README',
+    'README.rst',
+    'INSTALL.rst',
     'COPYING',
     os.path.join('cockpit', 'resources', 'fonts', 'Universalis_COPYING.txt'),
     os.path.join('cockpit', 'resources', 'fonts', 'Universalis_NOTICE.txt'),
@@ -31,15 +32,15 @@ class sdist(setuptools.command.sdist.sdist):
 
 setuptools.setup(
     name = 'microscope-cockpit',
-    version = '2.9.0+dev',
+    version = '2.9.1+dev',
     description = 'Hardware agnostic microscope user interface',
     long_description = open('README', 'r').read(),
     license = 'GPL-3.0+',
 
     url = "https://github.com/MicronOxford/cockpit",
 
-    author = '',
-    author_email = '',
+    author = 'See source for a complete list of contributors',
+    author_email = ' ',
 
     ## https://pypi.org/pypi?:action=list_classifiers
     classifiers = [
