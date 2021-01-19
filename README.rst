@@ -1,6 +1,8 @@
 Cockpit is a microscope graphical user interface.  It is a flexible
 and easy to extend platform aimed at life scientists using bespoke
-microscopes.  Its main features are:
+microscopes. `Webpage <https://micronoxford.com/python-microscope-cockpit>`__
+ 
+Its main features are:
 
 - Easy to use and extend by life scientists.  Cockpit is completely
   written in Python and meant to be extended by the user.
