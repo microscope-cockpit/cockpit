@@ -34,3 +34,12 @@ Its main features are:
 - Cockpit is free and open source software, released under the GPL.
 
 
+The User Interface
+------------------
+
+The user interface is made up of a number of windows with the main
+ones shown below.
+
+.. image:: cockpit/doc/cockpit-windows.png
+  :align: center	  
+  :alt: Cockpit maijn windows
