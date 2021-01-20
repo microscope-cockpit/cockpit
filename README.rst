@@ -9,7 +9,7 @@ Microscope-Cockpit
 
 Cockpit is a microscope graphical user interface.  It is a flexible
 and easy to extend platform aimed at life scientists using bespoke
-microscopes. A more detailed description is avalible in the recently
+microscopes. A more detailed description is available in the recently
 published `bioRxiv paper
 <https://www.biorxiv.org/content/10.1101/2021.01.18.427178v1>`__
 and on the `Webpage
