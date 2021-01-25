@@ -517,7 +517,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
 
     def InitGL(self):
-        self.w, self.h = self.GetClientSize()
+        scalefactor=self.GetContentScaleFactor()
+        self.w, self.h = self.GetClientSize()*scalefactor
         self.SetCurrent(self.context)
         glClearColor(0.3, 0.3, 0.3, 0.0)   ## background color
 
