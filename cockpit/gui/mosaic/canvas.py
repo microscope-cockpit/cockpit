@@ -350,7 +350,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             if not self.haveInitedGL:
                 self.initGL()
 
-            width, height = self.GetClientSize()
+            width, height = self.GetClientSize()*self.GetContentScaleFactor()
 
             glViewport(0, 0, width, height)
             glMatrixMode(GL_PROJECTION)
@@ -396,7 +396,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # Paranoia
         if not scale:
             return
-        width, height = self.GetClientSize()
+        width, height = self.GetClientSize()*self.GetContentScaleFactor()
         self.dx = -x * scale + width / 2
         self.dy = -y * scale + height / 2
         self.scale = scale
@@ -410,7 +410,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         if multiplier == 0:
             return
         self.scale *= multiplier
-        width, height = self.GetClientSize()
+        width, height = self.GetClientSize()*self.GetContentScaleFactor()
         halfWidth = width / 2
         halfHeight = height / 2
         self.dx = halfWidth - (halfWidth - self.dx) * multiplier
@@ -427,7 +427,10 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
 
     ## Remap an (X, Y) tuple of screen coordinates to a location on the stage.
     def mapScreenToCanvas(self, pos):
-        height = self.GetClientSize()[1]
+        scaleFactor = self.GetContentScaleFactor()
+        pos = (pos[0]*scaleFactor,pos[1]*scaleFactor)
+        
+        height = self.GetClientSize()[1]*scaleFactor
         return ((self.dx - pos[0]) / self.scale,
                 -(self.dy - height + pos[1]) / self.scale)
 
@@ -435,7 +438,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     ## Return a (bottom left, top right) tuple showing what part
     # of the stage is currently visible.
     def getViewBox(self):
-        width, height = self.GetClientSize()
+        width, height = self.GetClientSize()*self.GetContentScaleFactor()
         bottomLeft = (-self.dx / self.scale, -self.dy / self.scale)
         topRight = (-(self.dx - width) / self.scale,
                        -(self.dy - height) / self.scale)

@@ -212,7 +212,8 @@ class MosaicCommon:
             # Scale bar width.
             self.scalebar = 100*(10**math.floor(math.log(1/self.canvas.scale,10)))
             # Scale bar position, near the top left-hand corner.
-            scalebarPos = [30,-10]
+            scaleFactor = self.GetContentScaleFactor()
+            scalebarPos = [30*scaleFactor,-10*scaleFactor]
 
             # Scale bar vertices.
             x1 = scalebarPos[0]/self.canvas.scale
@@ -227,7 +228,7 @@ class MosaicCommon:
             # Do the actual drawing
             glColor3f(255, 0, 0)
             # The scale bar itself.
-            glLineWidth(8)
+            glLineWidth(8*scaleFactor)
             glBegin(GL_LINES)
             glVertex2f(x1,y1)
             glVertex2f(x2,y1)
@@ -236,9 +237,9 @@ class MosaicCommon:
             # The scale label.
             glPushMatrix()
             labelPosX= x1
-            labelPosY= y1 - (20./self.canvas.scale)
+            labelPosY= y1 - (20.*scaleFactor/self.canvas.scale)
             glTranslatef(labelPosX, labelPosY, 0)
-            fontScale = 1. / self.canvas.scale
+            fontScale = scaleFactor / self.canvas.scale
             glScalef(fontScale, fontScale, 1.)
             if (self.scalebar>1.0):
                 self.scale_face.render('%d um' % self.scalebar)
