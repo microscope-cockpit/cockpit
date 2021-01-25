@@ -215,7 +215,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
 
     ## Draw some text at the specified location
     def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
-        width, height = self.GetClientSize()
+        width, height = self.GetClientSize()*self.GetContentScaleFactor()
         aspect = float(height) / width
         loc = self.scaledVertex(loc[0], loc[1], True)
 
