@@ -104,6 +104,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.dx, self.dy = 0.0, 0.0
         ## Scaling factor.
         self.scale = 1.0
+        ## pixel to point mapping factor for Mac retina displays.
+        self.scaleFactor = self.GetContentScaleFactor() 
 
         ## Set to True once we've done some initialization.
         self.haveInitedGL = False
@@ -125,7 +127,10 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.Bind(wx.EVT_MOUSE_EVENTS, mouseCallback)
         # Do nothing on this event, to avoid flickering.
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event)
-
+        #event on DPI chnage on high DPI screens, needed for Mac retina
+        #displays.
+        self.Bind(wx.EVT_DPI_CHANGED, self.onDPIchange)
+  
 
 
     ## Now that OpenGL's ready to go, perform any necessary initialization.
@@ -417,6 +422,10 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.dy = halfHeight - (halfHeight - self.dy) * multiplier
         self.Refresh()
 
+    def onDPIchange(self,event):
+        #not an ideal solution as visible region changes but
+        #recalcs positions etc...
+        self.multiplyZoom(1)
 
     ## Change our translation by the specified number of pixels.
     def dragView(self, offset):
