@@ -104,9 +104,6 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.dx, self.dy = 0.0, 0.0
         ## Scaling factor.
         self.scale = 1.0
-        ## pixel to point mapping factor for Mac retina displays.
-        self.scaleFactor = self.GetContentScaleFactor() 
-
         ## Set to True once we've done some initialization.
         self.haveInitedGL = False
         ## WX rendering context
