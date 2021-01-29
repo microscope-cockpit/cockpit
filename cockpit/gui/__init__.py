@@ -32,9 +32,9 @@ import cockpit.events
 ## filesystem filepath.  It is a /-separated filepath, even on
 ## windows, so do not use os.path.join.
 
-BITMAPS_PATH = pkg_resources.resource_filename(
+IMAGES_PATH = pkg_resources.resource_filename(
     'cockpit',
-    'resources/bitmaps/'
+    'resources/images/'
 )
 
 

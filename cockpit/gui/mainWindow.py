@@ -635,7 +635,7 @@ def CockpitAboutInfo() -> wx.adv.AboutDialogInfo:
         # We should not have to set this, it should be set later via
         # the AboutBox parent icon.  We don't yet have icons working
         # (issue #388), but remove this when it is.
-        info.SetIcon(wx.Icon(os.path.join(cockpit.gui.BITMAPS_PATH,
+        info.SetIcon(wx.Icon(os.path.join(cockpit.gui.IMAGES_PATH,
                                           'cockpit-8bit.ico')))
 
         info.SetLicence('Cockpit is free software: you can redistribute it'

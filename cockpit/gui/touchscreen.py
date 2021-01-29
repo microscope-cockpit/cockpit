@@ -150,7 +150,7 @@ class TouchScreenWindow(wx.Frame, mosaic.MosaicCommon):
         ## Maps button names to wx.Button instances.
         self.nameToButton = {}
         self.nameToText={}
-        self.bitmapsPath = cockpit.gui.BITMAPS_PATH
+        self.bitmapsPath = os.path.join(cockpit.gui.IMAGES_PATH, "touchscreen")
 
         self.buttonPanel=wx.Panel(self.panel, -1, size=(300,-1),
                                   style=wx.BORDER_RAISED)
