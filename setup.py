@@ -56,6 +56,7 @@ setuptools.setup(
     package_data = {
         'cockpit' : [
             os.path.join('resources', 'images', 'touchscreen', '*.png'),
+            os.path.join('resources', 'images', '*.icns'),
             os.path.join('resources', 'images', '*.ico'),
             os.path.join('resources', 'fonts', '*.otf'),
         ],
