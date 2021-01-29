@@ -8,6 +8,7 @@
 ## notice and this notice are preserved.  This file is offered as-is,
 ## without any warranty.
 
+import glob
 import os.path
 
 import setuptools
@@ -23,7 +24,9 @@ manifest_files = [
     'COPYING',
     os.path.join('cockpit', 'resources', 'fonts', 'Universalis_COPYING.txt'),
     os.path.join('cockpit', 'resources', 'fonts', 'Universalis_NOTICE.txt'),
-]
+    os.path.join('aux', 'convert-images-to-png.py'),
+] + glob.glob(os.path.join('images', 'touchscreen', '*.svg'))
+
 class sdist(setuptools.command.sdist.sdist):
     def make_distribution(self):
         self.filelist.extend(manifest_files)
