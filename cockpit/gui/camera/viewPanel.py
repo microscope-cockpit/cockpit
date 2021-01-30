@@ -178,6 +178,22 @@ class ViewPanel(wx.Panel):
         # Subscribe to new image events only after canvas is prepared.
         events.subscribe(events.NEW_IMAGE % self.curCamera.name, self.onImage)
 
+    # TODO: This needs revision, too many sizes are being set
+    def change_size(self, size=wx.Size(VIEW_WIDTH, VIEW_HEIGHT - 40)):
+        size_corrected = wx.Size(size[0], size[1] + 30)
+        self.SetSize(size_corrected)
+        self.SetMinSize(size_corrected)
+        if self.canvas:
+            self.canvas.SetSize(size)
+            self.canvas.SetMinSize(size)
+            self.canvas.clear()
+            self.canvas.resetView()
+            self.canvas.setSize(size)
+        self.canvasPanel.SetSize(size)
+        self.canvasPanel.SetMinSize(size)
+        self.selector.SetSize(wx.Size(size[0], 30))
+        self.selector.SetMinSize(wx.Size(size[0], 30))
+
     ## React to the drawer changing, by updating our labels and colors.
     @cockpit.util.threads.callInMainThread
     def onFilterChange(self):
