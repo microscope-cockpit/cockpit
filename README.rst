@@ -1,7 +1,7 @@
 Microscope-Cockpit
 ==================
 
-.. image:: cockpit/resources/bitmaps/cockpit.ico
+.. image:: cockpit/resources/images/cockpit.ico
   :width: 400
   :align: center	  
   :alt: Cockpit Icon
