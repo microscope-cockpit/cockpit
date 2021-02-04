@@ -30,7 +30,9 @@ Config file
 
 Cockpit configuration is mainly performed with an `INI file
 <https://en.wikipedia.org/wiki/INI_file>`_, with multiple options
-organised over sections.  For example::
+organised over sections.  For example:
+
+.. code:: ini
 
   ;; This is a comment.  It's nice to document configuration files.
   [global]
@@ -80,10 +82,12 @@ stage section
 primitives
 
   A list of shapes to draw on stage displays.  Primitives are
-  specified by a config entry of the form::
+  specified by a config entry of the form:
 
-    primitives: c 1000 1000 100
-                r 1000 1000 100 100
+  .. code:: ini
+
+      primitives: c 1000 1000 100
+                  r 1000 1000 100 100
 
   where ``c x0 y0 radius`` defines a circle centred on ``x0, y0`` and
   ``r x0 y0 width height`` defines a rectangle centred on ``x0, y0``.
@@ -168,7 +172,9 @@ Depot Configuration
 Depot is the collection of devices available to the cockpit program.
 Each section of a depot configuration specifies a single device: the
 section name being the device name, while the options are the device
-configuration.  For example::
+configuration.  For example:
+
+.. code:: ini
 
   [west]
   type: cockpit.devices.microscopeCamera.MicroscopeCamera
