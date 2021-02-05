@@ -8,9 +8,14 @@
    section entitled "GNU Free Documentation License".
 
 Installation
-************
+############
 
-.. include:: ../INSTALL
+Cockpit is available on the Python Package Index (PyPI) and can be
+`installed like any other Python package
+<https://packaging.python.org/tutorials/installing-packages/>`__.  The
+short version of it is "use pip"::
+
+    pip install microscope-cockpit
 
 
 GNU/Linux
@@ -50,7 +55,7 @@ dependencies from PyPI, they need to be installed first with `apt`::
    omit them from the ``apt install`` command and let `pip` install
    them as part of `pip` automatic handling of missing dependencies.
 
-Once that is done, installing Cockpit with `pip` will install the
+Once that is done, installing Cockpit with `pip` will install any
 missing dependencies::
 
     pip3 install --user microscope-cockpit
@@ -112,4 +117,4 @@ If the plan is to make changes to the source code or to have the
 installed version follow development, consider installing in develop
 mode, also known as editable mode::
 
-    pip install --editable cockpit/
+    pip install --user --editable cockpit/
