@@ -108,7 +108,7 @@ class ViewPanel(wx.Panel):
         if event.LeftDClick():
             if self.imagePos is None:
                 self.imagePos = cockpit.interfaces.stageMover.getPosition()
-            x, y = event.GetPosition()
+            x, y = event.GetPosition()*self.GetContentScaleFactor()
             pixelSize = wx.GetApp().Objectives.GetPixelSize()
             x0, y0 = self.canvas.glToIndices(0, 0)
             dy, dx = self.canvas.canvasToIndices(x, y)

@@ -499,7 +499,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def onMouseWheel(self, event):
         # Only respond if event originated within window.
         p = event.GetPosition()
-        s = self.GetSize()
+        s = self.GetSize()*self.GetContentScaleFactor()
         if any(map(operator.or_, map(operator.gt, p, s), map(operator.lt, p, (0,0)))):
             return
         rotation = event.GetWheelRotation()
@@ -507,8 +507,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             return
         factor = rotation / 1000.
         x, y = event.GetLogicalPosition(wx.ClientDC(self))
-        w, h = self.GetClientSize()
-        h -= HISTOGRAM_HEIGHT
+        w, h = self.GetClientSize()*self.GetContentScaleFactor()
+        h -= HISTOGRAM_HEIGHT*self.GetContentScaleFactor()
         glx = -(2 * (x / w) - 1) / self.zoom
         gly = (2 * (y / h) - 1) / self.zoom
         newZoom = self.zoom * (1 + factor)
@@ -621,16 +621,18 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             return
 
         try:
+            Hist_Height=int(HISTOGRAM_HEIGHT*self.GetContentScaleFactor())
             self.painting = True
             self.SetCurrent(self.context)
             glClear(GL_COLOR_BUFFER_BIT)
-            glViewport(0, HISTOGRAM_HEIGHT, self.w, self.h - HISTOGRAM_HEIGHT)
+            glViewport(0, Hist_Height,
+                       self.w, self.h - Hist_Height)
             self.image.draw(pan=(self.panX, self.panY), zoom=self.zoom)
             if self.showCrosshair:
                 self.drawCrosshair()
 
 
-            glViewport(0, 0, self.w, HISTOGRAM_HEIGHT//2)
+            glViewport(0, 0, self.w, Hist_Height//2)
             self.histogram.draw()
             glColor(0, 1, 0, 1)
 
@@ -639,11 +641,12 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             glPushMatrix()
             glLoadIdentity ()
             glOrtho (0, self.w, 0, self.h, 1., -1.)
-            glTranslatef(0, HISTOGRAM_HEIGHT/2+2, 0)
+            glTranslatef(0, (Hist_Height)/2+2, 0)
             try:
                 self.face.render('%d [%-10d %10d] %d' %
                                  (self.image.dmin, self.histogram.lthresh,
-                                  self.histogram.uthresh, self.image.dmin+self.image.dptp))
+                                  self.histogram.uthresh,
+                                  self.image.dmin+self.image.dptp))
             except:
                 pass
             glPopMatrix()
@@ -679,7 +682,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def onMouse(self, event):
         if self.imageShape is None:
             return
-        self.curMouseX, self.curMouseY = event.GetPosition()
+        self.curMouseX, self.curMouseY = (event.GetPosition() *
+                                          self.GetContentScaleFactor())
         self.updateMouseInfo(self.curMouseX, self.curMouseY)
         if event.LeftDClick():
             # Explicitly skip EVT_LEFT_DCLICK for parent to handle.
@@ -691,7 +695,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             blackPointX = 0.5 * (1+self.histogram.data2gl(self.histogram.lthresh)) * self.w
             whitePointX = 0.5 * (1+self.histogram.data2gl(self.histogram.uthresh)) * self.w
             # Set drag mode based on current window position
-            if self.h - self.curMouseY >= HISTOGRAM_HEIGHT * 2:
+            if self.h - self.curMouseY >= (HISTOGRAM_HEIGHT *
+                                           self.GetContentScaleFactor()* 2):
                 self.dragMode = DRAG_CANVAS
             elif abs(self.curMouseX - blackPointX) < abs(self.curMouseX - whitePointX):
                 self.dragMode = DRAG_BLACKPOINT
@@ -769,7 +774,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Convert window co-ordinates to gl co-ordinates.
     def canvasToGl(self, x, y):
         glx = (-1 + 2 *x / self.w - self.panX * self.zoom) / self.zoom
-        gly = -(-1 + 2 * y / (self.h - HISTOGRAM_HEIGHT) + self.panY * self.zoom) / self.zoom
+        gly = -(-1 + 2 * y / (self.h - (HISTOGRAM_HEIGHT*
+                                        self.GetContentScaleFactor()))
+                + self.panY * self.zoom) / self.zoom
         return (glx, gly)
 
 
