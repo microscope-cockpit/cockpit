@@ -612,15 +612,16 @@ def CockpitAboutInfo() -> wx.adv.AboutDialogInfo:
                       'See the GNU General Public Licence, version 3 or later,'
                       ' for details.')
 
-
     # Authors are sorted alphabetically.
     for dev_name in ['Chris Weisiger',
+                     'Danail Stoychev',
                      'David Miguel Susano Pinto',
                      'Eric Branlund',
                      'Ian Dobbie',
                      'Julio Mateos-Langerak',
                      'Mick Phillips',
-                     'Nicholas Hall',]:
+                     'Nicholas Hall',
+                     'Sebastian Hasse',]:
         info.AddDeveloper(dev_name)
 
     # wxWidgets has native and generic implementations for the about
