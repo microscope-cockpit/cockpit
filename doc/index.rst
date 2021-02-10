@@ -16,6 +16,7 @@ Microscope-Cockpit
 
    install
    config
+   troubleshoot
 
 Cockpit is a microscope graphical user interface.  It is a flexible
 and easy to extend platform aimed at life scientists using bespoke
