@@ -37,6 +37,7 @@ import time
 import typing
 
 import cockpit.util.logger
+import Pyro4
 
 
 _PROGRAM_NAME = 'cockpit'
@@ -162,6 +163,7 @@ def _default_cockpit_config():
             ## reading the cockpit config files and will also be
             ## dependent on command line options.
 #            'depot-files' : '',
+            'pyro-pickle-protocol': Pyro4.config.PICKLE_PROTOCOL_VERSION,
         },
         'log' : {
             'level' : 'error',

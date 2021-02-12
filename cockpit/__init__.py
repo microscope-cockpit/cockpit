@@ -121,6 +121,12 @@ class CockpitApp(wx.App):
 
     def OnInit(self):
         try:
+            # Ideally we would set this per device but Pyro4 config is
+            # a singleton so our changes affects *all* devices we use
+            # (as well as anything else on the process using Pyro).
+            Pyro4.config.PICKLE_PROTOCOL_VERSION = self.Config[
+                "global"
+            ].getint("pyro-pickle-protocol")
             depot_config = self.Config.depot_config
             cockpit.depot.initialize(depot_config)
             numDevices = len(depot_config.sections()) + 1 # +1 for dummy devices

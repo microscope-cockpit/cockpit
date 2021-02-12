@@ -65,6 +65,12 @@ data-dir
 depot-files
   List of files to use for the device depot.  See :ref:`depot-config`.
 
+pyro-pickle-protocol
+  Pickle protocol version number to use with Pyro, i.e., when
+  connecting to the device server.  Defaults to whatever is already
+  set on Pyro which defaults to the highest pickle protocol version
+  available.  This affects *all* Pyro connections.
+
 log section
 ```````````
 level
