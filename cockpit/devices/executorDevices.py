@@ -107,7 +107,6 @@ class ExecutorDevice(device.Device):
     ## Connect to the DSP computer.
     @cockpit.util.threads.locked
     def initialize(self):
-        Pyro4.config.PICKLE_PROTOCOL_VERSION=4
         self.connection = Pyro4.Proxy(self.uri)
         self.connection._pyroTimeout = 6
         self.connection.Abort()
