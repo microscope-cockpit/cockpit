@@ -505,7 +505,7 @@ def plot_action_table_profile(
             if handler.name in table:
                 # The handler already exists in the table
                 if (table[handler.name][2] == 'digital'):
-                    #if digital have a poun t with last state at this time point
+                    #if digital have a point with last state at this time.
                     table[handler.name][0].append(time)
                     table[handler.name][1].append(table[handler.name][1][-1])
                 table[handler.name][0].append(time)
