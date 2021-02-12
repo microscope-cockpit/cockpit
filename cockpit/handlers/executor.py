@@ -492,10 +492,10 @@ def plot_action_table_profile(
     table = {}
 
     def action_type(action):
-        if isinstance(action, (float, int)):
-            return "analogue"
         if isinstance(action, bool):
             return "digital"
+        if isinstance(action, (float, int)):
+            return "analogue"
 
     for event in action_table.actions:
         if event is None:
@@ -504,6 +504,10 @@ def plot_action_table_profile(
         if handlers is None or handler in handlers:
             if handler.name in table:
                 # The handler already exists in the table
+                if (table[handler.name][2] == 'digital'):
+                    #if digital have a poun t with last state at this time point
+                    table[handler.name][0].append(time)
+                    table[handler.name][1].append(table[handler.name][1][-1])
                 table[handler.name][0].append(time)
                 table[handler.name][1].append(action)
             else:
