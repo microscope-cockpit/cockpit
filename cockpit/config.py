@@ -29,14 +29,11 @@ default config files and values, and command line options.
 import argparse
 import configparser
 import importlib
-import logging
 import os
 import os.path
 import sys
-import time
 import typing
 
-import cockpit.util.logger
 import Pyro4
 
 

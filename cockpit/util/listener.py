@@ -18,9 +18,8 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-
-import Pyro4
 from cockpit import depot
+
 
 ## Similar to the util.connection.Connection class.
 # Several device classes need to register functions with the cockpit

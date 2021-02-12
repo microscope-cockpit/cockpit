@@ -50,13 +50,11 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 import numpy
 from OpenGL.GL import *
 import traceback
 import wx
 
-from cockpit import depot
 from cockpit import events
 from cockpit.gui.primitive import Primitive
 import cockpit.gui.dialogs.getNumberDialog

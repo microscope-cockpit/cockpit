@@ -19,12 +19,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-import typing
-
 import wx
 
 import cockpit.interfaces.channels
-from cockpit import depot, events
+from cockpit import depot
 from cockpit.util.colors import wavelengthToColor
 from cockpit.gui.device import EnableButton
 from cockpit.gui import safeControls

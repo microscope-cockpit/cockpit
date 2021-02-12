@@ -36,14 +36,13 @@ import cockpit.handlers.stagePositioner
 import Pyro4
 from cockpit.devices.device import Device
 import threading
-import cockpit.util.logger as logger
 import cockpit.util.threads
 from cockpit.util import valueLogger
 
 import datetime
 import time
 import wx
-import re # to get regular expression parsing for config file
+
 
 DEFAULT_LIMITS = ((0, 0), (11000, 3000))
 LOGGING_PERIOD = 30

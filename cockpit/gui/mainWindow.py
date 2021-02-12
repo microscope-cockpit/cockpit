@@ -50,16 +50,13 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 # This module creates the primary window.  This window houses widgets
 # to control the most important hardware elements.  It is only
 # responsible for setting up the user interface; it assume that the
 # devices have already been initialized.
 
-import json
 import os.path
 import pkg_resources
-import platform
 import subprocess
 import sys
 import typing

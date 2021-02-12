@@ -51,7 +51,6 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 import numpy
-import os
 from OpenGL.GL import *
 import threading
 import time
@@ -62,7 +61,6 @@ import cockpit.gui
 import cockpit.gui.freetype
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
-from cockpit import depot
 
 
 ## @package cockpit.gui.macroStage

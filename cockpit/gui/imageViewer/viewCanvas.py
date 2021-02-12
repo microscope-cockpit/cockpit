@@ -51,7 +51,6 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 from cockpit import events
 import cockpit.gui
 import cockpit.gui.freetype
@@ -60,7 +59,6 @@ import cockpit.gui.dialogs.getNumberDialog
 import cockpit.util.datadoc
 import cockpit.util.threads
 
-from wx.glcanvas import GLCanvas
 from collections.abc import Iterable
 
 import numpy
@@ -72,6 +70,7 @@ import traceback
 import wx
 import wx.glcanvas
 import operator
+
 
 ## @package cockpit.gui.imageViewer.viewCanvas
 # This module provides a canvas for displaying camera images.

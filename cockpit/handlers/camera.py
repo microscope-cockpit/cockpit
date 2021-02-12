@@ -50,9 +50,7 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 import decimal
-import wx
 
 from cockpit import depot
 from cockpit.handlers import deviceHandler

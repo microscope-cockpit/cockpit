@@ -18,8 +18,6 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-import threading
-import time
 import unittest
 import unittest.mock
 

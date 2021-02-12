@@ -54,7 +54,7 @@ import threading
 
 from cockpit import events
 import cockpit.util.threads
-import sys
+
 
 ## A DeviceHandler acts as the interface between the GUI and the device module.
 # In other words, it tells the GUI what the device does, and translates GUI

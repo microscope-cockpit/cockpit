@@ -18,7 +18,6 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from cockpit.experiment import actionTable
 from cockpit import depot
 from cockpit.experiment import experiment
@@ -26,8 +25,8 @@ from cockpit.gui import guiUtils
 import cockpit.util
 
 import decimal
-import math
 import wx
+
 
 ## Provided so the UI knows what to call this experiment.
 EXPERIMENT_NAME = 'RotatorSweep'

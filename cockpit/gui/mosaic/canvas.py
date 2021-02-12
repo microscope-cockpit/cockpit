@@ -51,22 +51,20 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 import numpy
 from OpenGL.GL import *
 import traceback
 import wx.glcanvas
 
-from cockpit import depot
 from cockpit import events
 from cockpit.gui.mosaic.tile import Tile, MegaTile
 import cockpit.util.datadoc
 import cockpit.util.logger
 import cockpit.util.threads
-import itertools
 import queue
 import time
 import numpy as np
+
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1

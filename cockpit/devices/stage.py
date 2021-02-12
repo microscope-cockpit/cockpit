@@ -22,8 +22,6 @@
 """ stage.py: defines a base class for stage devices.
 """
 
-import itertools
-
 from decimal import Decimal
 from cockpit.devices.device import Device
 from cockpit.interfaces.stageMover import AXIS_MAP
