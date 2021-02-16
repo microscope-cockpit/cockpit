@@ -62,6 +62,7 @@ import os
 import sys
 import threading
 import traceback
+import typing
 import wx
 
 import Pyro4
@@ -317,7 +318,7 @@ class CockpitApp(wx.App):
             cockpit.util.userConfig.setValue(config_name, window.IsShown())
 
 
-def main() -> int:
+def main(argv: typing.Sequence[str]) -> int:
     ## wxglcanvas (used in the mosaic windows) does not work with
     ## wayland (see https://trac.wxwidgets.org/ticket/17702).  The
     ## workaround is to force GTK to use the x11 backend.  See also
@@ -326,7 +327,7 @@ def main() -> int:
         os.environ['GDK_BACKEND'] = 'x11'
 
     try:
-        config = cockpit.config.CockpitConfig(sys.argv)
+        config = cockpit.config.CockpitConfig(argv)
         cockpit.util.logger.makeLogger(config['log'])
         cockpit.util.files.initialize(config)
     except:
@@ -365,3 +366,17 @@ def main() -> int:
             )
         os._exit(1)
     return 0
+
+
+def _setuptools_entry_point() -> int:
+    # The setuptools entry point must be a function, it can't be a
+    # module or a package.  Also, setuptools does not pass sys.argv to
+    # the entry option, the entry point must access sys.argv itself
+    # but we want our main to take argv as argument so it can be
+    # called from other programs.  We also don't want main's argv
+    # argument to default to sys.argv because 1) bad idea to use
+    # mutable objects as default arguments, and 2) when the
+    # documentation is generated (with Sphinx's autodoc extension),
+    # then sys.argv gets replaced with the sys.argv value at the time
+    # docs were generated (see https://stackoverflow.com/a/12087750 ).
+    return main(sys.argv)

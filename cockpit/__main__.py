@@ -18,10 +18,12 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+
 import cockpit
 
 # Because "cockpit" is a package and not a module, this module named
 # "__main__" is required so that "python -m cockpit" works.
 
 if __name__ == '__main__':
-    cockpit.main()
+    sys.exit(cockpit.main(sys.argv))

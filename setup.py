@@ -79,7 +79,7 @@ setuptools.setup(
 
     entry_points = {
         'gui_scripts': [
-            'cockpit = cockpit:main',
+            'cockpit = cockpit:_setuptools_entry_point',
         ]
     },
 
