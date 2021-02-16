@@ -1,3 +1,6 @@
+.. image:: https://zenodo.org/badge/14752681.svg
+   :target: https://zenodo.org/badge/latestdoi/14752681
+   
 Microscope-Cockpit
 ==================
 
