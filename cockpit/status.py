@@ -80,7 +80,7 @@ config = cockpit.config.CockpitConfig(sys.argv).depot_config
 for s in config.sections():
     # Skip special devices.
     if s.lower() in IGNORELIST:
-        skipped.append('skipped %s:  in ingore list' % s)
+        skipped.append('skipped %s:  in ignore list' % s)
     # Skip devices that don't have remotes.
     if not any(map(lambda x: x in config.options(s), [IPSTR, 'uri'])):
         skipped.append('skipped %s:  no host or uri' % s)
