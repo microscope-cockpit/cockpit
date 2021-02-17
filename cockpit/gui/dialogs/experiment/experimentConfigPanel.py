@@ -289,7 +289,7 @@ class ExperimentConfigPanel(wx.Panel):
         #   keys but we should probably handle the whole defaults in
         #   some other manner.
         result = {
-            'filenameTemplate': '{time}.mrc',
+            'filenameTemplate': '{time}.dv',
             **result,
         }
 
