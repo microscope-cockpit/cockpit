@@ -291,6 +291,7 @@ class ChannelsPanel(wx.Panel):
     def RemoveButton(self, name: str) -> None:
         button = self.GetButtonByLabel(name)
         self._buttons_sizer.Detach(button)
+        button.Destroy()
         self._LayoutWithFrame()
 
     def GetButtonByLabel(self, name: str) -> wx.Button:
