@@ -329,8 +329,15 @@ class ActionsPanel(wx.Panel):
             camera = depot.getHandlerWithName(
                 self._sel_cam.GetString(self._sel_cam.GetSelection())
             )
-            mosaic_panel.masterMosaic.camera = camera
-            mosaic_panel.masterMosaic.toggleMosaic()
+            if camera.getIsEnabled():
+                mosaic_panel.masterMosaic.camera = camera
+                mosaic_panel.masterMosaic.toggleMosaic()
+            else:
+                button.SetValue(False)
+                wx.MessageBox(
+                    "The %s camera is not enabled." % camera.descriptiveName,
+                    caption='Cameras is not active'
+                )
         else:
             # Released => stop mosaic
             mosaic_panel.masterMosaic.shouldContinue.clear()
