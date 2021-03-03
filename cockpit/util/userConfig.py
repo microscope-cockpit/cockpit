@@ -65,6 +65,14 @@ def _writeConfig(config, fpath):
         fh.write(printer.pformat(config))
 
 
+def clearAllValues() -> None:
+    """Discard all previous configuration and writes that to file."""
+    global _config
+    global _config_path
+    _config = {}
+    _writeConfig(_config, _config_path)
+
+
 ## Retrieve the config value referenced by key.
 # If key is not found, default is inserted and returned.
 # If the value changed as a result of the lookup (because we wrote the
