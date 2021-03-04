@@ -55,7 +55,6 @@ import time
 
 from cockpit import depot
 from cockpit.handlers import deviceHandler
-from cockpit import events
 import cockpit.util.logger
 import cockpit.util.userConfig
 import cockpit.util.threads

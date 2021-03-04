@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="SVGRoot" width="48px" height="48px" version="1.1" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+ <path d="m4 5h10" style="fill:none;stroke-width:2;stroke:#0080ff"/>
+ <path d="m19 5h10" style="fill:none;stroke-width:2;stroke:#0080ff"/>
+ <path d="m34 5h10" style="fill:none;stroke-width:2;stroke:#0080ff"/>
+ <path d="m23 36h2v-20l5 5 1-1-7-7-7 7 1 1 5-5z" style="fill:#000000"/>
+</svg>

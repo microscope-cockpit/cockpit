@@ -49,13 +49,8 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-import wx
-
 from cockpit import depot
 from cockpit.handlers import deviceHandler
-
-from cockpit import events
 
 
 ## This handler represents any device that is capable of causing an image to 

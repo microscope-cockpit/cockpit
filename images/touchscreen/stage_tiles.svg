@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="SVGRoot" width="48px" height="48px" version="1.1" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+ <path d="m9 4v29" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m4 9h34" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m15 4v26" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m21 4v23" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m27 4v23" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m33 4v23" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m4 15h34" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m4 21h34" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m4 27h18" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m4 33h8" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m14 37c4.6233-4.9396 9.2888-7.0111 14-7 4.6216 0.01093 9.2872 2.0091 14 7-4.7959 4.1192-9.2663 6.0898-14 6-4.5969-0.08725-9.4588-2.1178-14-6z" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <circle cx="28" cy="36.5" r="3" style="fill:#0080ff;stroke-width:2;stroke:#0080ff"/>
+</svg>

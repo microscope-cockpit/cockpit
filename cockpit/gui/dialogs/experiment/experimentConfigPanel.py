@@ -3,6 +3,7 @@
 
 ## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
 ## Copyright (C) 2018 Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
+## Copyright (C) 2018 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## This file is part of Cockpit.
 ##
@@ -62,9 +63,11 @@ import cockpit.util.files
 import collections
 import decimal
 import json
-import os
+import os.path
 import time
 import traceback
+import typing
+
 import wx
 
 
@@ -92,11 +95,8 @@ class ExperimentConfigPanel(wx.Panel):
     # \param resetCallback Function to call to force a reset of the panel.
     # \param configKey String used to look up settings in the user config. This
     #        allows different experiment panels to have different defaults.
-    # \param shouldShowFileControls True if we want to show the file suffix
-    #        and filename controls, False otherwise (typically because we're
-    #        encapsulated by some other system that handles its own filenames).
     def __init__(self, parent, resizeCallback, resetCallback,
-            configKey = 'singleSiteExperiment', shouldShowFileControls = True):
+            configKey = 'singleSiteExperiment'):
         super().__init__(parent, style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.TAB_TRAVERSAL)
         self.parent = parent
 
@@ -116,7 +116,8 @@ class ExperimentConfigPanel(wx.Panel):
         ## Map of default settings as loaded from config.
         self.settings = self.loadConfig()
 
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(wx.BoxSizer(wx.VERTICAL))
+        self.sizer = self.GetSizer()
 
         # Section for settings that are universal to all experiment types.
         universalSizer = wx.FlexGridSizer(2, 3, 5, 5)
@@ -246,26 +247,10 @@ class ExperimentConfigPanel(wx.Panel):
         self.shouldExposeSimultaneously.SetValue(self.settings['shouldExposeSimultaneously'])
         self.onExposureCheckbox()
 
-        # File controls.
-        self.filePanel = wx.Panel(self)
-        rowSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.filenameSuffix = guiUtils.addLabeledInput(self.filePanel,
-                rowSizer, label = "Filename suffix:",
-                defaultValue = self.settings['filenameSuffix'],
-                size = (160, -1))
-        self.filenameSuffix.Bind(wx.EVT_KEY_DOWN, self.generateFilename)
-        self.filename = guiUtils.addLabeledInput(self.filePanel,
-                rowSizer, label = "Filename:", size = (200, -1))
-        self.generateFilename()
-        updateButton = wx.Button(self.filePanel, -1, 'Update')
-        updateButton.SetToolTip(wx.ToolTip(
-                "Generate a new filename based on the current time " +
-                "and file suffix."))
-        updateButton.Bind(wx.EVT_BUTTON, self.generateFilename)
-        rowSizer.Add(updateButton)
-        self.filePanel.SetSizerAndFit(rowSizer)
-        self.filePanel.Show(shouldShowFileControls)
-        self.sizer.Add(self.filePanel, 0, wx.LEFT, border=5)
+        self.filepath_panel = FilepathPanel(self)
+        self.filepath_panel.SetTemplate(self.settings['filenameTemplate'])
+        self.filepath_panel.UpdateFilename()
+        self.Sizer.Add(self.filepath_panel, wx.SizerFlags(1).Expand().Border())
 
         # Save/load experiment settings buttons.
         saveLoadPanel = wx.Panel(self)
@@ -287,7 +272,6 @@ class ExperimentConfigPanel(wx.Panel):
     # with light sources) invalid.
     def loadConfig(self):
         result = cockpit.util.userConfig.getValue(self.configKey, default = {
-                'filenameSuffix': '',
                 'numReps': '1',
                 'repDuration': '0',
                 'sequencedExposureSettings': [['' for l in self.allLights] for c in self.allCameras],
@@ -298,6 +282,17 @@ class ExperimentConfigPanel(wx.Panel):
                 'ZPositionMode': 0,
             }
         )
+        # FIXME: cockpit.util.userConfig.getValue(...default={...})
+        #   does not work well with dicts because it will read the
+        #   saved dict and not pick defaults for missing keys so we
+        #   end up without a default value for those.  These are new
+        #   keys but we should probably handle the whole defaults in
+        #   some other manner.
+        result = {
+            'filenameTemplate': '{time}.dv',
+            **result,
+        }
+
         for key in ['simultaneousExposureTimes']:
             if len(result[key]) != len(self.allLights):
                 # Number of light sources has changed; invalidate the config.
@@ -412,29 +407,6 @@ class ExperimentConfigPanel(wx.Panel):
         panel.onExperimentTypeChoice()
 
 
-    ## Generate a filename, based on the current time and the
-    # user's chosen file suffix.
-    def generateFilename(self, event = None):
-        # HACK: if the event came from the user typing into the suffix box,
-        # then we need to let it go through so that the box gets updated,
-        # and we have to wait to generate the new filename until after that
-        # point (otherwise we get the old value before) the user hit any keys).
-        if event is not None:
-            event.Skip()
-            wx.CallAfter(self.generateFilename)
-        else:
-            suffix = self.filenameSuffix.GetValue()
-            if suffix:
-                suffix = '_' + suffix
-            base = time.strftime('%Y%m%d-%H%M%S', time.localtime())
-            self.filename.SetValue("%s%s" % (base, suffix))
-
-
-    ## Set the filename.
-    def setFilename(self, newName):
-        self.filename.SetValue(newName)
-    
-
     ## Run the experiment per the user's settings.
     def runExperiment(self):
         # Returns True to close dialog box, None or False otherwise.
@@ -492,8 +464,14 @@ class ExperimentConfigPanel(wx.Panel):
             zHeight = 1e-6
             sliceHeight = 1e-6
 
-        savePath = os.path.join(cockpit.util.files.getUserSaveDir(),
-                self.filename.GetValue())
+        try:
+            savePath = self.filepath_panel.GetPath()
+        except Exception:
+            cockpit.gui.ExceptionBox(
+                "Failed to get filename for data.", parent=self
+            )
+            return True
+
         params = {
                 'numReps': guiUtils.tryParseNum(self.numReps),
                 'repDuration': guiUtils.tryParseNum(self.repDuration, float),
@@ -520,9 +498,9 @@ class ExperimentConfigPanel(wx.Panel):
         for i, camera in enumerate(self.allCameras):
             sequencedExposureSettings.append([c.GetValue() for c in self.cameraToExposureTimes[camera]])
         simultaneousTimes = [c.GetValue() for c in self.lightExposureTimes]
-        
+
         newSettings = {
-                'filenameSuffix': self.filenameSuffix.GetValue(),
+                'filenameTemplate': self.filepath_panel.GetTemplate(),
                 'numReps': self.numReps.GetValue(),
                 'repDuration': self.repDuration.GetValue(),
                 'sequencedExposureSettings': sequencedExposureSettings,
@@ -538,4 +516,71 @@ class ExperimentConfigPanel(wx.Panel):
     ## Save the current experiment settings to config.
     def saveSettings(self):
         cockpit.util.userConfig.setValue(self.configKey, self.getSettingsDict())
-    
+
+
+class FilepathPanel(wx.Panel):
+    """Panel to select directory and filename based on template."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._dir_ctrl = wx.DirPickerCtrl(
+            self, path=cockpit.util.files.getUserSaveDir()
+        )
+        self._template_ctrl = wx.TextCtrl(self)
+        self._template_ctrl.SetToolTip(
+            "Template for the name of the data file. The values '{date}' and"
+            " '{time}' will be replaced with their current values."
+        )
+
+        self._fname_ctrl = wx.TextCtrl(self, value="")
+
+        self._update_btn = wx.Button(self, label="Update")
+        self._update_btn.SetToolTip("Update 'Filename' based on 'Template'.")
+        self._update_btn.Bind(wx.EVT_BUTTON, self._OnUpdateFilename)
+
+        self.UpdateFilename()
+
+        grid = wx.BoxSizer(wx.HORIZONTAL)
+
+        static_sizer = wx.SizerFlags(0).CentreVertical().Border()
+        expand_sizer = wx.SizerFlags(1).CentreVertical().Border()
+
+        def add_pair(label, ctrl):
+            grid.Add(wx.StaticText(self, label=label), static_sizer)
+            grid.Add(ctrl, expand_sizer)
+
+        add_pair("Directory:", self._dir_ctrl)
+        add_pair("Template:", self._template_ctrl)
+        add_pair("Filename:", self._fname_ctrl)
+        grid.Add(self._update_btn, static_sizer)
+
+        self.SetSizer(grid)
+
+    def UpdateFilename(self, mappings: typing.Mapping[str, str] = {}) -> None:
+        all_mappings = {
+            "date": time.strftime("%Y%m%d"),
+            "time": time.strftime("%H%M%S"),
+            **mappings,
+        }
+
+        template = self._template_ctrl.GetValue()
+        basename = template.format(**all_mappings)
+        self._fname_ctrl.SetValue(basename)
+
+    def _OnUpdateFilename(self, evt: wx.CommandEvent) -> None:
+        del evt
+        self.UpdateFilename()
+
+    def GetPath(self) -> str:
+        """Return full filepath to use."""
+        dirname = self._dir_ctrl.GetPath()
+        basename = self._fname_ctrl.GetValue()
+        if not basename:
+            raise Exception("Filename is empty")
+        return os.path.join(dirname, basename)
+
+    def GetTemplate(self) -> str:
+        return self._template_ctrl.GetValue()
+
+    def SetTemplate(self, template: str) -> None:
+        self._template_ctrl.SetValue(template)

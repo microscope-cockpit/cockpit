@@ -50,12 +50,17 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import typing
+
+import matplotlib.pyplot as plt
 
 import collections
 from cockpit import depot
-from cockpit.handlers import deviceHandler
+from cockpit.handlers.deviceHandler import DeviceHandler
 from cockpit import events
 from cockpit.handlers.genericPositioner import GenericPositionerHandler
+from cockpit.experiment.actionTable import ActionTable
+from cockpit.experiment import experiment
 from numbers import Number
 import operator
 import time
@@ -65,7 +70,7 @@ import functools
 
 
 ## This handler is responsible for executing portions of experiments.
-class ExecutorHandler(deviceHandler.DeviceHandler):
+class ExecutorHandler(DeviceHandler):
     ## callbacks must include the following:
     # - examineActions(name, table): Perform any necessary validation or
     #   modification of the experiment's ActionTable.
@@ -472,6 +477,59 @@ class AnalogDigitalExecutorHandler(AnalogMixin, DigitalMixin, ExecutorHandler):
     pass
 
 
+def plot_action_table_profile(
+    action_table: ActionTable,
+    handlers: typing.Optional[typing.List[DeviceHandler]] = None,
+) -> None:
+    """Plot the timing profile of an action table like an oscilloscope display.
+
+    Args:
+        action_table: the action table to plot.
+        handlers: if not None, only plot actions for the given
+            handlers.
+    """
+    # We first construct a more usable table
+    table = {}
+
+    def action_type(action):
+        if isinstance(action, bool):
+            return "digital"
+        if isinstance(action, (float, int)):
+            return "analogue"
+
+    for event in action_table.actions:
+        if event is None:
+            continue
+        time, handler, action = event
+        if handlers is None or handler in handlers:
+            if handler.name in table:
+                # The handler already exists in the table
+                if (table[handler.name][2] == 'digital'):
+                    #if digital have a point with last state at this time.
+                    table[handler.name][0].append(time)
+                    table[handler.name][1].append(table[handler.name][1][-1])
+                table[handler.name][0].append(time)
+                table[handler.name][1].append(action)
+            else:
+                table[handler.name] = ([time], [action], action_type(action))
+
+    # Generate the actual plot
+    fig, axs = plt.subplots(len(table), 1, sharex=True)
+    fig.subplots_adjust(hspace=0)  # Remove horizontal space between axes
+    for i, (key, data) in enumerate(table.items()):
+        if data[2] == "analogue":
+            axs[i].plot(data[0], data[1])
+        else:
+            axs[i].step(data[0], data[1], where="post")
+            axs[i].set_yticks([0, 1])
+            axs[i].set_ylim(-0.1, 1.1)
+        axs[i].set_xlabel("Time", fontsize=12)
+        axs[i].set_ylabel(key, fontsize=12)
+        axs[i].grid(True, which="both", axis="x")
+
+    plt.show(block=False)
+
+
 ## This debugging window allows manipulation of analogue and digital lines.
 class ExecutorDebugWindow(wx.Frame):
     def __init__(self, handler, parent, *args, **kwargs):
@@ -514,15 +572,29 @@ class ExecutorDebugWindow(wx.Frame):
                                 # If dealing with ADUs, float should perhaps be int,
                                 # but rely on device to set correct type.
                 anaSizer.Add(control, 0, wx.RIGHT, 20)
+
+            btn = wx.Button(self, label="Display last experiment")
+            btn.SetToolTip(wx.ToolTip(
+                "Plot the last experiment like an oscilloscope display."
+            ))
+            btn.Bind(wx.EVT_BUTTON, self._OnDisplayLastExperiment)
+            anaSizer.Add(btn, 0, wx.RIGHT, 20)
             mainSizer.Add(anaSizer)
 
         panel.SetSizerAndFit(mainSizer)
         self.SetClientSize(panel.GetSize())
 
+    def _OnDisplayLastExperiment(self, evt: wx.CommandEvent) -> None:
+        del evt
+        if experiment.lastExperiment is None:
+            wx.MessageBox("No experiment has been done yet.")
+        else:
+            plot_action_table_profile(experiment.lastExperiment.table)
+
 
 ## A class for a handler that can perform actions in an experiment,
 # but doesn't have any analogue or digital capabilities.
-class SimpleExecutor(deviceHandler.DeviceHandler):
+class SimpleExecutor(DeviceHandler):
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks):
         super().__init__(name, groupName, isEligibleForExperiments,
                          callbacks, depot.EXECUTOR)
@@ -554,7 +626,7 @@ class SimpleExecutor(deviceHandler.DeviceHandler):
 
 ## A trigger handler to allow discrimination of trigger and
 # triggered device in the action table.
-class TriggerProxy(deviceHandler.DeviceHandler):
+class TriggerProxy(DeviceHandler):
     def __init__(self, name, trigSource):
         super().__init__(name + " trigger", name + " group",
                          False, {}, depot.GENERIC_DEVICE)

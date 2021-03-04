@@ -62,6 +62,7 @@ import os
 import sys
 import threading
 import traceback
+import typing
 import wx
 
 import Pyro4
@@ -76,6 +77,7 @@ if (distutils.version.LooseVersion(Pyro4.__version__) >=
 import cockpit.config
 import cockpit.depot
 import cockpit.events
+import cockpit.gui
 import cockpit.gui.loggingWindow
 import cockpit.gui.mainWindow
 import cockpit.interfaces
@@ -120,6 +122,12 @@ class CockpitApp(wx.App):
 
     def OnInit(self):
         try:
+            # Ideally we would set this per device but Pyro4 config is
+            # a singleton so our changes affects *all* devices we use
+            # (as well as anything else on the process using Pyro).
+            Pyro4.config.PICKLE_PROTOCOL_VERSION = self.Config[
+                "global"
+            ].getint("pyro-pickle-protocol")
             depot_config = self.Config.depot_config
             cockpit.depot.initialize(depot_config)
             numDevices = len(depot_config.sections()) + 1 # +1 for dummy devices
@@ -310,7 +318,7 @@ class CockpitApp(wx.App):
             cockpit.util.userConfig.setValue(config_name, window.IsShown())
 
 
-def main() -> int:
+def main(argv: typing.Sequence[str]) -> int:
     ## wxglcanvas (used in the mosaic windows) does not work with
     ## wayland (see https://trac.wxwidgets.org/ticket/17702).  The
     ## workaround is to force GTK to use the x11 backend.  See also
@@ -318,14 +326,20 @@ def main() -> int:
     if wx.Platform == '__WXGTK__' and 'GDK_BACKEND' not in os.environ:
         os.environ['GDK_BACKEND'] = 'x11'
 
-    # TODO: have this in a try, and show a window (would probably need
-    # to be different wx.App), with the error if it fails (see #439).
-    config = cockpit.config.CockpitConfig(sys.argv)
-    cockpit.util.logger.makeLogger(config['log'])
-    cockpit.util.files.initialize(config)
-
-    app = CockpitApp(config=config)
-    app.MainLoop()
+    try:
+        config = cockpit.config.CockpitConfig(argv)
+        cockpit.util.logger.makeLogger(config['log'])
+        cockpit.util.files.initialize(config)
+    except:
+        app = wx.App()
+        cockpit.gui.ExceptionBox(caption='Failed to initialise cockpit')
+        # We ProcessPendingEvents() instead of entering the MainLoop()
+        # because we won't have more windows created, meaning that the
+        # program would not exit after closing the exception box.
+        app.ProcessPendingEvents()
+    else:
+        app = CockpitApp(config=config)
+        app.MainLoop()
 
     # HACK: manually exit the program if we find threads running.  At
     # this point, any thread running is non-daemonic, i.e., a thread
@@ -354,5 +368,15 @@ def main() -> int:
     return 0
 
 
-if __name__ == '__main__':
-    main()
+def _setuptools_entry_point() -> int:
+    # The setuptools entry point must be a function, it can't be a
+    # module or a package.  Also, setuptools does not pass sys.argv to
+    # the entry option, the entry point must access sys.argv itself
+    # but we want our main to take argv as argument so it can be
+    # called from other programs.  We also don't want main's argv
+    # argument to default to sys.argv because 1) bad idea to use
+    # mutable objects as default arguments, and 2) when the
+    # documentation is generated (with Sphinx's autodoc extension),
+    # then sys.argv gets replaced with the sys.argv value at the time
+    # docs were generated (see https://stackoverflow.com/a/12087750 ).
+    return main(sys.argv)

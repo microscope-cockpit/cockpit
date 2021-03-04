@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="SVGRoot" width="48px" height="48px" version="1.1" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+ <path d="m42 32c0-2.4397-3.2134-4.5849-8.0801-5.8379m-19.84 0c-4.8667 1.253-8.0801 3.3981-8.0801 5.8379" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m42 32c0 3.866-8.0589 7-18 7s-18-3.134-18-7" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m42 36.571c0 3.866-8.0589 7-18 7s-18-3.134-18-7" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m6 37v-5" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <path d="m42 37v-5" style="fill:none;stroke-width:2;stroke:#000000"/>
+ <ellipse cx="24" cy="32" rx="14" ry="4" style="fill:#0080ff"/>
+ <path d="m23 4h2v25l7-7 1 1-9 9-9-9 1-1 7 7z" style="fill:#000000"/>
+</svg>

@@ -51,7 +51,6 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 import numpy
-import os
 from OpenGL.GL import *
 import threading
 import time
@@ -62,7 +61,6 @@ import cockpit.gui
 import cockpit.gui.freetype
 import cockpit.interfaces.stageMover
 import cockpit.util.logger
-from cockpit import depot
 
 
 ## @package cockpit.gui.macroStage
@@ -215,7 +213,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
 
     ## Draw some text at the specified location
     def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
-        width, height = self.GetClientSize()
+        width, height = self.GetClientSize()*self.GetContentScaleFactor()
         aspect = float(height) / width
         loc = self.scaledVertex(loc[0], loc[1], True)
 

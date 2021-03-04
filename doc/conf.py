@@ -1,46 +1,66 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2019 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
+## Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 ##
 ## Copying and distribution of this file, with or without modification,
 ## are permitted in any medium without royalty provided the copyright
 ## notice and this notice are preserved.  This file is offered as-is,
 ## without any warranty.
 
-import sys
-
-sys.path.insert(0, '../cockpit')
-
-
-## This should be read from setup.py.  Maybe we should use
-## pkg_resources to avoid duplication?
-author = 'Micron Oxford'
-project = 'Cockpit'
-copyright = '2019, Micron Oxford'
-
-
-master_doc = 'index'
+project = "Microscope-Cockpit"
+author = ""
+copyright = "CC BY-SA"
+version = "2.9.1+dev"
+release = version
 
 
 extensions = [
-  'sphinx.ext.autodoc',
-  'sphinx.ext.napoleon',
-  'sphinx.ext.todo',
-  'sphinx.ext.viewcode',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.todo",
+    "sphinx.ext.viewcode",
 ]
 
-## Configuration for sphinx.ext.todo
+master_doc = "index"
+
+nitpicky = True
+
+
+# Configuration for sphinx.ext.todo
 todo_include_todos = True
 
-## Configuration for sphinx.ext.napoleon
+# Configuration for sphinx.ext.napoleon
 napoleon_google_docstring = True
 napoleon_include_private_with_doc = True
 napoleon_include_special_with_doc = True
 
 
-##
-## Options for HTML output
-##
+#
+# Options for HTML output
+#
 
-html_theme = 'agogo'
+html_theme = "alabaster"
+html_theme_options = {
+    "description": (
+        "A flexible and easy to extend microscope user interface aimed at"
+        " life scientists using bespoke microscopes."
+    ),
+    "github_button": True,
+    "github_repo": "cockpit",
+    "github_user": "MicronOxford",
+    "show_related": False,
+    "sidebar_collapse": False,
+    "show_powered_by": False,
+    "show_relbars": True,
+}
+
+html_short_title = "Cockpit documentation"
+html_logo = "../cockpit/resources/images/cockpit.ico"
+html_favicon = html_logo
+
+html_copy_source = False
+html_show_source_link = False
+
+html_show_copyright = False
+html_show_sphinx = False

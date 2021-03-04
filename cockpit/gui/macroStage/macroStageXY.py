@@ -50,13 +50,11 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 import numpy
 from OpenGL.GL import *
 import traceback
 import wx
 
-from cockpit import depot
 from cockpit import events
 from cockpit.gui.primitive import Primitive
 import cockpit.gui.dialogs.getNumberDialog
@@ -168,7 +166,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
             dc = wx.PaintDC(self)
             self.SetCurrent(self.context)
-            width, height = self.GetClientSize()
+            width, height = self.GetClientSize()*self.GetContentScaleFactor()
 
             glViewport(0, 0, width, height)
 

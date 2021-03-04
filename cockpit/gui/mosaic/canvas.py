@@ -51,22 +51,20 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 import numpy
 from OpenGL.GL import *
 import traceback
 import wx.glcanvas
 
-from cockpit import depot
 from cockpit import events
 from cockpit.gui.mosaic.tile import Tile, MegaTile
 import cockpit.util.datadoc
 import cockpit.util.logger
 import cockpit.util.threads
-import itertools
 import queue
 import time
 import numpy as np
+
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1
@@ -104,7 +102,6 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.dx, self.dy = 0.0, 0.0
         ## Scaling factor.
         self.scale = 1.0
-
         ## Set to True once we've done some initialization.
         self.haveInitedGL = False
         ## WX rendering context
@@ -125,7 +122,10 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.Bind(wx.EVT_MOUSE_EVENTS, mouseCallback)
         # Do nothing on this event, to avoid flickering.
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event)
-
+        #event on DPI chnage on high DPI screens, needed for Mac retina
+        #displays.
+        self.Bind(wx.EVT_DPI_CHANGED, self.onDPIchange)
+  
 
 
     ## Now that OpenGL's ready to go, perform any necessary initialization.
@@ -350,7 +350,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             if not self.haveInitedGL:
                 self.initGL()
 
-            width, height = self.GetClientSize()
+            width, height = self.GetClientSize()*self.GetContentScaleFactor()
 
             glViewport(0, 0, width, height)
             glMatrixMode(GL_PROJECTION)
@@ -396,7 +396,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # Paranoia
         if not scale:
             return
-        width, height = self.GetClientSize()
+        width, height = self.GetClientSize()*self.GetContentScaleFactor()
         self.dx = -x * scale + width / 2
         self.dy = -y * scale + height / 2
         self.scale = scale
@@ -410,13 +410,17 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         if multiplier == 0:
             return
         self.scale *= multiplier
-        width, height = self.GetClientSize()
+        width, height = self.GetClientSize()*self.GetContentScaleFactor()
         halfWidth = width / 2
         halfHeight = height / 2
         self.dx = halfWidth - (halfWidth - self.dx) * multiplier
         self.dy = halfHeight - (halfHeight - self.dy) * multiplier
         self.Refresh()
 
+    def onDPIchange(self,event):
+        #not an ideal solution as visible region changes but
+        #recalcs positions etc...
+        self.multiplyZoom(1)
 
     ## Change our translation by the specified number of pixels.
     def dragView(self, offset):
@@ -427,7 +431,10 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
 
     ## Remap an (X, Y) tuple of screen coordinates to a location on the stage.
     def mapScreenToCanvas(self, pos):
-        height = self.GetClientSize()[1]
+        scaleFactor = self.GetContentScaleFactor()
+        pos = (pos[0]*scaleFactor,pos[1]*scaleFactor)
+        
+        height = self.GetClientSize()[1]*scaleFactor
         return ((self.dx - pos[0]) / self.scale,
                 -(self.dy - height + pos[1]) / self.scale)
 
@@ -435,7 +442,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     ## Return a (bottom left, top right) tuple showing what part
     # of the stage is currently visible.
     def getViewBox(self):
-        width, height = self.GetClientSize()
+        width, height = self.GetClientSize()*self.GetContentScaleFactor()
         bottomLeft = (-self.dx / self.scale, -self.dy / self.scale)
         topRight = (-(self.dx - width) / self.scale,
                        -(self.dy - height) / self.scale)

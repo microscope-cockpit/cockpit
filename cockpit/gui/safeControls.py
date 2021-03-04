@@ -408,7 +408,7 @@ class SetPointGauge(SafeControl, wx.Window):
 
     def __init__(self, parent, id=wx.ID_ANY,
                  tolerance=.005, minValue=0, maxValue=100,
-                 fetch_current=None,
+                 fetch_current=None, margins=wx.Size(0, 3),
                  pos=wx.DefaultPosition, size=(-1, 18), style=wx.SL_HORIZONTAL):
         """Initialise a SetPointGauge
 
@@ -421,6 +421,7 @@ class SetPointGauge(SafeControl, wx.Window):
           minValue (float): The minimum allowable value.
           maxValue (float): The maximum allowable value.
           fetch_current (function): A function to fetch the current value.
+          margins (wx.Size): The horizontal and vertical margins.
           pos (wx.Position): The window position.
           size (wx.Size): The window size.
           style: A combination of wx WindowStyle flags.
@@ -452,6 +453,8 @@ class SetPointGauge(SafeControl, wx.Window):
 
         self._timer = wx.Timer(self)
         self._timer.Start(50)
+
+        self._margins = margins
 
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_TIMER, self.OnTimer)
@@ -593,7 +596,6 @@ class SetPointGauge(SafeControl, wx.Window):
         dc = wx.BufferedPaintDC(self)
         c = self.__class__.colours
         rect = self.GetClientRect()
-        margin = 3
         gradient = [wx.EAST, wx.NORTH][self._vertical]
 
         dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
@@ -601,14 +603,15 @@ class SetPointGauge(SafeControl, wx.Window):
         dc.SetPen(wx.Pen(wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUHILIGHT)))
         bar = copy.copy(rect)
         if self._vertical:
-            bar.width -= 2 * margin
-            bar.X += margin
-            bar.height = rect.height * self._value.to_quotient(self._displayed)
-            bar.Y = rect.height - bar.height
+            bar.width -= 2 * self._margins[1]
+            bar.X += self._margins[1]
+            bar.height = rect.height * self._value.to_quotient(self._displayed) - 2 * self._margins[0]
+            bar.Y = rect.height - bar.height + self._margins[0]
         else:
-            bar.height -= 2 * margin
-            bar.Y += margin
-            bar.width = rect.width * self._value.to_quotient(self._displayed)
+            bar.height -= 2 * self._margins[1]
+            bar.Y += self._margins[1]
+            bar.width = rect.width * self._value.to_quotient(self._displayed) - 2 * self._margins[0]
+            bar.X += self._margins[0]
         dc.SetBrush(wx.Brush(c['setpoint']))
         dc.SetPen(wx.Pen(c['setpoint']))
         dc.GradientFillLinear(bar, c['black'], c['setpoint'], gradient)

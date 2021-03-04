@@ -49,8 +49,6 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-from cockpit import depot
 import cockpit.gui.guiUtils
 import cockpit.interfaces.stageMover
 import cockpit.util.userConfig

@@ -8,6 +8,7 @@
 ## notice and this notice are preserved.  This file is offered as-is,
 ## without any warranty.
 
+import glob
 import os.path
 
 import setuptools
@@ -18,11 +19,14 @@ import setuptools.command.sdist
 ## distribution.  We could also have a MANIFEST file but we'd rather
 ## not have the distribution configuration over multiple files.
 manifest_files = [
-    'README',
+    'README.rst',
+    'INSTALL.rst',
     'COPYING',
     os.path.join('cockpit', 'resources', 'fonts', 'Universalis_COPYING.txt'),
     os.path.join('cockpit', 'resources', 'fonts', 'Universalis_NOTICE.txt'),
-]
+    os.path.join('aux', 'convert-images-to-png.py'),
+] + glob.glob(os.path.join('images', 'touchscreen', '*.svg'))
+
 class sdist(setuptools.command.sdist.sdist):
     def make_distribution(self):
         self.filelist.extend(manifest_files)
@@ -31,15 +35,15 @@ class sdist(setuptools.command.sdist.sdist):
 
 setuptools.setup(
     name = 'microscope-cockpit',
-    version = '2.9.0+dev',
+    version = '2.9.1+dev',
     description = 'Hardware agnostic microscope user interface',
-    long_description = open('README', 'r').read(),
+    long_description = open('README.rst', 'r').read(),
     license = 'GPL-3.0+',
 
     url = "https://github.com/MicronOxford/cockpit",
 
-    author = '',
-    author_email = '',
+    author = 'See source for a complete list of contributors',
+    author_email = ' ',
 
     ## https://pypi.org/pypi?:action=list_classifiers
     classifiers = [
@@ -51,8 +55,9 @@ setuptools.setup(
     packages = setuptools.find_packages(),
     package_data = {
         'cockpit' : [
-            os.path.join('resources', 'bitmaps', '*.png'),
-            os.path.join('resources', 'bitmaps', '*.ico'),
+            os.path.join('resources', 'images', 'touchscreen', '*.png'),
+            os.path.join('resources', 'images', '*.icns'),
+            os.path.join('resources', 'images', '*.ico'),
             os.path.join('resources', 'fonts', '*.otf'),
         ],
     },
@@ -74,7 +79,7 @@ setuptools.setup(
 
     entry_points = {
         'gui_scripts': [
-            'cockpit = cockpit:main',
+            'cockpit = cockpit:_setuptools_entry_point',
         ]
     },
 

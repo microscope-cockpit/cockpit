@@ -1,4 +1,4 @@
-.. Copyright (C) 2019 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
+.. Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 
    Permission is granted to copy, distribute and/or modify this
    document under the terms of the GNU Free Documentation License,
@@ -7,20 +7,45 @@
    no Back-Cover Texts.  A copy of the license is included in the
    section entitled "GNU Free Documentation License".
 
-Cockpit
-#######
-
-.. include:: ../README
+Microscope-Cockpit
+##################
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
 
    install
    config
+   troubleshoot
 
-Indices and tables
-******************
+Cockpit is a microscope graphical user interface.  It is a flexible
+and easy to extend platform aimed at life scientists using bespoke
+microscopes. Its main features are:
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+- Easy to use and extend by life scientists.  Cockpit is completely
+  written in Python and meant to be extended by the user.
+
+- Independent of the actual devices being used.  Cockpit uses Python's
+  `microscope <https://www.python-microscope.org>`__ package to
+  control the devices.  The graphical interface and experiments
+  automatically adjust to the existing devices.
+
+- Very fast device control and time precision.  During experiments,
+  devices are controlled via hardware signals.
+
+- Cross Platform.  Cockpit can run on GNU/Linux, macOS, and Windows.
+
+- Cockpit is free and open source software, released under the GPL.
+
+A more detailed description is available in the `bioRxiv paper
+<https://www.biorxiv.org/content/10.1101/2021.01.18.427178v1>`__.
+
+The User Interface
+==================
+
+The user interface is made up of a number of windows with the main
+ones shown below.
+
+.. image:: cockpit-windows.png
+  :align: center
+  :alt: Cockpit main windows

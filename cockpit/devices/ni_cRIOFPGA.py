@@ -50,7 +50,6 @@ import socket
 import time
 import numpy as np
 from itertools import chain
-from functools import reduce
 
 from cockpit import depot, events
 import cockpit.handlers.executor

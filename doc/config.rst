@@ -1,4 +1,4 @@
-.. Copyright (C) 2019 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
+.. Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
 
    Permission is granted to copy, distribute and/or modify this
    document under the terms of the GNU Free Documentation License,
@@ -30,7 +30,9 @@ Config file
 
 Cockpit configuration is mainly performed with an `INI file
 <https://en.wikipedia.org/wiki/INI_file>`_, with multiple options
-organised over sections.  For example::
+organised over sections.  For example:
+
+.. code:: ini
 
   ;; This is a comment.  It's nice to document configuration files.
   [global]
@@ -63,6 +65,12 @@ data-dir
 depot-files
   List of files to use for the device depot.  See :ref:`depot-config`.
 
+pyro-pickle-protocol
+  Pickle protocol version number to use with Pyro, i.e., when
+  connecting to the device server.  Defaults to whatever is already
+  set on Pyro which defaults to the highest pickle protocol version
+  available.  This affects *all* Pyro connections.
+
 log section
 ```````````
 level
@@ -80,10 +88,12 @@ stage section
 primitives
 
   A list of shapes to draw on stage displays.  Primitives are
-  specified by a config entry of the form::
+  specified by a config entry of the form:
 
-    primitives: c 1000 1000 100
-                r 1000 1000 100 100
+  .. code:: ini
+
+      primitives: c 1000 1000 100
+                  r 1000 1000 100 100
 
   where ``c x0 y0 radius`` defines a circle centred on ``x0, y0`` and
   ``r x0 y0 width height`` defines a rectangle centred on ``x0, y0``.
@@ -168,7 +178,9 @@ Depot Configuration
 Depot is the collection of devices available to the cockpit program.
 Each section of a depot configuration specifies a single device: the
 section name being the device name, while the options are the device
-configuration.  For example::
+configuration.  For example:
+
+.. code:: ini
 
   [west]
   type: cockpit.devices.microscopeCamera.MicroscopeCamera

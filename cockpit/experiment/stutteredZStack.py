@@ -50,8 +50,6 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-from cockpit.experiment import actionTable
 from cockpit import events
 import cockpit.util.userConfig
 from cockpit.experiment import zStack

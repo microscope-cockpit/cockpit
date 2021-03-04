@@ -49,20 +49,10 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-from cockpit.experiment import dataSaver
 from cockpit import depot
-from cockpit import events
 from cockpit.experiment import experiment
-from cockpit.gui import guiUtils
-import cockpit.interfaces.stageMover
-import cockpit.util.logger
 
-import gc
-import os
-import threading
 import time
-
 
 
 ## Immediate-mode experiments are Experiments which perform actions via the
