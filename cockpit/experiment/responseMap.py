@@ -49,6 +49,10 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+"""Generates response map correction files (which use detailed
+response maps of the cameras, combined with linear interpolation, to
+correct for nonlinear camera response).
+"""
 
 from cockpit.experiment import actionTable
 import decimal

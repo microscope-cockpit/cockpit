@@ -70,9 +70,17 @@ import numpy as np
 ZOOM_SWITCHOVER = 1
 BUFFER_LENGTH = 32
 
-## This class handles drawing the mosaic. Mosaics consist of collections of 
-# images from the cameras.
+
 class MosaicCanvas(wx.glcanvas.GLCanvas):
+    """Canvas where the mosaic is drawn.
+
+    Mosaics consist of collections of images from the cameras.  This
+    class sets up the OpenGL canvas that image data is drawn to.  Has
+    a basic level-of-detail system so that the computer doesn't bog
+    down horribly when trying to draw thousands of tiles at the same
+    time.
+
+    """
     ## Tiles and context are shared amongst all instances, since all
     # offer views of the same data.
     # The first instance creates the context.

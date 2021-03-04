@@ -49,6 +49,13 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+"""
+Handles display of a single tile in the canvas.  A tile is either a
+single image from one camera, or a larger array of low-resolution
+images from that camera; the latter is used when zoomed out, as a
+performance measure.
+
+"""
 
 import numpy
 from OpenGL.GL import (

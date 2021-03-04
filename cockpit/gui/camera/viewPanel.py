@@ -63,10 +63,16 @@ import cockpit.interfaces.stageMover
 (VIEW_WIDTH, VIEW_HEIGHT) = (512, 552)
 
 
-## This class provides an interface for a single camera. It includes a
-# button at the top to select which camera to use, a viewing area to display
-# the image the camera sees, and a histogram at the bottom.
 class ViewPanel(wx.Panel):
+    """Interface for a single camera display.
+
+    It includes a button at the top to select which camera to use, a
+    viewing area to display the image the camera sees, and a histogram
+    at the bottom.
+
+    It depends heavily on :mod:`cockpit.gui.imageViewer`.
+
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

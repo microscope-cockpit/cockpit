@@ -19,24 +19,135 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Cockpit events module is a topic based publish-subscriber system.
+
+This module is meant as a event passing middleware between the UI,
+using :class:`wx.Event`, and the individual devices and handlers which
+are independent on wxPython.
+
+In addition to the :class:`Publisher` class, there is a singleton
+``Publisher`` instance used throughout the Cockpit program.  The
+module functions :func:`publish`, :func:`subscribe`, and
+:func:`unsubscribe` are pass-through functions to this singleton.
+
+The global singleton means that any code may subscribe to an event,
+such as ``STAGE_POSITION`` or ``CAMERA_ENABLE``.  Likewise any code
+may publish an event, along with associated data.  When an event is
+published, all subscribers to the event have their functions called.
+For example::
+
+    from cockpit import events
+
+    # subscribe obj.on_user_abort so that it is called when the
+    # USER_ABORT event is published.
+    events.subscribe(events.USER_ABORT,
+                     obj.on_user_abort)
+
+    # Publish the CAMERA_ENABLE event as well as the associated data,
+    # camera handler and whether it has been enabled or disabled.
+    events.publish(events.CAMERA_ENABLE,
+                   camera_handler, is_enabled)
+
+Beware
+======
+
+While the global singleton can make it easy to solve some problems, it
+can be easily abused and leads to situations where it's not clear what
+happens when an event is published.
+
+GUI code should not subscribe to events directly and instead should
+use :class:`cockpit.gui.EvtEmitter`.  Events between GUI components
+should not require this events systems and should instead be using
+wx's own event loop.
+
+Available events
+================
+
+Anything can be "published".  The following is a list of events that
+the system expects.
+
+``CAMERA_ENABLE``
+
+``CLEANUP_AFTER_EXPERIMENT``
+
+``DEVICE_STATUS``
+
+``EXECUTOR_DONE % executor_name``
+
+``EXPERIMENT_COMPLETE``
+  The entirety of an experiment has finished execution.
+
+``EXPERIMENT_EXECUTION``
+  Some component of the currently-running experiment has finished.
+
+``LIGHT_SOURCE_ENABLE``
+  The light source associated with the provided handler has been
+  enabled / disabled for taking images.
+
+``MOSAIC_UPDATE``
+
+``NEW_IMAGE % camera name``
+  An image has arrived for the camera with the given name.
+
+``PREPARE_FOR_EXPERIMENT``
+  An experiment is about to be executed, so devices should prepare
+  themselves.
+
+``SETTINGS_CHANGED % deviceor_handler_name``
+
+``STAGE_MOVER``
+  A ``StagePositioner`` handler is moving.
+
+``STAGE_POSITION``
+  The stage currently is at the specified position.
+
+``STAGE_STOPPED``
+  A ``StagePositioner`` handler has stopped moving.
+
+``STAGE_TOP_BOTTOM``
+
+``UPDATE_STATUS_LIGHT``
+
+``USER_ABORT``
+  The user clicked on the Abort button.
+
+``VIDEO_MODE_TOGGLE``
+
+``"filter change"``
+
+``"image pixel info"``
+  The mouse has moved over a camera view, and the specified
+  coordinates have the given value.
+
+``"new site"``
+  The user has marked a position as being of interest.
+
+``"objective change"``
+  The objective has been changed.
+
+``"site deleted"``
+  The specified Site is to be forgotten.
+
+``"soft safety limit"``
+  The software-enforced motion limits for the given axis (summing all
+  stage-positioner devices) have been changed.
+
+``"stage step index"``
+  Which Handler is currently being used to move the stage has been
+  changed; the Handlers are arranged in order of maximum range of
+  motion.
+
+``"stage step size"``
+  The amount of distance the stage will move when the user uses the
+  numeric keypad has changed.
+
+"""
+
 import collections
 import sys
 import threading
 import traceback
 import typing
-
-"""Cockpit events module is a topic based publish-subscriber system.
-
-This module is meant as a event passing middleware between the UI,
-using `wx.Event`s, and the individual devices and handlers which are
-independent on wxPython.
-
-In addition to the `Publisher` class, there is a singleton `Publisher`
-instance used throughout the Cockpit program.  The module functions
-`publish`, `subscribe`, and `unsubscribe` are pass-through functions
-to this singleton.
-
-"""
 
 ## Define common event strings here. This way, they're here for reference,
 # and can be used elsewhere to avoid errors due to typos.

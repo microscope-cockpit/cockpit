@@ -18,6 +18,16 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
+"""The "Model" behind Cockpit UI components.
+
+Historically, this subpackage was limited to provide interfaces to the
+GUI for when multiple handlers needed to be aggregated together to
+perform complex tasks.  As data and logic were extracted from the GUI
+components, it as been moved here.
+
+"""
+
+
 import re
 import typing
 
