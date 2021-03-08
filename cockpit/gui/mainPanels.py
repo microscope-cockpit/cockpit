@@ -52,7 +52,7 @@ class LightPanel(wx.Panel):
 
         self.Sizer.Add(self.button, flag=wx.EXPAND)
         self.Sizer.AddSpacer(2)
-        line = wx.StaticBox(self, size=(-1,4), style=wx.LI_HORIZONTAL)
+        line = wx.Control(self, size=(-1,4))
         line.SetBackgroundColour(wavelengthToColor(self.light.wavelength))
         self.Sizer.Add(line, flag=wx.EXPAND)
 
@@ -130,7 +130,7 @@ class CameraPanel(wx.Panel):
         self.Sizer.Add(self.button, flag=wx.EXPAND)
         self.Sizer.AddSpacer(2)
 
-        self.line = wx.StaticBox(self, size=(-1,4), style=wx.LI_HORIZONTAL)
+        self.line = wx.Control(self, size=(-1,4))
         self.line.SetBackgroundColour(wavelengthToColor(self.camera.wavelength or 0))
         self.Sizer.Add(self.line, flag=wx.EXPAND)
         # If there are problems here, it's because the inline function below is
