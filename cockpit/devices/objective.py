@@ -68,13 +68,15 @@ class ObjectiveDevice(cockpit.devices.device.Device):
 
     For example::
 
-      [60x water]
-      type: cockpit.devices.objective.ObjectiveDevice
-      pixel_size: 0.1
-      transform: (1, 0, 0)
-      offset: (-100, 50, 0)
-      colour: (1.0, .5, .5)
-      lensID: 10611
+    .. code:: ini
+
+        [60x water]
+        type: cockpit.devices.objective.ObjectiveDevice
+        pixel_size: 0.1
+        transform: (1, 0, 0)
+        offset: (-100, 50, 0)
+        colour: (1.0, .5, .5)
+        lensID: 10611
 
     """
 

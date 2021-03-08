@@ -50,7 +50,6 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 from cockpit import events
 import cockpit.gui.guiUtils
 import cockpit.handlers.stagePositioner
@@ -66,16 +65,6 @@ import threading
 import time
 import wx
 import re # to get regular expression parsing for config file
-
-## This module is for Physik Instrumente (PI) M687 XY stage.
-# Sample config entry:
-#  [m687]
-#  type: PhysikInstrumenteM687
-#  port: com6
-#  baud: 115200
-#  timeout: 0.1
-#  softlimits: ((-37500,-67500),(11500,59500))
-#
 
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
 
@@ -116,8 +105,22 @@ BANNED_RECTANGLES = ()
 #)
 
 
-
 class PhysikInstrumenteM687(Device):
+    """Physik Instrumente (PI) M687 XY stage.
+
+    Sample config entry:
+
+    .. code:: ini
+
+        [m687]
+        type: cockpit.devices.physikInstrumenteM687.PhysikInstrumenteM687
+        port: com6
+        baud: 115200
+        timeout: 0.1
+        softlimits: ((-37500,-67500),(11500,59500))
+
+    """
+
     _config_types = {'baud': int,
                      'timeout': float,}
     def __init__(self, name, config):

@@ -83,15 +83,17 @@ class DummyStage(_MicroscopeTestDevice,
     This device requires the ``lower-limits``, ``upper-limits``, and
     ``units-per-micron`` configuration values for each axis to be
     created.  The first letter of the configuration defines the axis.
-    For example, to create a dummy XY stage::
+    For example, to create a dummy XY stage:
 
-      [dummy XY stage]
-      x-lower-limits: 0
-      x-upper-limits: 25000
-      x-units-per-micron: 1
-      y-lower-limits: 0
-      y-upper-limits: 12000
-      y-units-per-micron: 1
+    .. config: ini
+
+        [dummy XY stage]
+        x-lower-limits: 0
+        x-upper-limits: 25000
+        x-units-per-micron: 1
+        y-lower-limits: 0
+        y-upper-limits: 12000
+        y-units-per-micron: 1
 
     """
     def __init__(self, name: str, config: typing.Mapping[str, str]) -> None:

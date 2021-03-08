@@ -19,10 +19,7 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 
-"""MicroscopeCamera device.
-
-  Supports cameras which implement the interface defined in
-  microscope.camera.Camera ."""
+"""Cameras from Python Microscope device server."""
 
 import decimal
 import Pyro4

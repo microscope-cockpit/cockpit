@@ -18,10 +18,6 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-
-""" stage.py: defines a base class for stage devices.
-"""
-
 from decimal import Decimal
 from cockpit.devices.device import Device
 from cockpit.interfaces.stageMover import AXIS_MAP
@@ -33,18 +29,18 @@ class SimplePiezo(Device):
     """A simple piezo axis.
 
     Sample config entry:
-      [zPiezo]                 # name
-      type: SimplePiezo        # this class
-      analogSource: asource    # an analogue source device name
-      analogLine: 0            # the line on the analogue source
-      offset: 0                # analogue units offset in experiment units, e.g. um
-      gain: 262.144            # unit conversion gain, e.g. ADU per um
-      min: 0                   # min axis range in experimental units
-      range: 250               # axis range in experimental units
 
-      [asource]
-      type: LegacyDSP
-      ...
+    .. code:: ini
+
+        [zPiezo]                 # name
+        type: cockpit.devices.stage.SimplePiezo        # this class
+        analogSource: asource    # an analogue source device name
+        analogLine: 0            # the line on the analogue source
+        offset: 0                # analogue units offset in experiment units, e.g. um
+        gain: 262.144            # unit conversion gain, e.g. ADU per um
+        min: 0                   # min axis range in experimental units
+        range: 250               # axis range in experimental units
+
     """
     _config_types = {
         # Min, max and range are ints to prevent crashes where ints are expected
