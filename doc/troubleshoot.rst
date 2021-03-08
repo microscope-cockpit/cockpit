@@ -90,7 +90,7 @@ from this script is below:
     server                       127.0.0.1  up        closed
     stage                        localhost  up        open
 
-    skipped server:  in ingore list
+    skipped server:  in ignore list
     skipped 40x:  no host or uri
     skipped zPiezo:  no host or uri
 
@@ -98,3 +98,91 @@ In this example it can clearly be seen that ``cameraR`` is closed so
 is the device preventing cockpit from starting up.  This error was
 produced be deliberately connecting to the wrong port to generate an
 error on startup.
+
+
+Device issues
+=============
+
+If cockpit started successfully then the devices defined in the depot
+configuration file must have been alive and able to be
+connected. However, most devices do not initialise the hardware until
+there is an enable call, generally caused by the user clicking on the
+control button for that device in the main GUI window.
+
+Most devices will be able to auto reconnect if something causes the
+remote microscope process to stop. This means that generally devices
+can easily be reactivated by restarting the remote microscope process,
+possibly stopping it first, and then trying ti disable and re-enable the
+device in the cockpit interface. The disable call will fail,
+generally giving a red icon next to the device name in the GUI. If you
+then click again, cockpit will try to reconnect to the remote process
+and re-enable the device.
+
+If restarting the microscope remote and re-enabling the device in
+cockpit does not work the next step is to try and power cycle the
+remote hardware. First stop the controlling microscope process and
+then either turn off, or disconnect the power supply. For directly powered
+devices such as USB cameras etc, just unplug the cable. Leave for a
+few seconds and reconnect power, restart the microscope process and
+attempt to reconnect from cockpit.
+
+If all else fails you might have the close down and restart
+cockpit. this can be done either without restarting the microscope
+processes, or by restarting the microscope processes, effectively
+resetting everything.
+
+Access to hardware triggers can be gained by opening the XXX window
+which provides toggle buttons for all digital as well as text boxes to
+control analogue outputs provided by the timing device. 
+
+Additional information about specific devices can be gained by
+connecting to the device from cockpits internal python shell
+interface. From the windows menu select "PyShell". In this shell you
+can connect to specific devices with the code:
+
+.. code-block:: text
+
+	from cockpit import depot
+	device=depot.getDeviceWithName('NAME')
+
+Where NAME is the device name from the cockpit depot file. The device
+object then will allow access to the devices methods and
+values. Exactly what this can tell you quite device dependant. This
+approach gives low level access to all of the devices settings, and
+methods. 
+
+
+Experiment issues 
+=================
+
+Experiments are one of the the most complex parts of cockpit and
+issues related to running experiments can be difficult to
+solve.
+
+Fundamentally experiments involve the creation of an action table that
+describes what actions to take at what time. This action table is then
+off loaded to associated hardware, such as a DSP or the Red Pitaya
+single board computer,  to run the actual experiment.
+
+Experiment issues can often be diagnosed with the help of an
+oscilloscope, which can be used to monitor specific signals such as
+light, or camera triggers or analogue voltages to control piezo Z
+stages. Studying the existence or not of the correct trigger pulses and
+their relative timing can be very helpful in diagnosing issues such as
+mis-synchronisation of lights and cameras. 
+
+
+A useful tool cockpit provides is a graphical display
+of what it things the relevant timing signals should look like. Once
+and experiment has been run, the output digital and analogue signals
+can be displayed from the "plot action table" button in the XXX
+window.
+
+Finally it might be useful to examine the remote timing device to see
+what it thinks it should have performed. The Red Pitaya timing device
+provides a log of all action tables uploaded in /root/XXXXX.
+
+
+
+
+
