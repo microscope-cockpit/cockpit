@@ -442,18 +442,19 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         sideSizer.Add(self.sitesPanel, 1, wx.EXPAND)
         sizer.Add(sideSizer, 0, wx.EXPAND)
 
+        # The MosaicCanvas can't figure out its own best size so it
+        # just disappears after Fit.  We suggest its width to be 3/4
+        # of the window width.
+        side_panel_size = sideSizer.ComputeFittingClientSize(self)
+        canvas_size = (side_panel_size[0] * 3, side_panel_size[1])
 
         ## MosaicCanvas instance.
         limits = cockpit.interfaces.stageMover.getHardLimits()[:2]
         self.canvas = canvas.MosaicCanvas(self, limits, self.drawOverlay,
-                                          self.onMouse)
+                                          self.onMouse, size=canvas_size)
         sizer.Add(self.canvas, 1, wx.EXPAND)
-        self.SetSizerAndFit(sizer)
 
-        # The MosaicCanvas can't figure out its own best size so it
-        # just disappears after Fit.  We suggest its width to be 3/4
-        # of the window width.
-        self.SetClientSize((sideSizer.Size[0] * 4, sideSizer.Size[1]))
+        self.SetSizerAndFit(sizer)
 
         events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
         events.subscribe('soft safety limit', self.onAxisRefresh)
