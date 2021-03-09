@@ -51,8 +51,64 @@
 
 
 import numpy
-from OpenGL.GL import *
-from OpenGL.GL.framebufferobjects import *
+from OpenGL.GL import (
+    GL_BLUE_BIAS,
+    GL_BLUE_SCALE,
+    GL_CLAMP,
+    GL_COLOR_ATTACHMENT0,
+    GL_DRAW_FRAMEBUFFER,
+    GL_FLOAT,
+    GL_GREEN_BIAS,
+    GL_GREEN_SCALE,
+    GL_LINEAR,
+    GL_LUMINANCE,
+    GL_MAP_COLOR,
+    GL_MODELVIEW,
+    GL_NEAREST,
+    GL_PROJECTION,
+    GL_QUADS,
+    GL_RED_BIAS,
+    GL_RED_SCALE,
+    GL_RGB,
+    GL_SHORT,
+    GL_TEXTURE_2D,
+    GL_TEXTURE_MAG_FILTER,
+    GL_TEXTURE_MIN_FILTER,
+    GL_TEXTURE_WRAP_S,
+    GL_TEXTURE_WRAP_T,
+    GL_UNPACK_ALIGNMENT,
+    GL_UNPACK_SWAP_BYTES,
+    GL_UNSIGNED_BYTE,
+    GL_UNSIGNED_SHORT,
+    glBegin,
+    glBindTexture,
+    glColor3f,
+    glDeleteTextures,
+    glEnable,
+    glEnd,
+    glGenTextures,
+    glLoadIdentity,
+    glMatrixMode,
+    glOrtho,
+    glPixelStorei,
+    glPixelTransferf,
+    glPixelTransferi,
+    glPopMatrix,
+    glPushMatrix,
+    glTexCoord2f,
+    glTexImage2D,
+    glTexParameteri,
+    glTexSubImage2D,
+    glTranslatef,
+    glVertex2f,
+    glViewport,
+)
+from OpenGL.GL.framebufferobjects import (
+    glBindFramebuffer,
+    glFramebufferTexture2D,
+    glGenFramebuffers,
+)
+
 
 ## This module contains the Tile and MegaTile classes, along with some
 # supporting functions and constants.
