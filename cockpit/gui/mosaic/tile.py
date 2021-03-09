@@ -81,11 +81,14 @@ from OpenGL.GL import (
     GL_UNSIGNED_BYTE,
     GL_UNSIGNED_SHORT,
     glBegin,
+    glBindFramebuffer,
     glBindTexture,
     glColor3f,
     glDeleteTextures,
     glEnable,
     glEnd,
+    glFramebufferTexture2D,
+    glGenFramebuffers,
     glGenTextures,
     glLoadIdentity,
     glMatrixMode,
@@ -102,11 +105,6 @@ from OpenGL.GL import (
     glTranslatef,
     glVertex2f,
     glViewport,
-)
-from OpenGL.GL.framebufferobjects import (
-    glBindFramebuffer,
-    glFramebufferTexture2D,
-    glGenFramebuffers,
 )
 
 
