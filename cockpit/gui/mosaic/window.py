@@ -54,6 +54,7 @@
 import collections
 import math
 import threading
+import time
 
 import numpy
 import scipy.ndimage.measurements
@@ -727,6 +728,17 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             # have changed.
             try:
                 minVal, maxVal = cockpit.gui.camera.window.getCameraScaling(camera)
+                # HACK: If this is the first image being acquired the
+                # viewCanvas has not yet set the scaling.  Its default
+                # of [0 1] is unlikely to be appropriate for images
+                # that are likely uint8/16.  So wait a bit and read it
+                # again.  We should either be deciding the scaling
+                # ourselves, or get an image with associated scaling
+                # information or after the scaling information has
+                # been set.  See issue #718.
+                if (minVal == 0.0) and (maxVal == 1.0):
+                    time.sleep(0.1)
+                    minVal, maxVal = cockpit.gui.camera.window.getCameraScaling(camera)
             except Exception as e:
                 # Go to idle state.
                 self.shouldContinue.clear()
