@@ -474,7 +474,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.context = wx.glcanvas.GLContext(self)
 
         ## Font for text rendering
-        self.face = cockpit.gui.freetype.Face(18)
+        self.face = cockpit.gui.freetype.Face(self, 18)
 
         self.Bind(wx.EVT_PAINT, self.onPaint)
         # Do nothing, to prevent flickering

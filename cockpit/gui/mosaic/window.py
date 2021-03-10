@@ -357,8 +357,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         # separate fonts instead of dynamically changing the font size
         # because changing the font size would mean discarding the
         # glyph textures for that size.
-        self.site_face = cockpit.gui.freetype.Face(96)
-        self.scale_face = cockpit.gui.freetype.Face(18)
+        self.site_face = cockpit.gui.freetype.Face(self, 96)
+        self.scale_face = cockpit.gui.freetype.Face(self, 18)
 
         #default scale bar size is Zero
         self.scalebar = cockpit.util.userConfig.getValue('mosaicScaleBar',
@@ -471,7 +471,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             cockpit.gui.keyboard.setKeyboardHandlers(item)
 
         self.mosaicThread = None
-
 
     ## Create a button with the appropriate properties.
     def makeButton(self, parent, label, leftAction, rightAction, helpText,

@@ -920,8 +920,8 @@ class MosaicPanel(wx.Panel, mosaic.MosaicCommon):
         self.crosshairBoxSize = 0
 
         # MOSAIC FONT ATTRIBUTES
-        self.site_face = cockpit.gui.freetype.Face(64)
-        self.scale_face = cockpit.gui.freetype.Face(18)
+        self.site_face = cockpit.gui.freetype.Face(self, 64)
+        self.scale_face = cockpit.gui.freetype.Face(self, 18)
         # MORE MOSAIC ATTRIBUTES
         self.scalebar = cockpit.util.userConfig.getValue(
             "mosaicScaleBar", default=0

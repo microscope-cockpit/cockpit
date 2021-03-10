@@ -91,7 +91,7 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         ## Whether or not we should try to draw
         self.shouldDraw = True
         ## Font for drawing text
-        self.face = cockpit.gui.freetype.Face(18)
+        self.face = cockpit.gui.freetype.Face(self, 18)
 
         ## X values below this are off the canvas. We leave it up to children
         # to fill in proper values for these.
