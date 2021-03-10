@@ -418,7 +418,7 @@ class Experiment:
     def cleanup(self, runThread = None, saveThread = None):
         if runThread is not None:
             runThread.join()
-        if saveThread is not None and saveThread.isAlive():
+        if saveThread is not None and saveThread.is_alive():
             events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting',
                            'Waiting for saving to complete')
             saveThread.join()
