@@ -670,5 +670,4 @@ def CockpitAboutInfo() -> wx.adv.AboutDialogInfo:
 ## Create the window.
 def makeWindow():
     window = MainWindow()
-    window.Show()
     return window
