@@ -284,7 +284,7 @@ class PhysikInstrumenteM687(Device):
         busy_box.Show()
         while response != 0:
             # Request motion status
-            self.xyConnection.write(chr(5))
+            self.xyConnection.write(b'\x05')
             response = int(self.xyConnection.readline())
             busy_box.Pulse()
             time.sleep(0.2)
