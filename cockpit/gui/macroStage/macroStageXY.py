@@ -103,7 +103,7 @@ class _StagePositionEntryDialog(wx.Dialog):
         return [s.GetValue() for s in self._spins]
 
 
-def GoToXYZDialog(parent: wx.Window) -> bool:
+def GoToXYZDialog(parent: wx.Window) -> None:
     position_dialog = _StagePositionEntryDialog(parent)
     if position_dialog.ShowModal() != wx.ID_OK:
         return
@@ -135,7 +135,7 @@ def GoToXYZDialog(parent: wx.Window) -> bool:
             ):
                 currentHandlerIndex -= 1  # go to a bigger handler index
             if currentHandlerIndex < 0:
-                return False
+                return
     wx.GetApp().Stage.curHandlerIndex = currentHandlerIndex
     cockpit.interfaces.stageMover.goTo(newPos)
     wx.GetApp().Stage.curHandlerIndex = originalHandlerIndex
@@ -477,8 +477,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         #make sure we are back to the expected mover
         cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
 
-    def OnRightClick(self, event):
-        return GoToXYZDialog(self.GetParent())
+    def OnRightClick(self, event) -> None:
+        del event
+        GoToXYZDialog(self.GetParent())
 
     ## Right-clicked the mouse. Toggle drawing of the mosaic tiles
     def OnRightDoubleClick(self, event):
