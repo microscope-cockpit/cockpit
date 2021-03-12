@@ -336,7 +336,7 @@ class ActionsPanel(wx.Panel):
                 button.SetValue(False)
                 wx.MessageBox(
                     "The %s camera is not enabled." % camera.descriptiveName,
-                    caption='Cameras is not active'
+                    caption='Selected camera is not active'
                 )
         else:
             # Released => stop mosaic
