@@ -50,6 +50,8 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import typing
+
 import numpy
 from OpenGL.GL import *
 import traceback
@@ -65,18 +67,51 @@ import cockpit.util.logger
 from cockpit.gui.macroStage import macroStageBase
 
 
+class _StagePositionEntryDialog(wx.Dialog):
+    def __init__(self, parent: wx.Window) -> None:
+        super().__init__(parent, title="Move Stage")
+
+        self._spins = []
+        position = cockpit.interfaces.stageMover.getPosition()
+        limits = cockpit.interfaces.stageMover.getSoftLimits()
+        for i in range(3):
+            self._spins.append(wx.SpinCtrlDouble(
+                self,
+                min=limits[i][0],
+                max=limits[i][1],
+                initial=position[i]
+            ))
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        sizer.Add(wx.StaticText(self, label="Select stage position"),
+                  wx.SizerFlags().Border().Centre())
+
+        spins_sizer = wx.FlexGridSizer(cols=2, gap=(0, 0))
+        for spin, name in zip(self._spins, ['X', 'Y', 'Z']):
+            spins_sizer.Add(wx.StaticText(self, label=name),
+                            wx.SizerFlags().Border().Centre())
+            spins_sizer.Add(spin, wx.SizerFlags().Border().Expand())
+        sizer.Add(spins_sizer, wx.SizerFlags().Border().Centre())
+
+        buttons_sizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
+        sizer.Add(buttons_sizer, wx.SizerFlags().Border().Centre())
+
+        self.SetSizerAndFit(sizer)
+
+    def GetValue(self) -> typing.Tuple[float, float, float]:
+        return [s.GetValue() for s in self._spins]
+
+
 def GoToXYZDialog(parent: wx.Window) -> bool:
-    position = cockpit.interfaces.stageMover.getPosition()
-    values = cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
-        parent,
-        "Go To XYZ",
-        ("X", "Y", "Z"),
-        position,
-        atMouse=False,
-    )
-    newPos = [float(values[0]), float(values[1]), float(values[2])]
+    position_dialog = _StagePositionEntryDialog(parent)
+    if position_dialog.ShowModal() != wx.ID_OK:
+        return
+
+    newPos = position_dialog.GetValue()
     # Work out if we will be ouside the limits of the current stage
     # This should be a method of the StageMover interface (see #616)
+    position = cockpit.interfaces.stageMover.getPosition()
     posDelta = [
             newPos[0] - position[0],
             newPos[1] - position[1],
