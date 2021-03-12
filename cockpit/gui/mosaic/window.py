@@ -1031,7 +1031,10 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     # \param action Function to call with the selected camera as a parameter.
     def showCameraMenu(self, text, action):
         cameras = depot.getActiveCameras()
-        if len(cameras) == 1:
+        if len(cameras) == 0:
+            wx.MessageBox("Please enable a camera to run a mosaic.",
+                          caption="No cameras are enabled")
+        elif len(cameras) == 1:
             action(cameras[0])
         else:
             menu = wx.Menu()
