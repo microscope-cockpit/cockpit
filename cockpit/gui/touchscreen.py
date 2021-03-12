@@ -38,7 +38,7 @@ from cockpit import depot, events
 from cockpit.gui.camera.viewPanel import ViewPanel
 from cockpit.gui.device import EnableButton
 from cockpit.gui.dialogs.experiment import singleSiteExperiment
-from cockpit.gui.macroStage.macroStageXY import MacroStageXY
+from cockpit.gui.macroStage.macroStageXY import GoToXYZDialog, MacroStageXY
 from cockpit.gui.macroStage.macroStageZ import MacroStageZ
 from cockpit.gui.safeControls import EVT_SAFE_CONTROL_COMMIT, SetPointGauge
 from cockpit.interfaces import stageMover
@@ -1513,43 +1513,7 @@ class StageControlCommon(wx.Panel):
         self.dialog_safeties.Show()
 
     def _cb_move(self, e):
-        position = stageMover.getPosition()
-        values = cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
-            self.GetParent(),
-            "Go To XYZ",
-            ("X", "Y", "Z"),
-            position,
-            atMouse=False,
-        )
-        newPos = [float(values[0]), float(values[1]), float(values[2])]
-        # Work out if we will be ouside the limits of the current stage
-        posDelta = [
-            newPos[0] - position[0],
-            newPos[1] - position[1],
-            newPos[2] - position[2],
-        ]
-        originalHandlerIndex = wx.GetApp().Stage.curHandlerIndex
-        currentHandlerIndex = originalHandlerIndex
-        allPositions = stageMover.getAllPositions()
-        for axis in range(3):
-            if posDelta[axis] ** 2 > 0.001:
-                limits = stageMover.getIndividualHardLimits(axis)
-                currentpos = allPositions[currentHandlerIndex][axis]
-                if (
-                    # off bottom
-                    currentpos + posDelta[axis]
-                    < (limits[currentHandlerIndex][0])
-                ) or (
-                    # off top
-                    currentpos + posDelta[axis]
-                    > (limits[currentHandlerIndex][1])
-                ):
-                    currentHandlerIndex -= 1  # go to a bigger handler index
-                if currentHandlerIndex < 0:
-                    return False
-        wx.GetApp().Stage.curHandlerIndex = currentHandlerIndex
-        stageMover.goTo(newPos)
-        wx.GetApp().Stage.curHandlerIndex = originalHandlerIndex
+        GoToXYZDialog(self.GetParent())
 
 
 class MacroStagesPanel(wx.Panel):
