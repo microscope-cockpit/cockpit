@@ -6,4 +6,5 @@ short version of it is::
     pip install microscope-cockpit
 
 For details on dependencies, system specific instructions, and
-installing from development sources see `doc/install.rst`.
+installing from development sources see `doc/install.rst
+<doc/install.rst>`__.
