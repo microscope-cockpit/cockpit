@@ -5,6 +5,10 @@ short version of it is::
 
     pip install microscope-cockpit
 
+Once installed, Cockpit can be started from command line::
+
+    cockpit
+
 For details on dependencies, system specific instructions, and
 installing from development sources see `doc/install.rst
 <doc/install.rst>`__.
