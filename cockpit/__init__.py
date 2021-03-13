@@ -149,7 +149,7 @@ class CockpitApp(wx.App):
 
             status.Update(updateNum, "Initializing devices...")
             updateNum+=1
-            for i, device in enumerate(cockpit.depot.initialize(depot_config)):
+            for device in cockpit.depot.initialize(depot_config):
                 status.Update(updateNum, "Initializing devices...\n%s" % device)
                 updateNum+=1
             status.Update(updateNum, "Initializing device interfaces...")
