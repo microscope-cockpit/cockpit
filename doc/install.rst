@@ -1,4 +1,5 @@
 .. Copyright (C) 2020 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
+   Copyright (C) 2021 Martin Hailstone <martin.hailstone@engs.ox.ac.uk>
 
    Permission is granted to copy, distribute and/or modify this
    document under the terms of the GNU Free Documentation License,
@@ -13,9 +14,22 @@ Installation
 Cockpit is available on the Python Package Index (PyPI) and can be
 `installed like any other Python package
 <https://packaging.python.org/tutorials/installing-packages/>`__.  The
-short version of it is "use pip"::
+short version is::
 
     pip install microscope-cockpit
+
+For platform-specific instructions, details, and caveats, see below.
+
+Once installed, Cockpit can be started from command line::
+
+    cockpit
+
+.. note::
+
+    In the absence of configuration files, Cockpit will simulate the
+    required devices.  See the :ref:`configuration <configuration>`
+    section for details on how to configure Cockpit to control real
+    devices.
 
 
 GNU/Linux
