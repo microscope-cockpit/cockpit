@@ -68,6 +68,8 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             self.modes = self.describe_setting('readout mode')['values']
         else:
             self.modes = []
+        if self.baseTransform:
+            self._setTransform(self.baseTransform)
 
     @property
     def _modenames(self):
