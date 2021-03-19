@@ -783,7 +783,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     # Note: pass in x,y, but returns row-major datay, datax
     def glToIndices(self, glx, gly):
         datax = (1 + glx) * self.imageShape[1] // 2
-        datay = (1 + gly) * self.imageShape[0] // 2
+        datay = self.imageShape[0]-((1 + gly) * self.imageShape[0] // 2)
         return (datay, datax)
 
 
