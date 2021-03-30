@@ -234,7 +234,6 @@ class Experiment:
 
         self._run_thread = threading.Thread(target=self.execute,
                                             name="Experiment-execute")
-        self._run_thread.start()
 
         saveThread = None
         if self.savePath and max(self.cameraToImageCount.values()):
@@ -268,6 +267,8 @@ class Experiment:
                                           name="Experiment-execute-save")
             saveThread.start()
             generatedFilenames.append(saver.getFilenames())
+
+        self._run_thread.start()
 
         cleanup_thread = threading.Thread(target=self.cleanup,
                                           args=[self._run_thread, saveThread],
