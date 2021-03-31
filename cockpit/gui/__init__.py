@@ -167,7 +167,8 @@ def ExceptionBox(caption="", parent=None):
     ## subclass of wx.Dialog, it uses native widgets for simpler
     ## dialogs, such as gtk_message_dialog_new.
 
-    dialog = wx.Dialog(parent, title=caption, name="exception-dialog",style=wx.RESIZE_BORDER)
+    dialog = wx.Dialog(parent, title=caption, name="exception-dialog",
+                       style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
     message = wx.StaticText(dialog, label=str(current_exception))
     details = wx.TextCtrl(dialog, value=traceback.format_exc(),
                           style=(wx.TE_MULTILINE|wx.TE_DONTWRAP|wx.TE_READONLY))
