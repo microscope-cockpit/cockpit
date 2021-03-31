@@ -186,12 +186,11 @@ def ExceptionBox(caption="", parent=None):
 
     ## The default width of a TextCtrl does not take into account its
     ## actual content.  We need to manually set its size (issue #497)
-    ## The same is true for Mac.
-    if (wx.Platform != '__WXMSW__') and (wx.Platform != '__WXMAC__'): 
+    if (wx.Platform != '__WXMSW__') and (wx.Platform != '__WXMAC__'):
         details_text_size = details.GetTextExtent(details.Value)
     else:
-        ## On Windows, GetTextExtent ignores newlines so we need to
-        ## manually compute the text extent.
+        ## On Windows and Mac, GetTextExtent ignores newlines so we
+        ## need to manually compute the text extent.
         traceback_lines = details.Value.splitlines()
         longest_line = max(traceback_lines, key=len)
         one_line_size = details.GetTextExtent(longest_line)
