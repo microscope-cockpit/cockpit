@@ -657,7 +657,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.drawEvent.set()
         except Exception as e:
             print ("Error drawing view canvas:",e)
-            traceback.print_stack()
+            traceback.print_exc()
             #self.shouldDraw = False
         finally:
             self.painting = False
