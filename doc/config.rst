@@ -153,7 +153,7 @@ options are available:
 ``--debug``
   Set the logging level to debug.
 
-.. _cockpit_config_precedence:
+.. _cockpit-config-precedence:
 
 Precedence of option values
 ---------------------------
@@ -222,11 +222,11 @@ as follow:
 2. depot files in cockpit config files.  If multiple cockpit config
    files define depot files, the list of files is read is the one in
    the file with :ref:`highest precedence
-   <cockpit_config_precedence>`.
+   <cockpit-config-precedence>`.
 3. ``depot.conf`` files in :ref:`standard, system-dependent locations
-   <default_config_locations>`.
+   <default-config-locations>`.
 
-.. _default_config_locations:
+.. _default-config-locations:
 
 Location of config files
 ========================
