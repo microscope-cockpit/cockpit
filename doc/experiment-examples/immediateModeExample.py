@@ -55,8 +55,10 @@ from cockpit import events
 from . import immediateMode
 import cockpit.interfaces.imager
 import cockpit.interfaces.stageMover
+import cockpit.util.user
 
 import numpy
+import os
 import time
 
 
@@ -68,8 +70,8 @@ import time
 # >>> import experiment.myExperiment
 # >>> runner = experiment.myExperiment.MyExperiment()
 # >>> runner.run()
-# If you modify the file, then you need to reload it for changes to take
-# effect:
+# If you make changes to the experiment while the cockpit is running, you will
+# need to reload the experiment module for those changes to take effect:
 # >>> reload(experiment.myExperiment)
 class MyExperiment(immediateMode.ImmediateModeExperiment):
     def __init__(self):
@@ -79,16 +81,20 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         # data to. The experiment assumes we're
         # using the currently-active cameras and light sources for setting
         # up the output data file.
-        # Here we do 5 reps, with a 4s duration, and 1 image per rep.
+        # Here we do 5 reps, with a 4s duration, and 1 image per rep. The 
+        # file will get saved as "out.mrc" in the current user's data 
+        # directory.
+        savePath = os.path.join(cockpit.util.user.getUserSaveDir(), "out.mrc")
+        print ("Saving file to",savePath)
         immediateMode.ImmediateModeExperiment.__init__(self,
                 numReps = 5, repDuration = 4, imagesPerRep = 1,
-                savePath = "out.mrc")
+                savePath = savePath)
 
 
     ## This function is where you will implement the logic to be performed
     # in each rep of the experiment. The parameter is the number of the
     # rep you are executing, starting from 0 (0 = first rep, 1 = second
-    # rep, etc.). 
+    # rep, etc.).
     def executeRep(self, repNum):
         # Get all light sources that the microscope has.
         allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
@@ -97,9 +103,11 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         allLights = list(allLights)
         # Print the names of all light sources.
         for light in allLights:
-            print(light.name)
+            print (light.name)
         # Get all power controls for light sources.
         allLightPowers = depot.getHandlersOfType(depot.LIGHT_POWER)
+        # Get all light source filters.
+        allLightFilters = depot.getHandlersOfType(depot.LIGHT_FILTER)
 
         # Get all camera handlers that the microscope has, and filter it
         # down to the ones that are currently active.
@@ -129,8 +137,10 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         # Set this light source to stop continually exposing.
         led650.setExposing(False)
 
-        # Get another light source.
-        laser488 = depot.getHandlerWithName("488 L")
+        # Get another light source. The "\n" in the name is a newline, which
+        # was inserted (when this light source handler was created) to make
+        # the light control button look nice. 
+        laser488 = depot.getHandlerWithName("488\nlight")
 
         # Set this light source to be enabled when we take images.
         # Note: for lasers, an AOM in the laser box that acts as a light
@@ -150,8 +160,6 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         # Note: that if you try to wait for an image
         # that will never arrive (e.g. for the wrong camera name) then your
         # script will get stuck at this point.
-        # Note: you must have at least one light source enabled for any
-        # image to be taken! 
         eventName = 'new image %s' % activeCams[0].name
         image, timestamp = events.executeAndWaitFor(eventName,
                 cockpit.interfaces.imager.takeImage, shouldBlock = True)
