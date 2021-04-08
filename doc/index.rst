@@ -15,6 +15,7 @@ Microscope-Cockpit
    :hidden:
 
    install
+   getting-started
    config
    architecture
    troubleshoot
