@@ -57,10 +57,8 @@ Citation
 
 If you find this project useful, please cite:
 
-    *Microscope-Cockpit: Python-based bespoke microscopy for
-    bio-medical science* Mick A Phillips, David Miguel Susano Pinto,
-    Nicholas Hall, Julio Mateos-Langerak, Richard M Parton, Josh
-    Titlow, Danail V Stoychev, Thomas Parks, Tiago Susano Pinto, John
-    W Sedat, Martin J Booth, Ilan Davis, Ian M Dobbie. bioRxiv
-    2021.01.18.427178; doi: `https://doi.org/10.1101/2021.01.18.427178
-    <https://doi.org/10.1101/2021.01.18.427178>`__
+    Phillips MA, Susano Pinto DM, Hall N *et al*. Microscope-Cockpit:
+    Python-based bespoke microscopy for bio-medical science. Wellcome
+    Open Res 2021, **6**:76
+    (`https://doi.org/10.12688/wellcomeopenres.16610.1
+    <https://doi.org/10.12688/wellcomeopenres.16610.1>`__)

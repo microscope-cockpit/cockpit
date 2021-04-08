@@ -38,8 +38,8 @@ microscopes. Its main features are:
 
 - Cockpit is free and open source software, released under the GPL.
 
-A more detailed description is available in the `bioRxiv paper
-<https://www.biorxiv.org/content/10.1101/2021.01.18.427178v1>`__.
+A more detailed description is available in the `associated
+publication <https://doi.org/10.12688/wellcomeopenres.16610.1>`__.
 
 The User Interface
 ==================
