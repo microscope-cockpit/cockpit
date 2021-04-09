@@ -12,31 +12,40 @@
 Configuration
 *************
 
+.. note::
+
+    Cockpit uses `Microscope <https://python-microscope.org/>`_ to
+    handle the hardware level device communication.  This page is
+    concerned with the configuration of Cockpit and assumes you
+    already have working Microscope device servers.  For more
+    information on setting up device servers see `its documentation
+    <https://python-microscope.org/doc/architecture/device-server.html>`__.
+
 There are two parts to configuring cockpit.  The :ref:`configuration
 of cockpit proper <cockpit-config>` that covers most of cockpit
 options, and the :ref:`depot configuration <depot-config>` which lists
 all devices that cockpit will have control over.
 
-.. The userConfig stuff is not documented.  Not sure if it should be
-   documented at all, seems more like cache.  Parts of it that makes
-   sense to configure can have system-wide value, in which case should
-   be moved into cockpit config.
 
 .. _cockpit-config:
 
 Cockpit Configuration
 =====================
 
+Cockpit configuration controls basic behaviour of Cockpit such as
+logging level, where to save data as default, and the location of
+other configuration files.  In most cases, the default values will be
+enough and users will not need to change these.
+
 Config file
 -----------
 
-Cockpit configuration is mainly performed with an `INI file
-<https://en.wikipedia.org/wiki/INI_file>`_, with multiple options
-organised over sections.  For example:
+Cockpit configuration file spans multiple sections, each section
+having multiple options (see the :ref:`config-file-format` for
+details).  For example:
 
 .. code:: ini
 
-  ;; This is a comment.  It's nice to document configuration files.
   [global]
   data-dir: ~/data
   depot-files: /etc/xdg/cockpit/depot/general.conf
@@ -44,7 +53,8 @@ organised over sections.  For example:
                /etc/xdg/cockpit/depot/experimental.conf
 
   [log]
-  level: info
+  level: warning
+  dir: ~/data/logs
 
 The following sections and their options are recognised:
 
@@ -101,9 +111,9 @@ primitives
   ``r x0 y0 width height`` defines a rectangle centred on ``x0, y0``.
 
 
-.. TODO:: Ian says the options for the stage section are historical
-          and a fudge.  That need to be changed and may be removed in
-          the future.
+.. TODO:: These options for the stage section are historical and a
+          fudge.  They need to be changed and may be removed in the
+          future.
 
 dishAltitude
   Dish altitude.
@@ -172,6 +182,7 @@ This enables users to have a configuration file that overrides
 system-wide settings, or to use command line options for one-off
 change of settings.
 
+
 .. _depot-config:
 
 Depot Configuration
@@ -202,17 +213,22 @@ configuration.  For example:
 defines three devices: a camera named "west", an executor named
 "woody", and a laser light source named "488nm".  Each device has a
 ``type`` option which specifies the fully qualified class name of that
-device.  Each device type will require a different set of options
-which should be documented in the device type documentation.
+device.  Each type will require a different set of options which
+should be documented in its class documentation.
 
+In most cases, each device defined in the depot configuration file
+corresponds to a Python Microscope device server.  Typical exceptions
+are executor devices which do not exist in Python Microscope,
+controller devices where each controlled device needs its own section,
+and objectives.
 
-Multiple files
---------------
+Multiple depot configurations
+-----------------------------
 
 Like the cockpit configuration, depot configuration may span multiple
 files.  Unlike the cockpit configuration where sections with the same
 name are merged, each device section must be unique and sections with
-the same name will cause an error, even if in different files.
+the same name will cause an error even if in different files.
 
 In the case of depot files, precedence means what files get read.  If
 a set of files is present, the others are not processed.  The order is
@@ -226,7 +242,17 @@ as follow:
 3. ``depot.conf`` files in :ref:`standard, system-dependent locations
    <default-config-locations>`.
 
+
 .. _default-config-locations:
+
+Preferences
+===========
+
+In addition to the configuration, Cockpit also keeps a cache of user
+preferences such as the layout of the different windows, and the last
+used experiment and device settings.  These can be cleared via "Reset
+User Configuration" on the "Edit" menu.
+
 
 Location of config files
 ========================
@@ -241,3 +267,29 @@ Linux    ``/etc/xdg/cockpit/``              ``$HOME/.config/cockpit/``
 MacOS    ``/Library/Preferences/cockpit/``  ``~/Library/Application Support/cockpit/``
 Windows  ``%ProgramData%\cockpit\``         ``%LocalAppData%\cockpit\``
 =======  =================================  ==========================================
+
+
+.. _config-file-format:
+
+Configuration File Format
+=========================
+
+Configuration files are expected in the `INI file format
+<https://en.wikipedia.org/wiki/INI_file>`__ as supported by Python's
+``configparser``.  In this format, configuration consists of multiple
+sections, each named by a ``[section]`` header, followed by key/value
+entries.  For example:
+
+.. code:: ini
+
+    [This is the Section Name]
+    key: value
+    spaces in keys are allowed: and in keys as well
+
+    ; A comment line starts with ";" and is ignored.
+    ; It's a good idea to comment configuration files.
+
+    [This is the Name of a second Section]
+    multine values: Just start the following lines
+        with white space to create multine values.
+        The value can span as many lines as you want.

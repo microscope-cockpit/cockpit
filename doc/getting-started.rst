@@ -10,12 +10,42 @@
 Getting Started
 ###############
 
-Cockpit will run by default with a set of dummy devices.  Configuring
-Cockpit to use your own devices requires two things:
+If Cockpit is being installed for the first time and in the absence of
+any configuration files, Cockpit will simulate a series of devices.
+While this is useful for testing, the goal of Cockpit is to control a
+real microscope.  Configuring Cockpit to connect and control your own
+devices requires two things:
 
-- First, you need to setup a Python-Microscope `device-server
+1. setup a Python-Microscope `device-server
   <https://www.python-microscope.org/doc/architecture/device-server.html>`_
   for each of devices to be used.
 
-- Next, you need to configure :ref:`Cockpit's depot <depot-config>` to
-  use those devices.
+2. Configure :ref:`Cockpit's depot <depot-config>` to use those
+  devices.
+
+Configuration of the device servers is outside the scope of this
+documentation, refer to Microscope's `documentation
+<https://www.python-microscope.org/doc/architecture/device-server.html>`_.
+This document is about configuring Cockpit proper.
+
+Configuring Cockpit for the first time
+======================================
+
+If running Cockpit for the first time there will be no configuration
+files present.  These can be created with any text editor in a
+platform and specific :ref:`location <default-config-locations>`.  The
+"best" location is also use case specific.  For example, if this is an
+end-user system, i.e., users are not expected to be making changes,
+then a system wide configuration is better suited.  In the specific
+case of Microsoft Windows, the system-wide file to configure what
+devices to use is ``C:\ProgramData\cockpit\depot.conf``.
+
+The format of this file is defined in the :ref:`Depot configuration
+<depot-config>` section but it might be simpler to start with someone
+else's file as a starting point.  Some example configuration files can
+be found `here <https://github.com/MicronOxford/configs>`__.
+
+Once the file is created, verify that the depot file is working
+correctly, and devices are connected with::
+
+  python -m cockpit.status
