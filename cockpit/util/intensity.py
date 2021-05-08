@@ -96,8 +96,8 @@ class IntensityProfiler:
             peakx, peaky = self._beadCentre
             # Use a the fifth of the data around the bead, or to edge of dataset.
             dataSubset = self._data[:,
-                              max(0, peaky-halfWidth):min(ny, peaky+halfWidth),
-                              max(0, peakx-halfWidth):min(nx, peakx+halfWidth)]
+                              max(0, int(peaky-halfWidth)):min(int(ny), int(peaky+halfWidth)),
+                              max(0, int(peakx-halfWidth)):min(int(nx), int(peakx+halfWidth))]
             # Estimate background from image corners.
             bkg = np.min([np.mean(self._data[:,:nx//10,:ny//10]),
                           np.mean(self._data[:,:-nx//10,:ny//10]),
@@ -115,14 +115,14 @@ class IntensityProfiler:
                 phi[order] = np.arctan2(sepArr[2*order], sepArr[2*order-1])
             # Average a few points around the peak
             beadAverage = np.average(np.average(
-                              self._data[:, peaky-2:peaky+2, peakx-2:peakx+2],
+                              self._data[:, int(peaky-2):int(peaky+2), int(peakx-2):int(peakx+2)],
                               axis=2), axis=1)
             avgPeak = np.reshape(beadAverage, (-1, nPhases))
             avgPeak = np.average(avgPeak, 1)
             avgPeak -= avgPeak.min()
             avgPeak *= mag[1].max() / avgPeak.max()
 
-            peak = np.reshape(self._data[:,peaky,peakx], (-1, nPhases))
+            peak = np.reshape(self._data[:,int(peaky),int(peakx)], (-1, nPhases))
             peak = np.average(peak, 1)
             peak -= peak.min()
             peak *= mag[1].max() / peak.max()
