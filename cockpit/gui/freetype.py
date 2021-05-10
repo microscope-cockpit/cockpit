@@ -100,6 +100,8 @@ from OpenGL.GL import (
     glTexParameteri,
     glVertex2f,
 )
+import wx
+
 
 # The resource_name argument for resource_filename is not a filesystem
 # filepath.  It is a /-separated filepath, even on windows, so do not
@@ -146,8 +148,14 @@ class _Glyph:
 
         glPopClientAttrib()
 
+    def release(self) -> None:
+        """Delete associated textures.
 
-    def __del__(self):
+        We need to use this instead of ``__del__`` because by the time
+        the finaliser is called the GLContext might already have been
+        destroyed.
+
+        """
         glDeleteTextures([self._texture_id])
 
     @property
@@ -177,10 +185,26 @@ class _Glyph:
 
 
 class Face:
-    def __init__(self, size: int) -> None:
+    """
+    Args:
+        window: A wx window whose destruction will trigger the release
+            of the resources.  This is required to ensure that it
+            happens while the GLContext is still active.
+        size:
+    """
+    def __init__(self, window: wx.Window, size: int) -> None:
+        super().__init__()
         self._face = freetype.Face(_FONT_PATH)
         self._face.set_char_size(size*64)
         self._glyphs = {} # type: typing.Dict[str, _Glyph]
+
+        window.Bind(wx.EVT_WINDOW_DESTROY, self._OnWindowDestroy)
+
+    def _OnWindowDestroy(self, event: wx.WindowDestroyEvent) -> None:
+        while self._glyphs:
+            char_glyph = self._glyphs.popitem()
+            char_glyph[1].release()
+        event.Skip()
 
     def render(self, text: str) -> None:
         glPushAttrib(GL_ENABLE_BIT|GL_COLOR_BUFFER_BIT|GL_TEXTURE_BIT)

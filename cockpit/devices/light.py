@@ -30,17 +30,17 @@ from cockpit.handlers.lightSource import LightHandler
 class SimpleLight(cockpit.devices.device.Device):
     """A simple light device.
 
-    * may support external triggers
-    * has no software interface to the hardware, so no power level control
-    Sample config entry:
-      [led source]
-      type: LightDevice
-      triggerSource: trigsource
-      triggerLine: 1
+    This class adds support for simple devices that may support
+    external triggers and have no software interface to the hardware,
+    ad therefore no power level control.  Sample config entry:
 
-      [trigsource]
-      type: ExecutorDevice
-      ...
+    .. code:: ini
+
+        [led source]
+        type: cockpip.devices.light.SimpleLight
+        triggerSource: NAME_OF_EXECUTOR_DEVICE
+        triggerLine: 1
+
     """
     def getHandlers(self):
         self.handlers = []

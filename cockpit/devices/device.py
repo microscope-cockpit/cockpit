@@ -50,11 +50,23 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-## This serves as the base class for any Device subclass. Devices are as close
-# as MUI gets to speaking directly to hardware. Device implementation is 
-# largely left up to the client; this class simply provides a framework of 
-# stub functions that must be implemented. 
 class Device:
+    """Base class for Cockpit devices.
+
+    This serves as the base class for any Device subclass.  Devices
+    are as close as Cockpit gets to speaking directly to hardware.
+    Device implementation is largely left up to the client; this class
+    simply provides a framework of stub functions that must be
+    implemented.
+
+    Args:
+      name: name of the device.  In the depot configuration file this
+          is the name of the section where the device is declared.
+      config: map of the device configuration to their values as
+          strings.  This is the key/values read from the device
+          section on the depot configuration file.
+
+    """
     _config_types = {
         'port': int,
     }

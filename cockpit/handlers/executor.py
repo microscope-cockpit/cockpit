@@ -573,7 +573,7 @@ class ExecutorDebugWindow(wx.Frame):
                                 # but rely on device to set correct type.
                 anaSizer.Add(control, 0, wx.RIGHT, 20)
 
-            btn = wx.Button(self, label="Display last experiment")
+            btn = wx.Button(panel, label="Display last experiment")
             btn.SetToolTip(wx.ToolTip(
                 "Plot the last experiment like an oscilloscope display."
             ))

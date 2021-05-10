@@ -50,6 +50,8 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import typing
+
 import numpy
 from OpenGL.GL import *
 import traceback
@@ -63,6 +65,80 @@ import cockpit.interfaces.stageMover
 import cockpit.util.logger
 
 from cockpit.gui.macroStage import macroStageBase
+
+
+class _StagePositionEntryDialog(wx.Dialog):
+    def __init__(self, parent: wx.Window) -> None:
+        super().__init__(parent, title="Move Stage")
+
+        self._spins = []
+        position = cockpit.interfaces.stageMover.getPosition()
+        limits = cockpit.interfaces.stageMover.getSoftLimits()
+        for i in range(3):
+            self._spins.append(wx.SpinCtrlDouble(
+                self,
+                min=limits[i][0],
+                max=limits[i][1],
+                initial=position[i]
+            ))
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        sizer.Add(wx.StaticText(self, label="Select stage position"),
+                  wx.SizerFlags().Border().Centre())
+
+        spins_sizer = wx.FlexGridSizer(cols=2, gap=(0, 0))
+        for spin, name in zip(self._spins, ['X', 'Y', 'Z']):
+            spins_sizer.Add(wx.StaticText(self, label=name),
+                            wx.SizerFlags().Border().Centre())
+            spins_sizer.Add(spin, wx.SizerFlags().Border().Expand())
+        sizer.Add(spins_sizer, wx.SizerFlags().Border().Centre())
+
+        buttons_sizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
+        sizer.Add(buttons_sizer, wx.SizerFlags().Border().Centre())
+
+        self.SetSizerAndFit(sizer)
+
+    def GetValue(self) -> typing.Tuple[float, float, float]:
+        return [s.GetValue() for s in self._spins]
+
+
+def GoToXYZDialog(parent: wx.Window) -> None:
+    position_dialog = _StagePositionEntryDialog(parent)
+    if position_dialog.ShowModal() != wx.ID_OK:
+        return
+
+    newPos = position_dialog.GetValue()
+    # Work out if we will be ouside the limits of the current stage
+    # This should be a method of the StageMover interface (see #616)
+    position = cockpit.interfaces.stageMover.getPosition()
+    posDelta = [
+            newPos[0] - position[0],
+            newPos[1] - position[1],
+            newPos[2] - position[2],
+        ]
+    originalHandlerIndex = wx.GetApp().Stage.curHandlerIndex
+    currentHandlerIndex = originalHandlerIndex
+    allPositions = cockpit.interfaces.stageMover.getAllPositions()
+    for axis in range(3):
+        if posDelta[axis] ** 2 > 0.001:
+            limits = cockpit.interfaces.stageMover.getIndividualHardLimits(axis)
+            currentpos = allPositions[currentHandlerIndex][axis]
+            if (
+                # off bottom
+                currentpos + posDelta[axis]
+                < (limits[currentHandlerIndex][0])
+            ) or (
+                # off top
+                currentpos + posDelta[axis]
+                > (limits[currentHandlerIndex][1])
+            ):
+                currentHandlerIndex -= 1  # go to a bigger handler index
+            if currentHandlerIndex < 0:
+                return
+    wx.GetApp().Stage.curHandlerIndex = currentHandlerIndex
+    cockpit.interfaces.stageMover.goTo(newPos)
+    wx.GetApp().Stage.curHandlerIndex = originalHandlerIndex
 
 
 ## This class shows a high-level view of where the stage is in XY space, and
@@ -401,33 +477,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         #make sure we are back to the expected mover
         cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
 
-    def OnRightClick(self, event):
-        position = cockpit.interfaces.stageMover.getPosition()
-        values=cockpit.gui.dialogs.getNumberDialog.getManyNumbersFromUser(
-                self.GetParent(),
-                "Go To XYZ",('X','Y','Z'),
-                position,
-                atMouse=True)
-        newPos=[float(values[0]),float(values[1]),float(values[2])]
-#Work out if we will be ouside the limits of the current stage
-        posDelta = [newPos[0]-position[0],newPos[1]-position[1],newPos[2]-position[2]]
-        originalHandlerIndex = cockpit.interfaces.stageMover.mover.curHandlerIndex
-        currentHandlerIndex = originalHandlerIndex
-        allPositions=cockpit.interfaces.stageMover.getAllPositions()
-        for axis in range(3):
-            if (posDelta[axis]**2 > .001 ):
-                    limits = cockpit.interfaces.stageMover.getIndividualHardLimits(axis)
-                    currentpos = allPositions[currentHandlerIndex][axis]
-                    if ((currentpos + posDelta[axis]<(limits[currentHandlerIndex][0])) # off bottom
-                        or (currentpos + posDelta[axis]>(limits[currentHandlerIndex][1]))): #off top
-                        currentHandlerIndex -= 1 # go to a bigger handler index
-                    if currentHandlerIndex<0:
-                        return False
-        cockpit.interfaces.stageMover.mover.curHandlerIndex = currentHandlerIndex
-        cockpit.interfaces.stageMover.goTo(newPos)
-        cockpit.interfaces.stageMover.mover.curHandlerIndex = originalHandlerIndex
-        return True
-
+    def OnRightClick(self, event) -> None:
+        del event
+        GoToXYZDialog(self.GetParent())
 
     ## Right-clicked the mouse. Toggle drawing of the mosaic tiles
     def OnRightDoubleClick(self, event):

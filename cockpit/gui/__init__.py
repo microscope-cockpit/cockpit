@@ -18,6 +18,54 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
+"""This package contains all the UI for Cockpit.
+
+All of the widgets that are not created by specific devices live here
+--- the mosaic, macro stage view, camera window, etc.  The different
+GUI windows and widgets automatically adjust themselves based on the
+number and capabilities of the hardware available.
+
+Some of subpackages are:
+
+- :mod:`cockpit.gui.camera`: handles the display of images received
+  from the camera(s).  It depends heavily on the
+  :mod:`cockpit.gui.imageViewer`.
+
+- :mod:`cockpit.gui.dialogs`: contains all dialog subclasses and any
+  widgets that are specific to them.  This includes the experiment
+  setup dialogs.
+
+- :mod:`cockpit.gui.imageViewer`: generic code for displaying pixel
+  arrays to the screen.  It includes a histogram for black/white
+  scaling, zoom and drag, etc.
+
+- :mod:`cockpit.gui.macroStage`: the Macro Stage window gives the user
+  a high-level overview of where they are with respect to the motion
+  limits of their stage.
+
+- :mod:`cockpit.gui.mosaic`: the mosaic provides a UI to map out the
+  user's sample in detail.  It consists of a large OpenGL canvas and
+  some associated buttons.
+
+And some of its modules are:
+
+- :mod:`cockpit.gui.fileViewerWindow`: displays MRC files; this code
+  is invoked when an MRC file is dragged onto the main window.
+
+- :mod:`cockpit.gui.guiUtils`: utility functions for setting up and
+  running the UI.
+
+- :mod:`cockpit.gui.keyboard`: binds keyboard shortcuts to windows.
+
+- :mod:`cockpit.gui.loggingWindow`: displays standard output and
+  standard error.
+
+- :mod:`cockpit.gui.mainWindow`: shows exposure settings, the
+  run-experiment buttons, and any custom UI created by device code.
+
+"""
+
+
 import sys
 import traceback
 
@@ -119,7 +167,8 @@ def ExceptionBox(caption="", parent=None):
     ## subclass of wx.Dialog, it uses native widgets for simpler
     ## dialogs, such as gtk_message_dialog_new.
 
-    dialog = wx.Dialog(parent, title=caption, name="exception-dialog")
+    dialog = wx.Dialog(parent, title=caption, name="exception-dialog",
+                       style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
     message = wx.StaticText(dialog, label=str(current_exception))
     details = wx.TextCtrl(dialog, value=traceback.format_exc(),
                           style=(wx.TE_MULTILINE|wx.TE_DONTWRAP|wx.TE_READONLY))
@@ -138,11 +187,11 @@ def ExceptionBox(caption="", parent=None):
 
     ## The default width of a TextCtrl does not take into account its
     ## actual content.  We need to manually set its size (issue #497)
-    if wx.Platform != '__WXMSW__':
+    if (wx.Platform != '__WXMSW__') and (wx.Platform != '__WXMAC__'):
         details_text_size = details.GetTextExtent(details.Value)
     else:
-        ## On Windows, GetTextExtent ignores newlines so we need to
-        ## manually compute the text extent.
+        ## On Windows and Mac, GetTextExtent ignores newlines so we
+        ## need to manually compute the text extent.
         traceback_lines = details.Value.splitlines()
         longest_line = max(traceback_lines, key=len)
         one_line_size = details.GetTextExtent(longest_line)

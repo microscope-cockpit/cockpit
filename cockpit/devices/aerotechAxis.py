@@ -19,21 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-
-"""Cockpit aerotechAxis
-
-This module creates a simple stage-positioning device.
-
-Sample config entry:
-  [aerotech]
-  type: AerotechZStage
-  ipAddress: 192.168.0.5
-  port: 8000
-  softlimits: -45000, 5000
-
-
-"""
-
+"""Aerotech stages."""
 
 from cockpit.devices import device
 from cockpit import events
@@ -66,6 +52,20 @@ RESPONSE_CHARS = {
 
 
 class AerotechZStage(device.Device):
+    """Cockpit aerotechAxis
+
+    This class creates a simple stage-positioning device.  Sample
+    config entry:
+
+    .. code:: ini
+
+        [aerotech]
+        type: cockpit.devices.aerotechAxis.AerotechZStage
+        ipAddress: 192.168.0.5
+        port: 8000
+        softlimits: -45000, 5000
+
+    """
     def __init__(self, name, config={}):
         super().__init__(name, config)
         try :

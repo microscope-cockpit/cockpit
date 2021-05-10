@@ -216,6 +216,16 @@ class MainWindowPanel(wx.Panel):
                 print ("Opening first of %d files. Others can be viewed by dragging them from the filesystem onto the main window of the Cockpit." % len(filenames))
 
 
+class EditMenu(wx.Menu):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        menu_item = self.Append(wx.ID_ANY, item="Reset User Configuration")
+        self.Bind(wx.EVT_MENU, self.OnResetUserConfig, menu_item)
+
+    def OnResetUserConfig(self, evt: wx.CommandEvent) -> None:
+        cockpit.util.userConfig.clearAllValues()
+
+
 class ChannelsMenu(wx.Menu):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -469,6 +479,9 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnQuit, menu_item)
         menu_bar.Append(file_menu, '&File')
 
+        edit_menu = EditMenu()
+        menu_bar.Append(edit_menu, "&Edit")
+
         channels_menu = ChannelsMenu()
         menu_bar.Append(channels_menu, '&Channels')
 
@@ -657,5 +670,4 @@ def CockpitAboutInfo() -> wx.adv.AboutDialogInfo:
 ## Create the window.
 def makeWindow():
     window = MainWindow()
-    window.Show()
     return window

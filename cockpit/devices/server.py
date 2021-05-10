@@ -60,11 +60,15 @@ import cockpit.util.logger
 import cockpit.util.threads
 
 
-## This Device represents the cockpit itself, and is mostly used to
-# allow other computers to send information to the cockpit program.
-# It handles selecting the ports that are used by these other devices,
-# so that each incoming connection is on its own port.
 class CockpitServer(device.Device):
+    """Cockpit server that accepts connections from remote devices.
+
+    This Device represents the cockpit itself, and is mostly used to
+    allow other computers to send information to the cockpit program.
+    It handles selecting the ports that are used by these other
+    devices, so that each incoming connection is on its own port.
+
+    """
     def __init__(self, name, config={}):
         super().__init__(name, config)
         ## IP address of the cockpit computer.

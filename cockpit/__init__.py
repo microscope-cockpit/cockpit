@@ -149,7 +149,7 @@ class CockpitApp(wx.App):
 
             status.Update(updateNum, "Initializing devices...")
             updateNum+=1
-            for i, device in enumerate(cockpit.depot.initialize(depot_config)):
+            for device in cockpit.depot.initialize(depot_config):
                 status.Update(updateNum, "Initializing devices...\n%s" % device)
                 updateNum+=1
             status.Update(updateNum, "Initializing device interfaces...")
@@ -291,8 +291,15 @@ class CockpitApp(wx.App):
         positions = cockpit.util.userConfig.getValue('WindowPositions',
                                                      default={})
         for window in wx.GetTopLevelWindows():
-            if window.Title in positions:
-                window.SetPosition(positions[window.Title])
+            if window.Title not in positions:
+                continue
+
+            # Saved window position may be invalid if, for example,
+            # displays have been removed, so check it before trying to
+            # move the window (see #730).
+            position = positions[window.Title]
+            if wx.Display.GetFromPoint(position) != wx.NOT_FOUND:
+                window.SetPosition(position)
 
 
     def _SaveWindowPositions(self):

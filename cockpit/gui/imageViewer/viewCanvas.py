@@ -474,7 +474,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.context = wx.glcanvas.GLContext(self)
 
         ## Font for text rendering
-        self.face = cockpit.gui.freetype.Face(18)
+        self.face = cockpit.gui.freetype.Face(self, 18)
 
         self.Bind(wx.EVT_PAINT, self.onPaint)
         # Do nothing, to prevent flickering
@@ -657,7 +657,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.drawEvent.set()
         except Exception as e:
             print ("Error drawing view canvas:",e)
-            traceback.print_stack()
+            traceback.print_exc()
             #self.shouldDraw = False
         finally:
             self.painting = False
@@ -783,7 +783,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     # Note: pass in x,y, but returns row-major datay, datax
     def glToIndices(self, glx, gly):
         datax = (1 + glx) * self.imageShape[1] // 2
-        datay = (1 + gly) * self.imageShape[0] // 2
+        datay = self.imageShape[0]-((1 + gly) * self.imageShape[0] // 2)
         return (datay, datax)
 
 

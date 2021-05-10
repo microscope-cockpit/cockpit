@@ -18,34 +18,31 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-
-""" Cockpit device for SRS SR470 shutter controller.
-
-This is a really simple driver for the SR470 shutter controller.  For now, all
-it does is make the SR470 respond to an external trigger, although it is
-feasible that the shutter controller could be programmed to control exposure
-timing.
-
-Sample config entry:
-  [561nm shutter]
-  type: StanfordShutter
-  ipAddress: 192.168.0.10
-  port: 5024
-  lights: 561nm
-  triggerSource: dsp
-  triggerLine: 3
-
-  [dsp]
-  type: LegacyDSP
-  ...
-
-"""
-
 from cockpit.devices import shutter
 import telnetlib
 
 
 class StanfordShutter(shutter.ShutterDevice):
+    """Cockpit device for SRS SR470 shutter controller.
+
+    This is a really simple driver for the SR470 shutter controller.
+    For now, all it does is make the SR470 respond to an external
+    trigger, although it is feasible that the shutter controller could
+    be programmed to control exposure timing.
+
+    Sample config entry:
+
+    .. code:: ini
+
+        [561nm shutter]
+        type: cockpit.devices.sr470.StanfordShutter
+        ipAddress: 192.168.0.10
+        port: 5024
+        lights: 561nm
+        triggerSource: NAME_OF_EXECUTOR_DEVICE
+        triggerLine: 3
+
+    """
     def __init__(self, name, config={}):
         super().__init__(name, config)
         # Telnet connection to device

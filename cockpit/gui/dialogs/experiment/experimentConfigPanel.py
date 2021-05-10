@@ -455,8 +455,8 @@ class ExperimentConfigPanel(wx.Panel):
         if self.zPositionMode.GetStringSelection() == 'Current is center':
             altBottom = altitude - zHeight / 2
         elif self.zPositionMode.GetStringSelection() == 'Use saved top/bottom':
-            zHeight = (cockpit.interfaces.stageMover.mover.SavedTop
-                       - cockpit.interfaces.stageMover.mover.SavedBottom)
+            altBottom = cockpit.interfaces.stageMover.mover.SavedBottom
+            zHeight = cockpit.interfaces.stageMover.mover.SavedTop - altBottom
 
         sliceHeight = guiUtils.tryParseNum(self.sliceHeight, float)
         if zHeight == 0:

@@ -61,9 +61,13 @@ import cockpit.gui.viewFileDropTarget
 from cockpit.gui.camera import viewPanel
 
 
-
-## This class provides a grid of camera displays.
 class CamerasWindow(wx.Frame):
+    """Window with a grid of camera displays.
+
+    Arranges multiple ViewPanels, and handles things when cameras are
+    added/removed.
+
+    """
     SHOW_DEFAULT = True
     def __init__(self, parent):
         super().__init__(parent, title="Camera views")

@@ -122,10 +122,11 @@ class NIcRIO(executorDevices.ExecutorDevice):
         return self.connection.status.getStatus(line)
 
     def setAnalog(self, line, target):
-        """Set analog position in native units
-        :param line: Analog line to change
-        :param target: target value
-        :return:
+        """Set analog position in native units.
+
+        Args:
+            line: Analog line to change.
+            target: target value.
         """
         return self.connection.MoveAbsolute(line, target)
 

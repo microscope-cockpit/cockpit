@@ -49,24 +49,29 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
-## This Device specifies a "drawer" of optics and filters that determines
-# what cameras see what lights.
-# Configure it in the config file with type, camera names, and drawer
-# configurations, each with one dye and one wavelength per camera.
-#
-#       [name]
-#       type: Drawer
-#       cameras: cam1, cam2
-#       default: GFP: 525, Cy5: 695
-#       TRITC: FITC: 518, TRITC: 600
-#
-
 from cockpit.devices import device
 from cockpit.handlers.drawer import DrawerHandler, DrawerSettings
 import re
 
+
 class Drawer(device.Device):
+    """Drawer that sets wavelengths on cameras.
+
+    This device specifies a "drawer" of optics and filters that
+    determines what cameras see what lights.  Configure it in the
+    config file with type, camera names, and drawer configurations,
+    each with one dye and one wavelength per camera, like so:
+
+    .. code:: ini
+
+        [drawer]
+        type: cockpit.devices.drawer.Drawer
+        cameras: cam1, cam2
+        default: GFP: 525, Cy5: 695
+        TRITC: FITC: 518, TRITC: 600
+
+    """
+
     def __init__(self, name, config):
         super().__init__(name, config)
 

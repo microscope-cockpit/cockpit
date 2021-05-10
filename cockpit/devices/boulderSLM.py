@@ -19,21 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-
-""" This module makes a BNS SLM  device available to Cockpit.
-
-Sample config entry:
-  [slm]
-  type: BoulderSLM
-  triggerSource: dsp
-  triggerLine: 2
-  uri: PYRO:pyroSLM@slmhost:8000
-
-  [dsp]
-  type: LegacyDSP
-  ...
-
-"""
+"""Boulder SLM."""
 
 from collections import OrderedDict
 import decimal
@@ -129,6 +115,20 @@ def generate_pattern_image(shape, dist, wavelength, NA, pixel_size):
     return pattern
 
 class BoulderSLM(device.Device):
+    """Boulder SLM device.
+
+    Sample config entry:
+
+    .. code:: ini
+
+        [slm]
+        type: cockpit.devices.boulderSLM.BoulderSLM
+        uri: PYRO:pyroSLM@slmhost:8000
+        triggerSource: NAME_OF_EXECUTOR_DEVICE
+        triggerLine: 2
+
+    """
+
     _config_types = {
         'settlingtime': float,
         'triggerLine': int,
