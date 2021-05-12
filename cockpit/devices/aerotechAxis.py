@@ -250,3 +250,11 @@ class AerotechZStage(device.Device):
             self.socket.connect((self.ipAddress, self.port))
         except:
             raise
+
+    #function to home the stage, should be wrapped with a dialog to
+    #ensure the stage plate is removed.
+    def home(self):
+        self.command(b'ENABLE')
+        self.command(b'HOME')
+        self.command(b'DISABLE')
+        
