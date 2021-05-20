@@ -161,9 +161,7 @@ class ActionsPanel(wx.Panel):
         )
         wx.GetApp().Objectives.Bind(
             cockpit.interfaces.EVT_OBJECTIVE_CHANGED,
-            lambda e: self._sel_obj.SetSelection(
-                self._sel_obj.FindString(e.GetString())
-            ),
+            self._on_objective_changed,
         )
         self._sel_obj.SetSelection(
             self._sel_obj.FindString(wx.GetApp().Objectives.GetName())
@@ -337,7 +335,7 @@ class ActionsPanel(wx.Panel):
                 button.SetValue(False)
                 wx.MessageBox(
                     "The %s camera is not enabled." % camera.descriptiveName,
-                    caption='Selected camera is not active'
+                    caption="Selected camera is not active",
                 )
         else:
             # Released => stop mosaic
@@ -441,6 +439,11 @@ class ActionsPanel(wx.Panel):
         button_live = self.GetChildren()[12]
         if button_live.GetValue():
             button_live.SetValue(False)
+
+    def _on_objective_changed(self, e: wx.CommandEvent) -> None:
+        selection = self._sel_obj.FindString(e.GetString())
+        self._sel_obj.SetSelection(selection)
+        e.Skip()
 
 
 class VariableControlContinuous(wx.Panel):
