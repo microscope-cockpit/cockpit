@@ -33,6 +33,7 @@ import cockpit.gui.keyboard
 import cockpit.gui.mainWindow
 import cockpit.gui.mosaic.canvas
 import cockpit.gui.mosaic.window as mosaic
+import cockpit.interfaces
 import cockpit.util.userConfig
 from cockpit import depot, events
 from cockpit.gui.camera.viewPanel import ViewPanel
@@ -941,10 +942,12 @@ class MosaicPanel(wx.Panel, mosaic.MosaicCommon):
         events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
         events.subscribe("stage step size", self.onAxisRefresh)
         events.subscribe("soft safety limit", self.onAxisRefresh)
-        events.subscribe("objective change", self.onObjectiveChange)
         events.subscribe("mosaic start", self.mosaicStart)
         events.subscribe("mosaic stop", self.mosaicStop)
         events.subscribe(events.MOSAIC_UPDATE, self.mosaicUpdate)
+        wx.GetApp().Objectives.Bind(
+            cockpit.interfaces.EVT_OBJECTIVE_CHANGED, self.onObjectiveChange,
+        )
         self.Bind(wx.EVT_SIZE, self.onSize)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
         for item in [self, self.canvas]:
@@ -1006,12 +1009,14 @@ class MosaicPanel(wx.Panel, mosaic.MosaicCommon):
             # Only care about the X and Y axes.
             wx.CallAfter(self.Refresh)
 
-    def onObjectiveChange(self, handler):
+    def onObjectiveChange(self, event: wx.CommandEvent) -> None:
+        handler = depot.getHandlerWithName(event.GetString())
         # User changed the objective in use; resize our crosshair box to suit
         self.crosshairBoxSize = 512 * handler.pixel_size
         self.offset = handler.offset
         # force a redraw so that the crosshairs are properly sized
         self.Refresh()
+        event.Skip()
 
     def onMouse(self, event):
         if self.prevMousePos is None:
