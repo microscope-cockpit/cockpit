@@ -40,6 +40,7 @@ from cockpit.devices.camera import CameraDevice
 from cockpit.handlers.objective import ObjectiveHandler
 from cockpit.interfaces.imager import pauseVideo
 from microscope.devices import ROI, Binning
+from microscope import TriggerMode, TriggerType
 
 # Pseudo-enum to track whether device defaults in place.
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
@@ -118,7 +119,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             self.updateSettings(self.cached_settings)
             #self._proxy.update_settings(self.settings)
             self._proxy.enable()
-        self.handlers[0].exposureMode = self._proxy.get_trigger_type()
+        self.handlers[0].exposureMode = self._getCockpitExposureMode()
 
 
     def performSubscriptions(self):
@@ -160,6 +161,30 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         self.defaults = DEFAULTS_PENDING
         self.setAnyDefaults()
 
+    def _getCockpitExposureMode(self) -> int:
+        # Cockpit does not support all possible comabinations of
+        # trigger type and mode from Microscope.
+        microscope_trigger_to_cockpit_exposure = {
+            (
+                TriggerType.SOFTWARE,
+                TriggerMode.ONCE,
+            ): cockpit.handlers.camera.TRIGGER_SOFT,
+            (
+                TriggerType.HIGH,
+                TriggerMode.ONCE,
+            ): cockpit.handlers.camera.TRIGGER_BEFORE,
+            (
+                TriggerType.LOW,
+                TriggerMode.ONCE
+            ): cockpit.handlers.camera.TRIGGER_AFTER,
+            (
+                TriggerType.HIGH,
+                TriggerMode.BULB,
+            ): cockpit.handlers.camera.TRIGGER_DURATION,
+        }
+        return microscope_trigger_to_cockpit_exposure[
+            (self._proxy.trigger_type, self._proxy.trigger_mode)
+        ]
 
     def getHandlers(self):
         """Return camera handlers."""
@@ -214,7 +239,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         result.wait(timeout=10)
         self.enabled = self._proxy.get_is_enabled()
         if self.enabled:
-            self.handlers[0].exposureMode = self._proxy.get_trigger_type()
+            self.handlers[0].exposureMode = self._getCockpitExposureMode()
             self.listener.connect()
         self.updateSettings()
         return self.enabled
