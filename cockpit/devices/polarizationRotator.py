@@ -103,7 +103,7 @@ class PolarizationDevice(device.Device):
         idlevoltage = self.config.get('idlevoltage', 0)
         voltages = {}
         for vdef in self.config.get('sivoltages', '').split('\n'):
-            if vdef is '':
+            if vdef == "":
                 continue
             key, values = vdef.strip('\n').split(':')
             voltages[key] = tuple([float(v) for v in values.split(',')])
