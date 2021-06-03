@@ -340,7 +340,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         sizer.Add(wx.StaticText(self.panel, label="Gain"))
         gainButton = wx.Button(self.panel,
                                label="%s" % self.settings.get('gain', None))
-        gainButton.Bind(wx.EVT_LEFT_UP, self.onGainButton)
+        gainButton.Bind(wx.EVT_BUTTON, self.onGainButton)
         sizer.Add(gainButton, flag=wx.EXPAND)
         events.subscribe(events.SETTINGS_CHANGED % self,
                          lambda: gainButton.SetLabel("%s" % self.settings.get('gain', None)))
