@@ -119,7 +119,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             self.updateSettings(self.cached_settings)
             #self._proxy.update_settings(self.settings)
             self._proxy.enable()
-        self.handlers[0].exposureMode = self._getCockpitExposureMode()
+        self.handler.exposureMode = self._getCockpitExposureMode()
 
 
     def performSubscriptions(self):
@@ -152,7 +152,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
 
 
     def _readUserConfig(self):
-        idstr = self.handlers[0].getIdentifier() + '_SETTINGS'
+        idstr = self.handler.getIdentifier() + '_SETTINGS'
         defaults = cockpit.util.userConfig.getValue(idstr)
         if defaults is None:
             self.defaults = DEFAULTS_NONE
@@ -195,7 +195,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         else:
             trighandler = None
 
-        result = cockpit.handlers.camera.CameraHandler(
+        self.handler = cockpit.handlers.camera.CameraHandler(
                 "%s" % self.name, "universal camera",
                 {'setEnabled': self.enableCamera,
                  'getImageSize': self.getImageSize,
@@ -209,9 +209,8 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             cockpit.handlers.camera.TRIGGER_SOFT,
             trighandler,
             trigline)
-        # will be set with value from hardware later
-        self.handlers = [result]
-        return [result]
+
+        return [self.handler]
 
 
     @pauseVideo
@@ -239,7 +238,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         result.wait(timeout=10)
         self.enabled = self._proxy.get_is_enabled()
         if self.enabled:
-            self.handlers[0].exposureMode = self._getCockpitExposureMode()
+            self.handler.exposureMode = self._getCockpitExposureMode()
             self.listener.connect()
         self.updateSettings()
         return self.enabled
@@ -306,7 +305,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             # size. Use the handler to fetch the size, as this will use a cached value,
             # if available.
             events.publish(events.NEW_IMAGE % self.name,
-                           np.zeros(self.handlers[0].getImageSize(), dtype=np.int16),
+                           np.zeros(self.handler.getImageSize(), dtype=np.int16),
                            timestamp)
             raise image
 
