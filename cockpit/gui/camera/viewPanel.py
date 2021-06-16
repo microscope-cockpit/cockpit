@@ -122,7 +122,7 @@ class ViewPanel(wx.Panel):
             dy -= y0
             dx *= pixelSize
             dy *= pixelSize
-            target = (self.imagePos[0]-dx, self.imagePos[1]+dy)
+            target = (self.imagePos[0]-dx, self.imagePos[1]-dy)
             cockpit.interfaces.stageMover.goToXY(target)
         else:
             event.Skip()
