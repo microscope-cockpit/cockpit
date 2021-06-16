@@ -54,7 +54,7 @@ class StanfordShutter(shutter.ShutterDevice):
         self.connection = telnetlib.Telnet(self.ipAddress, self.port, timeout=5)
         self.connection.read_until(('SR470 Telnet Session:').encode())
         # Read out any trailing whitespace, e.g. newlines.
-        print(self.connection.read_eager())
+        self.connection.read_eager()
         self.enableTrigger()
 
 
