@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2018 Mick Phillips <mick.phillips@gmail.com>
+## Copyright (C) 2021 University of Oxford
 ##
 ## Latest version available at
 ##     https://github.com/mickp/csv_plotter

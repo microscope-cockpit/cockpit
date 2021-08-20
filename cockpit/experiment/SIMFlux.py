@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-## Copyright (C) 2019 David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
-## Copyright (C) 2019 Nicholas Hall <nicholas.hall@dtc.ox.ac.uk>
+## Copyright (C) 2021 Nicholas Hall
+## Copyright (C) 2021 University of Oxford
 ##
 ## This file is part of Cockpit.
 ##
