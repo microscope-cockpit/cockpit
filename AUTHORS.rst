@@ -17,7 +17,7 @@ as a short description of their contributions:
 
     Wrote the new touchscreen interface as well as multiple bug fixes.
 
-- David Miguel Susano Pinto <david.pinto@bioch.ox.ac.uk>
+- David Miguel Susano Pinto <carandraug@gmail.com>
 
     Been involved in different parts of Cockpit since 2017.
 
@@ -30,7 +30,7 @@ as a short description of their contributions:
 
     Bug fixes.
 
-- Ian Dobbie <ian.dobbie@bioch.ox.ac.uk>
+- Ian Dobbie <idobbie1@jh.edu>
 
     Been involved in different parts of Cockpit since 2015.
 
@@ -47,7 +47,7 @@ as a short description of their contributions:
     Been involved in its development since 2015, having effectively
     led its development until 2020.
 
-- Nicholas Hall <nicholas.hall@dtc.ox.ac.uk>
+- Nicholas Hall <nicholas.hall@strath.ac.uk>
 
     Wrote the SIMFlux experiment code.
 
