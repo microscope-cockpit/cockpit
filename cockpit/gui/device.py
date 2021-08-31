@@ -371,17 +371,16 @@ class SettingsEditor(wx.Frame):
         # Fetch and validate the value from the control - using event.GetValue
         # may return the wrong type for custom properties.
         value = prop.GetValue()
-
         if setting['type'] in (str(int), str(float), 'int', 'float'):
             # Bound to min/max.
             lims = setting['values']
             value = sorted(tuple(lims) + (value,))[1]
         elif setting['type'] in (str(str), 'str'):
             # Limit string length.
-            value = value[0, setting['values']]
+            value = value[0: setting['values']]
 
         self.current[name] = value
-        if value != self.device.settings[name]:
+        if value != self.settings[name]:
             prop.SetTextColour(wx.Colour(255, 0, 0))
         else:
             prop.SetTextColour(wx.Colour(0, 0, 0))
