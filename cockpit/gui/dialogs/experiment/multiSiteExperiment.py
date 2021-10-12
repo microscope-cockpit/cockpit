@@ -390,7 +390,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
             for siteId in siteIds:
                 if self.shouldAbort:
                     break
-                print(f"Imaging site {siteId} at {time.time():.2f")
+                print(f"Imaging site {siteId} at {time.time():.2f}")
                 self.imageSite(siteId, cycleNum, experimentStart)
 
             if self.shouldAbort:
