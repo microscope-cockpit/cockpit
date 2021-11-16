@@ -18,6 +18,7 @@ Microscope-Cockpit
    getting-started
    config
    architecture
+   file-format
    troubleshoot
 
 Cockpit is a microscope graphical user interface.  It is a flexible
