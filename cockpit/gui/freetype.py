@@ -156,7 +156,7 @@ class _Glyph:
         destroyed.
 
         """
-        glDeleteTextures([self._texture_id])
+        del self
 
     @property
     def advance(self) -> numpy.ndarray:
