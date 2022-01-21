@@ -457,6 +457,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     ## Given a path to a file, save the mosaic to that file and an adjacent
     # file. The first is a text file that describes the layout of the tiles;
     # the second is an MRC file that holds the actual image data.
+    @cockpit.util.threads.callInNewThread
     def saveTiles(self, savePath):
         wx.PostEvent(
             self.GetEventHandler(),
