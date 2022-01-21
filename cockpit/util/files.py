@@ -69,7 +69,7 @@ def initialize(config):
     global _LOGS_DIR
     _DATA_DIR = config.getpath('global', 'data-dir')
     _LOGS_DIR = config.getpath('log', 'dir')
-    _ensureDirectoriesExist()
+    # _ensureDirectoriesExist()
 
 ## Get the directory in which all users' directories are located
 def _getDataDir():
@@ -80,7 +80,7 @@ def getLogDir():
     return _LOGS_DIR
 
 def getUserSaveDir():
-    return os.path.join(_getDataDir(), getpass.getuser())
+    return _getDataDir()# os.path.join(_getDataDir(), getpass.getuser())
 
 def _ensureDirectoriesExist():
     for directory in [getUserSaveDir()]:
