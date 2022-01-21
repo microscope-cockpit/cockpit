@@ -62,27 +62,12 @@ import cockpit.util.threads
 import queue
 import time
 import numpy as np
+import wx.lib.newevent
 
 
-class ProgressStartEvent(wx.Event):
-    def __init__(self, title, message, maximum=100):
-        self.title = title
-        self.message = message
-        self.maximum = maximum
-
-
-class ProgressUpdateEvent(wx.Event):
-    def __init__(self, value):
-        self.value = value
-
-
-class ProgressEndEvent(wx.Event):
-    pass
-
-
-EVT_PROGRESS_START = wx.PyEventBinder(ProgressStartEvent, 1)
-EVT_PROGRESS_UPDATE = wx.PyEventBinder(ProgressUpdateEvent, 1)
-EVT_PROGRESS_END = wx.PyEventBinder(ProgressEndEvent, 1)
+ProgressStartEvent, EVT_PROGRESS_START = wx.lib.newevent.NewEvent()
+ProgressUpdateEvent, EVT_PROGRESS_UPDATE = wx.lib.newevent.NewEvent()
+ProgressEndEvent, EVT_PROGRESS_END = wx.lib.newevent.NewEvent()
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1
@@ -476,7 +461,9 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         wx.PostEvent(
             self.GetEventHandler(),
             ProgressStartEvent(
-                "Saving...", "Saving mosaic image data...", len(self.tiles)
+                title="Saving...",
+                message="Saving mosaic image data...",
+                maximum=len(self.tiles),
             ),
         )
         handle = open(savePath, "w")
@@ -518,7 +505,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         cockpit.util.datadoc.writeMrcHeader(header, handle)
         for i, image in enumerate(imageData[:, :]):
             handle.write(image)
-            wx.PostEvent(self.GetEventHandler(), ProgressUpdateEvent(i))
+            wx.PostEvent(self.GetEventHandler(), ProgressUpdateEvent(value=i))
         handle.close()
         wx.PostEvent(self.GetEventHandler(), ProgressEndEvent())
 
@@ -558,7 +545,9 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # in a segfault.
         wx.PostEvent(
             self.GetEventHandler(),
-            ProgressStartEvent("Loading", "Loading mosaic image data..."),
+            ProgressStartEvent(
+                title="Loading", message="Loading mosaic image data...", maximum=100
+            ),
         )
 
         if doc.imageArray.shape[2] > len(tileStats):
