@@ -590,6 +590,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         events.publish(events.MOSAIC_UPDATE)
 
     def createProgressDialog(self, event):
+        if hasattr(self, "progressDialog"):
+            return
         self.progressDialog = wx.ProgressDialog(
             parent=self.GetParent(),
             title=event.title,
@@ -599,9 +601,11 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.progressDialog.Show()
 
     def updateProgressDialog(self, event):
-        self.progressDialog.Update(event.value)
-        self.progressDialog.Show()
+        if hasattr(self, "progressDialog"):
+            self.progressDialog.Update(event.value)
+            self.progressDialog.Show()
 
     def destroyProgressDialog(self, event):
-        self.progressDialog.Destroy()
-        del self.progressDialog
+        if hasattr(self, "progressDialog"):
+            self.progressDialog.Destroy()
+            del self.progressDialog
