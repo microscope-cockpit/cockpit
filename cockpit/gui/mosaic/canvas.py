@@ -80,6 +80,10 @@ class ProgressEndEvent(wx.Event):
     pass
 
 
+EVT_PROGRESS_START = wx.PyEventBinder(ProgressStartEvent, 1)
+EVT_PROGRESS_UPDATE = wx.PyEventBinder(ProgressUpdateEvent, 1)
+EVT_PROGRESS_END = wx.PyEventBinder(ProgressEndEvent, 1)
+
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1
 BUFFER_LENGTH = 32
@@ -149,8 +153,9 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # event on DPI chnage on high DPI screens, needed for Mac retina
         # displays.
         self.Bind(wx.EVT_DPI_CHANGED, self.onDPIchange)
-        self.Bind(ProgressStartEvent, self.createProgressDialog)
-        self.Bind(ProgressEndEvent, self.destroyProgressDialog)
+        self.Bind(EVT_PROGRESS_START, self.createProgressDialog)
+        self.Bind(EVT_PROGRESS_UPDATE, self.updateProgressDialog)
+        self.Bind(EVT_PROGRESS_END, self.destroyProgressDialog)
 
     ## Now that OpenGL's ready to go, perform any necessary initialization.
     # We can now create textures, for example, so it's time to create our
