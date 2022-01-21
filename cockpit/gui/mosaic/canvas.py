@@ -63,6 +63,7 @@ import queue
 import time
 import numpy as np
 import wx.lib.newevent
+from threading import Lock
 
 
 ProgressStartEvent, EVT_PROGRESS_START = wx.lib.newevent.NewEvent()
@@ -138,6 +139,8 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # event on DPI chnage on high DPI screens, needed for Mac retina
         # displays.
         self.Bind(wx.EVT_DPI_CHANGED, self.onDPIchange)
+
+        self.progressLock = Lock()
         self.Bind(EVT_PROGRESS_START, self.createProgressDialog)
         self.Bind(EVT_PROGRESS_UPDATE, self.updateProgressDialog)
         self.Bind(EVT_PROGRESS_END, self.destroyProgressDialog)
@@ -592,6 +595,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     def createProgressDialog(self, event):
         if hasattr(self, "progressDialog"):
             return
+        self.progressLock.acquire()
         self.progressDialog = wx.ProgressDialog(
             parent=self.GetParent(),
             title=event.title,
@@ -599,13 +603,18 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             maximum=event.maximum,
         )
         self.progressDialog.Show()
+        self.progressLock.release()
 
     def updateProgressDialog(self, event):
+        self.progressLock.acquire()
         if hasattr(self, "progressDialog"):
             self.progressDialog.Update(event.value)
             self.progressDialog.Show()
+        self.progressLock.release()
 
     def destroyProgressDialog(self, event):
+        self.progressLock.acquire()
         if hasattr(self, "progressDialog"):
             self.progressDialog.Destroy()
             del self.progressDialog
+        self.progressLock.release()
