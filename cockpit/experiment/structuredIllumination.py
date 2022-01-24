@@ -361,11 +361,12 @@ class SIExperiment(experiment.Experiment):
         # Using tExp rather than 'time' to avoid confusion between table event
         # times and exposure durations.
         for light, tExp in lightTimePairs:
-            # SIM wavelength
-            longestWavelength = max(longestWavelength, light.wavelength)
-            if longestWavelength in ['Ambient', 'ambient']:
+            # SIM wavelength   
+            if light.name in ['Ambient', 'ambient']:
                 # SoftWorx uses -50 to represent transmitted light.
                 longestWavelength = -50
+            else:
+                longestWavelength = max(longestWavelength, light.wavelength)
             # Bleaching compensation
             tExpNew = tExp * (1 + decimal.Decimal(self.handlerToBleachCompensation[light]) * angle)
             newPairs.append((light, tExpNew))
