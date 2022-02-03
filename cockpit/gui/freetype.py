@@ -148,16 +148,6 @@ class _Glyph:
 
         glPopClientAttrib()
 
-    def release(self) -> None:
-        """Delete associated textures.
-
-        We need to use this instead of ``__del__`` because by the time
-        the finaliser is called the GLContext might already have been
-        destroyed.
-
-        """
-        glDeleteTextures([self._texture_id])
-
     @property
     def advance(self) -> numpy.ndarray:
         return self._advance
@@ -203,7 +193,6 @@ class Face:
     def _OnWindowDestroy(self, event: wx.WindowDestroyEvent) -> None:
         while self._glyphs:
             char_glyph = self._glyphs.popitem()
-            char_glyph[1].release()
         event.Skip()
 
     def render(self, text: str) -> None:
