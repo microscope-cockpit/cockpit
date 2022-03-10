@@ -564,8 +564,9 @@ class Experiment:
         # Note that a None value here means the user wanted to expose the
         # cameras without any special light.
         exposureEndTime = exposureStartTime + maxExposureTime
+        ambientNameTuple = ("Ambient", "ambient")
         for light, exposureTime, in lightTimePairs:
-            if light is not None and light.name not in ("Ambient", "ambient"): # i.e. not ambient light
+            if light is not None and light.name not in ambientNameTuple: # i.e. not ambient light
                 # Center the light exposure.
                 timeSlop = maxExposureTime - exposureTime
                 offset = timeSlop / 2
