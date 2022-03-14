@@ -191,8 +191,7 @@ class Face:
         window.Bind(wx.EVT_WINDOW_DESTROY, self._OnWindowDestroy)
 
     def _OnWindowDestroy(self, event: wx.WindowDestroyEvent) -> None:
-        while self._glyphs:
-            char_glyph = self._glyphs.popitem()
+        self._glyphs.clear()
         event.Skip()
 
     def render(self, text: str) -> None:
