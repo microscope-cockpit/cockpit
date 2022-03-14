@@ -136,7 +136,9 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         #event on DPI chnage on high DPI screens, needed for Mac retina
         #displays.
         self.Bind(wx.EVT_DPI_CHANGED, self.onDPIchange)
-  
+        self.Bind(EVT_PROGRESS_START, self.createProgressDialog)
+        self.Bind(EVT_PROGRESS_UPDATE, self.updateProgressDialog)
+        self.Bind(EVT_PROGRESS_END, self.destroyProgressDialog)
 
 
     ## Now that OpenGL's ready to go, perform any necessary initialization.
