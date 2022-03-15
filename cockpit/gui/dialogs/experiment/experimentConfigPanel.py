@@ -61,7 +61,7 @@ import cockpit.util.files
 import collections
 import decimal
 import json
-import os.path
+import os
 import time
 import traceback
 import typing
@@ -575,6 +575,8 @@ class FilepathPanel(wx.Panel):
         basename = self._fname_ctrl.GetValue()
         if not os.path.isdir(dirname):
             raise Exception("Specified directory does not exist")
+        if not os.access(dirname, os.W_OK):
+            raise Exception("Unable to write to specified directory")
         if not basename:
             raise Exception("Filename is empty")
         return os.path.join(dirname, basename)
