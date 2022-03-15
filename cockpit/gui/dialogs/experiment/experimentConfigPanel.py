@@ -466,7 +466,7 @@ class ExperimentConfigPanel(wx.Panel):
             savePath = self.filepath_panel.GetPath()
         except Exception:
             cockpit.gui.ExceptionBox(
-                "Failed to get filepath for data", parent=self
+                "Failed to get filepath for data.", parent=self
             )
             return True
 
