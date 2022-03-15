@@ -978,7 +978,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def saveSitesToFile(self, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
                 message = "Please select where to save the file.",
-                defaultDir = cockpit.util.files.getUserSaveDir())
+                defaultDir = cockpit.util.files.getDataDir())
         if dialog.ShowModal() != wx.ID_OK:
             return
         cockpit.interfaces.stageMover.writeSitesToFile(dialog.GetPath())
@@ -988,7 +988,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def loadSavedSites(self, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_OPEN, wildcard = '*.txt',
                 message = "Please select the file to load.",
-                defaultDir = cockpit.util.files.getUserSaveDir())
+                defaultDir = cockpit.util.files.getDataDir())
         if dialog.ShowModal() != wx.ID_OK:
             return
         cockpit.interfaces.stageMover.loadSites(dialog.GetPath())
@@ -1112,7 +1112,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def saveMosaic(self, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
                 message = "Please select where to save the file.",
-                defaultDir = cockpit.util.files.getUserSaveDir())
+                defaultDir = cockpit.util.files.getDataDir())
         if dialog.ShowModal() != wx.ID_OK:
             return
         self.canvas.saveTiles(dialog.GetPath())
