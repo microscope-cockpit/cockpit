@@ -51,8 +51,7 @@
 
 
 import getpass
-import os
-import os.path
+import time
 
 ## @package util.files
 # This module contains file-related functions and constants.
@@ -64,26 +63,30 @@ _DATA_DIR = None
 _LOGS_DIR = None
 
 ## Load directory information from the configuration.
+
+class Default(dict):
+    def __missing__(self, key):
+        return f"{{key}}"
+
+def substitute_patterns(filepath):
+    mappings = {
+        "user": getpass.getuser(),
+        "year": time.strftime("%Y"),
+        "date": time.strftime("%Y%m%d"),
+        "time": time.strftime("%H%M%S"),
+    }
+    return filepath.format_map(Default(**mappings))
+
 def initialize(config):
     global _DATA_DIR
     global _LOGS_DIR
-    _DATA_DIR = config.getpath('global', 'data-dir')
-    _LOGS_DIR = config.getpath('log', 'dir')
-    # _ensureDirectoriesExist()
+    _DATA_DIR = substitute_patterns(config.getpath("global", "data-dir"))
+    _LOGS_DIR = substitute_patterns(config.getpath('log', 'dir'))
 
 ## Get the directory in which all users' directories are located
-def _getDataDir():
+def getDataDir():
     return _DATA_DIR
 
 ## Return the directory in which logfiles are stored
 def getLogDir():
     return _LOGS_DIR
-
-def getUserSaveDir():
-    return _getDataDir()# os.path.join(_getDataDir(), getpass.getuser())
-
-def _ensureDirectoriesExist():
-    for directory in [getUserSaveDir()]:
-        if not os.path.exists(directory):
-            print ("Making",directory)
-            os.makedirs(directory)

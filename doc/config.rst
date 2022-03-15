@@ -72,7 +72,10 @@ config-dir
   the last used settings.
 
 data-dir
-  Directory for the default location to save image data.
+  Directory for the default location to save image data. This has 
+  several path substutution options: `{user}`, `{year}`, `{date}`, 
+  and `{time}`, allowing some customisation beyond a static path.
+
 
 depot-files
   List of files to use for the device depot.  See :ref:`depot-config`.
@@ -92,7 +95,8 @@ level
   increasing order: debug, info, warning, error, and critical.
 
 dir
-  Directory to create new log files.
+  Directory to create new log files. This allows the same path
+  substututions as data-dir.
 
 stage section
 `````````````
