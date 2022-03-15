@@ -464,9 +464,9 @@ class ExperimentConfigPanel(wx.Panel):
 
         try:
             savePath = self.filepath_panel.GetPath()
-        except Exception:
+        except Exception as e:
             cockpit.gui.ExceptionBox(
-                "Failed to get filename for data.", parent=self
+                f"Failed to get filepath for data: {str(e)}", parent=self
             )
             return True
 
@@ -573,6 +573,8 @@ class FilepathPanel(wx.Panel):
         """Return full filepath to use."""
         dirname = self._dir_ctrl.GetPath()
         basename = self._fname_ctrl.GetValue()
+        if not os.path.isdir(dirname):
+            raise Exception("%s is not an existing directory", dirname)
         if not basename:
             raise Exception("Filename is empty")
         return os.path.join(dirname, basename)
