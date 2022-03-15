@@ -357,18 +357,16 @@ class SIExperiment(experiment.Experiment):
         # the edge of the back pupil, the 1st-order spots from longer wave-
         # lengths will fall beyond the edge of the pupil. Therefore, we use the
         # longest wavelength in a given exposure to determine the SIM pattern.
-        longestWavelength = 0
+        wavelengths = []
         # Using tExp rather than 'time' to avoid confusion between table event
         # times and exposure durations.
         for light, tExp in lightTimePairs:
             # SIM wavelength
-            longestWavelength = max(longestWavelength, light.wavelength)
-            if longestWavelength in ['Ambient', 'ambient']:
-                # SoftWorx uses -50 to represent transmitted light.
-                longestWavelength = -50
+            wavelengths.append(light.wavelength)
             # Bleaching compensation
             tExpNew = tExp * (1 + decimal.Decimal(self.handlerToBleachCompensation[light]) * angle)
             newPairs.append((light, tExpNew))
+        longestWavelength = max(wavelengths)
         # Pre-exposure delay due to polarizer and SLM settling times.
         delay = decimal.Decimal(0.)
         # Set polarizer position

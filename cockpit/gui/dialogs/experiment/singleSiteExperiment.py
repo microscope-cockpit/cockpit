@@ -130,20 +130,15 @@ class SingleSiteExperimentDialog(wx.Dialog):
             self.Hide()
 
 
-    ## Blow away the experiment panel and recreate it from scratch.
-    def onReset(self, event = None):
-        self.sizer.Remove(self.panel)
-        self.panel.Destroy()
-        self.panel = experimentConfigPanel.ExperimentConfigPanel(self,
-                resizeCallback = self.onExperimentPanelResize,
-                resetCallback = self.onReset)
-        self.sizer.Prepend(self.panel)
-        self.sizer.Layout()
-        self.Refresh()
-        self.SetSizerAndFit(self.sizer)
-        return self.panel
-        
-        
+    ## Blow away the dialog and recreate it from scratch.
+    def onReset(self, event):
+        parent = self.GetParent()
+        global dialog
+        dialog.Destroy()
+        dialog = None
+        showDialog(parent)
+
+
 
 
 ## Global singleton

@@ -62,7 +62,12 @@ import cockpit.util.threads
 import queue
 import time
 import numpy as np
+import wx.lib.newevent
 
+
+ProgressStartEvent, EVT_PROGRESS_START = wx.lib.newevent.NewEvent()
+ProgressUpdateEvent, EVT_PROGRESS_UPDATE = wx.lib.newevent.NewEvent()
+ProgressEndEvent, EVT_PROGRESS_END = wx.lib.newevent.NewEvent()
 
 ## Zoom level at which we switch from rendering megatiles to rendering tiles.
 ZOOM_SWITCHOVER = 1
@@ -458,11 +463,16 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
     ## Given a path to a file, save the mosaic to that file and an adjacent
     # file. The first is a text file that describes the layout of the tiles;
     # the second is an MRC file that holds the actual image data.
+    @cockpit.util.threads.callInNewThread
     def saveTiles(self, savePath):
-        statusDialog = wx.ProgressDialog(parent = self.GetParent(),
-                title = "Saving...",
-                message = "Saving mosaic image data...", 
-                maximum = len(self.tiles))
+        wx.PostEvent(
+            self.GetEventHandler(),
+            ProgressStartEvent(
+                title="Saving...",
+                message="Saving mosaic image data...",
+                maximum=len(self.tiles),
+            ),
+        )
         handle = open(savePath, 'w')
         mrcPath = savePath + '.mrc'
         if '.txt' in savePath:
@@ -499,10 +509,9 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         cockpit.util.datadoc.writeMrcHeader(header, handle)
         for i, image in enumerate(imageData[:,:]):
             handle.write(image)
-            statusDialog.Update(i)
+            wx.PostEvent(self.GetEventHandler(), ProgressUpdateEvent(value=i))
         handle.close()
-        statusDialog.Destroy()
-
+        wx.PostEvent(self.GetEventHandler(), ProgressEndEvent())
 
     ## Load a text file describing a set of tiles, as well as the tile image
     # data. This is made a bit trickier by the fact that we want to display
@@ -535,10 +544,12 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         # to Destroy (which must also happen in the main thread via CallAfter)
         # may arrive before all of the Update calls are processed, resulting
         # in a segfault.
-        statusDialog = wx.ProgressDialog(parent = self.GetParent(),
-                title = "Loading...",
-                message = "Loading mosaic image data...")
-        statusDialog.Show()
+        wx.PostEvent(
+            self.GetEventHandler(),
+            ProgressStartEvent(
+                title="Loading", message="Loading mosaic image data...", maximum=100
+            ),
+        )
         if doc.imageArray.shape[2] > len(tileStats):
             # More images in the file than we have stats for.
             cockpit.util.logger.log.warning("Loading mosaic with %d images; only have positioning information for %d." % (doc.imageArray.shape[2], len(tileStats)))
@@ -555,7 +566,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                         "Failed to load line %d of file %s: %s.\n\nPlease see the logs for more details." % (i, filePath, e),
                         style = wx.ICON_INFORMATION | wx.OK).ShowModal()
                 cockpit.util.logger.log.error(traceback.format_exc())
-                statusDialog.Destroy()
+                wx.PostEvent(self.GetEventHandler(), ProgressEndEvent())
                 return
         # Wait until we've loaded all tiles or we go a full second without
         # any new tiles arriving.
@@ -570,5 +581,26 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
             if time.time() - lastUpdatedTime > 1:
                 break
             time.sleep(.1)
-        wx.CallAfter(statusDialog.Destroy)
+        wx.PostEvent(self.GetEventHandler(), ProgressEndEvent())
         events.publish(events.MOSAIC_UPDATE)
+
+    def createProgressDialog(self, event):
+        if hasattr(self, "progressDialog"):
+            return
+        self.progressDialog = wx.ProgressDialog(
+            parent=self.GetParent(),
+            title=event.title,
+            message=event.message,
+            maximum=event.maximum,
+        )
+        self.progressDialog.Show()
+
+    def updateProgressDialog(self, event):
+        if hasattr(self, "progressDialog"):
+            self.progressDialog.Update(event.value)
+            self.progressDialog.Show()
+
+    def destroyProgressDialog(self, event):
+        if hasattr(self, "progressDialog"):
+            self.progressDialog.Destroy()
+            del self.progressDialog
