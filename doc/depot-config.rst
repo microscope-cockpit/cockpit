@@ -135,6 +135,46 @@ and emission wavelengths.
 An NDfilter wheel in front of a light source, or range of light
 sources is defined like: (no idea what the spec for this is need to check)
 
+Executor
+````````
+
+The hardware timing is performed by a so called executor device. These
+devices need to specify the number of analog and digital control
+lines that they provide, for instance with a Red Pitaya single board
+computer providing the executor you have a section along the lines of: 
+
+.. code:: ini
+
+  [dsp]
+  type: cockpit.devices.executorDevices.ExecutorDevice
+  uri: PYRO:redPitaya@192.168.0.20:8005
+  dlines: 16
+  alines: 2
+
+
+Objectives
+``````````
+
+The specification of the objectives are also defined in the depot
+configuration file. Each objective has an associated pixel size and
+can provide an updated transform which will override the camera
+transform. The colour parameter is used to display possibly different
+accessible regions from different objectives in the stage and mosaic
+views. Additionally, there is an offset parameter which enables
+difference between objective fields of view to be accounted for in
+stage position. The lensID parameter is stored in image file metadata
+fileds so can be used to tag specific objectives, or objective types. 
+
+.. code:: ini
+
+  [10x]
+  type: cockpit.devices.objective.ObjectiveDevice
+  pixel_size: 0.787
+  transform:(0, 1, 1)
+  offset: (-34894, 320,-5955)
+  colour:(1,0,0)
+  lensID: 10118
+
     
   
 Additional specific parameters
