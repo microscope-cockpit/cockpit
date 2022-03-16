@@ -152,6 +152,29 @@ computer providing the executor you have a section along the lines of:
   alines: 2
 
 
+
+SI polarizer
+````````````
+
+Many of the existing cockpit systems are Structured Illumination
+Microscopes (SIM) and utilises LCD based polarization control, which are
+driven by analog voltages from the executor. These devices need a
+control source, gain and offset. The idle voltage says what voltage to
+set the control voltage to during idle times. The SIM configuration
+also need angle dependent voltages for each calibrated wavelength, eg:
+
+.. code:: ini
+
+  [SI polarizer]
+  type: cockpit.devices.polarizationRotator.PolarizationDevice
+  analogSource: dsp
+  analogLine: 1
+  gain: 1618.171641791
+  offset: 0
+  siVoltages: 488: 0.58, 0.67, 0.800
+              561: 0.500, 0.60, 0.75
+  idleVoltage: 1.0
+
 Objectives
 ``````````
 
@@ -163,7 +186,7 @@ accessible regions from different objectives in the stage and mosaic
 views. Additionally, there is an offset parameter which enables
 difference between objective fields of view to be accounted for in
 stage position. The lensID parameter is stored in image file metadata
-fileds so can be used to tag specific objectives, or objective types. 
+fields so can be used to tag specific objectives, or objective types. 
 
 .. code:: ini
 
@@ -194,3 +217,16 @@ for that device, eg:
 Will set the remote parameters as specified, this example is from an
 Andor iXon EMCCD device and will enable the watercooling switch and
 set the temperature to -80 C. 
+
+
+Non Python-Microscope devices
+`````````````````````````````
+
+There are several legacy devices that still exist that require a range
+of parameters as they weer created before direct hardware control was
+moved into Python-Microscope. It is hoped that these devices will be
+migrated to microscope and adopt the standard config names and syntax
+as defined for the existing devices, including most configuration
+being done in microscope. Currently the existing legacy devices
+include the Boulder/Meadowlark SLM, the Aerotech lifter, PI M678
+stage controller, Stanford sr470 shutter controller.
