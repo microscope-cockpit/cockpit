@@ -65,6 +65,7 @@ import os
 import time
 import traceback
 import typing
+from uuid import uuid4
 
 import wx
 
@@ -571,15 +572,32 @@ class FilepathPanel(wx.Panel):
 
     def GetPath(self) -> str:
         """Return full filepath to use."""
-        dirname = self._dir_ctrl.GetPath()
-        basename = self._fname_ctrl.GetValue()
+        # Ignore trailing/leading whitespace
+        dirname = self._dir_ctrl.GetPath().strip()
+        basename = self._fname_ctrl.GetValue().strip()
         if not os.path.isdir(dirname):
             raise Exception("Specified directory does not exist")
-        if not os.access(dirname, os.W_OK):
+        if not FilepathPanel.is_writable(dirname):
             raise Exception("Unable to write to specified directory")
         if not basename:
             raise Exception("Filename is empty")
-        return os.path.join(dirname, basename)
+        path = os.path.join(dirname, basename)
+        if os.path.isfile(path):
+            raise Exception("File already exists")
+        return path
+
+    @staticmethod
+    def is_writable(dir):
+        try:  # Only true way to test writability is to try
+            tmpfile =  os.path.join(dir, "tmp_%s" % uuid4())
+            with open(tmpfile, "wb+"):
+                pass
+        except Exception:
+            return False
+        finally:
+            if os.path.isfile(tmpfile):
+                os.remove(tmpfile)
+        return True
 
     def GetTemplate(self) -> str:
         return self._template_ctrl.GetValue()
