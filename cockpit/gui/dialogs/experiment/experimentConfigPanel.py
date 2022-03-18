@@ -581,10 +581,7 @@ class FilepathPanel(wx.Panel):
             raise Exception("Unable to write to specified directory")
         if not basename:
             raise Exception("Filename is empty")
-        path = os.path.join(dirname, basename)
-        if os.path.isfile(path):
-            raise Exception("File already exists")
-        return path
+        return os.path.join(dirname, basename)
 
     @staticmethod
     def is_writable(dir):
