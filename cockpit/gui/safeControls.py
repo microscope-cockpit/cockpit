@@ -605,12 +605,12 @@ class SetPointGauge(SafeControl, wx.Window):
         if self._vertical:
             bar.width -= 2 * self._margins[1]
             bar.X += self._margins[1]
-            bar.height = rect.height * self._value.to_quotient(self._displayed) - 2 * self._margins[0]
+            bar.height = int(rect.height * self._value.to_quotient(self._displayed) - 2 * self._margins[0])
             bar.Y = rect.height - bar.height + self._margins[0]
         else:
             bar.height -= 2 * self._margins[1]
             bar.Y += self._margins[1]
-            bar.width = rect.width * self._value.to_quotient(self._displayed) - 2 * self._margins[0]
+            bar.width = int(rect.width * self._value.to_quotient(self._displayed) - 2 * self._margins[0])
             bar.X += self._margins[0]
         dc.SetBrush(wx.Brush(c['setpoint']))
         dc.SetPen(wx.Pen(c['setpoint']))
@@ -623,12 +623,12 @@ class SetPointGauge(SafeControl, wx.Window):
         else:
             current = self._value.last
         if self._vertical:
-            bar.height = rect.height * self._value.to_quotient(current)
+            bar.height = int(rect.height * self._value.to_quotient(current))
             bar.Y = rect.height - bar.height
             bar.width = rect.width // 3
             bar.X += (rect.width // 2) - (bar.width // 2)
         else:
-            bar.width = rect.width * self._value.to_quotient(current)
+            bar.width = int(rect.width * self._value.to_quotient(current))
             bar.height = rect.height // 3
             bar.Y += (rect.height // 2) - (bar.height // 2)
         colour = c['on_target'] if self._value.on_target() else c['off_target']
@@ -645,10 +645,10 @@ class SetPointGauge(SafeControl, wx.Window):
             n = n // 2
             dg = rect.Size[self._vertical] / n
         if self._vertical:
-            lines = [(2, min(rect.height - 1, i * dg), rect.width - 2,
-                      min(rect.height - 1, i * dg)) for i in range(1, n)]
+            lines = [(2, min(rect.height - 1, int(i * dg)), rect.width - 2,
+                      min(rect.height - 1, int(i * dg))) for i in range(1, n)]
         else:
-            lines = [(min(rect.width - 1, i * dg), 2, min(rect.width - 1, i * dg),
+            lines = [(min(rect.width - 1, int(i * dg)), 2, min(rect.width - 1, int(i * dg)),
                       rect.height - 2) for i in range(1, n)]
         dc.SetPen(wx.Pen(colour=c['scale'], width=1, style=wx.PENSTYLE_DOT))
         dc.DrawLineList(lines)
@@ -661,10 +661,10 @@ class SetPointGauge(SafeControl, wx.Window):
             pos = self._value.to_quotient(self._pending)
             if self._vertical:
                 pos = rect.height * (1 - pos)
-                dc.DrawLine(0, pos, rect.width, pos)
+                dc.DrawLine(0, int(pos), rect.width, int(pos))
             else:
                 pos *= rect.width
-                dc.DrawLine(pos, 0, pos, rect.height)
+                dc.DrawLine(int(pos), 0, int(pos), rect.height)
 
     def DrawLimitIndicators(self, dc):
         """Draws <<< or >>> to indicate values exceeeding gauge range.

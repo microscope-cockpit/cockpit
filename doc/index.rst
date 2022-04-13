@@ -17,6 +17,7 @@ Microscope-Cockpit
    install
    getting-started
    config
+   depot-config
    architecture
    file-format
    troubleshoot
