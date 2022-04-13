@@ -223,7 +223,7 @@ Non Python-Microscope devices
 `````````````````````````````
 
 There are several legacy devices that still exist that require a range
-of parameters as they weer created before direct hardware control was
+of parameters as they were created before direct hardware control was
 moved into Python-Microscope. It is hoped that these devices will be
 migrated to microscope and adopt the standard config names and syntax
 as defined for the existing devices, including most configuration
