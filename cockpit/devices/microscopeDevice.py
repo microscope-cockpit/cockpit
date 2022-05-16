@@ -526,6 +526,10 @@ class MicroscopeStage(MicroscopeBase):
         handled_axis_names = set()
 
         their_axes_map = self._proxy.axes
+
+        if self._proxy.need_homed:
+            self._proxy.home()
+        
         for one_letter_name in 'xyz':
             axis_config_name = one_letter_name + '-axis-name'
             if axis_config_name not in self.config:
