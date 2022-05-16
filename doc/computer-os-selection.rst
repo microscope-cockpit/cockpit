@@ -34,7 +34,7 @@ windows. However, many people want some, or all of the devices
 connected to the main computer.
 
 CPU requirements
-****************
+````````````````
 
 In general cockpit is not very demanding of CPU, the heavy graphics
 tasks are performed on the system GPU. Cockpit is
@@ -46,7 +46,7 @@ python process and so will be able to exploit more of the power of a
 multi-core CPU. 
 
 Memory requirements
-*******************
+```````````````````
 
 Cockpit does not use a huge amount of memory, although additional
 memory may considerably help performance with image stacks. The
@@ -55,7 +55,7 @@ and in memory to allow rescaling so large mosaic considerably add to
 the memory footprint. I would recommend at least 16GB.
 
 Graphics Cards
-**************
+``````````````
 
 The system stores mosaics and live or snapped images on the graphics
 card to allow rapid navigation. This can require substantial ram on
@@ -65,20 +65,20 @@ scaling and rendering of these simple images, limited only by the
 available graphics memory to store the images.  
 
 Disk Space
-**********
+``````````
 
 The amount and rate at which image data can be collected in
 fundamentally limited by the disk storage space. For rapid image
 collection SSD's are much faster, and this performance can be further
 increased by using raid to spread the data across multiple
-disks. Typically a modern cMOS camera takes images of at least 8MB per
+disks. Typically a modern CMOS camera takes images of at least 8MB per
 image, multiple z-planes, colour channels and time points can make
 extremely large image stacks so ensure you have enough local storage
 for fast acquisition and then a network data store, with a data backup
 solution, for longer term storage.
 
 Multi-computer configuration
-****************************
+````````````````````````````
 
 In general for high performance systems we run the cockpit GUI from
 one computer and connect the actual hardware to other computers to
