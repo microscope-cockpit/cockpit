@@ -528,7 +528,16 @@ class MicroscopeStage(MicroscopeBase):
         their_axes_map = self._proxy.axes
 
         if self._proxy.need_homed:
-            self._proxy.home()
+            # Motors need homing.
+            msg = """
+            The XY stage needs to find the home position. Homing the stage 
+            may move it so please ensure that there are no obstructions, 
+            then press 'OK' to home the stage.
+            If you press "Cancel" the stage wil not be homed, its position
+            might be wrong and the stage motion limits may be wrong.
+            """
+            if cockpit.gui.guiUtils.getUserPermission(msg):
+                self._proxy.home()
         
         for one_letter_name in 'xyz':
             axis_config_name = one_letter_name + '-axis-name'
