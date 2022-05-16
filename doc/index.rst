@@ -19,6 +19,7 @@ Microscope-Cockpit
    config
    depot-config
    architecture
+   computer-os-selection
    file-format
    troubleshoot
 
