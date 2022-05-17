@@ -432,6 +432,13 @@ class ExperimentConfigPanel(wx.Panel):
                         self.lightExposureTimes[i].GetValue()):
                     lightTimePairs.append(
                         (light, guiUtils.tryParseNum(self.lightExposureTimes[i], decimal.Decimal)))
+                    
+            if lightTimePairs == [] :
+                if not guiUtils.getUserPermission(
+                    ("No enabled light has a define exposure time.") +
+                    "Are you sure you want to continue?"):
+                    return True
+                
             exposureSettings = [(cameras, lightTimePairs)]
         else:
             # A separate exposure for each camera.
