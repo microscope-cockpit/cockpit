@@ -131,7 +131,7 @@ class SingleSiteExperimentDialog(wx.Dialog):
 
 
     ## Blow away the dialog and recreate it from scratch.
-    def onReset(self, event):
+    def onReset(self, event=None):
         parent = self.GetParent()
         global dialog
         dialog.Destroy()
