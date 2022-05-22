@@ -112,8 +112,8 @@ the system expects.
 
 ``VIDEO_MODE_TOGGLE``
 
-``LOCKED_VIEW``
-Enabled on camera view images that are locked with zoom/pan to other views. 
+``SYNCED_VIEW``
+Enabled on camera view images that are synced with zoom/pan to other views. 
 
 ``"filter change"``
 
@@ -165,7 +165,7 @@ STAGE_POSITION = 'stage position'
 STAGE_MOVER = 'stage mover'
 STAGE_STOPPED = 'stage stopped'
 STAGE_TOP_BOTTOM = 'stage saved top/bottom'
-LOCKED_VIEW = 'locked view'
+SYNCED_VIEW = 'synced view'
 USER_ABORT = 'user abort'
 MOSAIC_UPDATE = 'mosaic update'
 NEW_IMAGE = 'new image %s' # must be suffixed with image source
