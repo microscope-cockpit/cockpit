@@ -434,7 +434,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
         ## Should we show a crosshair (used for alignment)?
         self.showCrosshair = False
-
+        self.lockViews = False
+        
         ## Queue of incoming images that we need to either display or discard.
         self.imageQueue = queue.Queue()
         ## Current image we're working with.
@@ -515,6 +516,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.zoom = newZoom
         self.panX += factor * glx
         self.panY += factor * gly
+        events.publish(events.LOCKED_VIEW, self.panX, self.panY, self.zoom)
         self.Refresh()
 
 
@@ -737,6 +739,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 ('Toggle clip highlighting', self.image.toggleClipHighlight),
                 ('', None),
                 ('Toggle alignment crosshair', self.toggleCrosshair),
+                ('Toggle lock view alignment', self.toggleLockViews),
                 ("Toggle FFT mode", self.toggleFFT),
                 ('', None),
                 ('Save image', self.saveData)
@@ -754,7 +757,17 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.image.vmax = self.histogram.uthresh = values[1]
         self.Refresh()
 
-
+    def toggleLockViews(self, event=None):
+        self.lockViews = not self.lockViews
+        if self.lockViews:
+            events.subscribe(events.LOCKED_VIEW,
+                             self.setView,
+                             )
+        else:
+            events.unsubscribe(events.LOCKED_VIEW,
+                               self.setView,
+                             )
+            
     def toggleCrosshair(self, event=None):
         self.showCrosshair = not(self.showCrosshair)
 
@@ -811,6 +824,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def modPan(self, dx, dy):
         self.panX += 2 * dx / (self.w * self.zoom)
         self.panY += 2 * dy / (self.h * self.zoom)
+        events.publish(events.LOCKED_VIEW, self.panX, self.panY, self.zoom)
         self.Refresh(0)
 
 
@@ -823,6 +837,13 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.panY = 0
         self.zoom = 1.0
         self.Refresh(0)
+
+    def setView(self, panX, panY, zoom):
+        self.panX = panX
+        self.panY = panY
+        self.zoom = zoom
+        self.Refresh(0)
+
 
     def resetPixelScale(self):
         self.image.autoscale()
