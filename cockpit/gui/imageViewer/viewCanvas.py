@@ -434,7 +434,10 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
 
         ## Should we show a crosshair (used for alignment)?
         self.showCrosshair = False
+        ##default to enabled synced view, set to flase then toggle it to
+        ##do the correct subscriptions. 
         self.syncViews = False
+        self.toggleSyncViews()
         
         ## Queue of incoming images that we need to either display or discard.
         self.imageQueue = queue.Queue()
