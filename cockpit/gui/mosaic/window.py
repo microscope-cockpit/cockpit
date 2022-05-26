@@ -164,6 +164,21 @@ class MosaicCommon:
         self.drawCrosshairs(cockpit.interfaces.stageMover.getPosition()[:2], (1, 0, 0),
                             offset=True)
 
+        if self.displayTrails and len(self.trails) > 1:
+            glLineWidth(max(1, self.canvas.scale * 1.5))
+            #trails colour is green
+            glColor3f(0,1,0)
+            glBegin(GL_LINES)
+            last_x=-self.trails[0][0]-self.offset[0]
+            last_y=self.trails[0][1]-self.offset[1]
+            for vertex in self.trails[1:]:
+                glVertex2f(last_x,last_y)
+                glVertex2f(-vertex[0]+self.offset[0],vertex[1]-self.offset[1])
+                last_x = -vertex[0]+self.offset[0]
+                last_y = vertex[1]-self.offset[1]
+            glEnd()
+
+        
         # If we're selecting tiles, draw the box the user is selecting.
         if self.selectTilesFunc is not None and self.lastClickPos is not None:
             start = self.canvas.mapScreenToCanvas(self.lastClickPos)
@@ -337,7 +352,10 @@ class MosaicWindow(wx.Frame, MosaicCommon):
 
         ## Camera used for making a mosaic
         self.camera = None
-
+        #toogle and array for trails
+        self.trails=[]
+        self.displayTrails=False
+        
         ## Mosaic tile overlap
         self.overlap = cockpit.util.userConfig.getValue('mosaicTileOverlap',
                                                         default = 0.0)
@@ -504,6 +522,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def onAxisRefresh(self, axis, *args):
         if axis in [0, 1]:
             # Only care about the X and Y axes.
+            #append new position
+            self.trails.append(cockpit.interfaces.stageMover.getPosition()[:2])
             wx.CallAfter(self.canvas.Refresh)
 
 
@@ -588,6 +608,16 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             menu.Append(menuId, "Toggle mosaic scale bar")
             self.Bind(wx.EVT_MENU,
                       lambda event: self.togglescalebar(),
+                      id=menuId)
+            menuId += 1
+            menu.Append(menuId, "Toggle trails display")
+            self.Bind(wx.EVT_MENU,
+                      lambda event: self.toggleDisplayTrails(),
+                      id=menuId)
+            menuId += 1
+            menu.Append(menuId, "Clear old trails")
+            self.Bind(wx.EVT_MENU,
+                      lambda event: self.clearTrails(),
                       id=menuId)
 
             cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
@@ -808,6 +838,18 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         cockpit.util.userConfig.setValue('mosaicScaleBar',self.scalebar)
         self.Refresh()
 
+    def toggleDisplayTrails(self):
+        #toggle Display of trails in mosaic.
+        self.displayTrails = not self.displayTrails
+        #store current state for future.
+        cockpit.util.userConfig.setValue('mosaicDisplayTrails',self.displayTrails)
+        self.Refresh()
+
+    def clearTrails(self):
+        #clear all exisiting trails
+        self.trails=[]
+        self.Refresh()
+        
     ## Save the current stage position as a new site with the specified
     # color (or our currently-selected color if none is provided).
     def saveSite(self, color = None):
