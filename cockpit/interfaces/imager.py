@@ -115,11 +115,11 @@ class Imager:
     ## Update exposure times on cameras.
     @pauseVideo
     def updateExposureTime(self, source=None):
-        e_times = [l.getExposureTime() for l in self.activeLights]
+        e_times = [l.getExposureTime() for l in self.activeLights.copy()]
         if not e_times:
             return
         e_max = max(e_times)
-        [c.setExposureTime(e_max) for c in self.activeCameras]
+        [c.setExposureTime(e_max) for c in self.activeCameras.copy()]
 
 
     ## Add or remove the provided object from the specified set.
