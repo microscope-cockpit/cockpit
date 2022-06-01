@@ -579,9 +579,9 @@ class LightsPanelEntry(wx.Panel):
                 cockpit.gui.IMAGES_PATH, "touchscreen/misc_wavelength.png",
             )
         )
-        if self.power.wavelength == None:
-            self.power.wavelength = -50
         if self.power:
+            if self.power.wavelength is None:
+                self.power.wavelength = -50
             img.Replace(
                 255, 255, 255, *wavelengthToColor(self.power.wavelength)
             )
