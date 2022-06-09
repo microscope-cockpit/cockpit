@@ -212,7 +212,7 @@ class ViewPanel(wx.Panel):
     def onImage(self, data, *args):
         self.canvas.setImage(data)
         self.pixelsize =  wx.GetApp().Objectives.GetPixelSize()
-        self.emwavelength = self.curCamera.getHandlers()[0].wavelngth
+        self.emwavelength = self.curCamera.wavelength
         self.imagePos = None
 
 
