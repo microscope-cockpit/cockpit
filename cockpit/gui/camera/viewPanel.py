@@ -211,6 +211,8 @@ class ViewPanel(wx.Panel):
     ## Receive a new image and send it to our canvas.
     def onImage(self, data, *args):
         self.canvas.setImage(data)
+        self.pixelsize =  wx.GetApp().Objectives.GetPixelSize()
+        self.emwavelength = self.curCamera.getHandlers()[0].wavelngth
         self.imagePos = None
 
 

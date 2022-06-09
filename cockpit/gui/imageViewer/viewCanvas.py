@@ -864,4 +864,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         # addressed first. See issue #538.
         if self.Parent.Parent.curCamera is not None:
             wls = [self.Parent.Parent.curCamera.wavelength,]
-        cockpit.util.datadoc.writeDataAsMrc(self.imageData, path, wavelengths=wls)
+            xysize=self.Parent.Parent.pixelsize
+        cockpit.util.datadoc.writeDataAsMrc(self.imageData, path,
+                                            XYSize=xysize, wavelengths=wls)
