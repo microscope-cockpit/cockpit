@@ -841,6 +841,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def toggleDisplayTrails(self):
         #toggle Display of trails in mosaic.
         self.displayTrails = not self.displayTrails
+        #send a mosaic update event to update touchscreen
+        events.publish(events.MOSAIC_UPDATE)
         #store current state for future.
         cockpit.util.userConfig.setValue('mosaicDisplayTrails',self.displayTrails)
         self.Refresh()
