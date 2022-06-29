@@ -57,6 +57,7 @@ import typing
 from cockpit import depot
 from cockpit import events
 from cockpit.util import userConfig
+import cockpit.util.threads
 
 import numpy
 import threading
@@ -451,6 +452,9 @@ def getSite(uniqueID):
 
 
 ## Save a new Site. Use default settings if none is provided.
+## CallInMainThread decorator used as otherwise the listbox of sites
+## sometimes does not update properly.
+@cockpit.util.threads.callInMainThread
 def saveSite(newSite = None):
     if newSite is None:
         newSite = Site(getPosition())
