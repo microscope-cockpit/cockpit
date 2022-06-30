@@ -433,8 +433,17 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                                    style=wx.LB_EXTENDED|wx.LB_SORT)
         self.sitesBox.Bind(wx.EVT_LISTBOX, self.onSelectSite)
         self.sitesBox.Bind(wx.EVT_LISTBOX_DCLICK, self.onDoubleClickSite)
-        events.subscribe('new site', self.onNewSiteCreated)
-        events.subscribe('site deleted', self.onSiteDeleted)
+
+        #these are gui events so use the EvtEmitter to run in the main
+        #thread.
+        cockpit.gui.EvtEmitter(self, cockpit.events.NEW_SITE).Bind(
+            cockpit.gui.EVT_COCKPIT,
+            lambda e: self.onNewSiteCreated(e.EventData[0]),
+            )
+        cockpit.gui.EvtEmitter(self, cockpit.events.DELETE_SITE).Bind(
+            cockpit.gui.EVT_COCKPIT,
+            lambda e: self.onSiteDeleted(e.EventData[0]),
+            )
         sitesSizer.Add(self.sitesBox, 1, wx.EXPAND)
 
         for args in [
