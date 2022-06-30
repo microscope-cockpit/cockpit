@@ -442,7 +442,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             )
         cockpit.gui.EvtEmitter(self, cockpit.events.DELETE_SITE).Bind(
             cockpit.gui.EVT_COCKPIT,
-            lambda e: self.onSiteDeleted(e.EventData[0]),
+            self._OnSiteDeleted,
             )
         sitesSizer.Add(self.sitesBox, 1, wx.EXPAND)
 
@@ -1063,7 +1063,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
 
 
     ## A site was deleted; remove it from our sites box.
-    def onSiteDeleted(self, site):
+    def _OnSiteDelete(self, event: wx.CommandEvent) -> None:
+        site = event.EventData[0]
         for item in self.sitesBox.GetItems():
             if site.uniqueID == item:
                 self.sitesBox.Delete(item)
