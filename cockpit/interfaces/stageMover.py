@@ -454,7 +454,7 @@ def getSite(uniqueID):
 ## Save a new Site. Use default settings if none is provided.
 ## CallInMainThread decorator used as otherwise the listbox of sites
 ## sometimes does not update properly.
-@cockpit.util.threads.callInMainThread
+#@cockpit.util.threads.callInMainThread
 def saveSite(newSite = None):
     if newSite is None:
         newSite = Site(getPosition())
@@ -462,14 +462,14 @@ def saveSite(newSite = None):
     # Start counting from the new site, if necessary.
     global uniqueSiteIndex
     uniqueSiteIndex = max(uniqueSiteIndex, newSite.uniqueID)
-    events.publish('new site', newSite)
+    events.publish(events.NEW_SITE, newSite)
 
 
 ## Remove a site with the specified ID.
 def deleteSite(siteID):
     site = mover.idToSite[siteID]
     del mover.idToSite[siteID]
-    events.publish('site deleted', site)
+    events.publish(events.DELETE_SITE, site)
     # HACK: if this siteID is for the most-recently created
     # site, decrement the global site ID.
     global uniqueSiteIndex
