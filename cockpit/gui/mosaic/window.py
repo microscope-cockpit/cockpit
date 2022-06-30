@@ -438,8 +438,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         #thread.
         cockpit.gui.EvtEmitter(self, cockpit.events.NEW_SITE).Bind(
             cockpit.gui.EVT_COCKPIT,
-            lambda e: self.onNewSiteCreated(e.EventData[0]),
-            )
+            self._OnNewSite,
+        )
         cockpit.gui.EvtEmitter(self, cockpit.events.DELETE_SITE).Bind(
             cockpit.gui.EVT_COCKPIT,
             self._OnSiteDeleted,
@@ -1023,7 +1023,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             # Redisplay the sites in the sitesbox.
             self.sitesBox.Clear()
             for site in cockpit.interfaces.stageMover.getAllSites():
-                self.onNewSiteCreated(site, shouldRefresh = False)
+                self._AddSiteToList(site, shouldRefresh = False)
             self.Refresh()
 
 
@@ -1048,7 +1048,12 @@ class MosaicWindow(wx.Frame, MosaicCommon):
 
 
     ## A new site was created (from any source); add it to our sites box.
-    def onNewSiteCreated(self, site, shouldRefresh = True):
+    def _OnNewSite(self, event: wx.CommandEvent) -> None:
+        site = event.EventData[0]
+        self._AddSiteToList(site, shouldRefresh=True)
+
+
+    def _AddSiteToList(self, site, shouldRefresh=True):
         # This display is a bit compressed, so that all positions are visible
         # even if there's a scrollbar in the sites box.
         position = ",".join(["%d" % p for p in site.position])
