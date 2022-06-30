@@ -452,9 +452,6 @@ def getSite(uniqueID):
 
 
 ## Save a new Site. Use default settings if none is provided.
-## CallInMainThread decorator used as otherwise the listbox of sites
-## sometimes does not update properly.
-#@cockpit.util.threads.callInMainThread
 def saveSite(newSite = None):
     if newSite is None:
         newSite = Site(getPosition())
