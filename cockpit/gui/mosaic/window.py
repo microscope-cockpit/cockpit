@@ -442,7 +442,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         )
         cockpit.gui.EvtEmitter(self, cockpit.events.DELETE_SITE).Bind(
             cockpit.gui.EVT_COCKPIT,
-            self._OnSiteDeleted,
+            self._OnSiteDelete,
             )
         sitesSizer.Add(self.sitesBox, 1, wx.EXPAND)
 
