@@ -859,6 +859,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     def clearTrails(self):
         #clear all exisiting trails
         self.trails=[]
+        events.publish(events.MOSAIC_UPDATE)
         self.Refresh()
         
     ## Save the current stage position as a new site with the specified
