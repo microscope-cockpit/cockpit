@@ -658,7 +658,7 @@ def makeHeaderFor(data, shouldSetMinMax = True, **kwargs):
 # \param wavelengths List of wavelengths (e.g. [488, 560]). Defaults to
 #        the currently active wavelengths.
 def makeHeaderForShape(shape, dtype, XYSize = None, ZSize = None,
-        wavelengths = []):
+                       wavelengths = [],zxy0=None):
     header = Mrc.makeHdrArray()
     Mrc.init_simple(header, Mrc.dtype2MrcMode(dtype),
             shape)
@@ -672,6 +672,8 @@ def makeHeaderForShape(shape, dtype, XYSize = None, ZSize = None,
             header.wave[i] = 0
     header.ImgSequence = 2
     header.d = [XYSize, XYSize, ZSize]
+    if zxy0 is not None:
+        header.zxy0=zxy0
     return header
 
 
@@ -685,11 +687,13 @@ def writeMrcHeader(header, filehandle):
 # the input array must be in WTZYX order; if the array has insufficient
 # dimensions it will be augmented with dimensions of size 1 starting from
 # the left (e.g. a 512x512 array becomes a 1x1x1x512x512 array).
-def writeDataAsMrc(data, filename, XYSize = None, ZSize = None, wavelengths = []):
+def writeDataAsMrc(data, filename, XYSize = None, ZSize = None, wavelengths = [],
+                   zxy0=None):
+    print(zxy0)
     shape = (5 - len(data.shape)) * [1] + list(data.shape)
     data_out = data.reshape(shape)
     header = makeHeaderFor(data_out, XYSize = XYSize, ZSize = ZSize,
-            wavelengths = wavelengths)
+                           wavelengths = wavelengths,zxy0=zxy0)
     handle = open(filename, 'wb')
     writeMrcHeader(header, handle)
     handle.seek(1024) # Seek to end of header
