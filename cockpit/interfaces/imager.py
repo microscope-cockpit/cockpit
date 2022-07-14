@@ -51,6 +51,8 @@
 
 
 from cockpit import events
+#from cockpit.gui import EvtEmitter
+import cockpit.gui
 from cockpit.handlers.imager import ImagerHandler
 import cockpit.util.threads
 import wx
@@ -120,6 +122,7 @@ class Imager:
 
 
     ## Add or remove the provided object from the specified set.
+    @cockpit.util.threads.callInMainThread
     def toggle(self, container, thing, shouldAdd):
         if shouldAdd:
             container.add(thing)
