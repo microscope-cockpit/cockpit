@@ -214,7 +214,6 @@ class ViewPanel(wx.Panel):
         self.pixelsize =  wx.GetApp().Objectives.GetPixelSize()
         self.emwavelength = self.curCamera.wavelength
         self.imagePos = cockpit.interfaces.stageMover.getPosition()
-        print(self.pixelsize,self.imagePos)
 
 
     ## Return True if we currently display a camera.

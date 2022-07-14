@@ -51,8 +51,6 @@
 
 
 from cockpit import events
-#from cockpit.gui import EvtEmitter
-import cockpit.gui
 from cockpit.handlers.imager import ImagerHandler
 import cockpit.util.threads
 import wx
@@ -110,6 +108,9 @@ class Imager:
         events.subscribe(events.USER_ABORT, self.stopVideo)
         # Update exposure times on certain events.
         events.subscribe('light exposure update', self.updateExposureTime)
+        events.subscribe(events.LIGHT_SOURCE_ENABLE, lambda *args: self.updateExposureTime())
+        events.subscribe(events.CAMERA_ENABLE, lambda *args: self.updateExposureTime())
+
 
     ## Update exposure times on cameras.
     @pauseVideo
@@ -122,15 +123,12 @@ class Imager:
 
 
     ## Add or remove the provided object from the specified set.
-    @cockpit.util.threads.callInMainThread
     def toggle(self, container, thing, shouldAdd):
         if shouldAdd:
             container.add(thing)
         elif thing in container:
             container.remove(thing)
-        #we have toggle some light or camera sate so need to check the
-        #nsap exposure times are correct.
-        self.updateExposureTime()
+
 
     ## Take an image.
     # \param shouldBlock True if we want to wait for the cameras and lights

@@ -866,7 +866,6 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             wls = [self.Parent.Parent.curCamera.wavelength,]
             xysize=self.Parent.Parent.pixelsize
             xyzpos=self.Parent.Parent.imagePos
-            print (xysize,xyzpos)
         cockpit.util.datadoc.writeDataAsMrc(self.imageData, path,
                                             XYSize=xysize, wavelengths=wls,
                                             zxy0=xyzpos)
