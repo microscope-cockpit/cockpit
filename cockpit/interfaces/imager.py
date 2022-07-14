@@ -108,9 +108,6 @@ class Imager:
         events.subscribe(events.USER_ABORT, self.stopVideo)
         # Update exposure times on certain events.
         events.subscribe('light exposure update', self.updateExposureTime)
-        events.subscribe(events.LIGHT_SOURCE_ENABLE, lambda *args: self.updateExposureTime())
-        events.subscribe(events.CAMERA_ENABLE, lambda *args: self.updateExposureTime())
-
 
     ## Update exposure times on cameras.
     @pauseVideo
@@ -128,7 +125,9 @@ class Imager:
             container.add(thing)
         elif thing in container:
             container.remove(thing)
-
+        #we have toggle some light or camera sate so need to check the
+        #nsap exposure times are correct.
+        self.updateExposureTime()
 
     ## Take an image.
     # \param shouldBlock True if we want to wait for the cameras and lights
