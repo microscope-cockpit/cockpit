@@ -112,14 +112,19 @@ class Imager:
         events.subscribe('light exposure update', self.updateExposureTime)
 
 
+    def _get_exposure_time(self) -> int:
+        if self.activeLights:
+            return max([l.getExposureTime() for l in self.activeLights])
+        else:
+            return 0
+
+
     ## Update exposure times on cameras.
     @pauseVideo
     def updateExposureTime(self, source=None):
-        e_times = [l.getExposureTime() for l in self.activeLights]
-        if not e_times:
-            return
-        e_max = max(e_times)
-        [c.setExposureTime(e_max) for c in self.activeCameras]
+        e_time = self._get_exposure_time()
+        for c in self.activeCameras:
+            c.setExposureTime(e_time)
 
 
     def _toggle(self, container, thing, shouldAdd):
@@ -225,8 +230,6 @@ class Imager:
         camLimiter = 0
         for camera in self.activeCameras:
             camLimiter = max(camLimiter, camera.getTimeBetweenExposures())
-        lightLimiter = 0
-        for light in self.activeLights:
-            lightLimiter = max(lightLimiter, light.getExposureTime())
+        lightLimiter = self._get_exposure_time()
         # The limiters are in milliseconds; downconvert.
         return self.lastImageTime + (camLimiter + lightLimiter) / 1000.0
