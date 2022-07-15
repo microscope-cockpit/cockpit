@@ -125,8 +125,8 @@ class Imager:
     def _toggle(self, container, thing, shouldAdd):
         if shouldAdd:
             container.add(thing)
-        elif thing in container:
-            container.remove(thing)
+        else:
+            container.discard(thing)
 
     def _on_camera_enable(self, handler, isEnabled):
         with self._lock:
