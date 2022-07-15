@@ -107,9 +107,9 @@ class Imager:
         self._lock = threading.Lock()
         events.subscribe(events.LIGHT_SOURCE_ENABLE, self._on_light_enable)
         events.subscribe(events.CAMERA_ENABLE, self._on_camera_enable)
+        events.subscribe('light exposure update', self._on_light_update)
 
         events.subscribe(events.USER_ABORT, self.stopVideo)
-        events.subscribe('light exposure update', self.updateExposureTime)
 
 
     def _get_exposure_time(self) -> int:
@@ -119,9 +119,8 @@ class Imager:
             return 0
 
 
-    ## Update exposure times on cameras.
     @pauseVideo
-    def updateExposureTime(self, source=None):
+    def _updateExposureTime(self):
         e_time = self._get_exposure_time()
         for c in self.activeCameras:
             c.setExposureTime(e_time)
@@ -136,12 +135,16 @@ class Imager:
     def _on_camera_enable(self, handler, isEnabled):
         with self._lock:
             self._toggle(self.activeCameras, handler, isEnabled)
-            self.updateExposureTime(handler)
+            self._updateExposureTime()
 
     def _on_light_enable(self, handler, isEnabled):
         with self._lock:
             self._toggle(self.activeLights, handler, isEnabled)
-            self.updateExposureTime(handler)
+            self._updateExposureTime()
+
+    def _on_light_update(self, handler):
+        with self._lock:
+            self._updateExposureTime()
 
 
     ## Take an image.
