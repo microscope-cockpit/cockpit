@@ -49,6 +49,29 @@ triggering also requires information about the trigger, eg:
 In this instance the hardware trigger comes from the device named
 'dsp' and utilises digital trigger line 8.
 
+
+Server configuration
+````````````````````
+Some remote devices, currently cameras, return data back to cockpit
+over a client initialised connection. These devices require the
+cockpit configuration to include a [server] section which defines the
+IP address and port that the cockpit server listens on, and this
+configuration is then passed on to the remote device with the initial
+connection to the device. The server section has two requirements and
+ipaddress and a port for example:
+
+[server]
+ipAddress: 10.1.10.186
+port: 7700
+
+will cause cockpit to listen for returned image data at this address
+and port.
+
+By default cockpit listens on the loopback address (127.0.0.1) at port
+7700 which will auto increment to find an empty port if this port is
+in use.
+
+
 Stages
 ``````
 
