@@ -60,9 +60,11 @@ configuration is then passed on to the remote device with the initial
 connection to the device. The server section has two requirements and
 ipaddress and a port for example:
 
-[server]
-ipAddress: 10.1.10.186
-port: 7700
+.. code:: ini
+
+  [server]
+  ipAddress: 10.1.10.186
+  port: 7700
 
 will cause cockpit to listen for returned image data at this address
 and port.
