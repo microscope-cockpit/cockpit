@@ -1665,7 +1665,7 @@ class ImagePreviewPanel(wx.lib.scrolledpanel.ScrolledPanel):
             # size is still 1x1
             new_width = self.GetClientSize()[0]
             vp_aspect_ratio = _VIEWPANEL_SIZE[0] / _VIEWPANEL_SIZE[1]
-            new_height = new_width / vp_aspect_ratio
+            new_height = int(new_width / vp_aspect_ratio)
             for view in viewsToShow:
                 view.change_size(wx.Size(new_width, new_height))
 
