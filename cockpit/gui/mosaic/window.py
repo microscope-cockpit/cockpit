@@ -499,6 +499,15 @@ class MosaicWindow(wx.Frame, MosaicCommon):
 
         self.mosaicThread = None
 
+        ## Dont continue mosaics if we chnage objective
+        events.subscribe('objective change', self.onObjectiveChange)
+
+    ##Objective chnage sets the shouldRestart flag so we dont
+    ##continue in the wrong place
+    def onObjectiveChange(self, objective):
+        self.shouldRestart = True
+
+        
     ## Create a button with the appropriate properties.
     def makeButton(self, parent, label, leftAction, rightAction, helpText,
             size = (-1, -1)):
