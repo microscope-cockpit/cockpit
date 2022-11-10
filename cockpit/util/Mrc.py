@@ -322,7 +322,7 @@ def save(a, fn, ifExists='ask', zAxisOrder=None,
         if ifExists[0] == 'o':
             pass
         elif ifExists[0] == 'a':
-            yes = raw_input("overwrite?").lower() == 'y'
+            yes = input("overwrite?").lower() == 'y'
             if not yes:
                 raise RuntimeError("not overwriting existing file '%s'"%fn)
         else:
