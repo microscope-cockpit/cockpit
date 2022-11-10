@@ -301,7 +301,7 @@ class ChannelsPanel(wx.Panel):
                 return sizer_item.Window
         else:
             raise ValueError('There is no button named \'%s\''
-                             % channel_name)
+                             % name)
 
 
     def OnChannelAdded(self, event: wx.CommandEvent) -> None:
