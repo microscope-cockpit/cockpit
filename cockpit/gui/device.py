@@ -457,11 +457,7 @@ class SettingsEditor(wx.Frame):
                 # the max() comparison in that case.
                 if None in desc['values'] or max(desc['values']) > wx.INT32_MAX:
                     propType = wx.propgrid.FloatProperty
-            try:
-                prop = propType(label=key, name=key)
-            except Exception as e:
-                sys.stderr.write("populateGrid threw exception for key %s with value %s: %s"
-                                 % (key, value, e))
+            prop = propType(label=key, name=key)
             if desc['readonly']:
                 prop.Enable(False)
             grid.Append(prop)
