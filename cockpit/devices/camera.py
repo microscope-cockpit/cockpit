@@ -84,7 +84,7 @@ class CameraDevice(device.Device):
         self._setTransform((lr, ud, rot))
 
     def _setTransform(self, transform):
-        # Sublcasses should override this if transforms are done on the device.
+        # Subclasses should override this if transforms are done on the device.
         self._transform = transform
 
     def finalizeInitialization(self):
