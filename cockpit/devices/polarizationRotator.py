@@ -27,7 +27,7 @@ class PolarizationDevice(device.Device):
 
     The device class makes available a handler for SI experiments
     which takes an integer argument in the action table that specifies
-    the SI angle index.  Upon exmining the table, it replaces
+    the SI angle index.  Upon examining the table, it replaces
     instances of this handler with instances of whatever handler
     drives the analogue out- put, having converted the angle index to
     the required voltage.
@@ -66,27 +66,6 @@ class PolarizationDevice(device.Device):
 
     def __init__(self, name, config={}):
         super().__init__(name, config)
-
-
-    def getHandlers(self):
-        asource = self.config.get('analogsource', None)
-        aline = self.config.get('analogline', None)
-        offset = self.config.get('offset', 0)
-        gain = self.config.get('gain', 1)
-        dt = Decimal(self.config.get('settlingtime', 0.05))
-        aHandler = depot.getHandler(asource, depot.EXECUTOR)
-
-        if aHandler is None:
-            raise Exception('No control source.')
-        movementTimeFunc = lambda x, start, delta: (0, dt)
-        handler = aHandler.registerAnalog(self, aline, offset, gain, movementTimeFunc)
-
-        # Connect handler to analogue source to populate movement callbacks.
-        handler.connectToAnalogSource(aHandler, aline, offset, gain)
-
-        result.append(handler)
-        return result
-
 
     def getHandlers(self):
         aSource = self.config.get('analogsource', None)
