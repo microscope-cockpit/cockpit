@@ -53,7 +53,7 @@ import typing
 
 import matplotlib.pyplot as plt
 
-import collections
+import collections.abc
 from cockpit import depot
 from cockpit.handlers.deviceHandler import DeviceHandler
 from cockpit import events
@@ -167,7 +167,7 @@ class ExecutorHandler(DeviceHandler):
             if h in self.analogClients:
                 # update analog state
                 lineHandler = self.analogClients[h]
-                if isinstance(args, collections.Iterable):
+                if isinstance(args, collections.abc.Iterable):
                     # Using an indexed position
                     pos = lineHandler.indexedPosition(*args)
                 else:
