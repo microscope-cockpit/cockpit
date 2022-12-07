@@ -21,11 +21,9 @@
 import time
 import threading
 import sys
-try:
-    from collections.abc import Iterable
-except:
-    from collections import Iterable
+from collections.abc import Iterable
 from datetime import datetime
+
 from cockpit.util import files
 import os
 DELIMITER = ';'
