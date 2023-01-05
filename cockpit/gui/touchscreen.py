@@ -759,56 +759,10 @@ class CamerasPanelEntry(wx.Panel):
         button_toggle.setState(self.camera_handler.state)
         sizer_row0.Add(button_toggle, 1, wx.EXPAND | wx.LEFT, 5)
         sizer.Add(sizer_row0, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
-        # Second row: gain
-        if "gain" in self.camera.settings:
-            sizer_row1 = wx.BoxSizer(wx.HORIZONTAL)
-            gain_min, gain_max = self.camera.describe_setting("gain")["values"]
-            gain_img = wx.Image(
-                os.path.join(
-                    cockpit.gui.IMAGES_PATH, "touchscreen/misc_opamp.png"
-                )
-            )
-            gain_ctrl = VariableControlContinuous(
-                self,
-                init_val=self.camera.settings["gain"],
-                step_offset=1,
-                units="",
-                limit_low=gain_min,
-                limit_high=gain_max,
-            )
-            gain_ctrl.Bind(
-                EVT_VAR_CTRL_CONT_COMMAND_EVENT,
-                lambda e: self.camera.updateSettings(
-                    {"gain": e.GetClientData()[1]}
-                ),
-            )
-            events.subscribe(
-                events.SETTINGS_CHANGED % self.camera,
-                lambda: gain_ctrl.set_value(self.camera.settings["gain"]),
-            )
-            sizer_row1.Add(
-                wx.StaticBitmap(self, bitmap=gain_img.ConvertToBitmap()),
-                0,
-                wx.ALIGN_CENTER,
-            )
-            sizer_row1.Add(gain_ctrl, 1, wx.ALIGN_CENTER | wx.LEFT, 5)
-            sizer.Add(
-                sizer_row1, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5
-            )
-        # Third row: readout and settings
-        sizer_row2 = wx.BoxSizer(wx.HORIZONTAL)
-        readout_choice = wx.Choice(self, choices=[])
-        if "readout mode" in self.camera.settings:
-            readout_choice.SetItems(self.camera._modenames)
-            readout_choice.SetSelection(0)
-        else:
-            readout_choice.Enable(False)
-        sizer_row2.Add(readout_choice, 1, wx.ALIGN_CENTER)
+        # Second row: the settings button
         button_settings = wx.Button(self, label="Settings")
         button_settings.Bind(wx.EVT_LEFT_UP, self.camera.showSettings)
-        sizer_row2.Add(button_settings, 1, wx.ALIGN_CENTER | wx.LEFT, 5)
-        sizer.Add(sizer_row2, 0, wx.EXPAND | wx.ALL, 5)
-        # Finalise layout
+        sizer.Add(button_settings, wx.SizerFlags().Expand().Border(wx.ALL, 5))
         self.SetSizer(sizer)
         self.Layout()
 

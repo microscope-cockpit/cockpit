@@ -141,8 +141,8 @@ class CameraPanel(wx.Panel):
         self.Sizer.AddSpacer(2)
 
         if camera.callbacks.get('makeUI', None):
-            self.Sizer.Add(camera.callbacks['makeUI'](self))
-        self.Sizer.AddSpacer(2)
+            self.Sizer.Add(camera.callbacks['makeUI'](self),
+                           wx.SizerFlags().Expand())
 
 
     def onWavelengthChange(self, wl):

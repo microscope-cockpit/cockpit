@@ -53,7 +53,6 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         super().__init__(name, config)
         self.enabled = False
         self.panel = None
-        self.modes = []
 
     def initialize(self):
         # Parent class will connect to proxy
@@ -65,33 +64,8 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             self.updateSettings()
         except:
             pass
-        if 'readout mode' in self.settings:
-            self.modes = self.describe_setting('readout mode')['values']
-        else:
-            self.modes = []
         if self.baseTransform:
             self._setTransform(self.baseTransform)
-
-    @property
-    def _modenames(self):
-        # Modes are a descriptive string of the form
-        # [amp-type] [freq] [channel]
-        if not self.modes:
-            return ['default']
-        import re
-        channels = set()
-        chre = re.compile(r' CH([0-9]+)', re.IGNORECASE)
-        ampre = re.compile(r'CONVENTIONAL ', re.IGNORECASE)
-        modes = []
-        for i, m in self.modes:
-            modes.append(ampre.sub('CONV ', m))
-            match = chre.search(m)
-            if match:
-                channels.union(match.groups())
-
-        if len(channels) < 2:
-            modes = [chre.sub('', m) for m in modes]
-        return modes
 
     def finalizeInitialization(self):
         super().finalizeInitialization()
@@ -323,57 +297,14 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
 
     ### UI functions ###
     def makeUI(self, parent):
-        # TODO - this should probably live in a base deviceHandler.
+        # TODO - this only adds a button with the button for settings.
+        # Maybe that shold all be handled in CameraPanel since the
+        # logic to draw the settings ins the microscope.gui package
+        # anyway.
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        # Readout mode control
-        sizer.Add(wx.StaticText(self.panel, label="Readout mode"))
-        modeButton = wx.Choice(self.panel, choices=self._modenames)
-        self.updateModeButton(modeButton)
-        sizer.Add(modeButton, flag=wx.EXPAND)
-        events.subscribe(events.SETTINGS_CHANGED % self,
-                         lambda: self.updateModeButton(modeButton))
-        modeButton.Bind(wx.EVT_CHOICE, lambda evt: self.setReadoutMode(evt.GetSelection()))
-        sizer.AddSpacer(4)
-        # Gain control
-        sizer.Add(wx.StaticText(self.panel, label="Gain"))
-        gainButton = wx.Button(self.panel,
-                               label="%s" % self.settings.get('gain', None))
-        if 'gain' not in self.settings:
-            gainButton.Disable()
-        gainButton.Bind(wx.EVT_BUTTON, self.onGainButton)
-        sizer.Add(gainButton, flag=wx.EXPAND)
-        events.subscribe(events.SETTINGS_CHANGED % self,
-                         lambda: gainButton.SetLabel("%s" % self.settings.get('gain', None)))
-        sizer.AddSpacer(4)
-        # Settings button
         adv_button = wx.Button(parent=self.panel, label='Settings')
         adv_button.Bind(wx.EVT_LEFT_UP, self.showSettings)
-        sizer.Add(adv_button)
-        self.panel.SetSizerAndFit(sizer)
+        sizer.Add(adv_button, flags=wx.SizerFlags().Expand())
+        self.panel.SetSizer(sizer)
         return self.panel
-
-
-    def updateModeButton(self, button):
-        button.Set(self._modenames)
-        button.SetSelection(self.settings.get('readout mode', 0))
-
-
-    def onGainButton(self, evt):
-        if 'gain' not in self.settings:
-            return
-        desc = self.describe_setting('gain')
-        mingain, maxgain = desc['values']
-        gain = wx.GetNumberFromUser('Gain', '', 'Set gain', value=self.settings.get('gain', 0),
-                                    min=mingain, max=maxgain)
-        if gain == -1:
-            return
-        self.updateSettings({'gain': gain})
-
-    @pauseVideo
-    def setReadoutMode(self, index):
-        if len(self.modes) <= 1:
-            # Only one mode - nothing to do.
-            return
-        self.set_setting('readout mode', self.modes[index][0])
-        self.updateSettings()
