@@ -46,13 +46,35 @@ from microscope import TriggerMode, TriggerType
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
 
 
+def _config_to_ROI(roi_str: str):
+    return ROI(*[int(t) for t in roi_str.strip('()').split(',')])
+
+
 class MicroscopeCamera(MicroscopeBase, CameraDevice):
-    """A class to control remote python microscope cameras."""
+    """Device class for a remote Python-Microscope camera.
+
+    The default transform and ROI can be configured, in the same
+    format as the one used in Python-Microscope.  For example:
+
+    [south camera]
+    type: cockpit.devices.microscopeCamera.MicroscopeCamera
+    uri: PYRO:SomeCamera@192.168.0.2:7003
+    # transform: (lr, ud, rot)
+    transform: (1, 0, 0)
+    # ROI: (left, top, width, height)
+    ROI: (512, 512, 128, 128)
+
+    """
     def __init__(self, name, config):
         # camConfig is a dict with containing configuration parameters.
         super().__init__(name, config)
         self.enabled = False
         self.panel = None
+
+        if 'roi' in config:
+            self._base_ROI = _config_to_ROI(config.get('roi'))
+        else:
+            self._base_ROI = None
 
     def initialize(self):
         # Parent class will connect to proxy
@@ -66,6 +88,8 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             pass
         if self.baseTransform:
             self._setTransform(self.baseTransform)
+        if self._base_ROI is not None:
+            roi = self._proxy.set_roi(self._base_ROI)
 
     def finalizeInitialization(self):
         super().finalizeInitialization()
