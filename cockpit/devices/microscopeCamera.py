@@ -54,15 +54,30 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
     """Device class for a remote Python-Microscope camera.
 
     The default transform and ROI can be configured, in the same
-    format as the one used in Python-Microscope.  For example:
+    format as the one used in Python-Microscope.  For example::
 
-    [south camera]
-    type: cockpit.devices.microscopeCamera.MicroscopeCamera
-    uri: PYRO:SomeCamera@192.168.0.2:7003
-    # transform: (lr, ud, rot)
-    transform: (1, 0, 0)
-    # ROI: (left, top, width, height)
-    ROI: (512, 512, 128, 128)
+        [south camera]
+        type: cockpit.devices.microscopeCamera.MicroscopeCamera
+        uri: PYRO:SomeCamera@192.168.0.2:7003
+        # transform: (lr, ud, rot)
+        transform: (1, 0, 0)
+        # ROI: (left, top, width, height)
+        ROI: (512, 512, 128, 128)
+
+    Guessing the correct transform can be tricky and it's often easier
+    to do it by trial and error.  Since this is a fairly specific
+    thing that is typically only done once, there isn't a UI on
+    Cockpit to do it.  To experiment and find the right transform
+    value from Cockpit, open a PyShell from Cockpit (``Ctrl``+``P``)
+    and change it manually like so::
+
+        from cockpit import depot
+        cam = depot.getDeviceWithName("south camera")
+        cam._setTransform((True, False, False))
+        cam.softTrigger()
+        # If the image displayed is not correct, experiment with
+        # other transform, e.g.:
+        cam._setTransform((True, True, False))
 
     """
     def __init__(self, name, config):
