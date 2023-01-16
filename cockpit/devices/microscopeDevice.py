@@ -129,7 +129,7 @@ class MicroscopeBase(device.Device):
         settings = {}
         if ss:
             settings.update(([m.groups() for kv in ss.split('\n')
-                             for m in [re.match(r'(.*)\s*[:=]\s*(.*)', kv)] if m]))
+                             for m in [re.match(r'(.*?)\s*[:=]\s*(.*?)$', kv)] if m]))
         for k,v in settings.items():
             try:
                 desc = self.describe_setting(k)
