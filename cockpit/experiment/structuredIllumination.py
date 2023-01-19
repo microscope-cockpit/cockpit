@@ -481,6 +481,9 @@ class SIExperiment(experiment.Experiment):
         del doc
         del img_data
 
+        # Copy permissions to new file
+        shutil.copymode(self.savePath, tmp_fh.name)
+
         ## Windows needs to have the file removed first.
         if os.name == "nt":
             os.remove(self.savePath)
