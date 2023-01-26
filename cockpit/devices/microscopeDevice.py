@@ -527,6 +527,23 @@ class MicroscopeStage(MicroscopeBase):
 
         their_axes_map = self._proxy.axes
 
+        #this runs enable on axis that may
+        if self._proxy.may_move_on_enable():
+            # Motors will home during enable.
+            title = "Stage needs to move"
+            msg = (
+                "The '%s' stage needs to find the home position."
+                " Homing may move it so please ensure that there are"
+                " no obstructions, then press 'OK' to home the stage."
+                " If you press 'Cancel' the stage will not be homed"
+                " and its behaviour will be unpredictable."
+                % (self.name)
+            )
+            if cockpit.gui.guiUtils.getUserPermission(msg, title):
+                 self._proxy.enable()
+        elif (not self._proxy.get_is_enabled()):
+            self._proxy.enable()
+
         for one_letter_name in 'xyz':
             axis_config_name = one_letter_name + '-axis-name'
             if axis_config_name not in self.config:
@@ -562,19 +579,6 @@ class MicroscopeStage(MicroscopeBase):
                 raise Exception('No configuration for the axis named \'%s\''
                                 % their_axis_name)
 
-        if self._proxy.may_move_on_enable():
-            # Motors will home during enable.
-            title = "Stage needs to move"
-            msg = (
-                "The '%s' stage needs to find the home position."
-                " Homing may move it so please ensure that there are"
-                " no obstructions, then press 'OK' to home the stage."
-                " If you press 'Cancel' the stage will not be homed"
-                " and its behaviour will be unpredictable."
-                % (self.name)
-            )
-            if cockpit.gui.guiUtils.getUserPermission(msg, title):
-                 self._proxy.enable()
 
 
     def getHandlers(self) -> typing.List[PositionerHandler]:
