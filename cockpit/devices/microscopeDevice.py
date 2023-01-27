@@ -520,14 +520,6 @@ class MicroscopeStage(MicroscopeBase):
     def initialize(self) -> None:
         super().initialize()
 
-        # The names of the axiss we have already configured, to avoid
-        # handling the same one under different names, and to ensure
-        # that we have all axis configured.
-        handled_axis_names = set()
-
-        their_axes_map = self._proxy.axes
-
-        #this runs enable on axis that may
         if self._proxy.may_move_on_enable():
             # Motors will home during enable.
             title = "Stage needs to move"
@@ -541,8 +533,15 @@ class MicroscopeStage(MicroscopeBase):
             )
             if cockpit.gui.guiUtils.getUserPermission(msg, title):
                  self._proxy.enable()
-        elif (not self._proxy.get_is_enabled()):
+        else:
             self._proxy.enable()
+
+        # The names of the axiss we have already configured, to avoid
+        # handling the same one under different names, and to ensure
+        # that we have all axis configured.
+        handled_axis_names = set()
+
+        their_axes_map = self._proxy.axes
 
         for one_letter_name in 'xyz':
             axis_config_name = one_letter_name + '-axis-name'
