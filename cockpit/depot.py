@@ -75,6 +75,8 @@ OBJECTIVE = "objective"
 POWER_CONTROL = "power control"
 SERVER = "server"
 STAGE_POSITIONER = "stage positioner"
+DIO = "digital io"
+
 
 SKIP_CONFIG = ['server']
 

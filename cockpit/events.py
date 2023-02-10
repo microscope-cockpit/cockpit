@@ -115,6 +115,12 @@ the system expects.
 ``SYNCED_VIEW``
 Enabled on camera view images that are synced with zoom/pan to other views. 
 
+``DIO_OUTPUT``
+A DIO output line has chnaged state
+
+``DIO_INPUT``
+A DIO input line has chnaged state
+
 ``"filter change"``
 
 ``"image pixel info"``
@@ -174,7 +180,8 @@ NEW_IMAGE = 'new image %s' # must be suffixed with image source
 SETTINGS_CHANGED = 'settings changed %s' # must be suffixed with device/handler name
 EXECUTOR_DONE = 'executor done %s' # must be sufficed with device/handler name
 VIDEO_MODE_TOGGLE = 'video mode toggle'
-
+DIO_OUTPUT = 'DIO output'
+DIO_INPUT = 'DIO input'
 
 _Subscriber = typing.Callable[..., None]
 

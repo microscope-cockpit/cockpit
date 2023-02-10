@@ -55,6 +55,7 @@ import cockpit.handlers.deviceHandler
 import cockpit.handlers.filterHandler
 import cockpit.handlers.lightPower
 import cockpit.handlers.lightSource
+import cockpit.handlers.digitalioHandler
 import cockpit.util.colors
 import cockpit.util.userConfig
 import cockpit.util.threads
@@ -578,8 +579,221 @@ class MicroscopeStage(MicroscopeBase):
                 raise Exception('No configuration for the axis named \'%s\''
                                 % their_axis_name)
 
-
-
     def getHandlers(self) -> typing.List[PositionerHandler]:
         # Override MicroscopeBase.getHandlers.  Do not call super.
         return [x.getHandler() for x in self._axes]
+
+class MicroscopeDIO(MicroscopeBase):
+    """Device class for asynchronous Digital Inout and Output signals.
+    This class enables the configuration of named buttons in main GUI window
+    to control for situation such a switchable excitation paths.
+
+    Additionally it provides a debug window which allow control of the 
+    state of all output lines and the direction (input or output) of each 
+    control line assuming the hardware support this.
+    """
+
+    def __init__(self, name: str, config: typing.Mapping[str, str]) -> None:
+        super().__init__(name, config)
+
+    def initialize(self) -> None:
+        super().initialize()
+        self.numLines=self._proxy.get_num_lines()
+        #cache which we can read from if we dont want a roundtrip
+        #to the remote.
+        self._cache=[None]*self.numLines
+        self.labels = [""]*self.numLines
+        self.IOMap = [None]*self.numLines
+
+        #read config entries if they exisit to
+        iomapConfig = self.config.get('iomap',[None]*self.numLines)
+        if iomapConfig[0] is not None:
+            #config is deifned so read it into a bool variable,
+            # else it is all [Nones]
+            iomap=iomapConfig.split(',')
+            for i,state in enumerate(iomap):
+                self.IOMap[i]=bool(int(state))
+        labels = self.config.get('labels',None)
+        paths = self.config.get('paths',None)
+
+        if self.IOMap[0] is not None:
+            #first entry is None so no map defined
+            self._proxy.set_all_IO_state(self.IOMap)
+        ##extract names of lines from file
+        ## this needs exactly the same number of lables as lines. Not a
+        ## robust design... should fix
+        if labels:
+            self.labels=labels.split("\n")
+        else:
+            for i in range(self.numLines):
+                self.labels[i]=str(i)
+        # extract defined paths
+        if paths:
+            self.paths=eval(paths)
+        else:
+            self.paths={}
+
+    def read_line(self, line: int, cache=False, updateGUI=True) -> int:
+        if cache:
+            return self._cache[line]
+        state = self._proxy.read_line(line)
+        if updateGUI:
+            #prevent a loop by calling this read line in the button
+            #toggle code
+            events.publish(events.DIO_INPUT,line,state)
+        return state
+
+    def read_all_lines(self, cache=False):
+        if cache:
+            return self._cache
+        states=self._proxy.read_all_lines()
+        for i in range(len(states)):
+            events.publish(events.DIO_INPUT,i,states[i])
+        return (states)
+
+    def write_line(self, line: int, state: bool) -> None:
+        self._proxy.write_line(line,state)
+        events.publish(events.DIO_OUTPUT,line,state)
+
+    def write_all_lines(self, array):
+        self._proxy.write_all_lines(array)
+        self._cache=array
+        for i in range(len(array)):
+            events.publish(events.DIO_OUTPUT,i,array[i])
+
+    def get_IO_state(self,line, cache=False):
+        if cache:
+            return(self.IOMap[line])
+        state=self._proxy.get_IO_state(line)
+        self.IOMap[line] = state
+        return(state)
+
+    def set_IO_state(self,line,state):
+        self.IOMap[line] = state
+        self._proxy.set_IO_state(line,state)
+
+    ## Debugging function: display a debug window.
+    def showDebugWindow(self):
+        self.DIOdebugWindow=DIOOutputWindow(self, parent=wx.GetApp().GetTopWindow()).Show()
+
+    def getHandlers(self):
+        """Return device handlers."""
+        ##nneds functions to get and set signals for save and load
+        ##channel functionality. 
+        h = cockpit.handlers.digitalioHandler.DigitalIOHandler(self.name,
+                             'DIO', False, 
+                            {'setOutputs': self.write_all_lines,
+                             'getOutputs': self.read_all_lines,
+                             'getPaths': self.getPaths,
+                             'write line': self.write_line,
+                             'get labels': self.getLabels})
+        self.handlers = [h]
+        return self.handlers
+
+    def getLabels(self):
+        return self.labels
+
+    def getPaths(self):
+        return self.paths
+
+    def receiveData(self, *args):
+        """This function is called when input line state is received from 
+        the hardware."""
+        (line, state) = args
+        #State changed send event to interested parties.
+        if self.IOMap[line]:
+            #this is meant to be an output line!
+            raise Exception('Input signal received on an output digital line')
+        self._cache[line]=state
+        events.publish(events.DIO_INPUT,line,state)
+
+## This debugging window lets each digital lineout of the DIO device
+## be manipulated individually.
+
+class DIOOutputWindow(wx.Frame):
+    def __init__(self, DIO, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+
+        ## piDevice instance.
+        self.DIO = DIO
+        # Contains all widgets.
+        panel = wx.Panel(self)
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
+        toggleSizer = wx.GridSizer(1, DIO.numLines, 1, 1)
+        buttonSizer = wx.GridSizer(1, DIO.numLines, 1, 1)
+
+        ## Maps buttons to their lines.
+        self.lineToButton = {}
+        self.state=self.DIO._proxy.read_all_lines()
+        # Set up the digital lineout buttons.
+        for i in range(DIO.numLines) :
+            #state of IO , output or Input
+            toggle = wx.ToggleButton(panel, wx.ID_ANY)
+            toggle.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: self.updateState())
+            toggleSizer.Add(toggle, 1, wx.EXPAND)
+            ioState=self.DIO.get_IO_state(i)
+            toggle.SetValue(ioState)
+            if ioState:
+                toggle.SetLabel("Output")
+            else:
+                toggle.SetLabel("Input")
+            #Button to toggle state of output lines.
+            button = wx.ToggleButton(panel, wx.ID_ANY, DIO.labels[i])
+            button.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: self.toggle())
+            buttonSizer.Add(button, 1, wx.EXPAND)
+            self.lineToButton[i] = [toggle,button]
+            if (self.state[i] is not None):
+                button.SetValue(self.state[i])
+            else:
+                #if no state reported from remote set to false
+                button.SetValue(False)
+            if (ioState==False):
+                #need to do something like colour the button red
+                button.Disable()
+            else:
+                button.Enable()
+
+        mainSizer.Add(toggleSizer)
+        mainSizer.Add(buttonSizer)
+        panel.SetSizerAndFit(mainSizer)
+        self.SetClientSize(panel.GetSize())
+        events.subscribe(events.DIO_OUTPUT,self.outputChanged)
+        events.subscribe(events.DIO_INPUT,self.inputChanged)
+
+    #functions to updated chaces and GUI displays when DIO state chnages. 
+    def outputChanged(self,line,state):
+        #check this is an output line
+        if self.DIO.IOMap:
+            self.lineToButton[line][1].SetValue(state)
+            self.DIO._cache[line]=state
+
+    def inputChanged(self,line,state):
+        # I think we need to check input versus output state.
+        self.updateState()
+
+    ## One of our buttons was clicked; update the debug output.
+    def toggle(self):
+        for line, (toggle, button)  in self.lineToButton.items():
+            if (self.DIO.get_IO_state(line)):
+                self.DIO.write_line(line, button.GetValue())
+            else:
+                #read input state.
+                button.SetValue=self.DIO.read_line(line,updateGUI=False)
+
+    ## One of our buttons was clicked; update the debug output.
+    def updateState(self):
+        for line, (toggle, button)  in self.lineToButton.items():
+            state=toggle.GetValue()
+            self.DIO.set_IO_state(line, state)
+            if state:
+                button.Enable()
+                toggle.SetLabel("Output")
+                button.SetLabel(self.DIO.labels[line])
+            else:
+                button.Disable()
+                toggle.SetLabel("Input")
+                state=self.DIO.read_line(line,updateGUI = False)
+                if state:
+                    button.SetLabel("True")
+                else:
+                    button.SetLabel("False")
