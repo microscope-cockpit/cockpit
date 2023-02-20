@@ -390,7 +390,7 @@ class WindowsMenu(wx.Menu):
             menu_item.Enable(False)
         else:
             shell = sys.platform == 'win32'
-            args = ['python', csv_plotter.__file__] + logs
+            args = [sys.executable, csv_plotter.__file__] + logs
             self.Bind(wx.EVT_MENU,
                       lambda e: subprocess.Popen(args, shell=shell),
                       menu_item)
