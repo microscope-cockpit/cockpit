@@ -47,6 +47,7 @@ import typing
 
 import Pyro4
 import wx
+import time
 from cockpit import events
 from cockpit.devices import device
 from cockpit import depot
@@ -59,6 +60,9 @@ import cockpit.handlers.digitalioHandler
 import cockpit.util.colors
 import cockpit.util.userConfig
 import cockpit.util.threads
+import cockpit.util.listener
+import cockpit.util.logger
+from cockpit.util import valueLogger
 from cockpit.gui.device import SettingsEditor
 from cockpit.handlers.stagePositioner import PositionerHandler
 from cockpit.interfaces import stageMover
@@ -595,13 +599,14 @@ class MicroscopeDIO(MicroscopeBase):
 
     def __init__(self, name: str, config: typing.Mapping[str, str]) -> None:
         super().__init__(name, config)
+        self.name = name
 
     def initialize(self) -> None:
         super().initialize()
         self.numLines=self._proxy.get_num_lines()
         #cache which we can read from if we dont want a roundtrip
         #to the remote.
-        self._cache=[None]*self.numLines
+        self._cache = [False]*self.numLines
         self.labels = [""]*self.numLines
         self.IOMap = [None]*self.numLines
 
@@ -623,7 +628,7 @@ class MicroscopeDIO(MicroscopeBase):
         ## this needs exactly the same number of lables as lines. Not a
         ## robust design... should fix
         if labels:
-            self.labels=labels.split("\n")
+            self.labels=eval(labels)
         else:
             for i in range(self.numLines):
                 self.labels[i]=str(i)
@@ -632,6 +637,14 @@ class MicroscopeDIO(MicroscopeBase):
             self.paths=eval(paths)
         else:
             self.paths={}
+        # Lister to receive data back from hardware
+        self.listener = cockpit.util.listener.Listener(self._proxy,
+                                               lambda *args:
+                                                       self.receiveData(*args))
+        #log to record line state chnages
+        self.logger = valueLogger.ValueLogger(self.name,
+                    keys=self.labels)
+
 
     def read_line(self, line: int, cache=False, updateGUI=True) -> int:
         if cache:
@@ -657,7 +670,6 @@ class MicroscopeDIO(MicroscopeBase):
 
     def write_all_lines(self, array):
         self._proxy.write_all_lines(array)
-        self._cache=array
         for i in range(len(array)):
             events.publish(events.DIO_OUTPUT,i,array[i])
 
@@ -671,6 +683,16 @@ class MicroscopeDIO(MicroscopeBase):
     def set_IO_state(self,line,state):
         self.IOMap[line] = state
         self._proxy.set_IO_state(line,state)
+
+    def enable(self,state):
+        if state:
+            self._proxy.enable()
+            self.listener.connect()
+            return(True)
+        else:
+            self._proxy.disable()
+            self.listener.disconnect()
+            return(False)
 
     ## Debugging function: display a debug window.
     def showDebugWindow(self):
@@ -686,7 +708,8 @@ class MicroscopeDIO(MicroscopeBase):
                              'getOutputs': self.read_all_lines,
                              'getPaths': self.getPaths,
                              'write line': self.write_line,
-                             'get labels': self.getLabels})
+                             'get labels': self.getLabels,
+                             'enable': self.enable})
         self.handlers = [h]
         return self.handlers
 
@@ -699,12 +722,11 @@ class MicroscopeDIO(MicroscopeBase):
     def receiveData(self, *args):
         """This function is called when input line state is received from 
         the hardware."""
-        (line, state) = args
-        #State changed send event to interested parties.
+        ((line,state),timestamp) = args
         if self.IOMap[line]:
             #this is meant to be an output line!
             raise Exception('Input signal received on an output digital line')
-        self._cache[line]=state
+        #State changed send event to interested parties.
         events.publish(events.DIO_INPUT,line,state)
 
 ## This debugging window lets each digital lineout of the DIO device
@@ -743,13 +765,14 @@ class DIOOutputWindow(wx.Frame):
             buttonSizer.Add(button, 1, wx.EXPAND)
             self.lineToButton[i] = [toggle,button]
             if (self.state[i] is not None):
-                button.SetValue(self.state[i])
+                button.SetValue(bool(self.state[i]))
             else:
                 #if no state reported from remote set to false
                 button.SetValue(False)
             if (ioState==False):
                 #need to do something like colour the button red
                 button.Disable()
+                button.SetLabel(str(int(self.DIO.read_line(i))))
             else:
                 button.Enable()
 
@@ -760,16 +783,23 @@ class DIOOutputWindow(wx.Frame):
         events.subscribe(events.DIO_OUTPUT,self.outputChanged)
         events.subscribe(events.DIO_INPUT,self.inputChanged)
 
-    #functions to updated chaces and GUI displays when DIO state chnages. 
+    #functions to updated chaces and GUI displays when DIO state changes. 
     def outputChanged(self,line,state):
         #check this is an output line
         if self.DIO.IOMap:
+            #log befroe we update cache to get sharp transitions.
+            self.DIO.logger.log(list(map(int,self.DIO._cache)))
             self.lineToButton[line][1].SetValue(state)
             self.DIO._cache[line]=state
+            #need to map bool's to ints for valuelogviewer
+            self.DIO.logger.log(list(map(int,self.DIO._cache)))
 
     def inputChanged(self,line,state):
+        self.DIO.logger.log(list(map(int,self.DIO._cache)))
+        self.DIO._cache[line]=state
+        self.DIO.logger.log(list(map(int,self.DIO._cache)))
         # I think we need to check input versus output state.
-        self.updateState()
+        self.updateState(line,bool(state))
 
     ## One of our buttons was clicked; update the debug output.
     def toggle(self):
@@ -778,10 +808,16 @@ class DIOOutputWindow(wx.Frame):
                 self.DIO.write_line(line, button.GetValue())
             else:
                 #read input state.
-                button.SetValue=self.DIO.read_line(line,updateGUI=False)
+                button.SetValue=bool(self.DIO.read_line(line,updateGUI=False))
 
     ## One of our buttons was clicked; update the debug output.
-    def updateState(self):
+    @cockpit.util.threads.callInMainThread
+    def updateState(self,line = None,state = None):
+        if (line is not None) and (state is not None):
+            cockpit.util.logger.log.debug("Line %d returned %s" %
+                                          (line,str(state)))
+            self.lineToButton[line][1].SetLabel(str(int(state)))
+            return()
         for line, (toggle, button)  in self.lineToButton.items():
             state=toggle.GetValue()
             self.DIO.set_IO_state(line, state)
@@ -793,7 +829,5 @@ class DIOOutputWindow(wx.Frame):
                 button.Disable()
                 toggle.SetLabel("Input")
                 state=self.DIO.read_line(line,updateGUI = False)
-                if state:
-                    button.SetLabel("True")
-                else:
-                    button.SetLabel("False")
+                button.SetLabel(str(int(state)))
+

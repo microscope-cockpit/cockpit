@@ -22,45 +22,17 @@
 from cockpit.handlers import deviceHandler
 from cockpit import depot
 import cockpit.gui
+import cockpit.gui.device
 import wx
 import cockpit.util.threads
-
-# class Filter:
-#     """An individual filter."""
-
-#     def __init__(self, position, *args):
-#         self.position = int(position)
-#         # args describes the filter.
-#         # The description can be one of
-#         #   label, value
-#         #   (label, value)
-#         #   label
-#         if isinstance(args[0], tuple):
-#             self.label = args[0][0]
-#             if len(args[0]) > 1:
-#                 self.value = args[0][1]
-#             else:
-#                 self.value = None
-#         else:
-#             self.label = args[0]
-#             if len(args) > 1:
-#                 self.value = args[1]
-#             else:
-#                 self.value = None
-
-            
-#     def __repr__(self):
-#         if self.value:
-#             return '%d: %s, %s' % (self.position, self.label, self.value)
-#         else:
-#             return '%d: %s' % (self.position, self.label)
-
 
 class DigitalIOHandler(deviceHandler.DeviceHandler):
     """A handler for Digital IO devcies."""
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks):
         super().__init__(name, groupName, isEligibleForExperiments,
                          callbacks, depot.DIO)
+        self.isEnabled = False
+                
     @property
     def paths(self):
         return self.callbacks['getPaths']()
@@ -70,13 +42,28 @@ class DigitalIOHandler(deviceHandler.DeviceHandler):
 
     def onLoadSettings(self, settings):
         print ("onLoad:",settings)
-        return self.callbacks['getOutputs'](settings)
+        return self.callbacks['setOutputs'](settings)
 
+    def setEnabled(self, shouldEnable = True):
+        try:
+            self.isEnabled = self.callbacks['enable'](shouldEnable)
+        except:
+            self.isEnabled = False
+            raise
+        if self.isEnabled != shouldEnable:
+            raise Exception("Problem enabling device with handler %s" % self)
+
+    ## Return self.isEnabled.
+    def getIsEnabled(self):
+        return self.isEnabled
+    
 
        ### UI functions ###
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
+        enablebutton=cockpit.gui.device.EnableButton(self.panel,deviceHandler=self)
+        sizer.Add(enablebutton,1,wx.EXPAND)
         self.pathNameToButton={}
         for key in self.paths.keys():
             button = wx.ToggleButton(self.panel, wx.ID_ANY)

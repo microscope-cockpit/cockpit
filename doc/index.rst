@@ -23,7 +23,8 @@ Microscope-Cockpit
    file-format
    troubleshoot
    development
-
+   extending
+   
 Cockpit is a microscope graphical user interface.  It is a flexible
 and easy to extend platform aimed at life scientists using bespoke
 microscopes. Its main features are:

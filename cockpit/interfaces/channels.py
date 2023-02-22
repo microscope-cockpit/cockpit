@@ -124,7 +124,8 @@ def CurrentChannel() -> Channel:
         if handler.deviceType in [cockpit.depot.CAMERA,
                                   cockpit.depot.LIGHT_FILTER,
                                   cockpit.depot.LIGHT_POWER,
-                                  cockpit.depot.LIGHT_TOGGLE]:
+                                  cockpit.depot.LIGHT_TOGGLE,
+                                  cockpit.depot.DIO]:
             new_channel[handler.name] = handler.onSaveSettings()
     return new_channel
 
