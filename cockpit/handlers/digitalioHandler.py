@@ -38,11 +38,17 @@ class DigitalIOHandler(deviceHandler.DeviceHandler):
         return self.callbacks['getPaths']()
         
     def onSaveSettings(self):
-        return self.callbacks['getOutputs']()
+        paths={}
+        for key in self.pathNameToButton.keys():
+            paths[key]=int(self.pathNameToButton[key].GetValue())
+        outputs=list(map(int,self.callbacks['getOutputs']()))
+        return [paths,outputs]
 
     def onLoadSettings(self, settings):
-        print ("onLoad:",settings)
-        return self.callbacks['setOutputs'](settings)
+        (paths,outputs)=settings
+        for key in paths.keys():
+            self.pathNameToButton[key].SetValue(paths[key])
+        return self.callbacks['setOutputs'](outputs)
 
     def setEnabled(self, shouldEnable = True):
         try:

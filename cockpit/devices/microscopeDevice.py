@@ -622,8 +622,16 @@ class MicroscopeDIO(MicroscopeBase):
         paths = self.config.get('paths',None)
 
         if self.IOMap[0] is not None:
-            #first entry is None so no map defined
+            #first entry is not None so map defined
             self._proxy.set_all_IO_state(self.IOMap)
+        else:
+            #no map so set all lines to output
+            self._proxy.set_all_IO_state([True]*self.numLines)
+        #start all output lines as false
+        for i in range(self.numLines):
+            if self.IOMap[i]:
+                self.write_line(i,False)
+                
         ##extract names of lines from file
         ## this needs exactly the same number of lables as lines. Not a
         ## robust design... should fix
