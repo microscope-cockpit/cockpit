@@ -65,6 +65,7 @@ from cockpit.interfaces import stageMover
 class HandlerPositionCtrl(wx.TextCtrl):
     def __init__(self, parent, axis: int, handler_index: int) -> None:
         super().__init__(parent, style=wx.TE_RIGHT|wx.TE_READONLY)
+        self.SetMinSize(self.GetSizeFromText("88888.88"))
         self._axis = axis
         self._handler_index = handler_index
 
@@ -107,6 +108,7 @@ class AxisStepCtrl(wx.TextCtrl):
     """
     def __init__(self, parent, axis: int) -> None:
         super().__init__(parent, style=wx.TE_RIGHT)
+        self.SetMinSize(self.GetSizeFromText("8888.88"))
         self._axis = axis
 
         self._SetStepSizeValue(stageMover.getCurStepSizes()[self._axis])
