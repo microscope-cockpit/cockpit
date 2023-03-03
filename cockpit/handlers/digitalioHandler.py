@@ -42,13 +42,20 @@ class DigitalIOHandler(deviceHandler.DeviceHandler):
         for key in self.pathNameToButton.keys():
             paths[key]=int(self.pathNameToButton[key].GetValue())
         outputs=list(map(int,self.callbacks['getOutputs']()))
-        return [paths,outputs]
+        IOstate = [self.callbacks['getIOstate'](i)
+                   for i in range(len(outputs))]
+        return [paths,outputs,IOstate]
 
     def onLoadSettings(self, settings):
-        (paths,outputs)=settings
+        (paths,outputs,IOstate)=settings
         for key in paths.keys():
             self.pathNameToButton[key].SetValue(paths[key])
-        return self.callbacks['setOutputs'](outputs)
+        for i,state in enumerate(IOstate):
+            #proabbyl safer not to change IO state here
+            #self.callbacks['setIOstate'](i,state)
+            if state:
+                self.callbacks['write line'](i,outputs[i])
+            
 
     def setEnabled(self, shouldEnable = True):
         try:

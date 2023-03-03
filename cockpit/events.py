@@ -121,6 +121,10 @@ A DIO output line has chnaged state
 ``DIO_INPUT``
 A DIO input line has chnaged state
 
+``VALUELOGGER_INPUT``
+New Value logger data has arrived
+
+
 ``"filter change"``
 
 ``"image pixel info"``
@@ -182,6 +186,7 @@ EXECUTOR_DONE = 'executor done %s' # must be sufficed with device/handler name
 VIDEO_MODE_TOGGLE = 'video mode toggle'
 DIO_OUTPUT = 'DIO output'
 DIO_INPUT = 'DIO input'
+VALUELOGGER_INPUT = 'ValueLogger input'
 
 _Subscriber = typing.Callable[..., None]
 

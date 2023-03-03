@@ -246,12 +246,35 @@ input. See the example config entries:
 
 .. code:: ini
 
-IOMap:1,1,0,0
-labels: ["Mirror1","Mirror2","In1","In2"]
-paths:{ "Widefield": [{"Mirror1": True, "Mirror2": False}, {"SIM": False}],
+  IOMap:1,1,0,0
+  labels: ["Mirror1","Mirror2","In1","In2"]
+  paths:{ "Widefield": [{"Mirror1": True, "Mirror2": False}, {"SIM": False}],
       "SIM": [{"Mirror1": False, "Mirror2": True}, {"Widefield": False}]}
 
-  
+Input and output digital signals are sent to the logger when values
+change. The logger is set to record the state before and after state
+changes are updated so that digital transitions are sharp. Typically
+values are only logged on state changes, both output changes trigger by
+the user or other actions and input changes that are pushed from the
+remote process.
+      
+
+Value Logger
+````````````
+
+The Value logger component allows analogue (or digital) signals to be
+passed into the Cockpit Logger and then viewed on the
+LogValueViewer. This allows a remote process such as a temperature
+logger to push data to Cockpit which is then logged and available for
+display in the LogValueViewer.
+
+The Value Logger configuration has a labels array which specifies
+names for each logged channel.
+
+.. code:: ini
+
+  labels:["T1", "T2"]
+
 Additional specific parameters
 ``````````````````````````````
 

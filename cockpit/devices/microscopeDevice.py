@@ -632,14 +632,16 @@ class MicroscopeDIO(MicroscopeBase):
             if self.IOMap[i]:
                 self.write_line(i,False)
                 
-        ##extract names of lines from file
-        ## this needs exactly the same number of lables as lines. Not a
-        ## robust design... should fix
+        ##extract names of lines from file, too many are ignored,
+        ## too few are padded with str(line number)
+        templabels=[]
         if labels:
-            self.labels=eval(labels)
-        else:
-            for i in range(self.numLines):
-                self.labels[i]=str(i)
+            templabels=eval(labels)
+        for i in range(self.numLines):
+            if i<len(templabels):
+                self.labels[i]=templabels[i]
+            else:
+                self.labels[i]=("Line %d" %i)
         # extract defined paths
         if paths:
             self.paths=eval(paths)
@@ -652,6 +654,9 @@ class MicroscopeDIO(MicroscopeBase):
         #log to record line state chnages
         self.logger = valueLogger.ValueLogger(self.name,
                     keys=self.labels)
+        events.subscribe(events.DIO_INPUT,self.log_state_change)
+        events.subscribe(events.DIO_OUTPUT,self.log_state_change)
+
 
 
     def read_line(self, line: int, cache=False, updateGUI=True) -> int:
@@ -702,6 +707,14 @@ class MicroscopeDIO(MicroscopeBase):
             self.listener.disconnect()
             return(False)
 
+    def log_state_change(self,line,state):
+        #log befroe we update cache to get sharp transitions.
+        self.logger.log(list(map(int,self._cache)))
+        self._cache[line]=state
+        #need to map bool's to ints for valuelogviewer
+        self.logger.log(list(map(int,self._cache)))
+
+        
     ## Debugging function: display a debug window.
     def showDebugWindow(self):
         self.DIOdebugWindow=DIOOutputWindow(self, parent=wx.GetApp().GetTopWindow()).Show()
@@ -713,7 +726,9 @@ class MicroscopeDIO(MicroscopeBase):
         h = cockpit.handlers.digitalioHandler.DigitalIOHandler(self.name,
                              'DIO', False, 
                             {'setOutputs': self.write_all_lines,
+                             'setIOstate': self.set_IO_state,
                              'getOutputs': self.read_all_lines,
+                             'getIOstate': self.get_IO_state,
                              'getPaths': self.getPaths,
                              'write line': self.write_line,
                              'get labels': self.getLabels,
@@ -795,18 +810,9 @@ class DIOOutputWindow(wx.Frame):
     def outputChanged(self,line,state):
         #check this is an output line
         if self.DIO.IOMap:
-            #log befroe we update cache to get sharp transitions.
-            self.DIO.logger.log(list(map(int,self.DIO._cache)))
             self.lineToButton[line][1].SetValue(state)
-            self.DIO._cache[line]=state
-            #need to map bool's to ints for valuelogviewer
-            self.DIO.logger.log(list(map(int,self.DIO._cache)))
 
     def inputChanged(self,line,state):
-        self.DIO.logger.log(list(map(int,self.DIO._cache)))
-        self.DIO._cache[line]=state
-        self.DIO.logger.log(list(map(int,self.DIO._cache)))
-        # I think we need to check input versus output state.
         self.updateState(line,bool(state))
 
     ## One of our buttons was clicked; update the debug output.
@@ -838,4 +844,66 @@ class DIOOutputWindow(wx.Frame):
                 toggle.SetLabel("Input")
                 state=self.DIO.read_line(line,updateGUI = False)
                 button.SetLabel(str(int(state)))
+
+
+class MicroscopeValueLogger(MicroscopeBase):
+    """Device class for asynchronous Digital Inout and Output signals.
+    This class enables the configuration of named buttons in main GUI window
+    to control for situation such a switchable excitation paths.
+
+    Additionally it provides a debug window which allow control of the 
+    state of all output lines and the direction (input or output) of each 
+    control line assuming the hardware support this.
+    """
+
+    def __init__(self, name: str, config: typing.Mapping[str, str]) -> None:
+        super().__init__(name, config)
+        self.name = name
+
+    def initialize(self) -> None:
+        super().initialize()
+        self.numSensors=self._proxy.get_num_sensors()
+        #cache which we can read from if we dont want a roundtrip
+        #to the remote.
+        self._cache = [False]*self.numSensors
+        self.labels = [""]*self.numSensors
+        labels = self.config.get('labels',None)
+        ##extract names of lines from file, too many are ignored,
+        ## too few are padded with str(line number)
+        templabels=[]
+        if labels:
+            templabels=eval(labels)
+        for i in range(self.numSensors):
+            if i<len(templabels):
+                self.labels[i]=templabels[i]
+            else:
+                self.labels[i]=("Sensor %d" %i)
+        # Lister to receive data back from hardware
+        self.listener = cockpit.util.listener.Listener(self._proxy,
+                                               lambda *args:
+                                                       self.receiveData(*args))
+        #log to record line state chnages
+        self.logger = valueLogger.ValueLogger(self.name,
+                    keys=self.labels)
+        self.enable(True)
+        
+    def receiveData(self, *args):
+        """This function is called sensors return data from 
+        the hardware."""
+        (data,timestamp) = args
+        events.publish(events.VALUELOGGER_INPUT,data)
+        self.logger.log(data)
+        
+
+
+    def enable(self,state):
+        if state:
+            self._proxy.enable()
+            self.listener.connect()
+            return(True)
+        else:
+            self._proxy.disable()
+            self.listener.disconnect()
+            return(False)
+
 
