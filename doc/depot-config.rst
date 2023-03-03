@@ -281,17 +281,24 @@ Additional specific parameters
 As well as the general parameters defined by the different microscope
 device types, hardware specific parameters can be set and any not
 defined parameter will be sent to the remote microscope as a setting
-for that device, eg:
+for that device. This involves the special keyword setting: followed
+by key-value pairs, this is an example from a Andor camera config:
 
 
 .. code:: ini
-
-  isWaterCooled: True
-  targetTemperature: -80
+	  
+settings:
+    aoi_height: 1024
+    aoi_width: 1024
+    aoi_left: 513
+    aoi_top: 513
+    pixel_readout_rate: 100 MHz
+    simple_pre_amp_gain_control: 16bit (low noise & high well capacity)
+    trigger_mode: External Exposure
 
 Will set the remote parameters as specified, this example is from an
-Andor iXon EMCCD device and will enable the watercooling switch and
-set the temperature to -80 C. 
+Andor camera device and will set aoi sizes, readout rates,pre_amp_gain
+and trigger mode.
 
 
 Non Python-Microscope devices
