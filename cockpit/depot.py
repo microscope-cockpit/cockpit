@@ -76,7 +76,7 @@ POWER_CONTROL = "power control"
 SERVER = "server"
 STAGE_POSITIONER = "stage positioner"
 DIO = "digital io"
-
+VALUE_LOGGER = "value logger"
 
 SKIP_CONFIG = ['server']
 
