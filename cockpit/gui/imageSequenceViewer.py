@@ -114,7 +114,7 @@ class ImageSequenceViewer(wx.Frame):
     ## Unsubscribe from the pixel info event so we don't leave stale functions
     # lying around.
     def onClose(self, event):
-        events.unsubscribe(events.IMAGE_PIXEL_INFOcock, self.onImagePixelInfo)
+        events.unsubscribe(events.IMAGE_PIXEL_INFO, self.onImagePixelInfo)
         event.Skip()
 
 
