@@ -87,6 +87,9 @@ additional init steps.
   The light source associated with the provided handler has been
   enabled / disabled for taking images.
 
+``LIGHT_EXPOSURE_UPDATE``
+The exposure time on a light source has been updated
+
 ``MOSAIC_UPDATE``
 
 ``NEW_IMAGE % camera name``
@@ -175,6 +178,7 @@ UPDATE_STATUS_LIGHT = 'update status light'
 PREPARE_FOR_EXPERIMENT = 'prepare for experiment'
 CLEANUP_AFTER_EXPERIMENT = 'cleanup after experiment'
 LIGHT_SOURCE_ENABLE = 'light source enable'
+LIGHT_EXPOSURE_UPDATE = 'light exposure update'
 CAMERA_ENABLE = 'camera enable'
 FILTER_CHANGE = 'filter change'
 STAGE_POSITION = 'stage position'
@@ -187,7 +191,7 @@ SYNCED_VIEW = 'synced view'
 USER_ABORT = 'user abort'
 MOSAIC_UPDATE = 'mosaic update'
 NEW_IMAGE = 'new image %s' # must be suffixed with image source
-IMAGE_PIXEL_INFO= 'image pixel info'
+IMAGE_PIXEL_INFO = 'image pixel info'
 SETTINGS_CHANGED = 'settings changed %s' # must be suffixed with device/handler name
 EXECUTOR_DONE = 'executor done %s' # must be sufficed with device/handler name
 VIDEO_MODE_TOGGLE = 'video mode toggle'

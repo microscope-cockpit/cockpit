@@ -107,7 +107,7 @@ class Imager:
         self._lock = threading.Lock()
         events.subscribe(events.LIGHT_SOURCE_ENABLE, self._on_light_enable)
         events.subscribe(events.CAMERA_ENABLE, self._on_camera_enable)
-        events.subscribe('light exposure update', self._on_light_update)
+        events.subscribe(events.LIGHT_EXPOSURE_UPDATE, self._on_light_update)
 
         events.subscribe(events.USER_ABORT, self.stopVideo)
 

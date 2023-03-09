@@ -194,7 +194,7 @@ class LightHandler(deviceHandler.DeviceHandler):
         # \param outermost: flag indicating that we should update others.
         self.callbacks['setExposureTime'](self.name, value)
         # Publish event to update control labels.
-        events.publish('light exposure update', self)
+        events.publish(events.LIGHT_EXPOSURE_UPDATE, self)
         # Update exposure times for lights that share the same shutter.
         s = self.__class__.__lightToShutter.get(self, None)
         self.exposureTime = value
@@ -203,7 +203,7 @@ class LightHandler(deviceHandler.DeviceHandler):
                 s.setExposureTime(value)
             for other in self.__class__.__shutterToLights[s].difference([self]):
                 other.setExposureTime(value, outermost=False)
-                events.publish('light exposure update', other)
+                events.publish(events.LIGHT_EXPOSURE_UPDATE, other)
 
     ## Get the current exposure time, in milliseconds.
     @cached
