@@ -820,7 +820,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         shape = numpy.array(self.imageShape, dtype=np.uint)
         if (coords < shape).all() and (coords >= 0).all():
             value = self.imageData[coords[0], coords[1]]
-            events.publish("image pixel info", coords[::-1], value)
+            events.publish(events.IMAGE_PIXEL_INFO, coords[::-1], value)
 
 
     ## Modify our panning amount by the provided factor.

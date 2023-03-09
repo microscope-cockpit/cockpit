@@ -97,7 +97,7 @@ class ImageSequenceViewer(wx.Frame):
         # to access curViewIndex in self.setCurImage we get strange values.
         self.setCurImage()
 
-        events.subscribe('image pixel info', self.onImagePixelInfo)
+        events.subscribe(events.IMAGE_PIXEL_INFO, self.onImagePixelInfo)
         self.Bind(wx.EVT_CLOSE, self.onClose)
         accelTable = wx.AcceleratorTable([
             (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_MULTIPLY, 1), 
@@ -114,7 +114,7 @@ class ImageSequenceViewer(wx.Frame):
     ## Unsubscribe from the pixel info event so we don't leave stale functions
     # lying around.
     def onClose(self, event):
-        events.unsubscribe('image pixel info', self.onImagePixelInfo)
+        events.unsubscribe(events.IMAGE_PIXEL_INFOcock, self.onImagePixelInfo)
         event.Skip()
 
 

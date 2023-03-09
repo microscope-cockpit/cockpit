@@ -131,7 +131,7 @@ New Value logger data has arrived
 ``FILTER_CHANGE``
 There has been a filter change on some beam path. 
 
-``"image pixel info"``
+``IMAGE_PIXEL_INFO``
   The mouse has moved over a camera view, and the specified
   coordinates have the given value.
 
@@ -187,6 +187,7 @@ SYNCED_VIEW = 'synced view'
 USER_ABORT = 'user abort'
 MOSAIC_UPDATE = 'mosaic update'
 NEW_IMAGE = 'new image %s' # must be suffixed with image source
+IMAGE_PIXEL_INFO= 'image pixel info'
 SETTINGS_CHANGED = 'settings changed %s' # must be suffixed with device/handler name
 EXECUTOR_DONE = 'executor done %s' # must be sufficed with device/handler name
 VIDEO_MODE_TOGGLE = 'video mode toggle'
