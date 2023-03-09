@@ -109,7 +109,7 @@ class DrawerHandler(deviceHandler.DeviceHandler):
 
         # Last thing to do is update UI to show default selections.
         initial_settings = self.settings[self.settingIndex]
-        events.oneShotSubscribe('cockpit initialization complete',
+        events.oneShotSubscribe(events.COCKPIT_INIT_COMPLETE,
                                 lambda: self.changeDrawer(initial_settings))
 
     ## Generate a row of buttons, one for each possible drawer.

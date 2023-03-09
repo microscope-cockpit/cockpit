@@ -65,6 +65,8 @@ Available events
 Anything can be "published".  The following is a list of events that
 the system expects.
 
+``COCKPIT_INIT_COMPLETE``
+
 ``CAMERA_ENABLE``
 
 ``CLEANUP_AFTER_EXPERIMENT``
@@ -163,6 +165,7 @@ import typing
 
 ## Define common event strings here. This way, they're here for reference,
 # and can be used elsewhere to avoid errors due to typos.
+COCKPIT_INIT_COMPLETE = 'cockpit initialization complete'
 DEVICE_STATUS = 'device status'
 EXPERIMENT_EXECUTION = 'experiment execution'
 EXPERIMENT_COMPLETE = 'experiment complete'

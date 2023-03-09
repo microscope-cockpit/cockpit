@@ -162,7 +162,7 @@ class PhysikInstrumenteM687(Device):
 
         events.subscribe(events.USER_ABORT, self.onAbort)
         events.subscribe('macro stage xy draw', self.onMacroStagePaint)
-        #events.subscribe('cockpit initialization complete', self.promptExerciseStage)
+        #events.subscribe(events.COCKPIT_INIT_COMPLETE, self.promptExerciseStage)
 
 
     def initialize(self):

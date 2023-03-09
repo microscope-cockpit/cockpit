@@ -109,7 +109,7 @@ class Nanomover(Device):
         self.middleXY=( (self.safeties[0][1]-self.safeties[0][0])/2.0,
                         (self.safeties[0][1]-self.safeties[0][0])/2.0)
         events.subscribe(events.USER_ABORT, self.onAbort)
-        events.subscribe('cockpit initialization complete',
+        events.subscribe(events.COCKPIT_INIT_COMPLETE,
                          self.promptExerciseStage)
 
         

@@ -218,7 +218,7 @@ class CockpitApp(wx.App):
             cockpit.depot.makeInitialPublications()
             cockpit.interfaces.stageMover.makeInitialPublications()
 
-            cockpit.events.publish('cockpit initialization complete')
+            cockpit.events.publish(cockpit.events.COCKPIT_INIT_COMPLETE)
             self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
             return True
         except Exception as e:
