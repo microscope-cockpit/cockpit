@@ -408,7 +408,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glEnd()
             glLineWidth(1)
 
-            events.publish('macro stage xy draw', self)
+            events.publish(events.MACRO_STAGE_XY_DRAW, self)
 
             glFlush()
             self.SwapBuffers()

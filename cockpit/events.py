@@ -110,6 +110,8 @@ The exposure time on a light source has been updated
 ``STAGE_STOPPED``
   A ``StagePositioner`` handler has stopped moving.
 
+``MACRO_STAGE_XY_DRAW``
+
 ``STAGE_TOP_BOTTOM``
 
 ``UPDATE_STATUS_LIGHT``
