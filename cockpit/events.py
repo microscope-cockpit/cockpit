@@ -66,6 +66,8 @@ Anything can be "published".  The following is a list of events that
 the system expects.
 
 ``COCKPIT_INIT_COMPLETE``
+Cockpit initialization has completed, some hardware may need to take
+additional init steps. 
 
 ``CAMERA_ENABLE``
 
@@ -126,8 +128,8 @@ A DIO input line has chnaged state
 ``VALUELOGGER_INPUT``
 New Value logger data has arrived
 
-
-``"filter change"``
+``FILTER_CHANGE``
+There has been a filter change on some beam path. 
 
 ``"image pixel info"``
   The mouse has moved over a camera view, and the specified
@@ -174,6 +176,7 @@ PREPARE_FOR_EXPERIMENT = 'prepare for experiment'
 CLEANUP_AFTER_EXPERIMENT = 'cleanup after experiment'
 LIGHT_SOURCE_ENABLE = 'light source enable'
 CAMERA_ENABLE = 'camera enable'
+FILTER_CHANGE = 'filter change'
 STAGE_POSITION = 'stage position'
 STAGE_MOVER = 'stage mover'
 STAGE_STOPPED = 'stage stopped'

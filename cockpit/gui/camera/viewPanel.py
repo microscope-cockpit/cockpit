@@ -104,7 +104,7 @@ class ViewPanel(wx.Panel):
 
         self.disable()
 
-        events.subscribe("filter change", self.onFilterChange)
+        events.subscribe(events.FILTER_CHANGE, self.onFilterChange)
         self.Bind(wx.EVT_LEFT_DCLICK, self.onMouse)
 
     ## User interacted with our current image.

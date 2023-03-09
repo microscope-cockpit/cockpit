@@ -159,7 +159,7 @@ class CameraHandler(deviceHandler.DeviceHandler):
         ## Update the filter for this camera.
         self.dye = dye
         self.wavelength = wavelength
-        events.publish('filter change')
+        events.publish(events.FILTER_CHANGE)
 
 
     ## Invoke our callback, and let everyone know that a new camera is online.

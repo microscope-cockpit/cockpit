@@ -87,13 +87,13 @@ class CameraHandlerTestCase(unittest.TestCase):
 
     def test_update_filter(self):
         event_handler = unittest.mock.Mock()
-        cockpit.events.subscribe('filter change', event_handler)
+        cockpit.events.subscribe('cockpoit.events.FILTER_CHANGE, event_handler)
 
         try:
             camera = cockpit.handlers.camera.CameraHandler(**self.args)
             camera.updateFilter('test-dye', 512.0)
         finally:
-            cockpit.events.unsubscribe('filter change', event_handler)
+            cockpit.events.unsubscribe(cockpit.events.FILTER_CHANGE, event_handler)
 
         event_handler.assert_called_once()
         self.assertEqual(camera.dye, 'test-dye')
