@@ -904,8 +904,8 @@ class MosaicPanel(wx.Panel, mosaic.MosaicCommon):
         events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
         events.subscribe("stage step size", self.onAxisRefresh)
         events.subscribe("soft safety limit", self.onAxisRefresh)
-        events.subscribe("mosaic start", self.mosaicStart)
-        events.subscribe("mosaic stop", self.mosaicStop)
+        events.subscribe(events.MOSAIC_START, self.mosaicStart)
+        events.subscribe(events.MOSAIC_STOP, self.mosaicStop)
         events.subscribe(events.MOSAIC_UPDATE, self.mosaicUpdate)
         wx.GetApp().Objectives.Bind(
             cockpit.interfaces.EVT_OBJECTIVE_CHANGED, self.onObjectiveChange,

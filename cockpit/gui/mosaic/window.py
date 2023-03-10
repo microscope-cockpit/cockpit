@@ -711,7 +711,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             if not self.shouldContinue.is_set():
                 ## Enter idle state.
                 # Update button label in main thread.
-                events.publish("mosaic stop")
+                events.publish(events.MOSAIC_STOP)
                 wx.CallAfter(self.nameToButton['Run mosaic'].SetLabel, 'Run mosaic')
                 # Detect stage movement so know whether to start new spiral on new position.
                 events.subscribe(events.STAGE_POSITION, self.onStageMoveWhenPaused)
@@ -723,7 +723,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                 wx.CallAfter(self.nameToButton['Run mosaic'].SetLabel, 'Stop mosaic')
                 # Set reconfigure flag: cameras or objective may have changed.
                 self.shouldReconfigure = True
-                events.publish("mosaic start")
+                events.publish(events.MOSAIC_START)
                 # Catch case that stage has moved but user wants to continue mosaic.
                 if not self.shouldRestart and target is not None:
                     self.goTo(target, True)

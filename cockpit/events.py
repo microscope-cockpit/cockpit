@@ -92,6 +92,9 @@ The exposure time on a light source has been updated
 
 ``MOSAIC_UPDATE``
 
+``MOSAIC_START``
+A mosaic has been started
+
 ``NEW_IMAGE % camera name``
   An image has arrived for the camera with the given name.
 
@@ -192,6 +195,8 @@ DELETE_SITE = 'site deleted'
 SYNCED_VIEW = 'synced view'
 USER_ABORT = 'user abort'
 MOSAIC_UPDATE = 'mosaic update'
+MOSAIC_START = 'mosaic start'
+MOSAIC_STOP = 'mosaic stop'
 NEW_IMAGE = 'new image %s' # must be suffixed with image source
 IMAGE_PIXEL_INFO = 'image pixel info'
 SETTINGS_CHANGED = 'settings changed %s' # must be suffixed with device/handler name
