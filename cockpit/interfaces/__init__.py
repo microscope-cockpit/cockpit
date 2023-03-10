@@ -103,7 +103,7 @@ class Objectives(wx.EvtHandler):
         self.QueueEvent(event)
         # Camera devices care when objectives changes to update their
         # transforms so we need to publish a cockpit event as well.
-        cockpit.events.publish("objective change", self._current)
+        cockpit.events.publish(cockpit.events.OBJECTIVE_CHANGE, self._current)
 
     def GetName(self) -> str:
         """Convenience getter for name of current objective."""

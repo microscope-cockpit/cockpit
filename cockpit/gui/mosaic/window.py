@@ -500,7 +500,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         self.mosaicThread = None
 
         ## Dont continue mosaics if we chnage objective
-        events.subscribe('objective change', self.onObjectiveChange)
+        events.subscribe(events.OBJECTIVE_CHANGE, self.onObjectiveChange)
 
     ##Objective chnage sets the shouldRestart flag so we dont
     ##continue in the wrong place

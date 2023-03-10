@@ -146,7 +146,7 @@ There has been a filter change on some beam path.
 ``"new site"``
   The user has marked a position as being of interest.
 
-``"objective change"``
+``OBJECTIVE_CHANGE``
   The objective has been changed.
 
 ``"site deleted"``
@@ -199,6 +199,7 @@ MOSAIC_START = 'mosaic start'
 MOSAIC_STOP = 'mosaic stop'
 NEW_IMAGE = 'new image %s' # must be suffixed with image source
 IMAGE_PIXEL_INFO = 'image pixel info'
+OBJECTIVE_CHANGE = 'objective change'
 SETTINGS_CHANGED = 'settings changed %s' # must be suffixed with device/handler name
 EXECUTOR_DONE = 'executor done %s' # must be sufficed with device/handler name
 VIDEO_MODE_TOGGLE = 'video mode toggle'

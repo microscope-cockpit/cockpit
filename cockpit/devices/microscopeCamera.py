@@ -139,7 +139,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         """Perform subscriptions for this camera."""
         events.subscribe(events.CLEANUP_AFTER_EXPERIMENT,
                 self.cleanupAfterExperiment)
-        events.subscribe('objective change',
+        events.subscribe(events.OBJECTIVE_CHANGE,
                 self.onObjectiveChange)
 
 
