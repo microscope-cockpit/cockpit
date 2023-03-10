@@ -275,7 +275,7 @@ class StageMover:
         step_sizes = list(self.GetStepSizes())
         step_sizes[axis] = step_size
         self._step_sizes[self.curHandlerIndex] = tuple(step_sizes)
-        events.publish('stage step size', axis, step_size)
+        events.publish(events.STAGE_STEP_SIZE, axis, step_size)
 
     def ChangeStepSize(self, direction: int) -> None:
         if direction == +1:
@@ -289,7 +289,7 @@ class StageMover:
         self._step_sizes[self.curHandlerIndex] = new_step_sizes
 
         for axis, step_size in enumerate(self.GetStepSizes()):
-            events.publish('stage step size', axis, step_size)
+            events.publish(STAGE_STEP_SIZE, axis, step_size)
 
 
     ## Handle one of our devices moving. We just republish an abstracted
@@ -370,10 +370,10 @@ def changeMover():
     if newIndex != oldIndex:
         old_step_sizes = mover.GetStepSizes()
         mover.curHandlerIndex = newIndex
-        events.publish("stage step index", mover.curHandlerIndex)
+        events.publish(events.STAGE_STEP_INDEX, mover.curHandlerIndex)
         for axis, new_step_size in enumerate(mover.GetStepSizes()):
             if old_step_sizes[axis] != new_step_size:
-                events.publish("stage step size", axis, new_step_size)
+                events.publish(events.STAGE_STEP_SIZE, axis, new_step_size)
 
 
 ## Change the step size for the current handlers.

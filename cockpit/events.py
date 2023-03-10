@@ -156,12 +156,12 @@ There has been a filter change on some beam path.
   The software-enforced motion limits for the given axis (summing all
   stage-positioner devices) have been changed.
 
-``"stage step index"``
+``STAGE_STEP_INDEX``
   Which Handler is currently being used to move the stage has been
   changed; the Handlers are arranged in order of maximum range of
   motion.
 
-``"stage step size"``
+``STAGE_STEP_SIZE``
   The amount of distance the stage will move when the user uses the
   numeric keypad has changed.
 
@@ -190,6 +190,8 @@ STAGE_POSITION = 'stage position'
 STAGE_MOVER = 'stage mover'
 STAGE_STOPPED = 'stage stopped'
 STAGE_TOP_BOTTOM = 'stage saved top/bottom'
+STAGE_STEP_INDEX = 'stage step index'
+STAGE_STEP_SIZE = 'stage step size'
 MACRO_STAGE_XY_DRAW = 'macro stage xy draw'
 SOFT_SAFETY_LIMIT = 'soft safety limit'
 NEW_SITE = 'new site'

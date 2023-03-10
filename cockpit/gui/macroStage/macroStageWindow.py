@@ -73,7 +73,7 @@ class HandlerPositionCtrl(wx.TextCtrl):
             self.Disable()
 
         for event, handler in [(cockpit.events.STAGE_POSITION, self._OnMove),
-                               ('stage step index', self._OnHandlerChange)]:
+                               (cockpit.events.STAGE_STEP_INDEX, self._OnHandlerChange)]:
             emitter = cockpit.gui.EvtEmitter(self, event)
             emitter.Bind(cockpit.gui.EVT_COCKPIT, handler)
 
@@ -121,7 +121,7 @@ class AxisStepCtrl(wx.TextCtrl):
         self.Bind(wx.EVT_KILL_FOCUS, self._OnKillFocus)
         self.Bind(wx.EVT_SET_FOCUS, self._OnSetFocus)
 
-        step_size = cockpit.gui.EvtEmitter(self, 'stage step size')
+        step_size = cockpit.gui.EvtEmitter(self, cockpit.events.STAGE_STEP_SIZE)
         step_size.Bind(cockpit.gui.EVT_COCKPIT, self._OnStepSizeChange)
 
 
