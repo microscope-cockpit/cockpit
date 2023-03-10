@@ -352,7 +352,7 @@ def makeInitialPublications():
         events.publish(events.STAGE_POSITION, axis, getPositionForAxis(axis))
         limits = getSoftLimitsForAxis(axis)
         for isMax in [0, 1]:
-            events.publish("soft safety limit", axis, limits[isMax],
+            events.publish(events.SOFT_SAFETY_LIMIT, axis, limits[isMax],
                     bool(isMax))
 
 
@@ -599,7 +599,7 @@ def setSoftLimit(axis, value, isMax):
     # range of motion, cares about soft limits.
     try:
         mover.axisToHandlers[axis][0].setSoftLimit(value, isMax)
-        events.publish("soft safety limit", axis, value, isMax)
+        events.publish(events.SOFT_SAFETY_LIMIT, axis, value, isMax)
         return True
     except Exception as e:
         # \todo Assuming that any exception here means the safety was not

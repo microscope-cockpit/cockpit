@@ -202,7 +202,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         # Bind context menu event to None to prevent main window context menu
         # being displayed in preference to our own.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
-        events.subscribe("soft safety limit", self.onSafetyChange)
+        events.subscribe(events.SOFT_SAFETY_LIMIT, self.onSafetyChange)
         self.SetToolTip(wx.ToolTip("Left double-click to move the stage. " +
                 "Right click for gotoXYZ and double-click to toggle displaying of mosaic " +
                 "tiles."))

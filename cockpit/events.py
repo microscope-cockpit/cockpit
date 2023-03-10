@@ -149,10 +149,10 @@ There has been a filter change on some beam path.
 ``OBJECTIVE_CHANGE``
   The objective has been changed.
 
-``"site deleted"``
+``DELETE_SITE``
   The specified Site is to be forgotten.
 
-``"soft safety limit"``
+``SOFT_SAFETY_LIMIT``
   The software-enforced motion limits for the given axis (summing all
   stage-positioner devices) have been changed.
 
@@ -190,6 +190,7 @@ STAGE_POSITION = 'stage position'
 STAGE_MOVER = 'stage mover'
 STAGE_STOPPED = 'stage stopped'
 STAGE_TOP_BOTTOM = 'stage saved top/bottom'
+SOFT_SAFETY_LIMIT = 'soft safety limit'
 NEW_SITE = 'new site'
 DELETE_SITE = 'site deleted'
 SYNCED_VIEW = 'synced view'

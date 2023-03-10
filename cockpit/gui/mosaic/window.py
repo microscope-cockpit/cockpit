@@ -484,7 +484,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         self.SetSizerAndFit(sizer)
 
         events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
-        events.subscribe('soft safety limit', self.onAxisRefresh)
+        events.subscribe(events.SOFT_SAFETY_LIMIT, self.onAxisRefresh)
 
         abort_emitter = cockpit.gui.EvtEmitter(self, events.USER_ABORT)
         abort_emitter.Bind(cockpit.gui.EVT_COCKPIT, self.onAbort)

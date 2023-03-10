@@ -903,7 +903,7 @@ class MosaicPanel(wx.Panel, mosaic.MosaicCommon):
         # MOSAIC BINDING
         events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
         events.subscribe("stage step size", self.onAxisRefresh)
-        events.subscribe("soft safety limit", self.onAxisRefresh)
+        events.subscribe(events.SOFT_SAFETY_LIMIT, self.onAxisRefresh)
         events.subscribe(events.MOSAIC_START, self.mosaicStart)
         events.subscribe(events.MOSAIC_STOP, self.mosaicStop)
         events.subscribe(events.MOSAIC_UPDATE, self.mosaicUpdate)
@@ -1714,7 +1714,7 @@ class DialogSafeties(wx.Dialog):
             sizer_row_buttons, 0, wx.ALIGN_CENTRE | wx.TOP | wx.BOTTOM, 5
         )
         # Further event handling
-        cockpit.gui.EvtEmitter(self, "soft safety limit").Bind(
+        cockpit.gui.EvtEmitter(self, events.SOFT_SAFETY_LIMIT).Bind(
             cockpit.gui.EVT_COCKPIT, lambda e: self._on_limit_soft_change(e)
         )
         # Finalise layout
