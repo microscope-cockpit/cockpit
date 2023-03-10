@@ -87,7 +87,7 @@ class CameraHandlerTestCase(unittest.TestCase):
 
     def test_update_filter(self):
         event_handler = unittest.mock.Mock()
-        cockpit.events.subscribe('cockpoit.events.FILTER_CHANGE, event_handler)
+        cockpit.events.subscribe(cockpit.events.FILTER_CHANGE, event_handler)
 
         try:
             camera = cockpit.handlers.camera.CameraHandler(**self.args)
