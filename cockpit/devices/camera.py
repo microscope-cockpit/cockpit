@@ -71,7 +71,7 @@ class CameraDevice(device.Device):
         if 'transform' in config:
             self.baseTransform = _config_to_transform(config.get('transform'))
         else:
-            self.baseTransform = None
+            self.baseTransform = [0,0,0]
 
     def updateTransform(self, pathTransform):
         """Apply a new pathTransform"""
