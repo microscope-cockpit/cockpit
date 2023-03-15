@@ -54,6 +54,7 @@ import cockpit.gui
 import cockpit.gui.freetype
 import cockpit.gui.guiUtils
 import cockpit.gui.dialogs.getNumberDialog
+import cockpit.gui.mosaic.window
 import cockpit.util.datadoc
 import cockpit.util.threads
 
@@ -745,6 +746,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 ('Toggle sync view', self.toggleSyncViews),
                 ("Toggle FFT mode", self.toggleFFT),
                 ('', None),
+                ('Send image to mosaic',
+                         cockpit.gui.mosaic.window.transferCameraImage),
                 ('Save image', self.saveData)
                 ]
 
