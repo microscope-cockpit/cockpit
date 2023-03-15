@@ -783,7 +783,7 @@ class DIOOutputWindow(wx.Frame):
             else:
                 toggle.SetLabel("Input")
             #Button to toggle state of output lines.
-            button = wx.ToggleButton(panel, wx.ID_ANY, DIO.labels[i])
+            button = wx.ToggleButton(panel, wx.ID_ANY, self.DIO.labels[i])
             button.Bind(wx.EVT_TOGGLEBUTTON, lambda evt: self.toggle())
             buttonSizer.Add(button, 1, wx.EXPAND)
             self.lineToButton[i] = [toggle,button]
@@ -811,6 +811,7 @@ class DIOOutputWindow(wx.Frame):
         #check this is an output line
         if self.DIO.IOMap:
             self.lineToButton[line][1].SetValue(state)
+            self.updateState(line,bool(state))
 
     def inputChanged(self,line,state):
         self.updateState(line,bool(state))
@@ -830,7 +831,11 @@ class DIOOutputWindow(wx.Frame):
         if (line is not None) and (state is not None):
             cockpit.util.logger.log.debug("Line %d returned %s" %
                                           (line,str(state)))
-            self.lineToButton[line][1].SetLabel(str(int(state)))
+            if (self.DIO.get_IO_state(line)):
+                #output button have names
+                self.lineToButton[line][1].SetLabel(self.DIO.labels[line])
+            else:
+                self.lineToButton[line][1].SetLabel(str(int(state)))
             return()
         for line, (toggle, button)  in self.lineToButton.items():
             state=toggle.GetValue()
