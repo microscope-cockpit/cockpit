@@ -582,11 +582,40 @@ class MicroscopeStage(MicroscopeBase):
                 # them?
                 raise Exception('No configuration for the axis named \'%s\''
                                 % their_axis_name)
-
+        #check if we need to poll for updates of position
+        #This is usually required as there is a manual joystick which can move
+        #the stage without cokcoit knowing about it.
+        self.pollStage = bool(self.config.get('poll-stage',False))
+        if (self.pollStage):
+            print(self.config.get('num-stage-axes',0))
+            if len(self._axes) == int(self.config.get('num-stage-axes',0)):
+                #need to know in advance how many axis need to initilized
+                self.pollInterval=float(self.config.get('poll-interval',10))
+                self._positionCache = [0.0 for x in range(len(self._axes))]
+                self.updatePosThread()
+            
     def getHandlers(self) -> typing.List[PositionerHandler]:
         # Override MicroscopeBase.getHandlers.  Do not call super.
         return [x.getHandler() for x in self._axes]
 
+
+    #thread to interogate stage regularly to see if it moves manually
+    @cockpit.util.threads.callInNewThread
+    def updatePosThread(self):
+        handlers=self.getHandlers()
+        print("stage-pos",self._positionCache)
+        while True:
+            print("stage poll")
+            for i,handler in enumerate(handlers):
+                newpos=handler.getPosition()
+  #              print (i,self._positionCache[i])
+                if newpos != self._positionCache[i]:
+                    self._positionCache[i]=newpos
+                    events.publish(events.STAGE_POSITION, i, newpos)
+            time.sleep(self.pollInterval)
+            
+
+    
 class MicroscopeDIO(MicroscopeBase):
     """Device class for asynchronous Digital Inout and Output signals.
     This class enables the configuration of named buttons in main GUI window

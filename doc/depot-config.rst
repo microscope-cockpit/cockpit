@@ -115,7 +115,22 @@ example of an analog z piezo stage is:
   min: 0
   range: 220
 
+Finally some stages may have additional manual control mechanisms such
+as a joystick. Moving the stage via this mechanism doesn't feed back
+to cockpit so some other mechanism is need to keep up with these
+changes. If you add a 'poll-stage: True' config parameter the stage
+will be polled with some interval (defaults 10s) to see if it has
+moved. This functionality also requires a 'num-stage-axes' parameter
+so that the stage polling only occurs after the final axis is
+initialised. An example section to create this poll thread is:
 
+.. code:: ini
+  poll-stage: True
+  poll-interval: 5
+  num-stage-axes: 2
+
+
+  
 Cameras
 ```````
 

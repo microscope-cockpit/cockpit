@@ -523,7 +523,10 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     ## Now that we've been created, recenter the canvas.
     def centerCanvas(self, event = None):
         curPosition = cockpit.interfaces.stageMover.getPosition()[:2]
-
+        #As we read a position propergate a stage event to ensure
+        # other interface components are in synch.
+        events.publish(events.STAGE_POSITION, 0, curPosition[0])
+        events.publish(events.STAGE_POSITION, 1, curPosition[1])
         # Calculate the size of the box at the center of the crosshairs.
         # \todo Should we necessarily assume a 512x512 area here?
         #if we havent previously set crosshairBoxSize (maybe no camera active)
