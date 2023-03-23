@@ -501,7 +501,7 @@ class DataDoc:
                 del self.image.Mrc
 
             # Write out the header.
-            outputFile = file(savePath, 'wb')
+            outputFile = open(savePath, 'wb')
             outputFile.write(newHeader._array.tostring())
 
         # Slices to use to crop out the 3D volume we want to use for each
