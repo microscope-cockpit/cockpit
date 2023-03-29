@@ -227,10 +227,8 @@ class Experiment:
             if not guiUtils.getUserPermission(warning):
                 return False
 
-
-        # ToDo: check duration of action table against timelapse settings
-        # display appropriate warnings.
-        self.lastMinuteActions()
+        if not self.lastMinuteActions():
+            return False
 
         self._run_thread = threading.Thread(target=self.execute,
                                             name="Experiment-execute")
@@ -324,7 +322,7 @@ class Experiment:
     ## Do any last-minute actions immediately before starting the experiment.
     # Return False if anything goes wrong.
     def lastMinuteActions(self):
-        pass
+        return True
 
     ## Generate an ActionTable of events to perform during the experiment.
     # Return the ActionTable instance.
