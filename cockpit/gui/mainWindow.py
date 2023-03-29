@@ -540,15 +540,21 @@ class MainWindow(wx.Frame):
         objects have been destroyed already.
         """
         if not event.CanVeto():
-            event.Destroy()
+            MainWindow.destroyAllWindows()
         else:
             wx.GetApp()._SaveWindowPositions()
+            MainWindow.destroyAllWindows()
             # Let the default event handler handle the frame
             # destruction.
             event.Skip()
 
     def _OnAbout(self, event):
         wx.adv.AboutBox(CockpitAboutInfo(), parent=self)
+
+    @staticmethod
+    def destroyAllWindows():
+        for w in wx.GetTopLevelWindows():
+            wx.CallAfter(w.Destroy)
 
 
 class StatusLights(wx.StatusBar):
