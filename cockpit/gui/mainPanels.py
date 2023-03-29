@@ -32,6 +32,7 @@ class PanelLabel(wx.StaticText):
     def __init__(self, parent, label=""):
         super().__init__(parent, label=label)
         self.SetFont(self.GetFont().Bold().Larger().Larger())
+        self.Fit()
 
 
 class LightPanel(wx.Panel):
@@ -71,7 +72,7 @@ class LightPanel(wx.Panel):
                                 lambda p: powCtrl.SetValue(p *100.0))
             powCtrl.Bind(safeControls.EVT_SAFE_CONTROL_COMMIT,
                          lambda evt: lightPower.setPower(evt.Value /100.0))
-            self.Sizer.Add(powCtrl)
+            self.Sizer.Add(powCtrl, 1, flag=wx.EXPAND)
 
         if lightFilters:
             self.Sizer.AddSpacer(4)
@@ -79,6 +80,9 @@ class LightPanel(wx.Panel):
                            flag=wx.ALIGN_CENTER_HORIZONTAL)
             for f in lightFilters:
                 self.Sizer.Add(f.makeSelector(self), flag=wx.EXPAND)
+
+        self.Sizer.Layout()
+        self.SetSizerAndFit(self.Sizer)
 
 
     def SetFocus(self):
@@ -116,7 +120,8 @@ class LightControlsPanel(wx.Panel):
             sz.Add(panel, flag=wx.EXPAND)
             self.panels[light] = panel
             sz.AddSpacer(4)
-        self.Fit()
+        self.Sizer.Layout()
+        self.SetSizerAndFit(self.Sizer)
 
 
 class CameraPanel(wx.Panel):
@@ -143,6 +148,8 @@ class CameraPanel(wx.Panel):
         if camera.callbacks.get('makeUI', None):
             self.Sizer.Add(camera.callbacks['makeUI'](self),
                            wx.SizerFlags().Expand())
+        self.Sizer.Layout()
+        self.SetSizerAndFit(self.Sizer)
 
 
     def onWavelengthChange(self, wl):
@@ -183,7 +190,8 @@ class CameraControlsPanel(wx.Panel):
             sz.Add(panel, flag=wx.EXPAND)
             self.panels[cam] = panel
             sz.AddSpacer(4)
-        self.Fit()
+        self.Sizer.Layout()
+        self.SetSizerAndFit(self.Sizer)
 
 
 class ObjectiveControls(wx.Panel):
@@ -211,7 +219,8 @@ class ObjectiveControls(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(label)
         sizer.Add(self._choice)
-        self.SetSizer(sizer)
+        sizer.Layout()
+        self.SetSizerAndFit(sizer)
 
     def _OnObjectiveChoice(self, event: wx.CommandEvent) -> None:
         self._interface.ChangeObjective(event.GetString())
@@ -240,6 +249,8 @@ class FilterControls(wx.Panel):
         for i, f in enumerate(filters):
             subpanel.Sizer.Add(f.makeUI(subpanel), 0,
                                wx.EXPAND | wx.RIGHT | wx.BOTTOM, 8)
+        self.Sizer.Layout()
+        self.SetSizerAndFit(self.Sizer)
 
 
 class ChannelsPanel(wx.Panel):
@@ -259,7 +270,8 @@ class ChannelsPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(label)
         sizer.Add(self._buttons_sizer, wx.SizerFlags().Expand())
-        self.SetSizer(sizer)
+        sizer.Layout()
+        self.SetSizerAndFit(sizer)
 
 
     def _LayoutWithFrame(self):

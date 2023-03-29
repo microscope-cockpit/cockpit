@@ -184,21 +184,21 @@ class MainWindowPanel(wx.Panel):
             if item is not None:
                 itemsizer = wx.BoxSizer(wx.VERTICAL)
                 itemsizer.Add(cockpit.gui.mainPanels.PanelLabel(self, thing.name))
-                itemsizer.Add(item, 1, wx.EXPAND)
+                itemsizer.Add(item, 0, wx.EXPAND)
                 if rowSizer.GetChildren():
                     # Add a spacer.
                     rowSizer.AddSpacer(COL_SPACER)
-                rowSizer.Add(itemsizer)
+                rowSizer.Add(itemsizer, 1, flag=wx.EXPAND)
 
-        root_sizer.Add(rowSizer, wx.SizerFlags().Expand())
+        root_sizer.Add(rowSizer, 1, flag=wx.EXPAND)
         root_sizer.AddSpacer(ROW_SPACER)
 
         lights_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        lights_sizer.Add(mainPanels.LightControlsPanel(self), flag=wx.EXPAND)
-        lights_sizer.Add(mainPanels.ChannelsPanel(self), flag=wx.EXPAND)
-        root_sizer.Add(lights_sizer, flag=wx.EXPAND)
-
+        lights_sizer.Add(mainPanels.LightControlsPanel(self), 0, flag=wx.EXPAND)
+        lights_sizer.Add(mainPanels.ChannelsPanel(self), 0, flag=wx.EXPAND)
+        root_sizer.Add(lights_sizer, 1, flag=wx.EXPAND)
         self.SetSizer(root_sizer)
+        self.Layout()
 
         keyboard.setKeyboardHandlers(self)
         self.joystick = joystick.Joystick(self)
@@ -502,9 +502,11 @@ class MainWindow(wx.Frame):
 
         self.SetStatusBar(StatusLights(parent=self))
 
-        sizer = wx.BoxSizer()
-        sizer.Add(panel)
-        self.SetSizerAndFit(sizer)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(panel, 1, flag=wx.EXPAND | wx.ALL)
+        sizer.Layout()
+        sizer.SetSizeHints(self)
+        self.SetSizer(sizer)
 
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -514,9 +516,16 @@ class MainWindow(wx.Frame):
         if 'gtk3' in wx.PlatformInfo:
             self.Bind(wx.EVT_SHOW, self.OnShow)
 
+        self.Bind(wx.EVT_SIZE, self.OnSize)
+
+    def OnSize(self, event: wx.SizeEvent) -> None:
+        self.Layout()
+        self.SetMinSize(self.GetSizer().GetMinSize())
+        self.Update()
+        event.Skip()
 
     def OnShow(self, event: wx.ShowEvent) -> None:
-        self.Fit()
+        self.Layout()
         event.Skip()
 
     def OnOpen(self, event: wx.CommandEvent) -> None:
