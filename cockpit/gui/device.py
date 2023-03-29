@@ -320,13 +320,15 @@ class SettingsEditor(wx.Frame):
         #self.panel = wx.Panel(self, wx.ID_ANY, style=wx.WANTS_CHARS)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.grid = wx.propgrid.PropertyGrid(self,
-                                             style=wx.propgrid.PG_SPLITTER_AUTO_CENTER)
+        self.grid = wx.propgrid.PropertyGrid(
+            self,
+            style=wx.propgrid.PG_SPLITTER_AUTO_CENTER | wx.propgrid.PG_HIDE_MARGIN
+        )
         self.grid.SetColumnProportion(0, 2)
         self.grid.SetColumnProportion(1, 1)
         self.populateGrid()
         self.Bind(wx.propgrid.EVT_PG_CHANGED, self.onPropertyChange)
-        sizer.Add(self.grid, 1, wx.EXPAND | wx.ALIGN_LEFT | wx.ALIGN_TOP)
+        sizer.Add(self.grid, 1, wx.EXPAND | wx.ALIGN_TOP, 0, 0)
 
         sizer.AddSpacer(2)
         buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -338,19 +340,19 @@ class SettingsEditor(wx.Frame):
         okButton = wx.Button(self, id=wx.ID_OK)
         okButton.Bind(wx.EVT_BUTTON, self.onClose)
         okButton.SetToolTip(wx.ToolTip("Apply settings and close this window."))
-        buttonSizer.Add(okButton, 0)
+        buttonSizer.Add(okButton, 1, flag=wx.EXPAND)
 
         cancelButton = wx.Button(self, id=wx.ID_CANCEL)
         cancelButton.Bind(wx.EVT_BUTTON, self.onClose)
         cancelButton.SetToolTip(wx.ToolTip("Close this window without applying settings."))
-        buttonSizer.Add(cancelButton, 0)
+        buttonSizer.Add(cancelButton, 1, flag=wx.EXPAND)
 
         applyButton = wx.Button(self, id=wx.ID_APPLY)
         applyButton.SetToolTip(wx.ToolTip("Apply these settings."))
         applyButton.Bind(wx.EVT_BUTTON, lambda evt: self.device.updateSettings(self.current))
-        buttonSizer.Add(applyButton, 0)
+        buttonSizer.Add(applyButton, 1, flag=wx.EXPAND)
 
-        sizer.Add(buttonSizer, 0, wx.ALIGN_CENTER, 0, 0)
+        sizer.Add(buttonSizer, 0, wx.EXPAND, 0, 0)
         self.SetSizerAndFit(sizer)
         self.SetMinSize((256, -1))
         events.subscribe(events.SETTINGS_CHANGED % self.device, self.updateGrid)
@@ -436,6 +438,8 @@ class SettingsEditor(wx.Frame):
                 prop.SetTextColour('black')
             except:
                 prop.SetTextColour('red')
+        grid.FitColumns()
+        self.Fit()
         self.Thaw()
 
 
