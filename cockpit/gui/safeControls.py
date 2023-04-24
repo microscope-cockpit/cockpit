@@ -667,7 +667,7 @@ class SetPointGauge(SafeControl, wx.Window):
                 dc.DrawLine(int(pos), 0, int(pos), rect.height)
 
     def DrawLimitIndicators(self, dc):
-        """Draws <<< or >>> to indicate values exceeeding gauge range.
+        """Draws <<< or >>> to indicate values exceeding gauge range.
 
         Args:
           dc (wx.DeviceContext): The device context to use for drawing.

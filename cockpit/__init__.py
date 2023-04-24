@@ -349,7 +349,7 @@ def main(argv: typing.Sequence[str]) -> int:
     # HACK: manually exit the program if we find threads running.  At
     # this point, any thread running is non-daemonic, i.e., a thread
     # that doesn't exit when the main thread exits.  These will make
-    # cockipt process hang and require it to be manually terminated.
+    # cockpit process hang and require it to be manually terminated.
     # Why do we have non-daemonic threads?  Daemon status is inherited
     # from the parent thread, and must be manually set.  Since it is
     # easy to forget, we'll leave this here to catch any failure and
