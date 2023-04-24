@@ -55,7 +55,7 @@ from cockpit import events
 from . import immediateMode
 import cockpit.interfaces.imager
 import cockpit.interfaces.stageMover
-import cockpit.util.user
+import cockpit.util.files
 
 import numpy
 import os
@@ -84,7 +84,7 @@ class MyExperiment(immediateMode.ImmediateModeExperiment):
         # Here we do 5 reps, with a 4s duration, and 1 image per rep. The 
         # file will get saved as "out.mrc" in the current user's data 
         # directory.
-        savePath = os.path.join(cockpit.util.user.getUserSaveDir(), "out.mrc")
+        savePath = os.path.join(cockpit.util.files.getUserSaveDir(), "out.mrc")
         print ("Saving file to",savePath)
         immediateMode.ImmediateModeExperiment.__init__(self,
                 numReps = 5, repDuration = 4, imagesPerRep = 1,
