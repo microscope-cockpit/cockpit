@@ -289,7 +289,7 @@ class StageMover:
         self._step_sizes[self.curHandlerIndex] = new_step_sizes
 
         for axis, step_size in enumerate(self.GetStepSizes()):
-            events.publish(STAGE_STEP_SIZE, axis, step_size)
+            events.publish(events.STAGE_STEP_SIZE, axis, step_size)
 
 
     ## Handle one of our devices moving. We just republish an abstracted
