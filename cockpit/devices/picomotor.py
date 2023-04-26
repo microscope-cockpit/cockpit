@@ -204,7 +204,7 @@ class PicoMotorDevice(device.Device):
             self.sendXYCommand('%s pa 100' %
                                (self.axisMapper[axis]),0)
             #calculate how to move back to where we were
-            endpositon[axis]=-newposition[axis]+oldposition[axis]
+            endposition[axis]=-newposition[axis]+origPosition[axis]
                         
   
         print ("home done now returning to last position",endposition)
