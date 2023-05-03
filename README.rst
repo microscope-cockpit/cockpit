@@ -14,7 +14,7 @@ and easy to extend platform aimed at life scientists using bespoke
 microscopes.  More detailed information is available:
 
 - in the `Online documentation
-  < https://microscope-cockpit.org/>`__
+  <https://microscope-cockpit.org/>`__
 
 - on the `Micron Oxford websitee
   <https://micronoxford.com/python-microscope-cockpit>`__
