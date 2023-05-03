@@ -14,13 +14,13 @@ and easy to extend platform aimed at life scientists using bespoke
 microscopes.  More detailed information is available:
 
 - in the `Online documentation
-  <https://www.micron.ox.ac.uk/software/cockpit/>`__
+  < https://microscope-cockpit.org/>`__
 
 - on the `Micron Oxford websitee
   <https://micronoxford.com/python-microscope-cockpit>`__
 
-- in the recently published `bioRxiv paper
-  <https://www.biorxiv.org/content/10.1101/2021.01.18.427178v1>`__
+- in the recently published `paper
+  <https://wellcomeopenresearch.org/articles/6-76>`__
 
 Main Features
 --------------
