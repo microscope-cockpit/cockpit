@@ -16,7 +16,7 @@ microscopes.  More detailed information is available:
 - in the `Online documentation
   <https://microscope-cockpit.org/>`__
 
-- on the `Micron Oxford websitee
+- on the `Micron Oxford website
   <https://micronoxford.com/python-microscope-cockpit>`__
 
 - in the recently published `paper
