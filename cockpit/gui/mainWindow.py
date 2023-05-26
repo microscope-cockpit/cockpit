@@ -658,7 +658,7 @@ def CockpitAboutInfo() -> wx.adv.AboutDialogInfo:
     # platforms other than GTK the generic dialog is used which we
     # want to avoid.
     if wx.Platform == '__WXGTK__':
-        info.SetWebSite('https://www.micron.ox.ac.uk/software/cockpit/')
+        info.SetWebSite('https://microscope-cockpit.org/')
 
         # We should not have to set this, it should be set later via
         # the AboutBox parent icon.  We don't yet have icons working
