@@ -48,7 +48,7 @@ html_theme_options = {
     ),
     "github_button": True,
     "github_repo": "cockpit",
-    "github_user": "MicronOxford",
+    "github_user": "microscope-cockpit",
     "show_related": False,
     "sidebar_collapse": False,
     "show_powered_by": False,

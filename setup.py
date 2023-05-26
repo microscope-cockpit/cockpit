@@ -40,7 +40,7 @@ setuptools.setup(
     long_description = open('README.rst', 'r').read(),
     license = 'GPL-3.0+',
 
-    url = "https://github.com/MicronOxford/cockpit",
+    url = "https://github.com/microscope-cockpit/cockpit",
 
     author = 'See source for a complete list of contributors',
     author_email = ' ',

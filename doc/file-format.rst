@@ -38,7 +38,7 @@ DV file header specification
 
 
  The extended header has the following structure per
- plane (see `cockpit github issue  #290 <https://github.com/MicronOxford/cockpit/issues/290>`__)
+ plane (see `cockpit github issue  #290 <https://github.com/microscope-cockpit/cockpit/issues/290>`__)
 
    *  8 32bit signed integers, often are all set to zero.
    *  Followed by 32 32bit floats.  We only what the first 14 are:

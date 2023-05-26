@@ -124,7 +124,7 @@ Development sources
 Cockpit development happens in a public git repository making it
 possible to install cockpit from development sources::
 
-    git clone https://github.com/MicronOxford/cockpit.git
+    git clone https://github.com/microscope-cockpit/cockpit.git
     pip install cockpit/
 
 If the plan is to make changes to the source code or to have the

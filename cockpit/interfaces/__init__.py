@@ -46,7 +46,7 @@ class Objectives(wx.EvtHandler):
     At any time, only one objective is selected, which prevents its use
     on a system where different cameras image through different
     objectives at the same time (see `cockpit issue #554
-    <https://github.com/MicronOxford/cockpit/issues/554>`_).
+    <https://github.com/microscope-cockpit/cockpit/issues/554>`_).
 
     Events emitted by this class
     ----------------------------

@@ -492,7 +492,7 @@ class MainWindow(wx.Frame):
         help_menu = wx.Menu()
         menu_item = help_menu.Append(wx.ID_ANY, item='Online repository')
         self.Bind(wx.EVT_MENU,
-                  lambda evt: wx.LaunchDefaultBrowser('https://github.com/MicronOxford/cockpit/'),
+                  lambda evt: wx.LaunchDefaultBrowser('https://github.com/microscope-cockpit/cockpit/'),
                   menu_item)
         menu_item = help_menu.Append(wx.ID_ABOUT)
         self.Bind(wx.EVT_MENU, self._OnAbout, menu_item)
