@@ -182,6 +182,7 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
         self.Bind(wx.EVT_SET_FOCUS, self.GetParent().SetFocus)
         self.Bind(wx.EVT_CHILD_FOCUS, self.OnFocus)
         self.Bind(wx.EVT_KILL_FOCUS, lambda evt: self.Cancel())
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnClose)
         self.AcceptsFocusRecursively = lambda: True
         self.AcceptsFocus = lambda: False
 
@@ -290,6 +291,9 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
             self.PostEvent()
         else:
             evt.Skip()
+
+    def OnClose(self, evt):
+        self._checkTimer.Stop()
 
     @property
     def Value(self):
@@ -460,6 +464,7 @@ class SetPointGauge(SafeControl, wx.Window):
         self.Bind(wx.EVT_TIMER, self.OnTimer)
         self.Bind(wx.EVT_LEFT_DCLICK, self.OnLDClick)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnDrag)
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnClose)
         self.AcceptsFocusFromKeyboard = lambda: False
         self.SetDoubleBuffered(True)
 
@@ -728,6 +733,9 @@ class SetPointGauge(SafeControl, wx.Window):
         except:
             self._value.last = None
         self._fetching = False
+
+    def OnClose(self, evt):
+        self._timer.Stop()
 
 
 class SpinGauge(wx.Panel):

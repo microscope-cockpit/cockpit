@@ -112,6 +112,7 @@ class IconButton(wx.ToggleButton):
             self.SetBitmapPressed(image.ConvertToBitmap())
         self.Bind(wx.EVT_TOGGLEBUTTON, lambda e: self._visual_feedback(e))
         self.Bind(wx.EVT_TIMER, lambda e: self._on_timer(e))
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.onClose)
 
     def _do_layout(self):
         pass
@@ -124,6 +125,8 @@ class IconButton(wx.ToggleButton):
         if not self.toggleable:
             self.SetValue(False)
 
+    def onClose(self, evt):
+        self.timer.Stop()
 
 class ActionsPanel(wx.Panel):
     def __init__(self, parent, **kwargs):
