@@ -125,6 +125,7 @@ so that the stage polling only occurs after the final axis is
 initialised. An example section to create this poll thread is:
 
 .. code:: ini
+
   poll-stage: True
   poll-interval: 5
   num-stage-axes: 2

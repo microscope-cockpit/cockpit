@@ -587,7 +587,6 @@ class MicroscopeStage(MicroscopeBase):
         #the stage without cokcoit knowing about it.
         self.pollStage = bool(self.config.get('poll-stage',False))
         if (self.pollStage):
-            print(self.config.get('num-stage-axes',0))
             if len(self._axes) == int(self.config.get('num-stage-axes',0)):
                 #need to know in advance how many axis need to initilized
                 self.pollInterval=float(self.config.get('poll-interval',10))
@@ -603,9 +602,7 @@ class MicroscopeStage(MicroscopeBase):
     @cockpit.util.threads.callInNewThread
     def updatePosThread(self):
         handlers=self.getHandlers()
-        print("stage-pos",self._positionCache)
         while True:
-            print("stage poll")
             for i,handler in enumerate(handlers):
                 newpos=handler.getPosition()
   #              print (i,self._positionCache[i])
