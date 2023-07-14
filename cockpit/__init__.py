@@ -319,7 +319,11 @@ class CockpitApp(wx.App):
         for window in wx.GetTopLevelWindows():
             if window is wx.GetApp().GetTopWindow():
                 continue
-            config_name = 'Show Window ' + window.GetTitle()
+            title=window.GetTitle()
+            #camera views title can need to be stripped.
+            if title.startswith('Camera views '):
+                title='Camera views'
+            config_name = 'Show Window ' + title
             cockpit.util.userConfig.setValue(config_name, window.IsShown())
 
 
