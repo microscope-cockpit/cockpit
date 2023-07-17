@@ -128,6 +128,7 @@ class IconButton(wx.ToggleButton):
     def OnDestroy(self, evt):
         self.timer.Stop()
 
+
 class ActionsPanel(wx.Panel):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
@@ -569,6 +570,7 @@ class LightsPanelEntry(wx.Panel):
         self.power = power_handler
         self._set_properties()
         self._do_layout()
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
 
     def _set_properties(self):
         pass
@@ -600,20 +602,20 @@ class LightsPanelEntry(wx.Panel):
         exposure_img = wx.Image(
             os.path.join(cockpit.gui.IMAGES_PATH, "touchscreen/misc_pulse.png")
         )
-        exposure_ctrl = VariableControlContinuous(
+        self.exposure_ctrl = VariableControlContinuous(
             self, init_val=100, step_scale=1.2, units="ms", limit_low=1
         )
-        exposure_ctrl.Bind(
+        self.exposure_ctrl.Bind(
             EVT_VAR_CTRL_CONT_COMMAND_EVENT,
             lambda e: self.light.setExposureTime(e.GetClientData()[1]),
         )
-        self.light.addWatch("exposureTime", exposure_ctrl.set_value)
+        self.light.addWatch("exposureTime", self.exposure_ctrl.set_value)
         sizer_row1.Add(
             wx.StaticBitmap(self, bitmap=exposure_img.ConvertToBitmap()),
             0,
             wx.ALIGN_CENTER,
         )
-        sizer_row1.Add(exposure_ctrl, 1, wx.ALIGN_CENTER | wx.LEFT, 5)
+        sizer_row1.Add(self.exposure_ctrl, 1, wx.ALIGN_CENTER | wx.LEFT, 5)
         sizer.Add(sizer_row1, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         # Third row: power control
         if self.power:
@@ -625,7 +627,7 @@ class LightsPanelEntry(wx.Panel):
                     cockpit.gui.IMAGES_PATH, "touchscreen/misc_power.png"
                 )
             )
-            power_ctrl = VariableControlContinuous(
+            self.power_ctrl = VariableControlContinuous(
                 self,
                 init_val=self.power.powerSetPoint * 100,
                 step_offset=1,
@@ -633,23 +635,23 @@ class LightsPanelEntry(wx.Panel):
                 limit_low=0,
                 limit_high=100,
             )
-            power_ctrl.Bind(
+            self.power_ctrl.Bind(
                 EVT_VAR_CTRL_CONT_COMMAND_EVENT,
                 lambda e: self.power.setPower(e.GetClientData()[1] / 100),
             )
-            self.power.addWatch(
-                "powerSetPoint", lambda x: power_ctrl.set_value(x * 100)
-            )
+            self.power.addWatch("powerSetPoint", self._set_power_ctrl_percent)
             sizer_row2_row0.Add(
                 wx.StaticBitmap(self, bitmap=power_img.ConvertToBitmap()),
                 0,
                 wx.ALIGN_CENTER,
             )
-            sizer_row2_row0.Add(power_ctrl, 1, wx.ALIGN_CENTER | wx.LEFT, 5)
+            sizer_row2_row0.Add(
+                self.power_ctrl, 1, wx.ALIGN_CENTER | wx.LEFT, 5
+            )
             sizer_row2.Add(sizer_row2_row0, 0, wx.EXPAND)
             # Lower subrow
             sizer_row2_row1 = wx.BoxSizer(wx.HORIZONTAL)
-            slider = SetPointGauge(
+            self.slider = SetPointGauge(
                 self,
                 minValue=0,
                 maxValue=100,
@@ -657,16 +659,16 @@ class LightsPanelEntry(wx.Panel):
                 margins=wx.Size(3, 3),
                 style=wx.BORDER_SIMPLE,
             )
-            slider.Bind(
+            self.slider.Bind(
                 EVT_SAFE_CONTROL_COMMIT,
                 lambda e: self.power.setPower(e.Value / 100),
             )
-            slider.SetValue(self.power.powerSetPoint * 100)
+            self.slider.SetValue(self.power.powerSetPoint * 100)
             self.power.addWatch(
-                "powerSetPoint", lambda x: slider.SetValue(x * 100)
+                "powerSetPoint", self._set_slider_power_percent
             )
             sizer_row2_row1.Add(24, 24, 0)
-            sizer_row2_row1.Add(slider, 1, wx.ALIGN_CENTER | wx.LEFT, 24)
+            sizer_row2_row1.Add(self.slider, 1, wx.ALIGN_CENTER | wx.LEFT, 24)
             sizer_row2_row1.Add(24, 24, 0)
             sizer_row2.Add(sizer_row2_row1, 0, wx.EXPAND)
             sizer.Add(
@@ -676,6 +678,18 @@ class LightsPanelEntry(wx.Panel):
         # Finalise layout
         self.SetSizer(sizer)
         self.Layout()
+
+    def OnDestroy(self, event: wx.WindowDestroyEvent) -> None:
+        self.light.removeWatch("exposureTime", self.exposure_ctrl.set_value)
+        self.power.removeWatch("powerSetPoint", self._set_power_ctrl_percent)
+        self.power.removeWatch("powerSetPoint", self._set_slider_power_percent)
+        event.Skip()
+
+    def _set_power_ctrl_percent(self, power):
+        self.power_ctrl.set_value(power * 100)
+
+    def _set_slider_power_percent(self, power):
+        self.slider.SetValue(power * 100)
 
 
 class LightsPanel(wx.Panel):
@@ -860,10 +874,11 @@ class MosaicPanel(wx.Panel, mosaic.MosaicCommon):
     @property
     def displayTrails(self):
         return mosaic.window.displayTrails
+
     @property
     def trails(self):
         return mosaic.window.trails
-    
+
     @property
     def primitives(self):
         return mosaic.window.primitives

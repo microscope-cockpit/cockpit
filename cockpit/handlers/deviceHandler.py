@@ -226,6 +226,18 @@ class DeviceHandler:
         self._watches[name].add(callback)
 
 
+    def removeWatch(self, name: str, callback) -> None:
+        """Remove a watch on a deveice parameter.
+
+        No input check!  If we're trying to remove a watch and the
+        name and callback are missing it will raise `TypeError`.  We
+        want to know so we can fix the code (but maybe we could just
+        log the error!)
+
+        """
+        self._watches[name].remove(callback)
+
+
     ## A function that any control can call to toggle enabled/disabled state.
     @cockpit.util.threads.callInNewThread
     def toggleState(self, *args, **kwargs):
