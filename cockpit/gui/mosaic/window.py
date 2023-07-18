@@ -346,7 +346,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         self.offset=(0,0)
         ## Event object to control run state of mosaicLoop.
         self.shouldContinue = threading.Event()
-
+        self.shouldExit = threading.Event()
         primitive_specs = wx.GetApp().Config['stage'].getlines('primitives', [])
         self.primitives = [Primitive.factory(spec) for spec in primitive_specs]
 
@@ -504,12 +504,25 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         ## Dont continue mosaics if we chnage objective
         events.subscribe(events.OBJECTIVE_CHANGE, self.onObjectiveChange)
 
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
+
+    def OnDestroy(self, event: wx.WindowDestroyEvent) -> None:
+        if self.mosaicThread is not None and self.mosaicThread.is_alive():
+            # This should signal the mosaic thread...
+            self.shouldExit.set()
+            # ... but if it is paused we need to unpause it as well.
+            self.shouldContinue.set()
+
+            self.mosaicThread.join()
+        event.Skip()
+
+
     ##Objective chnage sets the shouldRestart flag so we dont
     ##continue in the wrong place
     def onObjectiveChange(self, objective):
         self.shouldRestart = True
 
-        
+
     ## Create a button with the appropriate properties.
     def makeButton(self, parent, label, leftAction, rightAction, helpText,
             size = (-1, -1)):
@@ -714,6 +727,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         stepper = self.mosaicStepper()
         target = None
         while True:
+            if self.shouldExit.is_set():
+                return
             if not self.shouldContinue.is_set():
                 ## Enter idle state.
                 # Update button label in main thread.
@@ -723,6 +738,10 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                 events.subscribe(events.STAGE_POSITION, self.onStageMoveWhenPaused)
                 # Wait for shouldContinue event.
                 self.shouldContinue.wait()
+                # Check if we should exit the thread.
+                if self.shouldExit.is_set():
+                    return
+
                 # Clear subscription
                 events.unsubscribe(events.STAGE_POSITION, self.onStageMoveWhenPaused)
                 # Update button label in main thread.
