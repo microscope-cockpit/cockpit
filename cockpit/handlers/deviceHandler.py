@@ -221,7 +221,9 @@ class DeviceHandler:
 
     ## Add a watch on a device parameter.
     def addWatch(self, name, callback):
-        return
+        if name not in self._watches:
+            self._watches[name] = set()
+        self._watches[name].add(callback)
 
 
     ## A function that any control can call to toggle enabled/disabled state.
