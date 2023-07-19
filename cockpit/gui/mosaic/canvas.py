@@ -139,7 +139,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.Bind(EVT_PROGRESS_START, self.createProgressDialog)
         self.Bind(EVT_PROGRESS_UPDATE, self.updateProgressDialog)
         self.Bind(EVT_PROGRESS_END, self.destroyProgressDialog)
-
+        self.oldScaleFactor=self.GetContentScaleFactor()
 
     ## Now that OpenGL's ready to go, perform any necessary initialization.
     # We can now create textures, for example, so it's time to create our 
@@ -431,9 +431,22 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         self.Refresh()
 
     def onDPIchange(self,event):
-        #not an ideal solution as visible region changes but
-        #recalcs positions etc...
-        self.multiplyZoom(1)
+        #get new scale and work out change.
+        contentScale=self.GetContentScaleFactor()
+        multiplier = (contentScale/self.oldScaleFactor)
+        #work out old canvas size to shift back to origin
+        oldwidth, oldheight = self.GetClientSize()*self.oldScaleFactor
+        oldhalfWidth = oldwidth / 2
+        oldhalfHeight = oldheight / 2
+        #apply shift to give new position of center of image
+        x= (-self.dx + oldhalfWidth) / (self.scale)
+        y= (-self.dy + oldhalfHeight) / (self.scale)
+        self.scale *= multiplier
+        #move to this new view, which is same as old but at different DPI
+        self.zoomTo(x, y, self.scale)
+        #store scale factor so we can use for next rescale
+        self.oldScaleFactor = contentScale
+
 
     ## Change our translation by the specified number of pixels.
     def dragView(self, offset):
