@@ -128,7 +128,7 @@ class DeviceHandler:
                  isEligibleForExperiments, callbacks, deviceType):
         # Set up dict for attribute-change listeners.
         super().__init__()
-        self._watches = {}
+        self._publisher = events.Publisher()
         self.state = None
         self.__cache = {}
         self.name = name
@@ -143,17 +143,7 @@ class DeviceHandler:
 
     def __setattr__(self, key, value):
         object.__setattr__(self, key, value)
-        if not hasattr(self, '_watches'):
-            return
-        if key not in self._watches:
-            return
-        for cb in self._watches[key]:
-            try:
-                cb(value)
-            except:
-                # Should maybe clean up failing watch callbacks.
-                pass
-
+        self._publisher.publish(key, value)
 
 
     # Define __lt__ to make handlers sortable.
@@ -221,21 +211,13 @@ class DeviceHandler:
 
     ## Add a watch on a device parameter.
     def addWatch(self, name, callback):
-        if name not in self._watches:
-            self._watches[name] = set()
-        self._watches[name].add(callback)
+        """Add a watch/callback on a device attribute."""
+        self._publisher.subscribe(name, callback)
 
 
     def removeWatch(self, name: str, callback) -> None:
-        """Remove a watch on a deveice parameter.
-
-        No input check!  If we're trying to remove a watch and the
-        name and callback are missing it will raise `TypeError`.  We
-        want to know so we can fix the code (but maybe we could just
-        log the error!)
-
-        """
-        self._watches[name].remove(callback)
+        """Remove a watch/callback on a device attribute."""
+        self._publisher.unsubscribe(name, callback)
 
 
     ## A function that any control can call to toggle enabled/disabled state.
