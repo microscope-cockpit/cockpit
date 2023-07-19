@@ -71,6 +71,9 @@ additional init steps.
 
 ``CAMERA_ENABLE``
 
+``UPDATE_ROI``
+A camera has updated its ROI which might change other displays.
+
 ``CLEANUP_AFTER_EXPERIMENT``
 
 ``DEVICE_STATUS``
@@ -185,6 +188,7 @@ CLEANUP_AFTER_EXPERIMENT = 'cleanup after experiment'
 LIGHT_SOURCE_ENABLE = 'light source enable'
 LIGHT_EXPOSURE_UPDATE = 'light exposure update'
 CAMERA_ENABLE = 'camera enable'
+UPDATE_ROI = 'update roi'
 FILTER_CHANGE = 'filter change'
 STAGE_POSITION = 'stage position'
 STAGE_MOVER = 'stage mover'

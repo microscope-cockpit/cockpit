@@ -217,6 +217,9 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
                  'getExposureTime': self.getExposureTime,
                  'setExposureTime': self.setExposureTime,
                  'getSavefileInfo': self.getSavefileInfo,
+                 'setROI': self.setROI,
+                 'getROI': self.getROI,
+                 'getSensorShape': self.getSensorShape,
                  'makeUI': self.makeUI,
                  'softTrigger': self.softTrigger},
             cockpit.handlers.camera.TRIGGER_SOFT,
@@ -269,16 +272,25 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
 
     def getImageSize(self, name):
         """Read the image size from the camera."""
-        roi = self._proxy.get_roi()  # left, bottom, right, top
-        if not isinstance(roi, ROI):
-            cockpit.util.logger.log.warning("%s returned tuple not ROI()" % self.name)
-            roi = ROI(*roi)
+        roi = self.getROI(name)
         binning = self._proxy.get_binning()
         if not isinstance(binning, Binning):
             cockpit.util.logger.log.warning("%s returned tuple not Binning()" % self.name)
             binning = Binning(*binning)
         return (roi.width//binning.h, roi.height//binning.v)
 
+    def getROI(self, name):
+        """Read the ROI from the camera"""
+        roi = self._proxy.get_roi()
+        if not isinstance(roi, ROI):
+            cockpit.util.logger.log.warning("%s returned tuple not ROI()" % self.name)
+            roi = ROI(*roi)
+        return roi
+
+    def getSensorShape(self, name):
+        """Read the sensor shape from the camera"""
+        sensor_shape = self._proxy.get_sensor_shape()
+        return sensor_shape
 
     def getSavefileInfo(self, name):
         """Return an info string describing the measurement."""
@@ -328,6 +340,12 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         # Camera uses times in s; cockpit uses ms.
         self._proxy.set_exposure_time(exposureTime / 1000.0)
 
+
+    def setROI(self, name, roi):
+        result = self._proxy.set_roi(roi)
+
+        if not result:
+            cockpit.util.logger.log.warning("%s could not set ROI" % self.name)
 
     def softTrigger(self, name=None):
         if self.enabled:

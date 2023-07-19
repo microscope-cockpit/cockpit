@@ -485,7 +485,9 @@ class MosaicWindow(wx.Frame, MosaicCommon):
 
         events.subscribe(events.STAGE_POSITION, self.onAxisRefresh)
         events.subscribe(events.SOFT_SAFETY_LIMIT, self.onAxisRefresh)
-
+        events.subscribe(events.MOSAIC_UPDATE, self.mosaicUpdate)
+        events.subscribe(events.UPDATE_ROI,self.updateROI)
+        
         abort_emitter = cockpit.gui.EvtEmitter(self, events.USER_ABORT)
         abort_emitter.Bind(cockpit.gui.EVT_COCKPIT, self.onAbort)
 
@@ -553,7 +555,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         self.crosshairBoxSize = 512 * wx.GetApp().Objectives.GetPixelSize()
         self.offset = wx.GetApp().Objectives.GetOffset()
         #force a redraw so that the crosshairs are properly sized
-        self.Refresh()
+        # Refresh this and other mosaic views.
+        events.publish(events.MOSAIC_UPDATE)
         event.Skip()
 
 
@@ -847,7 +850,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                                     z-self.offset[2]),
                 (width, height),
                 scalings = cockpit.gui.camera.window.getCameraScaling(camera))
-        self.Refresh()
+        # Refresh this and other mosaic views.
+        events.publish(events.MOSAIC_UPDATE)
 
     def togglescalebar(self):
         #toggle the scale bar between 0 and 1.
@@ -857,22 +861,34 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             self.scalebar = 1
         #store current state for future.
         cockpit.util.userConfig.setValue('mosaicScaleBar',self.scalebar)
-        self.Refresh()
+        #send a mosaic update event to update touchscreen
+        events.publish(events.MOSAIC_UPDATE)
 
     def toggleDisplayTrails(self):
         #toggle Display of trails in mosaic.
         self.displayTrails = not self.displayTrails
-        #send a mosaic update event to update touchscreen
-        events.publish(events.MOSAIC_UPDATE)
         #store current state for future.
         cockpit.util.userConfig.setValue('mosaicDisplayTrails',self.displayTrails)
-        self.Refresh()
+        #send a mosaic update event to update touchscreen
+        events.publish(events.MOSAIC_UPDATE)
+
 
     def clearTrails(self):
         #clear all exisiting trails
         self.trails=[]
         events.publish(events.MOSAIC_UPDATE)
+
+
+    def mosaicUpdate(self):
         self.Refresh()
+
+    def updateROI(self,cameraname):
+        #camera roi has updated so check if we are using this camera and
+        #if so update imaging region
+        if self.camera is not None:
+            if cameraname == self.camera.name :
+                #publish event toi update this mosaic and touchscreen
+                events.publish(events.MOSAIC_UPDATE) 
         
     ## Save the current stage position as a new site with the specified
     # color (or our currently-selected color if none is provided).
@@ -1013,7 +1029,9 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         ## Deselect everything to work around issue #408 (under gtk,
         ## deleting items will move the selection to the next item)
         self.sitesBox.SetSelection(wx.NOT_FOUND)
-        self.Refresh()
+        # Refresh this and other mosaic views.
+        events.publish(events.MOSAIC_UPDATE)
+
 
 
     ## Move the selected sites by an offset.
@@ -1037,7 +1055,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             self.sitesBox.Clear()
             for site in cockpit.interfaces.stageMover.getAllSites():
                 self._AddSiteToList(site, shouldRefresh = False)
-            self.Refresh()
+            # Refresh this and other mosaic views.
+            events.publish(events.MOSAIC_UPDATE)
 
 
     ## Save sites to a file.
@@ -1077,7 +1096,9 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             label = '%04d' % label
         self.sitesBox.Append("%s: %s" % (label, position))
         if shouldRefresh:
-            self.Refresh()
+            # Refresh this and other mosaic views.
+            events.publish(events.MOSAIC_UPDATE)
+
 
 
     ## A site was deleted; remove it from our sites box.

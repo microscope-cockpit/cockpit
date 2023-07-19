@@ -205,7 +205,43 @@ class MainWindowPanel(wx.Panel):
 
         self.SetDropTarget(viewFileDropTarget.ViewFileDropTarget(self))
 
+        #subscribe to camera UPDATE_ROI events so we can ask to apply it to all
+        #cameras or not.
+        self.updateROI = False
+        events.subscribe(events.UPDATE_ROI, self.updateCamROI) 
 
+    #function fired on camera ROI update. It looks to see if there are
+    #other active cameras and asks if you want to set all cameras to that
+    #ROI or not. 
+    def updateCamROI(self,camName):
+        #track if already updating cameras, only need to ask once
+        if self.updateROI:
+            return
+        self.updateROI=True
+        asked = False
+        update = False
+        active= depot.getHandlerWithName(camName)
+        cameras = sorted(depot.getHandlersOfType(depot.CAMERA),
+                         key=lambda c: c.name)
+        roi=active.getROI()
+        for camera in cameras:
+            if camera.isEnabled and (camera.name is not camName):
+                #another active camera camera so ask.
+                title = "Apply to other Cameras?"
+                msg = (
+                    " You have added a new ROI to camera  '%s'."
+                    " Do you wish to apply the same ROI to all "
+                    " other cameras?" % (camName)
+                )
+                if not asked:
+                    asked = True
+                    if cockpit.gui.guiUtils.getUserPermission(msg, title):
+                        #update ROI on this camera.
+                        update = True
+                if update:
+                    camera.setROI(roi)
+        self.updateROI=False
+        
     ## User clicked the "view last file" button; open the last experiment's
     # file in an image viewer. A bit tricky when there's multiple files
     # generated due to the splitting logic. We just view the first one in

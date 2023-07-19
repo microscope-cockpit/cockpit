@@ -78,7 +78,7 @@ import operator
 HISTOGRAM_HEIGHT = 40
 
 ## Drag modes
-(DRAG_NONE, DRAG_CANVAS, DRAG_BLACKPOINT, DRAG_WHITEPOINT) = range(4)
+(DRAG_NONE, DRAG_CANVAS, DRAG_BLACKPOINT, DRAG_WHITEPOINT, DRAG_ROI) = range(5)
 
 
 class BaseGL():
@@ -467,6 +467,14 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.panX = 0
         self.panY = 0
 
+        ## ROI
+        self.roi = None                 # Current roi
+        self.roi_drag = None            # ROI currently being defined
+        self.definingROI = False        # Are we defining the ROI
+        self.definedROI = False         # New ROI defined but not grabbed.
+        self.shift_down = False         #shift key drags a square ROI
+
+        
         ## What kind of dragging we're doing.
         self.dragMode = DRAG_NONE
 
@@ -485,12 +493,17 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
         self.Bind(wx.EVT_MOUSEWHEEL, self.onMouseWheel)
         self.Bind(wx.EVT_DPI_CHANGED, self.onDPIchange)
+        
         # Right click also creates context menu event, which will pass up
         # if unhandled. Bind it to None to prevent the main window
         # context menu being displayed after our own.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         self.painting = False
 
+        #shift key to make ROI square requirse knowing if the key is down
+        self.Bind(wx.EVT_KEY_DOWN, self.onKeyDown)
+        self.Bind(wx.EVT_KEY_UP, self.onKeyUp)
+        
         # Initialise FFT variables
         self.showFFT = False
 
@@ -554,6 +567,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     # actually display the image.
     def setImage(self, newImage):
         self.imageQueue.put_nowait(newImage)
+        self.definedROI = False # new image will have new ROI.
 
 
     ## Consume images out of self.imageQueue and either display them or
@@ -633,8 +647,10 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
             self.image.draw(pan=(self.panX, self.panY), zoom=self.zoom)
             if self.showCrosshair:
                 self.drawCrosshair()
-
-
+            if self.definingROI:
+                self.drawROI()
+            if self.definedROI:
+                self.drawROI()
             glViewport(0, 0, self.w, Hist_Height//2)
             self.histogram.draw()
             glColor(0, 1, 0, 1)
@@ -674,6 +690,24 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                           (self.zoom*self.panX, -1), (self.zoom*self.panX, 1)])
         glDrawArrays(GL_LINES, 0, 4)
 
+    @cockpit.util.threads.callInMainThread
+    def drawROI(self):
+        if self.roi_drag:
+            glColor3f(255, 0, 0)
+
+            # Get raw gl co-ordinates
+            v = [self.indicesToGl(self.roi_drag[1], self.roi_drag[0]),
+                self.indicesToGl(self.roi_drag[1] + self.roi_drag[3], self.roi_drag[0]),
+                self.indicesToGl(self.roi_drag[1] + self.roi_drag[3], self.roi_drag[0] + self.roi_drag[2]),
+                self.indicesToGl(self.roi_drag[1], self.roi_drag[0] + self.roi_drag[2])
+                ]
+
+            # Correct co-ordinates for zoom and pan
+            v_zoompan = [((p[0] + self.panX) * self.zoom, (p[1] + self.panY) * self.zoom) for p in v]
+
+            # Draw roi box
+            glVertexPointerf(v_zoompan)
+            glDrawArrays(GL_LINE_LOOP, 0, 4)
 
     ## Update the size of the canvas by scaling it.
     def setSize(self, size):
@@ -695,12 +729,16 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         elif event.LeftDown():
             # Started dragging
             self.mouseDragX, self.mouseDragY = self.curMouseX, self.curMouseY
+            self.mouseLdownX, self.mouseLdownY = self.curMouseX, self.curMouseY
             blackPointX = 0.5 * (1+self.histogram.data2gl(self.histogram.lthresh)) * self.w
             whitePointX = 0.5 * (1+self.histogram.data2gl(self.histogram.uthresh)) * self.w
             # Set drag mode based on current window position
             if self.h - self.curMouseY >= (HISTOGRAM_HEIGHT *
                                            self.GetContentScaleFactor()* 2):
-                self.dragMode = DRAG_CANVAS
+                if self.definingROI:
+                    self.dragMode = DRAG_ROI
+                else:
+                    self.dragMode = DRAG_CANVAS
             elif abs(self.curMouseX - blackPointX) < abs(self.curMouseX - whitePointX):
                 self.dragMode = DRAG_BLACKPOINT
             else:
@@ -722,10 +760,60 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                 else:
                     self.histogram.uthresh = threshold
                     self.image.vmax = threshold
+            elif self.dragMode == DRAG_ROI:
+
+                if self.shift_down:
+                    #shift is down so force square ROI
+                    # Get co-ordinates in canvas units
+                    coords_x = [self.mouseDragX, self.mouseLdownX]
+                    coords_y = [self.mouseDragY, self.mouseLdownY]
+                    roi_xmin, roi_ymin = min(coords_x), min(coords_y)
+                    roi_xmax, roi_ymax = max(coords_x), max(coords_y)
+                    # Convert to data indices
+                    roi_min_ind = self.canvasToIndices(roi_xmin, roi_ymin)
+                    roi_max_ind = self.canvasToIndices(roi_xmax, roi_ymax)
+                    # Get size of roi
+                    roi_maxsize = max((roi_max_ind[0] - roi_min_ind[0], roi_max_ind[1] - roi_min_ind[1]))
+                    roi_size = (roi_maxsize, roi_maxsize)
+                    # Set roi (left, top, width, height)
+                    self.roi_drag = (roi_min_ind[1], roi_min_ind[0],
+                                     roi_size[1], roi_size[0])
+                else:
+                    #Shift is up so use real coords 
+                    roi_start=[self.mouseLdownY,self.mouseLdownX]
+                    roi_end=[self.mouseDragY-self.mouseLdownY,
+                             self.mouseDragX-self.mouseLdownX]
+                    (roi_xmin_ind,
+                     roi_ymin_ind)=self.canvasToIndices(roi_start[0],
+                                                        roi_start[1])
+                    (roi_xmax_ind,
+                     roi_ymax_ind)=self.canvasToIndices(roi_end[0],
+                                                        roi_end[1])
+
+                    self.roi_drag =(roi_xmin_ind,roi_ymin_ind,
+                                    roi_xmax_ind,roi_ymax_ind)
+
+
             self.mouseDragX = self.curMouseX
             self.mouseDragY = self.curMouseY
         elif event.RightDown():
             cockpit.gui.guiUtils.placeMenuAtMouse(self, self._menu)
+        elif event.LeftUp():
+            if self.definingROI:
+                camera = self.Parent.Parent.curCamera
+
+                # Set ROI in camera, correcting for current roi
+                if self.roi:
+                    roi = (self.roi[0] + self.roi_drag[0], self.roi[1] + self.roi_drag[1], self.roi_drag[2], self.roi_drag[3])
+                else:
+                    roi = self.roi_drag
+
+                camera.setROI(roi)
+                events.publish(events.UPDATE_ROI,camera.name)
+
+                self.roi = roi
+                self.definingROI = False
+                self.definedROI = True
         elif event.Entering() and self.TopLevelParent.IsActive():
             self.SetFocus()
         else:
@@ -741,6 +829,9 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         return [('Reset view', self.resetView),
                 ('Set histogram parameters', self.onSetHistogram),
                 ('Toggle clip highlighting', self.image.toggleClipHighlight),
+                ('', None),
+                ('Set ROI', self.onDefineROI),
+                ('Clear ROI', self.onClearROI),
                 ('', None),
                 ('Toggle alignment crosshair', self.toggleCrosshair),
                 ('Toggle sync view', self.toggleSyncViews),
@@ -774,6 +865,34 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                                self.setView,
                              )
             
+    def onDefineROI(self, event = None):
+        self.roi_drag = None
+        self.definingROI = True
+
+    def onClearROI(self, event = None):
+        camera = self.Parent.Parent.curCamera
+        sensor_shape = camera.getSensorShape()
+        roi = (0,0,sensor_shape[0], sensor_shape[1])
+        camera.setROI(roi)
+        self.roi = roi
+        self.definedROI = False
+        events.publish(events.UPDATE_ROI,camera.name)
+        self.Refresh()
+
+    def onKeyDown(self, event):
+        keycode = event.GetKeyCode()
+        if keycode == wx.WXK_SHIFT:
+            self.shift_down = True
+        event.Skip()
+        self.Refresh()
+
+    def onKeyUp(self, event):
+        keycode = event.GetKeyCode()
+        if keycode == wx.WXK_SHIFT:
+            self.shift_down = False
+        event.Skip()
+        self.Refresh()
+
     def toggleCrosshair(self, event=None):
         self.showCrosshair = not(self.showCrosshair)
 
@@ -799,10 +918,22 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     ## Convert gl co-ordinates to indices into the data.
     # Note: pass in x,y, but returns row-major datay, datax
     def glToIndices(self, glx, gly):
-        datax = (1 + glx) * self.imageShape[1] // 2
-        datay = self.imageShape[0]-((1 + gly) * self.imageShape[0] // 2)
-        return (datay, datax)
+        # Vertical and horizontal modifiers for non-square images.
+        hlim = self.imageShape[1] / max(self.imageShape)
+        vlim = self.imageShape[0] / max(self.imageShape)
+        datax = int((1 + glx / hlim) * self.imageShape[1] // 2)
+        datay = int(self.imageShape[0]-((1 + gly / vlim) * self.imageShape[0] // 2))
+        datax_clamped = max(0, min(datax, self.imageShape[1]))
+        datay_clamped = max(0, min(datay, self.imageShape[0]))
+        return (datay_clamped, datax_clamped)
 
+    ## Convert data indices to gl co-ordinates.
+    # Note: pass in row-major datay, datax, but returns x,y
+    def indicesToGl(self, datay, datax):
+        glx = 2 / self.imageShape[1] * datax - 1
+        gly = 2 / self.imageShape[0] * (self.imageShape[0] - datay) - 1
+
+        return(glx, gly)
 
     ## Convert window co-ordinates to indices into the data.
     def canvasToIndices(self, x, y):
