@@ -131,7 +131,7 @@ initialised. An example section to create this poll thread is:
   num-stage-axes: 2
 
 
-  
+
 Cameras
 ```````
 
@@ -182,7 +182,7 @@ Executor
 The hardware timing is performed by a so called executor device. These
 devices need to specify the number of analog and digital control
 lines that they provide, for instance with a Red Pitaya single board
-computer providing the executor you have a section along the lines of: 
+computer providing the executor you have a section along the lines of:
 
 .. code:: ini
 
@@ -227,7 +227,7 @@ accessible regions from different objectives in the stage and mosaic
 views. Additionally, there is an offset parameter which enables
 difference between objective fields of view to be accounted for in
 stage position. The lensID parameter is stored in image file metadata
-fields so can be used to tag specific objectives, or objective types. 
+fields so can be used to tag specific objectives, or objective types.
 
 .. code:: ini
 
@@ -273,7 +273,7 @@ changes are updated so that digital transitions are sharp. Typically
 values are only logged on state changes, both output changes trigger by
 the user or other actions and input changes that are pushed from the
 remote process.
-      
+
 
 Value Logger
 ````````````
@@ -300,10 +300,9 @@ defined parameter will be sent to the remote microscope as a setting
 for that device. This involves the special keyword setting: followed
 by key-value pairs, this is an example from a Andor camera config:
 
-
 .. code:: ini
-	  
-settings:
+
+  settings:
     aoi_height: 1024
     aoi_width: 1024
     aoi_left: 513
