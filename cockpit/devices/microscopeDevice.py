@@ -899,6 +899,8 @@ class MicroscopeValueLogger(MicroscopeBase):
         self._cache = [False]*self.numSensors
         self.labels = [""]*self.numSensors
         labels = self.config.get('labels',None)
+        ##do we get data pushed or do we pull it from the remote. 
+        self.pullData = self.config.get('pulldata',False)
         ##extract names of lines from file, too many are ignored,
         ## too few are padded with str(line number)
         templabels=[]
@@ -910,7 +912,9 @@ class MicroscopeValueLogger(MicroscopeBase):
             else:
                 self.labels[i]=("Sensor %d" %i)
         # Lister to receive data back from hardware
-        self.listener = cockpit.util.listener.Listener(self._proxy,
+        if not self.pullData:
+            #data is pushed so we need the start a listerner to receive the data
+            self.listener = cockpit.util.listener.Listener(self._proxy,
                                                lambda *args:
                                                        self.receiveData(*args))
         #log to record line state chnages
@@ -924,17 +928,22 @@ class MicroscopeValueLogger(MicroscopeBase):
         (data,timestamp) = args
         events.publish(events.VALUELOGGER_INPUT,data)
         self.logger.log(data)
-        
 
+    def getRemoteValues(self):
+        data=self._proxy.getValues()
+        events.publish(events.VALUELOGGER_INPUT,data)
+        self.logger.log(data)
 
     def enable(self,state):
         if state:
             self._proxy.enable()
-            self.listener.connect()
+            if not self.pullData:
+                self.listener.connect()
             return(True)
         else:
             self._proxy.disable()
-            self.listener.disconnect()
+            if not self.pullData:
+                self.listener.disconnect()
             return(False)
 
 
