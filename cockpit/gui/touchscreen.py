@@ -586,7 +586,8 @@ class LightsPanelEntry(wx.Panel):
         sizer_row0 = wx.BoxSizer(wx.HORIZONTAL)
         img = wx.Image(
             os.path.join(
-                cockpit.gui.IMAGES_PATH, "touchscreen/misc_wavelength.png",
+                cockpit.gui.IMAGES_PATH,
+                "touchscreen/misc_wavelength.png",
             )
         )
         if self.light:
@@ -769,7 +770,8 @@ class CamerasPanelEntry(wx.Panel):
         sizer_row0 = wx.BoxSizer(wx.HORIZONTAL)
         img = wx.Image(
             os.path.join(
-                cockpit.gui.IMAGES_PATH, "touchscreen/misc_wavelength.png",
+                cockpit.gui.IMAGES_PATH,
+                "touchscreen/misc_wavelength.png",
             )
         )
         if self.camera_handler.wavelength:
@@ -933,7 +935,8 @@ class MosaicPanel(wx.Panel, mosaic.MosaicCommon):
         events.subscribe(events.MOSAIC_STOP, self.mosaicStop)
         events.subscribe(events.MOSAIC_UPDATE, self.mosaicUpdate)
         wx.GetApp().Objectives.Bind(
-            cockpit.interfaces.EVT_OBJECTIVE_CHANGED, self.onObjectiveChange,
+            cockpit.interfaces.EVT_OBJECTIVE_CHANGED,
+            self.onObjectiveChange,
         )
         self.Bind(wx.EVT_SIZE, self.onSize)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.onMouse)
@@ -1057,7 +1060,7 @@ class MosaicPanel(wx.Panel, mosaic.MosaicCommon):
                     # Invert the scaling direction.
                     multiplier = 2 - multiplier
                     delta *= -1
-                self.canvas.multiplyZoom(multiplier ** delta)
+                self.canvas.multiplyZoom(multiplier**delta)
 
         self.prevMousePos = mousePos
 
