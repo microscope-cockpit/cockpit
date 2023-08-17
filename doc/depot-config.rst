@@ -285,11 +285,17 @@ logger to push data to Cockpit which is then logged and available for
 display in the LogValueViewer.
 
 The Value Logger configuration has a labels array which specifies
-names for each logged channel.
+names for each logged channel. Additionally it has a Boolean flag to
+define if the data is pushed from the remote (the default) or pulled.
+If the data is pulled there is a definable poll interval (default = 20
+seconds).
 
 .. code:: ini
 
   labels:["T1", "T2"]
+  pullData: True
+  pollInterval: 10
+
 
 Additional specific parameters
 ``````````````````````````````

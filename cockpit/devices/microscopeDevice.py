@@ -878,7 +878,7 @@ class DIOOutputWindow(wx.Frame):
 
 
 class MicroscopeValueLogger(MicroscopeBase):
-    """Device class for asynchronous Digital Inout and Output signals.
+    """Device class for asynchronous Digital Input and Output signals.
     This class enables the configuration of named buttons in main GUI window
     to control for situation such a switchable excitation paths.
 
@@ -901,6 +901,7 @@ class MicroscopeValueLogger(MicroscopeBase):
         labels = self.config.get('labels',None)
         ##do we get data pushed or do we pull it from the remote. 
         self.pullData = self.config.get('pulldata',False)
+        self.pollInterval = int(self.config.get('pollinterval',20))
         ##extract names of lines from file, too many are ignored,
         ## too few are padded with str(line number)
         templabels=[]
@@ -917,23 +918,31 @@ class MicroscopeValueLogger(MicroscopeBase):
             self.listener = cockpit.util.listener.Listener(self._proxy,
                                                lambda *args:
                                                        self.receiveData(*args))
-        #log to record line state chnages
-        self.logger = valueLogger.ValueLogger(self.name,
-                    keys=self.labels)
+            #log to record line state chnages
+            self.logger = valueLogger.ValueLogger(self.name,
+                                                  keys=self.labels)
+        else:
+            self.logger = valueLogger.PollingLogger(self.name,
+                                                     self.pollInterval,
+                                                     self.getRemoteValues,
+                                                     keys=self.labels)
+
         self.enable(True)
         
     def receiveData(self, *args):
-        """This function is called sensors return data from 
-        the hardware."""
+        """This function is called when sensors push data from the remote and 
+        return data from the hardware."""
         (data,timestamp) = args
         events.publish(events.VALUELOGGER_INPUT,data)
         self.logger.log(data)
 
     def getRemoteValues(self):
+        """This calls the remote getValues() function to 
+        pull data from the remote hardware."""
         data=self._proxy.getValues()
         events.publish(events.VALUELOGGER_INPUT,data)
-        self.logger.log(data)
-
+        return(data)
+        
     def enable(self,state):
         if state:
             self._proxy.enable()
@@ -944,6 +953,13 @@ class MicroscopeValueLogger(MicroscopeBase):
             self._proxy.disable()
             if not self.pullData:
                 self.listener.disconnect()
+            else:
+                # Is this a race condition should we stop the event then
+                # disable the proxy?
+                self.logger.__stopEvent.set()
             return(False)
 
+    #ensure we stop the polling if we are shutting down. 
+    def onExit(self):
+        self.enable(False)
 
