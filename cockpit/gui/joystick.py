@@ -69,7 +69,7 @@ import cockpit.gui.mosaic.window as mosaic
 class Joystick:
     def __init__(self, window):
         # Support for Joysticks in wx is conditional (see #870)
-        if wx.adv.USE_JOYSTICK:
+        if not wx.adv.USE_JOYSTICK:
             cockpit.util.logger.log.warning(
                 'wxWidgets was built without joystick support'
                 ' so it is disabled in Cockpit too.'
