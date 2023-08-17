@@ -138,14 +138,12 @@ class CockpitApp(wx.App):
 
             depot_config = self.Config.depot_config
 
-            # XXX: get a reference from the singleton.  Change this
-            # once we replace
             self.Depot.initialize(depot_config)
 
             numDevices = len(depot_config.sections()) + 1 # +1 for dummy devices
             numNonDevices = 15
             status = wx.ProgressDialog(parent = None,
-                    title = "Initializing OMX Cockpit",
+                    title = "Initializing Cockpit",
                     message = "Importing modules...",
                     ## Fix maximum: + 1 is for dummy devices
                     maximum = numDevices + numNonDevices)
