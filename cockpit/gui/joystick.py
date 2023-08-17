@@ -75,6 +75,15 @@ class Joystick:
                 ' so it is disabled in Cockpit too.'
             )
             return None
+        # While Joysticks methods work in Window and Linux when there
+        # are no Joysticks connected, it errors in Mac so we really
+        # need to check this (see #870)
+        if wx.adv.Joystick.GetNumberJoysticks() == 0:
+            cockpit.util.logger.log.info(
+                'wxWidgets found no joysticks so support for them'
+                ' is disabled in Cockpit.'
+            )
+            return None
         self._stick = wx.adv.Joystick()
         self._stick.SetCapture(window, 50)
         # Stick should be calibrated in the OS rather than correcting
