@@ -82,7 +82,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
         events.subscribe(events.USER_ABORT, self.onAbort)
         
         ## List of all light handlers.
-        self.allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
+        self.allLights = wx.GetApp().Depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         ## List of booleans indicating which lights were active at the
         # start of the experiment.
         self.activeLights = [None for l in self.allLights]
@@ -159,7 +159,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
         columnSizer = wx.BoxSizer(wx.VERTICAL)
         ## We don't necessarily have this option.
         self.shouldPowerDownWhenDone = None
-        powerHandlers = depot.getHandlersOfType(depot.POWER_CONTROL)
+        powerHandlers = wx.GetApp().Depot.getHandlersOfType(depot.POWER_CONTROL)
         if powerHandlers:
             # There are devices that we could potentially turn off at end of
             # experiment.
@@ -408,7 +408,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
             self.allLights[i].setEnabled(shouldActivate)
         if (self.shouldPowerDownWhenDone is not None and
                 self.shouldPowerDownWhenDone.GetValue()):
-            handlers = depot.getHandlersOfType(depot.POWER_CONTROL)
+            handlers = wx.GetApp().Depot.getHandlersOfType(depot.POWER_CONTROL)
             for handler in handlers:
                 handler.disable()
         events.publish(events.UPDATE_STATUS_LIGHT, 'device waiting', '')

@@ -361,13 +361,10 @@ deviceDepot = None
 
 ## Simple passthrough
 def initialize(config):
-    global deviceDepot
-    deviceDepot = DeviceDepot()
     for device in deviceDepot.initialize(config):
         yield device
 
 
-## All simple passthroughs while we use the module as a singleton
 def makeInitialPublications():
     deviceDepot.makeInitialPublications()
 

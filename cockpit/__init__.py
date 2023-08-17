@@ -96,7 +96,16 @@ class CockpitApp(wx.App):
         ## OnInit() will make use of config, and wx.App.__init__()
         ## calls OnInit().  So we need to assign this before super().
         self._config = config
+        self._depot = cockpit.depot.DeviceDepot()
+        # FIXME: some places still access the depot singleton instance
+        # in the module (through the module free functions) so we need
+        # to keep a reference to this object there.
+        cockpit.depot.deviceDepot = self._depot
         super().__init__(redirect=False)
+
+    @property
+    def Depot(self):
+        return self._depot
 
     @property
     def Config(self):
@@ -126,8 +135,13 @@ class CockpitApp(wx.App):
             Pyro4.config.PICKLE_PROTOCOL_VERSION = self.Config[
                 "global"
             ].getint("pyro-pickle-protocol")
+
             depot_config = self.Config.depot_config
-            cockpit.depot.initialize(depot_config)
+
+            # XXX: get a reference from the singleton.  Change this
+            # once we replace
+            self.Depot.initialize(depot_config)
+
             numDevices = len(depot_config.sections()) + 1 # +1 for dummy devices
             numNonDevices = 15
             status = wx.ProgressDialog(parent = None,
@@ -147,18 +161,18 @@ class CockpitApp(wx.App):
 
             status.Update(updateNum, "Initializing devices...")
             updateNum+=1
-            for device in cockpit.depot.initialize(depot_config):
+            for device in self.Depot.initialize(depot_config):
                 status.Update(updateNum, "Initializing devices...\n%s" % device)
                 updateNum+=1
             status.Update(updateNum, "Initializing device interfaces...")
             updateNum+=1
 
             self._imager = cockpit.interfaces.imager.Imager(
-                cockpit.depot.getHandlersOfType(cockpit.depot.IMAGER)
+                self.Depot.getHandlersOfType(cockpit.depot.IMAGER)
             )
             cockpit.interfaces.stageMover.initialize()
             self._objectives = cockpit.interfaces.Objectives(
-                cockpit.depot.getHandlersOfType(cockpit.depot.OBJECTIVE)
+                self.Depot.getHandlersOfType(cockpit.depot.OBJECTIVE)
             )
             self._stage = cockpit.interfaces.stageMover.mover
             self._channels = cockpit.interfaces.channels.Channels()
@@ -215,7 +229,7 @@ class CockpitApp(wx.App):
             # Sometimes, status doesn't make it into the list, so test.
             status.Destroy()
 
-            cockpit.depot.makeInitialPublications()
+            self.Depot.makeInitialPublications()
             cockpit.interfaces.stageMover.makeInitialPublications()
 
             cockpit.events.publish(cockpit.events.COCKPIT_INIT_COMPLETE)
@@ -267,7 +281,7 @@ class CockpitApp(wx.App):
         except:
             cockpit.util.logger.log.error("Error on USER_ABORT during exit")
             cockpit.util.logger.log.error(traceback.format_exc())
-        for dev in cockpit.depot.getAllDevices():
+        for dev in self.Depot.getAllDevices():
             try:
                 dev.onExit()
             except:

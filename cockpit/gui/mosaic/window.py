@@ -305,7 +305,7 @@ class MosaicCommon:
 
         glBegin(GL_LINE_LOOP)
         # Draw the box.
-        cams = depot.getActiveCameras()
+        cams = wx.GetApp().Depot.getActiveCameras()
         # if there is a camera us its real pixel count
         if (len(cams) > 0):
             pixel_size = wx.GetApp().Objectives.GetPixelSize()
@@ -762,7 +762,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
 
             if self.shouldReconfigure:
                 #  Check that camera is valid
-                active = depot.getActiveCameras()
+                active = wx.GetApp().Depot.getActiveCameras()
                 if len(active) == 0:
                     self.shouldContinue.clear()
                     sys.stderr.write("Mosaic stopping: no active cameras.\n")
@@ -852,7 +852,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         camera = self.camera
         if camera is None or not camera.getIsEnabled():
             # Select the first active camera.
-            for cam in depot.getHandlersOfType(depot.CAMERA):
+            for cam in wx.GetApp().Depot.getHandlersOfType(depot.CAMERA):
                 if cam.getIsEnabled():
                     camera = cam
                     break
@@ -1152,7 +1152,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     # \param text String template to use for entries in the menu.
     # \param action Function to call with the selected camera as a parameter.
     def showCameraMenu(self, text, action):
-        cameras = depot.getActiveCameras()
+        cameras = wx.GetApp().Depot.getActiveCameras()
         if len(cameras) == 0:
             wx.MessageBox("Please enable a camera to run a mosaic.",
                           caption="No cameras are enabled")
@@ -1371,7 +1371,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         # Scan each site in Z to get perfect focus. Look up/down +- 1 micron,
         # and pick the Z altitude with the brightest image.
         # HACK: use the first active camera we find.
-        cameras = depot.getHandlersOfType(depot.CAMERA)
+        cameras = wx.GetApp().Depot.getHandlersOfType(depot.CAMERA)
         camera = None
         for alt in cameras:
             if alt.getIsEnabled():

@@ -106,9 +106,9 @@ class ExperimentConfigPanel(wx.Panel):
         # debugging, so we can examine the state of the experiment.
         self.runner = None
 
-        self.allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
+        self.allLights = wx.GetApp().Depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         self.allLights.sort(key = lambda l: l.wavelength)
-        self.allCameras = depot.getHandlersOfType(depot.CAMERA)
+        self.allCameras = wx.GetApp().Depot.getHandlersOfType(depot.CAMERA)
         self.allCameras.sort(key = lambda c: c.name)
 
         ## Map of default settings as loaded from config.
@@ -411,12 +411,12 @@ class ExperimentConfigPanel(wx.Panel):
         self.saveSettings()
         # Find the Z mover with the smallest range of motion, assumed
         # to be our experiment mover.
-        mover = depot.getSortedStageMovers()[2][-1]
+        mover = wx.GetApp().Depot.getSortedStageMovers()[2][-1]
         # Only use active cameras and enabled lights.
         # Must do list(filter) because we will iterate over the list
         # many times.
         cameras = list(filter(lambda c: c.getIsEnabled(),
-                depot.getHandlersOfType(depot.CAMERA)))
+                wx.GetApp().Depot.getHandlersOfType(depot.CAMERA)))
         if not cameras:
             wx.MessageDialog(self,
                     message = "No cameras are enabled, so the experiment cannot be run.",

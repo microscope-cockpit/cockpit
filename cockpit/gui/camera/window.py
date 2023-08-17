@@ -72,7 +72,7 @@ class CamerasWindow(wx.Frame):
     def __init__(self, parent):
         super().__init__(parent, title="Camera views")
 
-        self.numCameras = len(depot.getHandlersOfType(depot.CAMERA))
+        self.numCameras = len(wx.GetApp().Depot.getHandlersOfType(depot.CAMERA))
 
         self.panel = wx.Panel(self)
 
