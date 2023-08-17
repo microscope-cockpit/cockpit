@@ -25,6 +25,8 @@ import time
 import wx
 import wx.adv
 
+import cockpit.util.logger
+
 # Define a button comparison function that supports the different
 # enumeration schemes on Windows and Linux as at wxWidgets version 3.1.2.
 # Currently, different platforms enumerate changed buttons as follows:
@@ -66,7 +68,12 @@ import cockpit.gui.mosaic.window as mosaic
 
 class Joystick:
     def __init__(self, window):
-        if sys.platform == 'darwin':
+        # Support for Joysticks in wx is conditional (see #870)
+        if wx.adv.USE_JOYSTICK:
+            cockpit.util.logger.log.warning(
+                'wxWidgets was built without joystick support'
+                ' so it is disabled in Cockpit too.'
+            )
             return None
         self._stick = wx.adv.Joystick()
         self._stick.SetCapture(window, 50)
