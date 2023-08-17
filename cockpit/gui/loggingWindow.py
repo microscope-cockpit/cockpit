@@ -49,8 +49,9 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
+import threading
 import sys
+
 import wx
 import wx.aui
 
@@ -77,7 +78,6 @@ class LoggingWindow(wx.Frame):
         # as it comes in, then we get tons of newlines we don't want.
         self.textCache = ''
         # Need a lock on the cache to prevent segfaults due to concurrent access.
-        import threading
         self.cacheLock = threading.Lock()
 
         # HACK: enforce that writing to these controls only happens in the

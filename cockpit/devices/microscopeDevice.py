@@ -43,6 +43,7 @@ For connection via a controller::
 
 """
 
+import collections.abc
 import typing
 
 import Pyro4
@@ -184,7 +185,6 @@ class MicroscopeBase(device.Device):
             # on the handler. The handler should probably expose the
             # settings interface.
             self.setAnyDefaults()
-            import collections.abc
             if self.handlers and isinstance(self.handlers, collections.abc.Sequence):
                 h = self.handlers[0]
             elif self.handlers:

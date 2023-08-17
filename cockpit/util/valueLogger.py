@@ -18,6 +18,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
+import random
 import time
 import threading
 import sys
@@ -25,7 +26,7 @@ from collections.abc import Iterable
 from datetime import datetime
 
 from cockpit.util import files
-import os
+import os.path
 DELIMITER = ';'
 
 class ValueLogger:
@@ -84,8 +85,7 @@ class ValueLogger:
     @classmethod
     def getLogFiles(cls):
         """Return the full path to all files opened in this session."""
-        from os import path
-        return [path.realpath(fh.name) for fh in cls._fhs]
+        return [os.path.realpath(fh.name) for fh in cls._fhs]
 
 
 class PollingLogger(ValueLogger):
@@ -148,5 +148,4 @@ class TestSource:
 
 
     def getValues(self):
-        import random
         return[i+random.random() for i in range(4)]

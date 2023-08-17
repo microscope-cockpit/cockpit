@@ -32,6 +32,7 @@ import cockpit.util.threads
 from cockpit.util import valueLogger
 
 import datetime
+import operator
 import time
 import wx
 
@@ -199,8 +200,7 @@ class LinkamStage(MicroscopeBase, Device):
                 tNow = time.time()
                 if tNow - lastTime > LOGGING_PERIOD:
                     newTemps = [status.get(k) for k in self.logger.keys]
-                    from operator import eq
-                    if not all(map(eq, newTemps, lastTemps)):
+                    if not all(map(operator.eq, newTemps, lastTemps)):
                         self.logger.log(newTemps)
                         lastTemps = newTemps
                     lastTime = tNow

@@ -80,6 +80,8 @@ import cockpit.util.files
 import cockpit.util.userConfig
 from cockpit.gui import viewFileDropTarget
 from cockpit.gui import mainPanels
+from cockpit.util import valueLogger
+from cockpit.util import csv_plotter
 
 
 ROW_SPACER = 12
@@ -418,8 +420,6 @@ class WindowsMenu(wx.Menu):
 
         # Add item to launch valueLogViewer (XXX: this should be
         # handled by some sort of plugin system and not hardcoded).
-        from cockpit.util import valueLogger
-        from cockpit.util import csv_plotter
         menu_item = self.Append(wx.ID_ANY, "Launch ValueLogViewer")
         logs = valueLogger.ValueLogger.getLogFiles()
         if not logs:

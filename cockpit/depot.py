@@ -51,13 +51,23 @@
 
 
 ## This module serves as a central coordination point for all devices. Devices
-# are initialized and registered from here, and if a part of the UI wants to 
+# are initialized and registered from here, and if a part of the UI wants to
 # interact with a specific kind of device, they can find it through the depot.
 
 import collections
 import configparser
 import os
+from concurrent.futures import ThreadPoolExecutor
 
+from cockpit.devices.dummies import (
+    DummyCamera,
+    DummyDSP,
+    DummyLaser,
+    DummyStage,
+    DummyStage,
+)
+from cockpit.devices.objective import ObjectiveDevice
+from cockpit.devices.server import CockpitServer
 from cockpit.handlers.deviceHandler import DeviceHandler
 
 ## Different eligible device handler types. These correspond 1-to-1 to
@@ -111,8 +121,6 @@ class DeviceDepot:
         print("Cockpit is running from %s" % os.path.split(os.path.abspath(__file__))[0])
 
         # Create our server
-        from cockpit.devices.server import CockpitServer
-
         ## TODO remove special case by having fallback empty section?
         ## Or fallback to the defaults in the class?
         if config.has_section('server'):
@@ -166,7 +174,6 @@ class DeviceDepot:
 
         # Dummy objectives
         if not getHandlersOfType(OBJECTIVE):
-            from cockpit.devices.objective import ObjectiveDevice
             dummy_obj_config = {
                 "40x": {
                     "pixel_size": "0.2",
@@ -191,14 +198,12 @@ class DeviceDepot:
         # Dummy stages
         axes = self.getSortedStageMovers().keys()
         if 2 not in axes:
-            from cockpit.devices.dummies import DummyStage
             dummies.append(DummyStage("dummy Z stage",
                                       {"z-lower-limits": "0",
                                        "z-upper-limits": "2500",
                                        "z-units-per-micron": "1"}))
 
         if (0 not in axes) or (1 not in axes):
-            from cockpit.devices.dummies import DummyStage
             dummies.append(DummyStage("dummy XY stage",
                                       {"x-lower-limits": "0",
                                        "x-upper-limits": "25000",
@@ -209,16 +214,13 @@ class DeviceDepot:
 
         # Cameras
         if not getHandlersOfType(CAMERA):
-            from cockpit.devices.dummies import DummyCamera
             for i in range(1, 5):
                 dummies.append(DummyCamera('Dummy camera %d' % i, {}))
         # Dummy imager
         if not getHandlersOfType(IMAGER):
-            from cockpit.devices.dummies import DummyDSP
             dummies.append(DummyDSP('imager', {}))
         # Dummy laser
         if not getHandlersOfType(LIGHT_TOGGLE):
-            from cockpit.devices.dummies import DummyLaser
             for wl in [405, 488, 633]:
                 dummies.append(DummyLaser('Dummy %d' % wl, {'wavelength' : wl}))
         # Initialise dummies.
@@ -274,7 +276,6 @@ class DeviceDepot:
     ## Do any extra initialization needed now that everything is properly
     # set up.
     def finalizeInitialization(self):
-        from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=4) as pool:
            for device in self.nameToDevice.values():
                pool.submit(device.finalizeInitialization)

@@ -28,6 +28,7 @@ import matplotlib
 import numpy as np
 import os
 import wx
+import sys
 
 matplotlib.use('WXAgg')
 import matplotlib.dates
@@ -546,7 +547,6 @@ class CSVPlotter(wx.Frame):
 
 
 if __name__ == "__main__":
-    import sys
     if len(sys.argv) <= 1:
         filenames = glob.glob("*.log")
     else:

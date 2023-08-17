@@ -18,6 +18,11 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
+from functools import partial
+
+import Pyro4
+import wx
+
 from cockpit.devices import microscopeDevice
 import cockpit.gui.device
 import cockpit.handlers.filterHandler
@@ -25,7 +30,7 @@ from cockpit.handlers.deviceHandler import STATES
 from cockpit.handlers.filterHandler import FilterHandler, Filter
 from cockpit import depot
 from cockpit import events
-import wx
+
 
 
 class ClaritySlideHandler(FilterHandler):
@@ -93,7 +98,6 @@ class Clarity(microscopeDevice.MicroscopeFilter):
         return self.handlers
 
     def set_slide_position(self, position, callback=None):
-        import Pyro4
         asproxy = Pyro4.Proxy(self._proxy._pyroUri)
         asproxy._pyroAsync()
         result = asproxy.set_slide_position(position).then(callback)
@@ -141,7 +145,6 @@ class Clarity(microscopeDevice.MicroscopeFilter):
         mode_selector = cockpit.gui.device.EnumChoice(panel)
         mode_selector.Set(self.describe_setting('mode')['values'])
         self.buttons['mode'] = mode_selector
-        from functools import partial
         mode_selector.setOnChoice(partial(self.set_setting, 'mode'))
         panel.Sizer.Add(mode_selector)
         # door status indicator

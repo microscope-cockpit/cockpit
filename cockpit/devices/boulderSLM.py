@@ -24,6 +24,7 @@ from collections import OrderedDict
 import decimal
 from cockpit.devices import device
 from itertools import groupby
+from threading import Lock
 import Pyro4
 import wx
 
@@ -40,7 +41,6 @@ class _LastParameters():
         self.slm = slm
         self._params = None
         self._result = None
-        from threading import Lock
         self._lock = Lock()
 
     @property

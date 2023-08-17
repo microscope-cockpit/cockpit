@@ -54,6 +54,8 @@ import collections
 import math
 import threading
 import time
+import sys
+from functools import wraps
 
 import numpy
 import scipy.ndimage.measurements
@@ -87,8 +89,6 @@ CAMERA_TIMEOUT = 1
 
 ## Simple structure for marking potential beads.
 BeadSite = collections.namedtuple('BeadSite', ['pos', 'size', 'intensity'])
-
-from functools import wraps
 
 
 def _pauseMosaicLoop(func):
@@ -723,7 +723,6 @@ class MosaicWindow(wx.Frame, MosaicCommon):
     # intervals, to generate a stitched-together high-level view of the stage
     # contents.
     def mosaicLoop(self):
-        from sys import stderr
         stepper = self.mosaicStepper()
         target = None
         while True:
@@ -766,7 +765,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                 active = depot.getActiveCameras()
                 if len(active) == 0:
                     self.shouldContinue.clear()
-                    stderr.write("Mosaic stopping: no active cameras.\n")
+                    sys.stderr.write("Mosaic stopping: no active cameras.\n")
                     continue
                 camera = self.camera
                 # Fallback to 0th active camera.
@@ -793,7 +792,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             except Exception as e:
                 # Go to idle state.
                 self.shouldContinue.clear()
-                stderr.write("Mosaic stopping - problem taking image: %s\n" % str(e))
+                sys.stderr.write("Mosaic stopping - problem taking image: %s\n" % str(e))
                 continue
 
             # Get the scaling for the camera we're using, since they may
@@ -814,7 +813,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             except Exception as e:
                 # Go to idle state.
                 self.shouldContinue.clear()
-                stderr.write("Mosaic stopping - problem in getCameraScaling: %s\n" % str(e))
+                sys.stderr.write("Mosaic stopping - problem in getCameraScaling: %s\n" % str(e))
                 continue
 
             # Paint the tile at the stage position at which image was captured.
@@ -831,7 +830,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                 self.goTo(target, True)
             except Exception as e:
                 self.shouldContinue.clear()
-                stderr.write("Mosaic stopping - problem in target calculation: %s\n" % str(e))
+                sys.stderr.write("Mosaic stopping - problem in target calculation: %s\n" % str(e))
                 continue
 
 

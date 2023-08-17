@@ -20,6 +20,7 @@
 
 import configparser
 import contextlib
+import decimal
 import os
 import os.path
 import posixpath
@@ -28,6 +29,7 @@ import unittest
 import unittest.mock
 
 import cockpit.config
+import cockpit.devices.light
 
 """Test units for cockpit.config
 """
@@ -155,11 +157,9 @@ class TestGetType(TestConfigConverters):
         self.assertTypes('str', str)
 
     def test_python_stdlib_type(self):
-        import decimal
         self.assertTypes('decimal.Decimal', decimal.Decimal)
 
     def test_cockpit_device_type(self):
-        import cockpit.devices.light
         self.assertTypes('cockpit.devices.light.SimpleLight',
                           cockpit.devices.light.SimpleLight)
 
