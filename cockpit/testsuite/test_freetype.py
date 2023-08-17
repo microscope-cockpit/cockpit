@@ -21,11 +21,13 @@
 import unittest
 
 import cockpit.gui.freetype
+from cockpit.testsuite.test_gui import WxTestCase
 
 
-class FaceTestCase(unittest.TestCase):
+class FaceTestCase(WxTestCase):
     def setUp(self):
-        self.face = cockpit.gui.freetype.Face(18)
+        super().setUp()
+        self.face = cockpit.gui.freetype.Face(self.frame, 18)
 
     def test_render(self):
         ## Not sure how to actual test if it gets rendered, but this
