@@ -49,14 +49,10 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-import concurrent.futures as futures
-import time
-
 from cockpit import depot
 from cockpit.handlers import deviceHandler
 import cockpit.util.logger
 import cockpit.util.userConfig
-import cockpit.util.threads
 
 
 ## This handler is for light sources where the power of the light can be
