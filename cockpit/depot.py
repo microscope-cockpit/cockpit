@@ -301,13 +301,65 @@ class DeviceDepot:
             )
         return axisToMovers
 
+    def getHandlerWithName(self, name):
+        """Return the handler with the specified name."""
+        return self.nameToHandler.get(name, None)
+
+    def getHandlersOfType(self, deviceType):
+        """Return all registered device handlers of the appropriate type."""
+        return self.deviceTypeToHandlers[deviceType]
+
+    def getHandlersInGroup(self, groupName):
+        """Return all registered device handlers in the appropriate group."""
+        return self.groupNameToHandlers[groupName]
+
+    def getAllHandlers(self):
+        """Get all registered device handlers."""
+        return self.nameToHandler.values()
+
+    def getAllDevices(self):
+        """Get all registered devices."""
+        return self.nameToDevice.values()
+
+    def getActiveCameras(self):
+        """Get all cameras that are currently in use."""
+        cameras = self.getHandlersOfType(CAMERA)
+        result = []
+        for camera in cameras:
+            if camera.getIsEnabled():
+                result.append(camera)
+        return result
+
+    def getDeviceWithName(self, name):
+        """Get a device by its name."""
+        return self.nameToDevice.get(name)
+
+    def getHandler(self, nameOrDevice, handlerType):
+        """Get the handlers of a specific type for a device."""
+        if isinstance(nameOrDevice, DeviceHandler):
+            if nameOrDevice.deviceType == handlerType:
+                return nameOrDevice
+        if isinstance(nameOrDevice, str):
+            dev = self.getDeviceWithName(nameOrDevice)
+        else:
+            dev = nameOrDevice
+
+        handlers = set(self.getHandlersOfType(handlerType))
+        devHandlers = set(self.deviceToHandlers.get(dev, []))
+        handlers = handlers.intersection(devHandlers)
+        if len(handlers) == 0:
+            return None
+        elif len(handlers) == 1:
+            return handlers.pop()
+        else:
+            return list(handlers)
 
 
-## XXX: Global singleton
+## XXX: Global singleton and a bunch of simple passthroughs because
+## this module has historically been used as the object itself.
 deviceDepot = None
 
-
-## Simple passthrough.
+## Simple passthrough
 def initialize(config):
     global deviceDepot
     deviceDepot = DeviceDepot()
@@ -315,76 +367,36 @@ def initialize(config):
         yield device
 
 
-## Simple passthrough.
+## All simple passthroughs while we use the module as a singleton
 def makeInitialPublications():
     deviceDepot.makeInitialPublications()
 
-
-## Return the handler with the specified name.
 def getHandlerWithName(name):
-    return deviceDepot.nameToHandler.get(name, None)
+    return deviceDepot.getHandlerWithName(name)
 
-
-## Return all registered device handlers of the appropriate type.
 def getHandlersOfType(deviceType):
-    return deviceDepot.deviceTypeToHandlers[deviceType]
+    return deviceDepot.getHandlersOfType(deviceType)
 
-
-## Return all registered device handlers in the appropriate group.
 def getHandlersInGroup(groupName):
-    return deviceDepot.groupNameToHandlers[groupName]
+    return deviceDepot.getHandlersInGroup(groupName)
 
-
-## Get all registered device handlers.
 def getAllHandlers():
-    return deviceDepot.nameToHandler.values()
+    return deviceDepot.getAllHandlers()
 
-
-## Get all registered devices.
 def getAllDevices():
-    return deviceDepot.nameToDevice.values()
+    return deviceDepot.getAllDevices()
 
-
-## Simple passthrough.
 def getSortedStageMovers():
     return deviceDepot.getSortedStageMovers()
 
-
-## Get all cameras that are currently in use.
 def getActiveCameras():
-    cameras = getHandlersOfType(CAMERA)
-    result = []
-    for camera in cameras:
-        if camera.getIsEnabled():
-            result.append(camera)
-    return result
+    return deviceDepot.getActiveCameras()
 
-
-## Add a handler
 def addHandler(handler, device=None):
     return deviceDepot.addHandler(handler, device)
 
-## Get a device by its name.
 def getDeviceWithName(name):
     return deviceDepot.nameToDevice.get(name)
 
-
-## Get the handlers of a specific type for a device.
 def getHandler(nameOrDevice, handlerType):
-    if isinstance(nameOrDevice, DeviceHandler):
-        if nameOrDevice.deviceType == handlerType:
-            return nameOrDevice
-    if isinstance(nameOrDevice, str):
-        dev = getDeviceWithName(nameOrDevice)
-    else:
-        dev = nameOrDevice
-
-    handlers = set(getHandlersOfType(handlerType))
-    devHandlers = set(deviceDepot.deviceToHandlers.get(dev, []))
-    handlers = handlers.intersection(devHandlers)
-    if len(handlers) == 0:
-        return None
-    elif len(handlers) == 1:
-        return handlers.pop()
-    else:
-        return list(handlers)
+    return deviceDepot.getHandler(nameOrDevice, handlerType)
