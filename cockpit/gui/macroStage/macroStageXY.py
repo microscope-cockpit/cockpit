@@ -212,6 +212,27 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             self._OnObjectiveChanged,
         )
 
+        #many stages have an external control that cockpit knows nothing about
+        #eg an xy(z) joystick. So setup a wx timer to poll the position
+        #and update if it changes.
+        self._positionCache = [0.0 for x in range(len
+                                (cockpit.interfaces.stageMover.getPosition()))]
+        self._timer = wx.Timer(self)
+        #poll every 1 s (1000 ms)
+        self._timer.Start(1000)
+        self.Bind(wx.EVT_TIMER, self.onTimer)
+
+    #code that the wx timer calls to check postion on a regular basisis.
+    def onTimer(self, evt):
+        position=cockpit.interfaces.stageMover.getPosition()
+        for i,pos in enumerate(position):
+            if pos != self._positionCache[i]:
+                events.publish(events.STAGE_POSITION, i, pos)
+                self._positionCache[i] = pos
+
+    def OnDestroy(self, evt):
+        self._timer.Stop()
+
     ## Safety limits have changed, which means we need to force a refresh.
     # \todo Redrawing everything just to tackle the safety limits is a bit
     # excessive.
