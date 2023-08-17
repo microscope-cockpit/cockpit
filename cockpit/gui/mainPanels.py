@@ -73,6 +73,11 @@ class LightPanel(wx.Panel):
             self.powCtrl.Bind(safeControls.EVT_SAFE_CONTROL_COMMIT,
                               lambda evt: lightPower.setPower(evt.Value /100.0))
             self.Sizer.Add(self.powCtrl, 1, flag=wx.EXPAND)
+            self._timer = wx.Timer(self)
+            #set timer for 500 ms for each channel
+            self._timer.Start(500)
+            self.Bind(wx.EVT_TIMER, self.onTimer)
+
 
         if lightFilters:
             self.Sizer.AddSpacer(4)
@@ -86,10 +91,16 @@ class LightPanel(wx.Panel):
         self.Sizer.Layout()
         self.SetSizerAndFit(self.Sizer)
 
+    #fucntion that wx.timer calls to check remote power
+    def onTimer(self, evt):
+        self.lightPower.lastPower = self.lightPower.callbacks['getPower']()
+
+
     def OnDestroy(self, event: wx.WindowDestroyEvent) -> None:
         self.light.removeWatch('exposureTime', self.expCtrl.SetValue)
         if self.lightPower is not None:
             self.lightPower.removeWatch('powerSetPoint', self._SetPowerPercent)
+            self._timer.Stop()
         event.Skip()
 
     def _SetPowerPercent(self,power):
