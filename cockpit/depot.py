@@ -276,13 +276,22 @@ class DeviceDepot:
     ## Do any extra initialization needed now that everything is properly
     # set up.
     def finalizeInitialization(self):
+        futures = []
         with ThreadPoolExecutor(max_workers=4) as pool:
-           for device in self.nameToDevice.values():
-               pool.submit(device.finalizeInitialization)
-        # Context manager ensures devices are finalized before handlers.
+            for device in self.nameToDevice.values():
+                futures.append(pool.submit(device.finalizeInitialization))
+        for future in futures:
+            if future.exception():
+                raise future.exception()
+
+        # Ensure devices are finalized before handlers.
+        futures = []
         with ThreadPoolExecutor(max_workers=4) as pool:
             for handler in self.handlersList:
-                pool.submit(handler.finalizeInitialization)
+                futures.append(pool.submit(handler.finalizeInitialization))
+        for future in futures:
+            if future.exception():
+                raise future.exception()
 
 
     ## Return a mapping of axis to a sorted list of positioners for that axis.
