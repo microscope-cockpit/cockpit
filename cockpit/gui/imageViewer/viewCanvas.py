@@ -762,37 +762,29 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                     self.image.vmax = threshold
             elif self.dragMode == DRAG_ROI:
 
+                # Get co-ordinates in canvas units
+                coords_x = [self.mouseDragX, self.mouseLdownX]
+                coords_y = [self.mouseDragY, self.mouseLdownY]
+                roi_xmin, roi_ymin = min(coords_x), min(coords_y)
+                roi_xmax, roi_ymax = max(coords_x), max(coords_y)
+                # Convert to data indices
+                roi_min_ind = self.canvasToIndices(roi_xmin, roi_ymin)
+                roi_max_ind = self.canvasToIndices(roi_xmax, roi_ymax)
+
                 if self.shift_down:
                     #shift is down so force square ROI
-                    # Get co-ordinates in canvas units
-                    coords_x = [self.mouseDragX, self.mouseLdownX]
-                    coords_y = [self.mouseDragY, self.mouseLdownY]
-                    roi_xmin, roi_ymin = min(coords_x), min(coords_y)
-                    roi_xmax, roi_ymax = max(coords_x), max(coords_y)
-                    # Convert to data indices
-                    roi_min_ind = self.canvasToIndices(roi_xmin, roi_ymin)
-                    roi_max_ind = self.canvasToIndices(roi_xmax, roi_ymax)
                     # Get size of roi
-                    roi_maxsize = max((roi_max_ind[0] - roi_min_ind[0], roi_max_ind[1] - roi_min_ind[1]))
+                    roi_maxsize = max((roi_max_ind[0] - roi_min_ind[0],
+                                       roi_max_ind[1] - roi_min_ind[1]))
                     roi_size = (roi_maxsize, roi_maxsize)
-                    # Set roi (left, top, width, height)
-                    self.roi_drag = (roi_min_ind[1], roi_min_ind[0],
+                else: 
+
+                    roi_size = (roi_max_ind[0] - roi_min_ind[0],
+                                roi_max_ind[1] - roi_min_ind[1])
+
+                # Set roi (left, top, width, height)
+                self.roi_drag = (roi_min_ind[1], roi_min_ind[0],
                                      roi_size[1], roi_size[0])
-                else:
-                    #Shift is up so use real coords 
-                    roi_start=[self.mouseLdownY,self.mouseLdownX]
-                    roi_end=[self.mouseDragY-self.mouseLdownY,
-                             self.mouseDragX-self.mouseLdownX]
-                    (roi_xmin_ind,
-                     roi_ymin_ind)=self.canvasToIndices(roi_start[0],
-                                                        roi_start[1])
-                    (roi_xmax_ind,
-                     roi_ymax_ind)=self.canvasToIndices(roi_end[0],
-                                                        roi_end[1])
-
-                    self.roi_drag =(roi_xmin_ind,roi_ymin_ind,
-                                    roi_xmax_ind,roi_ymax_ind)
-
 
             self.mouseDragX = self.curMouseX
             self.mouseDragY = self.curMouseY
