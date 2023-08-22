@@ -49,34 +49,21 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+"""Executor devices.
 
-## This module handles interacting with the DSP card that sends the digital and
-# analog signals that control our light sources, cameras, and piezos. In 
-# particular, it effectively is solely responsible for running our experiments.
-# As such it's a fairly complex module. 
-# 
-# A few helpful features that need to be accessed from the commandline:
-# 1) A window that lets you directly control the digital and analog outputs
-#    of the DSP.
-# >>> import devices.dsp as DSP
-# >>> DSP.makeOutputWindow()
-#
-# 2) Create a plot describing the actions that the DSP set up in the most
-#    recent experiment profile.
-# >>> import devices.dsp as DSP
-# >>> DSP._deviceInstance.plotProfile()
-#
-# 3) Manually advance the SLM forwards some number of steps; useful for when
-#    it has gotten offset and is no longer "resting" on the first pattern.
-# >>> import devices.dsp as DSP
-# >>> DSP._deviceInstance.advanceSLM(numSteps)
-# (where numSteps is an integer, the number of times to advance it).
-#
-# Sample config entry:
-#  [dsp]
-#  type: LegacyDSP
-#  uri: PYRO:pyroDSP@somehost:8001
+Devices in this module are responsible for the synchronisation of all
+devices.  In particular, are responsible for running our experiments and
+as such are fairly complex.
 
+To debug issues with this device, there is a ``debug [device name]``
+window accessible which can be opened from the ``Windows`` entry in
+the menu bar.  Namely, this window provides:
+
+1. direct control of the digital and analog outputs of all lines;
+
+2. a plot describing the actions set up in the most recent experiment.
+
+"""
 
 import Pyro4
 import time
@@ -92,6 +79,22 @@ from itertools import chain
 
 
 class ExecutorDevice(device.Device):
+    """Device class for executor.
+
+    An executor is the device responsible for sends the digital and
+    analog signals that control other devices such as light sources,
+    cameras, and piezos.  In particular, it effectively is solely
+    responsible for running experiments.
+
+    Sample depot configuration::
+
+      [redpitaya]
+      type: cockpit.devices.executorDevices.ExecutorDevice
+      uri: PYRO:SomeExecutor@192.168.0.2:8000
+      alines: 2  # number of analog lines
+      dlines: 16  # number of digital lines
+
+    """
     _config_types = {
         'alines' : int,
         'dlines' : int,
@@ -210,6 +213,18 @@ class ExecutorDevice(device.Device):
 
 
 class LegacyDSP(ExecutorDevice):
+    """Device class for the, legacy, DSP executor.
+
+    This is effectively the old interface to interfaces which relied
+    on a specific DSP board which is no longer available.
+
+    Sample depot configuration::
+
+      [dsp]
+      type: LegacyDSP
+      uri: PYRO:pyroDSP@somehost:8001
+
+    """
     #        May need to wrap profile digitals and analogs in numpy object.
     def __init__(self, name, config):
         super().__init__(name, config)
