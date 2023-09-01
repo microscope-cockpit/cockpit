@@ -407,6 +407,7 @@ class AnalogLineHandler(GenericPositionerHandler):
     #   absolute:   time, handler, float or int
     #   indexed:    time, handler, (index, wavelength or None or 'default')
     def __init__(self, name, groupName, asource, line, offset, gain, movementTimeFunc):
+        super().__init__(name,groupName,True, {})
         # Indexed positions. Can be a dict if wavelength-independent, or
         # a mapping of wavelengths (as floats or ints) to lists of same length.
         self.positions = []
