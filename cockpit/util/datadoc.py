@@ -618,7 +618,7 @@ class DataDoc:
             output[i] = scipy.ndimage.affine_transform(slice, invertedTransform,
                     offset, output = numpy.float32, cval = slice.min(),
                     order = order)
-        output = scipy.ndimage.interpolation.shift(output, [dz, dy, dx],
+        output = scipy.ndimage.shift(output, [dz, dy, dx],
                 order = order)
         return output
 

@@ -58,7 +58,7 @@ import sys
 from functools import wraps
 
 import numpy
-import scipy.ndimage.measurements
+import scipy.ndimage
 import wx
 from OpenGL.GL import *
 
@@ -1291,7 +1291,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                     if region.shape[0] < regionSize or region.shape[1] < regionSize:
                         continue
                     # Find connected components in data.
-                    numComponents = scipy.ndimage.measurements.label(region)[1]
+                    numComponents = scipy.ndimage.label(region)[1]
                     if numComponents != 1:
                         # More than one bead visible, or no beads at all.
                         continue

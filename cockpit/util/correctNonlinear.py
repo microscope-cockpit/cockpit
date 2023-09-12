@@ -244,7 +244,7 @@ class SubCorrector:
         mapInput = numpy.zeros((3, self.imageShape[0], self.imageShape[1]))
         mapInput[:1] = indices
         mapInput[1:] = numpy.indices(self.imageShape)
-        exposures = scipy.ndimage.interpolation.map_coordinates(
+        exposures = scipy.ndimage.map_coordinates(
                 self.uniformExposures, mapInput, order = 1, cval = -1)
         return exposures
 
