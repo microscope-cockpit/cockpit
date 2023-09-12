@@ -75,7 +75,7 @@
 from cockpit.util import datadoc
 
 import numpy
-import scipy.interpolate
+import scipy.ndimage
 import sys
 import time
 
