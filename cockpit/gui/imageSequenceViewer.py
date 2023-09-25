@@ -67,7 +67,7 @@ class ImageSequenceViewer(wx.Frame):
         self.images = images
         self.title = title
         ## Current image/pixel under examination.
-        self.curViewIndex = numpy.zeros(5, dtype = numpy.int)
+        self.curViewIndex = numpy.zeros(5, dtype = int)
 
         ## Panel for holding UI widgets.
         self.panel = wx.Panel(self)

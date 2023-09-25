@@ -95,7 +95,7 @@ class DataDoc:
         ## Size in pixels of the data, since having it as a Numpy array
         # instead of a tuple (from self.imageArray.shape) is occasionally
         # handy.
-        self.size = numpy.array([self.numWavelengths, numTimepoints, numZ, numY, numX], dtype = numpy.int)
+        self.size = numpy.array([self.numWavelengths, numTimepoints, numZ, numY, numX], dtype = int)
         ## 5D array of pixel data, indexed as
         # self.imageArray[wavelength][time][z][y][x]
         # In other words, in WTZYX order. In general we try to treat
@@ -124,7 +124,7 @@ class DataDoc:
 
         ## Index of the single pixel that is visible in all different data
         # views.
-        self.curViewIndex = numpy.array(self.size / 2, numpy.int)
+        self.curViewIndex = numpy.array(self.size / 2, int)
         # Initial time view is at 0
         self.curViewIndex[1] = 0
 
@@ -389,7 +389,7 @@ class DataDoc:
             transformedCoord = numpy.array([coord[0],
                     transformedCoord[2], transformedCoord[1],
                     transformedCoord[0]],
-                dtype = numpy.int
+                dtype = int
             )
             resultCoords[wavelength,:] = transformedCoord
             transformedCoord.shape = 4, 1
