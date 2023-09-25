@@ -163,7 +163,7 @@ class PositionerHandler(deviceHandler.DeviceHandler):
         def wrapMoveFunc(f):
             def call(x, arg):
                 f(arg)
-                time.sleep(sum(self.getMovementTime(0, arg)))
+                time.sleep(sum(float(self.getMovementTime(0, arg))))
                 events.publish(events.STAGE_MOVER, x)
                 events.publish(events.STAGE_STOPPED, self.name)
             return call
