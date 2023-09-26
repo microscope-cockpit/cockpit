@@ -93,6 +93,11 @@ class Joystick:
         self._centre = ( (self._stick.XMin + self._stick.XMax) // 2,
                         (self._stick.YMin + self._stick.YMax) // 2)
         self._buttonDownTimes = {}
+        #set joystick speed from defualt or config file. 
+        self.speed=_SPEED
+        if('joystick' in self.Config):
+           self.speed= self.Config["joystick"].getfloat("speed",_SPEED)
+
         window.Bind(wx.EVT_JOY_MOVE, self._onMoveEvent)
         window.Bind(wx.EVT_JOY_BUTTON_DOWN, self._onButtonDown)
         window.Bind(wx.EVT_JOY_BUTTON_UP, self._onButtonUp)
