@@ -179,6 +179,9 @@ def _default_cockpit_config():
             # 'loadPosition' : '',
             # 'unloadPosition' : '',
         },
+        'joystick' : {
+            'speed' : 0.01,
+        }
     }
     return default
 

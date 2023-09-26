@@ -48,7 +48,6 @@ else:
 # Stick movement threshold
 _CLICKMS = 200
 _THRESHOLD = 300
-_SPEED = 0.01
 
 
 # Joystick behaviour
@@ -93,10 +92,7 @@ class Joystick:
         self._centre = ( (self._stick.XMin + self._stick.XMax) // 2,
                         (self._stick.YMin + self._stick.YMax) // 2)
         self._buttonDownTimes = {}
-        #set joystick speed from defualt or config file. 
-        self.speed=_SPEED
-        if('joystick' in self.Config):
-           self.speed= self.Config["joystick"].getfloat("speed",_SPEED)
+        self._speed = self.Config["joystick"].getfloat("speed")
 
         window.Bind(wx.EVT_JOY_MOVE, self._onMoveEvent)
         window.Bind(wx.EVT_JOY_BUTTON_DOWN, self._onButtonDown)
@@ -147,8 +143,8 @@ class Joystick:
                 mosaic.window.canvas.multiplyZoom(1.01)
             return
         if buttonTest(event.ButtonState, 0):
-            moveRelative([-0.01*d*self.speed for d in delta] + [0], False)
+            moveRelative([-0.01*d*self._speed for d in delta] + [0], False)
         elif buttonTest(event.ButtonState, 1):
-            moveRelative([0, 0, -0.01*delta[1]*self.speed], False)
+            moveRelative([0, 0, -0.01*delta[1]*self._speed], False)
         else:
-            mosaic.window.canvas.dragView(tuple(0.01*d*self.speed for d in delta))
+            mosaic.window.canvas.dragView(tuple(0.01*d*self._speed for d in delta))

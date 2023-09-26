@@ -130,14 +130,15 @@ loadPosition
 unloadPosition
   Unload position used in the touchscreen.
 
+
 joystick section
 ````````````````
-
 speed
+  A float scale factor used to mutiply the joystick output to produce
+  stage movement.  Smaller numbers make the stage control with
+  joystick slower, while larger numbers make it faster.  Default is
+  0.01
 
- A float scale factor used to mutiply the joystick output to produce stage
- movement. Smaller numbers make the stage control with joystick
- slower, while larger numbers make it faster. Default is 0.01
 
 Command line options
 --------------------
