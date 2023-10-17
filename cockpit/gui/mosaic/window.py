@@ -787,7 +787,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                 data, timestamp = events.executeAndWaitForOrTimeout(
                     events.NEW_IMAGE % camera.name,
                     wx.GetApp().Imager.takeImage,
-                    camera.getExposureTime()/1000 + CAMERA_TIMEOUT,
+                    camera.getExposureTime()/1000 +
+                    camera.getTimeBetweenExposures()/1000 + CAMERA_TIMEOUT,
                     shouldBlock=True)
             except Exception as e:
                 # Go to idle state.
