@@ -60,7 +60,6 @@ import cockpit.util.threads
 
 from collections.abc import Iterable
 
-import numpy
 from OpenGL.GL import *
 import numpy as np
 import queue
@@ -942,8 +941,8 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
                                        self.w, self.h]):
             return
         # First we have to convert from screen- to data-coordinates.
-        coords = numpy.array(self.canvasToIndices(x, y), dtype=np.uint)
-        shape = numpy.array(self.imageShape, dtype=np.uint)
+        coords = np.array(self.canvasToIndices(x, y), dtype=np.uint)
+        shape = np.array(self.imageShape, dtype=np.uint)
         if (coords < shape).all() and (coords >= 0).all():
             value = self.imageData[coords[0], coords[1]]
             events.publish(events.IMAGE_PIXEL_INFO, coords[::-1], value)
@@ -989,9 +988,52 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         # kwargs, but the way per-camera pixel sizes are handled needs to be
         # addressed first. See issue #538.
         if self.Parent.Parent.curCamera is not None:
-            wls = [self.Parent.Parent.curCamera.wavelength,]
-            xysize=self.Parent.Parent.pixelsize
-            xyzpos=self.Parent.Parent.imagePos
-        cockpit.util.datadoc.writeDataAsMrc(self.imageData, path,
-                                            XYSize=xysize, wavelengths=wls,
-                                            zxy0=xyzpos)
+            metadata = self.Parent.Parent.metadata
+            wls = [metadata['wavelength'],]
+            xysize=metadata['pixelsize']
+            xyzpos=metadata['imagePos']
+            exposureTime = metadata['exposure time']
+            emwavelength = metadata['wavelength']
+            exwavelength = metadata['exwavelength']
+            lensID = metadata['lensID']
+
+            #setup a single plane of extended header metadata
+            ## Size of one plane's worth of metadata in the extended header.
+            numIntegers = 8
+            numFloats = 32
+
+            intMetadataBuffers = np.zeros(numIntegers, dtype = np.int32)
+            floatMetadataBuffers = np.zeros(numFloats, dtype = np.float32)
+            floatMetadataBuffers[12] = 1.0 # intensity scaling
+            floatMetadataBuffers[2:5] = xyzpos[0:3]
+            floatMetadataBuffers[5] = np.min(self.imageData)
+            floatMetadataBuffers[6] = np.max(self.imageData)
+            floatMetadataBuffers[7] = np.mean(self.imageData)
+            floatMetadataBuffers[8] = exposureTime
+            floatMetadataBuffers[10] = exwavelength
+            floatMetadataBuffers[11] = emwavelength
+
+
+            #spec for extended header
+            # 8 32bit signed integers, often are all set to zero.
+            # Followed by 32 32bit floats. We only what the first 14 are:
+            # 0 photosensor reading (typically in mV)
+            # 1 elapsed time (seconds since experiment began)
+            # 2 x stage coordinates
+            # 3 y stage coordinates
+            # 4 z stage coordinates
+            # 5 minimum intensity
+            # 6 maximum intensity
+            # 7 mean intensity
+            # 8 exposure time (seconds)
+            # 9 neutral density (fraction of 1 or percentage)
+            # 10 excitation wavelength
+            # 11 emission wavelength
+            # 12 intensity scaling (usually 1)
+            # 13 energy conversion factor (usually 1)
+
+        cockpit.util.datadoc.writeDataAsMrcWithExthdr(self.imageData, path,
+                                    XYSize=xysize, wavelengths=wls,
+                                    zxy0=xyzpos,lensID=lensID,
+                                    intMetadataBuffers = intMetadataBuffers,
+                                    floatMetadataBuffers = floatMetadataBuffers)

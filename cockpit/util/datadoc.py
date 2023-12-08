@@ -689,7 +689,6 @@ def writeMrcHeader(header, filehandle):
 # the left (e.g. a 512x512 array becomes a 1x1x1x512x512 array).
 def writeDataAsMrc(data, filename, XYSize = None, ZSize = None, wavelengths = [],
                    zxy0=None):
-    print(zxy0)
     shape = (5 - len(data.shape)) * [1] + list(data.shape)
     data_out = data.reshape(shape)
     header = makeHeaderFor(data_out, XYSize = XYSize, ZSize = ZSize,
@@ -698,6 +697,44 @@ def writeDataAsMrc(data, filename, XYSize = None, ZSize = None, wavelengths = []
     writeMrcHeader(header, handle)
     handle.seek(1024) # Seek to end of header
     data_out.tofile(handle)
+    handle.close()
+
+
+## Write out the provided data array as if it were an MRC file. Note that
+# the input array must be in WTZYX order; if the array has insufficient
+# dimensions it will be augmented with dimensions of size 1 starting from
+# the left (e.g. a 512x512 array becomes a 1x1x1x512x512 array).
+def writeDataAsMrcWithExthdr(data, filename, XYSize = None,
+                             ZSize = None, wavelengths = [],
+                             zxy0=None, lensID=None, intMetadataBuffers = [],
+                             floatMetadataBuffers = []):
+    shape = (5 - len(data.shape)) * [1] + list(data.shape)
+    data_out = data.reshape(shape)
+    header = makeHeaderFor(data_out, XYSize = XYSize, ZSize = ZSize,
+                           wavelengths = wavelengths,zxy0=zxy0)
+    #deal with extended header meta data
+    numIntegers = len(intMetadataBuffers)
+    numFloats = len(floatMetadataBuffers)
+    header.NumIntegers = numIntegers
+    header.NumFloats = numFloats
+    header.LensNum = lensID
+    extendedBytes = 4 * (numIntegers + numFloats)
+    header.next = extendedBytes
+    
+    handle = open(filename, 'wb')
+    writeMrcHeader(header, handle)
+
+    metadataOffset = 1024 
+    dataOffset = (1024 + extendedBytes)
+    try:
+        handle.seek(metadataOffset)
+        handle.write(intMetadataBuffers)
+        handle.write(floatMetadataBuffers)
+        handle.seek(dataOffset) # Seek to end of header
+        data_out.tofile(handle)
+    except Exception as e:
+        print ("Error writing image:",e)
+        raise e
     handle.close()
 
 

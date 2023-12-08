@@ -784,7 +784,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             curZ = pos[2] - self.offset[2]
             # Take an image. Use timeout to prevent getting stuck here.
             try:
-                data, timestamp = events.executeAndWaitForOrTimeout(
+                data, metadata = events.executeAndWaitForOrTimeout(
                     events.NEW_IMAGE % camera.name,
                     wx.GetApp().Imager.takeImage,
                     camera.getExposureTime()/1000 +
@@ -822,7 +822,8 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                                  ( -pos[0] + self.offset[0] - width / 2,
                                     pos[1] - self.offset[1] - height / 2,
                                     curZ,),
-                                 (width, height), scalings=(minVal, maxVal))
+                                 (width, height), scalings=(minVal, maxVal),
+                                 metadata=metadata)
             # Move to the next position in shifted coords.
             dx, dy = next(stepper)
             target = (centerX + self.offset[0] + dx * width,
@@ -858,17 +859,21 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                     camera = cam
                     break
         # Get image size in microns.
-        pixel_size = wx.GetApp().Objectives.GetPixelSize()
+        #This data should be grabbed from the metadata as the system
+        #settings, stage pos etc may have changed
+        data,metadata = cockpit.gui.camera.window.getImageForCamera(camera)
+        pixel_size = metadata['pixelsize']
         width, height = camera.getImageSize()
         width *= pixel_size
         height *= pixel_size
-        x, y, z = cockpit.interfaces.stageMover.getPosition()
-        data = cockpit.gui.camera.window.getImageForCamera(camera)
+        x, y, z = metadata['imagePos']
+ 
         self.canvas.addImage(data, (-x +self.offset[0]- width / 2,
                                     y-self.offset[1] - height / 2,
                                     z-self.offset[2]),
                 (width, height),
-                scalings = cockpit.gui.camera.window.getCameraScaling(camera))
+                scalings = cockpit.gui.camera.window.getCameraScaling(camera),
+                metadata=metadata)
         # Refresh this and other mosaic views.
         events.publish(events.MOSAIC_UPDATE)
 
@@ -1383,8 +1388,9 @@ class MosaicWindow(wx.Frame, MosaicCommon):
             bestIntensity = None
             for offset in numpy.arange(-1, 1.1, .1):
                 cockpit.interfaces.stageMover.goTo((x, y, z + offset), shouldBlock = True)
-                image, timestamp = events.executeAndWaitFor(events.NEW_IMAGE % camera.name,
+                image, metadata = events.executeAndWaitFor(events.NEW_IMAGE % camera.name,
                         wx.GetApp().Imager.takeImage, shouldBlock = True)
+                timestamp=metadata['timestamp']
                 if bestIntensity is None or image.max() > bestIntensity:
                     bestIntensity = image.max()
                     bestOffset = offset

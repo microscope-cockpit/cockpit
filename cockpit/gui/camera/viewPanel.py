@@ -52,6 +52,7 @@
 import wx
 from cockpit import depot
 from cockpit import events
+from cockpit.experiment import experiment
 import cockpit.util.threads
 import cockpit.gui.guiUtils
 import cockpit.gui.imageViewer.viewCanvas
@@ -209,13 +210,12 @@ class ViewPanel(wx.Panel):
 
 
     ## Receive a new image and send it to our canvas.
-    def onImage(self, data, *args):
+    def onImage(self, data, metadata, *args):
         self.canvas.setImage(data)
-        self.pixelsize =  wx.GetApp().Objectives.GetPixelSize()
-        self.emwavelength = self.curCamera.wavelength
-        self.imagePos = cockpit.interfaces.stageMover.getPosition()
-
-
+        if not experiment.isRunning():
+            self.metadata = metadata
+            self.imagePos = self.metadata['imagePos']
+            
     ## Return True if we currently display a camera.
     def getIsEnabled(self):
         return self.curCamera is not None
@@ -233,7 +233,7 @@ class ViewPanel(wx.Panel):
 
     ## Get the current pixel data for the view.
     def getPixelData(self):
-        return self.canvas.imageData
+        return (self.canvas.imageData,self.metadata)
 
     ## Debugging: convert to string.
     def __repr__(self):

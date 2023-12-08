@@ -308,8 +308,8 @@ class DataSaver:
     # thread.
     def startCollecting(self):
         for camera in self.cameras:
-            def func(data, timestamp, camera=camera):
-                return self.onImage(self.cameraToIndex[camera], data, timestamp)
+            def func(data, metadata, camera=camera):
+                return self.onImage(self.cameraToIndex[camera], data, metadata)
             self.lambdas.append(func)
             events.subscribe(events.NEW_IMAGE % camera.name, func)
 
@@ -334,7 +334,7 @@ class DataSaver:
 
         # Wait until it's been a bit without getting any more images in, or
         # until we have all the images we expected to get for each camera.
-        while (time.time() - self.lastImageTime < .5
+        while (time.time() - self.lastImageTime < 1.0
                or not self.imageQueue.empty()):
             amDone = True
             for camera in self.cameras:
@@ -383,8 +383,8 @@ class DataSaver:
 
 
     ## Receive new data, and add it to the queue.
-    def onImage(self, cameraIndex, imageData, timestamp):
-        self.imageQueue.put((cameraIndex, imageData, timestamp))
+    def onImage(self, cameraIndex, imageData, metadata):
+        self.imageQueue.put((cameraIndex, imageData, metadata))
 
 
     ## Continually poll our imageQueue and save data to the file.
@@ -394,7 +394,8 @@ class DataSaver:
             if self.shouldAbort:
                 # Do nothing.
                 return
-            cameraIndex, imageData, timestamp = self.imageQueue.get()
+            cameraIndex, imageData, metadata = self.imageQueue.get()
+            timestamp=metadata['timestamp']
             if self.firstTimestamp is None:
                 self.firstTimestamp = timestamp
             # Store the timestamp as a rebased 32-bit float; we can't use

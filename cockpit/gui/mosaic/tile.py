@@ -143,8 +143,8 @@ dtypeToGlTypeMap = {
 
 ## This class handles a single tile in the mosaic.
 class Tile:
-    def __init__(self, textureData, pos, size,
-            histogramScale, layer, shouldDelayAllocation=False):
+    def __init__(self, textureData, pos, size, histogramScale,
+                 layer, metadata, shouldDelayAllocation=False):
 
         ## Array of pixel brightnesses
         self.textureData = textureData
@@ -159,6 +159,8 @@ class Tile:
 
         ## Grouping this tile belongs to, used to toggle display
         self.layer = layer
+        self.metadata = metadata
+        #collect metadata
 
         ## OpenGL texture ID
         self.texture = glGenTextures(1)
@@ -351,8 +353,8 @@ class MegaTile(Tile):
     def __init__(self, pos):
         super().__init__(self._emptyTileData, pos,
                  (self.micronSize, self.micronSize),
-                 (0, 1), 'megatiles',
-                 shouldDelayAllocation = True)
+                 (0, 1), 'megatiles', metadata=None,
+                 shouldDelayAllocation = True,)
         ## Counts the number of tiles we've rendered to ourselves.
         self.numRenderedTiles = 0
         ## Whether or not we've allocated memory for our texture yet.
