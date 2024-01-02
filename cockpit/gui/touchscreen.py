@@ -1060,7 +1060,7 @@ class MosaicPanel(wx.Panel, mosaic.MosaicCommon):
                     # Invert the scaling direction.
                     multiplier = 2 - multiplier
                     delta *= -1
-                self.canvas.multiplyZoom(multiplier**delta)
+                self.canvas.ZoomAtPoint(multiplier**delta, mousePos)
 
         self.prevMousePos = mousePos
 

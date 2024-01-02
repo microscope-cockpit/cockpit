@@ -625,7 +625,7 @@ class MosaicWindow(wx.Frame, MosaicCommon):
                     # Invert the scaling direction.
                     multiplier = 2 - multiplier
                     delta *= -1
-                self.canvas.multiplyZoom(multiplier ** delta)
+                self.canvas.ZoomAtPoint(multiplier ** delta, mousePos)
         if event.RightDown():
             # Display a context menu.
             menu = wx.Menu()
