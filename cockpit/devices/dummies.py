@@ -22,7 +22,9 @@ import threading
 import typing
 
 import Pyro4
-import microscope.devices
+import microscope
+import microscope.abc
+import microscope.simulators
 import microscope.testsuite.devices
 
 import cockpit.devices.executorDevices
@@ -32,7 +34,7 @@ from cockpit.handlers.stagePositioner import PositionerHandler
 
 
 class _MicroscopeTestDevice:
-    def __init__(self, test_device: microscope.devices.Device,
+    def __init__(self, test_device: microscope.abc.Device,
                  name: str, config: typing.Mapping[str, str]) -> None:
         # Ideally, the Cockpit device class for Microscope devices
         # would simply take a microscope.Device instance (which could
@@ -58,7 +60,7 @@ class _MicroscopeTestDevice:
 class DummyCamera(_MicroscopeTestDevice,
                   cockpit.devices.microscopeCamera.MicroscopeCamera):
     def __init__(self, *args, **kwargs):
-        super().__init__(microscope.testsuite.devices.TestCamera(),
+        super().__init__(microscope.simulators.SimulatedCamera(),
                          *args, **kwargs)
 
 
@@ -72,7 +74,7 @@ class DummyDSP(_MicroscopeTestDevice,
 class DummyLaser(_MicroscopeTestDevice,
                  cockpit.devices.microscopeDevice.MicroscopeLaser):
     def __init__(self, *args, **kwargs):
-        super().__init__(microscope.testsuite.devices.TestLaser(),
+        super().__init__(microscope.simulators.SimulatedLightSource(),
                          *args, **kwargs)
 
 
@@ -97,7 +99,7 @@ class DummyStage(_MicroscopeTestDevice,
 
     """
     def __init__(self, name: str, config: typing.Mapping[str, str]) -> None:
-        limits = {} # type: typing.Dict[str, microscope.devices.AxisLimits]
+        limits = {} # type: typing.Dict[str, microscope.AxisLimits]
         config = config.copy()
         for one_letter in 'xyz':
             lower_limits_key = one_letter + '-lower-limits'
@@ -109,14 +111,14 @@ class DummyStage(_MicroscopeTestDevice,
                               % one_letter)
                 lower_limits = float(config.pop(lower_limits_key))
                 upper_limits = float(config.pop(upper_limits_key))
-                limits[one_letter] = microscope.devices.AxisLimits(lower_limits,
-                                                                   upper_limits)
+                limits[one_letter] = microscope.AxisLimits(lower_limits,
+                                                           upper_limits)
                 config[one_letter + '-axis-name'] = one_letter
             elif lower_limits_key in config or upper_limits_key in config:
                 raise Exception('only one limit for the \'%s\' axis on config'
                                 % one_letter)
 
-        test_stage = microscope.testsuite.devices.TestStage(limits)
+        test_stage = microscope.simulators.SimulatedStage(limits)
         super().__init__(test_stage, name, config)
 
     def getHandlers(self) -> typing.List[PositionerHandler]:

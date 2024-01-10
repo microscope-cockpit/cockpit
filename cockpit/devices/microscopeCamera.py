@@ -41,8 +41,7 @@ from cockpit.devices.camera import CameraDevice
 from cockpit.handlers.objective import ObjectiveHandler
 from cockpit.interfaces.imager import pauseVideo
 from cockpit.experiment import experiment
-from microscope.devices import ROI, Binning
-from microscope import TriggerMode, TriggerType
+from microscope import Binning, ROI, TriggerMode, TriggerType
 
 # Pseudo-enum to track whether device defaults in place.
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)

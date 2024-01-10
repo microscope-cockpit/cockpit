@@ -68,7 +68,7 @@ from cockpit.gui.device import SettingsEditor
 from cockpit.handlers.stagePositioner import PositionerHandler
 from cockpit.interfaces import stageMover
 import re
-from microscope.devices import AxisLimits
+from microscope import AxisLimits
 
 # Pseudo-enum to track whether device defaults in place.
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
