@@ -10,44 +10,38 @@
 File Format
 ###########
 
-.. _Base_file_format:
-
 Base file format
 ****************
 
-Currently Cockpoit only supports the '.dv' file format which is an
-extension of the mrc file format. The mrc file format is defined in
+Currently Cockpit only supports the dv file format which is an
+extension of the mrc file format.  The mrc file format is defined in
 detail in `MRC/CCP4 2014 file format specification
-<https://www.ccpem.ac.uk/mrc_format/mrc2014.php>`__. The CCP4
-consortium of the EM community are continuing to support and extend this
-file format. This support includes file validators and a detailed
-specification, which is compatible with the files used here but not
-identical.
+<https://www.ccpem.ac.uk/mrc_format/mrc2014.php>`__.  The CCP4
+consortium of the EM community are continuing to support and extend
+this file format.  This support includes file validators and a
+detailed specification, which is compatible with the files used here
+but not identical.
 
-Cockpit utilises the exended header to store specific optical
-microscopy meta-data. In particular
-both the excitation and emission wavelengths must be set to correctly
-select the SIM fitting bootstrap parameters including stripe width and
-k0 angles.
+Cockpit utilises the extended header to store specific optical
+microscopy metadata.  In particular both the excitation and emission
+wavelengths must be set to correctly select the SIM fitting bootstrap
+parameters including stripe width and k0 angles.
 
-
-.. _DV_file_header:
 
 DV file header specification
 ****************************
 
+The extended header has the following structure per plane (see
+`Cockpit github issue #290
+<https://github.com/microscope-cockpit/cockpit/issues/290>`__):
 
- The extended header has the following structure per
- plane (see `cockpit github issue  #290 <https://github.com/microscope-cockpit/cockpit/issues/290>`__)
+* 8 32bit signed integers, often all set to zero.
+* Followed by 32 32bit floats.  We only know what the first 14 mean:
 
-   *  8 32bit signed integers, often are all set to zero.
-   *  Followed by 32 32bit floats.  We only what the first 14 are:
+.. list-table:: DV extended header values
+   :widths: 25 75
+   :header-rows: 1
 
-
-.. list-table:: DV extended header values 
-   :widths: 25 75 
-   :header-rows: 1 
- 
    * - Float index
      - Meta data content
    * - 0
@@ -55,38 +49,38 @@ DV file header specification
    * - 1
      - elapsed time (seconds since experiment began)
    * - 2
-     -      x stage coordinates
+     - x stage coordinates
    * - 3
-     -      y stage coordinates
+     - y stage coordinates
    * - 4
-     -      z stage coordinates
+     - z stage coordinates
    * - 5
-     -      minimum intensity
+     - minimum intensity
    * - 6
-     -      maximum intensity
+     - maximum intensity
    * - 7
-     -     mean intensity
+     - mean intensity
    * - 8
-     -      exposure time (seconds)
+     - exposure time (seconds)
    * - 9
-     -      neutral density (fraction of 1 or percentage)
+     - neutral density (fraction of 1 or percentage)
    * - 10
-     -      excitation wavelength
+     - excitation wavelength
    * - 11
-     -      emission wavelength
+     - emission wavelength
    * - 12
-     -      intensity scaling (usually 1)
+     - intensity scaling (usually 1)
    * - 13
-     -      energy conversion factor (usually 1)
-   
-   	  
-Software supporting .dv files.
-*****************************
+     - energy conversion factor (usually 1)
 
-Although a realtively uncommon format, the .dv file format is supprted
-by the bioformats project allowing import of .dv files into software
-using this library including imageJ, OMERO and matlab. Additionally,
-the `Chromagnon <https://github.com/macronucleus/Chromagnon>`__ image
-alignment tool will read and write .dv files and it is the native
-format for DeltaVision microscopes utilising the commerical package
+
+Software supporting dv files
+****************************
+
+Although a relatively uncommon format, the dv file format is well
+supported by Bioformats and so supported by most bioimaging programs,
+including ImageJ, OMERO and Matlab.  Additionally, the `Chromagnon
+<https://github.com/macronucleus/Chromagnon>`__ image alignment tool
+will read and write dv files and it is the native format for
+DeltaVision and OMX microscopes utilising the commercial package
 SoftWoRx.

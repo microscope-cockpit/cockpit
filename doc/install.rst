@@ -45,8 +45,8 @@ Debian based distributions (such as Ubuntu)
 
 The only Cockpit dependency not available on Debian repositories is
 `microscope <https://pypi.org/project/microscope/>`__ which can be
-installed with `pip`.  To avoid having `pip` installing the other
-dependencies from PyPI, they need to be installed first with `apt`::
+installed with pip.  To avoid having pip installing the other
+dependencies from PyPI, they need to be installed first with apt::
 
     sudo apt install \
       python3 \
@@ -66,10 +66,10 @@ dependencies from PyPI, they need to be installed first with `apt`::
    Older versions of Debian and Ubuntu may not have some of the
    dependencies packaged, namely `freetype-py
    <https://pypi.org/project/freetype-py/>`__.  In such case, simply
-   omit them from the ``apt install`` command and let `pip` install
-   them as part of `pip` automatic handling of missing dependencies.
+   omit them from the ``apt install`` command and let pip install them
+   as part of pip automatic handling of missing dependencies.
 
-Once that is done, installing Cockpit with `pip` will install any
+Once that is done, installing Cockpit with pip will install any
 missing dependencies::
 
     pip3 install --user microscope-cockpit
@@ -79,7 +79,7 @@ macOS
 =====
 
 The easiest method to install Cockpit on macOS is to install the
-python.org build of the latest python version and then use `pip` to
+python.org build of the latest python version and then use pip to
 install cockpit and its dependencies:
 
 1. Download and install the latest Python 3 from `python.org

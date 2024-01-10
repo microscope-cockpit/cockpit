@@ -19,20 +19,21 @@ provides the user interaction to the different interfaces and
 handlers.
 
 The Cockpit program starts in :func:`cockpit.main` which reads the
-configuration files and constructs an :class:`cockpit.CockpitApp`
+configuration files and constructs a :class:`cockpit.CockpitApp`
 object.  This ``CockpitApp`` instance constructs a
 :class:`cockpit.depot.DeviceDepot` and initialises all the devices
 declared on the depot configuration.  Each device constructs their
-associated handlers are initialised which are then collected by the
+associated handlers when initialised which are then collected by the
 device depot.  Once devices and handlers are initialised, interfaces
 are initialised.  Finally, the multiple GUI windows are created based
 on the different handlers and interfaces available.  Once
-initialisation is completed, we simply enter the event loop (provided
-by the wxPython library) and wait for the user to do something.
+initialisation is completed, we enter the wx event loop (provided by
+the wxPython library) and wait for the user to do something.
 
 .. todo::
 
-    Consider using sphin-apidoc to generate the rest of this page.
+    Consider using sphinx-apidoc to generate the rest of this page.
+
 
 cockpit.devices package
 =======================

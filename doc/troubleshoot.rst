@@ -51,11 +51,11 @@ device is currently being initialised which is almost certainly the
 cause of the error.
 
 The "Initialising Cockpit" window might be hidden by the Python errors
-window titled "Failed to initialise cockpit".  This can simply be
+window titled "Failed to initialise Cockpit".  This can simply be
 moved out of the way.  This window will contain a stack of the Python
 code which may be beneficial in tracing obscure errors.
 
-An additional status tool is part of cockpit.  This can be run like
+An additional status tool is part of Cockpit.  This can be run like
 so:
 
 .. code-block:: bash
@@ -95,7 +95,7 @@ from this script is below:
     skipped zPiezo:  no host or uri
 
 In this example it can clearly be seen that ``cameraR`` is closed so
-is the device preventing cockpit from starting up.  This error was
+is the device preventing Cockpit from starting up.  This error was
 produced by deliberately connecting to the wrong port to generate an
 error on startup.
 
@@ -147,7 +147,7 @@ specific devices with the code:
     from cockpit import depot
     device = depot.getDeviceWithName("NAME")
 
-Where `"NAME"` is the device name from the Cockpit depot file.  The
+Where ``"NAME"`` is the device name from the Cockpit depot file.  The
 device object then will allow access to the devices methods and
 values.  Exactly what this can tell you is quite device dependant.
 This approach gives low level access to all of the devices settings

@@ -20,7 +20,7 @@
 
 """Device specific modules.
 
-The `cockpit.devices` package is the closest in Cockpit to the
+The :mod:`cockpit.devices` package is the closest in Cockpit to the
 physical devices.  Most of these modules do not contact directly to
 the devices but they connect to the device server/daemon/service that
 does.  The depot configuration file typically refers to classes in
@@ -39,10 +39,11 @@ device classes.
 
 The primary task that Cockpit devices are responsible for is creation
 of device handlers.  Each handler represents an abstract bit of
-hardware, for example a camera or stage mover.  The ``getHandlers()``
-function is expected to generate and return a list of handlers; the UI
-then interacts with these handlers when the user performs actions.
-See the :mod:`cockpit.handlers` package for details.
+hardware, for example a camera or stage mover.  The
+:meth:`Device.getHandlers()` method is expected to generate and return
+a list of handlers; the UI then interacts with these handlers when the
+user performs actions.  See the :mod:`cockpit.handlers` package for
+details.
 
 Some notable modules in this package are:
 

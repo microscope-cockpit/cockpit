@@ -11,21 +11,21 @@ Getting Started
 ###############
 
 If Cockpit is being installed for the first time and in the absence of
-any configuration files, Cockpit will simulate a series of devices.
-While this is useful for testing, the goal of Cockpit is to control a
-real microscope.  Configuring Cockpit to connect and control your own
+any configuration files, Cockpit simulates a series of devices.  While
+this is useful for testing, the goal of Cockpit is to control a real
+microscope.  Configuring Cockpit to connect and control your own
 devices requires two things:
 
-1. setup a Python-Microscope `device-server
-  <https://www.python-microscope.org/doc/architecture/device-server.html>`_
-  for each of devices to be used.
+1. Setup a Python-Microscope `device-server
+   <https://www.python-microscope.org/doc/architecture/device-server.html>`__
+   for each of devices to be used.
 
 2. Configure :ref:`Cockpit's depot <depot-config>` to use those
-  devices.
+   devices.
 
 Configuration of the device servers is outside the scope of this
 documentation, refer to Microscope's `documentation
-<https://www.python-microscope.org/doc/architecture/device-server.html>`_.
+<https://www.python-microscope.org/doc/architecture/device-server.html>`__.
 This document is about configuring Cockpit proper.
 
 Configuring Cockpit for the first time
@@ -48,4 +48,4 @@ be found `here <https://github.com/MicronOxford/configs>`__.
 Once the file is created, verify that the depot file is working
 correctly, and devices are connected with::
 
-  python -m cockpit.status
+    python3 -m cockpit.status

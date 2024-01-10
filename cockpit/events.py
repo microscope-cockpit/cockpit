@@ -39,13 +39,11 @@ For example::
 
     # subscribe obj.on_user_abort so that it is called when the
     # USER_ABORT event is published.
-    events.subscribe(events.USER_ABORT,
-                     obj.on_user_abort)
+    events.subscribe(events.USER_ABORT, obj.on_user_abort)
 
     # Publish the CAMERA_ENABLE event as well as the associated data,
     # camera handler and whether it has been enabled or disabled.
-    events.publish(events.CAMERA_ENABLE,
-                   camera_handler, is_enabled)
+    events.publish(events.CAMERA_ENABLE, camera_handler, is_enabled)
 
 Beware
 ======
@@ -66,13 +64,13 @@ Anything can be "published".  The following is a list of events that
 the system expects.
 
 ``COCKPIT_INIT_COMPLETE``
-Cockpit initialization has completed, some hardware may need to take
-additional init steps. 
+    Cockpit initialisation has completed, some hardware may need to
+    take additional init steps.
 
 ``CAMERA_ENABLE``
 
 ``UPDATE_ROI``
-A camera has updated its ROI which might change other displays.
+    A camera has updated its ROI which might change other displays.
 
 ``CLEANUP_AFTER_EXPERIMENT``
 
@@ -81,40 +79,40 @@ A camera has updated its ROI which might change other displays.
 ``EXECUTOR_DONE % executor_name``
 
 ``EXPERIMENT_COMPLETE``
-  The entirety of an experiment has finished execution.
+    The entirety of an experiment has finished execution.
 
 ``EXPERIMENT_EXECUTION``
-  Some component of the currently-running experiment has finished.
+    Some component of the currently-running experiment has finished.
 
 ``LIGHT_SOURCE_ENABLE``
-  The light source associated with the provided handler has been
-  enabled / disabled for taking images.
+    The light source associated with the provided handler has been
+    enabled / disabled for taking images.
 
 ``LIGHT_EXPOSURE_UPDATE``
-The exposure time on a light source has been updated
+    The exposure time on a light source has been updated
 
 ``MOSAIC_UPDATE``
 
 ``MOSAIC_START``
-A mosaic has been started
+    A mosaic has been started
 
-``NEW_IMAGE % camera name``
-  An image has arrived for the camera with the given name.
+``NEW_IMAGE % camera_name``
+    An image has arrived for the camera with the given name.
 
 ``PREPARE_FOR_EXPERIMENT``
-  An experiment is about to be executed, so devices should prepare
-  themselves.
+    An experiment is about to be executed, so devices should prepare
+    themselves.
 
-``SETTINGS_CHANGED % deviceor_handler_name``
+``SETTINGS_CHANGED % device_or_handler_name``
 
 ``STAGE_MOVER``
-  A ``StagePositioner`` handler is moving.
+    A :class:`StagePositioner` handler is moving.
 
 ``STAGE_POSITION``
-  The stage currently is at the specified position.
+    The stage currently is at the specified position.
 
 ``STAGE_STOPPED``
-  A ``StagePositioner`` handler has stopped moving.
+    A :class:`StagePositioner` handler has stopped moving.
 
 ``MACRO_STAGE_XY_DRAW``
 
@@ -123,50 +121,51 @@ A mosaic has been started
 ``UPDATE_STATUS_LIGHT``
 
 ``USER_ABORT``
-  The user clicked on the Abort button.
+    The user clicked on the "Abort" button.
 
 ``VIDEO_MODE_TOGGLE``
 
 ``SYNCED_VIEW``
-Enabled on camera view images that are synced with zoom/pan to other views. 
+    Enabled on camera view images that are synced with zoom/pan to
+    other views.
 
 ``DIO_OUTPUT``
-A DIO output line has chnaged state
+    A DIO output line has changed state
 
 ``DIO_INPUT``
-A DIO input line has chnaged state
+    A DIO input line has changed state
 
 ``VALUELOGGER_INPUT``
-New Value logger data has arrived
+    New :class:`ValueLogger` data has arrived
 
 ``FILTER_CHANGE``
-There has been a filter change on some beam path. 
+    There has been a filter change on some beam path.
 
 ``IMAGE_PIXEL_INFO``
-  The mouse has moved over a camera view, and the specified
-  coordinates have the given value.
+    The mouse has moved over a camera view, and the specified
+    coordinates have the given value.
 
 ``"new site"``
-  The user has marked a position as being of interest.
+    The user has marked a position as being of interest.
 
 ``OBJECTIVE_CHANGE``
-  The objective has been changed.
+    The objective has been changed.
 
 ``DELETE_SITE``
-  The specified Site is to be forgotten.
+    The specified Site is to be forgotten.
 
 ``SOFT_SAFETY_LIMIT``
-  The software-enforced motion limits for the given axis (summing all
-  stage-positioner devices) have been changed.
+    The software-enforced motion limits for the given axis (summing
+    all stage-positioner devices) have changed.
 
 ``STAGE_STEP_INDEX``
-  Which Handler is currently being used to move the stage has been
-  changed; the Handlers are arranged in order of maximum range of
-  motion.
+    Which ``Handler`` is currently being used to move the stage has
+    been changed; the Handlers are arranged in order of maximum range
+    of motion.
 
 ``STAGE_STEP_SIZE``
-  The amount of distance the stage will move when the user uses the
-  numeric keypad has changed.
+    The amount of distance the stage will move when the user uses the
+    numeric keypad has changed.
 
 """
 
