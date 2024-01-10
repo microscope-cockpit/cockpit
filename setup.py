@@ -35,7 +35,7 @@ class sdist(setuptools.command.sdist.sdist):
 
 setuptools.setup(
     name = 'microscope-cockpit',
-    version = '2.9.1+dev',
+    version = '2.9.2',
     description = 'Hardware agnostic microscope user interface',
     long_description = open('README.rst', 'r').read(),
     license = 'GPL-3.0+',

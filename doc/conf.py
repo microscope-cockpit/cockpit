@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.path.pardir))
 project = "Microscope-Cockpit"
 author = ""
 copyright = "CC BY-SA"
-version = "2.9.1+dev"
+version = "2.9.2"
 release = version
 
 
