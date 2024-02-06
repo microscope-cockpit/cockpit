@@ -1,0 +1,86 @@
+[project]
+name = "microscope-cockpit"
+version = "2.9.2+dev"
+description = "Hardware agnostic microscope user interface"
+readme = "README.rst"
+license = {file = "COPYING"}
+
+# Names are in alphabetical order.  This is the list of active
+# maintainers.  For the full list of people that have contributed to
+# the development of the project, see `doc/authors.rst`.
+maintainers = [
+    {name = "David Miguel Susano Pinto"},
+    {name = "Ian Dobbie"},
+    {name = "Julio Mateos-Langerak"},
+]
+
+# https://pypi.org/classifiers
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Topic :: Scientific/Engineering",
+]
+
+requires-python = ">=3.5"
+dependencies = [
+    "PyOpenGL",
+    "Pyro4>=4.22",
+    "freetype-py",
+    "matplotlib",
+    "microscope>=0.7",
+    "numpy",
+    "pyserial",
+    "scipy",
+    "wxPython>=4.1",
+]
+
+[project.gui-scripts]
+microscope-gui = "cockpit:_setuptools_entry_point"
+
+[project.urls]
+Homepage = "https://www.microscope-cockpit.org"
+Download = "https://pypi.org/project/microscope-cockpit/"
+Source = "https://github.com/microscope-cockpit/cockpit/"
+Tracker = "https://github.com/microscope-cockpit/cockpit/issues/"
+
+
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-dir]
+cockpit = "cockpit"
+
+
+[tool.isort]
+profile = "black"
+line_length = 79
+
+
+[tool.black]
+line-length = 79
+
+
+[tool.pylint.FORMAT]
+max-line-length = 79
+
+
+[tool.pytest.ini_options]
+testpaths = ["cockpit/testsuite",]
+
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+# We need to set isolated_build because: 'pyproject.toml file found.
+# To use a PEP 517 build-backend you are required to configure tox to
+# use an isolated_build"
+isolated_build = True
+envlist = py
+
+[testenv]
+description = run whole test suite
+commands = python -m unittest discover \
+    --start-directory cockpit/testsuite \
+    --verbose
+"""
