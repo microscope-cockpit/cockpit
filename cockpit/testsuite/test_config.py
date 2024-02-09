@@ -257,7 +257,7 @@ class TestLinuxPaths(unittest.TestCase):
     def test_default_without_xdg_variables(self):
         """Default files and directories in Linux systems"""
         with patched_env({'HOME' : '/srv/people'}):
-            for var in ('XDG_CONFIG_DIRS', 'XDG_CACHE_HOME', 'XDG_CONFIG_HOME'):
+            for var in ('XDG_CONFIG_DIRS', 'XDG_STATE_HOME', 'XDG_CONFIG_HOME'):
                 os.environ.pop(var, None)
             self.assertEqual(cockpit.config.default_system_cockpit_config_files(),
                              ['/etc/xdg/cockpit/cockpit.conf'])
@@ -268,7 +268,7 @@ class TestLinuxPaths(unittest.TestCase):
             self.assertEqual(cockpit.config.default_user_depot_config_files(),
                              ['/srv/people/.config/cockpit/depot.conf'])
             self.assertEqual(cockpit.config._default_log_dir(),
-                             '/srv/people/.cache/cockpit')
+                             '/srv/people/.local/state/cockpit')
             self.assertEqual(cockpit.config._default_user_config_dir(),
                              '/srv/people/.config/cockpit')
 

@@ -258,9 +258,10 @@ as follow:
 Preferences
 ===========
 
-In addition to the configuration, Cockpit also keeps a cache of user
-preferences such as the layout of the different windows, and the last
-used experiment and device settings.  These can be cleared via "Reset
+In addition to the configuration, Cockpit keeps user preferences, such
+as the layout of the different windows, and the last used experiment
+and device settings, saved to file.  This ensures that current state
+is restored after restarting Cockpit.  These can be cleared via "Reset
 User Configuration" on the "Edit" menu.
 
 

@@ -287,11 +287,10 @@ def _default_log_dir():
     elif _is_mac():
         base_dir = os.path.expanduser('~/Library/Logs')
     else: # freedesktop.org Base Directory Specification
-        ## Log files are not really cache files, but XDG spec says
-        ## "user-specific non-essential data files" and that's the
-        ## closest thing we have.
-        base_dir = _get_nonempty_env('XDG_CACHE_HOME',
-                                     os.path.join(os.environ['HOME'], '.cache'))
+        base_dir = _get_nonempty_env(
+            'XDG_STATE_HOME',
+            os.path.join(os.environ['HOME'], '.local', 'state')
+        )
     return os.path.join(base_dir, _PROGRAM_NAME)
 
 
