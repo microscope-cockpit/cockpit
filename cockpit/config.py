@@ -148,6 +148,8 @@ class DepotConfig(configparser.ConfigParser):
                     self.add_section(new_section)
                     for k, v in file_config[new_section].items():
                         self[new_section][k] = v
+            else:
+                raise Exception("Unable to read depot file: %s" % filename)
 
 
 def _default_cockpit_config():
