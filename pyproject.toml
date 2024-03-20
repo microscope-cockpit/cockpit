@@ -35,7 +35,7 @@ dependencies = [
 ]
 
 [project.gui-scripts]
-microscope-gui = "cockpit:_setuptools_entry_point"
+cockpit = "cockpit:_setuptools_entry_point"
 
 [project.urls]
 Homepage = "https://www.microscope-cockpit.org"
