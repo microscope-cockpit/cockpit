@@ -148,9 +148,6 @@ class DepotConfig(configparser.ConfigParser):
                     self.add_section(new_section)
                     for k, v in file_config[new_section].items():
                         self[new_section][k] = v
-            else:
-                raise Exception("Unable to read depot file: %s" % filename)
-
 
 def _default_cockpit_config():
     default = {
@@ -210,7 +207,7 @@ def _parse_cmd_line_options(options):
                         help="Do not read user and system config files")
 
     parser.add_argument('--depot-file', dest='depot_files',
-                        action='append',
+                        action='append',default=[],
                         metavar='DEPOT-CONFIG-PATH',
                         help='File path for depot device configuration')
 
@@ -218,6 +215,14 @@ def _parse_cmd_line_options(options):
                         help="Enable debug logging level")
 
     parsed_options = parser.parse_args(options)
+
+    #check if depot or config files specified exist.
+    for fname in parsed_options.depot_files:
+            if not (os.path.isfile(fname) and os.access(fname, os.R_OK)):
+                raise Exception("Unable to read depot file %s" % fname)
+    for fname in parsed_options.config_files:
+        if not (os.path.isfile(fname) and os.access(fname, os.R_OK)):
+            raise Exception("Unable to read config file %s" % fname)
 
     ## '--no-config-files' is just a convenience flag option for
     ## '--no-user-config-file --no-system-config-files'
@@ -246,23 +251,23 @@ def _default_system_config_dirs():
     """
     if _is_windows():
         try:
-            base_dirs = [os.path.expandvars('%ProgramData%')]
+            base_dirs = [os.path.expandvars(r'%ProgramData%')]
         except KeyError: # Fallback according to KNOWNFOLDERID docs
-            base_dirs = [os.path.expandvars('%SystemDrive%\ProgramData')]
+            base_dirs = [os.path.expandvars(r'%SystemDrive%\ProgramData')]
     elif _is_mac():
         base_dirs = ['/Library/Preferences']
     else: # freedesktop.org Base Directory Specification
-        base_dirs = _get_nonempty_env('XDG_CONFIG_DIRS', '/etc/xdg').split(':')
+        base_dirs = _get_nonempty_env('XDG_CONFIG_DIRS', r'/etc/xdg').split(':')
         base_dirs = [d for d in base_dirs if d] # remove empty entries
     return [os.path.join(d, _PROGRAM_NAME) for d in base_dirs]
 
 def _default_user_config_dir():
     if _is_windows():
-        base_dir = os.path.expandvars('%LocalAppData%')
+        base_dir = os.path.expandvars(r'%LocalAppData%')
     elif _is_mac():
-        base_dir = os.path.expanduser('~/Library/Application Support')
+        base_dir = os.path.expanduser(r'~/Library/Application Support')
     else: # freedesktop.org Base Directory Specification
-        base_dir = _get_nonempty_env('XDG_CONFIG_HOME',
+        base_dir = _get_nonempty_env(r'XDG_CONFIG_HOME',
                                      os.path.join(os.environ['HOME'],
                                                   '.config'))
     return os.path.join(base_dir, _PROGRAM_NAME)
@@ -283,11 +288,11 @@ def _default_system_config_files(fname):
 def _default_log_dir():
     if _is_windows():
         try:
-            base_dir = os.path.expandvars('%LocalAppData%')
+            base_dir = os.path.expandvars(r'%LocalAppData%')
         except KeyError: # Fallback according to KNOWNFOLDERID docs
-            base_dir = os.path.expandvars('%UserProfile%\AppData\Local')
+            base_dir = os.path.expandvars(r'%UserProfile%\AppData\Local')
     elif _is_mac():
-        base_dir = os.path.expanduser('~/Library/Logs')
+        base_dir = os.path.expanduser(r'~/Library/Logs')
     else: # freedesktop.org Base Directory Specification
         base_dir = _get_nonempty_env(
             'XDG_STATE_HOME',
