@@ -72,6 +72,7 @@ class DataSaver:
     ## \param cameras List of CameraHandler instances for the cameras that
     #         will be generating images
     # \param numReps How many times the experiment will be repeated.
+    # \param repDuration How long each rep lasts.
     # \param cameraToImagesPerRep Maps camera handlers to how many images to
     #        expect for that camera in a single repeat of the experiment.
     # \param cameraToIgnoredImageIndices Maps camera handlers to indices of
@@ -85,11 +86,12 @@ class DataSaver:
     #        and there can be up to 10 of them.
     # \param cameraToExcitation Maps camera handlers to the excitation
     #        wavelength used to generate the images it will acquire.
-    def __init__(self, cameras, numReps, cameraToImagesPerRep,
+    def __init__(self, cameras, numReps, repDuration, cameraToImagesPerRep,
                  cameraToIgnoredImageIndices, runThread, savePath, pixelSizeZ,
                  titles, cameraToExcitation):
         self.cameras = cameras
         self.numReps = numReps
+        self.repDuration = repDuration
         self.cameraToImagesPerRep = cameraToImagesPerRep
         self.cameraToIgnoredImageIndices = cameraToIgnoredImageIndices
         self.runThread = runThread
@@ -170,6 +172,7 @@ class DataSaver:
         ## Time at which we last received an image, so we know when images
         # have stopped arriving.
         self.lastImageTime = time.time()
+        self.startTime = time.time()
 
         ## Filehandles we will write the data to.
         self.filehandles = []
@@ -296,7 +299,8 @@ class DataSaver:
         for camera in self.cameras:
             totals.append(self.cameraToImagesKeptPerRep[camera] * self.numReps)
         ## Thread that handles updating the UI.
-        self.statusThread = StatusUpdateThread(names, totals)
+        self.statusThread = StatusUpdateThread(names, totals, self.numReps,
+                                               self.repDuration)
 
         # Start the data-saving thread.
         self.saveData()
@@ -334,8 +338,9 @@ class DataSaver:
 
         # Wait until it's been a bit without getting any more images in, or
         # until we have all the images we expected to get for each camera.
-        while (time.time() - self.lastImageTime < 1.0
+        while ((time.time() - self.lastImageTime < self.repDuration+1.0)
                or not self.imageQueue.empty()):
+#            print ((time.time() - self.startTime),self.repDuration*self.numReps)
             amDone = True
             for camera in self.cameras:
                 total = self.imagesKept[self.cameraToIndex[camera]]
@@ -528,7 +533,7 @@ class DataSaver:
 ## This thread handles telling the saving status light to update twice per
 # second.
 class StatusUpdateThread(threading.Thread):
-    def __init__(self, cameraNames, totals):
+    def __init__(self, cameraNames, totals, numReps, repDuration):
         super().__init__()
         ## List of names of the cameras.
         self.cameraNames = cameraNames
@@ -538,6 +543,9 @@ class StatusUpdateThread(threading.Thread):
         self.imageCountLock = threading.Lock()
         ## List of total images expected per camera.
         self.totals = totals
+        self.numReps=numReps
+        self.repDuration=repDuration
+        self.startTime=time.time()
         ## Set to True to end the thread.
         self.shouldStop = False
         self.name = "DataSaver-status"
@@ -546,16 +554,22 @@ class StatusUpdateThread(threading.Thread):
     def run(self):
         prevCounts = list(self.imagesReceived)
         self.updateText()
+        count=0
         while not self.shouldStop:
             if prevCounts != self.imagesReceived:
                 # Have received new images since the last update;
                 # update the display.
+                count=0
                 with self.imageCountLock:
                     self.updateText()
                     prevCounts = list(self.imagesReceived)
             else:
-                # No images; wait a bit.
+                # No images; wait a bit, but update wait text every 0.5s
                 time.sleep(.1)
+                count=count+1
+                if count==5:
+                    count=0
+                    self.updateText()
         # Clear the status light.
         events.publish(events.UPDATE_STATUS_LIGHT, 'image count', '')
 
@@ -567,7 +581,11 @@ class StatusUpdateThread(threading.Thread):
             curCount = self.imagesReceived[i]
             maxCount = self.totals[i]
             statusText.append('%s: %d/%d' % (name, curCount, maxCount))
-
+        if((sum(self.imagesReceived) % (maxCount/self.numReps)) == 0):
+            #we are between reps
+            repTime = (time.time()-self.startTime)%self.repDuration
+            timeleft=self.repDuration-repTime
+            statusText.append('waiting %.0fs for next repeat' % timeleft)
         events.publish(events.UPDATE_STATUS_LIGHT, 'image count',
                        ' | '.join(statusText))
 
