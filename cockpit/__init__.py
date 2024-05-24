@@ -360,15 +360,19 @@ def main(argv: typing.Sequence[str]) -> int:
         config = cockpit.config.CockpitConfig(argv)
         cockpit.util.logger.makeLogger(config['log'])
         cockpit.util.files.initialize(config)
+    ## If anything happens during this initial stage there is no UI
+    ## yet, so create a simple UI to display the exception text.
+    ## Then, re-raise the caught exception so that it is displayed on
+    ## command line and for whatever cleanup Python does.
     except SystemExit as ex:
-        ## Reraise without showing exception UI on a exit code zero
-        ## because it was not an error, maybe 'cockpit --help'.
-        if ex.code == 0:
-             raise ex
-        else:
+        ## Do not show exception UI on exit code zero because it was
+        ## not an error, maybe 'cockpit --help' was called.
+        if ex.code != 0:
             show_exception_app()
-    except:
+        raise ex
+    except BaseException as ex:
         show_exception_app()
+        raise ex
     else:
         app = CockpitApp(config=config)
         app.MainLoop()
