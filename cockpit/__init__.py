@@ -339,6 +339,15 @@ class CockpitApp(wx.App):
             cockpit.util.userConfig.setValue(config_name, window.IsShown())
 
 
+def show_exception_app() -> None:
+    app = wx.App()
+    cockpit.gui.ExceptionBox(caption='Failed to initialise cockpit')
+    ## We ProcessPendingEvents() instead of entering the MainLoop()
+    ## because we won't have more windows created, meaning that the
+    ## program would not exit after closing the exception box.
+    app.ProcessPendingEvents()
+
+
 def main(argv: typing.Sequence[str]) -> int:
     ## wxglcanvas (used in the mosaic windows) does not work with
     ## wayland (see https://trac.wxwidgets.org/ticket/17702).  The
@@ -351,13 +360,15 @@ def main(argv: typing.Sequence[str]) -> int:
         config = cockpit.config.CockpitConfig(argv)
         cockpit.util.logger.makeLogger(config['log'])
         cockpit.util.files.initialize(config)
+    except SystemExit as ex:
+        ## Reraise without showing exception UI on a exit code zero
+        ## because it was not an error, maybe 'cockpit --help'.
+        if ex.code == 0:
+             raise ex
+        else:
+            show_exception_app()
     except:
-        app = wx.App()
-        cockpit.gui.ExceptionBox(caption='Failed to initialise cockpit')
-        # We ProcessPendingEvents() instead of entering the MainLoop()
-        # because we won't have more windows created, meaning that the
-        # program would not exit after closing the exception box.
-        app.ProcessPendingEvents()
+        show_exception_app()
     else:
         app = CockpitApp(config=config)
         app.MainLoop()
