@@ -104,10 +104,8 @@ from OpenGL.GL import (
 import wx
 
 
-_FONT_PATH = str(
-    importlib.resources.files("cockpit").joinpath(
-        "resources/fonts/UniversalisADFStd-Regular.otf"
-    )
+_FONT_PATH = importlib.resources.files("cockpit").joinpath(
+    "resources/fonts/UniversalisADFStd-Regular.otf"
 )
 
 
@@ -183,7 +181,7 @@ class Face:
     """
     def __init__(self, window: wx.Window, size: int) -> None:
         super().__init__()
-        self._face = freetype.Face(_FONT_PATH)
+        self._face = freetype.Face(_FONT_PATH.open("rb"))
         self._face.set_char_size(size*64)
         self._glyphs = {} # type: typing.Dict[str, _Glyph]
 
