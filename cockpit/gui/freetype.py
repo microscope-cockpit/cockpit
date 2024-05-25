@@ -52,9 +52,10 @@ to get FTGL installed (see issue #615).
 
 """
 
+import importlib.resources
+
 import freetype
 import numpy
-import pkg_resources
 from OpenGL.GL import (
     GL_ALPHA,
     GL_BLEND,
@@ -103,12 +104,10 @@ from OpenGL.GL import (
 import wx
 
 
-# The resource_name argument for resource_filename is not a filesystem
-# filepath.  It is a /-separated filepath, even on windows, so do not
-# use os.path.join.
-_FONT_PATH = pkg_resources.resource_filename(
-    'cockpit',
-    'resources/fonts/UniversalisADFStd-Regular.otf'
+_FONT_PATH = str(
+    importlib.resources.files("cockpit").joinpath(
+        "resources/fonts/UniversalisADFStd-Regular.otf"
+    )
 )
 
 
