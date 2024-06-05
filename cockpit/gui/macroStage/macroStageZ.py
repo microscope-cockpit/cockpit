@@ -50,13 +50,13 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import logging
 from OpenGL.GL import *
 import traceback
 import wx
 
 from cockpit import events
 import cockpit.interfaces.stageMover
-import cockpit.util.logger
 import cockpit.util.userConfig
 
 from cockpit.gui.macroStage import macroStageBase
@@ -188,7 +188,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             slot = int((altitude - self.minY) // ALTITUDE_BUCKET_SIZE)
             if slot < 0 or slot > len(self.altitudeBuckets):
                 # This should, of course, be impossible.
-                cockpit.util.logger.log.warning("Impossible experiment altitude %f (min %f, max %f)",
+                logging.warning("Impossible experiment altitude %f (min %f, max %f)",
                         altitude, self.minY, self.maxY)
             else:
             # bounds check slot
@@ -285,8 +285,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                         self.histograms = self.histograms[:-1]
 
             except Exception as e:
-                cockpit.util.logger.log.error("Error updating macro stage Z status: %s", e)
-                cockpit.util.logger.log.error(traceback.format_exc())
+                logging.error("Error updating macro stage Z status: %s", e)
+                logging.error(traceback.format_exc())
                 self.shouldDraw = False
 
         
@@ -422,7 +422,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             # our stage position info.
             self.drawEvent.set()
         except Exception as e:
-            cockpit.util.logger.log.error("Error drawing Z macro stage: %s", e)
+            logging.error("Error drawing Z macro stage: %s", e)
             traceback.print_exc()
             self.shouldDraw = False
 

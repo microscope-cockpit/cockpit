@@ -51,7 +51,6 @@
 
 from cockpit import events
 import cockpit.util.datadoc
-import cockpit.util.logger
 import cockpit.util.threads
 
 import numpy

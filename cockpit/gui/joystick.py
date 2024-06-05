@@ -18,14 +18,14 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from operator import sub
+import logging
 import sys
 import time
+from operator import sub
+
 import wx
 import wx.adv
 
-import cockpit.util.logger
 
 # Define a button comparison function that supports the different
 # enumeration schemes on Windows and Linux as at wxWidgets version 3.1.2.
@@ -71,7 +71,7 @@ class Joystick:
     def __init__(self, window):
         # Support for Joysticks in wx is conditional (see #870)
         if not wx.adv.USE_JOYSTICK:
-            cockpit.util.logger.log.warning(
+            logging.warning(
                 'wxWidgets was built without joystick support'
                 ' so it is disabled in Cockpit too.'
             )
@@ -80,7 +80,7 @@ class Joystick:
         # are no Joysticks connected, it errors in Mac so we really
         # need to check this (see #870)
         if wx.adv.Joystick.GetNumberJoysticks() == 0:
-            cockpit.util.logger.log.info(
+            logging.info(
                 'wxWidgets found no joysticks so support for them'
                 ' is disabled in Cockpit.'
             )

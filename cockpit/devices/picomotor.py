@@ -55,11 +55,11 @@ from cockpit import events
 import cockpit.handlers.stagePositioner
 import cockpit.util.threads
 
+import logging
 import socket
 import threading
 import time
 
-import cockpit.util.logger
 ## TODO: test with hardware.
 
 
@@ -301,8 +301,11 @@ class PicoMotorDevice(device.Device):
                 try :
                     response = self.xyConnection.recv(1024)
                 except :
-                    cockpit.util.logger.log.debug("in command %s, %d, No response",
-                                              command,numExpectedLines)
+                    logging.debug(
+                        "in command %s, %d, No response",
+                        command,
+                        numExpectedLines
+                    )
                 return response
 
 
@@ -314,7 +317,7 @@ class PicoMotorDevice(device.Device):
         numLines = 0
         while True:
             output = self.xyConnection.recv(1024)
-            cockpit.util.logger.log.debug("Picomotor responce %s", output)
+            logging.debug("Picomotor responce %s", output)
             response += output
             numLines += 1
             if numLines == numExpectedLines:

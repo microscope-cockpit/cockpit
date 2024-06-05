@@ -54,13 +54,13 @@ from cockpit import depot
 import cockpit.experiment.experimentRegistry
 from cockpit.gui import guiUtils
 import cockpit.interfaces.stageMover
-import cockpit.util.logger
 import cockpit.util.userConfig
 import cockpit.util.files
 
 import collections
 import decimal
 import json
+import logging
 import os.path
 import time
 import traceback
@@ -371,9 +371,9 @@ class ExperimentConfigPanel(wx.Panel):
         try:
             handle.write(json.dumps(settings))
         except Exception as e:
-            cockpit.util.logger.log.error("Couldn't save experiment settings: %s" % e)
-            cockpit.util.logger.log.error(traceback.format_exc())
-            cockpit.util.logger.log.error("Settings are:\n%s" % str(settings))
+            logging.error("Couldn't save experiment settings: %s" % e)
+            logging.error(traceback.format_exc())
+            logging.error("Settings are:\n%s" % str(settings))
         handle.close()
         
 

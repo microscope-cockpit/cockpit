@@ -56,9 +56,12 @@
 # the GUI.
 
 import importlib
+import logging
 import os
+import os.path
 import sys
 import threading
+import time
 import traceback
 import typing
 import wx
@@ -76,7 +79,6 @@ import cockpit.interfaces.channels
 import cockpit.interfaces.imager
 import cockpit.interfaces.stageMover
 import cockpit.util.files
-import cockpit.util.logger
 import cockpit.util.userConfig
 
 
@@ -235,8 +237,8 @@ class CockpitApp(wx.App):
             return True
         except Exception as e:
             cockpit.gui.ExceptionBox(caption='Failed to initialise cockpit')
-            cockpit.util.logger.log.error("Initialization failed: %s" % e)
-            cockpit.util.logger.log.error(traceback.format_exc())
+            logging.error("Initialization failed: %s" % e)
+            logging.error(traceback.format_exc())
             return False
 
     def onActivateApp(self, event):
@@ -277,16 +279,14 @@ class CockpitApp(wx.App):
         try:
             cockpit.events.publish(cockpit.events.USER_ABORT)
         except:
-            cockpit.util.logger.log.error("Error on USER_ABORT during exit")
-            cockpit.util.logger.log.error(traceback.format_exc())
+            logging.error("Error on USER_ABORT during exit")
+            logging.error(traceback.format_exc())
         for dev in self.Depot.getAllDevices():
             try:
                 dev.onExit()
             except:
-                cockpit.util.logger.log.error(
-                    "Error on device '%s' during exit", dev.name
-                )
-                cockpit.util.logger.log.error(traceback.format_exc())
+                logging.error("Error on device '%s' during exit", dev.name)
+                logging.error(traceback.format_exc())
         # Documentation states that we must return the same return value
         # as the base class.
         return super().OnExit()
@@ -348,6 +348,34 @@ def show_exception_app() -> None:
     app.ProcessPendingEvents()
 
 
+def _configure_logging(config):
+    """Setup the *root* logger.
+
+    Args:
+        logging_config (``configparser.SectionProxy``): the config
+            section for the logger.
+    """
+    log_dir = config.getpath('dir')
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    filename = time.strftime(config.get('filename-template'))
+    filepath = os.path.join(log_dir, filename)
+
+    level = getattr(logging, config.get('level').upper())
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+
+    log_handler = logging.FileHandler(filepath, mode = "a")
+    formatter = logging.Formatter('%(asctime)s %(levelname)-8s'
+                                  + ' %(module)10s:%(lineno)4d'
+                                  + '  %(message)s')
+    log_handler.setFormatter(formatter)
+    log_handler.setLevel(level)
+    root_log.addHandler(log_handler)
+
+
 def main(argv: typing.Sequence[str]) -> int:
     ## wxglcanvas (used in the mosaic windows) does not work with
     ## wayland (see https://trac.wxwidgets.org/ticket/17702).  The
@@ -358,7 +386,7 @@ def main(argv: typing.Sequence[str]) -> int:
 
     try:
         config = cockpit.config.CockpitConfig(argv)
-        cockpit.util.logger.makeLogger(config['log'])
+        _configure_logging(config['log'])
         cockpit.util.files.initialize(config)
     ## If anything happens during this initial stage there is no UI
     ## yet, so create a simple UI to display the exception text.
@@ -393,13 +421,11 @@ def main(argv: typing.Sequence[str]) -> int:
         if not thread.daemon and thread is not threading.main_thread():
             badThreads.append(thread)
     if badThreads:
-        cockpit.util.logger.log.error(
+        logging.error(
             "Found %d non-daemon threads at exit.  These are:", len(badThreads)
         )
         for thread in badThreads:
-            cockpit.util.logger.log.error(
-                "Thread '%s': %s", thread.name, thread.__dict__
-            )
+            logging.error("Thread '%s': %s", thread.name, thread.__dict__)
         os._exit(1)
     return 0
 

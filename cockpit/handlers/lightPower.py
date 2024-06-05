@@ -49,9 +49,10 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import logging
+
 from cockpit import depot
 from cockpit.handlers import deviceHandler
-import cockpit.util.logger
 import cockpit.util.userConfig
 
 
@@ -93,7 +94,7 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         try:
             self.setPower(targetPower)
         except Exception as e:
-            cockpit.util.logger.log.warning("Failed to set prior power level %s for %s: %s" % (targetPower, self.name, e))
+            logging.warning("Failed to set prior power level %s for %s: %s" % (targetPower, self.name, e))
 
 
     def onSaveSettings(self):

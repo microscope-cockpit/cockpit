@@ -49,14 +49,13 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-
 import Pyro4
+import logging
 import threading
 import traceback
 
 from cockpit.devices import device
 import cockpit.handlers.server
-import cockpit.util.logger
 import cockpit.util.threads
 
 
@@ -143,5 +142,5 @@ class ServerDaemon:
         try:
             self.func(*args)
         except Exception as e:
-            cockpit.util.logger.log.error("ServerDaemon [%s] failed its callback: %s" % (self.name, e))
-            cockpit.util.logger.log.error(traceback.format_exc())
+            logging.error("ServerDaemon [%s] failed its callback: %s" % (self.name, e))
+            logging.error(traceback.format_exc())

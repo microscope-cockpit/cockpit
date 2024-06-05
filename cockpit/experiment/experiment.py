@@ -58,10 +58,10 @@ from cockpit.gui import guiUtils
 
 import cockpit.handlers.camera
 import cockpit.interfaces.stageMover
-import cockpit.util.logger
 
 import decimal
 import gc
+import logging
 import os
 import threading
 import time
@@ -332,7 +332,7 @@ class Experiment:
 
     ## Run the experiment. Return True if it was successful.
     def execute(self):
-        cockpit.util.logger.log.info("Experiment.execute started.")
+        logging.info("Experiment.execute started.")
         # Iteratively find the ExperimentExecutor that can tackle the largest
         # portion of self.table, have them run it, and wait for them to finish.
         executors = depot.getHandlersOfType(depot.EXECUTOR)
@@ -351,7 +351,7 @@ class Experiment:
                     delay += max(0, time.time() - nextTime)
 
                 if self.shouldAbort:
-                    cockpit.util.logger.log.error("Cancelling on rep %d after %d actions due to user abort" % (rep, curIndex))
+                    logging.error("Cancelling on rep %d after %d actions due to user abort" % (rep, curIndex))
                     break
                 best = None
                 bestLen = 0
@@ -402,7 +402,7 @@ class Experiment:
 
             if shouldStop:
                 # All reps handled by an executor.
-                cockpit.util.logger.log.debug("Stopping now at %.2f" % time.time())
+                logging.debug("Stopping now at %.2f" % time.time())
                 break
             # Wait for the end of the rep.
             if rep != self.numReps - 1:
@@ -411,7 +411,7 @@ class Experiment:
         ## TODO: figure out how long we should wait for the last captures to complete.
         # For now, wait 1s.
         time.sleep(1.)
-        cockpit.util.logger.log.info("Experiment.execute completed.")
+        logging.info("Experiment.execute completed.")
         return True
 
     ## Wait for the provided thread(s) to finish, then clean up our handlers.

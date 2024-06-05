@@ -49,6 +49,7 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import logging
 import typing
 
 import numpy
@@ -61,7 +62,6 @@ from cockpit.gui.primitive import Primitive
 import cockpit.gui.dialogs.getNumberDialog
 import cockpit.interfaces
 import cockpit.interfaces.stageMover
-import cockpit.util.logger
 
 from cockpit.gui.macroStage import macroStageBase
 
@@ -437,8 +437,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             # our stage position info.
             self.drawEvent.set()
         except Exception as e:
-            cockpit.util.logger.log.error("Exception drawing XY macro stage: %s", e)
-            cockpit.util.logger.log.error(traceback.format_exc())
+            logging.error("Exception drawing XY macro stage: %s", e)
+            logging.error(traceback.format_exc())
             self.shouldDraw = False
 
 

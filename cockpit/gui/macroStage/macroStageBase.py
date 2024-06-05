@@ -59,7 +59,6 @@ from cockpit import events
 import cockpit.gui
 import cockpit.gui.freetype
 import cockpit.interfaces.stageMover
-import cockpit.util.logger
 
 
 ## @package cockpit.gui.macroStage

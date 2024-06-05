@@ -22,6 +22,8 @@
 """Cameras from Python Microscope device server."""
 
 import decimal
+import logging
+
 import Pyro4
 import wx
 
@@ -32,7 +34,6 @@ import cockpit.gui.device
 import cockpit.gui.guiUtils
 import cockpit.handlers.camera
 import cockpit.util.listener
-import cockpit.util.logger
 import cockpit.util.threads
 import cockpit.util.userConfig
 import cockpit.interfaces.stageMover
@@ -279,7 +280,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         roi = self.getROI(name)
         binning = self._proxy.get_binning()
         if not isinstance(binning, Binning):
-            cockpit.util.logger.log.warning("%s returned tuple not Binning()" % self.name)
+            logging.warning("%s returned tuple not Binning()" % self.name)
             binning = Binning(*binning)
         return (roi.width//binning.h, roi.height//binning.v)
 
@@ -287,7 +288,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         """Read the ROI from the camera"""
         roi = self._proxy.get_roi()
         if not isinstance(roi, ROI):
-            cockpit.util.logger.log.warning("%s returned tuple not ROI()" % self.name)
+            logging.warning("%s returned tuple not ROI()" % self.name)
             roi = ROI(*roi)
         return roi
 
@@ -383,7 +384,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         result = self._proxy.set_roi(roi)
 
         if not result:
-            cockpit.util.logger.log.warning("%s could not set ROI" % self.name)
+            logging.warning("%s could not set ROI" % self.name)
 
     def softTrigger(self, name=None):
         if self.enabled:

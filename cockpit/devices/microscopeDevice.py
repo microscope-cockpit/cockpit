@@ -44,6 +44,7 @@ For connection via a controller::
 """
 
 import collections.abc
+import logging
 import typing
 
 import Pyro4
@@ -62,7 +63,6 @@ import cockpit.util.colors
 import cockpit.util.userConfig
 import cockpit.util.threads
 import cockpit.util.listener
-import cockpit.util.logger
 from cockpit.util import valueLogger
 from cockpit.gui.device import SettingsEditor
 from cockpit.handlers.stagePositioner import PositionerHandler
@@ -840,8 +840,7 @@ class DIOOutputWindow(wx.Frame):
     @cockpit.util.threads.callInMainThread
     def updateState(self,line = None,state = None):
         if (line is not None) and (state is not None):
-            cockpit.util.logger.log.debug("Line %d returned %s" %
-                                          (line,str(state)))
+            logging.debug("Line %d returned %s" % (line,str(state)))
             if (self.DIO.get_IO_state(line)):
                 #output button have names
                 self.lineToButton[line][1].SetLabel(self.DIO.labels[line])
