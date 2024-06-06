@@ -373,7 +373,7 @@ def _configure_logging(config):
                                   + '  %(message)s')
     log_handler.setFormatter(formatter)
     log_handler.setLevel(level)
-    root_log.addHandler(log_handler)
+    root_logger.addHandler(log_handler)
 
 
 def main(argv: typing.Sequence[str]) -> int:
