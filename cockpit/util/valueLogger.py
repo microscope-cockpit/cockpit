@@ -25,8 +25,8 @@ import sys
 from collections.abc import Iterable
 from datetime import datetime
 
-from cockpit.util import files
 import os.path
+
 DELIMITER = ';'
 
 class ValueLogger:
@@ -40,7 +40,9 @@ class ValueLogger:
         self._fhLock = threading.Lock()
         self.keys = keys
         filename = name + "_" + datetime.now().strftime("%Y%m%d-%H%M%S") + ".log"
-        self.setLogFile(os.path.join(files.getLogDir(), filename)) # sets self._fh
+        self.setLogFile(
+            os.path.join(wx.GetApp().Config.getpath('log', 'dir'), filename)
+        )  # sets self._fh
 
 
     def __del__(self):
