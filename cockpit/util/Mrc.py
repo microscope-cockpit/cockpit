@@ -1096,40 +1096,40 @@ def adjusted_data_shape(numel, shape):
 
 mrcHdr_dtype = N.dtype(
     [
-        ("Num", "3i4"),
-        ("PixelType", "1i4"),
-        ("mst", "3i4"),
-        ("m", "3i4"),
-        ("d", "3f4"),
-        ("angle", "3f4"),
-        ("axis", "3i4"),
-        ("mmm1", "3f4"),
-        ("type", "1i2"),
-        ("nspg", "1i2"),
-        ("next", "1i4"),
-        ("dvid", "1i2"),
-        ("blank", "30i1"),
-        ("NumIntegers", "1i2"),  # Number of 4 byte integers stored in the extended header per section.
-        ("NumFloats", "1i2"),  # Number of 4 byte floating-point numbers stored in the extended header per section.
-        ("sub", "1i2"),  # Number of sub-resolution data sets stored within the image. Typically, this equals 1.
-        ("zfac", "1i2"),  # Reduction quotient for the z axis of the sub-resolution images.
-        ("mm2", "2f4"),  # Minimum intensity of the 2nd wavelength image.
-        ("mm3", "2f4"),  # Minimum intensity of the 2nd wavelength image.
-        ("mm4", "2f4"),  # Minimum intensity of the 2nd wavelength image.
-        ("ImageType", "1i2"),  # Image type. See Image Type table below.
-        ("LensNum", "1i2"),  # Lens identification number.
-        ("n1", "1i2"),  # Depends on the image type.
-        ("n2", "1i2"),  # Depends on the image type.
-        ("v1", "1i2"),  # Depends on the image type.
-        ("v2", "1i2"),  # Depends on the image type.
-        ("mm5", "2f4"),  # Minimum intensity of the 2nd wavelength image.
-        ("NumTimes", "1i2"),  # Number of time points.
-        ("ImgSequence", "1i2"),  # Image sequence. 0=ZTW, 1=WZT, 2=ZWT.
-        ("tilt", "3f4"),  # X axis tilt angle (degrees).
-        ("NumWaves", "1i2"),  # Number of wavelengths.
-        ("wave", "5i2"),  # Wavelength 1, in nm.
-        ("zxy0", "3f4"),  # X origin, in µm.
-        ("NumTitles", "1i4"),  # Number of titles. Valid numbers are between 0 and 10.
-        ("title", "10a80"),  # Title 1. 80 characters long.
+        ("Num", "i4", (3,)),
+        ("PixelType", "i4", (1,)),
+        ("mst", "i4", (3,)),
+        ("m", "i4", (3,)),
+        ("d", "f4", (3,)),
+        ("angle", "f4", (3,)),
+        ("axis", "i4", (3,)),
+        ("mmm1", "f4", (3,)),
+        ("type", "i2", (1,)),
+        ("nspg", "i2", (1,)),
+        ("next", "i4", (1,)),
+        ("dvid", "i2", (1,)),
+        ("blank", "i1", (30,)),
+        ("NumIntegers", "i2", (1,)),  # Number of 4 byte integers stored in the extended header per section.
+        ("NumFloats", "i2", (1,)),  # Number of 4 byte floating-point numbers stored in the extended header per section.
+        ("sub", "i2", (1,)),  # Number of sub-resolution data sets stored within the image. Typically, this equals 1.
+        ("zfac", "i2", (1,)),  # Reduction quotient for the z axis of the sub-resolution images.
+        ("mm2", "f4", (2,)),  # Minimum intensity of the 2nd wavelength image.
+        ("mm3", "f4", (2,)),  # Minimum intensity of the 2nd wavelength image.
+        ("mm4", "f4", (2,)),  # Minimum intensity of the 2nd wavelength image.
+        ("ImageType", "i2", (1,)),  # Image type. See Image Type table below.
+        ("LensNum", "i2", (1,)),  # Lens identification number.
+        ("n1", "i2", (1,)),  # Depends on the image type.
+        ("n2", "i2", (1,)),  # Depends on the image type.
+        ("v1", "i2", (1,)),  # Depends on the image type.
+        ("v2", "i2", (1,)),  # Depends on the image type.
+        ("mm5", "f4", (2,)),  # Minimum intensity of the 2nd wavelength image.
+        ("NumTimes", "i2", (1,)),  # Number of time points.
+        ("ImgSequence", "i2", (1,)),  # Image sequence. 0=ZTW, 1=WZT, 2=ZWT.
+        ("tilt", "f4", (3,)),  # X axis tilt angle (degrees).
+        ("NumWaves", "i2", (1,)),  # Number of wavelengths.
+        ("wave", "i2", (5,)),  # Wavelength 1, in nm.
+        ("zxy0", "f4", (3,)),  # X origin, in µm.
+        ("NumTitles", "i4", (1,)),  # Number of titles. Valid numbers are between 0 and 10.
+        ("title", "a80", (10,)),  # Title 1. 80 characters long.
     ]
 )
