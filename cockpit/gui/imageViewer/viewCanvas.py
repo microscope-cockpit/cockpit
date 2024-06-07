@@ -242,7 +242,7 @@ class Image(BaseGL):
         else:
             # Need to use multiple textures to store data.
             tx = ty = self._maxTexEdge
-        self.dptp = data.ptp()
+        self.dptp = np.ptp(data)
         self.dmin = data.min()
         if self.dptp < 1e-6:
             self.dptp = 1
