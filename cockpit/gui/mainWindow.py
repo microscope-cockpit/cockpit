@@ -54,11 +54,13 @@
 # responsible for setting up the user interface; it assume that the
 # devices have already been initialized.
 
+import io
 import os.path
 import pkg_resources
 import subprocess
 import sys
 import typing
+from configparser import ConfigParser
 from itertools import chain
 
 import wx
@@ -254,6 +256,28 @@ class MainWindowPanel(wx.Panel):
             window = fileViewerWindow.FileViewer(filenames[0], self)
             if len(filenames) > 1:
                 print ("Opening first of %d files. Others can be viewed by dragging them from the filesystem onto the main window of the Cockpit." % len(filenames))
+
+
+def _show_configparser_frame(
+        config: ConfigParser, frame_title="Configuration (parsed)"
+) -> None:
+    config_str = io.StringIO()
+    config.write(config_str)
+
+    frame = wx.Frame(parent=None, title=frame_title)
+    panel = wx.Panel(parent=frame)
+    text_ctrl = cockpit.gui.create_monospaced_multiline_text_ctrl(
+        parent=panel, text=config_str.getvalue(), min_rows=24, min_cols=80
+    )
+
+    panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+    panel_sizer.Add(text_ctrl, flags=wx.SizerFlags(1).Expand())
+    panel.SetSizerAndFit(panel_sizer)
+
+    frame_sizer = wx.BoxSizer(wx.HORIZONTAL)
+    frame_sizer.Add(panel, flags=wx.SizerFlags(1).Expand())
+    frame.SetSizerAndFit(frame_sizer)
+    frame.Show()
 
 
 class EditMenu(wx.Menu):
@@ -513,6 +537,10 @@ class MainWindow(wx.Frame):
         file_menu = wx.Menu()
         menu_item = file_menu.Append(wx.ID_OPEN)
         self.Bind(wx.EVT_MENU, self.OnOpen, menu_item)
+        menu_item = file_menu.Append(wx.ID_ANY, item="View Cockpit config")
+        self.Bind(wx.EVT_MENU, self.OnViewConfig, menu_item)
+        menu_item = file_menu.Append(wx.ID_ANY, item="View Depot config")
+        self.Bind(wx.EVT_MENU, self.OnViewDepot, menu_item)
         menu_item = file_menu.Append(wx.ID_EXIT)
         self.Bind(wx.EVT_MENU, self.OnQuit, menu_item)
         menu_bar.Append(file_menu, '&File')
@@ -573,6 +601,17 @@ class MainWindow(wx.Frame):
         except Exception as ex:
             cockpit.gui.ExceptionBox('Failed to open \'%s\'' % filepath,
                                      parent=self)
+
+    def OnViewConfig(self, event: wx.CommandEvent) -> None:
+        _show_configparser_frame(
+            wx.GetApp().Config, frame_title="Cockpit configuration (parsed)"
+        )
+
+    def OnViewDepot(self, event: wx.CommandEvent) -> None:
+        _show_configparser_frame(
+            wx.GetApp().Config.depot_config,
+            frame_title="Depot configuration (parsed)"
+        )
 
     def OnQuit(self, event: wx.CommandEvent) -> None:
         self.Close()

@@ -143,14 +143,24 @@ class EvtEmitter(wx.EvtHandler):
 
 
 def create_monospaced_multiline_text_ctrl(
-        parent: wx.Window, text: str
+        parent: wx.Window, text: str, min_rows=0, min_cols=0
 ) -> wx.TextCtrl:
     """Create a `wx.TextCtrl` to display a block of code.
+
+    This is its own separate function to address wxWidget issues when
+    computing the right size to display the whole text.
+
+    The `min_rows` and `min_cols` can be used to SetInitialSize to at
+    least a specific number of lines and characters per line.
 
     Args:
         parent: parent window for the created TextCtrl.
         text: initial text to display which is used to compute the
             control initial size.
+        min_rows: initial minimum number of rows/lines of text.
+        min_cols: initial minimum number of columns of text/characters
+            per line.
+
     """
     text_ctrl = wx.TextCtrl(
         parent,
@@ -178,11 +188,19 @@ def create_monospaced_multiline_text_ctrl(
     else:
         text_ctrl_text_size = text_ctrl.GetTextExtent(text_ctrl.Value)
 
+    char_text_size = text_ctrl.GetTextExtent("a")
+
+    text_ctrl_text_size.IncTo(
+        wx.Size(
+            width=char_text_size.Width * min_cols,
+            height=char_text_size.Height * min_rows,
+        )
+    )
+
     ## The computed height seems to always be short of some pixels
     ## (don't know where the issue, probably on GetSizeFromTextSize or
     ## GetTextExtent).  It would go unnoticed if not by the vertical
     ## scrollbar.  So we just add space for an extra line of text.
-    char_text_size = text_ctrl.GetTextExtent("a")
     text_ctrl_text_size.IncBy(dx=0, dy=char_text_size.Height)
 
     text_ctrl.SetInitialSize(text_ctrl.GetSizeFromTextSize(text_ctrl_text_size))
