@@ -774,7 +774,7 @@ def shapeFromHdr(hdr, verbose=0):
 # my hack to allow thinks like a.Mrc.hdr.d = (1,2,3)
 def implement_hdr(hdrArray):
     class hdr:
-        __slots__ = mrcHdrNames[:] + ['_array']
+        __slots__ = list(mrcHdr_dtype.names) + ['_array']
         def __init__(s):
             pass
         def __setattr__(s, n, v):
@@ -1094,49 +1094,42 @@ def adjusted_data_shape(numel, shape):
     return tuple(shape)
 
 
-mrcHdrFields = [
-    ('3i4', 'Num'),
-    ('1i4', 'PixelType'),
-    ('3i4', 'mst'),
-    ('3i4', 'm'),
-    ('3f4', 'd'),
-    ('3f4', 'angle'),
-    ('3i4', 'axis'),
-    ('3f4', 'mmm1'),
-    ('1i2', 'type'),
-    ('1i2', 'nspg'),
-    ('1i4', 'next'),
-    ('1i2', 'dvid'),
-    ('30i1', 'blank'),
-    ('1i2', 'NumIntegers', 'Number of 4 byte integers stored in the extended header per section. '),
-    ('1i2', 'NumFloats', 'Number of 4 byte floating-point numbers stored in the extended header per section. '),
-    ('1i2', 'sub', 'Number of sub-resolution data sets stored within the image. Typically, this equals 1. '),
-    ('1i2', 'zfac', 'Reduction quotient for the z axis of the sub-resolution images. '),
-    ('2f4', 'mm2', 'Minimum intensity of the 2nd wavelength image. '),
-    ('2f4', 'mm3', 'Minimum intensity of the 2nd wavelength image. '),
-    ('2f4', 'mm4', 'Minimum intensity of the 2nd wavelength image. '),
-    ('1i2', 'ImageType', 'Image type. See Image Type table below. '),
-    ('1i2', 'LensNum', 'Lens identification number.'),
-    ('1i2', 'n1', 'Depends on the image type.'),
-    ('1i2', 'n2', 'Depends on the image type.'),
-    ('1i2', 'v1', 'Depends on the image type. '),
-    ('1i2', 'v2', 'Depends on the image type. '),
-    ('2f4', 'mm5', 'Minimum intensity of the 2nd wavelength image. '),
-    ('1i2', 'NumTimes', 'Number of time points.'),
-    ('1i2', 'ImgSequence', 'Image sequence. 0=ZTW, 1=WZT, 2=ZWT. '),
-    ('3f4', 'tilt', 'X axis tilt angle (degrees). '),
-    ('1i2', 'NumWaves', 'Number of wavelengths.'),
-    ('5i2', 'wave', 'Wavelength 1, in nm.'),
-    ('3f4', 'zxy0', 'X origin, in um.'),
-    ('1i4', 'NumTitles', 'Number of titles. Valid numbers are between 0 and 10. '),
-    ('10a80', 'title', 'Title 1. 80 characters long. '),
-]
-
-mrcHdrNames = []
-mrcHdrFormats = []
-for ff in mrcHdrFields:
-    mrcHdrFormats.append(ff[0])
-    mrcHdrNames.append(ff[1])
-del ff
-del mrcHdrFields
-mrcHdr_dtype = list(zip(mrcHdrNames, mrcHdrFormats))
+mrcHdr_dtype = N.dtype(
+    [
+        ("Num", "3i4"),
+        ("PixelType", "1i4"),
+        ("mst", "3i4"),
+        ("m", "3i4"),
+        ("d", "3f4"),
+        ("angle", "3f4"),
+        ("axis", "3i4"),
+        ("mmm1", "3f4"),
+        ("type", "1i2"),
+        ("nspg", "1i2"),
+        ("next", "1i4"),
+        ("dvid", "1i2"),
+        ("blank", "30i1"),
+        ("NumIntegers", "1i2"),  # Number of 4 byte integers stored in the extended header per section.
+        ("NumFloats", "1i2"),  # Number of 4 byte floating-point numbers stored in the extended header per section.
+        ("sub", "1i2"),  # Number of sub-resolution data sets stored within the image. Typically, this equals 1.
+        ("zfac", "1i2"),  # Reduction quotient for the z axis of the sub-resolution images.
+        ("mm2", "2f4"),  # Minimum intensity of the 2nd wavelength image.
+        ("mm3", "2f4"),  # Minimum intensity of the 2nd wavelength image.
+        ("mm4", "2f4"),  # Minimum intensity of the 2nd wavelength image.
+        ("ImageType", "1i2"),  # Image type. See Image Type table below.
+        ("LensNum", "1i2"),  # Lens identification number.
+        ("n1", "1i2"),  # Depends on the image type.
+        ("n2", "1i2"),  # Depends on the image type.
+        ("v1", "1i2"),  # Depends on the image type.
+        ("v2", "1i2"),  # Depends on the image type.
+        ("mm5", "2f4"),  # Minimum intensity of the 2nd wavelength image.
+        ("NumTimes", "1i2"),  # Number of time points.
+        ("ImgSequence", "1i2"),  # Image sequence. 0=ZTW, 1=WZT, 2=ZWT.
+        ("tilt", "3f4"),  # X axis tilt angle (degrees).
+        ("NumWaves", "1i2"),  # Number of wavelengths.
+        ("wave", "5i2"),  # Wavelength 1, in nm.
+        ("zxy0", "3f4"),  # X origin, in µm.
+        ("NumTitles", "1i4"),  # Number of titles. Valid numbers are between 0 and 10.
+        ("title", "10a80"),  # Title 1. 80 characters long.
+    ]
+)
