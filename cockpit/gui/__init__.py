@@ -177,6 +177,14 @@ def create_monospaced_multiline_text_ctrl(
         )
     else:
         text_ctrl_text_size = text_ctrl.GetTextExtent(text_ctrl.Value)
+
+    ## The computed height seems to always be short of some pixels
+    ## (don't know where the issue, probably on GetSizeFromTextSize or
+    ## GetTextExtent).  It would go unnoticed if not by the vertical
+    ## scrollbar.  So we just add space for an extra line of text.
+    char_text_size = text_ctrl.GetTextExtent("a")
+    text_ctrl_text_size.IncBy(dx=0, dy=char_text_size.Height)
+
     text_ctrl.SetInitialSize(text_ctrl.GetSizeFromTextSize(text_ctrl_text_size))
     return text_ctrl
 
