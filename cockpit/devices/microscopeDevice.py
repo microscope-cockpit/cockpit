@@ -366,14 +366,14 @@ class MicroscopeFilter(MicroscopeBase):
         # Cameras
         cdefs = self.config.get('cameras', None)
         if cdefs:
-            self.cameras = re.split('[,;]\s*', cdefs)
+            self.cameras = re.split(r'[,;]\s*', cdefs)
         else:
             self.cameras = None
 
         # Lights
         ldefs = self.config.get('lights', None)
         if ldefs:
-            self.lights = re.split('[,;]\s*', ldefs)
+            self.lights = re.split(r'[,;]\s*', ldefs)
         else:
             self.lights = None
 
@@ -383,7 +383,7 @@ class MicroscopeFilter(MicroscopeBase):
             raise Exception(
                 "Missing 'filters' value for device '%s'" % self.name
             )
-        fdefs = [re.split(':\s*|,\s*', f) for f in re.split('\n', fdefs) if f]
+        fdefs = [re.split(r':\s*|,\s*', f) for f in re.split(r'\n', fdefs) if f]
         self.filters = [cockpit.handlers.filterHandler.Filter(*f) for f in fdefs]
 
 
