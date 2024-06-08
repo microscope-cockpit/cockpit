@@ -384,7 +384,7 @@ def _pre_gui_init(argv: typing.Sequence[str]) -> cockpit.config.CockpitConfig:
     _configure_logging(config['log'])
 
     data_dir = config.getpath('global', 'data-dir')
-    _logger.error("Creating data-dir '%s' if needed", data_dir)
+    _logger.info("Creating data-dir '%s' if needed", data_dir)
     os.makedirs(data_dir, exist_ok=True)
 
     return config
