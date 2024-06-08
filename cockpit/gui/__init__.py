@@ -142,6 +142,45 @@ class EvtEmitter(wx.EvtHandler):
         return super().Destroy()
 
 
+def create_monospaced_multiline_text_ctrl(
+        parent: wx.Window, text: str
+) -> wx.TextCtrl:
+    """Create a `wx.TextCtrl` to display a block of code.
+
+    Args:
+        parent: parent window for the created TextCtrl.
+        text: initial text to display which is used to compute the
+            control initial size.
+    """
+    text_ctrl = wx.TextCtrl(
+        parent,
+        value=text,
+        style=(wx.TE_MULTILINE|wx.TE_DONTWRAP|wx.TE_READONLY)
+    )
+
+    ## 'w.Font.Family = f' does not work because 'w.Font' returns a
+    ## copy of the font.  We need to modify that copy and assign back.
+    text_ctrl_font = text_ctrl.Font
+    text_ctrl_font.Family = wx.FONTFAMILY_TELETYPE
+    text_ctrl.Font = text_ctrl_font
+
+    ## The default width of a TextCtrl does not take into account its
+    ## actual content.  We need to manually set its size (issue #497)
+    if wx.Platform in ["__WXMSW__", "__WXMAC__"]:
+        ## On Windows and Mac, GetTextExtent ignores newlines so we
+        ## need to manually compute the text extent.
+        text_lines = text_ctrl.Value.splitlines()
+        longest_line = max(text_lines, key=len)
+        one_line_size = text_ctrl.GetTextExtent(longest_line)
+        text_ctrl_text_size = wx.Size(
+            width=one_line_size[0], height=(one_line_size[1] * len(text_lines))
+        )
+    else:
+        text_ctrl_text_size = text_ctrl.GetTextExtent(text_ctrl.Value)
+    text_ctrl.SetInitialSize(text_ctrl.GetSizeFromTextSize(text_ctrl_text_size))
+    return text_ctrl
+
+
 def ExceptionBox(caption="", parent=None):
     """Show python exception in a modal dialog.
 
@@ -170,34 +209,16 @@ def ExceptionBox(caption="", parent=None):
     dialog = wx.Dialog(parent, title=caption, name="exception-dialog",
                        style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
     message = wx.StaticText(dialog, label=str(current_exception))
-    details = wx.TextCtrl(dialog, value=traceback.format_exc(),
-                          style=(wx.TE_MULTILINE|wx.TE_DONTWRAP|wx.TE_READONLY))
 
-    ## 'w.Font.Family = f' does not work because it 'w.Font' returns a
-    ## copy of the font.  We need to modify that copy and assign back.
-    details_font = details.Font
-    details_font.Family = wx.FONTFAMILY_TELETYPE
-    details.Font = details_font
+    details = create_monospaced_multiline_text_ctrl(
+        parent=dialog, text=traceback.format_exc()
+    )
 
     sizer = wx.BoxSizer(wx.VERTICAL)
     sizer.Add(message, wx.SizerFlags(0).Expand().Border())
     sizer.Add(details, wx.SizerFlags(1).Expand().Border())
     sizer.Add(dialog.CreateSeparatedButtonSizer(wx.OK),
               wx.SizerFlags(0).Expand().Border())
-
-    ## The default width of a TextCtrl does not take into account its
-    ## actual content.  We need to manually set its size (issue #497)
-    if (wx.Platform != '__WXMSW__') and (wx.Platform != '__WXMAC__'):
-        details_text_size = details.GetTextExtent(details.Value)
-    else:
-        ## On Windows and Mac, GetTextExtent ignores newlines so we
-        ## need to manually compute the text extent.
-        traceback_lines = details.Value.splitlines()
-        longest_line = max(traceback_lines, key=len)
-        one_line_size = details.GetTextExtent(longest_line)
-        details_text_size = wx.Size(one_line_size[0],
-                                    one_line_size[1] * len(traceback_lines))
-    details.SetInitialSize(details.GetSizeFromTextSize(details_text_size))
 
     dialog.SetSizerAndFit(sizer)
     dialog.Centre()
