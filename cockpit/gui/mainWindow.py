@@ -78,7 +78,6 @@ import cockpit.experiment.experiment
 from cockpit.gui import fileViewerWindow
 from cockpit.gui import joystick
 from cockpit.gui import keyboard
-import cockpit.util.files
 import cockpit.util.userConfig
 from cockpit.gui import viewFileDropTarget
 from cockpit.gui import mainPanels

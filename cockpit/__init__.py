@@ -78,7 +78,6 @@ import cockpit.interfaces
 import cockpit.interfaces.channels
 import cockpit.interfaces.imager
 import cockpit.interfaces.stageMover
-import cockpit.util.files
 import cockpit.util.userConfig
 
 
@@ -383,7 +382,11 @@ def _pre_gui_init(argv: typing.Sequence[str]) -> cockpit.config.CockpitConfig:
     """Cockpit initialisation before we have a GUI."""
     config = cockpit.config.CockpitConfig(argv)
     _configure_logging(config['log'])
-    cockpit.util.files.initialize(config)
+
+    data_dir = config.getpath('global', 'data-dir')
+    _logger.error("Creating data-dir '%s' if needed", data_dir)
+    os.makedirs(data_dir, exist_ok=True)
+
     return config
 
 

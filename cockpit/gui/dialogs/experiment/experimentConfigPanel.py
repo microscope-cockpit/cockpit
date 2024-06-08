@@ -55,7 +55,6 @@ import cockpit.experiment.experimentRegistry
 from cockpit.gui import guiUtils
 import cockpit.interfaces.stageMover
 import cockpit.util.userConfig
-import cockpit.util.files
 
 import collections
 import decimal
@@ -362,7 +361,7 @@ class ExperimentConfigPanel(wx.Panel):
         # Get the filepath to save settings to.
         dialog = wx.FileDialog(self, style = wx.FD_SAVE, wildcard = '*.txt',
                 message = 'Please select where to save the experiment.',
-                defaultDir = cockpit.util.files.getUserSaveDir())
+                defaultDir=wx.GetApp().Config.getpath('global', 'data-dir'))
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
             return
@@ -382,7 +381,7 @@ class ExperimentConfigPanel(wx.Panel):
     def onLoadExperiment(self, event = None):
         dialog = wx.FileDialog(self, style = wx.FD_OPEN, wildcard = '*.txt',
                 message = 'Please select the experiment file to load.',
-                defaultDir = cockpit.util.files.getUserSaveDir())
+                defaultDir=wx.GetApp().Config.getpath('global', 'data-dir'))
         if dialog.ShowModal() != wx.ID_OK:
             # User cancelled.
             return
@@ -529,7 +528,7 @@ class FilepathPanel(wx.Panel):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._dir_ctrl = wx.DirPickerCtrl(
-            self, path=cockpit.util.files.getUserSaveDir()
+            self, path=wx.GetApp().Config.getpath('global', 'data-dir')
         )
         self._template_ctrl = wx.TextCtrl(self)
         self._template_ctrl.SetToolTip(
