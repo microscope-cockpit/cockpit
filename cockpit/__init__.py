@@ -55,6 +55,7 @@
 # Python on it to start the program. It initializes everything and creates
 # the GUI.
 
+import argparse
 import importlib
 import logging
 import os
@@ -63,8 +64,8 @@ import sys
 import threading
 import time
 import traceback
-import typing
 import wx
+from typing import List
 
 import Pyro4
 
@@ -350,7 +351,61 @@ def show_exception_app() -> None:
     app.ProcessPendingEvents()
 
 
-def _configure_logging(config):
+def _parse_cmd_line_args(cmd_line_args: List[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(prog="cockpit")
+
+    parser.add_argument(
+        "--config-file",
+        dest="config_files",
+        action="append",
+        default=[],
+        metavar="COCKPIT-CONFIG-PATH",
+        help="File path for another cockpit config file",
+    )
+    parser.add_argument(
+        "--no-user-config-files",
+        dest="read_user_config_files",
+        action="store_false",
+        help="Do not read user config files"
+    )
+    parser.add_argument(
+        "--no-system-config-files",
+        dest="read_system_config_files",
+        action="store_false",
+        help="Do not read system config files"
+    )
+    parser.add_argument(
+        "--no-config-files",
+        dest="read_config_files",
+        action="store_false",
+        help="Do not read user and system config files"
+    )
+
+    parser.add_argument(
+        "--depot-file",
+        dest="depot_files",
+        action="append",
+        default=[],
+        metavar="DEPOT-CONFIG-PATH",
+        help="File path for depot device configuration"
+    )
+
+    parser.add_argument(
+        "--debug", action="store_true", help="Enable debug logging level"
+    )
+
+    cmd_line_options = parser.parse_args(cmd_line_args[1:])
+
+    ## '--no-config-files' is just a convenience flag option for
+    ## '--no-user-config-file --no-system-config-files'
+    if not cmd_line_options.read_config_files:
+        cmd_line_options.read_user_config_files = False
+        cmd_line_options.read_system_config_files = False
+
+    return cmd_line_options
+
+
+def _configure_logging(config) -> None:
     """Setup the *root* logger.
 
     Args:
@@ -358,8 +413,7 @@ def _configure_logging(config):
             section for the logger.
     """
     log_dir = config.getpath('dir')
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    os.makedirs(log_dir, exist_ok=True)
 
     filename = time.strftime(config.get('filename-template'))
     filepath = os.path.join(log_dir, filename)
@@ -378,9 +432,26 @@ def _configure_logging(config):
     root_logger.addHandler(log_handler)
 
 
-def _pre_gui_init(argv: typing.Sequence[str]) -> cockpit.config.CockpitConfig:
+def _pre_gui_init(argv: List[str]) -> cockpit.config.CockpitConfig:
     """Cockpit initialisation before we have a GUI."""
-    config = cockpit.config.CockpitConfig(argv)
+    ## Logging setup has four phases:
+    ##
+    ##   1) an initial configuration with Python's default so we can
+    ##      have logs from the very beginning even if only on the
+    ##      command line;
+    ##   2) after parsing the command line options, maybe change the
+    ##      logging level if there is --debug flag;
+    ##   3) after we have read and parse all configuration files,
+    ##      logging starts properly possibly written to a file (in
+    ##      addition to the command line);
+    ##   4) once the CockpitApp have started, logs are also displayed
+    ##      on Cockpit's logging window.
+
+    logging.basicConfig()
+    cmd_line_options = _parse_cmd_line_args(argv)
+    if cmd_line_options.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+    config = cockpit.config.CockpitConfig(cmd_line_options)
     _configure_logging(config['log'])
 
     data_dir = config.getpath('global', 'data-dir')
@@ -390,7 +461,7 @@ def _pre_gui_init(argv: typing.Sequence[str]) -> cockpit.config.CockpitConfig:
     return config
 
 
-def main(argv: typing.Sequence[str]) -> int:
+def main(argv: List[str]) -> int:
     try:
         config = _pre_gui_init(argv)
     ## If anything happens during this initial stage there is no UI

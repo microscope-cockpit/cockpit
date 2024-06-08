@@ -44,15 +44,22 @@ class CockpitConfig(configparser.ConfigParser):
     """Configuration for cockpit.
 
     Args:
-        argv (list<str>): command line options, including the program
-            name.  Will most likely be ``sys.argv``.
+        cmd_line_options (argparse.Namespace): parsed command line
+            options, which controls which configuration files are
+            read, and is then merged into the configuration itself.
 
     """
-    def __init__(self, argv):
+    def __init__(self, cmd_line_options: argparse.Namespace):
         super().__init__(converters=_type_converters)
         self.read_dict(_default_cockpit_config())
 
-        cmd_line_options = _parse_cmd_line_options(argv[1:])
+        ## Check if depot or config files specified exist (see #710).
+        for fname in cmd_line_options.depot_files:
+            if not (os.path.isfile(fname) and os.access(fname, os.R_OK)):
+                raise Exception("Unable to read depot file %s" % fname)
+        for fname in cmd_line_options.config_files:
+            if not (os.path.isfile(fname) and os.access(fname, os.R_OK)):
+                raise Exception("Unable to read config file %s" % fname)
 
         ## Read cockpit config files.  Least "important" files go
         ## first so that later files can override option values.
@@ -183,54 +190,6 @@ def _default_cockpit_config():
         }
     }
     return default
-
-
-def _parse_cmd_line_options(options):
-    parser = argparse.ArgumentParser(prog=_PROGRAM_NAME)
-
-    parser.add_argument('--config-file', dest='config_files',
-                        action='append', default=[],
-                        metavar='COCKPIT-CONFIG-PATH',
-                        help='File path for another cockpit config file')
-
-    parser.add_argument('--no-user-config-files',
-                        dest='read_user_config_files',
-                        action='store_false',
-                        help="Do not read user config files")
-    parser.add_argument('--no-system-config-files',
-                        dest='read_system_config_files',
-                        action='store_false',
-                        help="Do not read system config files")
-    parser.add_argument('--no-config-files',
-                        dest='read_config_files',
-                        action='store_false',
-                        help="Do not read user and system config files")
-
-    parser.add_argument('--depot-file', dest='depot_files',
-                        action='append',default=[],
-                        metavar='DEPOT-CONFIG-PATH',
-                        help='File path for depot device configuration')
-
-    parser.add_argument('--debug', dest='debug', action='store_true',
-                        help="Enable debug logging level")
-
-    parsed_options = parser.parse_args(options)
-
-    #check if depot or config files specified exist.
-    for fname in parsed_options.depot_files:
-            if not (os.path.isfile(fname) and os.access(fname, os.R_OK)):
-                raise Exception("Unable to read depot file %s" % fname)
-    for fname in parsed_options.config_files:
-        if not (os.path.isfile(fname) and os.access(fname, os.R_OK)):
-            raise Exception("Unable to read config file %s" % fname)
-
-    ## '--no-config-files' is just a convenience flag option for
-    ## '--no-user-config-file --no-system-config-files'
-    if not parsed_options.read_config_files:
-        parsed_options.read_user_config_files = False
-        parsed_options.read_system_config_files = False
-
-    return parsed_options
 
 
 def default_system_cockpit_config_files():
