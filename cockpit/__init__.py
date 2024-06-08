@@ -82,6 +82,9 @@ import cockpit.util.files
 import cockpit.util.userConfig
 
 
+_logger = logging.getLogger(__name__)
+
+
 # Required since Pyro4 v4.22 (which is a project requirement anyway)
 Pyro4.config.SERIALIZERS_ACCEPTED.discard('serpent')
 Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
@@ -376,6 +379,14 @@ def _configure_logging(config):
     root_logger.addHandler(log_handler)
 
 
+def _pre_gui_init(argv: typing.Sequence[str]) -> cockpit.config.CockpitConfig:
+    """Cockpit initialisation before we have a GUI."""
+    config = cockpit.config.CockpitConfig(argv)
+    _configure_logging(config['log'])
+    cockpit.util.files.initialize(config)
+    return config
+
+
 def main(argv: typing.Sequence[str]) -> int:
     ## wxglcanvas (used in the mosaic windows) does not work with
     ## wayland (see https://trac.wxwidgets.org/ticket/17702).  The
@@ -385,9 +396,7 @@ def main(argv: typing.Sequence[str]) -> int:
         os.environ['GDK_BACKEND'] = 'x11'
 
     try:
-        config = cockpit.config.CockpitConfig(argv)
-        _configure_logging(config['log'])
-        cockpit.util.files.initialize(config)
+        config = _pre_gui_init(argv)
     ## If anything happens during this initial stage there is no UI
     ## yet, so create a simple UI to display the exception text.
     ## Then, re-raise the caught exception so that it is displayed on
@@ -401,9 +410,9 @@ def main(argv: typing.Sequence[str]) -> int:
     except BaseException as ex:
         show_exception_app()
         raise ex
-    else:
-        app = CockpitApp(config=config)
-        app.MainLoop()
+
+    app = CockpitApp(config=config)
+    app.MainLoop()
 
     # HACK: manually exit the program if we find threads running.  At
     # this point, any thread running is non-daemonic, i.e., a thread
