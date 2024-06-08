@@ -72,7 +72,13 @@ config-dir
   the last used settings.
 
 data-dir
-  Directory for the default location to save image data.
+
+  Directory for the default location to save image data.  This value
+  will expand environment variables and an initial tilde (`~`).  The
+  default value is `~/MUI_DATA`, i.e., on the user's home directory.
+  If you have a setup where each user has its own data directory on a
+  separate filesystem, you can use something like
+  `D:\cockpit-data\${USERNAME}` or `/srv/cockpit-data/${USER}`.
 
 depot-files
   List of files to use for the device depot.  See :ref:`depot-config`.

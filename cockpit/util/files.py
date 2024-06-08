@@ -73,7 +73,7 @@ def _getDataDir():
     return _DATA_DIR
 
 def getUserSaveDir():
-    return os.path.join(_getDataDir(), getpass.getuser())
+    return os.path.join(_getDataDir())
 
 def _ensureDirectoriesExist():
     for directory in [getUserSaveDir()]:
