@@ -388,13 +388,6 @@ def _pre_gui_init(argv: typing.Sequence[str]) -> cockpit.config.CockpitConfig:
 
 
 def main(argv: typing.Sequence[str]) -> int:
-    ## wxglcanvas (used in the mosaic windows) does not work with
-    ## wayland (see https://trac.wxwidgets.org/ticket/17702).  The
-    ## workaround is to force GTK to use the x11 backend.  See also
-    ## cockpit issue #347
-    if wx.Platform == '__WXGTK__' and 'GDK_BACKEND' not in os.environ:
-        os.environ['GDK_BACKEND'] = 'x11'
-
     try:
         config = _pre_gui_init(argv)
     ## If anything happens during this initial stage there is no UI
