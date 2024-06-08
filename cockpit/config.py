@@ -302,13 +302,7 @@ def _default_log_dir():
 
 
 def _default_user_data_dir():
-    ## TODO: need better default.  See issue #320.  But not before we
-    ## add an option to change it in the GUI.
-    if _is_windows():
-        root_dir = 'C:\\'
-    else:
-        root_dir = os.path.expanduser('~')
-    return os.path.join(root_dir, 'MUI_DATA')
+    return os.path.join('~', 'MUI_DATA')
 
 
 def _parse_lines(option: str) -> typing.List[str]:
