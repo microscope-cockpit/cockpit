@@ -66,6 +66,9 @@ import cockpit.interfaces.stageMover
 from cockpit.gui.macroStage import macroStageBase
 
 
+_logger = logging.getLogger(__name__)
+
+
 class _StagePositionEntryDialog(wx.Dialog):
     def __init__(self, parent: wx.Window) -> None:
         super().__init__(parent, title="Move Stage")
@@ -437,8 +440,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             # our stage position info.
             self.drawEvent.set()
         except Exception as e:
-            logging.error("Exception drawing XY macro stage: %s", e)
-            logging.error(traceback.format_exc())
+            _logger.error("Exception drawing XY macro stage: %s", e)
+            _logger.error(traceback.format_exc())
             self.shouldDraw = False
 
 

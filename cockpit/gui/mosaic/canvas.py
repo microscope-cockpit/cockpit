@@ -66,6 +66,9 @@ import numpy as np
 import wx.lib.newevent
 
 
+_logger = logging.getLogger(__name__)
+
+
 ProgressStartEvent, EVT_PROGRESS_START = wx.lib.newevent.NewEvent()
 ProgressUpdateEvent, EVT_PROGRESS_UPDATE = wx.lib.newevent.NewEvent()
 ProgressEndEvent, EVT_PROGRESS_END = wx.lib.newevent.NewEvent()
@@ -621,7 +624,11 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         )
         if doc.imageArray.shape[2] > len(tileStats):
             # More images in the file than we have stats for.
-            logging.warning("Loading mosaic with %d images; only have positioning information for %d." % (doc.imageArray.shape[2], len(tileStats)))
+            _logger.warning(
+                "Loading mosaic with %d images; only have positioning information for %d.",
+                doc.imageArray.shape[2],
+                len(tileStats),
+            )
         maxImages = min(doc.imageArray.shape[2], len(tileStats))
         for i in range(maxImages):
             image = doc.imageArray[0, 0, i]
@@ -634,7 +641,7 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                 wx.MessageDialog(self.GetParent(),
                         "Failed to load line %d of file %s: %s.\n\nPlease see the logs for more details." % (i, filePath, e),
                         style = wx.ICON_INFORMATION | wx.OK).ShowModal()
-                logging.error(traceback.format_exc())
+                _logger.error(traceback.format_exc())
                 wx.PostEvent(self.GetEventHandler(), ProgressEndEvent())
                 return
         # Wait until we've loaded all tiles or we go a full second without

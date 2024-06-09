@@ -68,6 +68,9 @@ import typing
 import wx
 
 
+_logger = logging.getLogger(__name__)
+
+
 ## @package dialogs.experimentConfigPanel
 # This module holds the ExperimentConfigPanel class and associated constants.
 
@@ -370,9 +373,9 @@ class ExperimentConfigPanel(wx.Panel):
         try:
             handle.write(json.dumps(settings))
         except Exception as e:
-            logging.error("Couldn't save experiment settings: %s" % e)
-            logging.error(traceback.format_exc())
-            logging.error("Settings are:\n%s" % str(settings))
+            _logger.error("Couldn't save experiment settings: %s" % e)
+            _logger.error(traceback.format_exc())
+            _logger.error("Settings are:\n%s" % str(settings))
         handle.close()
         
 

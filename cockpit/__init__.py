@@ -240,8 +240,8 @@ class CockpitApp(wx.App):
             return True
         except Exception as e:
             cockpit.gui.ExceptionBox(caption='Failed to initialise cockpit')
-            logging.error("Initialization failed: %s" % e)
-            logging.error(traceback.format_exc())
+            _logger.error("Initialization failed: %s" % e)
+            _logger.error(traceback.format_exc())
             return False
 
     def onActivateApp(self, event):
@@ -282,14 +282,14 @@ class CockpitApp(wx.App):
         try:
             cockpit.events.publish(cockpit.events.USER_ABORT)
         except:
-            logging.error("Error on USER_ABORT during exit")
-            logging.error(traceback.format_exc())
+            _logger.error("Error on USER_ABORT during exit")
+            _logger.error(traceback.format_exc())
         for dev in self.Depot.getAllDevices():
             try:
                 dev.onExit()
             except:
-                logging.error("Error on device '%s' during exit", dev.name)
-                logging.error(traceback.format_exc())
+                _logger.error("Error on device '%s' during exit", dev.name)
+                _logger.error(traceback.format_exc())
         # Documentation states that we must return the same return value
         # as the base class.
         return super().OnExit()
@@ -497,11 +497,11 @@ def main(argv: List[str]) -> int:
         if not thread.daemon and thread is not threading.main_thread():
             badThreads.append(thread)
     if badThreads:
-        logging.error(
+        _logger.error(
             "Found %d non-daemon threads at exit.  These are:", len(badThreads)
         )
         for thread in badThreads:
-            logging.error("Thread '%s': %s", thread.name, thread.__dict__)
+            _logger.error("Thread '%s': %s", thread.name, thread.__dict__)
         os._exit(1)
     return 0
 

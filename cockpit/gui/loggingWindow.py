@@ -57,6 +57,9 @@ import wx
 import wx.aui
 
 
+_logger = logging.getLogger(__name__)
+
+
 ## This class provides a window that displays two text panels which capture
 # output (stdout and stderr) from the rest of the program. This simplifies
 # debugging in many ways.
@@ -110,9 +113,9 @@ class LoggingWindow(wx.Frame):
                 # We strip any unicode with filter to prevent a cascade of
                 # ---Logging Error--- messages.
                 if target is self.stdOut:
-                    logging.debug(''.join(filter(lambda c: ord(c) < 128, self.textCache)))
+                    _logger.debug(''.join(filter(lambda c: ord(c) < 128, self.textCache)))
                 else:
-                    logging.error(''.join(filter(lambda c: ord(c) < 128, self.textCache)))
+                    _logger.error(''.join(filter(lambda c: ord(c) < 128, self.textCache)))
                 self.textCache = ''
 
     def OnDestroy(self, event: wx.WindowDestroyEvent) -> None:

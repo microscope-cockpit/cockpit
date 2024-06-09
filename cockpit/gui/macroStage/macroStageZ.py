@@ -62,6 +62,9 @@ import cockpit.util.userConfig
 from cockpit.gui.macroStage import macroStageBase
 
 
+_logger = logging.getLogger(__name__)
+
+
 ## Width of an altitude line.
 HEIGHT_LINE_WIDTH = 3
 
@@ -188,8 +191,12 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             slot = int((altitude - self.minY) // ALTITUDE_BUCKET_SIZE)
             if slot < 0 or slot > len(self.altitudeBuckets):
                 # This should, of course, be impossible.
-                logging.warning("Impossible experiment altitude %f (min %f, max %f)",
-                        altitude, self.minY, self.maxY)
+                _logger.warning(
+                    "Impossible experiment altitude %f (min %f, max %f)",
+                    altitude,
+                    self.minY,
+                    self.maxY,
+                )
             else:
             # bounds check slot
                 if slot < len(self.altitudeBuckets):
@@ -285,8 +292,8 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                         self.histograms = self.histograms[:-1]
 
             except Exception as e:
-                logging.error("Error updating macro stage Z status: %s", e)
-                logging.error(traceback.format_exc())
+                _logger.error("Error updating macro stage Z status: %s", e)
+                _logger.error(traceback.format_exc())
                 self.shouldDraw = False
 
         
@@ -422,7 +429,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             # our stage position info.
             self.drawEvent.set()
         except Exception as e:
-            logging.error("Error drawing Z macro stage: %s", e)
+            _logger.error("Error drawing Z macro stage: %s", e)
             traceback.print_exc()
             self.shouldDraw = False
 

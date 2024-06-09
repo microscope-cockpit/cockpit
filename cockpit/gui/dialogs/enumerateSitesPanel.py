@@ -57,6 +57,9 @@ import cockpit.gui.guiUtils
 import cockpit.interfaces.stageMover
 
 
+_logger = logging.getLogger(__name__)
+
+
 ## @package dialogs.enumerateSitesPanel
 # This module contains the EnumerateSitesPanel class
 
@@ -124,5 +127,8 @@ class EnumerateSitesPanel(wx.Panel):
                 
             return (baseIndices, baseFrequencies)
         except Exception as e:
-            logging.warning("Invalid site list \"%s\"; returning no sites", self.sites.GetValue())
+            _logger.warning(
+                "Invalid site list \"%s\"; returning no sites",
+                self.sites.GetValue()
+            )
             return []

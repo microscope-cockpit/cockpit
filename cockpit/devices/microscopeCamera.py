@@ -44,6 +44,10 @@ from cockpit.interfaces.imager import pauseVideo
 from cockpit.experiment import experiment
 from microscope import Binning, ROI, TriggerMode, TriggerType
 
+
+_logger = logging.getLogger(__name__)
+
+
 # Pseudo-enum to track whether device defaults in place.
 (DEFAULTS_NONE, DEFAULTS_PENDING, DEFAULTS_SENT) = range(3)
 
@@ -280,7 +284,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         roi = self.getROI(name)
         binning = self._proxy.get_binning()
         if not isinstance(binning, Binning):
-            logging.warning("%s returned tuple not Binning()" % self.name)
+            _logger.warning("%s returned tuple not Binning()", self.name)
             binning = Binning(*binning)
         return (roi.width//binning.h, roi.height//binning.v)
 
@@ -288,7 +292,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         """Read the ROI from the camera"""
         roi = self._proxy.get_roi()
         if not isinstance(roi, ROI):
-            logging.warning("%s returned tuple not ROI()" % self.name)
+            _logger.warning("%s returned tuple not ROI()", self.name)
             roi = ROI(*roi)
         return roi
 
@@ -384,7 +388,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         result = self._proxy.set_roi(roi)
 
         if not result:
-            logging.warning("%s could not set ROI" % self.name)
+            _logger.warning("%s could not set ROI", self.name)
 
     def softTrigger(self, name=None):
         if self.enabled:

@@ -27,6 +27,9 @@ import wx
 import wx.adv
 
 
+_logger = logging.getLogger(__name__)
+
+
 # Define a button comparison function that supports the different
 # enumeration schemes on Windows and Linux as at wxWidgets version 3.1.2.
 # Currently, different platforms enumerate changed buttons as follows:
@@ -71,7 +74,7 @@ class Joystick:
     def __init__(self, window):
         # Support for Joysticks in wx is conditional (see #870)
         if not wx.adv.USE_JOYSTICK:
-            logging.warning(
+            _logger.warning(
                 'wxWidgets was built without joystick support'
                 ' so it is disabled in Cockpit too.'
             )
@@ -80,7 +83,7 @@ class Joystick:
         # are no Joysticks connected, it errors in Mac so we really
         # need to check this (see #870)
         if wx.adv.Joystick.GetNumberJoysticks() == 0:
-            logging.info(
+            _logger.info(
                 'wxWidgets found no joysticks so support for them'
                 ' is disabled in Cockpit.'
             )

@@ -59,6 +59,9 @@ import cockpit.handlers.server
 import cockpit.util.threads
 
 
+_logger = logging.getLogger(__name__)
+
+
 class CockpitServer(device.Device):
     """Cockpit server that accepts connections from remote devices.
 
@@ -142,5 +145,7 @@ class ServerDaemon:
         try:
             self.func(*args)
         except Exception as e:
-            logging.error("ServerDaemon [%s] failed its callback: %s" % (self.name, e))
-            logging.error(traceback.format_exc())
+            _logger.error(
+                "ServerDaemon [%s] failed its callback: %s", self.name, e
+            )
+            _logger.error(traceback.format_exc())

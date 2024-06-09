@@ -24,6 +24,9 @@ import os.path
 import pprint
 
 
+_logger = logging.getLogger(__name__)
+
+
 ## @package userConfig
 # This module handles loading and saving changes to user configuration, which
 # is used to remember individual users' settings (and a few global settings)
@@ -43,7 +46,7 @@ def _loadConfig(fpath):
     except FileNotFoundError:
         config = {}
     except SyntaxError as e:
-        logging.error(
+        _logger.error(
             "invalid or corrupted user config file '%s': %s", fpath, str(e)
         )
     return config

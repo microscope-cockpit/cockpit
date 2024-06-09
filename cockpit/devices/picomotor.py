@@ -60,6 +60,10 @@ import socket
 import threading
 import time
 
+
+_logger = logging.getLogger(__name__)
+
+
 ## TODO: test with hardware.
 
 
@@ -301,7 +305,7 @@ class PicoMotorDevice(device.Device):
                 try :
                     response = self.xyConnection.recv(1024)
                 except :
-                    logging.debug(
+                    _logger.debug(
                         "in command %s, %d, No response",
                         command,
                         numExpectedLines
@@ -317,7 +321,7 @@ class PicoMotorDevice(device.Device):
         numLines = 0
         while True:
             output = self.xyConnection.recv(1024)
-            logging.debug("Picomotor responce %s", output)
+            _logger.debug("Picomotor responce %s", output)
             response += output
             numLines += 1
             if numLines == numExpectedLines:

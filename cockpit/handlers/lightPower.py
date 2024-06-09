@@ -56,6 +56,9 @@ from cockpit.handlers import deviceHandler
 import cockpit.util.userConfig
 
 
+_logger = logging.getLogger(__name__)
+
+
 ## This handler is for light sources where the power of the light can be
 # controlled through software.
 class LightPowerHandler(deviceHandler.DeviceHandler):
@@ -94,7 +97,12 @@ class LightPowerHandler(deviceHandler.DeviceHandler):
         try:
             self.setPower(targetPower)
         except Exception as e:
-            logging.warning("Failed to set prior power level %s for %s: %s" % (targetPower, self.name, e))
+            _logger.warning(
+                "Failed to set prior power level %s for %s: %s",
+                targetPower,
+                self.name,
+                e,
+            )
 
 
     def onSaveSettings(self):
