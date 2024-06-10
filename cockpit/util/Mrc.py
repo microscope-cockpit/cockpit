@@ -47,7 +47,7 @@
 ## THE POSSIBILITY OF SUCH DAMAGE.
 
 """MRC file format: refer to
-http://www.msg.ucsf.edu/IVE/IVE4_HTML/IM_ref2.html
+https://web.archive.org/web/20190129061250/http://msg.ucsf.edu/IVE/IVE4_HTML/IM_ref2.html
 
 Mrc class uses memory mapping (file size limit about 1GB (more or less)
 Mrc2 class section wise file/array I/O

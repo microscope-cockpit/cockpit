@@ -445,7 +445,7 @@ class Experiment:
 
     ## Generate the "titles" that provide extra miscellaneous information
     # about the experiment. These are part of the MRC file format spec:
-    # http://msg.ucsf.edu/IVE/IVE4_HTML/IM_ref2.html
+    # https://web.archive.org/web/20190129061250/http://msg.ucsf.edu/IVE/IVE4_HTML/IM_ref2.html
     # There can be up to 10 titles and they can have up to 80 characters each.
     # We group them by device type.
     def generateTitles(self):
