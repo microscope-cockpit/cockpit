@@ -28,6 +28,7 @@ import tempfile
 import unittest
 import unittest.mock
 
+import cockpit
 import cockpit.config
 import cockpit.devices.light
 
@@ -87,7 +88,8 @@ def patched_config_dirs(system_basedirs, user_basedir):
 
 
 def call_cockpit(*args):
-    return cockpit.config.CockpitConfig(['cockpit', *args])
+    parsed_args = cockpit._parse_cmd_line_args(["cockpit", *args])
+    return cockpit.config.CockpitConfig(parsed_args)
 
 
 class TempConfigFile:
