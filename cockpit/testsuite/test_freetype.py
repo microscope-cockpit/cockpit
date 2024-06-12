@@ -33,3 +33,7 @@ class FaceTestCase(WxTestCase):
         ## Not sure how to actual test if it gets rendered, but this
         ## should at least not error.
         self.face.render('foobar')
+
+
+if __name__ == '__main__':
+    unittest.main()

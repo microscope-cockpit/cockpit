@@ -50,3 +50,7 @@ class PostpadTestCase(unittest.TestCase):
         data = numpy.ones((3,))
         padded = sim.postpad_data(data, (3,))
         self.assertEqual(padded.size, 3)
+
+
+if __name__ == '__main__':
+    unittest.main()

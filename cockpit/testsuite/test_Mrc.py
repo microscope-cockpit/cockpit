@@ -55,3 +55,7 @@ class TruncatedMrcFiles(unittest.TestCase):
                 numel = case[0]
                 shape = case[1]
                 Mrc.adjusted_data_shape(numel, shape)
+
+
+if __name__ == '__main__':
+    unittest.main()
