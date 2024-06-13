@@ -45,7 +45,29 @@ The format of this file is defined in the :ref:`Depot configuration
 else's file as a starting point.  Some example configuration files can
 be found `here <https://github.com/MicronOxford/configs>`__.
 
+An alternative approach is to start with no configuration file which
+will run cockpit with a predefined set of simulated devices. You can
+then start adding devices to the depot config file one at a
+time. Restart cockpit to test each device to ensure it is working. As real
+devices are added the simulated device will be deactivated. 
+testing each as it is 
+
 Once the file is created, verify that the depot file is working
 correctly, and devices are connected with::
 
     python3 -m cockpit.status
+
+Critical Components
+===================
+
+Cockpit was developed for performing experiments with highly
+dependable timing. For this reason the experiment module is designed
+around having an external hardware timing device, referenced in the
+code as the ``executor``. This device accepts a table of timings for
+the experiment and then is able to generate digital triggers and
+optionally analog voltage signals at specified timings. There are two
+currently supported options, a Red Pitaya single board computer, or a
+National Instruments cRO FPGA card.
+
+Additionally Cockpit requires a motorized stage, at least one camera,
+at least one light source and at least one objective.
