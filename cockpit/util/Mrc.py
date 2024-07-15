@@ -961,7 +961,7 @@ def init_simple(hdr, mode, nxOrShape, ny=None, nz=None):
     hdr.type= 0
     hdr.nspg= 0
     hdr.next= 0
-    hdr.dvid= 0xc0a0
+    hdr.dvid = -16224
     hdr.blank= 0
     hdr.NumIntegers= 0
     hdr.NumFloats= 0
