@@ -49,7 +49,7 @@ class Primitive:
         The primitive identifier may be in quotes, and values may be separated
         by any combination of spaces, commas and semicolons.
         """
-        p = re.split('[ |,|;]+', re.sub("['|\"]", '', spec))
+        p = re.split(r'[ |,|;]+', re.sub(r"['|\"]", '', spec))
         pType = p[0]
         pData = tuple(map(float, p[1:]))
         # Spec is a type and some data
