@@ -79,5 +79,5 @@ class DummyAnalogDevice(device.Device):
         # Add indexed positions if specified in config.
         positions = self.config.get('positions', None)
         if positions:
-            h.positions = map(float, re.split('[;,]\s*', positions))
+            h.positions = map(float, re.split(r'[;,]\s*', positions))
         return [h]

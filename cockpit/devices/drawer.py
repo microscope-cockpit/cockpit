@@ -80,16 +80,16 @@ class Drawer(device.Device):
             self.config = config
         else:
             config = self.config
-        cameras = re.split('[;, ]\s*', config['cameras'])
+        cameras = re.split(r'[;, ]\s*', config['cameras'])
         settings = []
         for key, item in config.items():
             if key in ['type', 'cameras']:
                 continue
-            filters = re.split('[,;]\s*', item)
+            filters = re.split(r'[,;]\s*', item)
             if filters:
                 if len(filters) != len(cameras):
                     raise Exception('Drawer: mismatch between number of cameras and filters.')
-                dyes, wls = zip(*[re.split('[:]\s*', f) for f in filters])
+                dyes, wls = zip(*[re.split(r'[:]\s*', f) for f in filters])
                 settings.append(DrawerSettings(key, cameras, dyes, wls))
         return settings
 

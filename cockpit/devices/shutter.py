@@ -31,7 +31,7 @@ class ShutterDevice(device.Device):
         super().__init__(name, config)
         lights = config.get('lights', None)
         if lights:
-            self.lights = re.split('[,;: ]\s*', lights)
+            self.lights = re.split(r'[,;: ]\s*', lights)
         else:
             self.lights = None
 
