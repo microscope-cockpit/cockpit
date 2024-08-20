@@ -210,7 +210,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         self.experimentAltitudes = list(
                 cockpit.util.userConfig.getValue('experimentAltitudes', default=[])
         )
-        self.experimentAltitudes.append(self.curStagePosition[2])
+        self.experimentAltitudes.append(float(self.curStagePosition[2]))
         cockpit.util.userConfig.setValue('experimentAltitudes', self.experimentAltitudes)
         self.calculateHistogram()
 
