@@ -415,7 +415,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             # Draw direction of stage motion, if any
             if abs(motorPos - self.prevStagePosition[2]) > .01:
                 delta = motorPos - self.prevStagePosition[2]
-                if abs(delta) > macroStageBase.MIN_DELTA_TO_DISPLAY:
+                if abs(delta) > self._min_delta_to_display:
                     lineCenterX = scaleX + self.horizLineLength / 2
                     self.drawArrow(
                             (lineCenterX, motorPos), 

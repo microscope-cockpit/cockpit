@@ -398,7 +398,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             # Draw direction of motion
             delta = motorPos - self.prevStagePosition[:2]
 
-            if sum(numpy.fabs(delta)) > macroStageBase.MIN_DELTA_TO_DISPLAY:
+            if sum(numpy.fabs(delta)) > self._min_delta_to_display:
                 self.drawArrow((motorPos[0]- self.offset[0],
                                 motorPos[1]+self.offset[1]), delta, (0, 0, 1),
                         arrowSize = self.maxExtent * .1,

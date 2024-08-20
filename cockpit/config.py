@@ -176,6 +176,7 @@ def _default_cockpit_config():
         'stage' : {
             # A list of primitives to draw on the macrostage display.
             'primitives' : '',
+            'min-delta-to-display': '0.01',
             ## TODO: come up with sensible defaults.  These are historical.
             'dishAltitude' : '7570',
             'slideAltitude' : '7370',

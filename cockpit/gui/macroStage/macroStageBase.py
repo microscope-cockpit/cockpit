@@ -65,9 +65,6 @@ import cockpit.interfaces.stageMover
 # This module contains the MacroStageBase base class, used by the MacroStageXY
 # and MacroStageZ classes, as well as some shared constants.
 
-## Don't bother showing a movement arrow for
-# movements smaller than this.
-MIN_DELTA_TO_DISPLAY = .01
 ## Line thickness for the arrow
 ARROW_LINE_THICKNESS = 3.5
 ## Bluntness of the arrowhead (pi/2 == totally blunt)
@@ -100,6 +97,12 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.minY = 0
         ## Y values above this are off the canvas
         self.maxY = 1000
+
+        ## Don't bother showing a movement arrow for movements smaller
+        ## than this.
+        self._min_delta_to_display = wx.GetApp().Config['stage'].getfloat(
+            'min-delta-to-display', 0.01
+        )
 
         ## (X, Y, Z) vector describing the stage position as of the last
         # time we drew ourselves. We need this to display motion deltas.
