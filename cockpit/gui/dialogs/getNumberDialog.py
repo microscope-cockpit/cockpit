@@ -148,10 +148,14 @@ class GetManyNumbersDialog(wx.Dialog):
 def getNumberFromUser(parent, title, prompt, default, atMouse=True):
     dialog = GetNumberDialog(parent, title, prompt, default, atMouse)
     dialog.ShowModal()
-    return dialog.getValue()
+    value = dialog.getValue()
+    dialog.Destroy()
+    return value
     
 
 def getManyNumbersFromUser(parent, title, prompts, defaultValues, atMouse=True):
     dialog = GetManyNumbersDialog(parent, title, prompts, defaultValues, atMouse)
     dialog.ShowModal()
-    return dialog.getValues()
+    value = dialog.getValues()
+    dialog.Destroy()
+    return value
