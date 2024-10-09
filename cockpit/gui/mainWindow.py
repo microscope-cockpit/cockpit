@@ -437,8 +437,14 @@ class WindowsMenu(wx.Menu):
         menu_item = self.Append(wx.ID_ANY, item='Reset window positions')
         self.Bind(wx.EVT_MENU, self.OnResetWindowPositions, menu_item)
 
-        # A separator between the window menu items and the other
-        # extra windows.
+        # A separator between "Reset window positions" and the Cockpit
+        # window menu items.
+        self.AppendSeparator()
+        self._first_cockpit_window_pos = self.GetMenuItemCount()
+        self._next_cockpit_window_pos = self.GetMenuItemCount()
+
+        # A separator between the Cockpit window menu items and the
+        # other extra windows.
         self.AppendSeparator()
 
         # Add item to launch valueLogViewer (XXX: this should be
@@ -482,6 +488,7 @@ class WindowsMenu(wx.Menu):
         main_window = wx.GetApp().GetTopWindow()
         all_windows = {w for w in wx.GetTopLevelWindows() if w is not main_window}
 
+        new_menu_items = False
         for window in all_windows.difference(self._id_to_window.values()):
             if not window.Title:
                 # We have bogus top-level windows because of the use
@@ -492,11 +499,29 @@ class WindowsMenu(wx.Menu):
             self.Bind(wx.EVT_MENU, self.OnWindowTitle, menu_item)
             self._id_to_window[menu_item.Id] = window
 
-            # Place this menu item after the "Reset window positions"
-            # but before the log viewer and debug window.
-            position = len(self._id_to_window)
-            self.Insert(position, menu_item)
+            # Place this menu item between the separators that group
+            # the cockpit windows.
+            self.Insert(self._next_cockpit_window_pos, menu_item)
+            self._next_cockpit_window_pos += 1
+            new_menu_items = True
 
+        if new_menu_items:
+            self._SortCockpitWindowMenuItems()
+
+
+    def _SortCockpitWindowMenuItems(self) -> None:
+        # Remove menu items from the menu, pair them with the window,
+        # sort the menu items based on the window name, and then
+        # re-insert the menu items by order.
+        menu_item_and_window_pairs = []
+        for menu_item_id, window in self._id_to_window.items():
+            menu_item = self.Remove(menu_item_id)
+            menu_item_and_window_pairs.append((menu_item, window))
+
+        menu_item_and_window_pairs.sort(key=lambda x: x[1].GetTitle())
+
+        for i, (menu_item, _) in enumerate(menu_item_and_window_pairs):
+            self.Insert(self._first_cockpit_window_pos + i, menu_item)
 
     def OnResetWindowPositions(self, event: wx.CommandEvent) -> None:
         del event
