@@ -59,7 +59,6 @@ import wx
 
 from cockpit import events
 from cockpit.gui.primitive import Primitive
-import cockpit.gui.dialogs.getNumberDialog
 import cockpit.interfaces
 import cockpit.interfaces.stageMover
 
