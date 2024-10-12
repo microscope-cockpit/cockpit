@@ -450,15 +450,9 @@ class WindowsMenu(wx.Menu):
         # Add item to launch valueLogViewer (XXX: this should be
         # handled by some sort of plugin system and not hardcoded).
         menu_item = self.Append(wx.ID_ANY, "Launch ValueLogViewer")
-        logs = valueLogger.ValueLogger.getLogFiles()
-        if not logs:
+        self.Bind(wx.EVT_MENU, self.OnLaunchValueLogViewer, menu_item)
+        if not valueLogger.ValueLogger.getLogFiles():
             menu_item.Enable(False)
-        else:
-            shell = sys.platform == 'win32'
-            args = [sys.executable, csv_plotter.__file__] + logs
-            self.Bind(wx.EVT_MENU,
-                      lambda e: subprocess.Popen(args, shell=shell),
-                      menu_item)
 
         # This is only for the piDIO and executor, both of which are a
         # window to set lines high/low.  We should probably have a
@@ -549,6 +543,16 @@ class WindowsMenu(wx.Menu):
         # coordinates.
         if wx.Display.GetFromWindow(window) == wx.NOT_FOUND:
             window.SetPosition(wx.GetMousePosition())
+
+    def OnLaunchValueLogViewer(self, event: wx.CommandEvent) -> None:
+        subprocess.Popen(
+            args=[
+                sys.executable,
+                csv_plotter.__file__,
+                *valueLogger.ValueLogger.getLogFiles()
+            ],
+            shell=(sys.platform == 'win32'),
+        )
 
 
 class MainWindow(wx.Frame):
