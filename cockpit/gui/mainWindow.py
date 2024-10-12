@@ -79,8 +79,9 @@ from cockpit.gui import keyboard
 import cockpit.util.userConfig
 from cockpit.gui import viewFileDropTarget
 from cockpit.gui import mainPanels
-from cockpit.util.valueLogger import ValueLogger
 from cockpit.util.csv_plotter import CSVPlotter
+from cockpit.util.intensity import IntensityProfilerFrame
+from cockpit.util.valueLogger import ValueLogger
 
 
 ROW_SPACER = 12
@@ -452,6 +453,11 @@ class WindowsMenu(wx.Menu):
         if not ValueLogger.getLogFiles():
             menu_item.Enable(False)
 
+        # Add item to launch SIM Intensity profile (XXX: this should
+        # be handled by some sort of plugin system and not hardcoded).
+        menu_item = self.Append(wx.ID_ANY, "Launch SIM Intensity Profile")
+        self.Bind(wx.EVT_MENU, self.OnLaunchSIMIntensityProfile, menu_item)
+
         # This is only for the piDIO and executor, both of which are a
         # window to set lines high/low.  We should probably have a
         # general window for this which we could use for all executor
@@ -546,6 +552,10 @@ class WindowsMenu(wx.Menu):
         log_files = ValueLogger.getLogFiles()
         window = CSVPlotter(None)
         window.add_data_sources(log_files, defer_open=True)
+        window.Show()
+
+    def OnLaunchSIMIntensityProfile(self, event: wx.CommandEvent) -> None:
+        window = IntensityProfilerFrame(wx.GetApp().MainWindow)
         window.Show()
 
 

@@ -206,8 +206,7 @@ class CockpitApp(wx.App):
                                 'cockpit.gui.mosaic.window',
                                 'cockpit.gui.macroStage.macroStageWindow',
                                 'cockpit.gui.shellWindow',
-                                'cockpit.gui.touchscreen',
-                                'cockpit.util.intensity']:
+                                'cockpit.gui.touchscreen']:
                 module = importlib.import_module(module_name)
                 status.Update(updateNum, ' ... ' + module_name)
                 updateNum += 1
