@@ -732,7 +732,7 @@ class MicroscopeDIO(MicroscopeBase):
         
     ## Debugging function: display a debug window.
     def showDebugWindow(self):
-        self.DIOdebugWindow=DIOOutputWindow(self, parent=wx.GetApp().GetTopWindow()).Show()
+        self.DIOdebugWindow=DIOOutputWindow(self, parent=wx.GetApp().MainWindow).Show()
 
     def getHandlers(self):
         """Return device handlers."""

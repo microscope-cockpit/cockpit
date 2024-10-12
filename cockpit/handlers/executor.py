@@ -221,7 +221,7 @@ class ExecutorHandler(DeviceHandler):
             except:
                 pass
         # If we get this far, we need to create a new window.
-        _windowInstance = ExecutorDebugWindow(self, parent=wx.GetApp().GetTopWindow())
+        _windowInstance = ExecutorDebugWindow(self, parent=wx.GetApp().MainWindow)
         _windowInstance.Show()
 
     def onPrepareForExperiment(self, experiment):

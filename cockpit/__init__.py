@@ -132,6 +132,10 @@ class CockpitApp(wx.App):
     def Stage(self):
         return self._stage
 
+    @property
+    def MainWindow(self):
+        return self._main_window
+
     def OnInit(self):
         try:
             # Ideally we would set this per device but Pyro4 config is
@@ -186,8 +190,8 @@ class CockpitApp(wx.App):
             status.Update(updateNum, "Initializing user interface...")
             updateNum+=1
 
-            main_window = cockpit.gui.mainWindow.makeWindow()
-            self.SetTopWindow(main_window)
+            self._main_window = cockpit.gui.mainWindow.makeWindow()
+            self.SetTopWindow(self._main_window)
 
             # Now that the main window exists, we can reparent the
             # logging window like all the other ones.
@@ -196,7 +200,7 @@ class CockpitApp(wx.App):
             # recommended.  We should be using child.Reparent(parent)
             # but that fails pretty bad in wxMSW and wxOSX (see issue
             # #618 and https://trac.wxwidgets.org/ticket/18785)
-            main_window.AddChild(logging_window)
+            self._main_window.AddChild(logging_window)
 
             for module_name in ['cockpit.gui.camera.window',
                                 'cockpit.gui.mosaic.window',
@@ -207,13 +211,13 @@ class CockpitApp(wx.App):
                 module = importlib.import_module(module_name)
                 status.Update(updateNum, ' ... ' + module_name)
                 updateNum += 1
-                module.makeWindow(main_window)
+                module.makeWindow(self._main_window)
 
             self.SetWindowPositions()
 
-            main_window.Show()
+            self._main_window.Show()
             for window in wx.GetTopLevelWindows():
-                if window is main_window:
+                if window is self._main_window:
                     continue
                 # Cockpit assumes we have window singleton, so bind
                 # close event to hide them.
