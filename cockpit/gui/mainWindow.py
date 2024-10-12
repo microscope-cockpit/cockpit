@@ -57,8 +57,6 @@
 import io
 import os.path
 import pkg_resources
-import subprocess
-import sys
 import typing
 from configparser import ConfigParser
 from itertools import chain
@@ -81,8 +79,8 @@ from cockpit.gui import keyboard
 import cockpit.util.userConfig
 from cockpit.gui import viewFileDropTarget
 from cockpit.gui import mainPanels
-from cockpit.util import valueLogger
-from cockpit.util import csv_plotter
+from cockpit.util.valueLogger import ValueLogger
+from cockpit.util.csv_plotter import CSVPlotter
 
 
 ROW_SPACER = 12
@@ -451,7 +449,7 @@ class WindowsMenu(wx.Menu):
         # handled by some sort of plugin system and not hardcoded).
         menu_item = self.Append(wx.ID_ANY, "Launch ValueLogViewer")
         self.Bind(wx.EVT_MENU, self.OnLaunchValueLogViewer, menu_item)
-        if not valueLogger.ValueLogger.getLogFiles():
+        if not ValueLogger.getLogFiles():
             menu_item.Enable(False)
 
         # This is only for the piDIO and executor, both of which are a
@@ -545,14 +543,10 @@ class WindowsMenu(wx.Menu):
             window.SetPosition(wx.GetMousePosition())
 
     def OnLaunchValueLogViewer(self, event: wx.CommandEvent) -> None:
-        subprocess.Popen(
-            args=[
-                sys.executable,
-                csv_plotter.__file__,
-                *valueLogger.ValueLogger.getLogFiles()
-            ],
-            shell=(sys.platform == 'win32'),
-        )
+        log_files = ValueLogger.getLogFiles()
+        window = CSVPlotter(None)
+        window.add_data_sources(log_files, defer_open=True)
+        window.Show()
 
 
 class MainWindow(wx.Frame):
