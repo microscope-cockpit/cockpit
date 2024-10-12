@@ -150,11 +150,10 @@ class CockpitApp(wx.App):
             self.Depot.initialize(depot_config)
 
             numDevices = len(depot_config.sections()) + 1 # +1 for dummy devices
-            numNonDevices = 15
+            numNonDevices = 10
             status = wx.ProgressDialog(parent = None,
                     title = "Initializing Cockpit",
                     message = "Importing modules...",
-                    ## Fix maximum: + 1 is for dummy devices
                     maximum = numDevices + numNonDevices)
             status.Show()
 
