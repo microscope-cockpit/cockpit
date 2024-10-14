@@ -69,6 +69,7 @@ class CamerasWindow(wx.Frame):
 
     """
     SHOW_DEFAULT = True
+    LIST_AS_COCKPIT_WINDOW = True
     def __init__(self, parent):
         super().__init__(parent, title="Camera views")
 

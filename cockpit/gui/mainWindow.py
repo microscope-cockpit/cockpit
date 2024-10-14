@@ -488,10 +488,10 @@ class WindowsMenu(wx.Menu):
 
         new_menu_items = False
         for window in all_windows.difference(self._id_to_window.values()):
-            if not window.Title:
-                # We have bogus top-level windows because of the use
-                # of AuiManager on the logging window (see issue #617)
-                # so skip windows without a title.
+            ## Windows with this attribute need to exist but may be
+            ## hidden (see #745)
+            should_be_listed = getattr(window, 'LIST_AS_COCKPIT_WINDOW', False)
+            if not should_be_listed:
                 continue
             menu_item = wx.MenuItem(self, wx.ID_ANY, window.Title)
             self.Bind(wx.EVT_MENU, self.OnWindowTitle, menu_item)

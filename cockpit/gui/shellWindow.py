@@ -22,6 +22,7 @@ import wx.py.shell
 
 class ShellWindow(wx.py.shell.ShellFrame):
     SHOW_DEFAULT = False
+    LIST_AS_COCKPIT_WINDOW = True
 
 def makeWindow(parent):
     window = ShellWindow(parent)

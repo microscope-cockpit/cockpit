@@ -65,6 +65,7 @@ _logger = logging.getLogger(__name__)
 # debugging in many ways.
 class LoggingWindow(wx.Frame):
     SHOW_DEFAULT = False
+    LIST_AS_COCKPIT_WINDOW = True
     def __init__(self, parent, title='Logging panels'):
         super().__init__(parent, title=title)
 

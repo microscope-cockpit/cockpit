@@ -328,6 +328,7 @@ class MosaicCommon:
 ## This class handles the UI of the mosaic.
 class MosaicWindow(wx.Frame, MosaicCommon):
     SHOW_DEFAULT = True
+    LIST_AS_COCKPIT_WINDOW = True
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         sizer = wx.BoxSizer(wx.HORIZONTAL)

@@ -364,6 +364,7 @@ class MacroStagePanel(wx.Panel):
 
 class MacroStageWindow(wx.Frame):
     SHOW_DEFAULT = True
+    LIST_AS_COCKPIT_WINDOW = True
     def __init__(self, parent, title='Macro Stage'):
         super().__init__(parent, title=title)
         panel = MacroStagePanel(self)
