@@ -29,7 +29,6 @@ import sys
 from collections import OrderedDict
 import wx
 import wx.propgrid
-import cockpit.gui.guiUtils
 from cockpit.handlers.deviceHandler import STATES
 import cockpit.util.userConfig
 import cockpit.util.threads
@@ -169,21 +168,6 @@ class MultilineDisplay(wx.StaticText):
             kwargs['size'] = (DEFAULT_SIZE[0], n * DEFAULT_SIZE[1])
         super().__init__(*args, **kwargs)
         self.SetFont(self.GetFont().Smaller())
-
-
-class Menu(wx.Menu):
-    def __init__(self, menuItems, menuCallback):
-        """Initialise a menu of menuItems that are handled by menuCallback."""
-        super().__init__()
-        for i, item in enumerate(menuItems):
-            if len(item):
-                self.Append(i, item, '')
-                self.Bind(wx.EVT_MENU,  lambda event, index=i, item=item:menuCallback(index, item), id= i)
-            else:
-                self.AppendSeparator()
-
-    def show(self, event):
-        cockpit.gui.guiUtils.placeMenuAtMouse(event.GetEventObject(), self)
 
 
 class EnumChoice(wx.Choice):
