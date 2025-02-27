@@ -306,7 +306,7 @@ class PhysikInstrumenteM687(Device):
             self.sendXYPositionUpdates()
             msg = 'Homing successful.'
 
-        cockpit.gui.guiUtils.showHelpDialog(None, msg)
+        wx.MessageBox(msg, style=(wx.ICON_INFORMATION | wx.OK))
 
         return success
 

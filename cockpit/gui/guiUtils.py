@@ -232,12 +232,6 @@ def makeLightsControls(parent, labels, defaults):
     return controls, sizer
 
 
-
-## Show an informative dialog
-def showHelpDialog(parent, text):
-    wx.MessageBox(text, style=(wx.ICON_INFORMATION | wx.OK), parent=parent)
-
-
 ## Add some explanatory text to the given sizer.
 def addHelperString(parent, sizer, text, border = 0, flags = wx.ALL):
     label = wx.StaticText(parent, -1, " (What is this?)")
