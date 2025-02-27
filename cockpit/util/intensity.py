@@ -69,11 +69,12 @@ class IntensityProfiler:
                 self._data = Mrc(src, 'r').data_withMrc(src)
             yield
         except IOError:
-            dlg = wx.MessageDialog(wx.GetTopLevelWindows()[0],
-                            "Could not open data file: it may have been moved or deleted.",
-                            caption="IO Error",
-                            style = wx.OK)
-            dlg.ShowModal()
+            wx.MessageBox(
+                "Could not open data file: it may have been moved or deleted.",
+                caption="IO Error",
+                style=wx.OK,
+                parent=wx.GetTopLevelWindows()[0],
+            )
             yield
         finally:
             if isOutermostCall:

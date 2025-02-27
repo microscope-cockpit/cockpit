@@ -235,8 +235,7 @@ def makeLightsControls(parent, labels, defaults):
 
 ## Show an informative dialog
 def showHelpDialog(parent, text):
-    wx.MessageDialog(parent, text,
-            style = wx.ICON_INFORMATION | wx.OK).ShowModal()
+    wx.MessageBox(text, style=(wx.ICON_INFORMATION | wx.OK), parent=parent)
 
 
 ## Add some explanatory text to the given sizer.

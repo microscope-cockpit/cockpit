@@ -420,9 +420,11 @@ class ExperimentConfigPanel(wx.Panel):
         cameras = list(filter(lambda c: c.getIsEnabled(),
                 wx.GetApp().Depot.getHandlersOfType(depot.CAMERA)))
         if not cameras:
-            wx.MessageDialog(self,
-                    message = "No cameras are enabled, so the experiment cannot be run.",
-                    style = wx.ICON_EXCLAMATION | wx.STAY_ON_TOP | wx.OK).ShowModal()
+            wx.MessageBox(
+                "No cameras are enabled, so the experiment cannot be run.",
+                style=(wx.ICON_EXCLAMATION | wx.STAY_ON_TOP | wx.OK),
+                parent=self,
+            )
             return True
 
         exposureSettings = []

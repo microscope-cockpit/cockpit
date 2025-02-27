@@ -956,9 +956,11 @@ class MosaicWindow(wx.Frame, MosaicCommon):
         sites = self.getSelectedSites()
         positions = [s.position for s in sites]
         if len(positions) < 3:
-            wx.MessageDialog(self,
-                    "Please select at least 3 in-focus sites.",
-                    "Insufficient input.").ShowModal()
+            wx.MessageBox(
+                "Please select at least 3 in-focus sites.",
+                caption="Insufficient input.",
+                parent=self,
+            )
             return
         positions = numpy.array(positions)
         # Pick a point in the plane, as the average of all site positions.

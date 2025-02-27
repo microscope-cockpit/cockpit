@@ -606,9 +606,20 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
         try:
             doc = cockpit.util.datadoc.DataDoc(mrcPath)
         except Exception as e:
-            wx.MessageDialog(self.GetParent(), 
-                    message = "I was unable to load the MRC file at\n%s\nholding the tile data. The error message was:\n\n%s\n\nPlease verify that the file path is correct and the file is valid." % (mrcPath, e),
-                    style = wx.ICON_INFORMATION | wx.OK).ShowModal()
+            wx.MessageBox(
+                (
+                    "I was unable to load the MRC file at\n"
+                    "%s\n"
+                    "holding the tile data. The error message was:\n"
+                    "\n"
+                    "%s\n"
+                    "\n"
+                    "Please verify that the file path is correct and the file is valid."
+                    % (mrcPath, e)
+                ),
+                style=(wx.ICON_INFORMATION | wx.OK),
+                parent=self.GetParent(),
+            )
             return
         # NOTE: this dialog is not safe to Update, since the update calls must
         # be referred to the main thread (via wx.CallAfter) and may arrive
@@ -638,9 +649,16 @@ class MosaicCanvas(wx.glcanvas.GLCanvas):
                 self.addImage(data, stats[:3], stats[3:5], stats[7:9], 
                             int(stats[9]))
             except Exception as e:
-                wx.MessageDialog(self.GetParent(),
-                        "Failed to load line %d of file %s: %s.\n\nPlease see the logs for more details." % (i, filePath, e),
-                        style = wx.ICON_INFORMATION | wx.OK).ShowModal()
+                wx.MessageBox(
+                    (
+                        "Failed to load line %d of file %s: %s.\n"
+                        "\n"
+                        "Please see the logs for more details."
+                        % (i, filePath, e)
+                    ),
+                    style=(wx.ICON_INFORMATION | wx.OK),
+                    parent=self.GetParent(),
+                )
                 _logger.error(traceback.format_exc())
                 wx.PostEvent(self.GetEventHandler(), ProgressEndEvent())
                 return
