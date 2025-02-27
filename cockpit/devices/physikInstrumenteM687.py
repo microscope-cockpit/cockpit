@@ -301,13 +301,12 @@ class PhysikInstrumenteM687(Device):
             if state != b'1':
                 msg += 'There was a problem homing motor %s.\n' % motor.decode()
                 success = False
-        
-        if not success:
-            cockpit.gui.guiUtils.showHelpDialog(None, msg)
-        else:
+
+        if success:
             self.sendXYPositionUpdates()
-            cockpit.gui.guiUtils.showHelpDialog(None, 'Homing successful.')
-            
+            msg = 'Homing successful.'
+
+        cockpit.gui.guiUtils.showHelpDialog(None, msg)
 
         return success
 
