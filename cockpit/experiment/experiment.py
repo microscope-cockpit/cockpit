@@ -229,6 +229,8 @@ class Experiment:
                       "\n    'Cancel' to go back and change parameters."
             if not guiUtils.getUserPermission(warning):
                 return False
+            #set repDuration to the last table action
+            self.repDuration= float(self.table.lastActionTime) / 1000.0
 
         if not self.lastMinuteActions():
             return False
