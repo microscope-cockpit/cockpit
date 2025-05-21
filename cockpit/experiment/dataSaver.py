@@ -149,6 +149,12 @@ class DataSaver:
                                                    * self.planeBytes
                                                    * len(self.cameras)
                                                    / 1024.0 / 1024.0)
+        #Now check that there are less than 2^15 -1 images per channel as
+        #dv files can't index more than this.
+        if (self.maxRepsPerFile * self.maxImagesPerRep) > (2**15)-1:
+            #then ensure that we split files at the end of a time point
+            # // operator is floor division
+            self.maxRepsPerFile = ((2**15)-1) // self.maxImagesPerRep
         # Sanity check.
         self.maxRepsPerFile = max(self.maxRepsPerFile, 1)
         ## Whether or not we need to split the data into multiple files.
