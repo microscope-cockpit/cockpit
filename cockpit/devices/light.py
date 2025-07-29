@@ -36,7 +36,7 @@ class SimpleLight(cockpit.devices.device.Device):
     .. code:: ini
 
         [led source]
-        type: cockpip.devices.light.SimpleLight
+        type: cockpit.devices.light.SimpleLight
         triggerSource: NAME_OF_EXECUTOR_DEVICE
         triggerLine: 1
 
