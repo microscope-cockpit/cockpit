@@ -405,7 +405,7 @@ class IntensityProfilerFrame(wx.Frame):
         img = np.dstack((proj, proj, proj))
         nx, ny = proj.shape
         self.bitmap.Bitmap.SetSize((nx,ny))
-        self.bitmap.Bitmap.CopyFromBuffer(img.tostring())
+        self.bitmap.Bitmap.CopyFromBuffer(img.tobytes())
 
         # Update the canvas.
         self.plotCanvas.Clear()

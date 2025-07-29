@@ -502,7 +502,7 @@ class DataDoc:
 
             # Write out the header.
             outputFile = open(savePath, 'wb')
-            outputFile.write(newHeader._array.tostring())
+            outputFile.write(newHeader._array.tobytes())
 
         # Slices to use to crop out the 3D volume we want to use for each
         # wave-timepoint pair.
@@ -680,7 +680,7 @@ def makeHeaderForShape(shape, dtype, XYSize = None, ZSize = None,
 ## Write just a header to the provided filehandle.
 def writeMrcHeader(header, filehandle):
     filehandle.seek(0)
-    filehandle.write(header._array.tostring())
+    filehandle.write(header._array.tobytes())
 
 
 ## Write out the provided data array as if it were an MRC file. Note that

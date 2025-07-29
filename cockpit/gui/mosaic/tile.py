@@ -199,10 +199,10 @@ class Tile:
         pic_ny, pic_nx = img.shape
         if img.dtype.type in (numpy.float64, numpy.int32, numpy.uint32):
             data = img.astype(numpy.float32)
-            imgString = data.tostring()
+            imgString = data.tobytes()
             imgType = numpy.float32
         else:
-            imgString = img.tostring()
+            imgString = img.tobytes()
             imgType = img.dtype.type
             
         # maxUShort: value that represents "maximum color" - i.e. white
