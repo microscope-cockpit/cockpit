@@ -112,12 +112,10 @@ class NIcRIO(executorDevices.ExecutorDevice):
         self.connection.connect()
         self.connection.Abort()
 
-    @cockpit.util.threads.locked
-    def finalizeInitialization(self):
-        server = depot.getHandlersOfType(depot.SERVER)[0]
-        self.receiveUri = server.register(self.receiveData)
-        # for line in range(self._alines):
-        #     self.setAnalog(line, 65536//2)
+    def onExit(self) -> None:
+        if self.connection is not None:
+            self.connection.disconnect()
+        self.connection = None
 
     def onPrepareForExperiment(self, *args):  # TODO: Verify here for weird z movements
         super().onPrepareForExperiment(*args)
@@ -145,30 +143,8 @@ class NIcRIO(executorDevices.ExecutorDevice):
         """
         return self.connection.MoveAbsolute(line, target)
 
-    def getHandlers(self):
-        """We control which light sources are active, as well as a set of stage motion piezos.
-        """
-        result = list()
-        h = cockpit.handlers.executor.AnalogDigitalExecutorHandler(
-            self.name, "executor",
-            {'examineActions': lambda *args: None,
-             'executeTable': self.executeTable,
-             'readDigital': self.connection.ReadDigital,
-             'writeDigital': self.connection.WriteDigital,
-             'getAnalog': self.getAnalog,
-             'setAnalog': self.setAnalog,
-             'runSequence': self.runSequence,
-             },
-            dlines=self._dlines, alines=self._alines)
-
-        result.append(h)
-
-        result.append(cockpit.handlers.imager.ImagerHandler(
-            "%s imager" % self.name, "imager",
-            {'takeImage': h.takeImage}))
-
-        self.handlers = set(result)
-        return result
+    def takeImage(self):
+        pass
 
     def _adaptActions(self, actions):
         """Adapt tha actions table to the cRIO. We have to:
@@ -323,8 +299,6 @@ class Connection:
 
     def disconnect(self):
         if self.connection is not None:
-            server = depot.getHandlersOfType(depot.SERVER)[0]
-            server.unregister(self.callback)
             try:
                 self.connection.close()
             except Exception as e:
