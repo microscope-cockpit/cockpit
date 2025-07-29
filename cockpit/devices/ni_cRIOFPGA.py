@@ -44,6 +44,17 @@
 # >>> FPGA._deviceInstance.advanceSLM(numSteps)
 # (where numSteps is an integer, the number of times to advance it).
 
+"""Exemple configuration
+[cRIO]
+type: cockpit.devices.ni_cRIOFPGA.NIcRIO
+ipAddress = 10.6.19.12
+sendport = 5000
+receiveport = 6666
+tickrate = 100
+dLines = 24
+aLines = 4
+"""
+
 import json
 from time import sleep
 import socket
@@ -73,18 +84,22 @@ class NIcRIO(executorDevices.ExecutorDevice):
         'ipaddress': str,
         'sendport': int,
         'receiveport': int,
+        'tickrate': int,
+        'alines': int,
+        'dlines': int,
     }
 
     def __init__(self, name, config):
         super().__init__(name, config)
-        # TODO: tickrate should go into a config?
-        self.tickrate = 100  # Number of ticks per ms. As of the resolution of the action table.
+        self.tickrate = config.get('tickrate')  # Number of ticks per ms. As of the resolution of the action table.
         self.sendPort = config.get('sendport')
         self.receivePort = config.get('receiveport')
         self.port = [self.sendPort, self.receivePort]
-        self._currentAnalogs = 4*[0]
+        self._dlines = self.config.get('dlines')
+        self._alines = self.config.get('alines')
+        self._currentAnalogs = self._alines * [0]
         # Absolute positions prior to the start of the experiment.
-        self._lastAnalogs = 4*[0]
+        self._lastAnalogs = self._alines * [0]
         # Store last movement profile for debugging
         self._lastProfile = None
         self.connection = None
@@ -101,12 +116,12 @@ class NIcRIO(executorDevices.ExecutorDevice):
     def finalizeInitialization(self):
         server = depot.getHandlersOfType(depot.SERVER)[0]
         self.receiveUri = server.register(self.receiveData)
-        # for line in range(self.nrAnalogLines):
+        # for line in range(self._alines):
         #     self.setAnalog(line, 65536//2)
 
     def onPrepareForExperiment(self, *args):  # TODO: Verify here for weird z movements
         super().onPrepareForExperiment(*args)
-        self._lastAnalogs = [self.connection.ReadPosition(a) for a in range(self.nrAnalogLines)]
+        self._lastAnalogs = [self.connection.ReadPosition(a) for a in range(self._alines)]
         self._lastAnalogs = [line for line in self._currentAnalogs]
         self._lastDigital = self.connection.ReadDigital()
 
@@ -144,7 +159,7 @@ class NIcRIO(executorDevices.ExecutorDevice):
              'setAnalog': self.setAnalog,
              'runSequence': self.runSequence,
              },
-            dlines=self.nrDigitalLines, alines=self.nrAnalogLines)
+            dlines=self._dlines, alines=self._alines)
 
         result.append(h)
 
@@ -162,7 +177,7 @@ class NIcRIO(executorDevices.ExecutorDevice):
         - generate a structure that describes the profile
         """
         # Profiles
-        analogs = [[] for x in range(self.nrAnalogLines)]  # A list of lists (one per channel) of tuples (ticks, (analog values))
+        analogs = [[] for x in range(self._alines)]  # A list of lists (one per channel) of tuples (ticks, (analog values))
         digitals = list()  # A list of tuples (ticks, digital state)
         # # Need to track time of last analog events
         # t_last_analog = None
