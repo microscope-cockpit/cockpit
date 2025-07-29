@@ -120,7 +120,7 @@ class NIcRIO(executorDevices.ExecutorDevice):
     def onPrepareForExperiment(self, *args):  # TODO: Verify here for weird z movements
         super().onPrepareForExperiment(*args)
         self._lastAnalogs = [self.connection.ReadPosition(a) for a in range(self._alines)]
-        self._lastAnalogs = [line for line in self._currentAnalogs]
+        self._lastAnalogs = list(self._currentAnalogs)
         self._lastDigital = self.connection.ReadDigital()
 
     def experimentDone(self):
