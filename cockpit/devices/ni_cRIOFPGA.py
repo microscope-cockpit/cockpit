@@ -76,6 +76,7 @@ COCKPIT_AXES = {'x': 0, 'y': 1, 'z': 2, 'SI angle': -1}
 FPGA_IDLE_STATE = 3
 FPGA_ABORTED_STATE = 4
 FPGA_HEARTBEAT_RATE = .1  # At which rate is the FPGA sending update status signals
+FPGA_HEARTBEAT_MAX_MSG_LEN = 2048
 MASTER_IP = '10.6.19.11'
 
 
@@ -102,7 +103,6 @@ class NIcRIO(executorDevices.ExecutorDevice):
         self._lastAnalogs = self._alines * [0]
         # Store last movement profile for debugging
         self._lastProfile = None
-        self.connection = None
 
     @cockpit.util.threads.locked
     def initialize(self):
@@ -311,16 +311,10 @@ class Connection:
         """
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        except socket.error as msg:
-            print('Failed to create socket.\n', msg)
-            return 1, '1'
-
-        try:
             s.settimeout(timeout)
             s.connect((host, port))
-        except socket.error as msg:
-            print('Failed to establish connection.\n', msg)
-            return 1, '2'
+        except socket.error as e:
+            raise e
 
         return s
 
@@ -642,32 +636,34 @@ class FPGAStatus(threading.Thread):
     def __init__(self, parent, host, port):
         threading.Thread.__init__(self)
         self.parent = parent
+        self.host = host
+        self.port = port
         # Create a dictionary to store the FPGA status and a lock to access it
         self.currentFPGAStatus = {}
         self.FPGAStatusLock = threading.Lock()
 
-        self.socket = self.createReceiveSocket(host, port)
+        # Create a socket
+        self.socket = None
+        self.createReceiveSocket()
 
         # Create a handle to stop the thread
         self.shouldRun = True
 
-    def createReceiveSocket(self, host, port):
+    def createReceiveSocket(self):
         """Creates a UDP socket meant to receive status information
         form the RT-ipAddress
 
         returns the bound socket
         """
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         except socket.error as msg:
             print('Failed to create socket. Error code: ', msg)
 
         try:
-            s.bind((host, port))
+            self.socket.bind((self.host, self.port))
         except socket.error as msg:
             print('Failed to bind address.\n', msg)
-
-        return s
 
     def getStatus(self, key=None):
         """Method to call from outside to get the status
@@ -688,16 +684,18 @@ class FPGAStatus(threading.Thread):
         It will update the FPGAStatus dictionary.
         """
         try:
-            # datagramLength = int(self.socket.recvfrom(4)[0].decode())
-            datagram = self.socket.recvfrom(1024)[0]
-        except:
-            print('Error receiving status datagram: ', datagram)
-
-        try:
+            datagram = self.socket.recvfrom(FPGA_HEARTBEAT_MAX_MSG_LEN)[0]
             status = json.loads(datagram)
-        except:
+        except json.JSONDecodeError as e:
             print('Could not serialize status datagram: ', datagram)
-            return
+            print(e)
+
+            return None
+
+        # for some reason (see taiga issue #125) the returned datagram decodes as an int and the connection is lost
+        if type(status) != dict:
+            print(f'The returned status for the FPGA is not the expected type: {status}')
+            return None
 
         return status
 
@@ -708,7 +706,6 @@ class FPGAStatus(threading.Thread):
         """
         if newStatus['Event'] in ['done', 'FPGA done']:
             self.parent.parent.experimentDone()
-            # events.publish(events.EXECUTOR_DONE, self.parent.parent.name)
             newStatus['Event'] = ''
 
         return newStatus
@@ -716,9 +713,21 @@ class FPGAStatus(threading.Thread):
     def run(self):
         self.currentFPGAStatus = self.getFPGAStatus()
         update_rate = FPGA_HEARTBEAT_RATE / 2
+        retries = 0
 
         while self.shouldRun:
             newFPGAStatus = self.getFPGAStatus()
+            if retries > 300:
+                # retrying to establish connection
+                try:
+                    self.createReceiveSocket()
+                except Exception as e:
+                    print(f'The status UDP connection to the Executor is lost after {retries} retries')
+                    raise e
+
+            if newFPGAStatus is None:
+                retries += 1
+                continue
             # with self.FPGAStatusLock:
             if newFPGAStatus['Event'] != self.currentFPGAStatus['Event'] and \
                     newFPGAStatus['Event'] == 'done' and \
