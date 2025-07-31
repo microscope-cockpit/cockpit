@@ -78,7 +78,6 @@ class LightPanel(wx.Panel):
             self._timer.Start(500)
             self.Bind(wx.EVT_TIMER, self.onTimer)
 
-
         if lightFilters:
             self.Sizer.AddSpacer(4)
             self.Sizer.Add(wx.StaticText(self, label="Filters"),

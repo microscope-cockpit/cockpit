@@ -282,6 +282,8 @@ class BoulderSLM(device.Device):
         # Set up a timer to update value displays.
         self.updateTimer = wx.Timer(posDisplay)
         self.updateTimer.Start(1000)
+        #ensure that we bind the window destroy event to stop timer
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
         # Changed my mind. SIM diffraction angle is an advanced parameter,
         # so it now lives in a right-click menu rather than on a button.
         panel.Bind(wx.EVT_CONTEXT_MENU, self.onRightMouse)
@@ -291,6 +293,10 @@ class BoulderSLM(device.Device):
         powerButton.manageStateOf((triggerButton, posDisplay))
         return panel
 
+    #ensure that the timer is stopped on window destroy
+    def OnDestroy(self, event: wx.WindowDestroyEvent) -> None:
+        self.updateTimer.Stop()
+        event.Skip()
 
     def updatePositionDisplay(self, event):
         baseStr = 'angle:\t%s\nphase:\t%s\nwavel.:\t%s'

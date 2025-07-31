@@ -195,6 +195,7 @@ class CSVPlotter(wx.Frame):
         self._makeUI()
         self.Bind(wx.EVT_TIMER, self.update_data, self._watch_timer)
         self._watch_timer.Start(1000)
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
         self.Bind(wx.EVT_CLOSE, self._on_close)
 
 
@@ -221,6 +222,10 @@ class CSVPlotter(wx.Frame):
         self.trace_to_item.clear()
         self.item_to_trace.clear()
         self.tree.DeleteAllItems()
+
+    def OnDestroy(self, event: wx.WindowDestroyEvent) -> None:
+        self._watch_timer.Stop()
+        event.Skip()
 
 
     def _on_select_file(self, evt):

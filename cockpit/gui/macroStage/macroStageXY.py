@@ -223,6 +223,9 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         #poll every 1 s (1000 ms)
         self._timer.Start(1000)
         self.Bind(wx.EVT_TIMER, self.onTimer)
+        #bind to window destroy to stop timer
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
+
 
     #code that the wx timer calls to check postion on a regular basisis.
     def onTimer(self, evt):
@@ -234,6 +237,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
     def OnDestroy(self, evt):
         self._timer.Stop()
+        evt.Skip()
 
     ## Safety limits have changed, which means we need to force a refresh.
     # \todo Redrawing everything just to tackle the safety limits is a bit

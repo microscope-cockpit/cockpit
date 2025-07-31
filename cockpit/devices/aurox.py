@@ -155,7 +155,14 @@ class Clarity(microscopeDevice.MicroscopeFilter):
         # Start a timer to report connection errors.
         self._timer = wx.Timer(panel)
         self._timer.Start(1000)
+        #ensure that we bind the window destry event to stop the timer
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
         panel.Bind(wx.EVT_TIMER, self.checkStatus, self._timer)
         panel.Fit()
         self.panel = panel
         return outer
+
+    #ensure that the timer is stopped on window destroy
+    def OnDestroy(self, event: wx.WindowDestroyEvent) -> None:
+        self._timer.Stop()
+        event.Skip()

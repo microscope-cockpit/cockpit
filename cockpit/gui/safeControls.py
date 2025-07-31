@@ -295,6 +295,7 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
 
     def OnDestroy(self, evt):
         self._checkTimer.Stop()
+        evt.Skip()
 
     @property
     def Value(self):
@@ -465,6 +466,7 @@ class SetPointGauge(SafeControl, wx.Window):
         self.Bind(wx.EVT_TIMER, self.OnTimer)
         self.Bind(wx.EVT_LEFT_DCLICK, self.OnLDClick)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnDrag)
+        #bind window destroy event to allow us to stop the timer
         self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
 
         self.AcceptsFocusFromKeyboard = lambda: False
@@ -738,6 +740,7 @@ class SetPointGauge(SafeControl, wx.Window):
 
     def OnDestroy(self, evt):
         self._timer.Stop()
+        evt.Skip()
 
 
 class SpinGauge(wx.Panel):

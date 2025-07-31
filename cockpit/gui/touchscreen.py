@@ -127,6 +127,7 @@ class IconButton(wx.ToggleButton):
 
     def OnDestroy(self, evt):
         self.timer.Stop()
+        evt.Skip()
 
 
 class ActionsPanel(wx.Panel):
