@@ -335,7 +335,10 @@ class DigitalMixin:
             # Switch off each light as its exposure time expires. If exposure times are equal, keep only the last one.
             for lline, ltime in ltpairs:
                 state -= lline
-                seq.append( (ltime, state))
+                if (exposureStartTime + ltime) == seq[-1][0]:
+                    seq[-1] = (exposureStartTime + ltime, state)
+                else:
+                    seq.append((exposureStartTime + ltime, state))
         else:
             # No lights. Just trigger the cameras.
             seq = [(0, camlines)]
