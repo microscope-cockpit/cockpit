@@ -54,6 +54,9 @@ import typing
 import matplotlib.pyplot as plt
 
 import collections.abc
+
+from microscope import ElectronicShutteringMode
+
 from cockpit import depot
 from cockpit.handlers.deviceHandler import DeviceHandler
 from cockpit import events
@@ -303,6 +306,11 @@ class DigitalMixin:
             return
         camlines = sum([1<<self.digitalClients[cam] for cam in self.activeCameras])
 
+        # We want to know if there are cameras using rolling shutter. If so, cameras must be triggered in advance
+        exposureStartTime = [cam.getTimeBetweenExposures() for cam in self.activeCameras
+                             if cam.getShutteringMode() == ElectronicShutteringMode.ROLLING]
+        exposureStartTime = max(exposureStartTime, default=0)
+
         if camlines == 0:
             # No cameras to be triggered.
             return
@@ -321,9 +329,11 @@ class DigitalMixin:
         if ltpairs:
             # Start by all active cameras and lights.
             state = camlines | functools.reduce(operator.ior, list(zip(*ltpairs))[0])
-            seq = [(0, state)]
-            # Switch off each light as its exposure time expires.
-            for  lline, ltime in ltpairs:
+            if exposureStartTime != 0:
+                seq = [(0, camlines)]
+            seq.append((exposureStartTime, state))
+            # Switch off each light as its exposure time expires. If exposure times are equal, keep only the last one.
+            for lline, ltime in ltpairs:
                 state -= lline
                 seq.append( (ltime, state))
         else:

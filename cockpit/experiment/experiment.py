@@ -50,6 +50,7 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+from microscope import ElectronicShutteringMode
 
 from cockpit.experiment import dataSaver
 from cockpit import depot
@@ -567,16 +568,27 @@ class Experiment:
                 maxExposureTime = max(maxExposureTime,
                         nextReadyTime - exposureStartTime)
 
+            # If the camera has a rolling shutter we need to add to the camera exposure time the readout time
+            # to ensure that all the pixels are exposed when we turn on the lights
+            elif camera.getShutteringMode() == ElectronicShutteringMode.ROLLING:
+                maxExposureTime += (self.cameraToReadoutTime[camera] + decimal.Decimal(0.1))
+
+
         # Open the shutters for the specified exposure times, centered within
-        # the max exposure time.
+        # the max exposure time. If camera has a rolling shutter, centered in the time frame
+        # where all pixels are exposed
         # Note that a None value here means the user wanted to expose the
         # cameras without any special light.
         exposureEndTime = exposureStartTime + maxExposureTime
         for light, exposureTime, in lightTimePairs:
-            if light is not None and light.name != 'Ambient': # i.e. not ambient light
-                # Center the light exposure.
-                timeSlop = maxExposureTime - exposureTime
-                offset = timeSlop / 2
+            if light is not None and light.name != 'Ambient':  # i.e. not ambient light
+                if camera.getShutteringMode() == ElectronicShutteringMode.ROLLING:
+                    # Center with all pixels exposed
+                    offset = decimal.Decimal(0.05)  # This is half of the time that was added for security to maxExposureTime
+                else:
+                    # Center the light exposure.
+                    timeSlop = maxExposureTime - exposureTime
+                    offset = timeSlop / 2
                 table.addAction(exposureEndTime - exposureTime - offset, light, True)
                 table.addAction(exposureEndTime - offset, light, False)
             # Record this exposure time.
@@ -595,14 +607,6 @@ class Experiment:
                 table.addToggle(exposureEndTime, camera)
             elif mode == cockpit.handlers.camera.TRIGGER_DURATION:
                 table.addAction(exposureStartTime, camera, True)
-                table.addAction(exposureEndTime, camera, False)
-            elif mode == cockpit.handlers.camera.TRIGGER_DURATION_PSEUDOGLOBAL:
-                # We added some security time to the readout time that
-                # we have to remove now
-                cameraExposureStartTime = (exposureStartTime
-                                           - self.cameraToReadoutTime[camera]
-                                           - decimal.Decimal(0.005))
-                table.addAction(cameraExposureStartTime, camera, True)
                 table.addAction(exposureEndTime, camera, False)
             elif mode == cockpit.handlers.camera.TRIGGER_BEFORE:
                 table.addToggle(exposureStartTime, camera)
