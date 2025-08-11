@@ -159,7 +159,7 @@ class PositionerHandler(deviceHandler.DeviceHandler):
     def connectToAnalogSource(self, source, line, offset, gain):
         h = source.registerAnalog(self, line, offset, gain)
         # Movements are handled by the analogue handler, but need to wrap to
-        # publish postion update and stage stop events.
+        # publish position update and stage stop events.
         def wrapMoveFunc(f):
             def call(x, arg):
                 f(arg)

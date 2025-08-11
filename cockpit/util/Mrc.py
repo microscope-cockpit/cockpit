@@ -563,7 +563,7 @@ class Mrc2:
 
     def _initWhenHdrArraySet(self):
         nx, ny, nsecs =  self.hdr.Num
-        self._shape = (nsecs, ny,nx) # todo: wavelenths , times
+        self._shape = (nsecs, ny,nx) # todo: wavelengths , times
         self._shape2d = self._shape[-2:]
         self._dtype  = MrcMode2dtype( self.hdr.PixelType )
         self._secByteSize = self._dtype.itemsize * N.prod( self._shape2d )
@@ -716,7 +716,7 @@ def dtype2MrcMode(dtype):
 def shapeFromHdr(hdr, verbose=0):
     """
     return "smart" shape
-    considering numTimes, numWavelenth and hdr.ImgSequence
+    considering numTimes, numWavelength and hdr.ImgSequence
 
     if verbose:
         print somthing like: w,t,z,y,x  ot z,y,x

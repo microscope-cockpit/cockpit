@@ -86,7 +86,7 @@ IMAGES_PATH = pkg_resources.resource_filename(
 )
 
 
-## A single event type for all cockpit.events. The origian cockpit
+## A single event type for all cockpit.events. The original cockpit
 ## event data is passed back as CockpitEvent.EventData.
 CockpitEvent, EVT_COCKPIT = wx.lib.newevent.NewEvent()
 
@@ -210,7 +210,7 @@ def create_monospaced_multiline_text_ctrl(
 def ExceptionBox(caption="", parent=None):
     """Show python exception in a modal dialog.
 
-    Creates a modal dialog without any option other than dismising the
+    Creates a modal dialog without any option other than dismissing the
     exception information.  The exception traceback is displayed in a
     monospaced font and its text can be copied into the clipboard.
 

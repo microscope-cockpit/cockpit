@@ -160,7 +160,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         # Set any defaults found in userConfig.
         # TODO - migrate defaults to a universalDevice base class.
         if self.defaults != DEFAULTS_PENDING:
-            # notrhing to do
+            # nothing to do
             return
         try:
             self._proxy.update_settings(self.settings)
@@ -181,7 +181,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         self.setAnyDefaults()
 
     def _getCockpitExposureMode(self) -> int:
-        # Cockpit does not support all possible comabinations of
+        # Cockpit does not support all possible combinations of
         # trigger type and mode from Microscope.
         microscope_trigger_to_cockpit_exposure = {
             (
@@ -342,7 +342,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             wavelength=None
             if self.handler.wavelength is not None:
                 wavelength=float(self.handler.wavelength)
-            #not running experiment so poulate all data
+            #not running experiment so populate all data
             metadata={'timestamp': timestamp,
                       'wavelength': wavelength,
                   'pixelsize': wx.GetApp().Objectives.GetPixelSize(),
@@ -351,7 +351,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
                   'lensID': wx.GetApp().Objectives.GetCurrent().lens_ID,
                   'ROI': self.getROI(self.name),
                   }
-            #basic huristic to find excitation wavelength.
+            #basic heuristic to find excitation wavelength.
             #Finds active lights, sorts in reverse order and then finds the
             #first that is lower than the emission wavelength. 
             lights=[]
@@ -367,7 +367,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
                     metadata['exwavelength'] = exwavelength
                     break
         else:
-            #experiment running so populate minmum of metadata
+            #experiment running so populate minimum of metadata
             #need to add more but this should equate to the behaviour
             #we had before
             metadata={'timestamp': timestamp,}
@@ -404,7 +404,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
     ### UI functions ###
     def makeUI(self, parent):
         # TODO - this only adds a button with the button for settings.
-        # Maybe that shold all be handled in CameraPanel since the
+        # Maybe that should all be handled in CameraPanel since the
         # logic to draw the settings ins the microscope.gui package
         # anyway.
         self.panel = wx.Panel(parent)
