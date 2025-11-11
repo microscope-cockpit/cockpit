@@ -175,7 +175,7 @@ def _default_cockpit_config():
             "pyro-pickle-protocol": Pyro4.config.PICKLE_PROTOCOL_VERSION,
         },
         "log": {
-            "level": "error",
+            "level": "warning",
             "dir": _default_log_dir(),
             "filename-template": "%%Y%%m%%d_%%a-%%H%%M.log",
         },
