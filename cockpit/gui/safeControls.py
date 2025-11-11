@@ -38,11 +38,14 @@ from cockpit.gui.guiUtils import FloatValidator
 
 import wx.lib.newevent
 
-SafeControlCommitEvent, EVT_SAFE_CONTROL_COMMIT = wx.lib.newevent.NewCommandEvent()
+(
+    SafeControlCommitEvent,
+    EVT_SAFE_CONTROL_COMMIT,
+) = wx.lib.newevent.NewCommandEvent()
 SafeControlPendingEvent, EVT_SAFE_CONTROL_PENDING = wx.lib.newevent.NewEvent()
 
 
-class SafeControl():
+class SafeControl:
     """A base class for safe controls.
 
     Clients should bind actions to SafeControlCommit events.
@@ -57,7 +60,9 @@ class SafeControl():
         if cancel or self._pending is not None:
             evt = SafeControlPendingEvent(id=self.GetId(), Value=self._pending)
         elif self.Value is not None:
-            evt = SafeControlCommitEvent(id=self.GetId(), Value=self.Value, Commit=True)
+            evt = SafeControlCommitEvent(
+                id=self.GetId(), Value=self.Value, Commit=True
+            )
         else:
             return
         evt.SetEventObject(self)
@@ -83,7 +88,9 @@ class SafeControl():
                 self._pending = float(pending)
             except:
                 pass
-            self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT))
+            self.SetBackgroundColour(
+                wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+            )
 
     def Cancel(self):
         """Cancel - resets to last committed value."""
@@ -125,7 +132,15 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
     achieve the same behaviour across Mac, Linux and MSWin platforms.
     """
 
-    def __init__(self, *args, minValue=0, maxValue=float('inf'), inc=0.2, value=0, **kwargs):
+    def __init__(
+        self,
+        *args,
+        minValue=0,
+        maxValue=float("inf"),
+        inc=0.2,
+        value=0,
+        **kwargs,
+    ):
         """Initialise a SafeSpinCtrlDouble
 
         Args:
@@ -145,16 +160,22 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
         self._inc = inc
         self._committed = None
         self._checkTimer = wx.Timer(self)
-        if str(inc).find('.') != -1:
-            self._places = len(str(inc)) - str(inc).find('.') - 1
+        if str(inc).find(".") != -1:
+            self._places = len(str(inc)) - str(inc).find(".") - 1
         else:
             self._places = 0
         te = self.te = wx.TextCtrl(self)
-        if 'size' in kwargs:
-            self.te.SetInitialSize(kwargs.get('size'))
+        if "size" in kwargs:
+            self.te.SetInitialSize(kwargs.get("size"))
         else:
-            longest = max(map(len, (str(minValue), str(maxValue)))) + self._places + 2
-            self.te.SetInitialSize(te.GetSizeFromTextSize(te.GetTextExtent(longest * "0" + "-.")))
+            longest = (
+                max(map(len, (str(minValue), str(maxValue))))
+                + self._places
+                + 2
+            )
+            self.te.SetInitialSize(
+                te.GetSizeFromTextSize(te.GetTextExtent(longest * "0" + "-."))
+            )
         self.te.SetValidator(FloatValidator())
         sb = wx.SpinButton(self)
         self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -206,7 +227,9 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
         EVT_KILL_FOCUS events when they lose focus, so we use a timer to check
         focus periodically.
         """
-        if self._pending is not None and not (self.HasFocus() or self.te.HasFocus()):
+        if self._pending is not None and not (
+            self.HasFocus() or self.te.HasFocus()
+        ):
             self.Cancel()
         else:
             self._checkTimer.StartOnce(500)
@@ -252,8 +275,10 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
         Args:
           evt (wx.CommandEvent(wx.wxEVT_TEXT)): The event.
         """
-        self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT))
-        if evt.String in ['', '.', '-']:
+        self.SetBackgroundColour(
+            wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+        )
+        if evt.String in ["", ".", "-"]:
             return
         text = self.GetValue()
         self.SetPending(text)
@@ -273,9 +298,14 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
             # Cancel on escape
             self.Cancel()
             wx.CallAfter(self.ReleaseFocus)
-        elif evt.KeyCode in [wx.WXK_NUMPAD_ENTER, wx.WXK_RETURN, wx.WXK_SPACE,
-                             wx.WXK_NUMPAD_TAB, wx.WXK_TAB]:
-            if self._laststr != '':
+        elif evt.KeyCode in [
+            wx.WXK_NUMPAD_ENTER,
+            wx.WXK_RETURN,
+            wx.WXK_SPACE,
+            wx.WXK_NUMPAD_TAB,
+            wx.WXK_TAB,
+        ]:
+            if self._laststr != "":
                 # Commit on return, enter, space or tab
                 self._pending = min(max(self.Value, self._min), self._max)
                 self.Commit()
@@ -319,8 +349,8 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
         """
         if value is not None and (self.Value != value):
             s = str(value)
-            if '.' in s:
-                s = s[:s.find('.') + self._places + 1]
+            if "." in s:
+                s = s[: s.find(".") + self._places + 1]
             self.te.ChangeValue(s)
 
     def SetPending(self, pending):
@@ -346,7 +376,7 @@ class SafeSpinCtrlDouble(SafeControl, wx.Panel):
         return self.te.GetValue()
 
 
-class GaugeValue():
+class GaugeValue:
     """Parameters used to display values on a gauge, with or without set point."""
 
     def __init__(self, value=0, minVal=0, maxVal=100, tol=0.01, fetch=None):
@@ -401,7 +431,8 @@ class GaugeValue():
         """Test if the last fetched value is on target.
 
         Returns:
-          bool: Whether or not the last fetched value is within tol of the setpoint."""
+          bool: Whether or not the last fetched value is within tol of the setpoint.
+        """
         if self.last is None:
             return True
         return abs(self.last - self.setpoint) / (self.range) < self.tol
@@ -409,13 +440,23 @@ class GaugeValue():
 
 class SetPointGauge(SafeControl, wx.Window):
     """A gauge that tracks a parameter against a set-point."""
+
     # A mapping of elements to wx.Colour instances, populated by first instance.
     colours = {}
 
-    def __init__(self, parent, id=wx.ID_ANY,
-                 tolerance=.005, minValue=0, maxValue=100,
-                 fetch_current=None, margins=wx.Size(0, 3),
-                 pos=wx.DefaultPosition, size=(-1, 18), style=wx.SL_HORIZONTAL):
+    def __init__(
+        self,
+        parent,
+        id=wx.ID_ANY,
+        tolerance=0.005,
+        minValue=0,
+        maxValue=100,
+        fetch_current=None,
+        margins=wx.Size(0, 3),
+        pos=wx.DefaultPosition,
+        size=(-1, 18),
+        style=wx.SL_HORIZONTAL,
+    ):
         """Initialise a SetPointGauge
 
         Args:
@@ -434,16 +475,21 @@ class SetPointGauge(SafeControl, wx.Window):
         """
         if len(self.__class__.colours) == 0:
             # initialise colours
-            self.__class__.colours.update({
-                'setpoint': wx.Colour('yellow'),
-                'black': wx.Colour('black'),
-                'on_target': wx.Colour((127,255,0,255)), # chartreuse
-                'off_target': wx.Colour('firebrick'),
-                'scale': wx.Colour('cyan'),
-                'needle': wx.Colour('magenta')})
+            self.__class__.colours.update(
+                {
+                    "setpoint": wx.Colour("yellow"),
+                    "black": wx.Colour("black"),
+                    "on_target": wx.Colour((127, 255, 0, 255)),  # chartreuse
+                    "off_target": wx.Colour("firebrick"),
+                    "scale": wx.Colour("cyan"),
+                    "needle": wx.Colour("magenta"),
+                }
+            )
 
         wx.Window.__init__(self, parent, id, pos, size, style)
-        self._value = GaugeValue(50, minValue, maxValue, tolerance, fetch_current)
+        self._value = GaugeValue(
+            50, minValue, maxValue, tolerance, fetch_current
+        )
         self._fetching = False
         self._vertical = style & wx.SL_VERTICAL > 0
         if self._vertical:
@@ -466,7 +512,7 @@ class SetPointGauge(SafeControl, wx.Window):
         self.Bind(wx.EVT_TIMER, self.OnTimer)
         self.Bind(wx.EVT_LEFT_DCLICK, self.OnLDClick)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnDrag)
-        #bind window destroy event to allow us to stop the timer
+        # bind window destroy event to allow us to stop the timer
         self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
 
         self.AcceptsFocusFromKeyboard = lambda: False
@@ -486,7 +532,9 @@ class SetPointGauge(SafeControl, wx.Window):
         """
         delta = value - self._displayed
         nsteps = int(min(10, abs(delta) // (0.01 * self._value.range)))
-        self._anim = [self._displayed + i * delta / nsteps for i in range(nsteps)]
+        self._anim = [
+            self._displayed + i * delta / nsteps for i in range(nsteps)
+        ]
         self._anim.append(value)
         self._anim.reverse()
         self._value.setpoint = value
@@ -509,7 +557,9 @@ class SetPointGauge(SafeControl, wx.Window):
         """
         rect = self.GetClientRect()
         if self._vertical:
-            return self._value.from_quotient((rect.height - pos[1]) / rect.Size[1])
+            return self._value.from_quotient(
+                (rect.height - pos[1]) / rect.Size[1]
+            )
         else:
             return self._value.from_quotient(float(pos[0] / rect.Size[0]))
 
@@ -538,7 +588,11 @@ class SetPointGauge(SafeControl, wx.Window):
           evt (wx.MouseEvent): The drag event.
         """
         pos = evt.GetLogicalPosition(wx.ClientDC(self))
-        if evt.Dragging() and evt.LeftIsDown() and self.GetClientRect().Contains(pos):
+        if (
+            evt.Dragging()
+            and evt.LeftIsDown()
+            and self.GetClientRect().Contains(pos)
+        ):
             self.SetPending(self.PosToValue(pos))
             self.PostEvent()
         elif evt.LeftUp():
@@ -609,21 +663,29 @@ class SetPointGauge(SafeControl, wx.Window):
 
         dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
         dc.Clear()
-        dc.SetPen(wx.Pen(wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUHILIGHT)))
+        dc.SetPen(
+            wx.Pen(wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUHILIGHT))
+        )
         bar = copy.copy(rect)
         if self._vertical:
             bar.width -= 2 * self._margins[1]
             bar.X += self._margins[1]
-            bar.height = int(rect.height * self._value.to_quotient(self._displayed) - 2 * self._margins[0])
+            bar.height = int(
+                rect.height * self._value.to_quotient(self._displayed)
+                - 2 * self._margins[0]
+            )
             bar.Y = rect.height - bar.height + self._margins[0]
         else:
             bar.height -= 2 * self._margins[1]
             bar.Y += self._margins[1]
-            bar.width = int(rect.width * self._value.to_quotient(self._displayed) - 2 * self._margins[0])
+            bar.width = int(
+                rect.width * self._value.to_quotient(self._displayed)
+                - 2 * self._margins[0]
+            )
             bar.X += self._margins[0]
-        dc.SetBrush(wx.Brush(c['setpoint']))
-        dc.SetPen(wx.Pen(c['setpoint']))
-        dc.GradientFillLinear(bar, c['black'], c['setpoint'], gradient)
+        dc.SetBrush(wx.Brush(c["setpoint"]))
+        dc.SetPen(wx.Pen(c["setpoint"]))
+        dc.GradientFillLinear(bar, c["black"], c["setpoint"], gradient)
 
         # Draw the current value
         bar = copy.copy(rect)
@@ -640,7 +702,7 @@ class SetPointGauge(SafeControl, wx.Window):
             bar.width = int(rect.width * self._value.to_quotient(current))
             bar.height = rect.height // 3
             bar.Y += (rect.height // 2) - (bar.height // 2)
-        colour = c['on_target'] if self._value.on_target() else c['off_target']
+        colour = c["on_target"] if self._value.on_target() else c["off_target"]
         dc.SetBrush(wx.Brush(colour))
         dc.SetPen(wx.Pen(colour))
         dc.DrawRectangle(bar)
@@ -654,17 +716,31 @@ class SetPointGauge(SafeControl, wx.Window):
             n = n // 2
             dg = rect.Size[self._vertical] / n
         if self._vertical:
-            lines = [(2, min(rect.height - 1, int(i * dg)), rect.width - 2,
-                      min(rect.height - 1, int(i * dg))) for i in range(1, n)]
+            lines = [
+                (
+                    2,
+                    min(rect.height - 1, int(i * dg)),
+                    rect.width - 2,
+                    min(rect.height - 1, int(i * dg)),
+                )
+                for i in range(1, n)
+            ]
         else:
-            lines = [(min(rect.width - 1, int(i * dg)), 2, min(rect.width - 1, int(i * dg)),
-                      rect.height - 2) for i in range(1, n)]
-        dc.SetPen(wx.Pen(colour=c['scale'], width=1, style=wx.PENSTYLE_DOT))
+            lines = [
+                (
+                    min(rect.width - 1, int(i * dg)),
+                    2,
+                    min(rect.width - 1, int(i * dg)),
+                    rect.height - 2,
+                )
+                for i in range(1, n)
+            ]
+        dc.SetPen(wx.Pen(colour=c["scale"], width=1, style=wx.PENSTYLE_DOT))
         dc.DrawLineList(lines)
 
         # Draw any pending value.
         if self._pending is not None:
-            pen = wx.Pen(colour=c['needle'], width=3)
+            pen = wx.Pen(colour=c["needle"], width=3)
             pen.SetCap(wx.CAP_ROUND)
             dc.SetPen(pen)
             pos = self._value.to_quotient(self._pending)
@@ -699,16 +775,22 @@ class SetPointGauge(SafeControl, wx.Window):
 
             def f_ch(pos, dirn):
                 mid = rect.width // 2
-                return [(mid, pos, 0, pos - dirn * mid),
-                        (mid, pos, rect.width, pos - dirn * mid)]
+                return [
+                    (mid, pos, 0, pos - dirn * mid),
+                    (mid, pos, rect.width, pos - dirn * mid),
+                ]
+
         else:
+
             def f_ch(pos, dirn):
                 mid = rect.height // 2
-                return [(pos, mid, pos - dirn * mid, 0),
-                        (pos, mid, pos - dirn * mid, rect.height)]
+                return [
+                    (pos, mid, pos - dirn * mid, 0),
+                    (pos, mid, pos - dirn * mid, rect.height),
+                ]
 
         if dirn is not None:
-            dc.SetPen(wx.Pen(self.__class__.colours['on_target'], width=2))
+            dc.SetPen(wx.Pen(self.__class__.colours["on_target"], width=2))
 
             posns = [self.range[dirn == 1] - i * dirn * 6 for i in range(3)]
             [dc.DrawLineList(f_ch(pos, dirn)) for pos in posns]
@@ -720,7 +802,9 @@ class SetPointGauge(SafeControl, wx.Window):
           evt (wx.TimerEvent): The TimerEvent to be processed.
         """
         if self._value.fetch and not self._fetching:
-            delayedresult.startWorker(self._onFetch, self._value.fetch, wargs=())
+            delayedresult.startWorker(
+                self._onFetch, self._value.fetch, wargs=()
+            )
             self._fetching = True
         if self._anim:
             self._displayed = self._anim.pop()
@@ -746,7 +830,14 @@ class SetPointGauge(SafeControl, wx.Window):
 class SpinGauge(wx.Panel):
     """A combined gauge and spin control."""
 
-    def __init__(self, parent, minValue=0, maxValue=100, increment=None, fetch_current=None):
+    def __init__(
+        self,
+        parent,
+        minValue=0,
+        maxValue=100,
+        increment=None,
+        fetch_current=None,
+    ):
         """Initialise a SpinGauge
 
         Args:
@@ -765,9 +856,19 @@ class SpinGauge(wx.Panel):
         # Determine increment
         increment = increment or float("%1.g" % ((maxValue - minValue) / 1000))
 
-        spinner = SafeSpinCtrlDouble(parent=self, id=wx.ID_ANY,
-                                     minValue=float(minValue), maxValue=float(maxValue), inc=increment)
-        slider = SetPointGauge(self, minValue=minValue, maxValue=maxValue, fetch_current=fetch_current)
+        spinner = SafeSpinCtrlDouble(
+            parent=self,
+            id=wx.ID_ANY,
+            minValue=float(minValue),
+            maxValue=float(maxValue),
+            inc=increment,
+        )
+        slider = SetPointGauge(
+            self,
+            minValue=minValue,
+            maxValue=maxValue,
+            fetch_current=fetch_current,
+        )
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(spinner, 1, flag=wx.EXPAND)
         sizer.Add(slider, 1, flag=wx.EXPAND)
@@ -843,4 +944,3 @@ class SpinGauge(wx.Panel):
         self.slider.SetPending(None)
         for obj in self.controls:
             obj.SetValue(value)
-

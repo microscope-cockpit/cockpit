@@ -29,13 +29,21 @@ import wx
 
 
 ## Provided so the UI knows what to call this experiment.
-EXPERIMENT_NAME = 'RotatorSweep'
+EXPERIMENT_NAME = "RotatorSweep"
 
 
 ## This class handles classic Z-stack experiments.
 class RotatorSweepExperiment(experiment.Experiment):
-    def __init__(self, polarizerHandler=None, settlingTime=0.1,
-                 startV=0.0, maxV=10., vSteps=100, *args, **kwargs):
+    def __init__(
+        self,
+        polarizerHandler=None,
+        settlingTime=0.1,
+        startV=0.0,
+        maxV=10.0,
+        vSteps=100,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.polarizerHandler = polarizerHandler
         self.settlingTime = settlingTime
@@ -44,8 +52,7 @@ class RotatorSweepExperiment(experiment.Experiment):
         self.vRange = (startV, maxV, vSteps)
         vDelta = float(maxV - startV) / vSteps
         # Add voltage parameters to the metadata.
-        self.metadata = 'Rotator start and delta: [%f, %f]' % (startV, vDelta)
-
+        self.metadata = "Rotator start and delta: [%f, %f]" % (startV, vDelta)
 
     ## Create the ActionTable needed to run the experiment.
     def generateActions(self):
@@ -65,7 +72,7 @@ class RotatorSweepExperiment(experiment.Experiment):
                 curTime = self.expose(curTime, cameras, lightTimePairs, table)
                 # Advance the time very slightly so that all exposures
                 # are strictly ordered.
-                curTime += decimal.Decimal('.001')
+                curTime += decimal.Decimal(".001")
             # Hold the rotator angle constant during the exposure.
             table.addAction(curTime, self.lineHandler, vTarget)
             # Advance time slightly so all actions are sorted (e.g. we
@@ -79,76 +86,88 @@ class RotatorSweepExperiment(experiment.Experiment):
 EXPERIMENT_CLASS = RotatorSweepExperiment
 from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR
 
+
 ## Generate the UI for special parameters used by this experiment.
 class ExperimentUI(wx.Panel):
     def __init__(self, parent, configKey):
-        super().__init__(parent = parent)
+        super().__init__(parent=parent)
         self.configKey = configKey
         sizer = wx.GridSizer(2, 4, 1)
         ## Maps strings to TextCtrls describing how to configure
         # response curve experiments.
         self.settings = self.loadSettings()
         self.settlingTimeControl = guiUtils.addLabeledInput(
-                                        self, sizer, label='settling time',
-                                        defaultValue=self.settings['settlingTime'],)
+            self,
+            sizer,
+            label="settling time",
+            defaultValue=self.settings["settlingTime"],
+        )
         self.settlingTimeControl.SetValidator(FLOATVALIDATOR)
 
         self.vStepsControl = guiUtils.addLabeledInput(
-                                        self, sizer, label='V steps',
-                                        defaultValue=self.settings['vSteps'],)
+            self,
+            sizer,
+            label="V steps",
+            defaultValue=self.settings["vSteps"],
+        )
         self.vStepsControl.SetValidator(INTVALIDATOR)
 
         self.startVControl = guiUtils.addLabeledInput(
-                                        self, sizer, label='V start',
-                                        defaultValue=self.settings['startV'],)
+            self,
+            sizer,
+            label="V start",
+            defaultValue=self.settings["startV"],
+        )
         self.startVControl.SetValidator(FLOATVALIDATOR)
 
         self.maxVControl = guiUtils.addLabeledInput(
-                                        self, sizer, label='V max',
-                                        defaultValue=self.settings['maxV'],)
+            self,
+            sizer,
+            label="V max",
+            defaultValue=self.settings["maxV"],
+        )
         self.maxVControl.SetValidator(FLOATVALIDATOR)
 
         self.SetSizerAndFit(sizer)
-
 
     ## Given a parameters dict (parameter name to value) to hand to the
     # experiment instance, augment them with our special parameters.
     def augmentParams(self, params):
         self.saveSettings()
-        params['settlingTime'] = guiUtils.tryParseNum(self.settlingTimeControl, float)
-        params['startV'] = guiUtils.tryParseNum(self.startVControl, float)
-        params['maxV'] = guiUtils.tryParseNum(self.maxVControl, float)
-        params['vSteps'] = guiUtils.tryParseNum(self.vStepsControl)
-        params['polarizerHandler'] = depot.getHandlerWithName('SI polarizer')
+        params["settlingTime"] = guiUtils.tryParseNum(
+            self.settlingTimeControl, float
+        )
+        params["startV"] = guiUtils.tryParseNum(self.startVControl, float)
+        params["maxV"] = guiUtils.tryParseNum(self.maxVControl, float)
+        params["vSteps"] = guiUtils.tryParseNum(self.vStepsControl)
+        params["polarizerHandler"] = depot.getHandlerWithName("SI polarizer")
         return params
-
 
     ## Load the saved experiment settings, if any.
     def loadSettings(self):
         return cockpit.util.userConfig.getValue(
-                self.configKey + 'RotatorSweepExperimentSettings',
-                default = {
-                    'settlingTime': '0.1',
-                    'startV' : '0.0',
-                    'maxV': '10.0',
-                    'vSteps': '100',
-                }
+            self.configKey + "RotatorSweepExperimentSettings",
+            default={
+                "settlingTime": "0.1",
+                "startV": "0.0",
+                "maxV": "10.0",
+                "vSteps": "100",
+            },
         )
-
 
     ## Generate a dict of our settings.
     def getSettingsDict(self):
-        return  {
-                'settlingTime': self.settlingTimeControl.GetValue(),
-                'startV': self.startVControl.GetValue(),
-                'maxV': self.maxVControl.GetValue(),
-                'vSteps': self.vStepsControl.GetValue(),}
-
+        return {
+            "settlingTime": self.settlingTimeControl.GetValue(),
+            "startV": self.startVControl.GetValue(),
+            "maxV": self.maxVControl.GetValue(),
+            "vSteps": self.vStepsControl.GetValue(),
+        }
 
     ## Save the current experiment settings to config.
-    def saveSettings(self, settings = None):
+    def saveSettings(self, settings=None):
         if settings is None:
             settings = self.getSettingsDict()
         cockpit.util.userConfig.setValue(
-                self.configKey + 'RotatorSweepExperimentSettings',
-                settings)
+            self.configKey + "RotatorSweepExperimentSettings", settings
+        )

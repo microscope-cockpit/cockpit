@@ -23,25 +23,25 @@ import unittest.mock
 
 import cockpit.handlers.stagePositioner
 
-class testStagePositioner(unittest.TestCase):
 
+class testStagePositioner(unittest.TestCase):
     def setUp(self):
         self.callbacks = unittest.mock.MagicMock()
         self.args = {
-            'name': 'mock',
-            'groupName': 'testsuite',
-            'isEligibleForExperiments': True,
-            'callbacks': self.callbacks,
-            'axis': 0,
-            'hardLimits': (-10, 10),
+            "name": "mock",
+            "groupName": "testsuite",
+            "isEligibleForExperiments": True,
+            "callbacks": self.callbacks,
+            "axis": 0,
+            "hardLimits": (-10, 10),
         }
 
     def test_default_soft_limits(self):
         PH = cockpit.handlers.stagePositioner.PositionerHandler(**self.args)
-        self.assertEqual(PH.getSoftLimits(), list(self.args['hardLimits']))
+        self.assertEqual(PH.getSoftLimits(), list(self.args["hardLimits"]))
 
     def test_soft_limits_present(self):
-        self.args['softLimits'] = (-5, 5)
+        self.args["softLimits"] = (-5, 5)
         PH = cockpit.handlers.stagePositioner.PositionerHandler(**self.args)
         ## XXX: Even if the soft limits in the constructor were a
         ## tuple, internally is changed to a list.  Makes sense
@@ -49,5 +49,5 @@ class testStagePositioner(unittest.TestCase):
         self.assertEqual(PH.getSoftLimits(), [-5, 5])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

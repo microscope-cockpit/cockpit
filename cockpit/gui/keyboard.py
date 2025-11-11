@@ -57,12 +57,15 @@ import cockpit.interfaces.stageMover
 
 
 def onChar(evt):
-    if isinstance(evt.EventObject, wx.TextCtrl) \
-            or evt.KeyCode in [wx.WXK_TAB, wx.WXK_ESCAPE]:
+    if isinstance(evt.EventObject, wx.TextCtrl) or evt.KeyCode in [
+        wx.WXK_TAB,
+        wx.WXK_ESCAPE,
+    ]:
         evt.Skip()
         return
-    if isinstance(evt.EventObject, (wx.ToggleButton, wx.Button)) \
-            and evt.KeyCode in [wx.WXK_RETURN, wx.WXK_SPACE, wx.WXK_TAB]:
+    if isinstance(
+        evt.EventObject, (wx.ToggleButton, wx.Button)
+    ) and evt.KeyCode in [wx.WXK_RETURN, wx.WXK_SPACE, wx.WXK_TAB]:
         evt.Skip()
         return
     if evt.KeyCode == wx.WXK_NUMPAD_MULTIPLY:
@@ -75,7 +78,7 @@ def onChar(evt):
         cockpit.interfaces.stageMover.recenterFineMotion()
     elif evt.KeyCode == wx.WXK_DOWN:
         # Z down
-        cockpit.interfaces.stageMover.step((0,0,-1))
+        cockpit.interfaces.stageMover.step((0, 0, -1))
     elif evt.KeyCode == wx.WXK_NUMPAD2:
         # Y down
         cockpit.interfaces.stageMover.step((0, -1, 0))
@@ -110,20 +113,22 @@ def onChar(evt):
 
 ## Given a wx.Window instance, set up keyboard controls for that instance.
 def setKeyboardHandlers(window):
-    accelTable = wx.AcceleratorTable([
-        # Pop up a menu to help the user find hidden windows.
-        (wx.ACCEL_CTRL, ord('M'), 6321),
-        # toggle python shell state with ^P
-        (wx.ACCEL_CTRL, ord('P'), 6322),
-    ])
+    accelTable = wx.AcceleratorTable(
+        [
+            # Pop up a menu to help the user find hidden windows.
+            (wx.ACCEL_CTRL, ord("M"), 6321),
+            # toggle python shell state with ^P
+            (wx.ACCEL_CTRL, ord("P"), 6322),
+        ]
+    )
     window.SetAcceleratorTable(accelTable)
     window.Bind(wx.EVT_MENU, lambda e: showHideShell(window), id=6322)
     window.Bind(wx.EVT_CHAR_HOOK, onChar)
 
 
-#Function to show/hide the pythion shell window
+# Function to show/hide the pythion shell window
 def showHideShell(parent):
     for window in wx.GetTopLevelWindows():
-        if window.GetTitle() == 'PyShell':
+        if window.GetTitle() == "PyShell":
             window.Show(not window.IsShown())
             break

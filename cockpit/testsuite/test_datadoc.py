@@ -29,7 +29,9 @@ from cockpit.util import datadoc
 
 class TestWriteDataAsMrc(unittest.TestCase):
     def setUp(self):
-        self.data = numpy.array(range(256), dtype=numpy.uint8).reshape((16, 16))
+        self.data = numpy.array(range(256), dtype=numpy.uint8).reshape(
+            (16, 16)
+        )
 
     def assertWriteAndReadingBack(self):
         with tempfile.NamedTemporaryFile() as fh:
@@ -48,9 +50,9 @@ class TestWriteDataAsMrc(unittest.TestCase):
         self.data = numpy.flipud(numpy.rot90(self.data))
         # We could just copy the data in F-contiguous order but doing
         # the transformations shows how cockpit would get to them.
-        self.assertFalse(self.data.flags['C_CONTIGUOUS'])
+        self.assertFalse(self.data.flags["C_CONTIGUOUS"])
         self.assertWriteAndReadingBack()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -71,31 +71,34 @@ class CockpitServer(device.Device):
     devices, so that each incoming connection is on its own port.
 
     """
+
     def __init__(self, name, config={}):
         super().__init__(name, config)
         ## IP address of the cockpit computer.
-        if not(hasattr(self, 'ipAddress')):
+        if not (hasattr(self, "ipAddress")):
             self.ipAddress = "127.0.0.1"
         ## Name used to represent us to the outside world.
-        self.name = 'mui'
+        self.name = "mui"
         ## Auto-incrementing port ID.
         self.uniquePortID = 7700
         ## Maps registered functions to the ServerDaemon instances
         # used to serve them.
         self.funcToDaemon = {}
 
-
     def getHandlers(self):
-        return [cockpit.handlers.server.ServerHandler("Cockpit server", "server",
-                {'register': self.register,
-                 'unregister': self.unregister})]
-                
+        return [
+            cockpit.handlers.server.ServerHandler(
+                "Cockpit server",
+                "server",
+                {"register": self.register, "unregister": self.unregister},
+            )
+        ]
 
     ## Register a new function. Create a daemon to listen to calls
     # on the appropriate port; those calls will be forwarded to
     # the registered function. Return a URI used to connect to that
     # daemon from outside.
-    def register(self, func, localIP = None):
+    def register(self, func, localIP=None):
         self.uniquePortID += 1
         ipAddress = self.ipAddress
         if localIP is not None:
@@ -104,8 +107,7 @@ class CockpitServer(device.Device):
         daemon = ServerDaemon(self.name, func, self.uniquePortID, ipAddress)
         self.funcToDaemon[func] = daemon
         daemon.serve()
-        return 'PYRO:%s@%s:%d' % (self.name, ipAddress, self.uniquePortID)
-
+        return "PYRO:%s@%s:%d" % (self.name, ipAddress, self.uniquePortID)
 
     ## Stop a daemon.
     def unregister(self, func):
@@ -114,28 +116,26 @@ class CockpitServer(device.Device):
             del self.funcToDaemon[func]
 
 
-
 class ServerDaemon:
     def __init__(self, name, func, port, host):
         self.name = name
         self.func = func
-        self.daemon = Pyro4.Daemon(port = port, host = host)
+        self.daemon = Pyro4.Daemon(port=port, host=host)
         self.daemon.register(self, name)
-
 
     ## Handle function calls by forwarding them to self.func.
     @cockpit.util.threads.callInNewThread
     def serve(self):
         self.daemon.requestLoop()
 
-
     ## Stop the daemon.
     def stop(self):
         # Per the documentation, these functions must be called
         # in separate threads, or else the process will hang.
         threading.Thread(target=self.daemon.close, name="server-close").start()
-        threading.Thread(target=self.daemon.shutdown, name="server-shutdown").start()
-
+        threading.Thread(
+            target=self.daemon.shutdown, name="server-shutdown"
+        ).start()
 
     ## Receive a function call from outside.
     # Note that if our caller throws an exception, then we do not propagate

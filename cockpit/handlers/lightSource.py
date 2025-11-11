@@ -60,14 +60,14 @@ import cockpit.util.threads
 # to control if a given illumination source is currently active (and for how
 # long).
 class LightHandler(deviceHandler.DeviceHandler):
-    ## callbacks should fill in the following functions: 
+    ## callbacks should fill in the following functions:
     # - setEnabled(name, value): Turn this light source on or off.
     # - setExposureTime(name, value): Set the exposure time for this light,
     #   in milliseconds.
     # - getExposureTime(name, value): Get the current exposure time for this
     #   light, in milliseconds.
     # - setExposing(name, isOn): Optional. Sets the light on/off continuously
-    #   (i.e. without regard for what the camera(s) are doing). 
+    #   (i.e. without regard for what the camera(s) are doing).
     # \param wavelength Wavelength of light the source emits, if appropriate.
     # \param exposureTime Default exposure time.
     # \param trigHandler: Optional. Sets up an auxilliary trigger source.
@@ -78,17 +78,25 @@ class LightHandler(deviceHandler.DeviceHandler):
     cached = deviceHandler.DeviceHandler.cached
 
     ## Keep track of shutters in class variables.
-    __shutterToLights = {} # 1:many
-    __lightToShutter = {} # 1:1
+    __shutterToLights = {}  # 1:many
+    __lightToShutter = {}  # 1:1
+
     @classmethod
     def addShutter(cls, shutter, lights=[]):
         cls.__shutterToLights[shutter] = set(lights)
         for l in lights:
             cls.__lightToShutter[l] = shutter
 
-
-    def __init__(self, name, groupName, callbacks, wavelength, exposureTime,
-                 trigHandler=None, trigLine=None):
+    def __init__(
+        self,
+        name,
+        groupName,
+        callbacks,
+        wavelength,
+        exposureTime,
+        trigHandler=None,
+        trigLine=None,
+    ):
         # Note we assume all light sources are eligible for experiments.
         # However there's no associated callbacks for a light source.
         super().__init__(name, groupName, True, callbacks, depot.LIGHT_TOGGLE)
@@ -101,9 +109,11 @@ class LightHandler(deviceHandler.DeviceHandler):
         if trigHandler and trigLine:
             h = trigHandler.registerDigital(self, trigLine)
             self.triggerNow = h.triggerNow
-            if 'setExposing' not in callbacks:
-                cb = lambda name, state: trigHandler.setDigital(trigLine, state)
-                callbacks['setExposing'] = cb
+            if "setExposing" not in callbacks:
+                cb = lambda name, state: trigHandler.setDigital(
+                    trigLine, state
+                )
+                callbacks["setExposing"] = cb
         else:
             self.triggerNow = lambda: None
 
@@ -113,11 +123,9 @@ class LightHandler(deviceHandler.DeviceHandler):
             onAbort = lambda *args: trigHandler.setDigital(trigLine, False)
             events.subscribe(events.USER_ABORT, onAbort)
 
-
     def makeInitialPublications(self):
         # Send state event to set initial state of any controls.
         events.publish(events.DEVICE_STATUS, self, self.state)
-
 
     def onSaveSettings(self):
         return {
@@ -132,40 +140,40 @@ class LightHandler(deviceHandler.DeviceHandler):
         if self.getIsEnabled() != settings["isEnabled"]:
             self.toggleState()
 
-
     ## Turn the laser on, off, or set continuous exposure.
     def setEnabled(self, setState):
         if self.state == deviceHandler.STATES.constant != setState:
-            if 'setExposing' in self.callbacks:
-                self.callbacks['setExposing'](self.name, False)
+            if "setExposing" in self.callbacks:
+                self.callbacks["setExposing"](self.name, False)
 
         if setState == deviceHandler.STATES.constant:
             if self.state == setState:
                 # Turn off the light
-                self.callbacks['setEnabled'](self.name, False)
+                self.callbacks["setEnabled"](self.name, False)
                 # Update setState since used to set self.state later
                 setState = deviceHandler.STATES.disabled
                 events.publish(events.LIGHT_SOURCE_ENABLE, self, False)
             else:
                 # Turn on the light continuously.
-                self.callbacks['setEnabled'](self.name, True)
-                if 'setExposing' in self.callbacks:
-                    self.callbacks['setExposing'](self.name, True)
+                self.callbacks["setEnabled"](self.name, True)
+                if "setExposing" in self.callbacks:
+                    self.callbacks["setExposing"](self.name, True)
                 # We indicate that the light source is disabled to prevent
                 # it being switched off by an exposure, but this event is
                 # used to update controls, so we need to chain it with a
                 # manual update.
-                events.oneShotSubscribe(events.LIGHT_SOURCE_ENABLE,
-                                        lambda *args: self.notifyListeners(self, setState))
+                events.oneShotSubscribe(
+                    events.LIGHT_SOURCE_ENABLE,
+                    lambda *args: self.notifyListeners(self, setState),
+                )
                 events.publish(events.LIGHT_SOURCE_ENABLE, self, False)
         elif setState == deviceHandler.STATES.enabled:
-            self.callbacks['setEnabled'](self.name, True)
+            self.callbacks["setEnabled"](self.name, True)
             events.publish(events.LIGHT_SOURCE_ENABLE, self, True)
         else:
-            self.callbacks['setEnabled'](self.name, False)
+            self.callbacks["setEnabled"](self.name, False)
             events.publish(events.LIGHT_SOURCE_ENABLE, self, False)
         self.state = setState
-
 
     ## Return True if we're enabled, False otherwise.
     def getIsEnabled(self):
@@ -181,7 +189,9 @@ class LightHandler(deviceHandler.DeviceHandler):
             self.setEnabled(deviceHandler.STATES.constant)
         except Exception as e:
             self.notifyListeners(self, deviceHandler.STATES.error)
-            raise Exception('Problem encountered en/disabling %s:\n%s' % (self.name, e))
+            raise Exception(
+                "Problem encountered en/disabling %s:\n%s" % (self.name, e)
+            )
         finally:
             self.enableLock.release()
 
@@ -192,30 +202,30 @@ class LightHandler(deviceHandler.DeviceHandler):
         # that share the same shutter if this is the outermost call.
         # \param value: new exposure time
         # \param outermost: flag indicating that we should update others.
-        self.callbacks['setExposureTime'](self.name, value)
+        self.callbacks["setExposureTime"](self.name, value)
         # Publish event to update control labels.
         events.publish(events.LIGHT_EXPOSURE_UPDATE, self)
         # Update exposure times for lights that share the same shutter.
         s = self.__class__.__lightToShutter.get(self, None)
         self.exposureTime = value
         if s and outermost:
-            if hasattr(s, 'setExposureTime'):
+            if hasattr(s, "setExposureTime"):
                 s.setExposureTime(value)
-            for other in self.__class__.__shutterToLights[s].difference([self]):
+            for other in self.__class__.__shutterToLights[s].difference(
+                [self]
+            ):
                 other.setExposureTime(value, outermost=False)
                 events.publish(events.LIGHT_EXPOSURE_UPDATE, other)
 
     ## Get the current exposure time, in milliseconds.
     @cached
     def getExposureTime(self):
-        return self.callbacks['getExposureTime'](self.name)
-
+        return self.callbacks["getExposureTime"](self.name)
 
     ## Simple getter.
     @cached
     def getWavelength(self):
         return self.wavelength
-
 
     ## Let them know what wavelength we are.
     def getSavefileInfo(self):

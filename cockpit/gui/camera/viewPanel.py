@@ -73,6 +73,7 @@ class ViewPanel(wx.Panel):
     It depends heavily on :mod:`cockpit.gui.imageViewer`.
 
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -84,9 +85,11 @@ class ViewPanel(wx.Panel):
         columnSizer = wx.BoxSizer(wx.VERTICAL)
         ## Clickable text box showing the name of the currently-selected
         # camera.
-        self.selector = wx.StaticText(self,
-                style = wx.RAISED_BORDER | wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE, 
-                size = (VIEW_WIDTH, 30))
+        self.selector = wx.StaticText(
+            self,
+            style=wx.RAISED_BORDER | wx.ALIGN_CENTRE | wx.ST_NO_AUTORESIZE,
+            size=(VIEW_WIDTH, 30),
+        )
         self.selector.Bind(wx.EVT_LEFT_DOWN, self.onSelector)
         self.selector.SetDoubleBuffered(True)
 
@@ -114,7 +117,7 @@ class ViewPanel(wx.Panel):
         if event.LeftDClick():
             if self.imagePos is None:
                 self.imagePos = cockpit.interfaces.stageMover.getPosition()
-            x, y = event.GetPosition()*self.GetContentScaleFactor()
+            x, y = event.GetPosition() * self.GetContentScaleFactor()
             pixelSize = wx.GetApp().Objectives.GetPixelSize()
             x0, y0 = self.canvas.glToIndices(0, 0)
             dy, dx = self.canvas.canvasToIndices(x, y)
@@ -122,11 +125,10 @@ class ViewPanel(wx.Panel):
             dy -= y0
             dx *= pixelSize
             dy *= pixelSize
-            target = (self.imagePos[0]-dx, self.imagePos[1]-dy)
+            target = (self.imagePos[0] - dx, self.imagePos[1] - dy)
             cockpit.interfaces.stageMover.goToXY(target)
         else:
             event.Skip()
-
 
     ## User clicked on the selector. Pop up a menu to let them either activate
     # a camera or, if we're already activated, deactivate the current one.
@@ -137,19 +139,27 @@ class ViewPanel(wx.Panel):
         ## Currently, have to mouse-over the bitmap area, or click in another window.
         menu = wx.Menu()
         if self.curCamera is not None:
-            item = menu.Append(-1, "Disable %s" % self.curCamera.descriptiveName)
-            self.Bind(wx.EVT_MENU, lambda event: self.curCamera.toggleState(), item)
+            item = menu.Append(
+                -1, "Disable %s" % self.curCamera.descriptiveName
+            )
+            self.Bind(
+                wx.EVT_MENU, lambda event: self.curCamera.toggleState(), item
+            )
         else:
             # Get all inactive cameras.
             cameras = wx.GetApp().Depot.getHandlersOfType(depot.CAMERA)
-            cameras.sort(key = lambda c: c.descriptiveName)
+            cameras.sort(key=lambda c: c.descriptiveName)
             for camera in cameras:
                 if not camera.getIsEnabled():
-                    item = menu.Append(-1, "Enable %s" % camera.descriptiveName)
-                    self.Bind(wx.EVT_MENU, 
-                            lambda event, cam=camera: cam.toggleState(), item)
+                    item = menu.Append(
+                        -1, "Enable %s" % camera.descriptiveName
+                    )
+                    self.Bind(
+                        wx.EVT_MENU,
+                        lambda event, cam=camera: cam.toggleState(),
+                        item,
+                    )
         cockpit.gui.guiUtils.placeMenuAtMouse(self, menu)
-
 
     ## Deactivate the view.
     def disable(self):
@@ -159,13 +169,14 @@ class ViewPanel(wx.Panel):
         if self.curCamera is not None:
             # Wrap this in a try/catch since it will fail if the initial
             # camera enabling failed.
-            events.unsubscribe(events.NEW_IMAGE % self.curCamera.name, self.onImage)
+            events.unsubscribe(
+                events.NEW_IMAGE % self.curCamera.name, self.onImage
+            )
             self.curCamera = None
         if self.canvas is not None:
             # Destroy the canvas.
-            self.canvas.clear(shouldDestroy = True)
+            self.canvas.clear(shouldDestroy=True)
             self.canvas = None
-
 
     ## Activate the view and connect to a data source.
     def enable(self, camera):
@@ -176,8 +187,9 @@ class ViewPanel(wx.Panel):
 
         # NB the 512 here is the largest texture size our graphics card can
         # gracefully handle.
-        self.canvas = cockpit.gui.imageViewer.viewCanvas.ViewCanvas(self.canvasPanel,
-        size = (VIEW_WIDTH, VIEW_HEIGHT))
+        self.canvas = cockpit.gui.imageViewer.viewCanvas.ViewCanvas(
+            self.canvasPanel, size=(VIEW_WIDTH, VIEW_HEIGHT)
+        )
         self.canvas.SetSize((VIEW_WIDTH, VIEW_HEIGHT))
         self.canvas.resetView()
 
@@ -208,32 +220,28 @@ class ViewPanel(wx.Panel):
             self.selector.SetBackgroundColour(self.curCamera.color)
             self.Refresh()
 
-
     ## Receive a new image and send it to our canvas.
     def onImage(self, data, metadata, *args):
         self.canvas.setImage(data)
         if not experiment.isRunning():
             self.metadata = metadata
-            self.imagePos = self.metadata['imagePos']
-            
+            self.imagePos = self.metadata["imagePos"]
+
     ## Return True if we currently display a camera.
     def getIsEnabled(self):
         return self.curCamera is not None
-
 
     ## Get the black- and white-point for the view.
     def getScaling(self):
         return self.canvas.getScaling()
 
-
     ## As above, but the relative values used to generate them instead.
     def getRelativeScaling(self):
         return self.canvas.getRelativeScaling()
 
-
     ## Get the current pixel data for the view.
     def getPixelData(self):
-        return (self.canvas.imageData,self.metadata)
+        return (self.canvas.imageData, self.metadata)
 
     ## Debugging: convert to string.
     def __repr__(self):

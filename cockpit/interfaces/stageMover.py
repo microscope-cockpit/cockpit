@@ -71,15 +71,15 @@ StageLimits = typing.Tuple[AxisLimits, AxisLimits, AxisLimits]
 ## Stage movement threshold (previously a hard-coded value).
 # There can be problems when this doesn't match a corresponding threshold
 # the stage device code.
-#TODO:  This should be defined in only one place, either here,
+# TODO:  This should be defined in only one place, either here,
 # in the stage code, or in a config file.
 STAGE_MIN_MOVEMENT = 0.3
 # Map possible axis identifiers to canonical integer identifiers.
 AXIS_MAP = {}
-AXIS_MAP.update({k:0 for k in '0xX'})
-AXIS_MAP.update({k:1 for k in '1yY'})
-AXIS_MAP.update({k:2 for k in '2zZ'})
-AXIS_MAP.update({k:k for k in [0,1,2]})
+AXIS_MAP.update({k: 0 for k in "0xX"})
+AXIS_MAP.update({k: 1 for k in "1yY"})
+AXIS_MAP.update({k: 2 for k in "2zZ"})
+AXIS_MAP.update({k: k for k in [0, 1, 2]})
 
 ## This module handles general stage motion: "go to this position", "move by
 # this delta", "remember this position", "go to this remembered position",
@@ -99,8 +99,7 @@ class Site:
     # \param group String describing the group the Site belongs to.
     # \param color RGB tuple used to color the Site in the UI.
     # \param size Size (in arbitrary units) to draw the site.
-    def __init__(self, position, group = None, color = (0, 255, 0),
-            size = 25):
+    def __init__(self, position, group=None, color=(0, 255, 0), size=25):
         self.position = position
         self.group = group
         self.color = color
@@ -110,25 +109,24 @@ class Site:
         ## Unique ID for the Site.
         self.uniqueID = uniqueSiteIndex
 
-
     ## Serialize the site -- convert it to a string we can use to
     # reconstruct it later.
     def serialize(self):
-        result = ''
-        result += ','.join(map(str, self.position))
-        result += ',%s,' % self.group
-        result += ','.join(map(str, self.color))
-        result += ',%.2f,%d' % (self.size, self.uniqueID)
+        result = ""
+        result += ",".join(map(str, self.position))
+        result += ",%s," % self.group
+        result += ",".join(map(str, self.color))
+        result += ",%.2f,%d" % (self.size, self.uniqueID)
         return result
 
 
 ## Generate a new Site from a text string generated from serialize(),
 # above.
 def deserializeSite(line):
-    x, y, z, group, r, g, b, size, id = line.split(',')
+    x, y, z, group, r, g, b, size, id = line.split(",")
     x, y, z, r, g, b, size = map(float, (x, y, z, r, g, b, size))
     id = int(id)
-    if group == 'None':
+    if group == "None":
         group = None
         # Otherwise let group remain as a string.
     result = Site(numpy.array((x, y, z)), group, (r, g, b), size)
@@ -136,19 +134,26 @@ def deserializeSite(line):
     return result
 
 
-def _SensibleStepSize(step_size: float, bases: typing.Sequence[int],
-                      cmp: typing.Callable[[float, float], bool]) -> float:
-    power_of_ten = 10**math.floor(math.log10(step_size))
+def _SensibleStepSize(
+    step_size: float,
+    bases: typing.Sequence[int],
+    cmp: typing.Callable[[float, float], bool],
+) -> float:
+    power_of_ten = 10 ** math.floor(math.log10(step_size))
     for base in bases:
         threshold = base * power_of_ten
         if cmp(step_size, threshold):
             return threshold
     else:
-        raise RuntimeError('failed to estimate best step size after trying'
-                           ' all bases in %s' % bases)
+        raise RuntimeError(
+            "failed to estimate best step size after trying"
+            " all bases in %s" % bases
+        )
+
 
 def SensibleNextStepSize(step_size: float) -> float:
     return _SensibleStepSize(step_size, [2, 5, 10], operator.lt)
+
 
 def SensiblePreviousStepSize(step_size: float) -> float:
     return _SensibleStepSize(step_size, [5, 2, 1, 0.5], operator.gt)
@@ -162,11 +167,11 @@ class StageMover:
         # motion.
         self.axisToHandlers = depot.getSortedStageMovers()
         if set(self.axisToHandlers.keys()) != {0, 1, 2}:
-            raise ValueError('stage mover requires 3 axis: X, Y, and Z')
+            raise ValueError("stage mover requires 3 axis: X, Y, and Z")
 
         # FIXME: we should have sensible defaults (see issue #638).
-        self._saved_top = userConfig.getValue('savedTop', default=3010.0)
-        self._saved_bottom = userConfig.getValue('savedBottom', default=3000.0)
+        self._saved_top = userConfig.getValue("savedTop", default=3010.0)
+        self._saved_bottom = userConfig.getValue("savedBottom", default=3000.0)
 
         ## XXX: We have a single index for all axis, even though each
         ## axis may have a different number of stages.  While we don't
@@ -204,13 +209,16 @@ class StageMover:
         # sizes for each handler index which maybe doesn't make sense
         # anymore but comes from the time when it were the handlers
         # themselves that kept track of step size.
-        self._step_sizes = [] # type: typing.List[typing.Tuple[float, float, float]]
+        self._step_sizes = (
+            []
+        )  # type: typing.List[typing.Tuple[float, float, float]]
         for stage_index in range(self.n_stages):
             default_step_sizes = []
             for axis in (0, 1, 2):
                 limits = self.axisToHandlers[axis][stage_index].getHardLimits()
-                step_size = SensiblePreviousStepSize((limits[1] - limits[0])
-                                                     / 100.0)
+                step_size = SensiblePreviousStepSize(
+                    (limits[1] - limits[0]) / 100.0
+                )
                 default_step_sizes.append(step_size)
             # Default is 1/100 of the axis length but in rectangular
             # stages that will lead to xy with different step sizes so
@@ -224,14 +232,13 @@ class StageMover:
         events.subscribe(events.STAGE_MOVER, self.onMotion)
         events.subscribe(events.STAGE_STOPPED, self.onStop)
 
-
     @property
     def SavedTop(self) -> float:
         return self._saved_top
 
     @SavedTop.setter
     def SavedTop(self, pos: float) -> None:
-        userConfig.setValue('savedTop', pos)
+        userConfig.setValue("savedTop", pos)
         self._saved_top = pos
         events.publish(events.STAGE_TOP_BOTTOM)
 
@@ -241,10 +248,9 @@ class StageMover:
 
     @SavedBottom.setter
     def SavedBottom(self, pos: float) -> None:
-        userConfig.setValue('savedBottom', pos)
+        userConfig.setValue("savedBottom", pos)
         self._saved_bottom = pos
         events.publish(events.STAGE_TOP_BOTTOM)
-
 
     def GetStepSizes(self) -> typing.Tuple[float, float, float]:
         """Return a (dX, dY, dZ) tuple of the current step sizes."""
@@ -260,7 +266,7 @@ class StageMover:
                 steps (positive or negative) to take along that axis.
         """
         if len(direction) != 3:
-            raise ValueError('direction must be a 3 element list')
+            raise ValueError("direction must be a 3 element list")
         for axis, sign in enumerate(direction):
             if sign != 0:
                 step_size = self._step_sizes[self.curHandlerIndex][axis]
@@ -269,9 +275,9 @@ class StageMover:
 
     def SetStepSize(self, axis: int, step_size: float) -> None:
         if step_size <= 0.0:
-            raise ValueError('step size must be a positive number')
+            raise ValueError("step size must be a positive number")
         elif axis not in [0, 1, 2]:
-            raise ValueError('axis must be in [0, 1, 2]')
+            raise ValueError("axis must be in [0, 1, 2]")
         step_sizes = list(self.GetStepSizes())
         step_sizes[axis] = step_size
         self._step_sizes[self.curHandlerIndex] = tuple(step_sizes)
@@ -283,7 +289,9 @@ class StageMover:
         elif direction == -1:
             guess_new = SensiblePreviousStepSize
         else:
-            raise ValueError('direction must be -1 (decrease) or +1 (increase)')
+            raise ValueError(
+                "direction must be -1 (decrease) or +1 (increase)"
+            )
         old_step_sizes = self.GetStepSizes()
         new_step_sizes = tuple([guess_new(x) for x in old_step_sizes])
         self._step_sizes[self.curHandlerIndex] = new_step_sizes
@@ -291,12 +299,10 @@ class StageMover:
         for axis, step_size in enumerate(self.GetStepSizes()):
             events.publish(events.STAGE_STEP_SIZE, axis, step_size)
 
-
     ## Handle one of our devices moving. We just republish an abstracted
     # stage position for that axis.
     def onMotion(self, axis):
         events.publish(events.STAGE_POSITION, axis, getPositionForAxis(axis))
-
 
     ## Handle one of our devices stopping motion; this unblocks _goToAxes
     # if it is waiting.
@@ -304,13 +310,12 @@ class StageMover:
         if name in self.nameToStoppedEvent:
             self.nameToStoppedEvent[name].set()
 
-
     ## Internal function to go to the specified location (specified as a list
     # of (axis, position) tuples). Wait for the axes to stop moving, if
     # shouldBlock is true.
     # \todo Assumes that the target position is within the range of motion of
     # the current handler.
-    def _goToAxes(self, position, shouldBlock = False):
+    def _goToAxes(self, position, shouldBlock=False):
         waiters = []
         for axis, target in position:
             # Get the offset for the movers that aren't being adjusted.
@@ -321,7 +326,10 @@ class StageMover:
 
             handler = self.axisToHandlers[axis][self.curHandlerIndex]
             # Check if we need to bother moving.
-            if abs(handler.getPosition() - (target - offset)) > STAGE_MIN_MOVEMENT:
+            if (
+                abs(handler.getPosition() - (target - offset))
+                > STAGE_MIN_MOVEMENT
+            ):
                 event = threading.Event()
                 waiters.append(event)
                 self.nameToStoppedEvent[handler.name] = event
@@ -331,8 +339,7 @@ class StageMover:
                 try:
                     event.wait(30)
                 except Exception as e:
-                    print ("Failed waiting for stage to stop after 30s")
-
+                    print("Failed waiting for stage to stop after 30s")
 
 
 ## Global singleton.
@@ -347,17 +354,19 @@ def initialize():
 
 ## Publicize any information that various widgets care about.
 def makeInitialPublications():
-    #for axis in range(3):
+    # for axis in range(3):
     for axis in mover.axisToHandlers.keys():
         events.publish(events.STAGE_POSITION, axis, getPositionForAxis(axis))
         limits = getSoftLimitsForAxis(axis)
         for isMax in [0, 1]:
-            events.publish(events.SOFT_SAFETY_LIMIT, axis, limits[isMax],
-                    bool(isMax))
+            events.publish(
+                events.SOFT_SAFETY_LIMIT, axis, limits[isMax], bool(isMax)
+            )
 
 
 ## Various module-global functions for interacting with the objects in the
 # Mover.
+
 
 def step(direction):
     mover.Step(direction)
@@ -386,7 +395,7 @@ def changeStepSize(direction):
 def recenterFineMotion():
     for axis, handlers in mover.axisToHandlers.items():
         if len(set(handlers)) < 2:
-            continue # Only makes sense if one has at least two stages
+            continue  # Only makes sense if one has at least two stages
 
         totalDelta = 0
         for handler in handlers[1:]:
@@ -401,48 +410,57 @@ def recenterFineMotion():
 
 
 ## Move to the specified position using the current handler.
-def goTo(position, shouldBlock = False):
+def goTo(position, shouldBlock=False):
     if len(position) != len(mover.axisToHandlers.keys()):
-        raise RuntimeError("Asked to go to position with wrong number of axes (%d != %d)" % (len(position), len(mover.axisToHandlers.keys())))
+        raise RuntimeError(
+            "Asked to go to position with wrong number of axes (%d != %d)"
+            % (len(position), len(mover.axisToHandlers.keys()))
+        )
     mover._goToAxes(enumerate(position), shouldBlock)
 
 
 ## As goTo, but only in X and Y.
-def goToXY(position, shouldBlock = False):
+def goToXY(position, shouldBlock=False):
     if len(position) != 2:
-        raise RuntimeError("Asked to go to XY position with wrong number of axes (%d != %d)" % (len(position), 2))
+        raise RuntimeError(
+            "Asked to go to XY position with wrong number of axes (%d != %d)"
+            % (len(position), 2)
+        )
     mover._goToAxes(enumerate(position), shouldBlock)
 
 
 ## As goTo, but only in Z.
-def goToZ(position, shouldBlock = False):
+def goToZ(position, shouldBlock=False):
     mover._goToAxes([(2, position)], shouldBlock)
 
 
 ## Move by the specified 3D offset.
-def moveRelative(offset, shouldBlock = False):
+def moveRelative(offset, shouldBlock=False):
     numAxes = len(mover.axisToHandlers.keys())
     if len(offset) != numAxes:
-        raise RuntimeError("Asked to move relatively with wrong number of axes (%d != %d)" % (len(offset), numAxes))
+        raise RuntimeError(
+            "Asked to move relatively with wrong number of axes (%d != %d)"
+            % (len(offset), numAxes)
+        )
     curPosition = getPosition()
     vals = [offset[i] + curPosition[i] for i in range(numAxes)]
     goTo(vals, shouldBlock)
 
 
 ## Wait for any stage motion to cease.
-def waitForStop(timeout = 5):
+def waitForStop(timeout=5):
     for name, event in mover.nameToStoppedEvent.items():
         if not event.wait(timeout):
             raise RuntimeError("Timed out waiting for %s to stop" % name)
 
 
 ## Move to the specified site.
-def goToSite(uniqueID, shouldBlock = False):
+def goToSite(uniqueID, shouldBlock=False):
     site = mover.idToSite[uniqueID]
     objOffset = wx.GetApp().Objectives.GetOffset()
-    offsetPosition=list(site.position)
+    offsetPosition = list(site.position)
     for i in range(len(offsetPosition)):
-        offsetPosition[i]=offsetPosition[i]+objOffset[i]
+        offsetPosition[i] = offsetPosition[i] + objOffset[i]
     goTo(offsetPosition, shouldBlock)
 
 
@@ -452,7 +470,7 @@ def getSite(uniqueID):
 
 
 ## Save a new Site. Use default settings if none is provided.
-def saveSite(newSite = None):
+def saveSite(newSite=None):
     if newSite is None:
         newSite = Site(getPosition())
     mover.idToSite[newSite.uniqueID] = newSite
@@ -497,14 +515,14 @@ def canReachSite(siteId):
 
 ## Record sites to a file.
 def writeSitesToFile(filename):
-    with open(filename, 'w') as handle:
+    with open(filename, "w") as handle:
         for id, site in mover.idToSite.items():
-            handle.write(site.serialize() + '\n')
+            handle.write(site.serialize() + "\n")
 
 
 ## Load sites from a file.
 def loadSites(filename):
-    with open(filename, 'r') as handle:
+    with open(filename, "r") as handle:
         for line in handle:
             site = deserializeSite(line)
             saveSite(site)
@@ -625,18 +643,18 @@ def moveZCheckMoverLimits(target):
     limits = getIndividualSoftLimits(2)
     offset = target - getPosition()[2]
 
-
     # FIXME: IMD 2018-11-07 I think this test needs to be currentpos
     # of the current mover not the overall pos.
     while mover.curHandlerIndex >= 0:
         handler = mover.curHandlerIndex
         moverPos = getAllPositions()[handler][2]
-        if ((moverPos + offset) > limits[mover.curHandlerIndex][1]
-            or (moverPos + offset) < limits[mover.curHandlerIndex][0]):
+        if (moverPos + offset) > limits[mover.curHandlerIndex][1] or (
+            moverPos + offset
+        ) < limits[mover.curHandlerIndex][0]:
             # need to drop down a handler to see if next handler can do the move
             mover.curHandlerIndex -= 1
             if mover.curHandlerIndex < 0:
-                print ("Move too large for any Z mover.")
+                print("Move too large for any Z mover.")
 
         else:
             goToZ(target)
@@ -678,7 +696,7 @@ def optimisedSiteOrder(baseOrder):
             break
 
         # Find the closest remaining point
-        nextPoint = min(remainingPoints, key = lambda a: distance(a, curPoint))
+        nextPoint = min(remainingPoints, key=lambda a: distance(a, curPoint))
         totalTourCost += distance(curPoint, nextPoint)
         curPoint = nextPoint
     # Add cost of closing the loop back to the first point.
@@ -687,7 +705,9 @@ def optimisedSiteOrder(baseOrder):
     # Calculate the cost of just doing everything in order.
     simpleTourCost = 0
     for i in range(len(baseOrder)):
-        simpleTourCost += distance(baseOrder[i], baseOrder[(i + 1) % len(baseOrder)])
+        simpleTourCost += distance(
+            baseOrder[i], baseOrder[(i + 1) % len(baseOrder)]
+        )
     simpleTourCost += distance(baseOrder[0], baseOrder[-1])
 
     if simpleTourCost < totalTourCost:

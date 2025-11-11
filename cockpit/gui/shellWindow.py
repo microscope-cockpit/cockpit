@@ -20,13 +20,15 @@
 
 import wx.py.shell
 
+
 class ShellWindow(wx.py.shell.ShellFrame):
     SHOW_DEFAULT = False
     LIST_AS_COCKPIT_WINDOW = True
 
+
 def makeWindow(parent):
     window = ShellWindow(parent)
-    window.shell.run('import wx')
-    window.shell.run('depot = wx.GetApp().Depot')
+    window.shell.run("import wx")
+    window.shell.run("depot = wx.GetApp().Depot")
     # Default icon for the ShellFrame is the PyCrust, so replace it.
     window.SetIcon(parent.GetIcon())

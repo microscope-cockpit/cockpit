@@ -68,6 +68,7 @@ import traceback
 
 def pauseVideo(func):
     """A wrapper to pause and resume video."""
+
     def wrapper(*args, **kwargs):
         wasInVideoMode = wx.GetApp().Imager.amInVideoMode
         if wasInVideoMode:
@@ -75,7 +76,7 @@ def pauseVideo(func):
             tstart = time.time()
             while wx.GetApp().Imager.amInVideoMode:
                 time.sleep(0.05)
-                if time.time() > tstart + 1.:
+                if time.time() > tstart + 1.0:
                     print("Timeout pausing video mode - abort and restart.")
                     events.publish(events.USER_ABORT)
                     break
@@ -111,20 +112,17 @@ class Imager:
 
         events.subscribe(events.USER_ABORT, self.stopVideo)
 
-
     def _get_exposure_time(self) -> int:
         if self.activeLights:
             return max([l.getExposureTime() for l in self.activeLights])
         else:
             return 0
 
-
     @pauseVideo
     def _updateExposureTime(self):
         e_time = self._get_exposure_time()
         for c in self.activeCameras:
             c.setExposureTime(e_time)
-
 
     def _toggle(self, container, thing, shouldAdd):
         if shouldAdd:
@@ -146,21 +144,21 @@ class Imager:
         with self._lock:
             self._updateExposureTime()
 
-
     ## Take an image.
     # \param shouldBlock True if we want to wait for the cameras and lights
     #        to be ready so we can take the image; False if we don't want to
     #        wait and should just give up if they aren't ready.
     # \param shouldStopVideo True if we should stop video mode. Only really
     #        used by self.videoMode().
-    def takeImage(self, shouldBlock = False, shouldStopVideo = True):
+    def takeImage(self, shouldBlock=False, shouldStopVideo=True):
         from cockpit.experiment import experiment
+
         if experiment.isRunning():
             print("Skipping takeImage because an experiment is running.")
             return
         elif len(self.activeCameras) == 0:
-            message = ('There are no cameras enabled.')
-            wx.MessageBox(message, caption='No cameras active')
+            message = "There are no cameras enabled."
+            wx.MessageBox(message, caption="No cameras active")
             return
         if shouldStopVideo:
             self.stopVideo()
@@ -173,7 +171,6 @@ class Imager:
         for handler in self._imageHandlers:
             handler.takeImage()
         self.lastImageTime = time.time()
-
 
     ## Video mode: continuously take images at our maximum update rate.
     # We stop whenever the user invokes takeImage() manually or the abort
@@ -206,26 +203,29 @@ class Imager:
             # timeout.  On top of the time to actual acquire the
             # image, we add 5 seconds for any processing and transfer
             # which should be more than enough (see issue #584).
-            timeout = 5.0 + ((camera.getExposureTime()
-                              + camera.getTimeBetweenExposures()) / 1000)
+            timeout = 5.0 + (
+                (camera.getExposureTime() + camera.getTimeBetweenExposures())
+                / 1000
+            )
             try:
                 events.executeAndWaitForOrTimeout(
                     events.NEW_IMAGE % (camera.name),
-                    self.takeImage, timeout,
-                    shouldBlock = True, shouldStopVideo = False)
+                    self.takeImage,
+                    timeout,
+                    shouldBlock=True,
+                    shouldStopVideo=False,
+                )
             except Exception as e:
-                print ("Video mode failed:", e)
+                print("Video mode failed:", e)
                 events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
                 traceback.print_exc()
                 break
         self.amInVideoMode = False
         events.publish(cockpit.events.VIDEO_MODE_TOGGLE, False)
 
-
     ## Stop our video thread, if relevant.
     def stopVideo(self):
         self.shouldStopVideoMode = True
-
 
     ## Get the next time it's safe to call takeImage(), based on the
     # cameras' time between images and the light sources' exposure times.

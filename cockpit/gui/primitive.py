@@ -26,8 +26,9 @@ import numpy
 CIRCLE_SEGMENTS = 32
 PI = 3.141592654
 
+
 class Primitive:
-    """ A class for rendering primitives from devices.
+    """A class for rendering primitives from devices.
 
     Stages can use primitives to show reference positions, such
     as well or sample grid locations. This class puts much of the
@@ -36,6 +37,7 @@ class Primitive:
     Note that canvases in separate contexts will each need their
     own Primitives - Primitives can not be shared between GL contexts.
     """
+
     @staticmethod
     def factory(spec):
         """
@@ -49,32 +51,33 @@ class Primitive:
         The primitive identifier may be in quotes, and values may be separated
         by any combination of spaces, commas and semicolons.
         """
-        p = re.split(r'[ |,|;]+', re.sub(r"['|\"]", '', spec))
+        p = re.split(r"[ |,|;]+", re.sub(r"['|\"]", "", spec))
         pType = p[0]
         pData = tuple(map(float, p[1:]))
         # Spec is a type and some data
-        if pType in ['c', 'C']:
+        if pType in ["c", "C"]:
             return Circle(*pData, n=CIRCLE_SEGMENTS)
-        if pType in ['r', 'R']:
+        if pType in ["r", "R"]:
             return Rectangle(*pData)
-
 
     def __init__(self, *args, **kwargs):
         self._vbo = None
         self._vertices = []
         self._numVertices = 0
 
-
     def makeVBO(self):
         vertices = self._vertices
         if self._vbo is None:
             self._vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
-        glBufferData(GL_ARRAY_BUFFER, len(vertices)*4,
-                    (c_float*len(vertices))(*vertices), GL_STATIC_DRAW)
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            len(vertices) * 4,
+            (c_float * len(vertices))(*vertices),
+            GL_STATIC_DRAW,
+        )
         glBindBuffer(GL_ARRAY_BUFFER, 0)
         self._numVertices = len(vertices) // 2
-
 
     def render(self):
         if self._vbo is None:
@@ -90,11 +93,11 @@ class Primitive:
 class Circle(Primitive):
     def __init__(self, x0, y0, r, n=CIRCLE_SEGMENTS):
         super().__init__()
-        dTheta = 2. * PI / n
+        dTheta = 2.0 * PI / n
         cosTheta = numpy.cos(dTheta)
         sinTheta = numpy.sin(dTheta)
         x = r
-        y = 0.
+        y = 0.0
 
         vs = []
         for i in range(n):
@@ -108,12 +111,18 @@ class Circle(Primitive):
 class Rectangle(Primitive):
     def __init__(self, x0, y0, w, h):
         super().__init__()
-        dw = w / 2.
-        dh = h / 2.
+        dw = w / 2.0
+        dh = h / 2.0
 
-        vs  = [(x0 - dw), y0 - dh,
-               (x0 + dw), y0 - dh,
-               (x0 + dw), y0 + dh,
-               (x0 - dw), y0 + dh]
+        vs = [
+            (x0 - dw),
+            y0 - dh,
+            (x0 + dw),
+            y0 - dh,
+            (x0 + dw),
+            y0 + dh,
+            (x0 - dw),
+            y0 + dh,
+        ]
 
         self._vertices = vs

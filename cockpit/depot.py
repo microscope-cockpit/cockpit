@@ -88,7 +88,8 @@ STAGE_POSITIONER = "stage positioner"
 DIO = "digital io"
 VALUE_LOGGER = "value logger"
 
-SKIP_CONFIG = ['server']
+SKIP_CONFIG = ["server"]
+
 
 class DeviceDepot:
     ## Initialize the Depot.
@@ -110,7 +111,6 @@ class DeviceDepot:
         ## Maps group name to handlers.
         self.groupNameToHandlers = collections.defaultdict(list)
 
-
     ## Call the initialize() method for each registered device, then get
     # the device's Handler instances and insert them into our various
     # containers.  Yield the device names as we go.
@@ -118,24 +118,26 @@ class DeviceDepot:
         ## TODO: we will want to remove this print statements when
         ## we're done refactoring the location of the log and config
         ## files (issue #320)
-        print("Cockpit is running from %s" % os.path.split(os.path.abspath(__file__))[0])
+        print(
+            "Cockpit is running from %s"
+            % os.path.split(os.path.abspath(__file__))[0]
+        )
 
         # Create our server
         ## TODO remove special case by having fallback empty section?
         ## Or fallback to the defaults in the class?
-        if config.has_section('server'):
-            sconf = dict(config.items('server'))
+        if config.has_section("server"):
+            sconf = dict(config.items("server"))
         else:
             sconf = {}
-        self.nameToDevice['server'] = CockpitServer('server', sconf)
-
+        self.nameToDevice["server"] = CockpitServer("server", sconf)
 
         # Parse config to create device instances.
         for name in config.sections():
             if name in SKIP_CONFIG:
                 continue
             try:
-                cls = config.gettype(name, 'type')
+                cls = config.gettype(name, "type")
             except configparser.NoOptionError:
                 raise RuntimeError("Missing 'type' key for device '%s'" % name)
 
@@ -154,12 +156,14 @@ class DeviceDepot:
             # TODO - catch circular dependencies.
             d = devices.pop(0)
             depends = []
-            for dependency in ['triggersource', 'analogsource', 'controller']:
+            for dependency in ["triggersource", "analogsource", "controller"]:
                 other = d.config.get(dependency)
                 if other:
                     if other not in self.nameToDevice:
-                        raise Exception("Device %s depends on non-existent device '%s'." %
-                                        (d.name, other))
+                        raise Exception(
+                            "Device %s depends on non-existent device '%s'."
+                            % (d.name, other)
+                        )
                     depends.append(other)
 
             if any([other not in done for other in depends]):
@@ -198,39 +202,50 @@ class DeviceDepot:
         # Dummy stages
         axes = self.getSortedStageMovers().keys()
         if 2 not in axes:
-            dummies.append(DummyStage("dummy Z stage",
-                                      {"z-lower-limits": "0",
-                                       "z-upper-limits": "2500",
-                                       "z-units-per-micron": "1"}))
+            dummies.append(
+                DummyStage(
+                    "dummy Z stage",
+                    {
+                        "z-lower-limits": "0",
+                        "z-upper-limits": "2500",
+                        "z-units-per-micron": "1",
+                    },
+                )
+            )
 
         if (0 not in axes) or (1 not in axes):
-            dummies.append(DummyStage("dummy XY stage",
-                                      {"x-lower-limits": "0",
-                                       "x-upper-limits": "25000",
-                                       "x-units-per-micron": "1",
-                                       "y-lower-limits": "0",
-                                       "y-upper-limits": "12000",
-                                       "y-units-per-micron": "1"}))
+            dummies.append(
+                DummyStage(
+                    "dummy XY stage",
+                    {
+                        "x-lower-limits": "0",
+                        "x-upper-limits": "25000",
+                        "x-units-per-micron": "1",
+                        "y-lower-limits": "0",
+                        "y-upper-limits": "12000",
+                        "y-units-per-micron": "1",
+                    },
+                )
+            )
 
         # Cameras
         if not getHandlersOfType(CAMERA):
             for i in range(1, 5):
-                dummies.append(DummyCamera('Dummy camera %d' % i, {}))
+                dummies.append(DummyCamera("Dummy camera %d" % i, {}))
         # Dummy imager
         if not getHandlersOfType(IMAGER):
-            dummies.append(DummyDSP('imager', {}))
+            dummies.append(DummyDSP("imager", {}))
         # Dummy laser
         if not getHandlersOfType(LIGHT_TOGGLE):
             for wl in [405, 488, 633]:
-                dummies.append(DummyLaser('Dummy %d' % wl, {'wavelength' : wl}))
+                dummies.append(DummyLaser("Dummy %d" % wl, {"wavelength": wl}))
         # Initialise dummies.
         for d in dummies:
             self.nameToDevice[d.name] = d
             self.initDevice(d)
 
         self.finalizeInitialization()
-        yield 'dummy-devices'
-
+        yield "dummy-devices"
 
     def addHandler(self, handler, device=None):
         self.deviceTypeToHandlers[handler.deviceType].append(handler)
@@ -242,12 +257,13 @@ class DeviceDepot:
             otherHandler = self.nameToHandler[handler.name]
             if handler is not otherHandler:
                 otherDevice = self.handlerToDevice[otherHandler]
-                raise RuntimeError("Multiple handlers with the same name [%s] from devices [%s] and [%s]" %
-                                   (handler.name, str(device), str(otherDevice)))
+                raise RuntimeError(
+                    "Multiple handlers with the same name [%s] from devices [%s] and [%s]"
+                    % (handler.name, str(device), str(otherDevice))
+                )
         self.nameToHandler[handler.name] = handler
         self.handlerToDevice[handler] = device
         self.groupNameToHandlers[handler.groupName].append(handler)
-
 
     ## Initialize a Device.
     def initDevice(self, device):
@@ -265,13 +281,12 @@ class DeviceDepot:
 
     ## Let each device publish any initial events it needs. It's assumed this
     # is called after all the handlers have set up their UIs, so that they can
-    # be adjusted to match the current configuration. 
+    # be adjusted to match the current configuration.
     def makeInitialPublications(self):
         for device in self.nameToDevice.values():
             device.makeInitialPublications()
         for handler in self.handlersList:
             handler.makeInitialPublications()
-
 
     ## Do any extra initialization needed now that everything is properly
     # set up.
@@ -293,7 +308,6 @@ class DeviceDepot:
             if future.exception():
                 raise future.exception()
 
-
     ## Return a mapping of axis to a sorted list of positioners for that axis.
     # We sort by range of motion, with the largest range coming first in the
     # list.
@@ -305,8 +319,9 @@ class DeviceDepot:
             axisToMovers[mover.axis].append(mover)
 
         for axis, handlers in axisToMovers.items():
-            handlers.sort(reverse = True,
-                    key = lambda a: a.getHardLimits()[1] - a.getHardLimits()[0]
+            handlers.sort(
+                reverse=True,
+                key=lambda a: a.getHardLimits()[1] - a.getHardLimits()[0],
             )
         return axisToMovers
 
@@ -368,6 +383,7 @@ class DeviceDepot:
 ## this module has historically been used as the object itself.
 deviceDepot = None
 
+
 ## Simple passthrough
 def initialize(config):
     for device in deviceDepot.initialize(config):
@@ -377,32 +393,42 @@ def initialize(config):
 def makeInitialPublications():
     deviceDepot.makeInitialPublications()
 
+
 def getHandlerWithName(name):
     return deviceDepot.getHandlerWithName(name)
+
 
 def getHandlersOfType(deviceType):
     return deviceDepot.getHandlersOfType(deviceType)
 
+
 def getHandlersInGroup(groupName):
     return deviceDepot.getHandlersInGroup(groupName)
+
 
 def getAllHandlers():
     return deviceDepot.getAllHandlers()
 
+
 def getAllDevices():
     return deviceDepot.getAllDevices()
+
 
 def getSortedStageMovers():
     return deviceDepot.getSortedStageMovers()
 
+
 def getActiveCameras():
     return deviceDepot.getActiveCameras()
+
 
 def addHandler(handler, device=None):
     return deviceDepot.addHandler(handler, device)
 
+
 def getDeviceWithName(name):
     return deviceDepot.nameToDevice.get(name)
+
 
 def getHandler(nameOrDevice, handlerType):
     return deviceDepot.getHandler(nameOrDevice, handlerType)

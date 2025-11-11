@@ -53,7 +53,7 @@ _logger = logging.getLogger(__name__)
 
 
 def _config_to_ROI(roi_str: str):
-    return ROI(*[int(t) for t in roi_str.strip('()').split(',')])
+    return ROI(*[int(t) for t in roi_str.strip("()").split(",")])
 
 
 class MicroscopeCamera(MicroscopeBase, CameraDevice):
@@ -86,14 +86,15 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         cam._setTransform((True, True, False))
 
     """
+
     def __init__(self, name, config):
         # camConfig is a dict with containing configuration parameters.
         super().__init__(name, config)
         self.enabled = False
         self.panel = None
 
-        if 'roi' in config:
-            self._base_ROI = _config_to_ROI(config.get('roi'))
+        if "roi" in config:
+            self._base_ROI = _config_to_ROI(config.get("roi"))
         else:
             self._base_ROI = None
 
@@ -101,8 +102,9 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         # Parent class will connect to proxy
         super().initialize()
         # Lister to receive data
-        self.listener = cockpit.util.listener.Listener(self._proxy,
-                                               lambda *args: self.receiveData(*args))
+        self.listener = cockpit.util.listener.Listener(
+            self._proxy, lambda *args: self.receiveData(*args)
+        )
         try:
             self.updateSettings()
         except:
@@ -119,42 +121,36 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         # is initialized before interfaces.imager.
         self.updateSettings = pauseVideo(self.updateSettings)
 
-
     def updateSettings(self, settings=None):
         if settings is not None:
             self._proxy.update_settings(settings)
         self.settings.update(self._proxy.get_all_settings())
         events.publish(events.SETTINGS_CHANGED % str(self))
 
-
     def _setTransform(self, tr):
         self._proxy.set_transform(tr)
         self.updateSettings()
-
 
     def cleanupAfterExperiment(self):
         """Restore settings as they were prior to experiment."""
         if self.enabled:
             self.updateSettings(self.cached_settings)
-            #self._proxy.update_settings(self.settings)
+            # self._proxy.update_settings(self.settings)
             self._proxy.enable()
         self.handler.exposureMode = self._getCockpitExposureMode()
 
-
     def performSubscriptions(self):
         """Perform subscriptions for this camera."""
-        events.subscribe(events.CLEANUP_AFTER_EXPERIMENT,
-                self.cleanupAfterExperiment)
-        events.subscribe(events.OBJECTIVE_CHANGE,
-                self.onObjectiveChange)
-
+        events.subscribe(
+            events.CLEANUP_AFTER_EXPERIMENT, self.cleanupAfterExperiment
+        )
+        events.subscribe(events.OBJECTIVE_CHANGE, self.onObjectiveChange)
 
     def onObjectiveChange(self, handler: ObjectiveHandler) -> None:
         # Changing an objective might change the transform since a
         # different objective might actually mean a different light
         # path (see comments on issue #456).
         self.updateTransform(handler.transform)
-
 
     def setAnyDefaults(self):
         # Set any defaults found in userConfig.
@@ -165,13 +161,12 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         try:
             self._proxy.update_settings(self.settings)
         except Exception as e:
-            print (e)
+            print(e)
         else:
             self.defaults = DEFAULTS_SENT
 
-
     def _readUserConfig(self):
-        idstr = self.handler.getIdentifier() + '_SETTINGS'
+        idstr = self.handler.getIdentifier() + "_SETTINGS"
         defaults = cockpit.util.userConfig.getValue(idstr)
         if defaults is None:
             self.defaults = DEFAULTS_NONE
@@ -194,7 +189,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             ): cockpit.handlers.camera.TRIGGER_BEFORE,
             (
                 TriggerType.LOW,
-                TriggerMode.ONCE
+                TriggerMode.ONCE,
             ): cockpit.handlers.camera.TRIGGER_AFTER,
             (
                 TriggerType.HIGH,
@@ -207,34 +202,37 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
 
     def getHandlers(self):
         """Return camera handlers."""
-        trigsource = self.config.get('triggersource', None)
-        trigline = self.config.get('triggerline', None)
+        trigsource = self.config.get("triggersource", None)
+        trigline = self.config.get("triggerline", None)
         if trigsource:
             trighandler = depot.getHandler(trigsource, depot.EXECUTOR)
         else:
             trighandler = None
 
         self.handler = cockpit.handlers.camera.CameraHandler(
-                "%s" % self.name, "universal camera",
-                {'setEnabled': self.enableCamera,
-                 'getImageSize': self.getImageSize,
-                 'getTimeBetweenExposures': self.getTimeBetweenExposures,
-                 'prepareForExperiment': self.prepareForExperiment,
-                 'getExposureTime': self.getExposureTime,
-                 'setExposureTime': self.setExposureTime,
-                 'getShutteringMode': self.getShutteringMode,
-                 'getSavefileInfo': self.getSavefileInfo,
-                 'setROI': self.setROI,
-                 'getROI': self.getROI,
-                 'getSensorShape': self.getSensorShape,
-                 'makeUI': self.makeUI,
-                 'softTrigger': self.softTrigger},
+            "%s" % self.name,
+            "universal camera",
+            {
+                "setEnabled": self.enableCamera,
+                "getImageSize": self.getImageSize,
+                "getTimeBetweenExposures": self.getTimeBetweenExposures,
+                "prepareForExperiment": self.prepareForExperiment,
+                "getExposureTime": self.getExposureTime,
+                "setExposureTime": self.setExposureTime,
+                "getShutteringMode": self.getShutteringMode,
+                "getSavefileInfo": self.getSavefileInfo,
+                "setROI": self.setROI,
+                "getROI": self.getROI,
+                "getSensorShape": self.getSensorShape,
+                "makeUI": self.makeUI,
+                "softTrigger": self.softTrigger,
+            },
             cockpit.handlers.camera.TRIGGER_SOFT,
             trighandler,
-            trigline)
+            trigline,
+        )
 
         return [self.handler]
-
 
     @pauseVideo
     def enableCamera(self, name, shouldEnable):
@@ -265,10 +263,9 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             self.listener.connect()
         self.updateSettings()
         # a hack as the event expects a light handler, but doesnt use it so
-        # call with the camera handler. 
-        events.publish(events.LIGHT_EXPOSURE_UPDATE,self.handler)
+        # call with the camera handler.
+        events.publish(events.LIGHT_EXPOSURE_UPDATE, self.handler)
         return self.enabled
-
 
     def getExposureTime(self, name=None, isExact=False):
         """Read the real exposure time from the camera."""
@@ -279,11 +276,9 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         else:
             return t * 1000.0
 
-
     def getShutteringMode(self, name):
         """Get the electronic shuttering mode of the camera."""
         return self._proxy.shuttering_mode
-
 
     def getImageSize(self, name):
         """Read the image size from the camera."""
@@ -292,7 +287,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         if not isinstance(binning, Binning):
             _logger.warning("%s returned tuple not Binning()", self.name)
             binning = Binning(*binning)
-        return (roi.width//binning.h, roi.height//binning.v)
+        return (roi.width // binning.h, roi.height // binning.v)
 
     def getROI(self, name):
         """Read the ROI from the camera"""
@@ -309,9 +304,8 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
 
     def getSavefileInfo(self, name):
         """Return an info string describing the measurement."""
-        #return "%s: %s image" % (name, self.imageSize)
+        # return "%s: %s image" % (name, self.imageSize)
         return ""
-
 
     def getTimeBetweenExposures(self, name, isExact=False):
         """Get the amount of time between exposures.
@@ -319,7 +313,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         This is the time that must pass after stopping one exposure
         before another can be started, in milliseconds."""
         # Camera uses time in s; cockpit uses ms.
-        #Note cycle time is exposure+Readout!
+        # Note cycle time is exposure+Readout!
         t_cyc = self._proxy.get_cycle_time() * 1000.0
         t_exp = self._proxy.get_exposure_time() * 1000.0
         t = t_cyc - t_exp
@@ -329,48 +323,48 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             result = t
         return result
 
-
     def prepareForExperiment(self, name, experiment):
         """Make the hardware ready for an experiment."""
         self.cached_settings.update(self.settings)
-
 
     def receiveData(self, *args):
         """This function is called when data is received from the hardware."""
         (image, timestamp) = args
         if not experiment.isRunning():
-            wavelength=None
+            wavelength = None
             if self.handler.wavelength is not None:
-                wavelength=float(self.handler.wavelength)
-            #not running experiment so populate all data
-            metadata={'timestamp': timestamp,
-                      'wavelength': wavelength,
-                  'pixelsize': wx.GetApp().Objectives.GetPixelSize(),
-                  'imagePos': cockpit.interfaces.stageMover.getPosition(),
-                  'exposure time': self.getExposureTime(),
-                  'lensID': wx.GetApp().Objectives.GetCurrent().lens_ID,
-                  'ROI': self.getROI(self.name),
-                  }
-            #basic heuristic to find excitation wavelength.
-            #Finds active lights, sorts in reverse order and then finds the
-            #first that is lower than the emission wavelength. 
-            lights=[]
-            for light in depot.getHandlersOfType('light source'):
+                wavelength = float(self.handler.wavelength)
+            # not running experiment so populate all data
+            metadata = {
+                "timestamp": timestamp,
+                "wavelength": wavelength,
+                "pixelsize": wx.GetApp().Objectives.GetPixelSize(),
+                "imagePos": cockpit.interfaces.stageMover.getPosition(),
+                "exposure time": self.getExposureTime(),
+                "lensID": wx.GetApp().Objectives.GetCurrent().lens_ID,
+                "ROI": self.getROI(self.name),
+            }
+            # basic heuristic to find excitation wavelength.
+            # Finds active lights, sorts in reverse order and then finds the
+            # first that is lower than the emission wavelength.
+            lights = []
+            for light in depot.getHandlersOfType("light source"):
                 if light.getIsEnabled():
                     lights.append(float(light.wavelength))
                     lights.sort()
                     lights.reverse()
-            metadata['exwavelength'] = None
+            metadata["exwavelength"] = None
             for exwavelength in lights:
-                if (wavelength and
-                    wavelength > exwavelength):
-                    metadata['exwavelength'] = exwavelength
+                if wavelength and wavelength > exwavelength:
+                    metadata["exwavelength"] = exwavelength
                     break
         else:
-            #experiment running so populate minimum of metadata
-            #need to add more but this should equate to the behaviour
-            #we had before
-            metadata={'timestamp': timestamp,}
+            # experiment running so populate minimum of metadata
+            # need to add more but this should equate to the behaviour
+            # we had before
+            metadata = {
+                "timestamp": timestamp,
+            }
 
         if not isinstance(image, Exception):
             events.publish(events.NEW_IMAGE % self.name, image, metadata)
@@ -378,17 +372,17 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
             # Handle the dropped frame by publishing an empty image of the correct
             # size. Use the handler to fetch the size, as this will use a cached value,
             # if available.
-            events.publish(events.NEW_IMAGE % self.name,
-                           np.zeros(self.handler.getImageSize(), dtype=np.int16),
-                           metadata)
+            events.publish(
+                events.NEW_IMAGE % self.name,
+                np.zeros(self.handler.getImageSize(), dtype=np.int16),
+                metadata,
+            )
             raise image
-
 
     def setExposureTime(self, name, exposureTime):
         """Set the exposure time."""
         # Camera uses times in s; cockpit uses ms.
         self._proxy.set_exposure_time(exposureTime / 1000.0)
-
 
     def setROI(self, name, roi):
         result = self._proxy.set_roi(roi)
@@ -400,7 +394,6 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         if self.enabled:
             self._proxy.soft_trigger()
 
-
     ### UI functions ###
     def makeUI(self, parent):
         # TODO - this only adds a button with the button for settings.
@@ -409,7 +402,7 @@ class MicroscopeCamera(MicroscopeBase, CameraDevice):
         # anyway.
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        adv_button = wx.Button(parent=self.panel, label='Settings')
+        adv_button = wx.Button(parent=self.panel, label="Settings")
         adv_button.Bind(wx.EVT_LEFT_UP, self.showSettings)
         sizer.Add(adv_button, flags=wx.SizerFlags().Expand())
         self.panel.SetSizer(sizer)

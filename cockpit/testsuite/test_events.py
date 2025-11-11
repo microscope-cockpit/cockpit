@@ -36,10 +36,14 @@ class TestEvents(unittest.TestCase):
         # code, which would clear the subscription we do on setUp.
         # That is why we patch manually here on setUp.
         self.patches = [
-            unittest.mock.patch('cockpit.events._publisher',
-                                new_callable=cockpit.events.Publisher),
-            unittest.mock.patch('cockpit.events._one_shot_publisher',
-                                new_callable=cockpit.events.OneShotPublisher),
+            unittest.mock.patch(
+                "cockpit.events._publisher",
+                new_callable=cockpit.events.Publisher,
+            ),
+            unittest.mock.patch(
+                "cockpit.events._one_shot_publisher",
+                new_callable=cockpit.events.OneShotPublisher,
+            ),
         ]
         for patch in self.patches:
             patch.start()
@@ -49,11 +53,12 @@ class TestEvents(unittest.TestCase):
         # need to do this ourselves.  This does mean that if the
         # subcription on the singleton is ever broken, this tests
         # won't catch that issue.
-        cockpit.events.subscribe(cockpit.events.USER_ABORT,
-                                 cockpit.events._one_shot_publisher.clear)
+        cockpit.events.subscribe(
+            cockpit.events.USER_ABORT, cockpit.events._one_shot_publisher.clear
+        )
 
         self.subscriber = unittest.mock.Mock()
-        self.event_name = 'test events'
+        self.event_name = "test events"
 
 
 class TestSubscriptions(TestEvents):
@@ -73,7 +78,7 @@ class TestSubscriptions(TestEvents):
     def test_subscribe_with_args(self):
         """Publishing event with args calls the subscriber with args"""
         args = [1, 2]
-        kwargs = {'foo': 'bar'}
+        kwargs = {"foo": "bar"}
         cockpit.events.publish(self.event_name, *args, **kwargs)
         self.subscriber.assert_called_once_with(*args, **kwargs)
 
@@ -85,7 +90,7 @@ class TestSubscriptions(TestEvents):
 
     def test_no_subscription(self):
         """Is not called for subscriptions it is not subscribed"""
-        cockpit.events.publish('other ' + self.event_name)
+        cockpit.events.publish("other " + self.event_name)
         self.subscriber.assert_not_called()
 
     def test_multiple_subscribers(self):
@@ -124,15 +129,17 @@ class TestExecuteAndWait(TestEvents):
         def side_effect(*args, **kwargs):
             # ignore args and kwargs
             cockpit.events.publish(event_name)
+
         return unittest.mock.Mock(side_effect=side_effect)
 
     def test_wait_for_event(self):
         """Waiting for specified event"""
         args = [1, 2]
-        kwargs = {'foo': 'bar'}
+        kwargs = {"foo": "bar"}
         emitter = self.mock_emitter(self.event_name)
-        cockpit.events.executeAndWaitFor(self.event_name, emitter,
-                                         *args, **kwargs)
+        cockpit.events.executeAndWaitFor(
+            self.event_name, emitter, *args, **kwargs
+        )
         emitter.assert_called_once_with(*args, **kwargs)
 
         # We check the mock subscriber to test that the publication
@@ -151,5 +158,5 @@ class TestExecuteAndWait(TestEvents):
         self.subscriber.assert_not_called()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -85,9 +85,19 @@ class DataSaver:
     #        and there can be up to 10 of them.
     # \param cameraToExcitation Maps camera handlers to the excitation
     #        wavelength used to generate the images it will acquire.
-    def __init__(self, cameras, numReps, repDuration, cameraToImagesPerRep,
-                 cameraToIgnoredImageIndices, runThread, savePath, pixelSizeZ,
-                 titles, cameraToExcitation):
+    def __init__(
+        self,
+        cameras,
+        numReps,
+        repDuration,
+        cameraToImagesPerRep,
+        cameraToIgnoredImageIndices,
+        runThread,
+        savePath,
+        pixelSizeZ,
+        titles,
+        cameraToExcitation,
+    ):
         self.cameras = cameras
         self.numReps = numReps
         self.repDuration = repDuration
@@ -133,9 +143,9 @@ class DataSaver:
             self.maxWidth = max(width, self.maxWidth)
             self.maxHeight = max(height, self.maxHeight)
             self.cameraToIndex[camera] = i
-            self.cameraToImagesKeptPerRep[camera] = \
-                (self.cameraToImagesPerRep[camera]
-                 - len(self.cameraToIgnoredImageIndices[camera]))
+            self.cameraToImagesKeptPerRep[camera] = self.cameraToImagesPerRep[
+                camera
+            ] - len(self.cameraToIgnoredImageIndices[camera])
         ## We need this for the upper bound on the array of data we write.
         self.maxImagesPerRep = max(self.cameraToImagesKeptPerRep.values())
 
@@ -145,20 +155,23 @@ class DataSaver:
 
         ## Number of timepoints per file, based on the above and
         # self.maxFilesize.
-        self.maxRepsPerFile = self.maxFilesize // (self.maxImagesPerRep
-                                                   * self.planeBytes
-                                                   * len(self.cameras)
-                                                   / 1024.0 / 1024.0)
-        #Now check that there are less than 2^15 -1 images per channel as
-        #dv files can't index more than this.
-        if (self.maxRepsPerFile * self.maxImagesPerRep) > (2**15)-1:
-            #then ensure that we split files at the end of a time point
+        self.maxRepsPerFile = self.maxFilesize // (
+            self.maxImagesPerRep
+            * self.planeBytes
+            * len(self.cameras)
+            / 1024.0
+            / 1024.0
+        )
+        # Now check that there are less than 2^15 -1 images per channel as
+        # dv files can't index more than this.
+        if (self.maxRepsPerFile * self.maxImagesPerRep) > (2**15) - 1:
+            # then ensure that we split files at the end of a time point
             # // operator is floor division
-            self.maxRepsPerFile = ((2**15)-1) // self.maxImagesPerRep
+            self.maxRepsPerFile = ((2**15) - 1) // self.maxImagesPerRep
         # Sanity check.
         self.maxRepsPerFile = max(self.maxRepsPerFile, 1)
         ## Whether or not we need to split the data into multiple files.
-        self.doNeedToSplitFiles = (self.maxRepsPerFile < self.numReps)
+        self.doNeedToSplitFiles = self.maxRepsPerFile < self.numReps
         # For simplicity's sake, we bring self.maxRepsPerFile down to
         # self.numReps in cases where we only need a single file anyway.
         self.maxRepsPerFile = min(self.numReps, self.maxRepsPerFile)
@@ -188,19 +201,20 @@ class DataSaver:
             # A bit tricky here: we want a suffix that has only as many
             # digits as needed, e.g. not doing ".001" when you're only going to
             # use 2 files.
-            numFilehandles = int(numpy.ceil(float(self.numReps)
-                                            / self.maxRepsPerFile))
+            numFilehandles = int(
+                numpy.ceil(float(self.numReps) / self.maxRepsPerFile)
+            )
             numDigits = int(numpy.ceil(numpy.log10(numFilehandles)))
             # Generates e.g. "%05d" if we need 5 digits, or "%01d" if we only
             # need 1.
             formatString = "%0" + str(numDigits) + "d"
             for i in range(numFilehandles):
                 filename = "%s.%s" % (savePath, formatString % i)
-                self.filehandles.append(open(filename, 'wb'))
+                self.filehandles.append(open(filename, "wb"))
                 self.filenames.append(filename)
         else:
             # We have just a single filehandle with the save path as specified.
-            self.filehandles.append(open(savePath, 'wb'))
+            self.filehandles.append(open(savePath, "wb"))
             self.filenames.append(savePath)
 
         ## Lock on writing to each file.
@@ -208,7 +222,7 @@ class DataSaver:
 
         pixelSizeXY = wx.GetApp().Objectives.GetPixelSize()
         lensID = wx.GetApp().Objectives.GetCurrent().lens_ID
-        #wavelength should always be on camera even if "0"
+        # wavelength should always be on camera even if "0"
         wavelengths = [c.wavelength for c in self.cameras]
 
         ## Size of one plane's worth of metadata in the extended header.
@@ -225,16 +239,25 @@ class DataSaver:
             # (potentially different for the final file).
             numTimepoints = self.maxRepsPerFile
             if i == len(self.filehandles) - 1:
-                numTimepoints = self.numReps - (self.maxRepsPerFile
-                                                * (len(self.filehandles) - 1))
+                numTimepoints = self.numReps - (
+                    self.maxRepsPerFile * (len(self.filehandles) - 1)
+                )
             header = cockpit.util.datadoc.makeHeaderForShape(
-                (len(self.cameras), numTimepoints, self.maxImagesPerRep,
-                    self.maxHeight, self.maxWidth),
-                numpy.uint16, pixelSizeXY, pixelSizeZ, wavelengths)
-            #write the lensID to the header if not zero (meaning undefined)
-            if (lensID != 0):
+                (
+                    len(self.cameras),
+                    numTimepoints,
+                    self.maxImagesPerRep,
+                    self.maxHeight,
+                    self.maxWidth,
+                ),
+                numpy.uint16,
+                pixelSizeXY,
+                pixelSizeZ,
+                wavelengths,
+            )
+            # write the lensID to the header if not zero (meaning undefined)
+            if lensID != 0:
                 header.LensNum = lensID
-
 
             # By default, the headers generated by DataDoc are for files in ZWT
             # order. But for efficient saving of large multi-wavelength files,
@@ -246,13 +269,19 @@ class DataSaver:
             if self.doNeedToSplitFiles and len(titles) < 8:
                 # We have room for an extra title indicating where this file
                 # falls in the sequence.
-                tempTitles.append("File %d of %d; base timepoint %d" % (i + 1,
-                    len(self.filehandles), i * self.maxRepsPerFile))
+                tempTitles.append(
+                    "File %d of %d; base timepoint %d"
+                    % (i + 1, len(self.filehandles), i * self.maxRepsPerFile)
+                )
             header.NumTitles = len(tempTitles)
-            header.title[:len(tempTitles)] = tempTitles
+            header.title[: len(tempTitles)] = tempTitles
             # Write the size of the extended header, in bytes.
-            header.next = (self.extendedBytes * self.maxImagesPerRep *
-                           len(self.cameras) * numTimepoints)
+            header.next = (
+                self.extendedBytes
+                * self.maxImagesPerRep
+                * len(self.cameras)
+                * numTimepoints
+            )
             # Number of 32-bit ints and floats in extended header, per plane.
             header.NumIntegers = numIntegers
             header.NumFloats = numFloats
@@ -264,13 +293,14 @@ class DataSaver:
             ## could create a new array each time for each plane but
             ## these arrays are small and there will be many image
             ## planes.  We do this to avoid memory fragmentation.
-            self.intMetadataBuffers.append(numpy.array([0] * numIntegers,
-                                                      dtype=numpy.int32))
-            floatMetadataBuffer = numpy.array([0.0] * numFloats,
-                                              dtype=numpy.float32)
-            floatMetadataBuffer[12] = 1.0 # intensity scaling
+            self.intMetadataBuffers.append(
+                numpy.array([0] * numIntegers, dtype=numpy.int32)
+            )
+            floatMetadataBuffer = numpy.array(
+                [0.0] * numFloats, dtype=numpy.float32
+            )
+            floatMetadataBuffer[12] = 1.0  # intensity scaling
             self.floatMetadataBuffers.append(floatMetadataBuffer)
-
 
         # Write the headers, to get us started. We will re-write this at the
         # end when we have more metadata to fill in (specifically, the min/max
@@ -304,12 +334,12 @@ class DataSaver:
         for camera in self.cameras:
             totals.append(self.cameraToImagesKeptPerRep[camera] * self.numReps)
         ## Thread that handles updating the UI.
-        self.statusThread = StatusUpdateThread(names, totals, self.numReps,
-                                               self.repDuration)
+        self.statusThread = StatusUpdateThread(
+            names, totals, self.numReps, self.repDuration
+        )
 
         # Start the data-saving thread.
         self.saveData()
-
 
     ## Subscribe to the new-camera-image events for the cameras we care about.
     # Save the functions we generate for handling the subscriptions, so we can
@@ -317,35 +347,36 @@ class DataSaver:
     # thread.
     def startCollecting(self):
         for camera in self.cameras:
+
             def func(data, metadata, camera=camera):
                 return self.onImage(self.cameraToIndex[camera], data, metadata)
+
             self.lambdas.append(func)
             events.subscribe(events.NEW_IMAGE % camera.name, func)
 
-            self.minMaxVals.append((float('inf'), float('-inf')))
+            self.minMaxVals.append((float("inf"), float("-inf")))
         events.subscribe(events.USER_ABORT, self.onAbort)
         self.statusThread.start()
-
 
     ## User aborted; stop saving data.
     def onAbort(self):
         self.shouldAbort = True
         self.statusThread.shouldStop = True
 
-
     ## Wait for the runThread to finish, then wait a bit longer in case some
     # images are laggardly, before we close our filehandles.
     def executeAndSave(self):
         # Joining the thread doesn't actually work until it has started,
         # hence the delay here.
-        time.sleep(.5)
+        time.sleep(0.5)
         self.runThread.join()
 
         # Wait until it's been a bit without getting any more images in, or
         # until we have all the images we expected to get for each camera.
-        while ((time.time() - self.lastImageTime < self.repDuration+1.0)
-               or not self.imageQueue.empty()):
-#            print ((time.time() - self.startTime),self.repDuration*self.numReps)
+        while (
+            time.time() - self.lastImageTime < self.repDuration + 1.0
+        ) or not self.imageQueue.empty():
+            #            print ((time.time() - self.startTime),self.repDuration*self.numReps)
             amDone = True
             for camera in self.cameras:
                 total = self.imagesKept[self.cameraToIndex[camera]]
@@ -357,7 +388,7 @@ class DataSaver:
                     break
             if amDone or self.shouldAbort:
                 break
-            time.sleep(.01)
+            time.sleep(0.01)
         self.amDone = True
 
         self.cleanup()
@@ -371,9 +402,9 @@ class DataSaver:
                 # so we just store 0.
                 minVal, maxVal = self.minMaxVals[i]
                 if i == 0:
-                    setattr(header, 'mmm1', (minVal, maxVal, 0))
+                    setattr(header, "mmm1", (minVal, maxVal, 0))
                 else:
-                    setattr(header, 'mm%d' % (i + 1), (minVal, maxVal))
+                    setattr(header, "mm%d" % (i + 1), (minVal, maxVal))
         # Rewrite the headers, now that we know what the min/max values are.
         # Of course, these won't be precisely accurate for every file.
         # \todo Track min/max values on a per-file basis.
@@ -383,7 +414,6 @@ class DataSaver:
                 cockpit.util.datadoc.writeMrcHeader(self.headers[i], handle)
                 handle.close()
 
-
     ## Clean up once saving is completed.
     def cleanup(self):
         self.statusThread.shouldStop = True
@@ -391,11 +421,9 @@ class DataSaver:
             events.unsubscribe(events.NEW_IMAGE % camera.name, self.lambdas[i])
         events.unsubscribe(events.USER_ABORT, self.onAbort)
 
-
     ## Receive new data, and add it to the queue.
     def onImage(self, cameraIndex, imageData, metadata):
         self.imageQueue.put((cameraIndex, imageData, metadata))
-
 
     ## Continually poll our imageQueue and save data to the file.
     @cockpit.util.threads.callInNewThread
@@ -405,7 +433,7 @@ class DataSaver:
                 # Do nothing.
                 return
             cameraIndex, imageData, metadata = self.imageQueue.get()
-            timestamp=metadata['timestamp']
+            timestamp = metadata["timestamp"]
             if self.firstTimestamp is None:
                 self.firstTimestamp = timestamp
             # Store the timestamp as a rebased 32-bit float; we can't use
@@ -415,15 +443,15 @@ class DataSaver:
             timestamp = timestamp - self.firstTimestamp
             self.writeImage(cameraIndex, imageData, timestamp)
 
-
     ## Write a single image to the file.
     def writeImage(self, cameraIndex, imageData, timestamp):
         self.imagesReceived[cameraIndex] += 1
         camera = self.indexToCamera[cameraIndex]
         # First determine if we actually want to keep this image.
-        if ((self.imagesReceived[cameraIndex]
-             % self.cameraToImagesPerRep[camera])
-            in self.cameraToIgnoredImageIndices[camera]):
+        if (
+            self.imagesReceived[cameraIndex]
+            % self.cameraToImagesPerRep[camera]
+        ) in self.cameraToIgnoredImageIndices[camera]:
             # This image is one that should be discarded.
             return
 
@@ -439,15 +467,21 @@ class DataSaver:
         zIndex = numImages % self.cameraToImagesKeptPerRep[camera]
 
         numCameras = len(self.cameras)
-        planeIndex = (int(timepoint * self.maxImagesPerRep * numCameras)
-                      + (zIndex * numCameras) + cameraIndex)
+        planeIndex = (
+            int(timepoint * self.maxImagesPerRep * numCameras)
+            + (zIndex * numCameras)
+            + cameraIndex
+        )
 
         ## Offsets for the plane metadata in the extended header, and
         ## for the plane data in the image section.  1024 is the
         ## length of the base header.
         metadataOffset = 1024 + (planeIndex * self.extendedBytes)
-        dataOffset = (1024 + int(self.headers[fileIndex].next)
-                      + (planeIndex * self.planeBytes))
+        dataOffset = (
+            1024
+            + int(self.headers[fileIndex].next)
+            + (planeIndex * self.planeBytes)
+        )
 
         height, width = imageData.shape
 
@@ -455,8 +489,9 @@ class DataSaver:
         # necessary, but we get "invalid argument" errors when writing
         # to the filehandle if we don't.
         # \todo Figure out why this is necessary.
-        paddedBuffer = numpy.zeros((self.maxHeight, self.maxWidth),
-                                   dtype=numpy.uint16)
+        paddedBuffer = numpy.zeros(
+            (self.maxHeight, self.maxWidth), dtype=numpy.uint16
+        )
         paddedBuffer[:height, :width] = imageData
 
         imageMin = imageData.min()
@@ -511,15 +546,17 @@ class DataSaver:
                 handle.seek(dataOffset)
                 handle.write(paddedBuffer)
             except Exception as e:
-                print ("Error writing image:",e)
+                print("Error writing image:", e)
                 raise e
 
             self.imagesKept[cameraIndex] += 1
             self.lastImageTime = time.time()
 
             curMin, curMax = self.minMaxVals[cameraIndex]
-            self.minMaxVals[cameraIndex] = (min(curMin, imageMin),
-                                            max(curMax, imageMax))
+            self.minMaxVals[cameraIndex] = (
+                min(curMin, imageMin),
+                max(curMax, imageMax),
+            )
 
         # Update the status text. But first, check for abort/experiment
         # completion, since we may actually be done now and we don't want
@@ -528,11 +565,9 @@ class DataSaver:
             return
         self.statusThread.newImage(cameraIndex)
 
-
     ## Return a list of the filenames we are writing to.
     def getFilenames(self):
         return self.filenames
-
 
 
 ## This thread handles telling the saving status light to update twice per
@@ -548,36 +583,34 @@ class StatusUpdateThread(threading.Thread):
         self.imageCountLock = threading.Lock()
         ## List of total images expected per camera.
         self.totals = totals
-        self.numReps=numReps
-        self.repDuration=repDuration
-        self.startTime=time.time()
+        self.numReps = numReps
+        self.repDuration = repDuration
+        self.startTime = time.time()
         ## Set to True to end the thread.
         self.shouldStop = False
         self.name = "DataSaver-status"
 
-
     def run(self):
         prevCounts = list(self.imagesReceived)
         self.updateText()
-        count=0
+        count = 0
         while not self.shouldStop:
             if prevCounts != self.imagesReceived:
                 # Have received new images since the last update;
                 # update the display.
-                count=0
+                count = 0
                 with self.imageCountLock:
                     self.updateText()
                     prevCounts = list(self.imagesReceived)
             else:
                 # No images; wait a bit, but update wait text every 0.5s
-                time.sleep(.1)
-                count=count+1
-                if count==5:
-                    count=0
+                time.sleep(0.1)
+                count = count + 1
+                if count == 5:
+                    count = 0
                     self.updateText()
         # Clear the status light.
-        events.publish(events.UPDATE_STATUS_LIGHT, 'image count', '')
-
+        events.publish(events.UPDATE_STATUS_LIGHT, "image count", "")
 
     ## Push a new text to the status light.
     def updateText(self):
@@ -585,15 +618,15 @@ class StatusUpdateThread(threading.Thread):
         for i, name in enumerate(self.cameraNames):
             curCount = self.imagesReceived[i]
             maxCount = self.totals[i]
-            statusText.append('%s: %d/%d' % (name, curCount, maxCount))
-        if((sum(self.imagesReceived) % (maxCount/self.numReps)) == 0):
-            #we are between reps
-            repTime = (time.time()-self.startTime)%self.repDuration
-            timeleft=self.repDuration-repTime
-            statusText.append('waiting %.0fs for next repeat' % timeleft)
-        events.publish(events.UPDATE_STATUS_LIGHT, 'image count',
-                       ' | '.join(statusText))
-
+            statusText.append("%s: %d/%d" % (name, curCount, maxCount))
+        if (sum(self.imagesReceived) % (maxCount / self.numReps)) == 0:
+            # we are between reps
+            repTime = (time.time() - self.startTime) % self.repDuration
+            timeleft = self.repDuration - repTime
+            statusText.append("waiting %.0fs for next repeat" % timeleft)
+        events.publish(
+            events.UPDATE_STATUS_LIGHT, "image count", " | ".join(statusText)
+        )
 
     ## Update our image count.
     def newImage(self, index):

@@ -26,40 +26,43 @@ import cockpit.gui.device
 import wx
 import cockpit.util.threads
 
+
 class DigitalIOHandler(deviceHandler.DeviceHandler):
     """A handler for Digital IO devcies."""
+
     def __init__(self, name, groupName, isEligibleForExperiments, callbacks):
-        super().__init__(name, groupName, isEligibleForExperiments,
-                         callbacks, depot.DIO)
+        super().__init__(
+            name, groupName, isEligibleForExperiments, callbacks, depot.DIO
+        )
         self.isEnabled = False
-                
+
     @property
     def paths(self):
-        return self.callbacks['getPaths']()
-        
+        return self.callbacks["getPaths"]()
+
     def onSaveSettings(self):
-        paths={}
+        paths = {}
         for key in self.pathNameToButton.keys():
-            paths[key]=int(self.pathNameToButton[key].GetValue())
-        outputs=list(map(int,self.callbacks['getOutputs']()))
-        IOstate = [self.callbacks['getIOstate'](i)
-                   for i in range(len(outputs))]
-        return [paths,outputs,IOstate]
+            paths[key] = int(self.pathNameToButton[key].GetValue())
+        outputs = list(map(int, self.callbacks["getOutputs"]()))
+        IOstate = [
+            self.callbacks["getIOstate"](i) for i in range(len(outputs))
+        ]
+        return [paths, outputs, IOstate]
 
     def onLoadSettings(self, settings):
-        (paths,outputs,IOstate)=settings
+        (paths, outputs, IOstate) = settings
         for key in paths.keys():
             self.pathNameToButton[key].SetValue(paths[key])
-        for i,state in enumerate(IOstate):
-            #proabbyl safer not to change IO state here
-            #self.callbacks['setIOstate'](i,state)
+        for i, state in enumerate(IOstate):
+            # proabbyl safer not to change IO state here
+            # self.callbacks['setIOstate'](i,state)
             if state:
-                self.callbacks['write line'](i,outputs[i])
-            
+                self.callbacks["write line"](i, outputs[i])
 
-    def setEnabled(self, shouldEnable = True):
+    def setEnabled(self, shouldEnable=True):
         try:
-            self.isEnabled = self.callbacks['enable'](shouldEnable)
+            self.isEnabled = self.callbacks["enable"](shouldEnable)
         except:
             self.isEnabled = False
             raise
@@ -69,52 +72,56 @@ class DigitalIOHandler(deviceHandler.DeviceHandler):
     ## Return self.isEnabled.
     def getIsEnabled(self):
         return self.isEnabled
-    
 
-       ### UI functions ###
+    ### UI functions ###
     def makeUI(self, parent):
         self.panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        enablebutton=cockpit.gui.device.EnableButton(self.panel,deviceHandler=self)
-        sizer.Add(enablebutton,1,wx.EXPAND)
-        self.pathNameToButton={}
+        enablebutton = cockpit.gui.device.EnableButton(
+            self.panel, deviceHandler=self
+        )
+        sizer.Add(enablebutton, 1, wx.EXPAND)
+        self.pathNameToButton = {}
         for key in self.paths.keys():
             button = wx.ToggleButton(self.panel, wx.ID_ANY)
             button.SetLabel(key)
-            button.Bind(wx.EVT_TOGGLEBUTTON,
-                        lambda evt,b=button: self.togglePaths(b))
+            button.Bind(
+                wx.EVT_TOGGLEBUTTON, lambda evt, b=button: self.togglePaths(b)
+            )
             sizer.Add(button, 1, wx.EXPAND)
-            self.pathNameToButton[key]=button
+            self.pathNameToButton[key] = button
         self.panel.SetSizerAndFit(sizer)
         return self.panel
 
-    def togglePaths(self,button):
-        path=button.Label
+    def togglePaths(self, button):
+        path = button.Label
         if button.GetValue():
-            #button is active so set the relevant DIO lines
-            #take settings for this path
-            settings=self.paths[path]
-            #loop throught DIO settings.
+            # button is active so set the relevant DIO lines
+            # take settings for this path
+            settings = self.paths[path]
+            # loop throught DIO settings.
             for object in settings[0].keys():
-                labels=self.callbacks['get labels']()
-                line=labels.index(object)
-                #loop through settings and set each named object to that state.
-                self.callbacks['write line'](line, settings[0][object])
-#                print(path,self.callbacks['getOutputs']())
-            #Need some way to define exclusive and non-exclusive paths
-            #assume they are exclusive for now.
-            otherbuttons=settings[1]
+                labels = self.callbacks["get labels"]()
+                line = labels.index(object)
+                # loop through settings and set each named object to that state.
+                self.callbacks["write line"](line, settings[0][object])
+            #                print(path,self.callbacks['getOutputs']())
+            # Need some way to define exclusive and non-exclusive paths
+            # assume they are exclusive for now.
+            otherbuttons = settings[1]
             for key in otherbuttons.keys():
                 self.pathNameToButton[key].SetValue(otherbuttons[key])
 
     @cockpit.util.threads.callInMainThread
-    def updateAfterChange(self,*args):
-#        # Accept *args so that can be called directly as a Pyro callback
-#        # or an event handler.
+    def updateAfterChange(self, *args):
+        #        # Accept *args so that can be called directly as a Pyro callback
+        #        # or an event handler.
         pass
+
+
 #        # need to update display if active.
-#self.
+# self.
 
 
 def finalizeInitialization(self):
-        self.updateAfterChange()
+    self.updateAfterChange()

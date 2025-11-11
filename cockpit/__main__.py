@@ -25,5 +25,5 @@ import cockpit
 # Because "cockpit" is a package and not a module, this module named
 # "__main__" is required so that "python -m cockpit" works.
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(cockpit.main(sys.argv))

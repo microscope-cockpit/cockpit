@@ -27,14 +27,14 @@ from cockpit.handlers.lightSource import LightHandler
 
 class ShutterDevice(device.Device):
     """Base shutter device with dummy methods for testing."""
+
     def __init__(self, name, config={}):
         super().__init__(name, config)
-        lights = config.get('lights', None)
+        lights = config.get("lights", None)
         if lights:
-            self.lights = re.split(r'[,;: ]\s*', lights)
+            self.lights = re.split(r"[,;: ]\s*", lights)
         else:
             self.lights = None
-
 
     def finalizeInitialization(self):
         ## Replace lights strings with their handlers.
@@ -47,25 +47,23 @@ class ShutterDevice(device.Device):
         # Register this shutter with the LightHandler class.
         LightHandler.addShutter(self, self.lights)
 
-
     def initialize(self):
         pass
 
-
     def performSubscriptions(self):
-            events.subscribe(events.PREPARE_FOR_EXPERIMENT,
-                            self.onPrepareForExperiment)
-            events.subscribe(events.EXPERIMENT_COMPLETE,
-                            self.onCleanupAfterExperiment)
-            events.subscribe(events.LIGHT_SOURCE_ENABLE, self.onLightSourceEnable)
-
+        events.subscribe(
+            events.PREPARE_FOR_EXPERIMENT, self.onPrepareForExperiment
+        )
+        events.subscribe(
+            events.EXPERIMENT_COMPLETE, self.onCleanupAfterExperiment
+        )
+        events.subscribe(events.LIGHT_SOURCE_ENABLE, self.onLightSourceEnable)
 
     def enableTrigger(self, enable=True):
         if enable:
             print("Shutter %s enabled." % self.name)
         else:
             print("Shutter %s disabled." % self.name)
-
 
     def onLightSourceEnable(self, handler, enab):
         if enab and handler in self.lights:
@@ -75,14 +73,11 @@ class ShutterDevice(device.Device):
             # All of our lights are disabled.
             self.enableTrigger(False)
 
-
     def setExposureTime(self, t):
         print("Shutter %s exposure time set to %s." % (self.name, t))
 
-
     def onPrepareForExperiment(self, experiment):
         self.enableTrigger()
-
 
     def onCleanupAfterExperiment(self):
         pass

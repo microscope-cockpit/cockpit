@@ -58,12 +58,12 @@ import decimal
 import math
 
 ## Provided so the UI knows what to call this experiment.
-EXPERIMENT_NAME = 'Z-stack'
+EXPERIMENT_NAME = "Z-stack"
 
 
 ## This class handles classic Z-stack experiments.
 class ZStackExperiment(experiment.Experiment):
-    ## Create the ActionTable needed to run the experiment. We simply move to 
+    ## Create the ActionTable needed to run the experiment. We simply move to
     # each Z-slice in turn, take an image, then move to the next.
     def generateActions(self):
         table = actionTable.ActionTable()
@@ -75,12 +75,15 @@ class ZStackExperiment(experiment.Experiment):
             # the volume.
             numZSlices += 1
         for zIndex in range(numZSlices):
-            # Move to the next position, then wait for the stage to 
+            # Move to the next position, then wait for the stage to
             # stabilize.
             zTarget = self.zStart + self.sliceHeight * zIndex
             motionTime, stabilizationTime = 0, 0
             if prevAltitude is not None:
-                motionTime, stabilizationTime = self.zPositioner.getMovementTime(prevAltitude, zTarget)
+                (
+                    motionTime,
+                    stabilizationTime,
+                ) = self.zPositioner.getMovementTime(prevAltitude, zTarget)
             curTime += motionTime
             table.addAction(curTime, self.zPositioner, zTarget)
             curTime += stabilizationTime
@@ -91,13 +94,14 @@ class ZStackExperiment(experiment.Experiment):
                 curTime = self.expose(curTime, cameras, lightTimePairs, table)
                 # Advance the time very slightly so that all exposures
                 # are strictly ordered.
-                curTime += decimal.Decimal('1e-10')
+                curTime += decimal.Decimal("1e-10")
             # Hold the Z motion flat during the exposure.
             table.addAction(curTime, self.zPositioner, zTarget)
 
         # Move back to the start so we're ready for the next rep.
         motionTime, stabilizationTime = self.zPositioner.getMovementTime(
-                self.zHeight, 0)
+            self.zHeight, 0
+        )
         curTime += motionTime
         table.addAction(curTime, self.zPositioner, self.zStart)
         # Hold flat for the stabilization time, and any time needed for
@@ -107,13 +111,17 @@ class ZStackExperiment(experiment.Experiment):
         if self.numReps > 1:
             for cameras, lightTimePairs in self.exposureSettings:
                 for camera in cameras:
-                    cameraReadyTime = max(cameraReadyTime,
-                            self.getTimeWhenCameraCanExpose(table, camera))
-        table.addAction(max(curTime + stabilizationTime, cameraReadyTime),
-                self.zPositioner, self.zStart)
+                    cameraReadyTime = max(
+                        cameraReadyTime,
+                        self.getTimeWhenCameraCanExpose(table, camera),
+                    )
+        table.addAction(
+            max(curTime + stabilizationTime, cameraReadyTime),
+            self.zPositioner,
+            self.zStart,
+        )
 
         return table
-
 
 
 ## A consistent name to use to refer to the class itself.

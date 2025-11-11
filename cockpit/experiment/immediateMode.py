@@ -67,11 +67,26 @@ class ImmediateModeExperiment(experiment.Experiment):
     # size (i.e. the distance between images in a 3D volume), if applicable.
     # And of course we need the save path for the file (or else no data will
     # be recorded). Optionally, additional metadata can be supplied.
-    def __init__(self, numReps, repDuration, imagesPerRep, sliceHeight = 0,
-            metadata = '', savePath = ''):
-        super().__init__(numReps, repDuration,
-                None, 0, 0, sliceHeight, {},
-                metadata = metadata, savePath = savePath)
+    def __init__(
+        self,
+        numReps,
+        repDuration,
+        imagesPerRep,
+        sliceHeight=0,
+        metadata="",
+        savePath="",
+    ):
+        super().__init__(
+            numReps,
+            repDuration,
+            None,
+            0,
+            0,
+            sliceHeight,
+            {},
+            metadata=metadata,
+            savePath=savePath,
+        )
         # Number of images to be collected per camera per rep.
         self.imagesPerRep = imagesPerRep
 
@@ -98,7 +113,6 @@ class ImmediateModeExperiment(experiment.Experiment):
         self.cameraToImageCount = {c: 0 for c in self.cameras}
         self.cameraToIgnoredImageIndices = {c: set() for c in self.cameras}
 
-
     def prepareHandlers(self):
         """Unlike with normal experiments, we don't prep handlers."""
         pass
@@ -111,7 +125,6 @@ class ImmediateModeExperiment(experiment.Experiment):
     def run(self):
         self.cameraToImageCount = {c: self.imagesPerRep for c in self.cameras}
         return super().run()
-
 
     ## Run the experiment. Return True if it was successful. This will call
     # self.executeRep() iteratively, taking care of the time to pass between
@@ -126,11 +139,12 @@ class ImmediateModeExperiment(experiment.Experiment):
             waitTime = self.repDuration - (endTime - startTime)
             time.sleep(max(0, waitTime))
 
-
     ## Execute one rep of the experiment. Override this function to perform
     # your experiment logic.
     # \param repNum The number of the rep (e.g. 0 = first rep, 1 = second
     #        rep, etc.)
     def executeRep(self, repNum):
-        raise RuntimeError(("Immediate-mode experiment %s " % self) +
-                "didn't implement its executeRep function.")
+        raise RuntimeError(
+            ("Immediate-mode experiment %s " % self)
+            + "didn't implement its executeRep function."
+        )

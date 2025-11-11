@@ -22,6 +22,7 @@ import unittest
 
 import cockpit.util.Mrc as Mrc
 
+
 class TruncatedMrcFiles(unittest.TestCase):
     def test_adjust_data_shape(self):
         ## An array of test cases, each a 3 element tuple specifying
@@ -44,18 +45,19 @@ class TruncatedMrcFiles(unittest.TestCase):
             numel = case[0]
             shape = case[1]
             expected_shape = case[2]
-            self.assertEqual(Mrc.adjusted_data_shape(numel, shape),
-                             expected_shape)
+            self.assertEqual(
+                Mrc.adjusted_data_shape(numel, shape), expected_shape
+            )
 
         test_cases = [
             (150, (10, 10)),
         ]
         for case in test_cases:
-            with self.assertRaisesRegex(ValueError, 'data too large'):
+            with self.assertRaisesRegex(ValueError, "data too large"):
                 numel = case[0]
                 shape = case[1]
                 Mrc.adjusted_data_shape(numel, shape)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

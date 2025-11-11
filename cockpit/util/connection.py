@@ -54,9 +54,10 @@
 import Pyro4
 from cockpit import depot
 
+
 ## Simple class for managing connections to remote services.
 class Connection:
-    def __init__(self, serviceName, ipAddress, port, localIp = None):
+    def __init__(self, serviceName, ipAddress, port, localIp=None):
         ## Name of the service on the remote server.
         self.serviceName = serviceName
         ## IP address to connect to.
@@ -71,21 +72,20 @@ class Connection:
         ## Extant connection to the camera.
         self.connection = None
 
-
     ## Establish a connection with the remote service, and tell
     # it to send us its data.
     # By default we set a short timeout of 5s so that we find out fairly
     # quickly if something went wrong.
-    def connect(self, callback, timeout = 5):
+    def connect(self, callback, timeout=5):
         self.callback = callback
         connection = Pyro4.Proxy(
-                'PYRO:%s@%s:%d' % (self.serviceName, self.ipAddress, self.port))
+            "PYRO:%s@%s:%d" % (self.serviceName, self.ipAddress, self.port)
+        )
         connection._pyroTimeout = timeout
         self.connection = connection
         server = depot.getHandlersOfType(depot.SERVER)[0]
         uri = server.register(self.callback, self.localIp)
         self.connection.receiveClient(uri)
-
 
     ## Remove the connection and stop listening to the service.
     def disconnect(self):
@@ -95,5 +95,7 @@ class Connection:
             try:
                 self.connection.receiveClient(None)
             except Exception as e:
-                print ("Couldn't disconnect from %s: %s" % (self.serviceName, e))
+                print(
+                    "Couldn't disconnect from %s: %s" % (self.serviceName, e)
+                )
             self.connection = None

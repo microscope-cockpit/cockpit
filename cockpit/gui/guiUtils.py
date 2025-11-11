@@ -59,7 +59,11 @@ import wx.lib.newevent
 # up UI elements and updating various status displays.
 
 # Create a custom event for validation errors.
-CockpitValidationErrorEvent, EVT_COCKPIT_VALIDATION_ERROR= wx.lib.newevent.NewCommandEvent()
+(
+    CockpitValidationErrorEvent,
+    EVT_COCKPIT_VALIDATION_ERROR,
+) = wx.lib.newevent.NewCommandEvent()
+
 
 class _BaseValidator(wx.Validator):
     """Validators for text controls used for numeric entry.
@@ -68,29 +72,25 @@ class _BaseValidator(wx.Validator):
     each derived class has an instance created in this file for passing to
     SetValidator.
     """
+
     def __init__(self, allowEmpty=False):
         super().__init__()
         self.Bind(wx.EVT_CHAR, self.OnChar)
-
 
     def Clone(self):
         # The copy constructor mentioned above.
         return self.__class__()
 
-
     def TransferToWindow(self):
         return True
 
-
     def TransferFromWindow(self):
         return True
-
 
     # Abstract - define in derived calss.
     def _validate(self, value):
         # Test a value. Raise an exception if it is not valid.
         pass
-
 
     def Validate(self, parent):
         ctrl = self.GetWindow()
@@ -101,11 +101,13 @@ class _BaseValidator(wx.Validator):
         val = ctrl.GetValue().strip()
 
         # Validate empty case
-        if val == '':
-            if getattr(ctrl, 'allowEmpty', False):
+        if val == "":
+            if getattr(ctrl, "allowEmpty", False):
                 return True
             else:
-                evt = CockpitValidationErrorEvent(id=wx.ID_ANY, control=ctrl, empty=True)
+                evt = CockpitValidationErrorEvent(
+                    id=wx.ID_ANY, control=ctrl, empty=True
+                )
                 wx.PostEvent(ctrl, evt)
                 return False
 
@@ -118,7 +120,6 @@ class _BaseValidator(wx.Validator):
             wx.PostEvent(ctrl, evt)
             return False
 
-
     def OnChar(self, event):
         # Define in subclass
         pass
@@ -130,29 +131,29 @@ class FloatValidator(_BaseValidator):
     * Restricts input to numeric characters an a single decimal point.
     * _validate() tests that string can be parsed as a float.
     """
+
     def _validate(self, val):
         # Allow special case of single decimal point.
-        if val == '.':
-            val = '0.'
+        if val == ".":
+            val = "0."
         return float(val)
-
 
     def OnChar(self, event):
         key = event.GetKeyCode()
         if key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
             # Pass cursors, backspace, etc. to control
             event.Skip()
-        elif chr(key) == '-' and event.EventObject.InsertionPoint == 0:
+        elif chr(key) == "-" and event.EventObject.InsertionPoint == 0:
             event.Skip()
         elif chr(key) in string.digits:
             # Pass any digit to control.
             event.Skip()
-        elif chr(key) == '.':
+        elif chr(key) == ".":
             # Only allow a single '.'
             tc = self.GetWindow()
             val = tc.GetValue()
             selection = event.EventObject.GetStringSelection()
-            if '.' not in val or '.' in selection:
+            if "." not in val or "." in selection:
                 event.Skip()
         return
 
@@ -162,9 +163,9 @@ class IntValidator(_BaseValidator):
 
     * Restricts input to numeric characters.
     * _validate() tests that string can be parsed as an int."""
+
     def _validate(self, val):
         return int(val)
-
 
     def OnChar(self, event):
         key = event.GetKeyCode()
@@ -183,12 +184,12 @@ class CSVValidator(_BaseValidator):
     * Restricts input to numeric characters an a single decimal point.
     * _validate() tests that string can be parsed as a float.
     """
+
     def _validate(self, val):
         converted = []
-        for v in val.split(','):
+        for v in val.split(","):
             converted.append(float(v))
         return converted
-
 
     def OnChar(self, event):
         key = event.GetKeyCode()
@@ -198,20 +199,22 @@ class CSVValidator(_BaseValidator):
         elif chr(key) in string.digits:
             # Pass any digit to control.
             event.Skip()
-        elif chr(key) == '-':
+        elif chr(key) == "-":
             event.Skip()
-        elif chr(key) == ',' and len(event.EventObject.Value) > 0:
+        elif chr(key) == "," and len(event.EventObject.Value) > 0:
             # Could also check that adjacent characters are not ','.
             event.Skip()
-        elif chr(key) == '.':
+        elif chr(key) == ".":
             # Could also check that there's only one '.' in the block
             # of text between delimiters.
             event.Skip()
         return
 
+
 FLOATVALIDATOR = FloatValidator()
 INTVALIDATOR = IntValidator()
 CSVVALIDATOR = CSVValidator()
+
 
 ## Generate a set of small text boxes for controlling individual lights.
 # Return a list of the controls, and the sizer they are contained in.
@@ -219,10 +222,11 @@ def makeLightsControls(parent, labels, defaults):
     sizer = wx.FlexGridSizer(2, len(labels), 0, 4)
     controls = []
     for label, defaultVal in zip(labels, defaults):
-        sizer.Add(wx.StaticText(parent, -1, label),
-                0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        sizer.Add(
+            wx.StaticText(parent, -1, label), 0, wx.ALIGN_RIGHT | wx.ALL, 5
+        )
         # Changed 'control' to 'ctrl' to more clearly discriminate from 'controls'.
-        ctrl = wx.TextCtrl(parent, size = (40, -1), name=label)
+        ctrl = wx.TextCtrl(parent, size=(40, -1), name=label)
         ctrl.SetValue(defaultVal)
         # allowEmpty=True lets validator know this control may be empty
         ctrl.SetValidator(FLOATVALIDATOR)
@@ -233,7 +237,7 @@ def makeLightsControls(parent, labels, defaults):
 
 
 ## Add some explanatory text to the given sizer.
-def addHelperString(parent, sizer, text, border = 0, flags = wx.ALL):
+def addHelperString(parent, sizer, text, border=0, flags=wx.ALL):
     label = wx.StaticText(parent, -1, " (What is this?)")
     label.SetForegroundColour((100, 100, 255))
     label.SetToolTip(wx.ToolTip(text))
@@ -245,22 +249,33 @@ def addHelperString(parent, sizer, text, border = 0, flags = wx.ALL):
 # @param defaultValue The default value the form input should have.
 # @param labelHeightAdjustment Number of pixels to push the input's label down
 # by. Sometimes labels and inputs don't align nicely otherwise.
-# @param controlType The type of the form input to make. Defaults to 
+# @param controlType The type of the form input to make. Defaults to
 #        wx.TextCtrl.
 # @param control The specific control object to use. Mutually exclusive
 #        with the controlType parameter.
 # @param helperString Help text to insert, using addHelperString.
 # @param flags Any wx flags to use when inserting the object into the sizer.
 # \todo The checkbox logic results in substantial code duplication.
-def addLabeledInput(parent, sizer, id = -1, label = '',
-                    defaultValue = '', size = (-1, -1), minSize = (-1, -1),
-                    shouldRightAlignInput = True, border = 0, labelHeightAdjustment = 3,
-                    control = None, controlType = None, helperString = '',
-                    flags = wx.ALL):
+def addLabeledInput(
+    parent,
+    sizer,
+    id=-1,
+    label="",
+    defaultValue="",
+    size=(-1, -1),
+    minSize=(-1, -1),
+    shouldRightAlignInput=True,
+    border=0,
+    labelHeightAdjustment=3,
+    control=None,
+    controlType=None,
+    helperString="",
+    flags=wx.ALL,
+):
     if control is None:
         if controlType is None:
             controlType = wx.TextCtrl
-        control = controlType(parent, id, defaultValue, size = size, name=label)
+        control = controlType(parent, id, defaultValue, size=size, name=label)
     text = wx.StaticText(parent, -1, label)
     rowSizer = wx.BoxSizer(wx.HORIZONTAL)
     rowSizer.SetMinSize(minSize)
@@ -270,14 +285,24 @@ def addLabeledInput(parent, sizer, id = -1, label = '',
         if shouldRightAlignInput:
             rowSizer.Add((10, -1), 1, wx.EXPAND | wx.ALL, 0)
         rowSizer.Add(text, 0, wx.TOP, labelHeightAdjustment)
-        if helperString != '':
-            addHelperString(parent, rowSizer, helperString,
-                    border = labelHeightAdjustment, flags = wx.TOP)
+        if helperString != "":
+            addHelperString(
+                parent,
+                rowSizer,
+                helperString,
+                border=labelHeightAdjustment,
+                flags=wx.TOP,
+            )
     else:
         rowSizer.Add(text, 0, wx.TOP, labelHeightAdjustment)
-        if helperString != '':
-            addHelperString(parent, rowSizer, helperString,
-                    border = labelHeightAdjustment, flags = wx.TOP)
+        if helperString != "":
+            addHelperString(
+                parent,
+                rowSizer,
+                helperString,
+                border=labelHeightAdjustment,
+                flags=wx.TOP,
+            )
         if shouldRightAlignInput:
             # Add an empty to suck up horizontal space
             rowSizer.Add((10, -1), 1, wx.EXPAND | wx.ALL, 0)
@@ -286,26 +311,30 @@ def addLabeledInput(parent, sizer, id = -1, label = '',
     return control
 
 
-## Simple utility function to pop up the supplied menu at the current 
+## Simple utility function to pop up the supplied menu at the current
 # mouse location.
 def placeMenuAtMouse(frame, menu):
-    # Get the Mouse Position on the Screen 
+    # Get the Mouse Position on the Screen
     mousePos = wx.GetMousePosition()
-    # Translate the Mouse's Screen Position to the Mouse's Control Position 
+    # Translate the Mouse's Screen Position to the Mouse's Control Position
     mousePosRelative = frame.ScreenToClient(mousePos)
     frame.PopupMenu(menu, mousePosRelative)
 
 
 ## Pop up a warning dialog, and return the user's reaction.
-def getUserPermission(text, title = 'Warning'):
-    response = wx.MessageDialog(None, text, title, 
-            wx.CANCEL | wx.OK | wx.STAY_ON_TOP | wx.ICON_EXCLAMATION).ShowModal()
+def getUserPermission(text, title="Warning"):
+    response = wx.MessageDialog(
+        None,
+        text,
+        title,
+        wx.CANCEL | wx.OK | wx.STAY_ON_TOP | wx.ICON_EXCLAMATION,
+    ).ShowModal()
     return response == wx.ID_OK
 
 
 ## Given a control, try to parse its value as a number, returning a
 # default value on failure.
-def tryParseNum(control, convertFunc = int, default = 0):
+def tryParseNum(control, convertFunc=int, default=0):
     try:
         return convertFunc(control.GetValue())
     except:

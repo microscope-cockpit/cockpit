@@ -76,22 +76,28 @@ class _StagePositionEntryDialog(wx.Dialog):
         position = cockpit.interfaces.stageMover.getPosition()
         limits = cockpit.interfaces.stageMover.getSoftLimits()
         for i in range(3):
-            self._spins.append(wx.SpinCtrlDouble(
-                self,
-                min=limits[i][0],
-                max=limits[i][1],
-                initial=position[i]
-            ))
+            self._spins.append(
+                wx.SpinCtrlDouble(
+                    self,
+                    min=limits[i][0],
+                    max=limits[i][1],
+                    initial=position[i],
+                )
+            )
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        sizer.Add(wx.StaticText(self, label="Select stage position"),
-                  wx.SizerFlags().Border().Centre())
+        sizer.Add(
+            wx.StaticText(self, label="Select stage position"),
+            wx.SizerFlags().Border().Centre(),
+        )
 
         spins_sizer = wx.FlexGridSizer(cols=2, gap=(0, 0))
-        for spin, name in zip(self._spins, ['X', 'Y', 'Z']):
-            spins_sizer.Add(wx.StaticText(self, label=name),
-                            wx.SizerFlags().Border().Centre())
+        for spin, name in zip(self._spins, ["X", "Y", "Z"]):
+            spins_sizer.Add(
+                wx.StaticText(self, label=name),
+                wx.SizerFlags().Border().Centre(),
+            )
             spins_sizer.Add(spin, wx.SizerFlags().Border().Expand())
         sizer.Add(spins_sizer, wx.SizerFlags().Border().Centre())
 
@@ -114,16 +120,18 @@ def GoToXYZDialog(parent: wx.Window) -> None:
     # This should be a method of the StageMover interface (see #616)
     position = cockpit.interfaces.stageMover.getPosition()
     posDelta = [
-            newPos[0] - position[0],
-            newPos[1] - position[1],
-            newPos[2] - position[2],
-        ]
+        newPos[0] - position[0],
+        newPos[1] - position[1],
+        newPos[2] - position[2],
+    ]
     originalHandlerIndex = wx.GetApp().Stage.curHandlerIndex
     currentHandlerIndex = originalHandlerIndex
     allPositions = cockpit.interfaces.stageMover.getAllPositions()
     for axis in range(3):
         if posDelta[axis] ** 2 > 0.001:
-            limits = cockpit.interfaces.stageMover.getIndividualHardLimits(axis)
+            limits = cockpit.interfaces.stageMover.getIndividualHardLimits(
+                axis
+            )
             currentpos = allPositions[currentHandlerIndex][axis]
             if (
                 # off bottom
@@ -163,8 +171,12 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         ## Last seen mouse position
         self.lastMousePos = [0, 0]
 
-        primitive_specs = wx.GetApp().Config['stage'].getlines('primitives', [])
-        self._primitives = [Primitive.factory(spec) for spec in primitive_specs]
+        primitive_specs = (
+            wx.GetApp().Config["stage"].getlines("primitives", [])
+        )
+        self._primitives = [
+            Primitive.factory(spec) for spec in primitive_specs
+        ]
 
         hardLimits = cockpit.interfaces.stageMover.getHardLimits()
         self.minX, self.maxX = hardLimits[0]
@@ -194,7 +206,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
         ## Size of text to draw. I confess I don't really understand how this
         # corresponds to anything, but it seems to work out.
-        self.textSize = .004
+        self.textSize = 0.004
 
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
         self.Bind(wx.EVT_LEFT_UP, self.OnLeftClick)
@@ -205,32 +217,37 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         # being displayed in preference to our own.
         self.Bind(wx.EVT_CONTEXT_MENU, lambda event: None)
         events.subscribe(events.SOFT_SAFETY_LIMIT, self.onSafetyChange)
-        self.SetToolTip(wx.ToolTip("Left double-click to move the stage. " +
-                "Right click for gotoXYZ and double-click to toggle displaying of mosaic " +
-                "tiles."))
+        self.SetToolTip(
+            wx.ToolTip(
+                "Left double-click to move the stage. "
+                + "Right click for gotoXYZ and double-click to toggle displaying of mosaic "
+                + "tiles."
+            )
+        )
 
         wx.GetApp().Objectives.Bind(
             cockpit.interfaces.EVT_OBJECTIVE_CHANGED,
             self._OnObjectiveChanged,
         )
 
-        #many stages have an external control that cockpit knows nothing about
-        #eg an xy(z) joystick. So setup a wx timer to poll the position
-        #and update if it changes.
-        self._positionCache = [0.0 for x in range(len
-                                (cockpit.interfaces.stageMover.getPosition()))]
+        # many stages have an external control that cockpit knows nothing about
+        # eg an xy(z) joystick. So setup a wx timer to poll the position
+        # and update if it changes.
+        self._positionCache = [
+            0.0
+            for x in range(len(cockpit.interfaces.stageMover.getPosition()))
+        ]
         self._timer = wx.Timer(self)
-        #poll every 1 s (1000 ms)
+        # poll every 1 s (1000 ms)
         self._timer.Start(1000)
         self.Bind(wx.EVT_TIMER, self.onTimer)
-        #bind to window destroy to stop timer
+        # bind to window destroy to stop timer
         self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
 
-
-    #code that the wx timer calls to check postion on a regular basisis.
+    # code that the wx timer calls to check postion on a regular basisis.
     def onTimer(self, evt):
-        position=cockpit.interfaces.stageMover.getPosition()
-        for i,pos in enumerate(position):
+        position = cockpit.interfaces.stageMover.getPosition()
+        for i, pos in enumerate(position):
             if pos != self._positionCache[i]:
                 events.publish(events.STAGE_POSITION, i, pos)
                 self._positionCache[i] = pos
@@ -247,7 +264,6 @@ class MacroStageXY(macroStageBase.MacroStageBase):
         if axis in [0, 1]:
             wx.CallAfter(self.Refresh)
 
-
     ## Draw the canvas. We draw the following:
     # - A blue dotted square representing the hard stage limits of
     #   [(4000, 4000), (25000, 25000)]
@@ -258,7 +274,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
     # - A purple dot for each saved site
     # - A black dot for each tile in the mosaic
     # - Device-defined primitives, e.g. to show individual sample locations.
-    def onPaint(self, event = None):
+    def onPaint(self, event=None):
         if not self.shouldDraw:
             return
         try:
@@ -268,7 +284,7 @@ class MacroStageXY(macroStageBase.MacroStageBase):
 
             dc = wx.PaintDC(self)
             self.SetCurrent(self.context)
-            width, height = self.GetClientSize()*self.GetContentScaleFactor()
+            width, height = self.GetClientSize() * self.GetContentScaleFactor()
 
             glViewport(0, 0, width, height)
 
@@ -288,22 +304,27 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             glLoadIdentity()
             glOrtho(self.maxX, self.minX, self.minY, self.maxY, -1.0, 1.0)
 
-            #Loop over objective offsets to draw limist in multiple colours.
+            # Loop over objective offsets to draw limist in multiple colours.
             for obj in wx.GetApp().Objectives.GetHandlers():
                 offset = obj.offset
                 colour = obj.colour
                 glLineWidth(4)
                 if obj is not wx.GetApp().Objectives.GetCurrent():
-                    colour = (min(1,colour[0]+0.7),min(1,colour[1]+0.7),
-                              min(1,colour[2]+0.7))
+                    colour = (
+                        min(1, colour[0] + 0.7),
+                        min(1, colour[1] + 0.7),
+                        min(1, colour[2] + 0.7),
+                    )
                     glLineWidth(2)
                 glEnable(GL_LINE_STIPPLE)
                 glLineStipple(3, 0xAAAA)
                 glColor3f(*colour)
                 glBegin(GL_LINE_LOOP)
-                for (xIndex, yIndex) in squareOffsets:
-                    glVertex2f(hardLimits[xIndex][0]-offset[0],
-                               hardLimits[yIndex][1]+offset[1])
+                for xIndex, yIndex in squareOffsets:
+                    glVertex2f(
+                        hardLimits[xIndex][0] - offset[0],
+                        hardLimits[yIndex][1] + offset[1],
+                    )
                 glEnd()
                 glDisable(GL_LINE_STIPPLE)
 
@@ -328,8 +349,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 glLineStipple(3, 0x5555)
                 glColor3f(0, 1, 0)
                 glBegin(GL_LINE_LOOP)
-                for (x, y) in [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]:
-                    glVertex2f(x-offset[0], y+offset[1])
+                for x, y in [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]:
+                    glVertex2f(x - offset[0], y + offset[1])
                 glEnd()
                 glDisable(GL_LINE_STIPPLE)
 
@@ -337,14 +358,17 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 glColor3f(0, 0, 0)
                 glBegin(GL_LINES)
                 for (vx, vy), (dx, dy) in [
-                        (softLimits[0], (self.maxExtent * .1, 0)),
-                        (softLimits[0], (0, self.maxExtent * .1)),
-                        (softLimits[1], (-self.maxExtent * .1, 0)),
-                        (softLimits[1], (0, -self.maxExtent * .1))]:
+                    (softLimits[0], (self.maxExtent * 0.1, 0)),
+                    (softLimits[0], (0, self.maxExtent * 0.1)),
+                    (softLimits[1], (-self.maxExtent * 0.1, 0)),
+                    (softLimits[1], (0, -self.maxExtent * 0.1)),
+                ]:
                     secondVertex = [vx + dx, vy + dy]
-                    glVertex2f(vx-offset[0], vy+offset[1])
-                    glVertex2f(secondVertex[0]-offset[0],
-                                      secondVertex[1]+offset[1])
+                    glVertex2f(vx - offset[0], vy + offset[1])
+                    glVertex2f(
+                        secondVertex[0] - offset[0],
+                        secondVertex[1] + offset[1],
+                    )
                 glEnd()
                 glLineWidth(1)
             # Now the coordinates. Only draw them if the soft limits aren't
@@ -353,8 +377,11 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 for i, (dx, dy) in enumerate([(4000, -700), (2000, 400)]):
                     x = softLimits[i][0]
                     y = softLimits[i][1]
-                    self.drawTextAt((x + dx, y + dy),
-                                    "(%d, %d)" % (x, y), size = self.textSize * .75)
+                    self.drawTextAt(
+                        (x + dx, y + dy),
+                        "(%d, %d)" % (x, y),
+                        size=self.textSize * 0.75,
+                    )
 
             glDisable(GL_LINE_STIPPLE)
 
@@ -369,20 +396,20 @@ class MacroStageXY(macroStageBase.MacroStageBase):
                 primitive.render()
             glDisable(GL_LINE_STIPPLE)
 
-            #Draw possibloe stage positions for current objective
+            # Draw possibloe stage positions for current objective
             offset = wx.GetApp().Objectives.GetOffset()
             colour = wx.GetApp().Objectives.GetColour()
             glLineWidth(2)
             # Draw stage position
             motorPos = self.curStagePosition[:2]
-            squareSize = self.maxExtent * .025
+            squareSize = self.maxExtent * 0.025
             glColor3f(*colour)
             glBegin(GL_LINE_LOOP)
-            for (x, y) in squareOffsets:
-                glVertex2f(motorPos[0]-offset[0] +
-                                  squareSize * x - squareSize / 2,
-                                  motorPos[1]+offset[1] +
-                                  squareSize * y - squareSize / 2)
+            for x, y in squareOffsets:
+                glVertex2f(
+                    motorPos[0] - offset[0] + squareSize * x - squareSize / 2,
+                    motorPos[1] + offset[1] + squareSize * y - squareSize / 2,
+                )
             glEnd()
 
             # Draw motion crosshairs
@@ -402,32 +429,43 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             delta = motorPos - self.prevStagePosition[:2]
 
             if sum(numpy.fabs(delta)) > self._min_delta_to_display:
-                self.drawArrow((motorPos[0]- self.offset[0],
-                                motorPos[1]+self.offset[1]), delta, (0, 0, 1),
-                        arrowSize = self.maxExtent * .1,
-                        arrowHeadSize = self.maxExtent * .025)
+                self.drawArrow(
+                    (
+                        motorPos[0] - self.offset[0],
+                        motorPos[1] + self.offset[1],
+                    ),
+                    delta,
+                    (0, 0, 1),
+                    arrowSize=self.maxExtent * 0.1,
+                    arrowHeadSize=self.maxExtent * 0.025,
+                )
                 glLineWidth(1)
 
             # The crosshairs don't always draw large enough to show,
             # so ensure that at least one pixel in the middle
             # gets drawn.
             glBegin(GL_POINTS)
-            glVertex2f(motorPos[0]-self.offset[0],
-                              motorPos[1]+self.offset[1])
+            glVertex2f(
+                motorPos[0] - self.offset[0], motorPos[1] + self.offset[1]
+            )
             glEnd()
 
             # Draw scale bar
             glColor3f(0, 0, 0)
             glLineWidth(1)
             glBegin(GL_LINES)
-            yOffset = self.minY + 0.9 * (self.viewDeltaY + 0.5 * (self.viewExtent - stageHeight))
+            yOffset = self.minY + 0.9 * (
+                self.viewDeltaY + 0.5 * (self.viewExtent - stageHeight)
+            )
             glVertex2f(hardLimits[0][0], yOffset)
             glVertex2f(hardLimits[0][1], yOffset)
             # Draw notches in the scale bar every 1mm.
-            for scaleX in range(int(hardLimits[0][0]), int(hardLimits[0][1]) + 1000, 1000):
-                width = self.viewExtent * .015
+            for scaleX in range(
+                int(hardLimits[0][0]), int(hardLimits[0][1]) + 1000, 1000
+            ):
+                width = self.viewExtent * 0.015
                 if scaleX % 5000 == 0:
-                    width = self.viewExtent * .025
+                    width = self.viewExtent * 0.025
                 y1 = yOffset - width / 2
                 y2 = yOffset + width / 2
                 glVertex2f(scaleX, y1)
@@ -447,9 +485,8 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             _logger.error(traceback.format_exc())
             self.shouldDraw = False
 
-
     ## Set one part of the stage motion limits.
-    def setXYLimit(self, pos = None):
+    def setXYLimit(self, pos=None):
         if pos is None:
             # Use current stage position
             pos = self.curStagePosition
@@ -474,7 +511,6 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             self.firstSafetyMousePos = None
             self.Refresh()
 
-
     ## Moved the mouse. Record its position
     def OnMouseMotion(self, event):
         if self.amSettingSafeties and self.firstSafetyMousePos:
@@ -482,25 +518,25 @@ class MacroStageXY(macroStageBase.MacroStageBase):
             self.lastMousePos = self.remapClick(event.GetPosition())
             self.Refresh()
 
-
     ## Clicked the left mouse button. Set safeties if we're in that mode.
     def OnLeftClick(self, event):
         if self.amSettingSafeties:
             safeLoc = self.remapClick(event.GetPosition())
             self.setXYLimit(safeLoc)
 
-
     ## Double-clicked the left mouse button. Move to the clicked location.
     def OnLeftDoubleClick(self, event):
-        originalMover= cockpit.interfaces.stageMover.mover.curHandlerIndex
-        #Quick hack to get deepsim working need to check if we can do it
-        #properly.  Should really check to see if we can move, and by that
-        #distance with exisiting mover
+        originalMover = cockpit.interfaces.stageMover.mover.curHandlerIndex
+        # Quick hack to get deepsim working need to check if we can do it
+        # properly.  Should really check to see if we can move, and by that
+        # distance with exisiting mover
         cockpit.interfaces.stageMover.mover.curHandlerIndex = 0
 
-        cockpit.interfaces.stageMover.goToXY(self.remapClick(event.GetPosition()))
+        cockpit.interfaces.stageMover.goToXY(
+            self.remapClick(event.GetPosition())
+        )
 
-        #make sure we are back to the expected mover
+        # make sure we are back to the expected mover
         cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
 
     def OnRightClick(self, event) -> None:
@@ -511,17 +547,21 @@ class MacroStageXY(macroStageBase.MacroStageBase):
     def OnRightDoubleClick(self, event):
         self.shouldDrawMosaic = not self.shouldDrawMosaic
 
-
     ## Remap a click location from pixel coordinates to realspace coordinates
     def remapClick(self, clickLoc):
         width, height = self.GetClientSize()
-        x = float(width - clickLoc[0]) / width * (self.maxX - self.minX) + self.minX
-        y = float(height - clickLoc[1]) / height * (self.maxY - self.minY) + self.minY
-        return [x+self.offset[0], y-self.offset[1]]
-
+        x = (
+            float(width - clickLoc[0]) / width * (self.maxX - self.minX)
+            + self.minX
+        )
+        y = (
+            float(height - clickLoc[1]) / height * (self.maxY - self.minY)
+            + self.minY
+        )
+        return [x + self.offset[0], y - self.offset[1]]
 
     ## Switch mode so that clicking sets the safeties
-    def setSafeties(self, event = None):
+    def setSafeties(self, event=None):
         self.amSettingSafeties = True
 
     ## Refresh display on objective change

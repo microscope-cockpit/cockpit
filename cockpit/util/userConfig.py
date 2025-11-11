@@ -34,14 +34,14 @@ _logger = logging.getLogger(__name__)
 
 ## In-memory version of the config; program singleton.
 _config = {}
-_config_path = ''
+_config_path = ""
 
 
 ## Open the config file and unserialize its contents.
 def _loadConfig(fpath):
     config = {}
     try:
-        with open(fpath, 'r') as fh:
+        with open(fpath, "r") as fh:
             config = eval(fh.read())
     except FileNotFoundError:
         config = {}
@@ -59,13 +59,13 @@ def _writeConfig(config, fpath):
     ## their contents are readable.
     printer = pprint.PrettyPrinter()
     if not printer.isreadable(config):
-        raise RuntimeError('user config file has non-writable data')
+        raise RuntimeError("user config file has non-writable data")
 
     dirname = os.path.dirname(fpath)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
-    with open(fpath, 'w') as fh:
+    with open(fpath, "w") as fh:
         fh.write(printer.pformat(config))
 
 
@@ -92,6 +92,7 @@ def getValue(key, default=None):
         result = default
     return result
 
+
 ## Set the entry referenced by key to the given value. Users are set as
 # in getValue.
 def setValue(key, value):
@@ -104,6 +105,7 @@ def setValue(key, value):
 def initialize(cockpit_config):
     global _config
     global _config_path
-    _config_path = os.path.join(cockpit_config['global'].get('config-dir'),
-                                'config.py')
+    _config_path = os.path.join(
+        cockpit_config["global"].get("config-dir"), "config.py"
+    )
     _config = _loadConfig(_config_path)

@@ -80,10 +80,7 @@ import cockpit.events
 ## filesystem filepath.  It is a /-separated filepath, even on
 ## windows, so do not use os.path.join.
 
-IMAGES_PATH = pkg_resources.resource_filename(
-    'cockpit',
-    'resources/images/'
-)
+IMAGES_PATH = pkg_resources.resource_filename("cockpit", "resources/images/")
 
 
 ## A single event type for all cockpit.events. The original cockpit
@@ -114,12 +111,14 @@ class EvtEmitter(wx.EvtHandler):
     always called.
 
     """
+
     def __init__(self, parent, cockpit_event_type):
         assert isinstance(parent, wx.Window)
         super().__init__()
         self._cockpit_event_type = cockpit_event_type
-        cockpit.events.subscribe(self._cockpit_event_type,
-                                 self._EmitCockpitEvent)
+        cockpit.events.subscribe(
+            self._cockpit_event_type, self._EmitCockpitEvent
+        )
 
         ## Destroy() is not called when the parent is destroyed, see
         ## https://github.com/wxWidgets/Phoenix/issues/630 so we need
@@ -130,8 +129,9 @@ class EvtEmitter(wx.EvtHandler):
         self.AddPendingEvent(CockpitEvent(EventData=args))
 
     def _Unsubscribe(self):
-        cockpit.events.unsubscribe(self._cockpit_event_type,
-                                   self._EmitCockpitEvent)
+        cockpit.events.unsubscribe(
+            self._cockpit_event_type, self._EmitCockpitEvent
+        )
 
     def _OnParentDestroy(self, event):
         self._Unsubscribe()
@@ -143,7 +143,7 @@ class EvtEmitter(wx.EvtHandler):
 
 
 def create_monospaced_multiline_text_ctrl(
-        parent: wx.Window, text: str, min_rows=0, min_cols=0
+    parent: wx.Window, text: str, min_rows=0, min_cols=0
 ) -> wx.TextCtrl:
     """Create a `wx.TextCtrl` to display a block of code.
 
@@ -165,7 +165,7 @@ def create_monospaced_multiline_text_ctrl(
     text_ctrl = wx.TextCtrl(
         parent,
         value=text,
-        style=(wx.TE_MULTILINE|wx.TE_DONTWRAP|wx.TE_READONLY)
+        style=(wx.TE_MULTILINE | wx.TE_DONTWRAP | wx.TE_READONLY),
     )
 
     ## 'w.Font.Family = f' does not work because 'w.Font' returns a
@@ -203,7 +203,9 @@ def create_monospaced_multiline_text_ctrl(
     ## scrollbar.  So we just add space for an extra line of text.
     text_ctrl_text_size.IncBy(dx=0, dy=char_text_size.Height)
 
-    text_ctrl.SetInitialSize(text_ctrl.GetSizeFromTextSize(text_ctrl_text_size))
+    text_ctrl.SetInitialSize(
+        text_ctrl.GetSizeFromTextSize(text_ctrl_text_size)
+    )
     return text_ctrl
 
 
@@ -223,7 +225,7 @@ def ExceptionBox(caption="", parent=None):
     """
     current_exception = sys.exc_info()[1]
     if current_exception is None:
-        raise RuntimeError('Not handling an exception')
+        raise RuntimeError("Not handling an exception")
 
     ## wx.MessageDialog looks better than plain wx.Dialog but we want
     ## to include the traceback without line-wrapping and to be able
@@ -232,8 +234,12 @@ def ExceptionBox(caption="", parent=None):
     ## subclass of wx.Dialog, it uses native widgets for simpler
     ## dialogs, such as gtk_message_dialog_new.
 
-    dialog = wx.Dialog(parent, title=caption, name="exception-dialog",
-                       style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+    dialog = wx.Dialog(
+        parent,
+        title=caption,
+        name="exception-dialog",
+        style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+    )
     message = wx.StaticText(dialog, label=str(current_exception))
 
     details = create_monospaced_multiline_text_ctrl(
@@ -243,8 +249,10 @@ def ExceptionBox(caption="", parent=None):
     sizer = wx.BoxSizer(wx.VERTICAL)
     sizer.Add(message, wx.SizerFlags(0).Expand().Border())
     sizer.Add(details, wx.SizerFlags(1).Expand().Border())
-    sizer.Add(dialog.CreateSeparatedButtonSizer(wx.OK),
-              wx.SizerFlags(0).Expand().Border())
+    sizer.Add(
+        dialog.CreateSeparatedButtonSizer(wx.OK),
+        wx.SizerFlags(0).Expand().Border(),
+    )
 
     dialog.SetSizerAndFit(sizer)
     dialog.Centre()

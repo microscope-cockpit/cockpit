@@ -177,42 +177,44 @@ import typing
 
 ## Define common event strings here. This way, they're here for reference,
 # and can be used elsewhere to avoid errors due to typos.
-COCKPIT_INIT_COMPLETE = 'cockpit initialization complete'
-DEVICE_STATUS = 'device status'
-EXPERIMENT_EXECUTION = 'experiment execution'
-EXPERIMENT_COMPLETE = 'experiment complete'
-UPDATE_STATUS_LIGHT = 'update status light'
-PREPARE_FOR_EXPERIMENT = 'prepare for experiment'
-CLEANUP_AFTER_EXPERIMENT = 'cleanup after experiment'
-LIGHT_SOURCE_ENABLE = 'light source enable'
-LIGHT_EXPOSURE_UPDATE = 'light exposure update'
-CAMERA_ENABLE = 'camera enable'
-UPDATE_ROI = 'update roi'
-FILTER_CHANGE = 'filter change'
-STAGE_POSITION = 'stage position'
-STAGE_MOVER = 'stage mover'
-STAGE_STOPPED = 'stage stopped'
-STAGE_TOP_BOTTOM = 'stage saved top/bottom'
-STAGE_STEP_INDEX = 'stage step index'
-STAGE_STEP_SIZE = 'stage step size'
-MACRO_STAGE_XY_DRAW = 'macro stage xy draw'
-SOFT_SAFETY_LIMIT = 'soft safety limit'
-NEW_SITE = 'new site'
-DELETE_SITE = 'site deleted'
-SYNCED_VIEW = 'synced view'
-USER_ABORT = 'user abort'
-MOSAIC_UPDATE = 'mosaic update'
-MOSAIC_START = 'mosaic start'
-MOSAIC_STOP = 'mosaic stop'
-NEW_IMAGE = 'new image %s' # must be suffixed with image source
-IMAGE_PIXEL_INFO = 'image pixel info'
-OBJECTIVE_CHANGE = 'objective change'
-SETTINGS_CHANGED = 'settings changed %s' # must be suffixed with device/handler name
-EXECUTOR_DONE = 'executor done %s' # must be sufficed with device/handler name
-VIDEO_MODE_TOGGLE = 'video mode toggle'
-DIO_OUTPUT = 'DIO output'
-DIO_INPUT = 'DIO input'
-VALUELOGGER_INPUT = 'ValueLogger input'
+COCKPIT_INIT_COMPLETE = "cockpit initialization complete"
+DEVICE_STATUS = "device status"
+EXPERIMENT_EXECUTION = "experiment execution"
+EXPERIMENT_COMPLETE = "experiment complete"
+UPDATE_STATUS_LIGHT = "update status light"
+PREPARE_FOR_EXPERIMENT = "prepare for experiment"
+CLEANUP_AFTER_EXPERIMENT = "cleanup after experiment"
+LIGHT_SOURCE_ENABLE = "light source enable"
+LIGHT_EXPOSURE_UPDATE = "light exposure update"
+CAMERA_ENABLE = "camera enable"
+UPDATE_ROI = "update roi"
+FILTER_CHANGE = "filter change"
+STAGE_POSITION = "stage position"
+STAGE_MOVER = "stage mover"
+STAGE_STOPPED = "stage stopped"
+STAGE_TOP_BOTTOM = "stage saved top/bottom"
+STAGE_STEP_INDEX = "stage step index"
+STAGE_STEP_SIZE = "stage step size"
+MACRO_STAGE_XY_DRAW = "macro stage xy draw"
+SOFT_SAFETY_LIMIT = "soft safety limit"
+NEW_SITE = "new site"
+DELETE_SITE = "site deleted"
+SYNCED_VIEW = "synced view"
+USER_ABORT = "user abort"
+MOSAIC_UPDATE = "mosaic update"
+MOSAIC_START = "mosaic start"
+MOSAIC_STOP = "mosaic stop"
+NEW_IMAGE = "new image %s"  # must be suffixed with image source
+IMAGE_PIXEL_INFO = "image pixel info"
+OBJECTIVE_CHANGE = "objective change"
+SETTINGS_CHANGED = (
+    "settings changed %s"  # must be suffixed with device/handler name
+)
+EXECUTOR_DONE = "executor done %s"  # must be sufficed with device/handler name
+VIDEO_MODE_TOGGLE = "video mode toggle"
+DIO_OUTPUT = "DIO output"
+DIO_INPUT = "DIO input"
+VALUELOGGER_INPUT = "ValueLogger input"
 
 _Subscriber = typing.Callable[..., None]
 
@@ -239,18 +241,18 @@ class Publisher:
             try:
                 self._subscriptions[event].remove(func)
             except ValueError:
-                pass # ignore func not in list error
+                pass  # ignore func not in list error
 
     def publish(self, event: str, *args, **kwargs):
-        """Call all functions subscribed to specific event with given arguments.
-        """
+        """Call all functions subscribed to specific event with given arguments."""
         for func in self._subscriptions[event]:
             try:
                 func(*args, **kwargs)
             except:
-                sys.stderr.write('Error in subscribed callable %s.%s().  %s'
-                                 % (func.__module__, func.__name__,
-                                    traceback.format_exc()))
+                sys.stderr.write(
+                    "Error in subscribed callable %s.%s().  %s"
+                    % (func.__module__, func.__name__, traceback.format_exc())
+                )
 
 
 class OneShotPublisher(Publisher):
@@ -261,6 +263,7 @@ class OneShotPublisher(Publisher):
     once).
 
     """
+
     def publish(self, event: str, *args, **kwargs) -> None:
         try:
             super().publish(event, *args, **kwargs)
@@ -273,7 +276,7 @@ class OneShotPublisher(Publisher):
         with self._lock:
             for subscriptions in self._subscriptions.values():
                 for subscription in subscriptions:
-                    if hasattr(subscription, '__abort__'):
+                    if hasattr(subscription, "__abort__"):
                         subscription.__abort__()
             self._subscriptions.clear()
 
@@ -282,15 +285,19 @@ class OneShotPublisher(Publisher):
 _publisher = Publisher()
 _one_shot_publisher = OneShotPublisher()
 
+
 def subscribe(event: str, func: _Subscriber) -> None:
     return _publisher.subscribe(event, func)
+
 
 def unsubscribe(event: str, func: _Subscriber) -> None:
     return _publisher.unsubscribe(event, func)
 
+
 def publish(event: str, *args, **kwargs) -> None:
     _publisher.publish(event, *args, **kwargs)
     _one_shot_publisher.publish(event, *args, **kwargs)
+
 
 def oneShotSubscribe(event: str, func: _Subscriber):
     return _one_shot_publisher.subscribe(event, func)
@@ -310,9 +317,13 @@ def executeAndWaitFor(eventType: str, func: _Subscriber, *args, **kwargs):
 
 ## Call the specified function with the provided arguments, and then wait for
 # either the named event to occur or the timeout to expire.
-def executeAndWaitForOrTimeout(eventType: str, func: _Subscriber,
-                               timeout: typing.Optional[float],
-                               *args, **kwargs):
+def executeAndWaitForOrTimeout(
+    eventType: str,
+    func: _Subscriber,
+    timeout: typing.Optional[float],
+    *args,
+    **kwargs,
+):
     global _one_shot_publisher
 
     # Timeout implemented with a condition.
@@ -330,10 +341,12 @@ def executeAndWaitForOrTimeout(eventType: str, func: _Subscriber,
         # Notify condition.
         with newCondition:
             newCondition.notify()
+
     def aborter():
         released[0] = True
         with newCondition:
             newCondition.notify()
+
     # Add a method to notify condition in the event of an abort event.
     releaser.__abort__ = aborter
 

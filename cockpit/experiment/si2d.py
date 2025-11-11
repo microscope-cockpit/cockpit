@@ -21,16 +21,16 @@
 from cockpit.experiment import structuredIllumination
 
 
-EXPERIMENT_NAME = '2D Structured Illumination'
+EXPERIMENT_NAME = "2D Structured Illumination"
 
 EXPERIMENT_CLASS = structuredIllumination.SIExperiment
 
 
 ## Generate the UI for special parameters used by this experiment.
 class ExperimentUI(structuredIllumination.BaseSIMExperimentUI):
-    _CONFIG_KEY_SUFFIX = 'SIExperiment2D'
+    _CONFIG_KEY_SUFFIX = "SIExperiment2D"
 
     def augmentParams(self, params):
         params = super().augmentParams(params)
-        params['numPhases'] = 3
+        params["numPhases"] = 3
         return params

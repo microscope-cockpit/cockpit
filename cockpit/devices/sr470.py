@@ -43,24 +43,25 @@ class StanfordShutter(shutter.ShutterDevice):
         triggerLine: 3
 
     """
+
     def __init__(self, name, config={}):
         super().__init__(name, config)
         # Telnet connection to device
         self.connection = None
 
-
     def initialize(self):
-        """ Open telnet connection and enable response to triggers. """
-        self.connection = telnetlib.Telnet(self.ipAddress, self.port, timeout=5)
-        self.connection.read_until(('SR470 Telnet Session:').encode())
+        """Open telnet connection and enable response to triggers."""
+        self.connection = telnetlib.Telnet(
+            self.ipAddress, self.port, timeout=5
+        )
+        self.connection.read_until(("SR470 Telnet Session:").encode())
         # Read out any trailing whitespace, e.g. newlines.
         self.connection.read_eager()
         self.enableTrigger()
 
-
     def enableTrigger(self, enab=True):
         # The SR470 has a 'normal' shutter state: open or closed. With external
-        # level triggering, the shutter is in the 'normal' state when the 
+        # level triggering, the shutter is in the 'normal' state when the
         # external input is high. If we set the shutter to 'normally closed', a
         # low logic level from the DSP will open it, but the DSP expects to send
         # a logic high to trigger or enable a light.
@@ -76,7 +77,6 @@ class StanfordShutter(shutter.ShutterDevice):
         else:
             self.send("ENAB 0")
 
-
     def onExit(self):
         try:
             # Reset the controller to close the shutter and revert to internal
@@ -88,23 +88,19 @@ class StanfordShutter(shutter.ShutterDevice):
         except:
             pass
 
-
     def onPrepareForExperiment(self, experiment):
         self.enableTrigger()
-
 
     def onCleanupAfterExperiment(self):
         # Assert shutter closed (also reverts to internal triggering).
         self.send("ASRT 0")
         self.enableTrigger()
 
-
     def setExposureTime(self, t):
         # Could set exposure on controller, but currently rely on bulb trigger
         # from a trigger source.
         pass
 
-
     def send(self, command):
-        self.connection.write( (command + '\n').encode() )
-        return self.connection.read_until('\n'.encode(), 0.05)
+        self.connection.write((command + "\n").encode())
+        return self.connection.read_until("\n".encode(), 0.05)

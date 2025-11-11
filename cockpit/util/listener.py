@@ -32,7 +32,7 @@ from cockpit import depot
 # listening - the proxy may be needed for configuration, or polling
 # state. The workaround has been to keep a copy of Connection's proxy
 # around, but this is messy.
-# Instead, this Listener class takes a Pyro proxy as an argument to 
+# Instead, this Listener class takes a Pyro proxy as an argument to
 # __init__, and only deals with registering and unregistering listener
 # functions.
 class Listener:
@@ -46,12 +46,11 @@ class Listener:
         ## Local cockpit server IP address
         self._localIp = localIp
 
-
     ## Establish a connection with the remote service, and tell
     # it to send us its data.
     # By default we set a short timeout of 5s so that we find out fairly
     # quickly if something went wrong.
-    def connect(self, callback=None, timeout = 5):
+    def connect(self, callback=None, timeout=5):
         server = depot.getHandlersOfType(depot.SERVER)[0]
         if self._listening:
             server.unregister(self._callback)
@@ -59,11 +58,10 @@ class Listener:
             self._callback = callback
         elif not self._callback:
             # No callback specified in either self._callback or this call.
-            raise Exception('No callback set.')
+            raise Exception("No callback set.")
         uri = server.register(self._callback, self._localIp)
         self._proxy.receiveClient(uri)
         self._listening = True
-
 
     ## Stop listening to the service.
     def disconnect(self):
@@ -75,5 +73,7 @@ class Listener:
         try:
             self._proxy.receiveClient(None)
         except Exception as e:
-            print ("Couldn't disconnect listener from %s: %s" % (self._proxy, e))
+            print(
+                "Couldn't disconnect listener from %s: %s" % (self._proxy, e)
+            )
         self._listening = False

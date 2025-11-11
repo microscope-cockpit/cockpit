@@ -36,15 +36,17 @@
 import threading
 import wx
 
+
 ## Call the passed-in function in a new thread. Used as a decorator when
 # a function needs to not block the UI thread.
 def callInNewThread(function):
     def wrappedFunc(*args, **kwargs):
-        thread = threading.Thread(target = function, args = args, kwargs = kwargs)
+        thread = threading.Thread(target=function, args=args, kwargs=kwargs)
         thread.name = function.__name__
         # Ensure the thread will exit when the program does.
         thread.daemon = True
         thread.start()
+
     return wrappedFunc
 
 
@@ -52,6 +54,7 @@ def callInNewThread(function):
 # events is cleared. This is necessary for anything that touches the user
 # interface or uses OpenGL. We first test if the current thread is the main
 # thread to avoid unnecessary requeuing.
+
 
 def callInMainThread(function):
     def wrappedFunc(*args, **kwargs):
@@ -61,6 +64,7 @@ def callInMainThread(function):
         else:
             # Push call to main thread.
             wx.CallAfter(function, *args, **kwargs)
+
     return wrappedFunc
 
 
@@ -69,6 +73,7 @@ def callInMainThread(function):
 objectToLock = {}
 ## Lock around modifying the above.
 locksLock = threading.Lock()
+
 
 ## Ensure that the given function cannot be called at the same time as
 # other functions wit the same first argument. We assume that the first
@@ -81,4 +86,5 @@ def locked(func):
                 objectToLock[first] = threading.Lock()
         with objectToLock[first]:
             return func(first, *args, **kwargs)
+
     return wrappedFunc

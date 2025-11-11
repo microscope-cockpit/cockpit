@@ -58,34 +58,35 @@ class PolarizationDevice(device.Device):
         name is not required for the SI experiments.
 
     """
+
     _config_types = {
-        'idlevoltage': float,
-        'offset': float,
-        'gain': float,
+        "idlevoltage": float,
+        "offset": float,
+        "gain": float,
     }
 
     def __init__(self, name, config={}):
         super().__init__(name, config)
 
     def getHandlers(self):
-        aSource = self.config.get('analogsource', None)
-        aLine = self.config.get('analogline', None)
+        aSource = self.config.get("analogsource", None)
+        aLine = self.config.get("analogline", None)
         aHandler = depot.getHandler(aSource, depot.EXECUTOR)
         if aHandler is None:
-            raise Exception('No control source.')
-        gain = self.config.get('gain', 1)
-        offset = self.config.get('offset', 0)
+            raise Exception("No control source.")
+        gain = self.config.get("gain", 1)
+        offset = self.config.get("offset", 0)
         h = aHandler.registerAnalog(self, aLine, offset, gain)
 
         # If there are indexed positions in the config, add them to the handler.
-        idlevoltage = self.config.get('idlevoltage', 0)
+        idlevoltage = self.config.get("idlevoltage", 0)
         voltages = {}
-        for vdef in self.config.get('sivoltages', '').split('\n'):
+        for vdef in self.config.get("sivoltages", "").split("\n"):
             if vdef == "":
                 continue
-            key, values = vdef.strip('\n').split(':')
-            voltages[key] = tuple([float(v) for v in values.split(',')])
-        if not set(['default', None]).intersection(voltages):
+            key, values = vdef.strip("\n").split(":")
+            voltages[key] = tuple([float(v) for v in values.split(",")])
+        if not set(["default", None]).intersection(voltages):
             voltages[None] = 3 * [idlevoltage]
         h.positions = voltages
         return [h]

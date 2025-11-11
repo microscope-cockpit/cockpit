@@ -1794,6 +1794,7 @@ class DialogSafeties(wx.Dialog):
 
 class TouchScreenWindow(wx.Frame):
     LIST_AS_COCKPIT_WINDOW = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._set_properties()

@@ -51,16 +51,18 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-## This module provides a dummy camera that generates test pattern images. 
+## This module provides a dummy camera that generates test pattern images.
 
 from cockpit.devices import device
+
 
 def _config_to_transform(tstr):
     """Desribes a simple transform: (flip LR, flip UD, rotate 90)"""
     if tstr:
-        return tuple([bool(int(t)) for t in tstr.strip('()').split(',')])
+        return tuple([bool(int(t)) for t in tstr.strip("()").split(",")])
     else:
         return (False, False, False)
+
 
 ## CameraDevice subclasses Device with some additions appropriate
 # to any camera.
@@ -68,10 +70,10 @@ class CameraDevice(device.Device):
     def __init__(self, name, config):
         super().__init__(name, config)
         # baseTransform depends on camera orientation and is constant.
-        if 'transform' in config:
-            self.baseTransform = _config_to_transform(config.get('transform'))
+        if "transform" in config:
+            self.baseTransform = _config_to_transform(config.get("transform"))
         else:
-            self.baseTransform = [0,0,0]
+            self.baseTransform = [0, 0, 0]
 
     def updateTransform(self, pathTransform):
         """Apply a new pathTransform"""
@@ -93,6 +95,6 @@ class CameraDevice(device.Device):
     def finalizeInitialization(self):
         # Set fixed filter if defined in config
         if self.handler.wavelength is None and self.handler.dye is None:
-            dye = self.config.get('dye', None)
-            wavelength = self.config.get('wavelength', None)
+            dye = self.config.get("dye", None)
+            wavelength = self.config.get("wavelength", None)
             self.handler.updateFilter(dye, wavelength)

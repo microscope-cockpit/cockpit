@@ -78,14 +78,25 @@ ALTITUDE_BUCKET_SIZE = 3
 ## Amount, in microns, of padding to add on either end of the mini-histogram
 MINI_HISTOGRAM_PADDING = 1
 
-#Size of secondar histogram if no fine motion stage in microns
+# Size of secondar histogram if no fine motion stage in microns
 SECONDARY_HISTOGRAM_SIZE = 50
+
 
 ## This is a simple container class for histogram display info.
 # \todo Refactor histogram drawing logic into this class.
-class Histogram():
-    def __init__(self, minAltitude, maxAltitude,
-                 xOffset, minY, maxY, width, shouldLabel, margin, data = None):
+class Histogram:
+    def __init__(
+        self,
+        minAltitude,
+        maxAltitude,
+        xOffset,
+        minY,
+        maxY,
+        width,
+        shouldLabel,
+        margin,
+        data=None,
+    ):
         ## Altitude in microns below which we do not display
         self.minAltitude = minAltitude
         ## Altitude in microns above which we do not display
@@ -108,27 +119,35 @@ class Histogram():
         # data point) in our range.
         self.maxBucketSize = 1
         if data:
-            for y in range(int(self.minAltitude), int(self.maxAltitude) + 1, ALTITUDE_BUCKET_SIZE):
+            for y in range(
+                int(self.minAltitude),
+                int(self.maxAltitude) + 1,
+                ALTITUDE_BUCKET_SIZE,
+            ):
                 slot = int(y - self.minAltitude) // ALTITUDE_BUCKET_SIZE
                 # MAP - this can crash here when Z-range is small, so bounds-check slot.
                 if slot < len(data):
                     self.maxBucketSize = max(self.maxBucketSize, data[slot])
 
-
     ## Rescale an altitude to our min and max, so that our min
     # maps to self.minY and our max to self.maxY, modulo our margin
     def scale(self, altitude):
-        altitude = float(altitude - self.minAltitude) / (self.maxAltitude - self.minAltitude)
-        altitude = altitude * (self.maxY - self.minY - self.margin * 2) + self.minY + self.margin
+        altitude = float(altitude - self.minAltitude) / (
+            self.maxAltitude - self.minAltitude
+        )
+        altitude = (
+            altitude * (self.maxY - self.minY - self.margin * 2)
+            + self.minY
+            + self.margin
+        )
         return altitude
-        
 
 
 ## This class shows a high-level view of where the stage is in Z space. It
 # includes the current stage position, hard and soft motion limits, and Z
 # tower position information.
 class MacroStageZ(macroStageBase.MacroStageBase):
-    ## Instantiate the MacroStageZ. 
+    ## Instantiate the MacroStageZ.
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         ## Backlink to parent for accessing one of its datastructures
@@ -140,23 +159,23 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         minZ, maxZ = cockpit.interfaces.stageMover.getHardLimitsForAxis(2)
         ## Total size of the stage's range of motion.
         self.stageExtent = maxZ - minZ
-        ## Vertical size of the canvas in microns -- slightly larger than the 
+        ## Vertical size of the canvas in microns -- slightly larger than the
         # stage's range of motion.
         # Note that since our width has no direct meaning, we'll just make it
         # the same as our height, and do everything proportionally.
-        self.minY = minZ - self.stageExtent * .05
-        self.maxY = maxZ + self.stageExtent * .05
+        self.minY = minZ - self.stageExtent * 0.05
+        self.maxY = maxZ + self.stageExtent * 0.05
         self.minX = self.minY
         self.maxX = self.maxY
         ## Amount of vertical space to allot to one line of text.
-        self.textLineHeight = self.stageExtent * .05
+        self.textLineHeight = self.stageExtent * 0.05
         ## Size of text to draw. Magic numbers ahoy.
-        self.textSize = .005
+        self.textSize = 0.005
         ## Horizontal position of the main Z position indicator
-        self.zHorizOffset = self.maxX - self.stageExtent * .25
-        ## Horizontal length of a "marker line" indicating the position of 
+        self.zHorizOffset = self.maxX - self.stageExtent * 0.25
+        ## Horizontal length of a "marker line" indicating the position of
         # something on the Z scale.
-        self.horizLineLength = self.stageExtent * .1
+        self.horizLineLength = self.stageExtent * 0.1
 
         self.stepSize = cockpit.interfaces.stageMover.getCurStepSizes()[2]
 
@@ -165,9 +184,16 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         ## List of histograms for drawing: one zoomed-out, one zoomed-in.
         self.histograms = []
         ## Dummy histogram that matches the range for the Z macro stage
-        self.dummyHistogram = Histogram(self.minY, self.maxY, 
-                self.zHorizOffset, self.minY, 
-                self.maxY, 0, False, 0)
+        self.dummyHistogram = Histogram(
+            self.minY,
+            self.maxY,
+            self.zHorizOffset,
+            self.minY,
+            self.maxY,
+            0,
+            False,
+            0,
+        )
 
         self.calculateHistogram()
 
@@ -178,15 +204,19 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         events.subscribe(events.STAGE_STEP_SIZE, self.onStepSizeChange)
         self.SetToolTip(wx.ToolTip("Double-click to move in Z"))
 
-
     ## Calculate the histogram buckets and min/max settings
     # based on self.experimentAltitudes
     def calculateHistogram(self):
-        self.experimentAltitudes = list(cockpit.util.userConfig.getValue('experimentAltitudes', 
-                                                                         default=[]))
+        self.experimentAltitudes = list(
+            cockpit.util.userConfig.getValue("experimentAltitudes", default=[])
+        )
         ## Set of buckets, by altitude, of the experiments
-        self.altitudeBuckets = [0 for i in range(int(self.minY),
-                int(self.maxY + 1), ALTITUDE_BUCKET_SIZE)]
+        self.altitudeBuckets = [
+            0
+            for i in range(
+                int(self.minY), int(self.maxY + 1), ALTITUDE_BUCKET_SIZE
+            )
+        ]
         for altitude in self.experimentAltitudes:
             slot = int((altitude - self.minY) // ALTITUDE_BUCKET_SIZE)
             if slot < 0 or slot > len(self.altitudeBuckets):
@@ -198,22 +228,22 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                     self.maxY,
                 )
             else:
-            # bounds check slot
+                # bounds check slot
                 if slot < len(self.altitudeBuckets):
                     self.altitudeBuckets[slot] += 1
-
 
     ## Handle a new experiment completing -- requires us to update our
     # histogram.
     def onExperimentComplete(self, *args):
         # Update histogram data
         self.experimentAltitudes = list(
-                cockpit.util.userConfig.getValue('experimentAltitudes', default=[])
+            cockpit.util.userConfig.getValue("experimentAltitudes", default=[])
         )
         self.experimentAltitudes.append(float(self.curStagePosition[2]))
-        cockpit.util.userConfig.setValue('experimentAltitudes', self.experimentAltitudes)
+        cockpit.util.userConfig.setValue(
+            "experimentAltitudes", self.experimentAltitudes
+        )
         self.calculateHistogram()
-
 
     ## Handle a soft safety limit being changed.
     def onSafetyChange(self, axis, position, isMax):
@@ -223,7 +253,6 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         if self.prevZSafety is None or self.prevZSafety != position:
             # Update primary histogram display settings
             self.prevZSafety = position
-
 
     ## Step sizes have changed, which means we get to redraw.
     # \todo Redrawing *everything* at this stage seems a trifle excessive.
@@ -236,27 +265,48 @@ class MacroStageZ(macroStageBase.MacroStageBase):
     def makeBigHistogram(self, altitude):
         minorLimits = cockpit.interfaces.stageMover.getIndividualSoftLimits(2)
         # Add the max range of motion of the first fine-motion controller.
-        #And subtract the lower limit if minor controller exisits.
-        if(len(minorLimits)>1):
-            minorPos= cockpit.interfaces.stageMover.getAllPositions()[1][2]
-            histogramMin = altitude-(minorPos-minorLimits[1][0]) - HISTOGRAM_MIN_PADDING
-            histogramMax = altitude+(-minorPos+minorLimits[1][1])+HISTOGRAM_MIN_PADDING
-        else: 
-            histogramMin = altitude-(SECONDARY_HISTOGRAM_SIZE/2.0)- HISTOGRAM_MIN_PADDING
-            histogramMax = altitude+(SECONDARY_HISTOGRAM_SIZE/2.0)+HISTOGRAM_MIN_PADDING
-        histogram = Histogram(histogramMin, histogramMax, 
-                self.zHorizOffset - self.stageExtent * .4, 
-                self.minY, self.maxY, 
-                self.stageExtent * .2, True, self.stageExtent * .05,
-                self.altitudeBuckets)
+        # And subtract the lower limit if minor controller exisits.
+        if len(minorLimits) > 1:
+            minorPos = cockpit.interfaces.stageMover.getAllPositions()[1][2]
+            histogramMin = (
+                altitude
+                - (minorPos - minorLimits[1][0])
+                - HISTOGRAM_MIN_PADDING
+            )
+            histogramMax = (
+                altitude
+                + (-minorPos + minorLimits[1][1])
+                + HISTOGRAM_MIN_PADDING
+            )
+        else:
+            histogramMin = (
+                altitude
+                - (SECONDARY_HISTOGRAM_SIZE / 2.0)
+                - HISTOGRAM_MIN_PADDING
+            )
+            histogramMax = (
+                altitude
+                + (SECONDARY_HISTOGRAM_SIZE / 2.0)
+                + HISTOGRAM_MIN_PADDING
+            )
+        histogram = Histogram(
+            histogramMin,
+            histogramMax,
+            self.zHorizOffset - self.stageExtent * 0.4,
+            self.minY,
+            self.maxY,
+            self.stageExtent * 0.2,
+            True,
+            self.stageExtent * 0.05,
+            self.altitudeBuckets,
+        )
         if not self.histograms:
             self.histograms.append(histogram)
         else:
             self.histograms[0] = histogram
         wx.CallAfter(self.Refresh)
 
-
-    ## Overrides the parent function, since we may need to also generate a 
+    ## Overrides the parent function, since we may need to also generate a
     # histogram based on the new Z position.
     def onMotion(self, axis, position):
         if axis != 2:
@@ -269,19 +319,24 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             try:
                 motorPos = self.curStagePosition[2]
                 if motorPos != self.prevStagePosition[2]:
-                    # Check if we need to draw a new mini histogram (that 
+                    # Check if we need to draw a new mini histogram (that
                     # scrolls with the stage's Z position).
                     zMin = motorPos - 25
                     zMax = motorPos + 25
                     if zMax < self.histograms[0].maxAltitude:
-                        # Stage has entered into the area covered by the 
+                        # Stage has entered into the area covered by the
                         # histogram, so show a zoomed-in version.
-                        histogram = Histogram(zMin - MINI_HISTOGRAM_PADDING,
-                                zMax + MINI_HISTOGRAM_PADDING,
-                                self.zHorizOffset - self.stageExtent * .8, 
-                                self.minY, self.maxY, self.stageExtent * .2,
-                                False, self.stageExtent * .05, 
-                                self.altitudeBuckets)
+                        histogram = Histogram(
+                            zMin - MINI_HISTOGRAM_PADDING,
+                            zMax + MINI_HISTOGRAM_PADDING,
+                            self.zHorizOffset - self.stageExtent * 0.8,
+                            self.minY,
+                            self.maxY,
+                            self.stageExtent * 0.2,
+                            False,
+                            self.stageExtent * 0.05,
+                            self.altitudeBuckets,
+                        )
                         # \todo There must surely be a better way to do this.
                         if len(self.histograms) == 2:
                             self.histograms[1] = histogram
@@ -296,7 +351,6 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 _logger.error(traceback.format_exc())
                 self.shouldDraw = False
 
-        
     ## Draw the following:
     # - A red line at the current stage height
     # - A purple line at the current Z tower height (or at a ceiling height if
@@ -306,7 +360,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
     # - A red line indicating the stage motion delta
     # - When moving, a blue arrow indicating our direction of motion
     # - A scale indicator
-    def onPaint(self, event = None):
+    def onPaint(self, event=None):
         if not self.shouldDraw:
             return
         try:
@@ -316,24 +370,28 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 
             dc = wx.PaintDC(self)
             self.SetCurrent(self.context)
-            width, height = self.GetClientSize()*self.GetContentScaleFactor()
+            width, height = self.GetClientSize() * self.GetContentScaleFactor()
 
             glViewport(0, 0, width, height)
-            
+
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             motorPos = self.curStagePosition[2]
             majorPos = cockpit.interfaces.stageMover.getAllPositions()[0][2]
-            minorLimits = cockpit.interfaces.stageMover.getIndividualSoftLimits(2)
+            minorLimits = (
+                cockpit.interfaces.stageMover.getIndividualSoftLimits(2)
+            )
             # Add the max range of motion of the first fine-motion controller.
-            #And subtract the lower limit
+            # And subtract the lower limit
             if len(minorLimits) > 1:
-                minorPos= cockpit.interfaces.stageMover.getAllPositions()[1][2]
+                minorPos = cockpit.interfaces.stageMover.getAllPositions()[1][
+                    2
+                ]
                 zMax = majorPos + minorLimits[1][1]
-                zMin = majorPos -(minorPos-minorLimits[1][0])
+                zMin = majorPos - (minorPos - minorLimits[1][0])
             else:
-                zMax = majorPos +(SECONDARY_HISTOGRAM_SIZE/2.0)
-                zMax = majorPos -(SECONDARY_HISTOGRAM_SIZE/2.0)
+                zMax = majorPos + (SECONDARY_HISTOGRAM_SIZE / 2.0)
+                zMax = majorPos - (SECONDARY_HISTOGRAM_SIZE / 2.0)
             # Add the max range of motion of the first fine-motion controller.
             if len(minorLimits) > 1:
                 zMax = majorPos + minorLimits[1][1]
@@ -341,7 +399,7 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             # Draw histograms. We do this first so that other lines can be drawn
             # on top.
             self.drawHistograms()
-            
+
             # Draw scale bar
             glColor3f(0, 0, 0)
             glLineWidth(1)
@@ -352,75 +410,90 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             self.scaledVertex(scaleX, maxY)
             # Draw notches in the scale bar, one every 1mm.
             for scaleY in range(int(minY), int(maxY) + 1000, 1000):
-                width = self.stageExtent * .025
+                width = self.stageExtent * 0.025
                 if scaleY % 5000 == 0:
-                    width = self.stageExtent * .05
+                    width = self.stageExtent * 0.05
                 x1 = scaleX - width / 2
                 x2 = scaleX + width / 2
                 self.scaledVertex(x1, scaleY)
                 self.scaledVertex(x2, scaleY)
             glEnd()
             glLineWidth(1)
-            
+
             glLineWidth(HEIGHT_LINE_WIDTH)
 
             # Draw spikes for the histogram peaks.
             config = wx.GetApp().Config
-            spikeHeight = self.stageExtent * .02
-            spikeLength = self.stageExtent * .2
-            for altitude in (config['stage'].getfloat('slideAltitude'),
-                             config['stage'].getfloat('dishAltitude')):
+            spikeHeight = self.stageExtent * 0.02
+            spikeLength = self.stageExtent * 0.2
+            for altitude in (
+                config["stage"].getfloat("slideAltitude"),
+                config["stage"].getfloat("dishAltitude"),
+            ):
                 glColor3f(0, 0, 0)
                 glBegin(GL_POLYGON)
                 self.scaledVertex(scaleX, altitude - spikeHeight / 2)
                 self.scaledVertex(scaleX - spikeLength, altitude)
                 self.scaledVertex(scaleX, altitude + spikeHeight / 2)
                 glEnd()
-            
-            #Draw top and bottom positions of stack in blue.
+
+            # Draw top and bottom positions of stack in blue.
             self.stackdef = [
                 cockpit.interfaces.stageMover.mover.SavedTop,
                 cockpit.interfaces.stageMover.mover.SavedBottom,
             ]
             for pos in self.stackdef:
                 if pos is not None:
-                    self.drawLine(pos, color = (0, 0, 1))
+                    self.drawLine(pos, color=(0, 0, 1))
 
-			
             # Draw current stage position
-            self.drawLine(motorPos, color = (1, 0, 0),
-                    label = str(int(motorPos)), isLabelOnLeft = True)
-            
+            self.drawLine(
+                motorPos,
+                color=(1, 0, 0),
+                label=str(int(motorPos)),
+                isLabelOnLeft=True,
+            )
+
             # Draw hard stage motion limits
-            self.drawLine(minY, stipple = 0xAAAA,
-                          color = (0, 0, 1), label = '%d' % minY)
-            self.drawLine(maxY, stipple = 0xAAAA,
-                          color = (0, 0, 1), label = '%d' % maxY)
+            self.drawLine(
+                minY, stipple=0xAAAA, color=(0, 0, 1), label="%d" % minY
+            )
+            self.drawLine(
+                maxY, stipple=0xAAAA, color=(0, 0, 1), label="%d" % maxY
+            )
 
             # Draw soft stage motion limit
             if self.prevZSafety is not None:
-                self.drawLine(self.prevZSafety, stipple = 0x5555,
-                        color = (0, .8, 0), label = str(int(self.prevZSafety)))
+                self.drawLine(
+                    self.prevZSafety,
+                    stipple=0x5555,
+                    color=(0, 0.8, 0),
+                    label=str(int(self.prevZSafety)),
+                )
 
             # Draw stage motion delta
             glLineWidth(1)
             glColor3f(1, 0, 0)
             glBegin(GL_LINES)
-            self.scaledVertex(scaleX + self.horizLineLength / 2, 
-                              motorPos + self.stepSize)
-            self.scaledVertex(scaleX + self.horizLineLength / 2, 
-                              motorPos - self.stepSize)
+            self.scaledVertex(
+                scaleX + self.horizLineLength / 2, motorPos + self.stepSize
+            )
+            self.scaledVertex(
+                scaleX + self.horizLineLength / 2, motorPos - self.stepSize
+            )
             glEnd()
 
             # Draw direction of stage motion, if any
-            if abs(motorPos - self.prevStagePosition[2]) > .01:
+            if abs(motorPos - self.prevStagePosition[2]) > 0.01:
                 delta = motorPos - self.prevStagePosition[2]
                 if abs(delta) > self._min_delta_to_display:
                     lineCenterX = scaleX + self.horizLineLength / 2
                     self.drawArrow(
-                            (lineCenterX, motorPos), 
-                            (0, delta), (0, 0, 1), 
-                            self.stageExtent * .15, self.stageExtent * .03
+                        (lineCenterX, motorPos),
+                        (0, delta),
+                        (0, 0, 1),
+                        self.stageExtent * 0.15,
+                        self.stageExtent * 0.03,
                     )
 
             glFlush()
@@ -432,7 +505,6 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             _logger.error("Error drawing Z macro stage: %s", e)
             traceback.print_exc()
             self.shouldDraw = False
-
 
     ## Draw all our histograms
     def drawHistograms(self):
@@ -447,21 +519,26 @@ class MacroStageZ(macroStageBase.MacroStageBase):
                 # Convert pixel offset to altitude inside our histogram
                 # min/max values
                 altitude = float(pixelOffset) / height
-                altitude = altitude * (histogram.maxAltitude - histogram.minAltitude) + histogram.minAltitude
+                altitude = (
+                    altitude * (histogram.maxAltitude - histogram.minAltitude)
+                    + histogram.minAltitude
+                )
                 # Map that altitude to a bucket
                 bucketIndex = int(altitude - self.minY) // ALTITUDE_BUCKET_SIZE
                 if bucketIndex < len(self.altitudeBuckets):
                     count = self.altitudeBuckets[bucketIndex]
                 else:
                     continue
-                width = int(float(count) / histogram.maxBucketSize * histogram.width)
+                width = int(
+                    float(count) / histogram.maxBucketSize * histogram.width
+                )
                 drawAltitude = histogram.scale(altitude)
                 self.scaledVertex(histogram.xOffset, drawAltitude)
                 self.scaledVertex(histogram.xOffset - width, drawAltitude)
             glEnd()
             glLineWidth(1)
 
-            # HACK: For some reason the left edge of the histogram is jagged. 
+            # HACK: For some reason the left edge of the histogram is jagged.
             # Cover it up.
             glBegin(GL_LINES)
             self.scaledVertex(histogram.xOffset, minY)
@@ -470,31 +547,45 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 
             # Draw histogram min/max
             if histogram.shouldLabel:
-                lineHeight = self.stageExtent * .05
-                self.drawTextAt((histogram.xOffset + self.stageExtent * .05, 
-                        minY - self.textLineHeight / 4),
-                        str(int(histogram.minAltitude)), size = self.textSize)
-                self.drawTextAt((histogram.xOffset + self.stageExtent * .05, 
-                        maxY - self.textLineHeight / 4),
-                        str(int(histogram.maxAltitude)), size = self.textSize)
-            
+                lineHeight = self.stageExtent * 0.05
+                self.drawTextAt(
+                    (
+                        histogram.xOffset + self.stageExtent * 0.05,
+                        minY - self.textLineHeight / 4,
+                    ),
+                    str(int(histogram.minAltitude)),
+                    size=self.textSize,
+                )
+                self.drawTextAt(
+                    (
+                        histogram.xOffset + self.stageExtent * 0.05,
+                        maxY - self.textLineHeight / 4,
+                    ),
+                    str(int(histogram.maxAltitude)),
+                    size=self.textSize,
+                )
+
             # Draw histogram stage motion delta
             motorPos = self.curStagePosition[2]
             glLineWidth(1)
             glBegin(GL_LINES)
             glColor3f(1, 0, 0)
-            self.scaledVertex(histogram.xOffset + self.stageExtent * .01, 
-                              histogram.scale(motorPos + self.stepSize))
-            self.scaledVertex(histogram.xOffset + self.stageExtent * .01, 
-                              histogram.scale(motorPos - self.stepSize))
+            self.scaledVertex(
+                histogram.xOffset + self.stageExtent * 0.01,
+                histogram.scale(motorPos + self.stepSize),
+            )
+            self.scaledVertex(
+                histogram.xOffset + self.stageExtent * 0.01,
+                histogram.scale(motorPos - self.stepSize),
+            )
             glEnd()
-            
+
             # Draw lines showing how the histogram relates to the
             # less zoomed-in view to its left.
             leftBottom = prevHistogram.scale(histogram.minAltitude)
             leftTop = prevHistogram.scale(histogram.maxAltitude)
             glLineWidth(1)
-            glColor3f(.5, .5, .5)
+            glColor3f(0.5, 0.5, 0.5)
             glBegin(GL_LINES)
             self.scaledVertex(prevHistogram.xOffset, leftBottom)
             self.scaledVertex(histogram.xOffset, minY)
@@ -506,18 +597,25 @@ class MacroStageZ(macroStageBase.MacroStageBase):
 
             prevHistogram = histogram
 
-
     ## Draw a horizontal line at the specified altitude.
-    def drawLine(self, altitude, lineLength = None,
-                 stipple = None, color = (0, 0, 0),
-                 width = 2, label = '', isLabelOnLeft = False,
-                 shouldLabelMainView = True, shouldLabelHistogram = True):
+    def drawLine(
+        self,
+        altitude,
+        lineLength=None,
+        stipple=None,
+        color=(0, 0, 0),
+        width=2,
+        label="",
+        isLabelOnLeft=False,
+        shouldLabelMainView=True,
+        shouldLabelHistogram=True,
+    ):
         if lineLength is None:
             lineLength = self.horizLineLength
         drawAltitude = altitude
         leftEdge = self.zHorizOffset + self.horizLineLength / 2
         rightEdge = self.zHorizOffset - self.horizLineLength / 2
-        
+
         if stipple is not None:
             glEnable(GL_LINE_STIPPLE)
             glLineStipple(3, stipple)
@@ -538,27 +636,39 @@ class MacroStageZ(macroStageBase.MacroStageBase):
         glEnd()
         if stipple is not None:
             glDisable(GL_LINE_STIPPLE)
-            
+
         if label:
             glLineWidth(1)
-            labelX = rightEdge - self.stageExtent * .01
+            labelX = rightEdge - self.stageExtent * 0.01
             if isLabelOnLeft:
-                labelX = leftEdge + self.stageExtent * .1
+                labelX = leftEdge + self.stageExtent * 0.1
             if shouldLabelMainView:
                 # Draw a text label next to the line, in the line's color.
                 self.drawTextAt(
-                        (labelX, drawAltitude - self.textLineHeight / 4), 
-                        label, size = self.textSize, color = color)
+                    (labelX, drawAltitude - self.textLineHeight / 4),
+                    label,
+                    size=self.textSize,
+                    color=color,
+                )
             if shouldLabelHistogram:
                 # Draw the label for the histograms too.
                 for histogram in self.histograms:
                     if histogram.shouldLabel:
                         histogramAltitude = histogram.scale(altitude)
-                        histogramLabelX = labelX - histogram.xOffset + self.horizLineLength / 2
-                        self.drawTextAt((histogramLabelX,
-                                histogramAltitude - self.textLineHeight / 4),
-                                label, size = self.textSize, color = color)
-
+                        histogramLabelX = (
+                            labelX
+                            - histogram.xOffset
+                            + self.horizLineLength / 2
+                        )
+                        self.drawTextAt(
+                            (
+                                histogramLabelX,
+                                histogramAltitude - self.textLineHeight / 4,
+                            ),
+                            label,
+                            size=self.textSize,
+                            color=color,
+                        )
 
     ## Double click moves the stage in Z.
     def OnMouse(self, event):
@@ -569,31 +679,36 @@ class MacroStageZ(macroStageBase.MacroStageBase):
             scale = (self.minY, self.maxY)
             # if we are on the first hist then use the coarest mover if not
             # then use the currently selected one.
-            originalMover= cockpit.interfaces.stageMover.mover.curHandlerIndex
+            originalMover = cockpit.interfaces.stageMover.mover.curHandlerIndex
             cockpit.interfaces.stageMover.mover.curHandlerIndex = 0
 
             for histogram in self.histograms:
                 if canvasLoc[0] < histogram.xOffset + self.horizLineLength:
                     scale = (histogram.minAltitude, histogram.maxAltitude)
                     # not first hist so revert to current mover whatever that
-                    #might be
-                    cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover                
-                    break # fall through as we have found which
-                          # histogram we clicked on
-                
+                    # might be
+                    cockpit.interfaces.stageMover.mover.curHandlerIndex = (
+                        originalMover
+                    )
+                    break  # fall through as we have found which
+                    # histogram we clicked on
+
             width, height = self.GetClientSize()
-            weight = 1. - float(clickLoc[1]) / height
+            weight = 1.0 - float(clickLoc[1]) / height
             altitude = (scale[1] - scale[0]) * weight + scale[0]
-            zHardMax = cockpit.interfaces.stageMover.getIndividualHardLimits(2)[0][1]
+            zHardMax = cockpit.interfaces.stageMover.getIndividualHardLimits(
+                2
+            )[0][1]
             cockpit.interfaces.stageMover.goToZ(min(zHardMax, altitude))
-            #make sure we are back to the expected mover
+            # make sure we are back to the expected mover
             cockpit.interfaces.stageMover.mover.curHandlerIndex = originalMover
-
-
 
     ## Remap an XY tuple to stage coordinates.
     def mapClickToCanvas(self, loc):
         width, height = self.GetClientSize()
         x = float(width - loc[0]) / width * (self.maxY - self.minY) + self.minY
-        y = float(height - loc[1]) / height * (self.maxY - self.minY) + self.minY
+        y = (
+            float(height - loc[1]) / height * (self.maxY - self.minY)
+            + self.minY
+        )
         return (x, y)

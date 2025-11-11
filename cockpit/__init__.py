@@ -86,9 +86,9 @@ _logger = logging.getLogger(__name__)
 
 
 # Required since Pyro4 v4.22 (which is a project requirement anyway)
-Pyro4.config.SERIALIZERS_ACCEPTED.discard('serpent')
-Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
-Pyro4.config.SERIALIZER = 'pickle'
+Pyro4.config.SERIALIZERS_ACCEPTED.discard("serpent")
+Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
+Pyro4.config.SERIALIZER = "pickle"
 Pyro4.config.REQUIRE_EXPOSE = False
 
 
@@ -97,6 +97,7 @@ class CockpitApp(wx.App):
     Args:
         config (:class:`cockpit.config.CockpitConfig`):
     """
+
     def __init__(self, config):
         ## OnInit() will make use of config, and wx.App.__init__()
         ## calls OnInit().  So we need to assign this before super().
@@ -149,29 +150,35 @@ class CockpitApp(wx.App):
 
             self.Depot.initialize(depot_config)
 
-            numDevices = len(depot_config.sections()) + 1 # +1 for dummy devices
+            numDevices = (
+                len(depot_config.sections()) + 1
+            )  # +1 for dummy devices
             numNonDevices = 10
-            status = wx.ProgressDialog(parent = None,
-                    title = "Initializing Cockpit",
-                    message = "Importing modules...",
-                    maximum = numDevices + numNonDevices)
+            status = wx.ProgressDialog(
+                parent=None,
+                title="Initializing Cockpit",
+                message="Importing modules...",
+                maximum=numDevices + numNonDevices,
+            )
             status.Show()
 
             # Do this early so we can see output while initializing.
             logging_window = cockpit.gui.loggingWindow.makeWindow(None)
 
-            updateNum=1
+            updateNum = 1
             status.Update(updateNum, "Initializing config...")
-            updateNum+=1
+            updateNum += 1
             cockpit.util.userConfig.initialize(self.Config)
 
             status.Update(updateNum, "Initializing devices...")
-            updateNum+=1
+            updateNum += 1
             for device in self.Depot.initialize(depot_config):
-                status.Update(updateNum, "Initializing devices...\n%s" % device)
-                updateNum+=1
+                status.Update(
+                    updateNum, "Initializing devices...\n%s" % device
+                )
+                updateNum += 1
             status.Update(updateNum, "Initializing device interfaces...")
-            updateNum+=1
+            updateNum += 1
 
             self._imager = cockpit.interfaces.imager.Imager(
                 self.Depot.getHandlersOfType(cockpit.depot.IMAGER)
@@ -182,12 +189,12 @@ class CockpitApp(wx.App):
             )
             self._stage = cockpit.interfaces.stageMover.mover
             self._channels = cockpit.interfaces.channels.Channels()
-            for fpath in self.Config['global'].getpaths('channel-files', []):
+            for fpath in self.Config["global"].getpaths("channel-files", []):
                 new_channels = cockpit.interfaces.channels.LoadFromFile(fpath)
                 self._channels.Update(new_channels)
 
             status.Update(updateNum, "Initializing user interface...")
-            updateNum+=1
+            updateNum += 1
 
             self._main_window = cockpit.gui.mainWindow.makeWindow()
             self.SetTopWindow(self._main_window)
@@ -201,13 +208,15 @@ class CockpitApp(wx.App):
             # #618 and https://trac.wxwidgets.org/ticket/18785)
             self._main_window.AddChild(logging_window)
 
-            for module_name in ['cockpit.gui.camera.window',
-                                'cockpit.gui.mosaic.window',
-                                'cockpit.gui.macroStage.macroStageWindow',
-                                'cockpit.gui.shellWindow',
-                                'cockpit.gui.touchscreen']:
+            for module_name in [
+                "cockpit.gui.camera.window",
+                "cockpit.gui.mosaic.window",
+                "cockpit.gui.macroStage.macroStageWindow",
+                "cockpit.gui.shellWindow",
+                "cockpit.gui.touchscreen",
+            ]:
                 module = importlib.import_module(module_name)
-                status.Update(updateNum, ' ... ' + module_name)
+                status.Update(updateNum, " ... " + module_name)
                 updateNum += 1
                 module.makeWindow(self._main_window)
 
@@ -224,10 +233,11 @@ class CockpitApp(wx.App):
                 #   1. check userConfig (value from last time)
                 #   2. check window class property SHOW_DEFAULT
                 #   3. if none of the above is set, hide
-                default_show = getattr(window, 'SHOW_DEFAULT', False)
-                config_name = 'Show Window ' + window.GetTitle()
-                to_show = cockpit.util.userConfig.getValue(config_name,
-                                                           default=default_show)
+                default_show = getattr(window, "SHOW_DEFAULT", False)
+                config_name = "Show Window " + window.GetTitle()
+                to_show = cockpit.util.userConfig.getValue(
+                    config_name, default=default_show
+                )
                 window.Show(to_show)
 
             # Now that the UI exists, we don't need this any more.
@@ -241,7 +251,7 @@ class CockpitApp(wx.App):
             self.Bind(wx.EVT_ACTIVATE_APP, self.onActivateApp)
             return True
         except Exception as e:
-            cockpit.gui.ExceptionBox(caption='Failed to initialise cockpit')
+            cockpit.gui.ExceptionBox(caption="Failed to initialise cockpit")
             _logger.error("Initialization failed: %s" % e)
             _logger.error(traceback.format_exc())
             return False
@@ -296,15 +306,15 @@ class CockpitApp(wx.App):
         # as the base class.
         return super().OnExit()
 
-
     def SetWindowPositions(self):
         """Place the windows in the position defined in userConfig.
 
         This should probably be a private method, or at least a method
         that would take the positions dict as argument.
         """
-        positions = cockpit.util.userConfig.getValue('WindowPositions',
-                                                     default={})
+        positions = cockpit.util.userConfig.getValue(
+            "WindowPositions", default={}
+        )
         for window in wx.GetTopLevelWindows():
             if window.Title not in positions:
                 continue
@@ -316,37 +326,37 @@ class CockpitApp(wx.App):
             if wx.Display.GetFromPoint(position) != wx.NOT_FOUND:
                 window.SetPosition(position)
 
-
     def _SaveWindowPositions(self):
-        positions = {w.Title : tuple(w.Position)
-                     for w in wx.GetTopLevelWindows()}
+        positions = {
+            w.Title: tuple(w.Position) for w in wx.GetTopLevelWindows()
+        }
 
         ## XXX: the camera window uses the title to include pixel info
         ## so fix the title so we can use it as ID later.
         camera_window_title = None
         for title in positions.keys():
-            if title.startswith('Camera views '):
+            if title.startswith("Camera views "):
                 camera_window_title = title
                 break
         if camera_window_title is not None:
-            positions['Camera views'] = positions.pop(camera_window_title)
+            positions["Camera views"] = positions.pop(camera_window_title)
 
-        cockpit.util.userConfig.setValue('WindowPositions', positions)
+        cockpit.util.userConfig.setValue("WindowPositions", positions)
 
         for window in wx.GetTopLevelWindows():
             if window is wx.GetApp().GetTopWindow():
                 continue
-            title=window.GetTitle()
-            #camera views title can need to be stripped.
-            if title.startswith('Camera views '):
-                title='Camera views'
-            config_name = 'Show Window ' + title
+            title = window.GetTitle()
+            # camera views title can need to be stripped.
+            if title.startswith("Camera views "):
+                title = "Camera views"
+            config_name = "Show Window " + title
             cockpit.util.userConfig.setValue(config_name, window.IsShown())
 
 
 def show_exception_app() -> None:
     app = wx.App()
-    cockpit.gui.ExceptionBox(caption='Failed to initialise cockpit')
+    cockpit.gui.ExceptionBox(caption="Failed to initialise cockpit")
     ## We ProcessPendingEvents() instead of entering the MainLoop()
     ## because we won't have more windows created, meaning that the
     ## program would not exit after closing the exception box.
@@ -368,19 +378,19 @@ def _parse_cmd_line_args(cmd_line_args: List[str]) -> argparse.Namespace:
         "--no-user-config-files",
         dest="read_user_config_files",
         action="store_false",
-        help="Do not read user config files"
+        help="Do not read user config files",
     )
     parser.add_argument(
         "--no-system-config-files",
         dest="read_system_config_files",
         action="store_false",
-        help="Do not read system config files"
+        help="Do not read system config files",
     )
     parser.add_argument(
         "--no-config-files",
         dest="read_config_files",
         action="store_false",
-        help="Do not read user and system config files"
+        help="Do not read user and system config files",
     )
 
     parser.add_argument(
@@ -389,7 +399,7 @@ def _parse_cmd_line_args(cmd_line_args: List[str]) -> argparse.Namespace:
         action="append",
         default=[],
         metavar="DEPOT-CONFIG-PATH",
-        help="File path for depot device configuration"
+        help="File path for depot device configuration",
     )
 
     parser.add_argument(
@@ -414,21 +424,23 @@ def _configure_logging(config) -> None:
         logging_config (``configparser.SectionProxy``): the config
             section for the logger.
     """
-    log_dir = config.getpath('dir')
+    log_dir = config.getpath("dir")
     os.makedirs(log_dir, exist_ok=True)
 
-    filename = time.strftime(config.get('filename-template'))
+    filename = time.strftime(config.get("filename-template"))
     filepath = os.path.join(log_dir, filename)
 
-    level = getattr(logging, config.get('level').upper())
+    level = getattr(logging, config.get("level").upper())
 
     root_logger = logging.getLogger()
     root_logger.setLevel(level)
 
-    log_handler = logging.FileHandler(filepath, mode = "a")
-    formatter = logging.Formatter('%(asctime)s %(levelname)-8s'
-                                  + ' %(module)10s:%(lineno)4d'
-                                  + '  %(message)s')
+    log_handler = logging.FileHandler(filepath, mode="a")
+    formatter = logging.Formatter(
+        "%(asctime)s %(levelname)-8s"
+        + " %(module)10s:%(lineno)4d"
+        + "  %(message)s"
+    )
     log_handler.setFormatter(formatter)
     log_handler.setLevel(level)
     root_logger.addHandler(log_handler)
@@ -454,9 +466,9 @@ def _pre_gui_init(argv: List[str]) -> cockpit.config.CockpitConfig:
     if cmd_line_options.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     config = cockpit.config.CockpitConfig(cmd_line_options)
-    _configure_logging(config['log'])
+    _configure_logging(config["log"])
 
-    data_dir = config.getpath('global', 'data-dir')
+    data_dir = config.getpath("global", "data-dir")
     _logger.info("Creating data-dir '%s' if needed", data_dir)
     os.makedirs(data_dir, exist_ok=True)
 

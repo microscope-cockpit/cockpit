@@ -31,6 +31,7 @@ class TestGetHelp(unittest.TestCase):
     caught to be displayed in a GUI like a "real" exception.
 
     """
+
     def test(self):
         with self.assertRaises(SystemExit) as cm:
             cockpit.main(["cockpit", "--help"])
@@ -39,5 +40,5 @@ class TestGetHelp(unittest.TestCase):
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

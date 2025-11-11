@@ -76,8 +76,10 @@ ARROWHEAD_ANGLE = numpy.pi / 6.0
 class MacroStageBase(wx.glcanvas.GLCanvas):
     ## Create the MacroStage. Mostly, attach a timer to the main window so
     # that we can use it to trigger updates.
-    def __init__(self, parent, size, id = -1, *args, **kwargs):
-        super().__init__(parent, id, size = tuple(map(int, size)), *args, **kwargs)
+    def __init__(self, parent, size, id=-1, *args, **kwargs):
+        super().__init__(
+            parent, id, size=tuple(map(int, size)), *args, **kwargs
+        )
 
         ## WX context for drawing.
         self.context = wx.glcanvas.GLContext(self)
@@ -100,8 +102,8 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
 
         ## Don't bother showing a movement arrow for movements smaller
         ## than this.
-        self._min_delta_to_display = wx.GetApp().Config['stage'].getfloat(
-            'min-delta-to-display', 0.01
+        self._min_delta_to_display = (
+            wx.GetApp().Config["stage"].getfloat("min-delta-to-display", 0.01)
         )
 
         ## (X, Y, Z) vector describing the stage position as of the last
@@ -117,14 +119,16 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.shouldForceRedraw = False
 
         ## Thread that ensures we don't spam redisplaying ourselves.
-        self.redrawTimerThread = threading.Thread(target=self.refreshWaiter,
-                                                  name="macrostage-refresh",
-                                                  daemon=True)
+        self.redrawTimerThread = threading.Thread(
+            target=self.refreshWaiter, name="macrostage-refresh", daemon=True
+        )
         self.redrawTimerThread.start()
 
         self.Bind(wx.EVT_PAINT, self.onPaint)
         self.Bind(wx.EVT_SIZE, lambda event: event)
-        self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: event) # Do nothing, to avoid flashing
+        self.Bind(
+            wx.EVT_ERASE_BACKGROUND, lambda event: event
+        )  # Do nothing, to avoid flashing
         events.subscribe(events.STAGE_POSITION, self.onMotion)
         events.subscribe(events.STAGE_STEP_INDEX, self.onStepIndexChange)
 
@@ -133,19 +137,16 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         self.SetCurrent(self.context)
         glClearColor(1.0, 1.0, 1.0, 0.0)
 
-
     ## Update our marker of where the stage currently is. This will indirectly
     # cause us to redisplay ourselves in a bit, thanks to self.refreshWaiter.
     def onMotion(self, axis, position):
         self.curStagePosition[axis] = position
-
 
     ## Step index has changed, so the highlighting on our step displays
     # is different.
     # \todo Redrawing *everything* at this stage seems a trifle excessive.
     def onStepIndexChange(self, index):
         self.shouldForceRedraw = True
-
 
     ## Wait until a minimum amount of time has passed since our last redraw
     # before we redraw again. Since we redraw when the stage moves and
@@ -156,27 +157,28 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
             if not self:
                 # Our window has been deleted; we're done here.
                 return
-            if (numpy.any(self.curStagePosition != self.prevStagePosition)
-                or self.shouldForceRedraw):
+            if (
+                numpy.any(self.curStagePosition != self.prevStagePosition)
+                or self.shouldForceRedraw
+            ):
                 self.drawEvent.clear()
                 wx.CallAfter(self.Refresh)
                 self.drawEvent.wait()
                 self.prevStagePosition[:] = self.curStagePosition
                 # Draw again after a delay, so that motion arrows get
                 # cleared.
-                time.sleep(.25)
+                time.sleep(0.25)
                 self.drawEvent.clear()
                 wx.CallAfter(self.Refresh)
                 self.drawEvent.wait()
                 self.shouldForceRedraw = False
-            time.sleep(.1)
+            time.sleep(0.1)
 
-
-    ## Rescale the input value to be in the range 
+    ## Rescale the input value to be in the range
     # (self.min[X|Y], self.max[X|Y]), flip the X axis, and call glVertex2f on
-    # the result. Or return the value instead if shouldReturn is true. The 
+    # the result. Or return the value instead if shouldReturn is true. The
     # basic idea here is to go from stage coordinates to view coordinates.
-    def scaledVertex(self, x, y, shouldReturn = False):
+    def scaledVertex(self, x, y, shouldReturn=False):
         newX = -1 * ((x - self.minX) / float(self.maxX - self.minX) * 2 - 1)
         newY = (y - self.minY) / float(self.maxY - self.minY) * 2 - 1
         if shouldReturn:
@@ -192,9 +194,27 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         angle = numpy.arctan2(delta[1], delta[0])
 
         pointLoc = baseLoc + delta
-        headLoc1 = pointLoc - numpy.array([numpy.cos(angle + ARROWHEAD_ANGLE), numpy.sin(angle + ARROWHEAD_ANGLE)]) * arrowHeadSize
-        headLoc2 = pointLoc - numpy.array([numpy.cos(angle - ARROWHEAD_ANGLE), numpy.sin(angle - ARROWHEAD_ANGLE)]) * arrowHeadSize
-        
+        headLoc1 = (
+            pointLoc
+            - numpy.array(
+                [
+                    numpy.cos(angle + ARROWHEAD_ANGLE),
+                    numpy.sin(angle + ARROWHEAD_ANGLE),
+                ]
+            )
+            * arrowHeadSize
+        )
+        headLoc2 = (
+            pointLoc
+            - numpy.array(
+                [
+                    numpy.cos(angle - ARROWHEAD_ANGLE),
+                    numpy.sin(angle - ARROWHEAD_ANGLE),
+                ]
+            )
+            * arrowHeadSize
+        )
+
         # Draw
         glColor3f(color[0], color[1], color[2])
         glLineWidth(ARROW_LINE_THICKNESS)
@@ -204,17 +224,16 @@ class MacroStageBase(wx.glcanvas.GLCanvas):
         glEnd()
         # Prevent the end of the line from showing through the
         # arrowhead by moving the arrowhead further along.
-        pointLoc += delta * .1
+        pointLoc += delta * 0.1
         glBegin(GL_POLYGON)
         glVertex2f(headLoc1[0], headLoc1[1])
         glVertex2f(headLoc2[0], headLoc2[1])
         glVertex2f(pointLoc[0], pointLoc[1])
         glEnd()
 
-
     ## Draw some text at the specified location
-    def drawTextAt(self, loc, text, size, color = (0, 0, 0)):
-        width, height = self.GetClientSize()*self.GetContentScaleFactor()
+    def drawTextAt(self, loc, text, size, color=(0, 0, 0)):
+        width, height = self.GetClientSize() * self.GetContentScaleFactor()
         aspect = float(height) / width
         loc = self.scaledVertex(loc[0], loc[1], True)
 

@@ -34,8 +34,12 @@ from cockpit.handlers.stagePositioner import PositionerHandler
 
 
 class _MicroscopeTestDevice:
-    def __init__(self, test_device: microscope.abc.Device,
-                 name: str, config: typing.Mapping[str, str]) -> None:
+    def __init__(
+        self,
+        test_device: microscope.abc.Device,
+        name: str,
+        config: typing.Mapping[str, str],
+    ) -> None:
         # Ideally, the Cockpit device class for Microscope devices
         # would simply take a microscope.Device instance (which could
         # be, or not, a Pyro proxy).  However, it really only works
@@ -45,41 +49,51 @@ class _MicroscopeTestDevice:
         test_device.initialize()
         pyro_daemon = Pyro4.Daemon()
         pyro_uri = pyro_daemon.register(test_device)
-        self._pyro_thread = threading.Thread(target=pyro_daemon.requestLoop,
-                                             daemon=True)
+        self._pyro_thread = threading.Thread(
+            target=pyro_daemon.requestLoop, daemon=True
+        )
         self._pyro_thread.start()
 
-        if 'uri' in config:
-            raise Exception('a dummy device must not have a uri config value'
-                            ' but \'%s\' was given' % config['uri'])
+        if "uri" in config:
+            raise Exception(
+                "a dummy device must not have a uri config value"
+                " but '%s' was given" % config["uri"]
+            )
         config = config.copy()
-        config['uri'] = pyro_uri
+        config["uri"] = pyro_uri
         super().__init__(name, config)
 
 
-class DummyCamera(_MicroscopeTestDevice,
-                  cockpit.devices.microscopeCamera.MicroscopeCamera):
+class DummyCamera(
+    _MicroscopeTestDevice, cockpit.devices.microscopeCamera.MicroscopeCamera
+):
     def __init__(self, *args, **kwargs):
-        super().__init__(microscope.simulators.SimulatedCamera(),
-                         *args, **kwargs)
+        super().__init__(
+            microscope.simulators.SimulatedCamera(), *args, **kwargs
+        )
 
 
-class DummyDSP(_MicroscopeTestDevice,
-               cockpit.devices.executorDevices.ExecutorDevice):
+class DummyDSP(
+    _MicroscopeTestDevice, cockpit.devices.executorDevices.ExecutorDevice
+):
     def __init__(self, *args, **kwargs):
-        super().__init__(microscope.testsuite.devices.DummyDSP(),
-                         *args, **kwargs)
+        super().__init__(
+            microscope.testsuite.devices.DummyDSP(), *args, **kwargs
+        )
 
 
-class DummyLaser(_MicroscopeTestDevice,
-                 cockpit.devices.microscopeDevice.MicroscopeLaser):
+class DummyLaser(
+    _MicroscopeTestDevice, cockpit.devices.microscopeDevice.MicroscopeLaser
+):
     def __init__(self, *args, **kwargs):
-        super().__init__(microscope.simulators.SimulatedLightSource(),
-                         *args, **kwargs)
+        super().__init__(
+            microscope.simulators.SimulatedLightSource(), *args, **kwargs
+        )
 
 
-class DummyStage(_MicroscopeTestDevice,
-                 cockpit.devices.microscopeDevice.MicroscopeStage):
+class DummyStage(
+    _MicroscopeTestDevice, cockpit.devices.microscopeDevice.MicroscopeStage
+):
     """Dummy stages.
 
     This device requires the ``lower-limits``, ``upper-limits``, and
@@ -98,25 +112,30 @@ class DummyStage(_MicroscopeTestDevice,
         y-units-per-micron: 1
 
     """
+
     def __init__(self, name: str, config: typing.Mapping[str, str]) -> None:
-        limits = {} # type: typing.Dict[str, microscope.AxisLimits]
+        limits = {}  # type: typing.Dict[str, microscope.AxisLimits]
         config = config.copy()
-        for one_letter in 'xyz':
-            lower_limits_key = one_letter + '-lower-limits'
-            upper_limits_key = one_letter + '-upper-limits'
-            units_per_micron_key = one_letter + '-units-per-micron'
+        for one_letter in "xyz":
+            lower_limits_key = one_letter + "-lower-limits"
+            upper_limits_key = one_letter + "-upper-limits"
+            units_per_micron_key = one_letter + "-units-per-micron"
             if lower_limits_key in config and upper_limits_key in config:
                 if units_per_micron_key not in config:
-                    Exception('no unites per micron config for \'%s\' axis'
-                              % one_letter)
+                    Exception(
+                        "no unites per micron config for '%s' axis"
+                        % one_letter
+                    )
                 lower_limits = float(config.pop(lower_limits_key))
                 upper_limits = float(config.pop(upper_limits_key))
-                limits[one_letter] = microscope.AxisLimits(lower_limits,
-                                                           upper_limits)
-                config[one_letter + '-axis-name'] = one_letter
+                limits[one_letter] = microscope.AxisLimits(
+                    lower_limits, upper_limits
+                )
+                config[one_letter + "-axis-name"] = one_letter
             elif lower_limits_key in config or upper_limits_key in config:
-                raise Exception('only one limit for the \'%s\' axis on config'
-                                % one_letter)
+                raise Exception(
+                    "only one limit for the '%s' axis on config" % one_letter
+                )
 
         test_stage = microscope.simulators.SimulatedStage(limits)
         super().__init__(test_stage, name, config)
@@ -128,5 +147,5 @@ class DummyStage(_MicroscopeTestDevice,
             # have getMovementTime yet (issue #614) so it can't be
             # used in experiments.  So we modify the handlers.
             handler.isEligibleForExperiments = True
-            handler.callbacks['getMovementTime'] = lambda *args : (1, 1)
+            handler.callbacks["getMovementTime"] = lambda *args: (1, 1)
         return handlers

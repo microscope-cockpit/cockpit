@@ -68,17 +68,18 @@ import shutil
 import wx
 
 ## Provided so the UI knows what to call this experiment.
-EXPERIMENT_NAME = 'Structured Illumination'
+EXPERIMENT_NAME = "Structured Illumination"
 
 ## Maps possible collection orders to their ordering (0: angle, 1: phase, 2: z).
 COLLECTION_ORDERS = {
-#        "Angle, Phase, Z": (0, 1, 2),
-#        "Angle, Z, Phase": (0, 2, 1),
-#        "Phase, Angle, Z": (1, 0, 2),
-#       "Phase, Z, Angle": (1, 2, 0),
-        "Z, Angle, Phase": (2, 0, 1),
-        "Z, Phase, Angle": (2, 1, 0),
+    #        "Angle, Phase, Z": (0, 1, 2),
+    #        "Angle, Z, Phase": (0, 2, 1),
+    #        "Phase, Angle, Z": (1, 0, 2),
+    #       "Phase, Z, Angle": (1, 2, 0),
+    "Z, Angle, Phase": (2, 0, 1),
+    "Z, Phase, Angle": (2, 1, 0),
 }
+
 
 def collection_order_tuple(order_str):
     """Return collection order in a tuple of 1 character c-style index.
@@ -86,12 +87,13 @@ def collection_order_tuple(order_str):
     A bit more sensible, lower-case, one character, tuple.
     """
     to1char = {
-        0 : "a",
-        1 : "p",
-        2 : "z",
+        0: "a",
+        1: "p",
+        2: "z",
     }
     z_order = [to1char[x] for x in COLLECTION_ORDERS[order_str]]
     return tuple(z_order)
+
 
 def postpad_data(data, shape):
     """Return padded data at end ofp each dimension and reshape.
@@ -100,11 +102,12 @@ def postpad_data(data, shape):
     values to obtain a specific shape.  The blank values are zero or
     NaN when supported by the datatype.  See cockpit bug #289.
     """
-    postpad_length =  shape - numpy.array(data.shape)
+    postpad_length = shape - numpy.array(data.shape)
     pad_width = list(zip([0] * len(shape), postpad_length))
     ## Let numpy figure out what to convert NaN into for blank values
-    return numpy.pad(data, pad_width, mode='constant',
-                     constant_values=[numpy.nan])
+    return numpy.pad(
+        data, pad_width, mode="constant", constant_values=[numpy.nan]
+    )
 
 
 def reorder_z_dim(data, order_packed, z_lengths, z_order, z_wanted):
@@ -124,19 +127,26 @@ def reorder_z_dim(data, order_packed, z_lengths, z_order, z_wanted):
         z_wanted - a 3 element tuple of 1 character, with the wanted
             order of the z dimension.
     """
-    assert data.ndim == len(order_packed), \
-        "DATA ndims different from lenght of ORDER_PACKED"
-    assert sorted(z_order) == ['a', 'p', 'z'], \
-        "Z_ORDER does not have only 'a, z, p'"
-    assert sorted(z_order) == sorted(z_wanted), \
-        "Z_ORDER not same elements as Z_WANTED"
+    assert data.ndim == len(
+        order_packed
+    ), "DATA ndims different from lenght of ORDER_PACKED"
+    assert sorted(z_order) == [
+        "a",
+        "p",
+        "z",
+    ], "Z_ORDER does not have only 'a, z, p'"
+    assert sorted(z_order) == sorted(
+        z_wanted
+    ), "Z_ORDER not same elements as Z_WANTED"
 
     z_idx = order_packed.index("z")
-    order_in = order_packed[0:z_idx] + z_order + order_packed[z_idx+1:]
-    order_out = order_packed[0:z_idx] + z_wanted + order_packed[z_idx+1:]
+    order_in = order_packed[0:z_idx] + z_order + order_packed[z_idx + 1 :]
+    order_out = order_packed[0:z_idx] + z_wanted + order_packed[z_idx + 1 :]
 
     packed_shape = data.shape
-    unpacked_shape = packed_shape[0:z_idx] + z_lengths + packed_shape[z_idx+1:]
+    unpacked_shape = (
+        packed_shape[0:z_idx] + z_lengths + packed_shape[z_idx + 1 :]
+    )
 
     ## If we are dealing with truncated files we may need to add blank
     ## planes into the data.  See cockpit bug #289.
@@ -172,22 +182,31 @@ class SIExperiment(experiment.Experiment):
     # \param bleachCompensations A dictionary mapping light handlers to
     #        how much to increase their exposure times on successive angles,
     #        to compensate for bleaching.
-    def __init__(self, collectionOrder, bleachCompensations, numAngles, numPhases,
-            angleHandler = None, phaseHandler = None, polarizerHandler = None,
-            slmHandler = None,
-            *args, **kwargs):
+    def __init__(
+        self,
+        collectionOrder,
+        bleachCompensations,
+        numAngles,
+        numPhases,
+        angleHandler=None,
+        phaseHandler=None,
+        polarizerHandler=None,
+        slmHandler=None,
+        *args,
+        **kwargs,
+    ):
         # Store the collection order in the MRC header.
-        metadata = 'SI order: %s' % collectionOrder
-        #Store the diffraction angle in MRC metadata
-        slmdev=depot.getDeviceWithName('slm')
-        if(slmdev):
-            diffangle=slmdev.connection.get_sim_diffraction_angle()
-            metadata += ': SLM diff_angle %.3f' % diffangle
-        if 'metadata' in kwargs:
+        metadata = "SI order: %s" % collectionOrder
+        # Store the diffraction angle in MRC metadata
+        slmdev = depot.getDeviceWithName("slm")
+        if slmdev:
+            diffangle = slmdev.connection.get_sim_diffraction_angle()
+            metadata += ": SLM diff_angle %.3f" % diffangle
+        if "metadata" in kwargs:
             # Augment the existing string.
-            kwargs['metadata'] += "; %s" % metadata
+            kwargs["metadata"] += "; %s" % metadata
         else:
-            kwargs['metadata'] = metadata
+            kwargs["metadata"] = metadata
         super().__init__(*args, **kwargs)
         self.numAngles = numAngles
         self.numPhases = numPhases
@@ -203,7 +222,6 @@ class SIExperiment(experiment.Experiment):
         self.slmHandler = slmHandler
         self.handlerToBleachCompensation = bleachCompensations
 
-
     ## Generate a sequence of (angle, phase, Z) positions for SI experiments,
     # based on the order the user specified.
     def genSIPositions(self):
@@ -217,7 +235,6 @@ class SIExperiment(experiment.Experiment):
                     phase = vals[ordering.index(1)]
                     z = vals[ordering.index(2)]
                     yield (angle, phase, self.zStart + z * self.sliceHeight)
-
 
     ## Create the ActionTable needed to run the experiment. We do three
     # Z-stacks for three different angles, and take five images at each
@@ -233,18 +250,18 @@ class SIExperiment(experiment.Experiment):
         if self.angleHandler is not None:
             theta = self.angleHandler.indexedPosition(0)
             table.addAction(curTime, self.angleHandler, theta)
-            curTime += decimal.Decimal('1e-6')
+            curTime += decimal.Decimal("1e-6")
         if self.phaseHandler is not None:
             table.addAction(curTime, self.phaseHandler, 0)
-            curTime += decimal.Decimal('1')
+            curTime += decimal.Decimal("1")
         table.addAction(curTime, self.zPositioner, self.zStart)
-        curTime += decimal.Decimal('1')
+        curTime += decimal.Decimal("1")
 
         if self.slmHandler is not None:
             # Add a first trigger of the SLM to get first new image.
             table.addAction(curTime, self.slmHandler, 0)
             # Wait a few ms for any necessary SLM triggers.
-            curTime = decimal.Decimal('5e-3')
+            curTime = decimal.Decimal("5e-3")
 
         for angle, phase, z in self.genSIPositions():
             delayBeforeImaging = 0
@@ -253,47 +270,64 @@ class SIExperiment(experiment.Experiment):
             # then have some time to stabilize. Or, if we have an SLM, then we
             # need to trigger it and then wait for it to stabilize.
             # Ensure we truly are doing this after all exposure events are done.
-            curTime = max(curTime,
-                          table.getFirstAndLastActionTimes()[1] + decimal.Decimal('1e-6'))
+            curTime = max(
+                curTime,
+                table.getFirstAndLastActionTimes()[1]
+                + decimal.Decimal("1e-6"),
+            )
             if angle != prevAngle and prevAngle is not None:
                 if self.angleHandler is not None:
                     theta = self.angleHandler.indexedPosition(angle)
-                    motionTime, stabilizationTime = self.angleHandler.getMovementTime(prevAngle, theta)
+                    (
+                        motionTime,
+                        stabilizationTime,
+                    ) = self.angleHandler.getMovementTime(prevAngle, theta)
                     # Move to the next position.
-                    table.addAction(curTime + motionTime, self.angleHandler, theta)
-                    delayBeforeImaging = max(delayBeforeImaging, 
-                            motionTime + stabilizationTime)
+                    table.addAction(
+                        curTime + motionTime, self.angleHandler, theta
+                    )
+                    delayBeforeImaging = max(
+                        delayBeforeImaging, motionTime + stabilizationTime
+                    )
                 # Advance time slightly so all actions are sorted (e.g. we
                 # don't try to change angle and phase in the same timestep).
-                curTime += decimal.Decimal('.001')
+                curTime += decimal.Decimal(".001")
 
             if phase != prevPhase and prevPhase is not None:
                 if self.phaseHandler is not None:
-                    motionTime, stabilizationTime = self.phaseHandler.getMovementTime(prevPhase, phase)
+                    (
+                        motionTime,
+                        stabilizationTime,
+                    ) = self.phaseHandler.getMovementTime(prevPhase, phase)
                     # Hold flat.
                     table.addAction(curTime, self.phaseHandler, prevPhase)
                     # Move to the next position.
-                    table.addAction(curTime + motionTime,
-                            self.phaseHandler, phase)
-                    delayBeforeImaging = max(delayBeforeImaging,
-                            motionTime + stabilizationTime)
+                    table.addAction(
+                        curTime + motionTime, self.phaseHandler, phase
+                    )
+                    delayBeforeImaging = max(
+                        delayBeforeImaging, motionTime + stabilizationTime
+                    )
                 # Advance time slightly so all actions are sorted (e.g. we
                 # don't try to change angle and phase in the same timestep).
-                curTime += decimal.Decimal('.001')
+                curTime += decimal.Decimal(".001")
 
             if z != prevZ:
                 if prevZ is not None:
-                    motionTime, stabilizationTime = self.zPositioner.getMovementTime(prevZ, z)
+                    (
+                        motionTime,
+                        stabilizationTime,
+                    ) = self.zPositioner.getMovementTime(prevZ, z)
                     # Hold flat.
                     table.addAction(curTime, self.zPositioner, prevZ)
                     # Move to the next position.
-                    table.addAction(curTime + motionTime,
-                            self.zPositioner, z)
-                    delayBeforeImaging = max(delayBeforeImaging,
-                            motionTime + stabilizationTime)
+                    table.addAction(curTime + motionTime, self.zPositioner, z)
+                    delayBeforeImaging = max(
+                        delayBeforeImaging, motionTime + stabilizationTime
+                    )
                 # Advance time slightly so all actions are sorted (e.g. we
                 # don't try to change angle and phase in the same timestep).
-                curTime += decimal.Decimal('.001')
+                curTime += decimal.Decimal(".001")
 
             prevAngle = angle
             prevPhase = phase
@@ -306,13 +340,16 @@ class SIExperiment(experiment.Experiment):
             # in a series of exposures at different wavelengths, with the SIM
             # pattern optimised for each wavelength.
             for cameras, lightTimePairs in self.exposureSettings:
-                curTime = self.expose(curTime, cameras, lightTimePairs, angle, phase, table)
+                curTime = self.expose(
+                    curTime, cameras, lightTimePairs, angle, phase, table
+                )
 
         # Hold Z, angle, and phase steady through to the end, then ramp down
         # to 0 to prep for the next experiment.
         table.addAction(curTime, self.zPositioner, prevZ)
         motionTime, stabilizationTime = self.zPositioner.getMovementTime(
-                self.zHeight, self.zStart)
+            self.zHeight, self.zStart
+        )
         table.addAction(curTime + motionTime, self.zPositioner, self.zStart)
         finalWaitTime = motionTime + stabilizationTime
 
@@ -323,19 +360,21 @@ class SIExperiment(experiment.Experiment):
             # Ramp down angle
             theta = self.angleHandler.indexedPosition(0)
             motionTime, stabilizationTime = self.angleHandler.getMovementTime(
-                    prevAngle, theta)
+                prevAngle, theta
+            )
             table.addAction(curTime + motionTime, self.angleHandler, theta)
             finalWaitTime = max(finalWaitTime, motionTime + stabilizationTime)
         if self.phaseHandler is not None:
             # Ramp down phase
             table.addAction(curTime, self.phaseHandler, prevPhase)
             motionTime, stabilizationTime = self.phaseHandler.getMovementTime(
-                    prevPhase, 0)
+                prevPhase, 0
+            )
             table.addAction(curTime + motionTime, self.phaseHandler, 0)
             finalWaitTime = max(finalWaitTime, motionTime + stabilizationTime)
         if self.polarizerHandler is not None:
             # Return to idle voltage.
-            table.addAction(curTime, self.polarizerHandler, (0, 'default'))
+            table.addAction(curTime, self.polarizerHandler, (0, "default"))
             finalWaitTime = finalWaitTime + decimal.Decimal(1e-6)
 
         # Set SLM back to 0th image ready for next measurement in timelapse or multi-site.
@@ -344,7 +383,6 @@ class SIExperiment(experiment.Experiment):
             table.addToggle(curTime, self.slmHandler)
 
         return table
-
 
     ## Wrapper around Experiment.expose() that:
     # 1: adjusts exposure times based on the current angle, to compensate for
@@ -364,14 +402,20 @@ class SIExperiment(experiment.Experiment):
             # SIM wavelength
             wavelengths.append(light.wavelength)
             # Bleaching compensation
-            tExpNew = tExp * (1 + decimal.Decimal(self.handlerToBleachCompensation[light]) * angle)
+            tExpNew = tExp * (
+                1
+                + decimal.Decimal(self.handlerToBleachCompensation[light])
+                * angle
+            )
             newPairs.append((light, tExpNew))
         longestWavelength = max(wavelengths)
         # Pre-exposure delay due to polarizer and SLM settling times.
-        delay = decimal.Decimal(0.)
+        delay = decimal.Decimal(0.0)
         # Set polarizer position
         if self.polarizerHandler is not None:
-            pos = self.polarizerHandler.indexedPosition(angle, longestWavelength)
+            pos = self.polarizerHandler.indexedPosition(
+                angle, longestWavelength
+            )
             ## Need to check last position to calculate move time. This
             # is currently only tracked outside this function, so we need to inspect
             # the table.
@@ -382,13 +426,19 @@ class SIExperiment(experiment.Experiment):
             lastpos = table.getLastActionFor(self.polarizerHandler)[1]
             if lastpos is None:
                 lastpos = 0
-            table.addAction(curTime, self.polarizerHandler, (angle, longestWavelength))
-            dt = decimal.Decimal(sum(self.polarizerHandler.getMovementTime(lastpos, pos)))
+            table.addAction(
+                curTime, self.polarizerHandler, (angle, longestWavelength)
+            )
+            dt = decimal.Decimal(
+                sum(self.polarizerHandler.getMovementTime(lastpos, pos))
+            )
             delay = max(delay, dt)
         # SLM trigger
         if self.slmHandler is not None:
             ## Add SLM event ot set pattern for phase, angle and longestWavelength.
-            table.addAction(curTime, self.slmHandler, (angle, phase, longestWavelength))
+            table.addAction(
+                curTime, self.slmHandler, (angle, phase, longestWavelength)
+            )
             delay = max(delay, self.slmHandler.getMovementTime())
         curTime += delay
         return super().expose(curTime, cameras, newPairs, table)
@@ -402,19 +452,18 @@ class SIExperiment(experiment.Experiment):
         in angle-z-phase order.
         """
         z_order = collection_order_tuple(self.collectionOrder)
-        z_wanted = ('a', 'z', 'p')
+        z_wanted = ("a", "z", "p")
         if z_order == z_wanted:
             # Already in order; don't do anything.
             return
-
 
         doc = cockpit.util.datadoc.DataDoc(self.savePath)
         order_in = tuple(doc.image.Mrc.axisOrderStr())
 
         length_getters = {
-            "a" : self.numAngles,
-            "z" : self.numZSlices,
-            "p" : self.numPhases,
+            "a": self.numAngles,
+            "z": self.numZSlices,
+            "p": self.numPhases,
         }
         ## If data is truncated, the number of Z planes in the header
         ## may differ from the number of Z planes in the data.  So
@@ -425,8 +474,9 @@ class SIExperiment(experiment.Experiment):
         if nz_in_data == nz_in_header:
             z_lengths = header_z_lengths
         else:
-            z_lengths = cockpit.util.Mrc.adjusted_data_shape(nz_in_data,
-                                                             header_z_lengths)
+            z_lengths = cockpit.util.Mrc.adjusted_data_shape(
+                nz_in_data, header_z_lengths
+            )
 
         ## Read the extended header again separately.  It our case,
         ## this is a struct made of int32 and float32, one per plane.
@@ -434,31 +484,40 @@ class SIExperiment(experiment.Experiment):
         ## with the right number of bytes per plane for the extended
         ## header.  We fake the struct by using multiple u1 per
         ## element.
-        ext_header_stride = 4 * (doc.imageHeader.NumIntegers
-                                 + doc.imageHeader.NumFloats)
-        ext_header_dtype = ",".join(['u1']*ext_header_stride)
+        ext_header_stride = 4 * (
+            doc.imageHeader.NumIntegers + doc.imageHeader.NumFloats
+        )
+        ext_header_dtype = ",".join(["u1"] * ext_header_stride)
         with open(self.savePath, "rb") as fh:
-            fh.seek(1024) # skip base header
-            ext_header = numpy.fromfile(fh, count=doc.getNPlanes(),
-                                        dtype=ext_header_dtype)
-        assert doc.imageHeader.next == ext_header.nbytes, \
-            "next value from datadoc differs from computed length"
-        assert order_in[-2:] == ('y', 'x'), \
-            "ORDER_IN two last dimensions are not Y and X"
+            fh.seek(1024)  # skip base header
+            ext_header = numpy.fromfile(
+                fh, count=doc.getNPlanes(), dtype=ext_header_dtype
+            )
+        assert (
+            doc.imageHeader.next == ext_header.nbytes
+        ), "next value from datadoc differs from computed length"
+        assert order_in[-2:] == (
+            "y",
+            "x",
+        ), "ORDER_IN two last dimensions are not Y and X"
 
         ## The file may be truncated if the experiment was aborted.
         ## In that case, the number of planes in file may be different
         ## from what is in the header so we get the shape header and
         ## not the shape from the data in the datadoc instance.  See
         ## cockpit bug #289.
-        header_shape = [int(n) for n in cockpit.util.Mrc.shapeFromHdr(doc.imageHeader)]
+        header_shape = [
+            int(n) for n in cockpit.util.Mrc.shapeFromHdr(doc.imageHeader)
+        ]
         ext_header = ext_header.reshape(header_shape[:-2])
 
         ## Finally, reorder the things.
-        img_data = reorder_z_dim(doc.image, order_in, z_lengths,
-                                 z_order, z_wanted)
-        ext_header = reorder_z_dim(ext_header, order_in[:-2], header_z_lengths,
-                                   z_order, z_wanted)
+        img_data = reorder_z_dim(
+            doc.image, order_in, z_lengths, z_order, z_wanted
+        )
+        ext_header = reorder_z_dim(
+            ext_header, order_in[:-2], header_z_lengths, z_order, z_wanted
+        )
 
         ## Build a new header from old doc data
 
@@ -490,8 +549,7 @@ class SIExperiment(experiment.Experiment):
         shutil.move(tmp_fh.name, self.savePath)
         return
 
-
-    def cleanup(self, runThread = None, saveThread = None):
+    def cleanup(self, runThread=None, saveThread=None):
         super().cleanup(runThread, saveThread)
         if self.savePath:
             self.reorder_img_file()
@@ -499,10 +557,12 @@ class SIExperiment(experiment.Experiment):
 
     def lastMinuteActions(self):
         if self.sliceHeight != 0.125:
-            warning = "Slice height must be 0.125 for softWoRx 3D " \
-                      "reconstruction. Choose:" \
-                      "\n    'OK' to run as is;" \
-                      "\n    'Cancel' to go back and change parameters."
+            warning = (
+                "Slice height must be 0.125 for softWoRx 3D "
+                "reconstruction. Choose:"
+                "\n    'OK' to run as is;"
+                "\n    'Cancel' to go back and change parameters."
+            )
             if not guiUtils.getUserPermission(warning):
                 return False
         return True
@@ -518,6 +578,7 @@ class BaseSIMExperimentUI(wx.Panel):
 
     Subclasses must implement class property `_CONFIG_KEY_SUFFIX`.
     """
+
     def __init__(self, parent, configKey):
         super().__init__(parent=parent)
 
@@ -532,90 +593,95 @@ class BaseSIMExperimentUI(wx.Panel):
         rowSizer.Add(text, 0, wx.ALL, 5)
         ## Ordered list of bleach compensation percentages.
         self.bleachCompensations, subSizer = guiUtils.makeLightsControls(
-                self,
-                [str(l.name) for l in self.allLights],
-                self.settings['bleachCompensations'])
+            self,
+            [str(l.name) for l in self.allLights],
+            self.settings["bleachCompensations"],
+        )
         rowSizer.Add(subSizer)
         sizer.Add(rowSizer)
         # Now a row for the collection order.
         rowSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.siCollectionOrder = guiUtils.addLabeledInput(self,
-                rowSizer, label = "Collection order",
-                control = wx.Choice(self, choices = sorted(COLLECTION_ORDERS.keys())),
-                helperString = "What order to change the angle, phase, and Z step of the experiment. E.g. for \"Angle, Phase, Z\" Angle will change most slowly and Z will change fastest.")
-        self.siCollectionOrder.SetSelection(self.settings['siCollectionOrder'])
+        self.siCollectionOrder = guiUtils.addLabeledInput(
+            self,
+            rowSizer,
+            label="Collection order",
+            control=wx.Choice(self, choices=sorted(COLLECTION_ORDERS.keys())),
+            helperString='What order to change the angle, phase, and Z step of the experiment. E.g. for "Angle, Phase, Z" Angle will change most slowly and Z will change fastest.',
+        )
+        self.siCollectionOrder.SetSelection(self.settings["siCollectionOrder"])
         sizer.Add(rowSizer)
         self.SetSizerAndFit(sizer)
-
 
     ## Given a parameters dict (parameter name to value) to hand to the
     # experiment instance, augment them with our special parameters.
     def augmentParams(self, params):
         self.saveSettings()
-        params['numAngles'] = 3
-        params['numPhases'] = 5
-        params['collectionOrder'] = self.siCollectionOrder.GetStringSelection()
-        params['angleHandler'] = depot.getHandlerWithName('SI angle')
-        params['phaseHandler'] = depot.getHandlerWithName('SI phase')
-        params['polarizerHandler'] = depot.getHandlerWithName('SI polarizer')
-        params['slmHandler'] = depot.getHandler('slm', depot.EXECUTOR)
+        params["numAngles"] = 3
+        params["numPhases"] = 5
+        params["collectionOrder"] = self.siCollectionOrder.GetStringSelection()
+        params["angleHandler"] = depot.getHandlerWithName("SI angle")
+        params["phaseHandler"] = depot.getHandlerWithName("SI phase")
+        params["polarizerHandler"] = depot.getHandlerWithName("SI polarizer")
+        params["slmHandler"] = depot.getHandler("slm", depot.EXECUTOR)
         compensations = {}
         for i, light in enumerate(self.allLights):
             val = guiUtils.tryParseNum(self.bleachCompensations[i], float)
             if val:
                 # Convert from percentage to multiplier
-                compensations[light] = .01 * float(val)
+                compensations[light] = 0.01 * float(val)
             else:
                 compensations[light] = 0
-        params['bleachCompensations'] = compensations
+        params["bleachCompensations"] = compensations
         return params
 
     def _getDefaultSettings(self):
         allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
         default = {
-            'bleachCompensations': ['' for l in self.allLights],
-            'siCollectionOrder': 0,
+            "bleachCompensations": ["" for l in self.allLights],
+            "siCollectionOrder": 0,
         }
         return default
-
 
     ## Load the saved experiment settings, if any.
     def loadSettings(self):
         result = cockpit.util.userConfig.getValue(
-                self.configKey,
-                default = self._getDefaultSettings()
+            self.configKey, default=self._getDefaultSettings()
         )
 
         allLights = depot.getHandlersOfType(depot.LIGHT_TOGGLE)
-        if len(result['bleachCompensations']) != len(self.allLights):
+        if len(result["bleachCompensations"]) != len(self.allLights):
             # Number of light sources has changed; invalidate the config.
-            result['bleachCompensations'] = ['' for light in self.allLights]
+            result["bleachCompensations"] = ["" for light in self.allLights]
         return result
-
 
     ## Generate a dict of our settings.
     def getSettingsDict(self):
         return {
-            'bleachCompensations': [c.GetValue() for c in self.bleachCompensations],
-            'siCollectionOrder': self.siCollectionOrder.GetSelection(),
+            "bleachCompensations": [
+                c.GetValue() for c in self.bleachCompensations
+            ],
+            "siCollectionOrder": self.siCollectionOrder.GetSelection(),
         }
 
-
     ## Save the current experiment settings to config.
-    def saveSettings(self, settings = None):
+    def saveSettings(self, settings=None):
         if settings is None:
             settings = self.getSettingsDict()
         cockpit.util.userConfig.setValue(self.configKey, settings)
 
 
 class ExperimentUI(BaseSIMExperimentUI):
-    _CONFIG_KEY_SUFFIX = 'SIExperimentSettings'
+    _CONFIG_KEY_SUFFIX = "SIExperimentSettings"
 
     def __init__(self, parent, configKey):
         super().__init__(parent, configKey)
 
-        self.shouldOnlyDoOneAngle = wx.CheckBox(self, label="Do only one angle")
-        self.shouldOnlyDoOneAngle.SetValue(self.settings['shouldOnlyDoOneAngle'])
+        self.shouldOnlyDoOneAngle = wx.CheckBox(
+            self, label="Do only one angle"
+        )
+        self.shouldOnlyDoOneAngle.SetValue(
+            self.settings["shouldOnlyDoOneAngle"]
+        )
 
         top_row_sizer = self.Sizer.GetItem(0).Sizer
         top_row_sizer.Prepend(self.shouldOnlyDoOneAngle, 0, wx.ALL, 5)
@@ -624,19 +690,23 @@ class ExperimentUI(BaseSIMExperimentUI):
     def augmentParams(self, params):
         params = super().augmentParams(params)
         if self.shouldOnlyDoOneAngle.GetValue():
-            params['numAngles'] = 1
+            params["numAngles"] = 1
         return params
 
     def _getDefaultSettings(self):
         default = super()._getDefaultSettings()
-        default.update({
-            'shouldOnlyDoOneAngle': False,
-        })
+        default.update(
+            {
+                "shouldOnlyDoOneAngle": False,
+            }
+        )
         return default
 
     def getSettingsDict(self):
         all_settings = super().getSettingsDict()
-        all_settings.update({
-            'shouldOnlyDoOneAngle': self.shouldOnlyDoOneAngle.GetValue(),
-        })
+        all_settings.update(
+            {
+                "shouldOnlyDoOneAngle": self.shouldOnlyDoOneAngle.GetValue(),
+            }
+        )
         return all_settings

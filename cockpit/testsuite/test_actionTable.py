@@ -27,9 +27,14 @@ import cockpit.handlers.deviceHandler
 
 
 class _MockDeviceHandler(cockpit.handlers.deviceHandler.DeviceHandler):
-    def __init__(self, name='mock', groupName='testsuite'):
-        super().__init__(name, groupName, isEligibleForExperiments=False,
-                         callbacks={}, deviceType=cockpit.depot.GENERIC_DEVICE)
+    def __init__(self, name="mock", groupName="testsuite"):
+        super().__init__(
+            name,
+            groupName,
+            isEligibleForExperiments=False,
+            callbacks={},
+            deviceType=cockpit.depot.GENERIC_DEVICE,
+        )
 
 
 class TestActionTable(unittest.TestCase):
@@ -54,8 +59,9 @@ class TestActionTable(unittest.TestCase):
         self.assertEqual(len(self.action_table), 0)
 
     def test___init___times(self):
-        self.assertEqual(self.action_table.getFirstAndLastActionTimes(),
-                         (None, None))
+        self.assertEqual(
+            self.action_table.getFirstAndLastActionTimes(), (None, None)
+        )
 
     def test___len___emtpy(self):
         self.assertEqual(0, self.action_table.__len__())
@@ -71,8 +77,7 @@ class TestActionTable(unittest.TestCase):
         self.assertEqual(len(self.action_table), self.action_table.__len__())
 
     def test___repr__(self):
-        """All this does currently is call prettyString.
-        """
+        """All this does currently is call prettyString."""
         self.assertTrue(isinstance(self.action_table.__repr__(), str))
 
     ## prettystring needs to handle diffrent handlers
@@ -80,15 +85,16 @@ class TestActionTable(unittest.TestCase):
     #                               no events at all
 
     def test_pretty_string_emtpy(self):
-        self.assertEqual(self.action_table.prettyString(), '')
+        self.assertEqual(self.action_table.prettyString(), "")
 
     def test_pretty_string_non_emtpy_length(self):
         handler = _MockDeviceHandler()
         n_actions = 5
         for i in range(n_actions):
-             self.action_table.addAction(i, handler, None)
-        self.assertEqual(len(self.action_table.prettyString().splitlines()),
-                         n_actions)
+            self.action_table.addAction(i, handler, None)
+        self.assertEqual(
+            len(self.action_table.prettyString().splitlines()), n_actions
+        )
 
     def test_pretty_string_format(self):
         """The format returned is the repr's of 'time handler.name parameter'
@@ -104,7 +110,7 @@ class TestActionTable(unittest.TestCase):
         except ValueError:
             self.assertTrue(False)
         self.assertEqual(name, handler.name)
-        self.assertEqual(parameter, 'None')
+        self.assertEqual(parameter, "None")
 
     def test___setitem__(self):
         pass
@@ -118,7 +124,9 @@ class TestActionTable(unittest.TestCase):
     def test_addAction_sets_time(self):
         self.action_table.addAction(1, None, None)
         self.action_table.addAction(3, None, None)
-        self.assertEqual((1, 3), self.action_table.getFirstAndLastActionTimes())
+        self.assertEqual(
+            (1, 3), self.action_table.getFirstAndLastActionTimes()
+        )
 
     def test_addToggle(self):
         # Toggles are represented by 2 events
@@ -172,20 +180,23 @@ class TestActionTable(unittest.TestCase):
 
         self.action_table.enforcePositiveTimepoints()
 
-        proper_times = set([t-min(timepoints) for t in timepoints])
+        proper_times = set([t - min(timepoints) for t in timepoints])
         corrected_times = set([action[0] for action in self.action_table])
         self.assertEqual(proper_times, corrected_times)
 
     def test_getFirstAndLastActionTimes_emtpy(self):
         ## XXX: Is this the correct response?
-        self.assertEqual(self.action_table.getFirstAndLastActionTimes(),
-                         (None, None))
+        self.assertEqual(
+            self.action_table.getFirstAndLastActionTimes(), (None, None)
+        )
 
     def test_getFirstAndLastActionTimes(self):
         for t in range(5):
             self.action_table.addAction(t, None, None)
 
-        self.assertEqual((0, 4), self.action_table.getFirstAndLastActionTimes())
+        self.assertEqual(
+            (0, 4), self.action_table.getFirstAndLastActionTimes()
+        )
 
     def test_getFirstAndLastActionTimes_close_decimal(self):
         """Actions may be very close, so even at high precision the times
@@ -199,13 +210,13 @@ class TestActionTable(unittest.TestCase):
     def test_getLastActionFor(self):
         handler = _MockDeviceHandler()
         self.action_table.addAction(0, handler, None)
-        self.assertEqual(self.action_table.getLastActionFor(handler),
-                         (0, None))
+        self.assertEqual(
+            self.action_table.getLastActionFor(handler), (0, None)
+        )
 
     # TODO: test marktime, no elements, no elements that need to be moved
     def test_shiftActionsBack(self):
-        """Tests that moving actions back introduces moves them later in time.
-        """
+        """Tests that moving actions back introduces moves them later in time."""
         self.action_table.addAction(1, None, None)
         self.action_table.shiftActionsBack(0, 1)
         self.assertEqual(2, self.action_table[0][0])
@@ -234,5 +245,5 @@ class TestActionTable(unittest.TestCase):
         self.assertEqual(0.1, self.action_table.addAction(0.1, None, None))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

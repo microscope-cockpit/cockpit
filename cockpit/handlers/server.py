@@ -66,10 +66,9 @@ class ServerHandler(deviceHandler.DeviceHandler):
         super().__init__(name, groupName, False, callbacks, depot.SERVER)
 
     ## Register a new function.
-    def register(self, func, localIp = None):
-        return self.callbacks['register'](func, localIp)
-
+    def register(self, func, localIp=None):
+        return self.callbacks["register"](func, localIp)
 
     ## Unregister a function, so it stops getting called.
     def unregister(self, func):
-        return self.callbacks['unregister'](func)
+        return self.callbacks["unregister"](func)

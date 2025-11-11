@@ -34,6 +34,7 @@ EVT_CHANNEL_REMOVED = wx.PyEventBinder(wx.NewEventType())
 
 Channel = typing.Dict[str, typing.Any]
 
+
 class Channels(wx.EvtHandler):
     """Map names to channel configurations.
 
@@ -58,9 +59,12 @@ class Channels(wx.EvtHandler):
     - ``EVT_CHANNEL_REMOVED``
 
     """
+
     def __init__(self) -> None:
         super().__init__()
-        self._map = collections.OrderedDict() # type: typing.OrderedDict[str, Channel]
+        self._map = (
+            collections.OrderedDict()
+        )  # type: typing.OrderedDict[str, Channel]
 
     @property
     def Names(self) -> typing.List[str]:
@@ -93,7 +97,7 @@ class Channels(wx.EvtHandler):
     def Add(self, name: str, channel: Channel) -> None:
         """Add new channel. Use `Change` to modify existing channel."""
         if name in self._map:
-            raise ValueError('channel \'%s\' already exists' % name)
+            raise ValueError("channel '%s' already exists" % name)
         self._map[name] = channel
         self._ProcessChannelEvent(EVT_CHANNEL_ADDED, name)
 
@@ -104,7 +108,7 @@ class Channels(wx.EvtHandler):
         self._map.pop(name)
         self._ProcessChannelEvent(EVT_CHANNEL_REMOVED, name)
 
-    def Update(self, other: 'Channels') -> None:
+    def Update(self, other: "Channels") -> None:
         """Update this instances with the channels from other."""
         # We call Add/Change instead of OrderedDict.update because the
         # add/remove events are meant for one channel change.  We
@@ -121,11 +125,13 @@ def CurrentChannel() -> Channel:
     """Returns current channel configuration."""
     new_channel = {}
     for handler in cockpit.depot.getAllHandlers():
-        if handler.deviceType in [cockpit.depot.CAMERA,
-                                  cockpit.depot.LIGHT_FILTER,
-                                  cockpit.depot.LIGHT_POWER,
-                                  cockpit.depot.LIGHT_TOGGLE,
-                                  cockpit.depot.DIO]:
+        if handler.deviceType in [
+            cockpit.depot.CAMERA,
+            cockpit.depot.LIGHT_FILTER,
+            cockpit.depot.LIGHT_POWER,
+            cockpit.depot.LIGHT_TOGGLE,
+            cockpit.depot.DIO,
+        ]:
             new_channel[handler.name] = handler.onSaveSettings()
     return new_channel
 
@@ -139,23 +145,27 @@ def ApplyChannel(channel: Channel) -> None:
         handler.onLoadSettings(settings)
 
     for handler in cockpit.depot.getAllHandlers():
-        if handler.deviceType in [cockpit.depot.CAMERA,
-                                  cockpit.depot.LIGHT_FILTER,
-                                  cockpit.depot.LIGHT_POWER,
-                                  cockpit.depot.LIGHT_TOGGLE]:
+        if handler.deviceType in [
+            cockpit.depot.CAMERA,
+            cockpit.depot.LIGHT_FILTER,
+            cockpit.depot.LIGHT_POWER,
+            cockpit.depot.LIGHT_TOGGLE,
+        ]:
             if handler.name not in channel:
-                warnings.warn("no channel settings for handler '%s'"
-                              % handler.name)
+                warnings.warn(
+                    "no channel settings for handler '%s'" % handler.name
+                )
 
 
 def SaveToFile(filepath: str, channels: Channels) -> None:
-    with open(filepath, 'w') as fh:
+    with open(filepath, "w") as fh:
         # We should not be accessing internal attributes but
         # alternatives seems overkill since Channels is so simple.
         json.dump(channels._map, fh, indent=2)
 
+
 def LoadFromFile(filepath: str) -> Channels:
-    with open(filepath, 'r') as fh:
+    with open(filepath, "r") as fh:
         # We should not be doing this manually but alternatives seem
         # overkill since Channels is so simple.
         internal_map = json.load(fh)

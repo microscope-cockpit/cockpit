@@ -50,11 +50,11 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-## Given a wavelength in nm, return an RGB color tuple. 
+## Given a wavelength in nm, return an RGB color tuple.
 def wavelengthToColor(wavelength, saturation=1):
     wavelength = float(wavelength)
     if wavelength == 0.0:
-        return (192,192,192)
+        return (192, 192, 192)
     # Convert wavelength to hue, with a color wheel that ranges from
     # blue (240 degrees) at 400nm to red (360 degrees) at 650nm by way of
     # green.
@@ -62,7 +62,7 @@ def wavelengthToColor(wavelength, saturation=1):
     # Make value decrease as we leave the visible spectrum.
     decay = max(0, max(400 - wavelength, wavelength - 650))
     # Don't let value decay too much.
-    value = max(.5, 1 - decay / 200.0)
+    value = max(0.5, 1 - decay / 200.0)
     r, g, b = hsvToRgb(hue, saturation, value)
     return tuple(int(val * 255) for val in (r, g, b))
 
@@ -78,10 +78,10 @@ def hsvToRgb(hue, saturation, value):
     hue = hue % 360
     hue /= 60.0
     sector = int(hue)
-    hueDecimal = hue - sector # Portion of hue after decimal point
+    hueDecimal = hue - sector  # Portion of hue after decimal point
     p = value * (1 - saturation)
     q = value * (1 - saturation * hueDecimal)
-    t = (1 - saturation * (1 - hueDecimal))
+    t = 1 - saturation * (1 - hueDecimal)
 
     if sector == 0:
         return (value, t, p)
