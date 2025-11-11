@@ -49,10 +49,10 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import time
+
 from cockpit import depot
 from cockpit.experiment import experiment
-
-import time
 
 
 ## Immediate-mode experiments are Experiments which perform actions via the

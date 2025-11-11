@@ -49,12 +49,12 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import numpy
+import wx
+
 import cockpit.gui.guiUtils
 import cockpit.interfaces.stageMover
 import cockpit.util.userConfig
-
-import wx
-import numpy
 
 
 ## This class shows a simple dialog to the user that allows them to lay down

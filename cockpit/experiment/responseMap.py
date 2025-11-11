@@ -54,27 +54,28 @@ response maps of the cameras, combined with linear interpolation, to
 correct for nonlinear camera response).
 """
 
-from cockpit.experiment import actionTable
 import decimal
-from cockpit import events
-from cockpit.experiment import experiment
-from cockpit.gui import guiUtils
+
+import matplotlib
+
 import cockpit.gui.imageSequenceViewer
 import cockpit.gui.progressDialog
 import cockpit.handlers.camera
-from cockpit.experiment import offsetGainCorrection
 import cockpit.util.correctNonlinear
 import cockpit.util.datadoc
 import cockpit.util.threads
 import cockpit.util.userConfig
+from cockpit import events
+from cockpit.experiment import actionTable, experiment, offsetGainCorrection
+from cockpit.gui import guiUtils
 
-import matplotlib
 
 matplotlib.use("WXAgg")
+import threading
+
 import matplotlib.backends.backend_wxagg
 import matplotlib.figure
 import numpy
-import threading
 import wx
 
 
@@ -413,7 +414,7 @@ class ResponseMapExperiment(
 
 ## A consistent name to use to refer to the experiment class itself.
 EXPERIMENT_CLASS = ResponseMapExperiment
-from cockpit.gui.guiUtils import FLOATVALIDATOR, INTVALIDATOR, CSVVALIDATOR
+from cockpit.gui.guiUtils import CSVVALIDATOR, FLOATVALIDATOR, INTVALIDATOR
 
 
 ## Generate the UI for special parameters used by this experiment.

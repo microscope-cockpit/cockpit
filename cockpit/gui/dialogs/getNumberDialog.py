@@ -50,9 +50,9 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-import cockpit.gui.guiUtils
-
 import wx
+
+import cockpit.gui.guiUtils
 
 
 ## This class allows for prompting the user for a number, similar to

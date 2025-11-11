@@ -20,21 +20,22 @@
 
 """Linkam stages."""
 
-from cockpit import events
-import cockpit.gui.guiUtils
-import cockpit.gui.device
-from cockpit.devices.microscopeDevice import MicroscopeBase
-import cockpit.handlers.stagePositioner
-import Pyro4
-from cockpit.devices.device import Device
-import threading
-import cockpit.util.threads
-from cockpit.util import valueLogger
-
 import datetime
 import operator
+import threading
 import time
+
+import Pyro4
 import wx
+
+import cockpit.gui.device
+import cockpit.gui.guiUtils
+import cockpit.handlers.stagePositioner
+import cockpit.util.threads
+from cockpit import events
+from cockpit.devices.device import Device
+from cockpit.devices.microscopeDevice import MicroscopeBase
+from cockpit.util import valueLogger
 
 
 DEFAULT_LIMITS = ((0, 0), (11000, 3000))

@@ -19,10 +19,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-from cockpit.gui import guiUtils
-from cockpit.experiment import structuredIllumination
-
 import wx
+
+from cockpit.experiment import structuredIllumination
+from cockpit.gui import guiUtils
 
 
 EXPERIMENT_NAME = "SIM Flux"

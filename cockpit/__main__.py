@@ -22,6 +22,7 @@ import sys
 
 import cockpit
 
+
 # Because "cockpit" is a package and not a module, this module named
 # "__main__" is required so that "python -m cockpit" works.
 

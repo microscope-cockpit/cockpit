@@ -52,15 +52,15 @@
 import re
 import time
 
-from cockpit.devices.device import Device
-from cockpit import events
-
-import cockpit.interfaces
 import cockpit.handlers.genericPositioner
 import cockpit.handlers.stagePositioner
+import cockpit.interfaces
 import cockpit.util.connection
 import cockpit.util.threads
 import cockpit.util.userConfig
+from cockpit import events
+from cockpit.devices.device import Device
+
 
 ## TODO: test with hardware.
 

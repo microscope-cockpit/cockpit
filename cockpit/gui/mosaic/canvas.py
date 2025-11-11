@@ -50,20 +50,20 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-
-import numpy
-from OpenGL.GL import *
-import traceback
-import wx.glcanvas
-
-from cockpit import events
-from cockpit.gui.mosaic.tile import Tile, MegaTile
-import cockpit.util.datadoc
-import cockpit.util.threads
 import queue
 import time
+import traceback
+
+import numpy
 import numpy as np
+import wx.glcanvas
 import wx.lib.newevent
+from OpenGL.GL import *
+
+import cockpit.util.datadoc
+import cockpit.util.threads
+from cockpit import events
+from cockpit.gui.mosaic.tile import MegaTile, Tile
 
 
 _logger = logging.getLogger(__name__)

@@ -23,13 +23,12 @@ from functools import partial
 import Pyro4
 import wx
 
-from cockpit.devices import microscopeDevice
 import cockpit.gui.device
 import cockpit.handlers.filterHandler
+from cockpit import depot, events
+from cockpit.devices import microscopeDevice
 from cockpit.handlers.deviceHandler import STATES
-from cockpit.handlers.filterHandler import FilterHandler, Filter
-from cockpit import depot
-from cockpit import events
+from cockpit.handlers.filterHandler import Filter, FilterHandler
 
 
 class ClaritySlideHandler(FilterHandler):

@@ -49,20 +49,22 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-from cockpit import events
+import re  # to get regular expression parsing for config file
+import threading
+import time
+
+import serial
+import wx
+from OpenGL.GL import *
+
 import cockpit.gui.guiUtils
 import cockpit.handlers.stagePositioner
 import cockpit.interfaces.stageMover
 import cockpit.util.threads
 import cockpit.util.userConfig
-
+from cockpit import events
 from cockpit.devices.device import Device
-from OpenGL.GL import *
-import serial
-import threading
-import time
-import wx
-import re  # to get regular expression parsing for config file
+
 
 LIMITS_PAT = r"(?P<limits>\(\s*\(\s*[-]?\d*\s*,\s*[-]?\d*\s*\)\s*,\s*\(\s*[-]?\d*\s*\,\s*[-]?\d*\s*\)\))"
 

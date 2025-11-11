@@ -50,15 +50,15 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from cockpit.devices import device
-from cockpit import events
-import cockpit.handlers.stagePositioner
-import cockpit.util.threads
-
 import logging
 import socket
 import threading
 import time
+
+import cockpit.handlers.stagePositioner
+import cockpit.util.threads
+from cockpit import events
+from cockpit.devices import device
 
 
 _logger = logging.getLogger(__name__)

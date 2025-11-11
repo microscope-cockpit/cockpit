@@ -49,26 +49,22 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-import typing
-
-import matplotlib.pyplot as plt
-
 import collections.abc
-
-from microscope import ElectronicShutteringMode
-
-from cockpit import depot
-from cockpit.handlers.deviceHandler import DeviceHandler
-from cockpit import events
-from cockpit.handlers.genericPositioner import GenericPositionerHandler
-from cockpit.experiment.actionTable import ActionTable
-from cockpit.experiment import experiment
-from numbers import Number
+import functools
 import operator
 import time
-from cockpit import util
+import typing
+from numbers import Number
+
+import matplotlib.pyplot as plt
 import wx
-import functools
+from microscope import ElectronicShutteringMode
+
+from cockpit import depot, events, util
+from cockpit.experiment import experiment
+from cockpit.experiment.actionTable import ActionTable
+from cockpit.handlers.deviceHandler import DeviceHandler
+from cockpit.handlers.genericPositioner import GenericPositionerHandler
 
 
 ## This handler is responsible for executing portions of experiments.

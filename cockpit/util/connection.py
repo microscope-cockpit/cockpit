@@ -52,6 +52,7 @@
 
 
 import Pyro4
+
 from cockpit import depot
 
 

@@ -21,11 +21,11 @@
 import threading
 import typing
 
-import Pyro4
 import microscope
 import microscope.abc
 import microscope.simulators
 import microscope.testsuite.devices
+import Pyro4
 
 import cockpit.devices.executorDevices
 import cockpit.devices.microscopeCamera

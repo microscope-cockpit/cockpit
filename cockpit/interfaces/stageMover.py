@@ -52,16 +52,15 @@
 
 import math
 import operator
+import threading
 import typing
 
-from cockpit import depot
-from cockpit import events
-from cockpit.util import userConfig
-import cockpit.util.threads
-
 import numpy
-import threading
 import wx
+
+import cockpit.util.threads
+from cockpit import depot, events
+from cockpit.util import userConfig
 
 
 AxisLimits = typing.Tuple[float, float]

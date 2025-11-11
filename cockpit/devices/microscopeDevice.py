@@ -45,30 +45,30 @@ For connection via a controller::
 
 import collections.abc
 import logging
+import re
+import time
 import typing
 
 import Pyro4
 import wx
-import time
-from cockpit import events
-from cockpit.devices import device
-from cockpit import depot
+from microscope import AxisLimits
+
 import cockpit.gui.device
 import cockpit.handlers.deviceHandler
+import cockpit.handlers.digitalioHandler
 import cockpit.handlers.filterHandler
 import cockpit.handlers.lightPower
 import cockpit.handlers.lightSource
-import cockpit.handlers.digitalioHandler
 import cockpit.util.colors
-import cockpit.util.userConfig
-import cockpit.util.threads
 import cockpit.util.listener
-from cockpit.util import valueLogger
+import cockpit.util.threads
+import cockpit.util.userConfig
+from cockpit import depot, events
+from cockpit.devices import device
 from cockpit.gui.device import SettingsEditor
 from cockpit.handlers.stagePositioner import PositionerHandler
 from cockpit.interfaces import stageMover
-import re
-from microscope import AxisLimits
+from cockpit.util import valueLogger
 
 
 _logger = logging.getLogger(__name__)

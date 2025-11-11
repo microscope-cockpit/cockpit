@@ -50,8 +50,8 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from cockpit.gui import imageSequenceViewer
 import cockpit.util.datadoc
+from cockpit.gui import imageSequenceViewer
 
 
 ## This viewer loads a file and shows the images in it.

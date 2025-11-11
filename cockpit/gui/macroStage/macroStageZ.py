@@ -51,14 +51,14 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from OpenGL.GL import *
 import traceback
-import wx
 
-from cockpit import events
+import wx
+from OpenGL.GL import *
+
 import cockpit.interfaces.stageMover
 import cockpit.util.userConfig
-
+from cockpit import events
 from cockpit.gui.macroStage import macroStageBase
 
 

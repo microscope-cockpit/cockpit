@@ -49,9 +49,10 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+import re
+
 from cockpit.devices import device
 from cockpit.handlers.drawer import DrawerHandler, DrawerSettings
-import re
 
 
 class Drawer(device.Device):

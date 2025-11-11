@@ -32,11 +32,13 @@ can present hazards, e.g. lasers. Safe controls:
 """
 
 import copy
+
 import wx
 import wx.lib.delayedresult as delayedresult
+import wx.lib.newevent
+
 from cockpit.gui.guiUtils import FloatValidator
 
-import wx.lib.newevent
 
 (
     SafeControlCommitEvent,

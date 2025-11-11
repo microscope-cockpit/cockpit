@@ -32,6 +32,7 @@ import cockpit
 import cockpit.config
 import cockpit.devices.light
 
+
 """Test units for cockpit.config
 """
 

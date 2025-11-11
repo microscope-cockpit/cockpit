@@ -18,8 +18,9 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-from cockpit.devices import shutter
 import telnetlib
+
+from cockpit.devices import shutter
 
 
 class StanfordShutter(shutter.ShutterDevice):

@@ -18,9 +18,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+
 from cockpit import depot
 from cockpit.devices import device
-import re
 
 
 class DummyAnalogDevice(device.Device):

@@ -50,13 +50,13 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 import wx
-from cockpit import depot
-from cockpit import events
-from cockpit.experiment import experiment
-import cockpit.util.threads
+
 import cockpit.gui.guiUtils
 import cockpit.gui.imageViewer.viewCanvas
 import cockpit.interfaces.stageMover
+import cockpit.util.threads
+from cockpit import depot, events
+from cockpit.experiment import experiment
 
 
 ## Default viewer dimensions.

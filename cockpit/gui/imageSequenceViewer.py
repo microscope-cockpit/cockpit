@@ -49,11 +49,11 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-from cockpit import events
-import cockpit.gui.imageViewer.viewCanvas
-
 import numpy
 import wx
+
+import cockpit.gui.imageViewer.viewCanvas
+from cockpit import events
 
 
 ## This UI widget shows a sequence of images.

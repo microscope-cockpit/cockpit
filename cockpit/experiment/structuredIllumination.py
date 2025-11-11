@@ -51,21 +51,22 @@
 
 """Runs SIM experiments."""
 
-from cockpit.experiment import actionTable
-from cockpit import depot
-from cockpit.experiment import experiment
-from cockpit.gui import guiUtils
-import cockpit.util.Mrc
-import cockpit.util.datadoc
-import cockpit.util.userConfig
-
 import decimal
 import math
-import numpy
 import os
-import tempfile
 import shutil
+import tempfile
+
+import numpy
 import wx
+
+import cockpit.util.datadoc
+import cockpit.util.Mrc
+import cockpit.util.userConfig
+from cockpit import depot
+from cockpit.experiment import actionTable, experiment
+from cockpit.gui import guiUtils
+
 
 ## Provided so the UI knows what to call this experiment.
 EXPERIMENT_NAME = "Structured Illumination"

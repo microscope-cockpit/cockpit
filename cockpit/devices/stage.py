@@ -19,10 +19,11 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 from decimal import Decimal
-from cockpit.devices.device import Device
-from cockpit.interfaces.stageMover import AXIS_MAP
-from cockpit.handlers import stagePositioner
+
 from cockpit import depot
+from cockpit.devices.device import Device
+from cockpit.handlers import stagePositioner
+from cockpit.interfaces.stageMover import AXIS_MAP
 
 
 class SimplePiezo(Device):

@@ -21,19 +21,20 @@
 """Boulder SLM."""
 
 import decimal
-from cockpit.devices import device
+import time
 from itertools import groupby
 from threading import Lock
+
 import Pyro4
 import wx
 
-from cockpit import events
 import cockpit.gui.device
 import cockpit.gui.dialogs.getNumberDialog
 import cockpit.gui.guiUtils
 import cockpit.handlers.executor
-import time
 import cockpit.util
+from cockpit import events
+from cockpit.devices import device
 
 
 class _LastParameters:

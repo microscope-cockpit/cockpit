@@ -51,12 +51,11 @@
 
 import decimal
 
-from cockpit import depot
-from cockpit.handlers import deviceHandler
-from cockpit import events
 import cockpit.handlers.imager
 import cockpit.interfaces.imager
 import cockpit.util.colors
+from cockpit import depot, events
+from cockpit.handlers import deviceHandler
 
 
 ## Available trigger modes for triggering the camera.

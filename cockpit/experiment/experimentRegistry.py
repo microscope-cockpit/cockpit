@@ -54,16 +54,19 @@
 # some experiment types may not be appropriate (due to requiring
 # hardware that is not available).
 
-from cockpit.experiment import offsetGainCorrection
-from cockpit.experiment import optoScriptExample
-from cockpit.experiment import responseMap
-from cockpit.experiment import structuredIllumination
-from cockpit.experiment import stutteredZStack
-from cockpit.experiment import sweptShutter
-from cockpit.experiment import zStack
-from cockpit.experiment import si2d
-from cockpit.experiment import rotatorSweep
-from cockpit.experiment import SIMFlux
+from cockpit.experiment import (
+    SIMFlux,
+    offsetGainCorrection,
+    optoScriptExample,
+    responseMap,
+    rotatorSweep,
+    si2d,
+    structuredIllumination,
+    stutteredZStack,
+    sweptShutter,
+    zStack,
+)
+
 
 ## List of registered modules.
 registeredModules = [

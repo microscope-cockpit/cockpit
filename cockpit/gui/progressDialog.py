@@ -39,9 +39,9 @@
 # methods. Of course, true ProgressDialogs have many other available functions,
 # so this is not truly safe, but it's good enough for most of our uses.
 
-import cockpit.util.threads
-
 import wx
+
+import cockpit.util.threads
 
 
 class ProgressDialog(wx.ProgressDialog):

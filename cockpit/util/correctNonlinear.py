@@ -72,12 +72,13 @@
 # I'm uncertain how closely this response corresponds to the true photon
 # count; I wouldn't count on them bearing much resemblance.
 
-from cockpit.util import datadoc
+import sys
+import time
 
 import numpy
 import scipy.ndimage
-import sys
-import time
+
+from cockpit.util import datadoc
 
 
 class Corrector:

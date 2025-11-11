@@ -50,23 +50,21 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-from microscope import ElectronicShutteringMode
-
-from cockpit.experiment import dataSaver
-from cockpit import depot
-from cockpit import events
-from cockpit.gui import guiUtils
-
-import cockpit.handlers.camera
-import cockpit.interfaces.stageMover
-
 import decimal
 import gc
 import logging
 import os
 import threading
 import time
+
 import wx
+from microscope import ElectronicShutteringMode
+
+import cockpit.handlers.camera
+import cockpit.interfaces.stageMover
+from cockpit import depot, events
+from cockpit.experiment import dataSaver
+from cockpit.gui import guiUtils
 
 
 _logger = logging.getLogger(__name__)

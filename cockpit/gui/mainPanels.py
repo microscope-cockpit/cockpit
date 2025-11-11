@@ -22,9 +22,9 @@ import wx
 
 import cockpit.interfaces.channels
 from cockpit import depot
-from cockpit.util.colors import wavelengthToColor
-from cockpit.gui.device import EnableButton
 from cockpit.gui import safeControls
+from cockpit.gui.device import EnableButton
+from cockpit.util.colors import wavelengthToColor
 
 
 class PanelLabel(wx.StaticText):

@@ -56,21 +56,23 @@ aLines = 4
 """
 
 import json
-from time import sleep
 import socket
+import threading
 import time
-import numpy as np
 from itertools import chain
+from time import sleep
 
-from cockpit import depot, events
+import numpy as np
+
 import cockpit.handlers.executor
 import cockpit.handlers.imager
 import cockpit.handlers.lightSource
 import cockpit.handlers.stagePositioner
-import threading
-import cockpit.util.threads
 import cockpit.util.connection
+import cockpit.util.threads
+from cockpit import depot, events
 from cockpit.devices import executorDevices
+
 
 COCKPIT_AXES = {"x": 0, "y": 1, "z": 2, "SI angle": -1}
 FPGA_IDLE_STATE = 3

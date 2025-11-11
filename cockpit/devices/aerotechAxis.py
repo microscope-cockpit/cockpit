@@ -20,12 +20,14 @@
 
 """Aerotech stages."""
 
-from cockpit.devices import device
-from cockpit import events
-import cockpit.handlers.stagePositioner
-import socket
 import re
+import socket
 from time import sleep
+
+import cockpit.handlers.stagePositioner
+from cockpit import events
+from cockpit.devices import device
+
 
 NAME_STRING = "aerotech mover"
 LIMITS_PAT = r"(?P<limits>\(?\s*[-]?\d*\s*,\s*[-]?\d*\s*\)?)"

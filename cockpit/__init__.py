@@ -64,10 +64,10 @@ import sys
 import threading
 import time
 import traceback
-import wx
 from typing import List
 
 import Pyro4
+import wx
 
 import cockpit.config
 import cockpit.depot

@@ -50,9 +50,10 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
+import decimal
+
 from cockpit import depot
 from cockpit.handlers import deviceHandler
-import decimal
 
 
 ## This handler is for generic positioning devices that can move along a

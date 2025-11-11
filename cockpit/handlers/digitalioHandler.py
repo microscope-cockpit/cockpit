@@ -19,12 +19,13 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-from cockpit.handlers import deviceHandler
-from cockpit import depot
+import wx
+
 import cockpit.gui
 import cockpit.gui.device
-import wx
 import cockpit.util.threads
+from cockpit import depot
+from cockpit.handlers import deviceHandler
 
 
 class DigitalIOHandler(deviceHandler.DeviceHandler):

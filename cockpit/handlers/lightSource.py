@@ -49,11 +49,9 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-from cockpit import depot
-from cockpit.handlers import deviceHandler
-from cockpit import events
-
 import cockpit.util.threads
+from cockpit import depot, events
+from cockpit.handlers import deviceHandler
 
 
 ## This handler is for lightsource toggle buttons and exposure time settings,

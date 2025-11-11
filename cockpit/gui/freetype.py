@@ -56,6 +56,7 @@ import importlib.resources
 
 import freetype
 import numpy
+import wx
 from OpenGL.GL import (
     GL_ALPHA,
     GL_BLEND,
@@ -101,7 +102,6 @@ from OpenGL.GL import (
     glTexParameteri,
     glVertex2f,
 )
-import wx
 
 
 _FONT_PATH = importlib.resources.files("cockpit").joinpath(

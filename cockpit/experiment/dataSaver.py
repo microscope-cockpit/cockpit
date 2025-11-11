@@ -49,16 +49,16 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-from cockpit import events
-import cockpit.util.datadoc
-import cockpit.util.threads
-
-import numpy
 import queue
 import threading
 import time
 
+import numpy
 import wx
+
+import cockpit.util.datadoc
+import cockpit.util.threads
+from cockpit import events
 
 
 ## Unique ID for identifying saver instances

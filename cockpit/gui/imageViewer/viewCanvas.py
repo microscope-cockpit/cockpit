@@ -49,25 +49,25 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-from cockpit import events
-import cockpit.gui
-import cockpit.gui.freetype
-import cockpit.gui.guiUtils
-import cockpit.gui.dialogs.getNumberDialog
-import cockpit.gui.mosaic.window
-import cockpit.util.datadoc
-import cockpit.util.threads
-
-from collections.abc import Iterable
-
-from OpenGL.GL import *
-import numpy as np
+import operator
 import queue
 import threading
 import traceback
+from collections.abc import Iterable
+
+import numpy as np
 import wx
 import wx.glcanvas
-import operator
+from OpenGL.GL import *
+
+import cockpit.gui
+import cockpit.gui.dialogs.getNumberDialog
+import cockpit.gui.freetype
+import cockpit.gui.guiUtils
+import cockpit.gui.mosaic.window
+import cockpit.util.datadoc
+import cockpit.util.threads
+from cockpit import events
 
 
 ## @package cockpit.gui.imageViewer.viewCanvas

@@ -175,6 +175,7 @@ import threading
 import traceback
 import typing
 
+
 ## Define common event strings here. This way, they're here for reference,
 # and can be used elsewhere to avoid errors due to typos.
 COCKPIT_INIT_COMPLETE = "cockpit initialization complete"

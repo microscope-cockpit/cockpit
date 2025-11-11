@@ -55,6 +55,7 @@ cockpit = "cockpit"
 [tool.isort]
 profile = "black"
 line_length = 79
+lines_after_imports = 2
 
 
 [tool.black]

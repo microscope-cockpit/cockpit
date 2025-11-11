@@ -50,9 +50,10 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
+import wx
+
 import cockpit.gui.guiUtils
 
-import wx
 
 ## @package dialogs.offsetSitesDialog
 # This module contains the \link dialogs.offsetSitesDialog.OffsetSites_Dialog

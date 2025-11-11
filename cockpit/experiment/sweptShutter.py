@@ -51,8 +51,7 @@
 
 """Does an open-shutter sweep in Z."""
 
-from cockpit.experiment import actionTable
-from cockpit.experiment import experiment
+from cockpit.experiment import actionTable, experiment
 
 
 ## Provided so the UI knows what to call this experiment.

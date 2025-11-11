@@ -24,21 +24,24 @@
 
 import csv
 import glob
+import os
+import sys
+
 import matplotlib
 import numpy as np
-import os
 import wx
-import sys
+
 
 matplotlib.use("WXAgg")
 import matplotlib.dates
+from matplotlib import colors
+from matplotlib import pyplot as plt
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import (
     NavigationToolbar2WxAgg as NavigationToolbar,
 )
-from matplotlib import colors
-from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
+
 
 DEBUG = False
 

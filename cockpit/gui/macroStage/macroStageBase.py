@@ -49,16 +49,17 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-import numpy
-from OpenGL.GL import *
 import threading
 import time
-import wx
 
-from cockpit import events
+import numpy
+import wx
+from OpenGL.GL import *
+
 import cockpit.gui
 import cockpit.gui.freetype
 import cockpit.interfaces.stageMover
+from cockpit import events
 
 
 ## @package cockpit.gui.macroStage

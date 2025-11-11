@@ -51,15 +51,16 @@
 
 
 import threading
+import time
+import traceback
+import typing
 
-from cockpit import events
-from cockpit.handlers.imager import ImagerHandler
-import cockpit.util.threads
 import wx
 
-import time
-import typing
-import traceback
+import cockpit.util.threads
+from cockpit import events
+from cockpit.handlers.imager import ImagerHandler
+
 
 ## This module provides an interface for taking images with the current
 # active cameras and light sources. It's used only outside of experiment

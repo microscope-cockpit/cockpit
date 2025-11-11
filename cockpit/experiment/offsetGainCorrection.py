@@ -53,20 +53,20 @@
 pixel values and then multiply them by a gain factor).
 """
 
-from cockpit.experiment import actionTable
 import decimal
-from cockpit import events
-from cockpit.experiment import experiment
-from cockpit.gui import guiUtils
+import threading
+import time
+
+import numpy
+import wx
+
 import cockpit.handlers.camera
 import cockpit.util.datadoc
 import cockpit.util.threads
 import cockpit.util.userConfig
-
-import numpy
-import threading
-import time
-import wx
+from cockpit import events
+from cockpit.experiment import actionTable, experiment
+from cockpit.gui import guiUtils
 
 
 ## Provided so the UI knows what to call this experiment.

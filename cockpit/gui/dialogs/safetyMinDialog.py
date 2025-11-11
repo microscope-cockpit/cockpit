@@ -50,10 +50,11 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
+import wx
+
 import cockpit.gui.guiUtils
 import cockpit.interfaces.stageMover
 
-import wx
 
 ## @package safetyMinDialog.py
 # This package contains the SafetyMin_Dialog class and associated constants and

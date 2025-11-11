@@ -50,19 +50,18 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+import traceback
 import typing
 
 import numpy
-from OpenGL.GL import *
-import traceback
 import wx
+from OpenGL.GL import *
 
-from cockpit import events
-from cockpit.gui.primitive import Primitive
 import cockpit.interfaces
 import cockpit.interfaces.stageMover
-
+from cockpit import events
 from cockpit.gui.macroStage import macroStageBase
+from cockpit.gui.primitive import Primitive
 
 
 _logger = logging.getLogger(__name__)

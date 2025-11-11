@@ -19,9 +19,9 @@
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-from cockpit import depot
+
+from cockpit import depot, events
 from cockpit.devices import device
-from cockpit import events
 from cockpit.handlers.lightSource import LightHandler
 
 

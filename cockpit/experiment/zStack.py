@@ -51,11 +51,11 @@
 
 """Standard Z stack experiment."""
 
-from cockpit.experiment import actionTable
-from cockpit.experiment import experiment
-
 import decimal
 import math
+
+from cockpit.experiment import actionTable, experiment
+
 
 ## Provided so the UI knows what to call this experiment.
 EXPERIMENT_NAME = "Z-stack"

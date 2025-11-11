@@ -56,11 +56,11 @@
 # transformations of data on the fly. It's since expanded to provide multiple
 # utility functions for reading and writing MRC files and headers.
 
-from cockpit.util import Mrc
-
 import numpy
 import scipy.ndimage
 import wx
+
+from cockpit.util import Mrc
 
 
 ## Maps dimensional axes to their labels.

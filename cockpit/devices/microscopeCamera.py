@@ -24,25 +24,24 @@
 import decimal
 import logging
 
+import numpy as np
 import Pyro4
 import wx
+from microscope import ROI, Binning, TriggerMode, TriggerType
 
-from cockpit import depot
-import numpy as np
-from cockpit import events
 import cockpit.gui.device
 import cockpit.gui.guiUtils
 import cockpit.handlers.camera
+import cockpit.interfaces.stageMover
 import cockpit.util.listener
 import cockpit.util.threads
 import cockpit.util.userConfig
-import cockpit.interfaces.stageMover
-from cockpit.devices.microscopeDevice import MicroscopeBase
+from cockpit import depot, events
 from cockpit.devices.camera import CameraDevice
+from cockpit.devices.microscopeDevice import MicroscopeBase
+from cockpit.experiment import experiment
 from cockpit.handlers.objective import ObjectiveHandler
 from cockpit.interfaces.imager import pauseVideo
-from cockpit.experiment import experiment
-from microscope import Binning, ROI, TriggerMode, TriggerType
 
 
 _logger = logging.getLogger(__name__)

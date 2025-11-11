@@ -18,14 +18,14 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
+import os.path
 import random
-import time
-import threading
 import sys
+import threading
+import time
 from collections.abc import Iterable
 from datetime import datetime
 
-import os.path
 
 DELIMITER = ";"
 

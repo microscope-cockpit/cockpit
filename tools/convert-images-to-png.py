@@ -24,8 +24,8 @@ just for convenience and because they are very small.
 
 """
 
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 
 # TODO: this works because we only have images for the touchscreen.

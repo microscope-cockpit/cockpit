@@ -64,11 +64,11 @@ from cockpit.devices.dummies import (
     DummyDSP,
     DummyLaser,
     DummyStage,
-    DummyStage,
 )
 from cockpit.devices.objective import ObjectiveDevice
 from cockpit.devices.server import CockpitServer
 from cockpit.handlers.deviceHandler import DeviceHandler
+
 
 ## Different eligible device handler types. These correspond 1-to-1 to
 # subclasses of the DeviceHandler class.

@@ -52,9 +52,9 @@
 
 import collections
 import math
+import sys
 import threading
 import time
-import sys
 from functools import wraps
 
 import numpy
@@ -73,8 +73,7 @@ import cockpit.gui.keyboard
 import cockpit.interfaces
 import cockpit.interfaces.stageMover
 import cockpit.util.userConfig
-from cockpit import depot
-from cockpit import events
+from cockpit import depot, events
 from cockpit.gui.mosaic import canvas
 from cockpit.gui.primitive import Primitive
 

@@ -51,16 +51,17 @@
 
 
 import time
+
 import wx
 
-from cockpit import depot
-from cockpit import events
 import cockpit.gui.dialogs.enumerateSitesPanel
+import cockpit.interfaces.stageMover
+import cockpit.util.threads
+import cockpit.util.userConfig
+from cockpit import depot, events
 from cockpit.gui import guiUtils
 from cockpit.gui.dialogs.experiment import experimentConfigPanel
-import cockpit.interfaces.stageMover
-import cockpit.util.userConfig
-import cockpit.util.threads
+
 
 ## Minimum size of controls (counting their labels)
 CONTROL_SIZE = (280, -1)

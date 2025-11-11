@@ -50,12 +50,6 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from cockpit import depot
-import cockpit.experiment.experimentRegistry
-from cockpit.gui import guiUtils
-import cockpit.interfaces.stageMover
-import cockpit.util.userConfig
-
 import collections
 import decimal
 import json
@@ -66,6 +60,12 @@ import traceback
 import typing
 
 import wx
+
+import cockpit.experiment.experimentRegistry
+import cockpit.interfaces.stageMover
+import cockpit.util.userConfig
+from cockpit import depot
+from cockpit.gui import guiUtils
 
 
 _logger = logging.getLogger(__name__)

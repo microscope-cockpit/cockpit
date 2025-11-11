@@ -49,14 +49,15 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-import Pyro4
 import logging
 import threading
 import traceback
 
-from cockpit.devices import device
+import Pyro4
+
 import cockpit.handlers.server
 import cockpit.util.threads
+from cockpit.devices import device
 
 
 _logger = logging.getLogger(__name__)

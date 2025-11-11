@@ -26,15 +26,17 @@ as part of another wx app.
 """
 
 
-from contextlib import contextmanager
 import gc
+from contextlib import contextmanager
 from itertools import chain
-from cockpit.util.Mrc import Mrc
-import numpy as np
 from operator import add
+
+import numpy as np
 import wx
-from wx.lib.floatcanvas import FloatCanvas
 import wx.lib.plot as plot
+from wx.lib.floatcanvas import FloatCanvas
+
+from cockpit.util.Mrc import Mrc
 
 
 ICON_SIZE = (16, 16)

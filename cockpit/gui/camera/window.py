@@ -52,11 +52,10 @@
 
 import wx
 
-from cockpit import depot
-from cockpit import events
 import cockpit.gui.keyboard
-import cockpit.util.threads
 import cockpit.gui.viewFileDropTarget
+import cockpit.util.threads
+from cockpit import depot, events
 from cockpit.gui.camera import viewPanel
 
 

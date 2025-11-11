@@ -49,11 +49,12 @@
 ## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-from cockpit import events
+import wx
+
 import cockpit.util.userConfig
+from cockpit import events
 from cockpit.experiment import zStack
 
-import wx
 
 ## Provided so the UI knows what to call this experiment.
 EXPERIMENT_NAME = "Stuttered Z-stack"

@@ -18,10 +18,12 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Cockpit.  If not, see <http://www.gnu.org/licenses/>.
 
-from OpenGL.GL import *
-from ctypes import c_float
 import re
+from ctypes import c_float
+
 import numpy
+from OpenGL.GL import *
+
 
 CIRCLE_SEGMENTS = 32
 PI = 3.141592654

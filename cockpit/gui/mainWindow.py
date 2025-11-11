@@ -56,29 +56,31 @@
 
 import io
 import os.path
-import pkg_resources
 import typing
 from configparser import ConfigParser
 from itertools import chain
 
+import pkg_resources
 import wx
 import wx.adv
 
+import cockpit.experiment.experiment
 import cockpit.gui
 import cockpit.gui.fileViewerWindow
 import cockpit.interfaces.channels
-
-from cockpit import depot
-from cockpit.gui.dialogs.experiment import multiSiteExperiment
-from cockpit.gui.dialogs.experiment import singleSiteExperiment
-from cockpit import events
-import cockpit.experiment.experiment
-from cockpit.gui import fileViewerWindow
-from cockpit.gui import joystick
-from cockpit.gui import keyboard
 import cockpit.util.userConfig
-from cockpit.gui import viewFileDropTarget
-from cockpit.gui import mainPanels
+from cockpit import depot, events
+from cockpit.gui import (
+    fileViewerWindow,
+    joystick,
+    keyboard,
+    mainPanels,
+    viewFileDropTarget,
+)
+from cockpit.gui.dialogs.experiment import (
+    multiSiteExperiment,
+    singleSiteExperiment,
+)
 from cockpit.util.csv_plotter import CSVPlotter
 from cockpit.util.intensity import IntensityProfilerFrame
 from cockpit.util.valueLogger import ValueLogger

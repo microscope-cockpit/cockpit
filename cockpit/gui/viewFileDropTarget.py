@@ -50,9 +50,9 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 
-from cockpit.gui import fileViewerWindow
-
 import wx
+
+from cockpit.gui import fileViewerWindow
 
 
 ## Allow users to drag files onto the provided window to pop up a viewer.
