@@ -8,8 +8,9 @@
 ## notice and this notice are preserved.  This file is offered as-is,
 ## without any warranty.
 
-import sys
 import os.path
+import sys
+
 
 # We need this so that autodoc can find Cockpit docstrings.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.path.pardir))
