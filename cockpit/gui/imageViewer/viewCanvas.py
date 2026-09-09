@@ -776,7 +776,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
     def setSize(self, size):
         if self.imageData is not None:
             self.w, self.h = size * self.GetContentScaleFactor()
-        self.Refresh(0)
+        self.Refresh(False)
 
     def onMouse(self, event):
         if self.imageShape is None:
@@ -1059,7 +1059,7 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.panX += 2 * dx / (self.w * self.zoom)
         self.panY += 2 * dy / (self.h * self.zoom)
         events.publish(events.SYNCED_VIEW, self.panX, self.panY, self.zoom)
-        self.Refresh(0)
+        self.Refresh(False)
 
     ## Reset our view mods.
     def resetView(self):
@@ -1069,13 +1069,15 @@ class ViewCanvas(wx.glcanvas.GLCanvas):
         self.panX = 0
         self.panY = 0
         self.zoom = 1.0
-        self.Refresh(0)
+        self.Refresh(False)
 
     def setView(self, panX, panY, zoom):
         self.panX = panX
         self.panY = panY
         self.zoom = zoom
-        self.Refresh(0)
+        # setView may be called by the eventloop though the ViewCanvas (self) has been already destroyed
+        if self:
+            self.Refresh(False)
 
     def resetPixelScale(self):
         self.image.autoscale()
