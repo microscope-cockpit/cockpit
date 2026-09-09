@@ -193,7 +193,7 @@ class PicoMotorDevice(device.Device):
                 "homeing axis 1 %s, origPosiiton=%d"
                 % (self.axisMapper[axis], origPosition[axis])
             )
-            (controller, motor) = self.axisMapper[axis].split(">")
+            controller, motor = self.axisMapper[axis].split(">")
             while self.checkForMotion(controller) == 1:
                 time.sleep(1)
             # Home this axis (to -ve home)
@@ -246,7 +246,7 @@ class PicoMotorDevice(device.Device):
                 "homeing axis 1 %s, origPosiiton=%d"
                 % (self.axisMapper[axis], origPosition[axis])
             )
-            (controller, motor) = self.axisMapper[axis].split(">")
+            controller, motor = self.axisMapper[axis].split(">")
             while self.checkForMotion(controller) == 1:
                 time.sleep(1)
             # Home this axis (to -ve home)
@@ -404,7 +404,7 @@ class PicoMotorDevice(device.Device):
                 return
             for axis in [0, 1, 2]:
                 events.publish(events.STAGE_MOVER, axis)
-            (prevX, prevY, prevZ) = (x, y, z)
+            prevX, prevY, prevZ = (x, y, z)
             time.sleep(0.1)
 
     ## Get the position of the specified axis, or all axes by default.

@@ -350,7 +350,7 @@ class MultiSiteExperimentDialog(wx.Dialog):
     # cycle that minimizes total travel time. Return a tuple of
     # (total number of site lists, mapping of cycle number to site list).
     def chooseSiteVisitOrder(self):
-        (baseIndices, frequencies) = self.sitesPanel.getSitesList()
+        baseIndices, frequencies = self.sitesPanel.getSitesList()
         # Check for sites that have been deleted
         baseOrder = []
         baseFrequencies = []

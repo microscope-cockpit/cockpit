@@ -58,9 +58,9 @@ import io
 import os.path
 import typing
 from configparser import ConfigParser
+from importlib.metadata import version
 from itertools import chain
 
-from importlib.metadata import version
 import wx
 import wx.adv
 
@@ -84,6 +84,7 @@ from cockpit.gui.dialogs.experiment import (
 from cockpit.util.csv_plotter import CSVPlotter
 from cockpit.util.intensity import IntensityProfilerFrame
 from cockpit.util.valueLogger import ValueLogger
+
 
 ROW_SPACER = 12
 COL_SPACER = 8

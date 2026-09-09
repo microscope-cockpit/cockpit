@@ -25,7 +25,6 @@ This can be used on its own from the command line, or can be included
 as part of another wx app.
 """
 
-
 import gc
 from contextlib import contextmanager
 from itertools import chain
@@ -200,7 +199,7 @@ class IntensityProfiler:
                 xOffset = x0 - n // 2
                 yOffset = y0 - n // 2
             peakPosition = np.argmax(middle)
-            (z, y, x) = np.unravel_index(peakPosition, middle.shape)
+            z, y, x = np.unravel_index(peakPosition, middle.shape)
             self._beadCentre = (x + xOffset, y + yOffset)
             return self._beadCentre
 

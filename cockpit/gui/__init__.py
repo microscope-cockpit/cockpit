@@ -74,10 +74,10 @@ import wx.lib.newevent
 
 import cockpit.events
 
+
 ## importlib.resources.files traverses the package with the '/'
 ## operator so the individual path components are joined in a way
 ## that is correct on all platforms, including windows.
-
 IMAGES_PATH = str(
     importlib.resources.files("cockpit") / "resources" / "images"
 )

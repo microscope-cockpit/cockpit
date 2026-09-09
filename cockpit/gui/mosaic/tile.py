@@ -322,7 +322,7 @@ class Tile:
         picTexRatio_x = float(pic_nx) / tex_nx
         picTexRatio_y = float(pic_ny) / tex_ny
 
-        (x, y) = self.pos[:2]
+        x, y = self.pos[:2]
 
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glBegin(GL_QUADS)

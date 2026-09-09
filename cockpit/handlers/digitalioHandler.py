@@ -52,7 +52,7 @@ class DigitalIOHandler(deviceHandler.DeviceHandler):
         return [paths, outputs, IOstate]
 
     def onLoadSettings(self, settings):
-        (paths, outputs, IOstate) = settings
+        paths, outputs, IOstate = settings
         for key in paths.keys():
             self.pathNameToButton[key].SetValue(paths[key])
         for i, state in enumerate(IOstate):

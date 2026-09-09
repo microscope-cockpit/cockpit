@@ -27,7 +27,6 @@ components, it as been moved here.
 
 """
 
-
 import re
 import typing
 
