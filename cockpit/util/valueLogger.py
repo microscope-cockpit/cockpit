@@ -26,6 +26,7 @@ import time
 from collections.abc import Iterable
 from datetime import datetime
 
+import wx
 
 DELIMITER = ";"
 
