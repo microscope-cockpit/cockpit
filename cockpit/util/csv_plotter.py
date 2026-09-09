@@ -34,7 +34,6 @@ import wx
 
 matplotlib.use("WXAgg")
 import matplotlib.dates
-from matplotlib import colors
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import (
@@ -48,16 +47,19 @@ DEBUG = False
 # We use images of size BMP_SIZE in the tree to act as a legend.
 BMP_SIZE = (16, 16)
 # A mapping of matplotlib colour to a base image index.
-C_TO_I = {}
-for i, hex in enumerate(plt.rcParams["axes.prop_cycle"].by_key()["color"]):
-    C_TO_I[hex.lower()] = i + 1
+I_TO_C = {}
+for i, c in enumerate(plt.rcParams["axes.prop_cycle"].by_key()["color"]):
+    I_TO_C[i + 1] = [int(flt * 255) for flt in c]
 
 
-def make_bitmap(hex, text=None):
+def make_bitmap(color_tuple, text=None):
     """Return a square bitmap for use in TreeCtrl imagelist."""
-    rgb = [int(flt * 255) for flt in colors.to_rgb(hex)]
     bmp = wx.Bitmap.FromRGBA(
-        *BMP_SIZE, red=rgb[0], green=rgb[1], blue=rgb[2], alpha=wx.ALPHA_OPAQUE
+        *BMP_SIZE,
+        red=color_tuple[0],
+        green=color_tuple[1],
+        blue=color_tuple[2],
+        alpha=wx.ALPHA_OPAQUE,
     )
     if text is not None:
         dc = wx.MemoryDC()
@@ -343,9 +345,9 @@ class CSVPlotter(wx.Frame):
                 BMP_SIZE[0], BMP_SIZE[1], *self.tree.GetBackgroundColour()
             )
         )
-        for hex in sorted(C_TO_I, key=C_TO_I.get):
-            iml.Add(make_bitmap(hex, "L"))
-            iml.Add(make_bitmap(hex, "R"))
+        for color_tuple in I_TO_C.values():
+            iml.Add(make_bitmap(color_tuple, "L"))
+            iml.Add(make_bitmap(color_tuple, "R"))
         self.tree.AssignImageList(iml)
 
         self.Fit()
@@ -361,7 +363,9 @@ class CSVPlotter(wx.Frame):
             index = 0
         else:
             # Image index: first term selects colour, second term selects L or R variant.
-            index = 2 * C_TO_I[trace.get_c()] - (trace.axes == self.axis)
+            index = 2 * list(I_TO_C.keys())[
+                list(I_TO_C.values()).index(trace.get_c())
+            ] - (trace.axes == self.axis)
         self.tree.SetItemImage(node, index)
 
     def update_data(self, evt):
