@@ -109,7 +109,6 @@ class Experiment:
     # \param otherHandlers List of miscellaneous handlers that are involved in
     #        the experiment.
     # \param metadata String of extra metadata to insert into the "titles"
-
     #        section of the saved file.
     # \param savePath Path to save image data to. If this isn't provided then
     #        no data will be saved.
@@ -610,7 +609,6 @@ class Experiment:
     def expose(self, curTime, cameras, lightTimePairs, table):
         # First, determine which cameras are not ready to be exposed, because
         # they may have seen light they weren't supposed to see (due to
-
         # bleedthrough from other cameras' exposures). These need
         # to be triggered (and we need to record that we want to throw away
         # those images) before we can proceed with the real exposure.
