@@ -200,6 +200,7 @@ class ExecutorDevice(device.Device):
     def executeTable(self, table, startIndex, stopIndex, numReps, repDuration):
         actions = actions_from_table(table, startIndex, stopIndex, repDuration)
 
+        actions = self._adaptActions(actions)
         events.publish(
             events.UPDATE_STATUS_LIGHT,
             "device waiting",
@@ -211,6 +212,11 @@ class ExecutorDevice(device.Device):
         )
         events.publish(events.EXPERIMENT_EXECUTION)
         return
+
+    def _adaptActions(self, actions):
+        """Subclass this method to adapt the actions table to your specific device.
+        Return the modified version of action"""
+        return actions
 
         ## Debugging function: set the digital output for the DSP.
 
