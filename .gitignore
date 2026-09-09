@@ -15,6 +15,7 @@
 /build
 /dist
 /venv
+/.venv
 /.tox
 /.mypy_cache
 /.pytest_cache
