@@ -147,9 +147,9 @@ class PhysikInstrumenteM687(Device):
         ## Maps the cockpit's axis ordering (0: X, 1: Y, 2: Z) to the
         # XY stage's ordering or swap it if True in the configuration
         if self.config.get("swapaxes", False):
-            self.axisMapper = {0: 2, 1: 1}
-        else:
             self.axisMapper = {0: 1, 1: 2}
+        else:
+            self.axisMapper = {0: 2, 1: 1}
         ## Maps cockpit axis ordering to a +-1 multiplier to apply to motion,
         # since some of our axes might be flipped.
         invert_0 = config.get("invert0", False)
