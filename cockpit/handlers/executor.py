@@ -551,8 +551,10 @@ def plot_action_table_profile(
     def action_type(action):
         if isinstance(action, bool):
             return "digital"
-        if isinstance(action, (float, int)):
+        elif isinstance(action, (float, int)):
             return "analogue"
+        else:
+            return None
 
     for event in action_table.actions:
         if event is None:
@@ -576,10 +578,12 @@ def plot_action_table_profile(
     for i, (key, data) in enumerate(table.items()):
         if data[2] == "analogue":
             axs[i].plot(data[0], data[1])
-        else:
+        elif data[2] == "digital":
             axs[i].step(data[0], data[1], where="post")
             axs[i].set_yticks([0, 1])
             axs[i].set_ylim(-0.1, 1.1)
+        else:
+            continue
         axs[i].set_xlabel("Time", fontsize=12)
         axs[i].set_ylabel(key, fontsize=12)
         axs[i].grid(True, which="both", axis="x")
