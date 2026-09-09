@@ -65,22 +65,22 @@ And some of its modules are:
 
 """
 
-
+import importlib.resources
 import sys
 import traceback
 
-import pkg_resources
 import wx
 import wx.lib.newevent
 
 import cockpit.events
 
+## importlib.resources.files traverses the package with the '/'
+## operator so the individual path components are joined in a way
+## that is correct on all platforms, including windows.
 
-## The resource_name argument for resource_filename is not a
-## filesystem filepath.  It is a /-separated filepath, even on
-## windows, so do not use os.path.join.
-
-IMAGES_PATH = pkg_resources.resource_filename("cockpit", "resources/images/")
+IMAGES_PATH = str(
+    importlib.resources.files("cockpit") / "resources" / "images"
+)
 
 
 ## A single event type for all cockpit.events. The original cockpit
