@@ -83,7 +83,6 @@ class OffsetSites_Dialog(wx.Dialog):
                     size=(60, -1),
                     minSize=(100, -1),
                     border=5,
-                    flags=wx.ALIGN_CENTRE | wx.ALL,
                 )
             )
 
